@@ -1,0 +1,407 @@
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE,comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6811_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[Control Statements and Recursion]{Control Statements and Recursion}
+\subtitle{FRE6811 Financial Software Laboratory, Spring 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author{Jerzy Pawlowski}
+% \email{jp3900@poly.edu}
+\date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Operators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has the following logical operators:
+      \begin{itemize}
+        \item '\texttt{<}' less than,
+        \item '\texttt{<=}' less than or equal to,
+        \item '\texttt{>}' greater than,
+        \item '\texttt{>=}' greater than or equal to,
+        \item '\texttt{==}' exactly equal to,
+        \item '\texttt{!=}' not equal to,
+        \item '\texttt{!x}' Not \texttt{x},
+        \item '\texttt{x \& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x | y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators are applied to vectors element-wise,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+TRUE | FALSE
+TRUE | NA
+v.var1 <- c(2, 4, 6)
+v.var1 < 5
+(v.var1 < 5) & (v.var1 > 3)
+v.var1[(v.var1 < 5) & (v.var1 > 3)]
+v.var2 <- c(-10, 0, 10)
+v.var1 < v.var2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{'\texttt{if}' statements}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
+      \vskip1ex
+      The logical conditions must be either a logical or numeric type, otherwise an error is thrown,
+      \vskip1ex
+      The '\texttt{else}' statement can also be omitted,
+      \vskip1ex
+      '\texttt{if}' statements can be nested using multiple '\texttt{else if}' statements,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+n.var1 <- -1
+if (n.var1) {  # positive numbers are TRUE, otherwise FALSE
+  n.var2 <- 4
+} else if (n.var1 == 0) {  # 'else if' together on same line
+  n.var2 <- 0
+} else {  # keep 'else' together with curly braces
+  n.var2 <- -4
+}
+n.var2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Conditions} are $R$ objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(e.cond)  # handler captures error condition
+    print(paste("error handler: ", e.cond)),
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Data Structures and Data Munging}
+
+
+%%%%%%%%%%%%%%%
+\subsection{$R$ Scripts}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{sink()} diverts output to a file, or ends the diversion,
+      \vskip1ex
+      \emph{Conditions} are $R$ objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+# sink("script.R")  # redirect to script file
+# sink()  # Turn redirect off
+# source("script.R", echo=TRUE)  # source script
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Copying Data Between $Excel$ and $R$}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      First, in $Excel$ copy data to $clipboard$ with \texttt{ctrl-C},
+      Then in $R$ go into R and use the function.
+      The function \texttt{sink()} diverts output to a file, or ends the diversion,
+      \vskip1ex
+      \emph{Conditions} are $R$ objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the
+      \hskip1em\url{http://alandgraf.blogspot.com/2013/02/copying-data-from-excel-to-r-and-back_24.html}\\
+      \hskip1em\url{http://en.wikibooks.org/wiki/R_Programming/Working_with_data_frames}\\
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+# function for copying data frame from clipboard into R
+# data is tab delimited, with a header.
+read.clip <- function(file="clipboard", sep="\t", header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read.clip
+
+# data.xls <- read.clip()
+# data.xls
+
+# function for copying data frame from R into clipboard
+# data is tab delimited, with a header.
+write.clip <- function(data, row.names=FALSE, col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t", row.names=row.names, col.names=col.names, ...)
+}  # end write.clip
+
+# write.clip(data=data.xls)
+
+# call spreadsheet-style data editor
+# blah <- edit(data.xls)
+
+
+# sink("script.R")  # redirect to script file
+# sink()  # Turn redirect off
+# source("script.R", echo=TRUE)  # source script
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Plotting}
+% \section{Plotting Using Package \texttt{ggplot2}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{ggplot2} is a very popular $R$ package for advanced plotting,
+      \vskip1ex
+      The function \texttt{autoplot()} creates a \texttt{ggplot2} object,
+      \vskip1ex
+      The function \texttt{theme()} allows customizing \texttt{ggplot2} objects,
+      <<quantlib,echo=3:30,tidy=FALSE,fig.width=6,fig.height=4,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize the random number generator
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+# coerce mts object into zoo
+zoo.eustx <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo.eustx) <- as.Date(365*(index(zoo.eustx)-1970))
+# create simple ggplot2 in single pane
+gg2.zoo <- autoplot(zoo.eustx, main="Eu Stox", 
+                    facets=NULL)
+# customize ggplot2 using 'theme' function
+gg2.zoo + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.background=element_blank())
+
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-3em}
+      \includegraphics[width=0.55\paperwidth,valign=t]{figure/quantlib}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simple \secname\hskip0.5em Example}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \verb|datasets| is a base package containing various datasets, for example \verb|EuStockMarkets|,
+
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize random number generator
+v.xvar <- 0.1*1:30  # independent variable
+v.yvar <- 3 + 2*v.xvar + rnorm(30)  # dependent variable plus noise
+lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
+summary(lm.simp)  # regression summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Plotting a \secname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \verb|datasets| is a base package containing various datasets, for example \verb|EuStockMarkets|,
+
+        <<simp_reg,echo=2:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize random number generator
+v.xvar <- 0.1*1:30
+v.yvar <- 3 + 2*v.xvar + rnorm(30)
+lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # axis title and labels
+par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(v.yvar ~ v.xvar)  # plot scatterplot
+title(main="Simple Regression", line=-1)
+abline(lm.simp, col="red")  # add reg line
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simp_reg}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Additional Reading}
+\begin{frame}[t]{\subsecname}
+
+Download $R$ Interpreter from $CRAN$ (Comprehensive $R$ Archive Network)\\
+\hskip1em\url{http://cran.us.r-project.org}\\
+\vskip4ex
+Download $RStudio$ IDE (Integrated Development Environment)\\
+\hskip1em\url{http://www.rstudio.com/ide}\\
+\vskip4ex
+
+\end{frame}
+
+
+\end{document}

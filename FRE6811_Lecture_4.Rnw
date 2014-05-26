@@ -1,0 +1,857 @@
+% FRE6811_Lecture_2
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6811_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6811 Lecture\#4]{FRE6811 Financial Software Laboratory}
+\subtitle{Lecture\#4, Spring 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author{Jerzy Pawlowski}
+% \email{jp3900@poly.edu}
+\date{February 17, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+% \begin{frame}[t]{Outline}
+% You might wish to add the option [pausesections]
+%   \tableofcontents
+% \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bank Account Using Mutable States}
+\begin{frame}[fragile,t]{\subsecname}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<echo=4:30,tidy=FALSE>>=
+rm(list=ls())
+# the super-assignment operator '<<-' adjusts the balance
+# 'balance' exists in OpenAccount evaluation environment
+# bank account example (from Venables) demonstrates mutable states
+# 'balance' is persistent between function calls
+OpenAccount <- function(balance) {
+# returns function list for account operations
+  list(
+    deposit = function(amount) {  # make deposit
+      if(amount > 0) {
+        balance <<- balance + amount  # '<<-' super-assignment operator
+        cat(amount, "deposited. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("Deposits must be positive!\n")
+      }
+    },  # end deposit
+    withdraw = function(amount) {  # make withdrawal
+      if(amount <= balance) {
+        balance <<- balance - amount  # '<<-' super-assignment operator
+        cat(amount, "withdrawn. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("You don't have that much money!\n")
+      }
+    },  # end withdraw
+    get.balance = function() {  # get balance
+      cat("Your current balance is:", balance, "\n")
+    }  # end get.balance
+  )  # end list
+}  # end OpenAccount
+@
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<tidy=FALSE>>=
+# perform account operations
+# open an account with 100 deposit
+my.account <- OpenAccount(100)
+ls(my.account)  # my.account is a list
+# add my.account to search path
+attach(my.account)
+withdraw(30)  # withdrawal to buy groceries
+deposit(100)  # deposit paycheck to account
+withdraw(200)  # withdrawal to buy Gucci bag
+get.balance()  # get account balance
+
+# list objects in scope of get.balance
+ls(environment(get.balance))
+
+detach(my.account)  # remove my.account from search path
+@
+  \end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Functions \texttt{lapply()} and  \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{lapply()} and  \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+      \vskip1ex
+      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+iris.list <- as.list(iris[1:5, 1:3])  # create list
+iris.list
+lapply(iris.list, mean)  # compute list of means of list elements
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=1:30,tidy=FALSE>>=
+# compute vector of means of list elements
+sapply(iris.list, mean)
+
+# create a matrix
+m.var <- matrix(sample(12), nrow=3, ncol=4)
+# calculate row sums
+apply(m.var, 1, sum)
+
+# now the same calculation using sapply
+sapply(1:nrow(m.var), function(n.row) {  # anonymous function
+    sum(m.var[n.row, ])
+  }  # end anonymous function
+)  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{apply()} Instead of '\texttt{for}' and '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      '\texttt{for}' and '\texttt{while}' loops are relatively inefficient and too slow for large computations,
+      \vskip1ex
+      '\texttt{apply()}' loops are much more efficient and preferred in practice,
+      \vskip1ex
+      The function '\texttt{system.time()}' returns the CPU time used to evaluate a given expression,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+large.matrix <- matrix(1:1000000, nrow=100000, ncol=10)
+row.sums <- c()
+
+system.time(
+  for(i in 1:nrow(large.matrix)) {
+    row.sums[i] <- sum(large.matrix[i,])
+  }  # end for
+)  # end system.time
+
+system.time(row.sums <- apply(large.matrix, 1, sum))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Even '\texttt{apply()}' loops are not the most efficient way to calculate statistics on rows and columns of very large matrices,
+      \vskip1ex
+      $R$ has very efficient functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      These functions call compiled \texttt{C} code and are therefore much faster than even the \texttt{apply()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=1:30,tidy=FALSE>>=
+system.time(row.sums <- apply(large.matrix, 1, sum))
+
+str(rowSums)  # get list of arguments
+# sum the rows and columns
+row.sums <- c()
+system.time(row.sums <- rowSums(large.matrix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Argument Handling}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ provides many ways to handle various unexpected argument values, by checking them before making any calculations,
+      \vskip1ex
+      Assigning default values to formal arguments allows for better control over their values,
+      \vskip1ex
+      The function \texttt{stopifnot()} stops function execution and produces an error if its argument is \texttt{FALSE},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+FunRobust <- function(v.in1, v.in2=NA) {
+# returns the sum of its two arguments
+  if (is.numeric(v.in2)) {  # check if v.in2 was input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end FunRobust
+FunRobust(1, 2)
+FunRobust(5, 'a')
+FunRobust <- function(v.in1, v.in2) {  # even more robust
+  stopifnot((!missing(v.in1) && is.numeric(v.in1)) || 
+               (!missing(v.in2) && is.numeric(v.in2)))
+  if (!missing(v.in2) && is.numeric(v.in2)) {  # check if v.in2 is valid input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end FunRobust
+FunRobust(5, 'a')
+FunRobust('a')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Conditions} are $R$ objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(e.cond)  # handler captures error condition
+    print(paste("error handler: ", e.cond)),
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error condition,
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(n.val) {  # anonymous function
+    stopifnot(n.val != 3)  # check for error
+    cat("(cat) n.val=", n.val)  # broadcast
+    paste("(return) n.val=", n.val)  # return value
+  }  # end anonymous function
+)  # end apply
+      @
+      Without \texttt{tryCatch()}, the  \texttt{apply()} loop exits without returning any result,
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=1:30,tidy=FALSE>>=
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(n.val) {  # anonymous function
+    tryCatch(  # with error handler
+      {  # body
+        stopifnot(n.val != 3)  # check for error
+        cat("(cat) n.val=", n.val)  # broadcast
+        paste("(return) n.val=", n.val)  # return value
+      },
+      error=function(e.cond)  # handler captures error condition
+        paste("handler: ", e.cond),
+      finally=print(paste("(finally) n.val=", n.val))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Data Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has a \texttt{Date} class for date objects (but without time),
+      \vskip1ex
+      The function \texttt{as.Date()} converts a character string into a date object,
+      \vskip1ex
+      $R$ stores \texttt{Date} objects as the number of days since January 1, 1970,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.Date()  # get today's date
+my.date <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
+my.date
+class(my.date)
+as.Date("06-15-2013", "%m-%d-%Y")  # specify format
+my.date + 20  # add 20 days
+unclass(my.date)  # get internal integer representation
+some.date <- as.Date("11/22/2013", "%m/%d/%Y")
+some.date
+# difference between dates
+difftime(some.date, my.date, units="weeks")
+weekdays(my.date)  # get day of the week
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date and Time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      $R$ has a class \texttt{POSIXct} for date and time objects,
+      \vskip1ex
+      The function \texttt{as.POSIXct()} converts a character string into a \texttt{POSIXct} object,
+      \vskip1ex
+      \texttt{format.POSIXct()} converts \texttt{POSIXct} objects to character strings,
+      \vskip1ex
+      $R$ stores \texttt{POSIXct} objects as the number of seconds since the epoch (January 1, 1970 UTC),
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2013-06-15 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+my.date <- as.POSIXct("2013-06-15 18:30:10", tz="America/New_York")
+my.date
+class(my.date)
+my.date + 20  # add 20 seconds
+unclass(my.date)  # get internal integer representation
+format(my.date, tz="UTC")  # convert to character in different TZ
+as.POSIXct(format(my.date, tz="UTC"))  # convert back to POSIXct
+as.POSIXct(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXct(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{zoo} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The library \texttt{zoo} is designed for managing \emph{time series} and ordered objects,
+      <<zoo_ts,echo=6:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create daily dates
+my.index <- as.Date("2010-06-15") + 1:1000
+# create zoo time series
+ts.random <- zoo(cumsum(rnorm(1000)), 
+                 order.by=my.index)
+class(ts.random)  # class 'zoo'
+tail(ts.random, 4)  # get last few elements
+write.zoo(ts.random, file="ts.random.txt")
+rm(ts.random)  # get last few elements
+ts.random <- read.zoo("ts.random.txt")
+tail(ts.random, 4)  # get last few elements
+# call plot.zoo
+plot(ts.random, xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames are 2-D objects (like matrices), but the columns can be of different classes,
+      \vskip1ex
+      Data frames can also be thought of as lists in which all the elements are vectors of the same length,\\
+      Each list element is a column of elements of the same class,
+      \vskip1ex
+      Data frames share properties of both lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+dim(df.florist)  # get dimension attribute
+colnames(df.florist)  # get the colnames attribute
+rownames(df.florist)  # get the rownames attribute
+class(df.florist)  # get object class
+class(df.florist$v.type)  # get column class
+class(df.florist$v.price)  # get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30,tidy=FALSE,prompt=TRUE>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+df.florist[2, ]  # get second row
+df.florist[2, 3]  # get second row and third column
+df.florist[[3]]  # get third column
+df.florist$v.color[3]  # get third row from column 'v.color'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{str()} compactly displays the structure of an $R$ object,
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an $R$ object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30,tidy=FALSE,prompt=TRUE>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+str(df.florist)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be sorted on any column,
+      \vskip1ex
+      The function \texttt{order()} returns a permutation vector,
+      \vskip1ex
+      \texttt{order()} can take several vectors as input, to break any ties,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30,tidy=FALSE,prompt=TRUE>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+order(df.florist$v.price)  # permute on price
+df.florist[order(df.florist$v.price), ]  # sort on price
+df.florist[order(df.florist$v.color), ]  # sort on color
+order(c(2, 1:4))  # there's a tie
+order(c(2, 1:4), 1:5)  # there's a tie
+# read sort() Examples
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Reading and Writing \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.35\textwidth}
+      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from files,
+      \vskip1ex
+      The functions \texttt{read.csv()} and \texttt{write.csv()} are wrappers for \texttt{read.table()} and \texttt{write.table()}, and read and write data frames from CSV format files,
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
+    \column{0.65\textwidth}
+      \vspace{-1em}
+      <<echo=6:30,tidy=FALSE,prompt=TRUE>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+write.csv(df.florist, file='florist.csv')  # write to file
+df.bad <- read.csv(file='badflorist.csv')  # read from file
+df.bad  # v.price has bad data point
+class(df.bad$v.price)  # numeric coerced to factor by bad data
+df.bad$v.price <- as.numeric(  # explicitly coerce to numeric
+                            as.character(df.bad$v.price))
+df.bad$v.price[2] <- 0.5  # fix value
+mean(df.bad$v.price)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bad Data}
+\begin{frame}[fragile,t]{Types of \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Possible sources of bad data are: imported data, class coercion, numeric overflow,
+      \vskip1ex
+      Types of bad data:
+      \begin{itemize}[]
+        \item \texttt{NA} means Not Available (missing) data,
+        \item \texttt{NaN} means Not a Number data,
+        \item \texttt{Inf} means numeric overflow - divide by zero,
+      \end{itemize}
+      \vskip1ex
+      The functions \texttt{is.na()} and \texttt{is.nan()} test for NA and NaN values,
+      \vskip1ex
+      Many functions have a \texttt{na.rm} parameter to remove NAs from input data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, 0/0, 1/0))  # test for NA
+is.nan(c(NA, 0/0, 1/0))  # test for NaN
+NA*1:4  # create vector of Nas
+v.na <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+mean(v.na)  # returns NA, when NAs are input
+mean(v.na, na.rm=TRUE)  # remove NAs from input data
+v.na[!is.na(v.na)]  # delete the NA values
+sum(!is.na(v.na))  # count non-NA values
+      @
+  \end{columns}
+\end{block}
+
+\begin{block}{}
+  \texttt{NULL} isn't bad data, but is a reserved word and represents a null object,\\
+  \texttt{NULL} is returned by functions whose value is undefined,\\
+  Very often variables are initialized to \texttt{NULL} before iteration,\\
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+head(airquality)  # airquality data has some NAs
+dim(airquality)
+sum(!complete.cases(airquality))  # number of NAs
+head(airquality[!complete.cases(airquality), ])  # display some NAs
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Rows containing bad data may be either removed or replaced with an estimated value,
+      \vskip1ex
+      The function \texttt{na.locf()} from library \texttt{zoo} replaces NAs with most recent non-NA prior to it,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+good.air <- airquality[complete.cases(airquality), ]  # remove NAs
+dim(good.air)
+head(good.air)  # NAs removed
+library(zoo)  # load package zoo
+good.air <- na.locf(airquality)  # replace NAs
+dim(good.air)
+head(good.air)  # NAs replaced
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.35\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} allow reading and writing matrices from CSV format files,
+      \vskip1ex
+      Using the \texttt{*.csv()} functions is very inefficient for large data sets,
+    \column{0.65\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE,prompt=TRUE>>=
+m.var <- matrix(1:6, nrow=2, ncol=3, dimnames=list(c("row1", "row2"), c("col1", "col2", "col3")))  # create a matrix
+m.var
+write.csv(m.var, file='matrix.csv')  # write to file
+m.in <- read.csv(file='matrix.csv')  # read from file
+m.in  # this is a data frame!
+class(m.in)  # this is a data frame!
+name.rows <- as.character(m.in[, 1])  # get rownames
+m.in <- as.matrix(m.in[, -1])  # coerce to matrix
+rownames(m.in) <- name.rows  # restore rownames
+m.in
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.35\textwidth}
+      There are many other ways of reading and writing matrices from files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      Reading and writing matrices without rownames can be simplified,
+      \vskip1ex
+      The function \texttt{write.matrix()} is part of library \texttt{MASS},
+      \vskip1ex
+      The advantage of using the \texttt{scan()} function is its speed, but it doesn't handle rownames,\\
+      Although aa test with 300x100 matrix showed almost same system.time(),
+    \column{0.65\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE,prompt=TRUE>>=
+m.var <- matrix(1:6, nrow=2, ncol=3,  # create a matrix without rownames
+                dimnames=list(NULL, c("col1", "col2", "col3")))
+m.var  # matrix without rownames
+library('MASS')  # load library 'MASS'
+write.matrix(m.var, file='matrix.csv',  # write to CSV file by row - it's very SLOW!!!
+                               sep=',')
+system.time(m.in <- scan(file='matrix.csv',  # skip first line with colnames
+                                  sep=',', skip=1, what=numeric()))
+m.in  # this is a vector!
+m.in <- matrix(m.in, nrow=2, byrow=TRUE)  # coerce by row to matrix
+#        dim(m.in) <- c(2, 3)  # coerce by column to matrix!
+name.cols <- readLines(con='matrix.csv', n=1)  # read colnames
+name.cols  # this is a string!
+name.cols <- strsplit(name.cols, s=',')[[1]]  # convert to char vector
+colnames(m.in) <- name.cols  # restore colnames
+m.in
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\subsecname}
+
+\begin{block}{Required}
+  \begin{itemize}[]
+    \item Create an $R$ script for calculating the first four moments of all four time series in the EuStockMarkets data (DAX, SMI, CAC, FTSE),
+    \item Your script should produce a 4x4 matrix containing all 16 moments, with row and column names,
+    \item You can choose to use '\texttt{for}' loops and/or  \texttt{apply()} functions,
+    \item Your script should use iteration, instead of manually repeating the same calculation for each index,
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 9, 10, 13: \fullcite{website:rintro}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

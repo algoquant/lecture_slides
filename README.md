@@ -1,3 +1,3 @@
 FRE6811  Financial Software Laboratory
 ========
-Time Series Analysis Using the R Language
+Financial Data Analysis Using the R Language
