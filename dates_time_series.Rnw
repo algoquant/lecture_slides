@@ -1,0 +1,1035 @@
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6811_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+
+% Title page setup
+\title[Date and Time Series Objects]{Date and Time Series Objects}
+\subtitle{FRE6871 R in Finance, Fall 2014}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@nyu.edu}
+\date{\today}
+
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Date and Time Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has a \texttt{Date} class for date objects (but without time),
+      \vskip1ex
+      The function \texttt{as.Date()} converts a character string into a date object,
+      \vskip1ex
+      $R$ stores \texttt{Date} objects as the number of days since January 1, 1970,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.Date()  # get today's date
+date_time <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time
+class(date_time)
+as.Date("06-15-2013", "%m-%d-%Y")  # specify format
+date_time + 20  # add 20 days
+unclass(date_time)  # get internal integer representation
+some.date <- as.Date("11/22/2013", "%m/%d/%Y")
+some.date
+# difference between dates
+difftime(some.date, date_time, units="weeks")
+weekdays(date_time)  # get day of the week
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date and Time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      $R$ has a class \texttt{POSIXct} for date and time objects,\\
+      \vskip1ex
+      The function \texttt{as.POSIXct()} converts a character string into a \texttt{POSIXct} object,\\
+      \vskip1ex
+      \texttt{format.POSIXct()} converts \texttt{POSIXct} objects to character strings,\\
+      \vskip1ex
+      $R$ stores \texttt{POSIXct} objects as the number of seconds since the epoch (January 1, 1970 UTC),\\
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,\\
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",\\
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2013-06-15 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+date_time <- as.POSIXct("2013-06-15 18:30:10", tz="America/New_York")
+date_time
+class(date_time)
+date_time + 20  # add 20 seconds
+unclass(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXct(format(date_time, tz="UTC"))  # convert back to POSIXct
+as.POSIXct(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXct(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXlt} Date and Time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      $R$ has a class \texttt{POSIXlt} for date and time objects,\\
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,\\
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,\\
+      \vskip1ex
+      $R$ stores \texttt{POSIXlt} objects as a list,\\
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,\\
+      \vskip1ex
+      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class\\
+      POSIXct is internally a numeric value that allows numeric calculations,\\
+      POSIXlt is internally a list\\
+      Round or truncate date-time objects,\\
+      POSIXct truncate and add days - convert to date class - add number - then convert back to POSIXct,\\
+      beware of coercion to \texttt{POSIXct},\\
+      conversions between the two date-time classes requires a timezone,\\
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",\\
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2013-06-15 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+date_time <- as.POSIXlt("2013-06-15 18:30:10", tz="America/New_York")
+date_time
+class(date_time)
+date_time + 20  # add 20 seconds
+class(date_time + 20)  # coercion to POSIXct
+aperm(as.matrix(unclass(date_time)))  # get internal representation
+
+as.POSIXct(as.Date(date_time)+1)  # add a day
+as.POSIXct(trunc(date_time, units="hours"))  # truncate to closest hour
+trunc(as.POSIXlt(date_time), units="hours")  # truncate POSIXlt object
+as.POSIXct(as.character(as.Date(date_time)))
+methods(trunc)  # trunc methods
+
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
+as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones and Class Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      $R$ has a class \texttt{POSIXlt} for date and time objects,\\
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,\\
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,\\
+      \vskip1ex
+      $R$ stores \texttt{POSIXlt} objects as a list,\\
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,\\
+      \vskip1ex
+      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class\\
+      POSIXct is internally a numeric value that allows numeric calculations,\\
+      POSIXlt is internally a list\\
+      beware of coercion to \texttt{POSIXct},\\
+      conversions between the two date-time classes requires a timezone,\\
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",\\
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2013-06-15 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+date_time <- as.POSIXlt("2013-06-15 18:30:10", tz="America/New_York")
+date_time
+class(date_time)
+date_time + 20  # add 20 seconds
+
+class(as.POSIXlt("2014-08-19")+3600)  # coercion to POSIXct
+
+unclass(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
+as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXt} Class and Class Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      $R$ has a class \texttt{POSIXlt} for date and time objects,\\
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,\\
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,\\
+      \vskip1ex
+      $R$ stores \texttt{POSIXlt} objects as a list,\\
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,\\
+      \vskip1ex
+      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class\\
+      POSIXct is internally a numeric value that allows numeric calculations,\\
+      POSIXlt is internally a list\\
+      beware of coercion to \texttt{POSIXct},\\
+      conversions between the two date-time classes requires a timezone,\\
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",\\
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2013-06-15 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+date_time <- as.POSIXlt("2013-06-15 18:30:10", tz="America/New_York")
+date_time
+class(date_time)
+date_time + 20  # add 20 seconds
+
+class(as.POSIXlt("2014-08-19")+3600)  # coercion to POSIXct
+
+unclass(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
+as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Review of Date and Time Classes in $R$}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series,
+      \vskip1ex
+      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series,
+      \vskip1ex
+      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \texttt{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series,
+    \column{0.7\textwidth}
+      \vspace{-3em}
+      <<echo=3:30,tidy=FALSE>>=
+rm(list=ls())
+library(zoo)  # load package zoo
+date_time <- Sys.Date()  # create date series of class 'Date'
+daily.index <- date_time + 0:365  # daily series over one year
+head(daily.index, 4)  # print first few dates
+format(head(daily.index, 4), "%m/%d/%Y")  # print first few dates
+# create daily date and time series of class 'POSIXct'
+daily.index <- seq(Sys.time(), by="days", length.out=365)
+head(daily.index, 4)  # print first few dates
+format(head(daily.index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
+# create series of monthly dates of class 'zoo'
+monthly.index <- yearmon(2010+0:36/12)
+head(monthly.index, 4)  # print first few dates
+# create series of quarterly dates of class 'zoo'
+qrtly.index <- yearqtr(2010+0:16/4)
+head(qrtly.index, 4)  # print first few dates
+# convert quarterly 'zoo' dates to POSIXct
+Sys.setenv(tz="UTC")
+as.POSIXct(head(qrtly.index, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ts()} creates time-series objects,\\
+      \vskip1ex
+      \texttt{stats} is a base package and contains functions for statistical calculations and random number generation,\\
+
+        <<rand_ts,eval=TRUE,tidy=FALSE,fig.show='hide'>>=
+set.seed(1121)  # for reproducibility
+n.var <- 100
+# create monthly time series starting 1990
+ts.var <- ts(data=cumsum(rnorm(n.var)), 
+             frequency=12, start=c(1990, 1))
+class(ts.var)  # class 'ts'
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(ts.var, type="l",  # perform plot
+     col="red", lty="solid", xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+# window the time series
+ts.new <- window(ts.var, start=1992, end=1997)
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rand_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EuStockMarkets}
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Data}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      $R$ includes a number of 'base' packages that are already installed and loaded,\\
+      \vskip1ex
+      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},\\
+      \vskip1ex
+      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,\\
+
+        <<eustx_ts,echo=2:30,eval=TRUE,tidy=FALSE,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+class(EuStockMarkets)  # multiple ts object
+dim(EuStockMarkets)
+head(EuStockMarkets)  # get first six rows
+plot(EuStockMarkets, main="", xlab="")  # plot all the columns
+title(main="EuStockMarkets", line=-1)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Returns}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram,\\
+      The parameter \texttt{breaks} is the number of cells of the histogram,\\
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density,\\
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points,\\
+
+        <<eustx_rets,echo=2:30,eval=TRUE,tidy=FALSE,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# calculate percentage returns
+ts.rets <- diff(log(EuStockMarkets))
+# calculate mean and standard deviation of returns
+c(mean(ts.rets[, 1]), sd(ts.rets[, 1]))
+# plot histogram
+hist(ts.rets[, 1], breaks=30, main="", xlim=c(-0.04, 0.04), 
+     ylim=c(0, 60), xlab="", ylab="", freq = FALSE)
+lines(density(ts.rets[, 1]),  # draw a line
+      col='red', lwd=2)
+ch.title <- paste(colnames(EuStockMarkets)[1], 'returns')
+title(main=ch.title, line=-1)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_rets}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Quantile-Quantile Plot}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A $Q-Q$ plot is a plot of points from two probability distributions with the same quantiles,\\
+      \vskip1ex
+      The function \texttt{qqnorm()} produces a normal Q-Q plot,\\
+      \vskip1ex
+      The function \texttt{qqline()} fits a line to the normal quantiles,\\
+      \vskip1ex
+      The $DAX$ Q-Q plot shows that the $DAX$ return distribution has fat tails,\\
+
+        <<eustx_qq,echo=4:30,eval=TRUE,tidy=FALSE,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# calculate percentage returns
+ts.rets <- diff(log(EuStockMarkets))
+# create normal Q-Q plot
+qqnorm(ts.rets[, 1], ylim=c(-0.04, 0.04), 
+       xlab='Normal Quantiles', main='')
+# fit a line to the normal quantiles
+qqline(ts.rets[, 1], col='red', lwd=2)
+ch.title <- paste(colnames(EuStockMarkets)[1], 
+                  'Q-Q Plot')
+title(main=ch.title, line=-1)  # add title
+shapiro.test(ts.rets[, 1])  # Shapiro-Wilk test
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_qq}
+      \vskip1ex
+      The p-value of the $Shapiro-Wilk$ test is very small, which shows that the $DAX$ returns are not normal,\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{zoo} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{zoo} is designed for managing \emph{time series} and ordered objects,
+      <<zoo_ts,echo=7:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create daily dates
+my.index <- as.Date("2010-06-15") + 1:1000
+# create zoo time series
+ts.random <- zoo(cumsum(rnorm(1000)), 
+                 order.by=my.index)
+class(ts.random)  # class 'zoo'
+tail(ts.random, 4)  # get last few elements
+write.zoo(ts.random, file="ts.random.txt")
+rm(ts.random)  # remove zoo object
+ts.random <- read.zoo("ts.random.txt")  # read it back
+tail(ts.random, 4)  # get last few elements
+# call plot.zoo
+plot(ts.random, xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operations on \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{coredata()} extracts the data contained in \texttt{zoo} object, and returns a vector or matrix,
+      \vskip1ex
+      The function \texttt{index()} extracts the time index of a \texttt{zoo} object,
+      \vskip1ex
+      The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \texttt{zoo} object,
+      \vskip1ex
+      The functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return cumulative sums, minima and maxima of a \texttt{zoo} object,
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=3:30,tidy=FALSE>>=
+rm(list=ls())
+library(zoo)  # load package zoo
+# create zoo time series
+daily.index <- Sys.Date() + 0:3
+zoo.ts <- zoo(rnorm(length(daily.index)), 
+               order.by=daily.index)
+zoo.ts
+index(zoo.ts)  # extract time index
+coredata(zoo.ts)  # extract coredata
+zoo.ts[start(zoo.ts)]  # first element
+zoo.ts[end(zoo.ts)]  # last element
+coredata(zoo.ts) <- rep(1, 4)  # replace coredata
+cumsum(zoo.ts)  # cumulative sum
+cummax(cumsum(zoo.ts))
+cummin(cumsum(zoo.ts))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{lag()} and \texttt{diff()} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{lag()} returns a lagged version of a time series, shifting the time index back by a given number of observations,
+      \vskip1ex
+      The function \texttt{diff()} returns the difference between a time series and its lagged version, 
+      \vskip1ex
+      For \texttt{zoo} objects, both these functions omit any \texttt{NA} values they may have produced,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30,tidy=FALSE>>=
+library(zoo)  # load package zoo
+coredata(zoo.ts) <- 1:4  # replace coredata
+zoo.ts
+diff(zoo.ts)  # diff with one day lag
+lag(zoo.ts, 2)  # two day lag
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sequential Joining \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{zoo} time series can be joined sequentially using \texttt{rbind},
+      <<zoo_join_seq,echo=7:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create daily date series of class 'Date'
+daily.index1 <- Sys.Date() + 0:365
+# create zoo time series
+zoo.ts1 <- zoo(rnorm(length(daily.index1)), 
+                 order.by=daily.index1)
+# create another zoo time series
+daily.index2 <- Sys.Date() + 365:730
+zoo.ts2 <- zoo(rnorm(length(daily.index2)), 
+                 order.by=daily.index2)
+# rbind the two time series
+zoo.ts3 <- rbind(zoo.ts1,  # ts1 supersedes ts2
+                 zoo.ts2[index(zoo.ts2) > 
+                           end(zoo.ts1)])
+plot(cumsum(zoo.ts3), xlab="", ylab="")
+# add vertical line at stitch point
+abline(v=index(tail(zoo.ts1, 1)), col="red", lty="dashed")
+title(main="Random Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_join_seq}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Merging \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{zoo} time series can be combined concurrently by joining their columns using \texttt{merge()},
+      \vskip1ex
+      If \texttt{all=TRUE}, then \texttt{merge()} uses the union of their dates, otherwise it uses their intersection,
+      \vskip1ex
+      The \texttt{merge()} operation can produce \texttt{NA} values,
+      \vskip1ex
+      \texttt{merge()} is similar to \texttt{cbind()},
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+# create daily date series of class 'Date'
+daily.index1 <- Sys.Date() + -3:1
+# create zoo time series
+zoo.ts1 <- zoo(rnorm(length(daily.index1)), 
+               order.by=daily.index1)
+# create another zoo time series
+daily.index2 <- Sys.Date() + -1:3
+zoo.ts2 <- zoo(rnorm(length(daily.index2)), 
+               order.by=daily.index2)
+merge(zoo.ts1, zoo.ts2)  # union of dates
+merge(zoo.ts1, zoo.ts2, all=FALSE)  # intersection of dates
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing \texttt{NA} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Operations on time series can produce \texttt{NA} values,
+      \vskip1ex
+      There are two dedicated functions for managing \texttt{NA} values in time series: 
+      \begin{itemize}[]
+        \item \texttt{na.omit()} removes observations containing \texttt{NA} values,
+        \item \texttt{na.locf()} carries the last non-\texttt{NA} observation forward,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=3:30,tidy=FALSE>>=
+rm(list=ls())
+library(zoo)  # load package zoo
+# create zoo time series
+zoo.ts <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
+zoo.ts[3] <- NA
+zoo.ts
+
+na.locf(zoo.ts)  # replace NA's using locf
+
+na.omit(zoo.ts)  # remove NA's using omit
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{aggregate()} performs temporal aggregations of \texttt{zoo} objects,
+      <<zoo_agg,echo=8:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create zoo time series
+daily.index <- Sys.Date() + 0:365
+zoo.ts <- zoo(rnorm(length(daily.index)), 
+                 order.by=daily.index)
+# create monthly dates
+dates.agg <- as.Date(as.yearmon(index(zoo.ts)))
+# perform monthly 'mean' aggregation
+zoo.agg <- aggregate(zoo.ts, by=dates.agg, 
+                     FUN=mean)
+# merge with original zoo - union of dates
+zoo.agg <- merge(zoo.ts, zoo.agg)
+# replace NA's using locf
+zoo.agg <- na.locf(zoo.agg)
+# extract aggregated zoo
+zoo.agg <- zoo.agg[index(zoo.ts), 2]
+# plot original and aggregated zoo
+plot(cumsum(zoo.ts), xlab="", ylab="")
+lines(cumsum(zoo.agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.15, title="Aggregated Prices", 
+       leg=c("orig prices", "agg prices"), lwd=2, 
+       col=c("black", "red"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_agg}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interpolating \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{zoo} has two functions for replacing \texttt{NA} values using interpolation:
+      \begin{itemize}[]
+        \item \texttt{na.approx()} performs linear interpolation,
+        \item \texttt{na.spline()} performs spline interpolation,
+      \end{itemize}
+      \vspace{-1em}
+      <<zoo_interpol,echo=6:30,tidy=FALSE,fig.show='hide'>>=
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# perform monthly 'mean' aggregation
+zoo.agg <- aggregate(zoo.ts, by=dates.agg, 
+                     FUN=mean)
+# merge with original zoo - union of dates
+zoo.agg <- merge(zoo.ts, zoo.agg)
+# replace NA's using linear interpolation
+zoo.agg <- na.approx(zoo.agg)
+# extract interpolated zoo
+zoo.agg <- zoo.agg[index(zoo.ts), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo.ts), xlab="", ylab="")
+lines(cumsum(zoo.agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.15, title="Interpolated Prices", 
+       leg=c("orig prices", "interpol prices"), lwd=2, 
+       col=c("black", "red"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_interpol}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Functions on \texttt{zoo} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{zoo} has several functions for rolling calculations:
+      \begin{itemize}[]
+        \item \texttt{rollapply()} applying function to rolling margins,
+        \item \texttt{rollmean()} calculate rolling means,
+        \item \texttt{rollmedian()} calculate rolling median,
+        \item \texttt{rollmax()} calculate rolling max,
+      \end{itemize}
+      \vspace{-1em}
+      <<zoo_roll,echo=6:30,tidy=FALSE,fig.show='hide'>>=
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# perform monthly 'mean' aggregation
+zoo.mean <- rollapply(zoo.ts, width=11, FUN=mean)
+# merge with original zoo - union of dates
+zoo.mean <- merge(zoo.ts, zoo.mean)
+# replace NA's using na.locf
+zoo.mean <- na.locf(zoo.mean, fromLast=TRUE)
+# extract mean zoo
+zoo.mean <- zoo.mean[index(zoo.ts), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo.ts), xlab="", ylab="")
+lines(cumsum(zoo.mean), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.15, title="Mean Prices", 
+       leg=c("orig prices", "mean prices"), lwd=2, 
+       col=c("black", "red"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_roll}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{RQuantLib} Calendar Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
+      \vskip1ex
+      The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=3:30,tidy=FALSE>>=
+rm(list=ls())
+library(zoo)  # load zoo
+library(RQuantLib)  # load RQuantLib
+# create daily date series of class 'Date'
+daily.index <- Sys.Date() + -5:2
+daily.index
+# create logical vector of business days
+bus.days <- isBusinessDay(  # RQuantLib calendar
+  calendar="UnitedStates/GovernmentBond", daily.index)
+# create daily series of business days
+bus.index <- daily.index[bus.days]
+bus.index
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{tseries} for Time Series Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<tseries_intro,echo=6:30,tidy=FALSE, eval=FALSE,fig.show='hide'>>=
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(tseries)  # load package tseries
+suppressWarnings(  # load MSFT data
+  zoo.msft <- get.hist.quote(instrument="MSFT", 
+                           start=Sys.Date()-365, 
+                           end=Sys.Date(), 
+                           origin="1970-01-01")
+  )  # end suppressWarnings
+class(zoo.msft)
+dim(zoo.msft)
+tail(zoo.msft, 4)
+
+sharpe(zoo.msft[, "Close"], r=0.01)  # calculate Sharpe ratio
+
+plot(zoo.msft[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/tseries_intro}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Time Series Data Using Package \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<zoo_plot_2y,echo=6:30,tidy=FALSE, eval=FALSE,fig.show='hide'>>=
+set.seed(1121)  # initialize the random number generator
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+suppressWarnings(  # load EUR/USD data
+  zoo.eurusd <- get.hist.quote(
+    instrument="EUR/USD", provider="oanda",
+    start=Sys.Date()-365, 
+    end=Sys.Date(), 
+    origin="1970-01-01")
+  )  # end suppressWarnings
+# bind and scrub data
+zoo.msfteur <- merge(zoo.eurusd, 
+                     zoo.msft[, "Close"])
+colnames(zoo.msfteur) <- c("EURUSD", "MSFT")
+zoo.msfteur <- 
+  zoo.msfteur[complete.cases(zoo.msfteur),]
+### plot with two "y" axes
+par(las=1)  # set text printing to "horizontal"
+# plot first ts
+plot(zoo.msfteur[, 1], xlab=NA, ylab=NA)
+# set range for second "y" axis
+par(usr=c(par("usr")[1:2], range(zoo.msfteur[,2])))
+lines(zoo.msfteur[, 2], col="red")  # second plot
+axis(side=4, col="red")  # second "y" axis on right
+# print axis labels
+mtext(colnames(zoo.msfteur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo.msfteur)[2], col="red", side=4, padj=-2, line=-3)
+title(main="EUR and MSFT", line=-1)  # add title
+# add legend without box
+legend("bottomright", legend=colnames(zoo.msfteur), 
+       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+
+##########
+
+# slightly different method using par(new=TRUE)
+# par(las=1)  # set text printing to "horizontal"
+# plot(zoo.msfteur[, 1], xlab=NA, ylab=NA)
+# par(new=TRUE)  # allow new plot on same chart
+# plot(zoo.msfteur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# axis(side=4, col="red")  # second "y" axis on right
+# mtext(colnames(zoo.msfteur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo.msfteur)[2], col="red", side=4, padj=-2, line=-3)
+# title(main="EUR and MSFT", line=-1)  # add title
+# legend("bottomright", legend=colnames(zoo.msfteur), 
+#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# "x" axis with monthly ticks - doesn't work
+# plot first ts wthout "x" axis
+# plot(zoo.msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
+# # add "x" axis with monthly ticks
+# month.ticks <- unique(as.yearmon(index(zoo.eurusd)))
+# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
+
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_plot_2y}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Classes in $R$}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has a number of different time series classes:
+      \begin{itemize}[]
+        \item Class \texttt{ts} from base package \texttt{stats},
+        \item Class \texttt{zoo} ordered observations,
+        \item Class \texttt{xts} extension of \texttt{zoo} class,
+        \item Class \texttt{timeSeries} from the \emph{Rmetrics} suite,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=1:30,tidy=FALSE>>=
+ts.msft <- as.ts(zoo.msft)
+class(ts.msft)
+# rename colnames
+colnames(ts.msft) <- paste0("MSFT.", colnames(ts.msft))
+tail(ts.msft, 4)
+
+library(timeSeries)
+tser.msft <- as.timeSeries(zoo.msft)
+class(ts.msft)
+tail(tser.msft, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

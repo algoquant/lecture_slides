@@ -1,0 +1,594 @@
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE,comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6811_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[Control Statements and Operators]{Control Statements and Operators}
+\subtitle{FRE6871 R in Finance, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Operators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has the following logical operators:
+      \begin{itemize}
+        \item '\texttt{<}' less than,
+        \item '\texttt{<=}' less than or equal to,
+        \item '\texttt{>}' greater than,
+        \item '\texttt{>=}' greater than or equal to,
+        \item '\texttt{==}' exactly equal to,
+        \item '\texttt{!=}' not equal to,
+        \item '\texttt{!x}' Not \texttt{x},
+        \item '\texttt{x \& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x | y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators are applied to vectors element-wise,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+TRUE | FALSE
+TRUE | NA
+v.var1 <- c(2, 4, 6)
+v.var1 < 5
+(v.var1 < 5) & (v.var1 > 3)
+v.var1[(v.var1 < 5) & (v.var1 > 3)]
+v.var2 <- c(-10, 0, 10)
+v.var1 < v.var2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Long Form Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ also has two long form logical operators:
+      \begin{itemize}
+        \item '\texttt{x \&\& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x || y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators differ from the short form operators in two ways:
+      \begin{itemize}
+        \item They only evaluate the first elements of their vector arguments,
+        \item They short-circuit (stop evaluation as soon as the expression is determined),
+      \end{itemize}
+      {\color{red}{Rule of Thumb}}
+      \begin{itemize}
+        \item Use '\texttt{\&\&}' and '\texttt{||}' in if-clauses,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+FuncTrue = function() {cat("FuncTrue\t"); TRUE}
+FuncFalse = function() {cat("FuncFalse\t"); FALSE}
+FuncTrue() | FuncFalse()
+FuncTrue() || FuncFalse()  # FuncFalse() isn't evaluated at all!
+v.var <- c(2, 4, 6)
+# works (does nothing) using '&&'
+if (is.matrix(v.var) && (v.var[2, 3] > 0)) {
+  v.var[2, 3] <- 1
+}
+# no short-circuit so fails (throws an error)
+if (is.matrix(v.var) & (v.var[2, 3] > 0)) {
+  v.var[2, 3] <- 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Assignment Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard assignment operator in $R$ is \texttt{"<-"},\\
+      \vskip1ex
+      Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in $R$,\\
+      \vskip1ex
+      But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),\\
+      \vskip1ex
+      The \texttt{"="} operator is used for named arguments in function calls,\\
+      \vskip1ex
+      When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,\\
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+n.var1 <- 3  # "<-" and "=" are valid assignment operators
+n.var1
+n.var1 = 3
+n.var1
+median(x = 1:10)  # "=" assignment within argument list
+x  # x doesn't exist outside the function
+median(x <- 1:10)  # "<-" assignment within argument list
+x  # x exists outside the function
+      @
+  \end{columns}
+\end{block}
+\pause
+
+\begin{block}{\color{red}{Rule of Thumb}}
+  Use \texttt{"<-"} in $R$ scripts and inside functions,\\
+  \vskip1ex
+  Use \texttt{"="} only in function calls.\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{'\texttt{if}' statements}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
+      \vskip1ex
+      The logical conditions must be either a logical or numeric type, otherwise an error is thrown,
+      \vskip1ex
+      The '\texttt{else}' statement can also be omitted,
+      \vskip1ex
+      '\texttt{if}' statements can be nested using multiple '\texttt{else if}' statements,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+n.var1 <- -1
+if (n.var1) {  # positive numbers are TRUE, otherwise FALSE
+  n.var2 <- 4
+} else if (n.var1 == 0) {  # 'else if' together on same line
+  n.var2 <- 0
+} else {  # keep 'else' together with curly braces
+  n.var2 <- -4
+}
+n.var2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      $R$ also has an \texttt{ifelse()} function that controls execution but it accepts and returns vectors,
+        <<func_ifelse,echo=2:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+# create two vectors
+v.var1 <- sin(0.25*pi*1:10)
+v.var2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+v.var3 <- ifelse(v.var1 > v.var2, v.var1, 
+                 v.var2)
+# cbind all three together
+v.var4 <- cbind(v.var1, v.var2, v.var3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+    cex.sub=0.5)
+# plot matrix
+matplot(v.var4, type="l", lty="solid", 
+        col=c("green", "blue", "red"), 
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(v.var4), 
+       title="", inset=0.05, cex=0.8, lwd=2, 
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Iteration Using '\texttt{for}' and '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '\texttt{for() \{...\}}' statement iterates over elements of a vector or list,
+      \vskip1ex
+      $R$ also has a '\texttt{while() \{...\}}' loop,
+      \vskip1ex
+      '\texttt{while}' loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
+      \vskip1ex
+      But '\texttt{while}' loops risk producing infinite loops if not written
+properly, so \alert{Use Them With Care!}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+my.colors <- list("red", "white", "blue")
+for (some.color in my.colors) {  # loop over list
+  print(some.color)
+}
+for (some.index in 1:3) {  # loop over vector
+  print(my.colors[[some.index]])
+}
+
+some.index <- 1  # 'while' loops need initialization
+while (some.index < 4) {  # while loop
+  print(my.colors[[some.index]])
+  some.index <- some.index + 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fibonacci Sequence Using '\texttt{for}' Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+fib.seq <- c()  # create empty vector
+fib.seq[1] <- 1  # initialize
+fib.seq[2] <- 1  # initialize
+for (i in 3:10) {  # perform recurrence loop
+  fib.seq[i] <- fib.seq[i-1] + fib.seq[i-2]
+}  # end for
+fib.seq
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulation Using '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      '\texttt{while}' loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of random prices hitting a barrier level,
+        <<rand_while,echo=7:30,fig.show='hide'>>=
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # for reproducibility
+max.simu <- 1000  # max simulation trials
+v.simu <- 0*1:max.simu  # initialize trials
+barrier.level <- 20  # barrier level
+v.simu[1] <- rnorm(1)  # first simulation value
+sim.index <- 2  # initialize simulation index
+while ((sim.index <= max.simu) && 
+         (v.simu[sim.index - 1] < barrier.level)) {
+  v.simu[sim.index] <- v.simu[sim.index - 1] + rnorm(1)
+  sim.index <- sim.index + 1
+}  # end while
+if (sim.index <= max.simu) {  # fill zero prices
+  v.simu[sim.index:max.simu] <- v.simu[sim.index - 1]
+}
+# create daily time series starting 2011
+ts.var <- ts(data=v.simu, frequency=365, start=c(2011, 1))
+plot(ts.var, type="l", col="black",  # perform plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier.level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rand_while}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{apply()} Instead of '\texttt{for}' and '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      '\texttt{for}' and '\texttt{while}' loops are relatively inefficient and too slow for large computations,
+      \vskip1ex
+      '\texttt{apply()}' loops are much more efficient and preferred in practice,
+      \vskip1ex
+      The function '\texttt{system.time()}' returns the CPU time used to evaluate a given expression,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+large.matrix <- matrix(1:1000000, nrow=100000, ncol=10)
+row.sums <- c()
+
+system.time(
+  for(i in 1:nrow(large.matrix)) {
+    row.sums[i] <- sum(large.matrix[i,])
+  }  # end for
+)  # end system.time
+
+system.time(row.sums <- apply(large.matrix, 1, sum))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Even '\texttt{apply()}' loops are not the most efficient way to calculate statistics on rows and columns of very large matrices,
+      \vskip1ex
+      $R$ has very efficient functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      These functions call compiled \texttt{C} code and are therefore much faster than even the \texttt{apply()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=1:30,tidy=FALSE>>=
+system.time(row.sums <- apply(large.matrix, 1, sum))
+
+str(rowSums)  # get list of arguments
+# sum the rows and columns
+row.sums <- c()
+system.time(row.sums <- rowSums(large.matrix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Argument Handling}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      $R$ provides many ways to handle various unexpected argument values, by checking them before making any calculations,
+      \vskip1ex
+      Assigning default values to formal arguments allows for better control over their values,
+      \vskip1ex
+      The function \texttt{stopifnot()} stops function execution and produces an error if its argument is \texttt{FALSE},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+FunRobust <- function(v.in1, v.in2=NA) {
+# returns the sum of its two arguments
+  if (is.numeric(v.in2)) {  # check if v.in2 was input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end FunRobust
+FunRobust(1, 2)
+FunRobust(5, 'a')
+FunRobust <- function(v.in1, v.in2) {  # even more robust
+  stopifnot((!missing(v.in1) && is.numeric(v.in1)) || 
+               (!missing(v.in2) && is.numeric(v.in2)))
+  if (!missing(v.in2) && is.numeric(v.in2)) {  # check if v.in2 is valid input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end FunRobust
+FunRobust(5, 'a')
+FunRobust('a')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Conditions} are $R$ objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(e.cond)  # handler captures error condition
+    print(paste("error handler: ", e.cond)),
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error condition,
+      <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(n.val) {  # anonymous function
+    stopifnot(n.val != 3)  # check for error
+    cat("(cat) n.val=", n.val)  # broadcast
+    paste("(return) n.val=", n.val)  # return value
+  }  # end anonymous function
+)  # end apply
+      @
+      Without \texttt{tryCatch()}, the  \texttt{apply()} loop exits without returning any result,
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=1:30,tidy=FALSE>>=
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(n.val) {  # anonymous function
+    tryCatch(  # with error handler
+      {  # body
+        stopifnot(n.val != 3)  # check for error
+        cat("(cat) n.val=", n.val)  # broadcast
+        paste("(return) n.val=", n.val)  # return value
+      },
+      error=function(e.cond)  # handler captures error condition
+        paste("handler: ", e.cond),
+      finally=print(paste("(finally) n.val=", n.val))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
