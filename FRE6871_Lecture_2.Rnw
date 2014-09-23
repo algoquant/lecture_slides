@@ -1,0 +1,793 @@
+% FRE6871_Lecture_2
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6871 Lecture\#2]{FRE6871 R in Finance}
+\subtitle{Lecture\#2, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{September 15, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+% \begin{frame}[t]{Outline}
+% You might wish to add the option [pausesections]
+%   \tableofcontents
+% \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Heterogeneous Data Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames are 2-D objects (like matrices), but the columns can be of different classes,
+      \vskip1ex
+      Data frames can also be thought of as lists in which all the elements are vectors of the same length,\\
+      Each list element is a column of elements of the same class,
+      \vskip1ex
+      Data frames share properties of both lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+dim(df.florist)  # get dimension attribute
+colnames(df.florist)  # get the colnames attribute
+rownames(df.florist)  # get the rownames attribute
+class(df.florist)  # get object class
+class(df.florist$v.type)  # get column class
+class(df.florist$v.price)  # get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+df.florist[2, ]  # get second row
+df.florist[2, 3]  # get second row and third column
+df.florist[[3]]  # get third column
+df.florist$v.color[3]  # get third row from column 'v.color'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{str()} compactly displays the structure of an \texttt{R} object,
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+str(df.florist)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be sorted on any column,
+      \vskip1ex
+      The function \texttt{order()} returns a permutation vector,
+      \vskip1ex
+      \texttt{order()} can take several vectors as input, to break any ties,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=6:30>>=
+v.type <- c('rose', 'daisy', 'tulip')  # character vector
+v.color <- c('red', 'white', 'yellow')  # character vector
+v.price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(v.type,  # create a data frame
+                         v.color, v.price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+order(df.florist$v.price)  # permute on price
+df.florist[order(df.florist$v.price), ]  # sort on price
+df.florist[order(df.florist$v.color), ]  # sort on color
+order(c(2, 1:4))  # there's a tie
+order(c(2, 1:4), 1:5)  # there's a tie
+# read sort() Examples
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Data Management and Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bad Data}
+\begin{frame}[fragile,t]{Types of \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Possible sources of bad data are: imported data, class coercion, numeric overflow,
+      \vskip1ex
+      Types of bad data:
+      \begin{itemize}[]
+        \item \texttt{NA} means Not Available (missing) data,
+        \item \texttt{NaN} means Not a Number data,
+        \item \texttt{Inf} means numeric overflow - divide by zero,
+      \end{itemize}
+      \vskip1ex
+      The functions \texttt{is.na()} and \texttt{is.nan()} test for NA and NaN values,
+      \vskip1ex
+      Many functions have a \texttt{na.rm} parameter to remove NAs from input data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, 0/0, 1/0))  # test for NA
+is.nan(c(NA, 0/0, 1/0))  # test for NaN
+NA*1:4  # create vector of Nas
+v.na <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+mean(v.na)  # returns NA, when NAs are input
+mean(v.na, na.rm=TRUE)  # remove NAs from input data
+v.na[!is.na(v.na)]  # delete the NA values
+sum(!is.na(v.na))  # count non-NA values
+      @
+  \end{columns}
+\end{block}
+
+\begin{block}{}
+  \texttt{NULL} isn't bad data, but is a reserved word and represents a null object,\\
+  \texttt{NULL} is returned by functions whose value is undefined,\\
+  Very often variables are initialized to \texttt{NULL} before iteration,\\
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+head(airquality)  # airquality data has some NAs
+dim(airquality)
+sum(!complete.cases(airquality))  # number of NAs
+head(airquality[!complete.cases(airquality), ])  # display some NAs
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Rows containing bad data may be either removed or replaced with an estimated value,
+      \vskip1ex
+      The function \texttt{na.locf()} from library \texttt{zoo} replaces NAs with most recent non-NA prior to it,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+good.air <- airquality[complete.cases(airquality), ]  # remove NAs
+dim(good.air)
+head(good.air)  # NAs removed
+library(zoo)  # load package zoo
+good.air <- na.locf(airquality)  # replace NAs
+dim(good.air)
+head(good.air)  # NAs replaced
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{\texttt{R} Packages}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+
+\begin{block}{Types of \subsecname}
+  \texttt{R} can run libraries of functions called packages,
+  \vskip1ex
+  \texttt{R} packages can can also  contain data,
+  \vskip1ex
+  Most packages need to be \emph{loaded} into \texttt{R} before they can be used,
+  \vskip1ex
+  \texttt{R} includes a number of \emph{base} packages that are already installed and loaded,
+  \vskip1ex
+  There's also a special package called the \texttt{base} package, which is responsible for all the basic \texttt{R} functionality,
+  \vskip1ex
+  \texttt{datasets} is a \emph{base} package containing various datasets, for example \texttt{EuStockMarkets},
+  \vskip1ex
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Loading Packages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{Loading Packages}
+\texttt{R} can run external libraries of functions called packages,\\
+Most packages need to be loaded before they can be used,
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There are two ways of loading package \texttt{MASS}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library("MASS") or require("MASS")
+      @
+  \end{columns}
+\end{block}
+%\vskip1ex
+\pause
+
+\begin{block}{Difference between \texttt{library()} and \texttt{require()}}
+\texttt{library()} halts execution if the package can't be loaded,\\
+\texttt{require()} returns a logical value, TRUE if the package is loaded, FALSE if it isn't.\\
+\end{block}
+\pause
+
+\begin{block}{\color{red}{Rule of Thumb}}
+Use \texttt{library()} in script files that might be sourced,\\
+Use \texttt{require()} inside other functions.\\
+\end{block}
+\pause
+
+\begin{block}{Installing Packages}
+Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
+But most packages need to be $installed$ before they can be loaded,\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Installing Packages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{Installing Packages from \texttt{CRAN}}
+Most of the widely used packages are available on \texttt{CRAN},\\
+For example package \texttt{AER}:\\
+\hskip1em\url{http://cran.r-project.org/web/packages/AER/}\\
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Install and load package \texttt{AER} in \texttt{R} Session:
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+install.packages("AER")  # install AER
+library("AER")  # load AER
+      @
+  \end{columns}
+\end{block}
+\pause
+
+\begin{block}{Installing packages in \texttt{RStudio}}
+Go to \alert{Tools} and then \alert{Install packages}\\
+Then enter package name, for example \texttt{AER}
+\end{block}
+\pause
+
+\begin{block}{Packages on $R-Forge$}
+Many other packages are available on $R-Forge$:\\
+\hskip1em\url{https://r-forge.r-project.org/}\\
+For example packages which are part of the $ReturnAnalytics$ project,\\
+\hskip1em\url{https://r-forge.r-project.org/projects/returnanalytics/}\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=579}\\
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Install package $PerformanceAnalytics$
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+install.packages("PerformanceAnalytics", 
+                 repos="http://R-Forge.R-project.org")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CRAN} Package Views}
+\begin{frame}[fragile,t]{\subsecname}
+
+\begin{columns}[T]
+  \column{0.4\textwidth}
+    \begin{block}{}
+      \texttt{CRAN} view for package \texttt{AER}:\\
+      \hskip1em\url{http://cran.r-project.org/web/packages/AER/}\\
+    \end{block}
+    \begin{block}{}
+      Note:
+      \begin{itemize}
+        \item Authors,
+        \item Version number,
+        \item Reference manual,
+        \item Vignettes,
+        \item Dependencies on other packages.
+      \end{itemize}
+    \end{block}
+  \column{0.6\textwidth}
+    \vspace{-1em}
+    \includegraphics[height=1.0\textwidth]{CRAN_Package.png}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CRAN} Task Views}
+\begin{frame}[fragile,t]{\subsecname}
+
+\begin{columns}[T]
+  \column{0.4\textwidth}
+    \begin{block}{}
+      \texttt{CRAN} Finance Task View\\
+      \hskip1em\url{http://cran.r-project.org//}\\
+    \end{block}
+    \begin{block}{}
+      Note:
+      \begin{itemize}
+        \item Maintainer,
+        \item Topics,
+        \item List of packages.
+      \end{itemize}
+    \end{block}
+  \column{0.6\textwidth}
+    \vspace{-1em}
+    \includegraphics[height=1.0\textwidth]{CRAN_Views.png}
+\end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Packages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The package \texttt{Ecdat} contains data sets for econometric analysis,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+      The data frame \texttt{Garch} contains daily currency prices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+packageDescription("Ecdat")  # get short description
+help(package="Ecdat")  # get documentation for package "Ecdat"
+data(package="Ecdat")  # show all datasets in package "Ecdat"
+library(Ecdat)  # load package Ecdat
+ls("package:Ecdat")  # list all objects in package "Ecdat"
+detach("package:Ecdat")  # remove Ecdat from search path
+      @
+
+      <<>>=
+library("Ecdat")  # data sets for econometric analysis
+class(Garch)
+dim(Garch)  # daily currency prices
+head(Garch[, -2])  # col 'dm' is Deutsch Mark
+detach("package:Ecdat")  # remove Ecdat from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Environments in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
+      \vskip1ex
+      There are three system environments:
+      \begin{itemize}
+        \item \texttt{globalenv()} the user's workspace,
+        \item \texttt{baseenv()} the environment of the base package,
+        \item \texttt{emptyenv()} the only environment without an enclosure,
+      \end{itemize}
+      Environments form a tree structure of successive enclosures, with the empty environment at its root,
+      \vskip1ex
+      Packages have their own environments,
+      \vskip1ex
+      The enclosure of the base package is the empty environment,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+baseenv()  # get base environment
+globalenv()  # get global environment
+environment()  # get current environment
+class(environment())  # get environment class
+n.globvar <- 1  # define variable in current environment
+ls(environment())  # get objects in current environment
+
+env.new <- new.env()  # create new environment
+parent.env(env.new)  # get calling environment of new environment
+assign("new_var1", 3, envir=env.new)  # assign Value to Name
+env.new$new_var2 <- 11  # create object in new environment
+ls(env.new)  # get objects in new environment
+ls(environment())  # get objects in current environment
+env.new$new_var1  # environments are subset like lists
+env.new[['new_var1']]  # environments are subset like lists
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} evaluates variables using the search path, a series of environments:
+      \begin{itemize}
+        \item global environment,
+        \item package environments,
+        \item base environment,
+      \end{itemize}
+      The function \texttt{search()} returns the current search path for \texttt{R} objects,
+      \vskip1ex
+      The function \texttt{attach()} attaches objects to the search path,
+      \vskip1ex
+      This allows referencing variables by their names alone, rather than as components of objects,
+      \vskip1ex
+      The function \texttt{detach()} detaches objects from the search path,
+      \begin{block}{\color{red}{Rule of Thumb}}
+        Be very careful with using \texttt{attach()},
+        \vskip1ex
+        Make sure to \texttt{detach()} objects once they're not needed,
+      \end{block}
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+search()  # get search path for R objects
+loadedNamespaces()
+my_var <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
+                        'trees'=c('pine', 'oak', 'maple'))
+my_var$trees
+attach(my_var)
+trees
+search()  # get search path for R objects
+detach(my_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package Namespaces}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Package \emph{namespaces}:
+      \begin{itemize}[]
+        \item Provide a mechanism for calling objects from a package,
+        \item Hide functions and data internal to the package,
+        \item Prevent naming conflicts between user and package names,
+      \end{itemize}
+      When a package is loaded using \texttt{library()} or \texttt{require()}, its \emph{namespace} is attached to the search path,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+search()  # get search path for R objects
+library("MASS")  # load package 'MASS'
+search()  # get search path for R objects
+ls("package:MASS")
+detach("package:MASS")  # remove MASS from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions have three components: 
+      \begin{itemize}
+        \item a list of formal arguments,
+        \item a body containing \texttt{R} code,
+        \item an environment,
+      \end{itemize}
+      An \texttt{R} function plus its environment is referred to as a function closure,
+      \vskip1ex
+      Formal arguments can be matched to actual arguments by position or by name,
+      \vskip1ex
+      Formal arguments can have default values so that when actual arguments are missing then their default values are used,
+      \vskip1ex
+      The function body doesn't require a return statement, since by default \texttt{R} functions return the last evaluated statement,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+MyFunc <- function(my_var1=2, my_var2=1) {  # define function MyFunc
+# default values can be specified in the argument list
+  my_var1 + 2*my_var2
+# the function returns the last evaluated statement
+}  # end MyFunc
+MyFunc(my_var1=3, my_var2=2)  # match arguments by name
+MyFunc(3, 2)  # match arguments by position
+MyFunc()  # use default values of arguments
+# define function that uses enclosure environment
+MyFunc <- function(my_var1=2, my_var2=1) {
+# default values can be specified in the argument list
+  my_var1 + 2*my_var2 + n.globvar
+# the function returns the last evaluated statement
+}  # end MyFunc
+MyFunc(3, 2)  # n.globvar doesn't exist yet!
+n.globvar <- 10
+MyFunc(3, 2)  # now works
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Calculating Moments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} provides an easy way for users to write functions,
+      \vskip1ex
+      Function arguments can be matched by position or by name,
+      \vskip1ex
+      If the function arguments are missing then the default value is used,
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+ts.rets <- diff(log(EuStockMarkets))[, 1]  # DAX returns
+
+# define function CalcSkew to calculate the skew
+CalcSkew <- function(ts.data=rnorm(1000)) {  # default is normal
+# Calculates the skew of a time series of returns.
+  i.num <- length(ts.data)  # number of observations
+  n.mean <- mean(ts.data)
+  n.sd <- sd(ts.data)
+# the last statement is what is returned
+  i.num*sum(((ts.data - n.mean)/n.sd)^3)/((i.num-1)*(i.num-2))
+}  # end CalcSkew
+
+# calculate skewness of DAX returns
+CalcSkew(ts.data=ts.rets)  # match arguments by name
+CalcSkew(ts.rets)  # match arguments by position
+CalcSkew()  # use default value of arguments
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
+      \vskip1ex
+      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+CalcSkew  # show the function code
+
+getAnywhere(CalcSkew)  # display function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\subsecname}
+
+\begin{block}{Required}
+  \begin{itemize}[]
+    \item Create a function for calculating the kurtosis of a time series of returns,
+    \item Using this function calculate the kurtosis of DAX returns, and of t-distribution returns with four degrees of freedom (use the same number of data points in both cases),
+    \item Plot the probability density of DAX returns together with t-distribution returns with four degrees of freedom on a single plot,
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 4, 5, 10: \fullcite{website:rintro}
+    \item Read chapters 5: \citetitle{matlofftexbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

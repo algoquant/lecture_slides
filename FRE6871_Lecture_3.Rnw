@@ -1,0 +1,915 @@
+% FRE6871_Lecture_3
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6871 Lecture\#3]{FRE6871 R in Finance}
+\subtitle{Lecture\#3, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{September 22, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Operators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has the following logical operators:
+      \begin{itemize}
+        \item '\texttt{<}' less than,
+        \item '\texttt{<=}' less than or equal to,
+        \item '\texttt{>}' greater than,
+        \item '\texttt{>=}' greater than or equal to,
+        \item '\texttt{==}' exactly equal to,
+        \item '\texttt{!=}' not equal to,
+        \item '\texttt{!x}' Not \texttt{x},
+        \item '\texttt{x \& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x | y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators are applied to vectors element-wise,
+    \column{0.6\textwidth}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+TRUE | FALSE
+TRUE | NA
+my_var1 <- c(2, 4, 6)
+my_var1 < 5
+(my_var1 < 5) & (my_var1 > 3)
+my_var1[(my_var1 < 5) & (my_var1 > 3)]
+my_var2 <- c(-10, 0, 10)
+my_var1 < my_var2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Long Form Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} also has two long form logical operators:
+      \begin{itemize}
+        \item '\texttt{x \&\& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x || y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators differ from the short form operators in two ways:
+      \begin{itemize}
+        \item They only evaluate the first elements of their vector arguments,
+        \item They short-circuit (stop evaluation as soon as the expression is determined),
+      \end{itemize}
+      {\color{red}{Rule of Thumb}}
+      \begin{itemize}
+        \item Use '\texttt{\&\&}' and '\texttt{||}' in if-clauses,
+      \end{itemize}
+    \column{0.6\textwidth}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+FuncTrue = function() {cat("FuncTrue\t"); TRUE}
+FuncFalse = function() {cat("FuncFalse\t"); FALSE}
+FuncTrue() | FuncFalse()
+FuncTrue() || FuncFalse()  # FuncFalse() isn't evaluated at all!
+my_var <- c(2, 4, 6)
+# works (does nothing) using '&&'
+if (is.matrix(my_var) && (my_var[2, 3] > 0)) {
+  my_var[2, 3] <- 1
+}
+# no short-circuit so fails (throws an error)
+if (is.matrix(my_var) & (my_var[2, 3] > 0)) {
+  my_var[2, 3] <- 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{'\texttt{if}' statements}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
+      \vskip1ex
+      The logical conditions must be either a logical or numeric type, otherwise an error is thrown,
+      \vskip1ex
+      The '\texttt{else}' statement can also be omitted,
+      \vskip1ex
+      '\texttt{if}' statements can be nested using multiple '\texttt{else if}' statements,
+    \column{0.6\textwidth}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+my_var1 <- -1
+if (my_var1) {  # positive numbers are TRUE, otherwise FALSE
+  my_var2 <- 4
+} else if (my_var1 == 0) {  # 'else if' together on same line
+  my_var2 <- 0
+} else {  # keep 'else' together with curly braces
+  my_var2 <- -4
+}
+my_var2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} also has an \texttt{ifelse()} function that controls execution but it accepts and returns vectors,
+        <<func_ifelse,echo=2:30,tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+# create two vectors
+my_var1 <- sin(0.25*pi*1:10)
+my_var2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+my_var3 <- ifelse(my_var1 > my_var2, my_var1, 
+                 my_var2)
+# cbind all three together
+my_var4 <- cbind(my_var1, my_var2, my_var3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+    cex.sub=0.5)
+# plot matrix
+matplot(my_var4, type="l", lty="solid", 
+        col=c("green", "blue", "red"), 
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(my_var4), 
+       title="", inset=0.05, cex=0.8, lwd=2, 
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Iteration Using '\texttt{for}' and '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '\texttt{for() \{...\}}' statement iterates over elements of a vector or list,
+      \vskip1ex
+      \texttt{R} also has a '\texttt{while() \{...\}}' loop,
+      \vskip1ex
+      '\texttt{while}' loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
+      \vskip1ex
+      But '\texttt{while}' loops risk producing infinite loops if not written
+properly, so \alert{Use Them With Care!}
+    \column{0.6\textwidth}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+my.colors <- list("red", "white", "blue")
+for (some.color in my.colors) {  # loop over list
+  print(some.color)
+}
+for (some.index in 1:3) {  # loop over vector
+  print(my.colors[[some.index]])
+}
+
+some.index <- 1  # 'while' loops need initialization
+while (some.index < 4) {  # while loop
+  print(my.colors[[some.index]])
+  some.index <- some.index + 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fibonacci Sequence Using '\texttt{for}' Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+        <<echo=2:30,tidy=FALSE>>=
+rm(list=ls())
+fib.seq <- c()  # create empty vector
+fib.seq[1] <- 1  # initialize
+fib.seq[2] <- 1  # initialize
+for (i in 3:10) {  # perform recurrence loop
+  fib.seq[i] <- fib.seq[i-1] + fib.seq[i-2]
+}  # end for
+fib.seq
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body, 
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FibRec <- function(n.num) {
+  if (n.num > 2) {
+    fib.seq <- FibRec(n.num-1)  # recursion
+    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
+  } else {
+    c(1, 1)  # initialize and return
+  }
+}  # end FibRec
+FibRec(10)
+tail(FibRec(10), 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Probability Distributions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Normal Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Normal probability density function is given by:
+      \begin{displaymath}
+        P(x) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
+      \end{displaymath}
+      The Standard Normal distribution is a special case of the Normal with $\mu=0$ and $\sigma=1$,
+\vskip1ex
+      The function \texttt{dnorm()} calculates the normal probability density,
+
+        <<norm_dist,echo=3:30,fig.show='hide'>>=
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+v.xval <- seq(-5, 7, length=100)
+v.yval <- dnorm(v.xval, mean=1.0, sd=2.0)
+plot(v.xval, v.yval, type="l", lty="solid", 
+     xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+n.low <- 3; n.up <- 5  # set lower and upper bounds
+# set polygon base
+v.reg <- ((v.xval >= n.low) & (v.xval <= n.up))
+polygon(c(n.low, v.xval[v.reg], n.up),  # draw polygon
+        c(-1, v.yval[v.reg], -1), col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Normal Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several Normal distributions with different values of $\sigma,$
+        <<norm_dist_mult,echo=3:30,fig.show='hide'>>=
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+v.xval <- seq(-4, 4, length=100)
+v.sigma <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+v.colors <- c("red", "black", "blue", "green")
+# create legend labels
+v.labels <- paste("sigma", v.sigma, sep='=')
+# plot an empty chart
+plot(v.xval, dnorm(v.xval, sd=v.sigma[1]), 
+     type="n", xlab="", ylab="", 
+     main="Normal Distributions")
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(v.xval, dnorm(v.xval, sd=v.sigma[in_dex]), 
+        lwd=2, col=v.colors[in_dex])
+}
+# add legend
+legend("topright", inset=0.05, title="Sigmas", 
+       v.labels, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=v.colors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/norm_dist_mult}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Chi-squared Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $Z_{1},\ldots ,Z_{k}$ be independent standard normal random variables,
+      \vskip1ex
+      Let $X=\sum_{i=1}^{k}Z_{i}^{2}$, \hskip1em then $X\sim \chi _{k}^{2}$,
+        <<chisq_dist_mult,echo=3:30,fig.show='hide'>>=
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+v.xval <- seq(0, 20, length=100)
+v.df <- c(2, 5, 8, 11)  # df values
+# create plot colors
+v.colors <- c("red", "black", "blue", "green")
+# create legend labels
+v.labels <- paste("df", v.df, sep='=')
+# plot an empty chart
+plot(v.xval, dchisq(v.xval, df=v.df[1]), 
+     type="n", xlab="", ylab="", 
+     main="Chi-squared Distributions")
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(v.xval, dchisq(v.xval, df=v.df[in_dex]), 
+        lwd=2, col=v.colors[in_dex])
+}
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees of freedom", v.labels, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=v.colors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chisq_dist_mult}
+      \vspace{-4em}
+      $X$ is distributed according to the \emph{chi-squared} distribution with $k$ degrees of freedom, given by:
+% \normalsize
+      \begin{displaymath}
+        P(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+% \footnotesize
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's $t$-distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $Z_{1},\ldots ,Z_{k}$ be independent standard normal random variables,
+      \vskip1ex
+      Let $s^2=\sum_{i=1}^{\nu}Z_{i}^{2}$, \hskip1em $t=\frac{\sum_{i=1}^{\nu}Z_{i}}{s}$,
+        <<t_dist_mult,echo=3:30,fig.show='hide'>>=
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+v.xval <- seq(-5, 5, length=100)
+v.df <- c(3, 6, 9)  # df values
+# create plot colors
+v.colors <- c("black", "red", "blue", "green")
+# create legend labels
+v.labels <- c('normal', paste("df", v.df, sep='='))
+# plot chart of normal distribution
+plot(v.xval, dnorm(v.xval), type="l", 
+     lwd=2, xlab="", ylab="", 
+     main="t-distributions")
+# add lines to plot
+for (in_dex in 1:3) {
+  lines(v.xval, dt(v.xval, df=v.df[in_dex]), 
+        lwd=2, col=v.colors[in_dex+1])
+}
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees\n of freedom", v.labels, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=v.colors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/t_dist_mult}
+      \vspace{-4em}
+      $t$ is distributed according to the $t$-distribution with $\nu$ degrees of freedom, given by:
+      \begin{displaymath}
+        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + x^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Date and Time Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has a \texttt{Date} class for date objects (but without time),
+      \vskip1ex
+      The function \texttt{as.Date()} converts a character string into a date object,
+      \vskip1ex
+      \texttt{R} stores \texttt{Date} objects as the number of days since January 1, 1970,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+Sys.Date()  # get today's date
+date_time <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time
+class(date_time)
+as.Date("06-15-2013", "%m-%d-%Y")  # specify format
+date_time + 20  # add 20 days
+as.numeric(date_time)  # get internal integer representation
+some.date <- as.Date("11/22/2013", "%m/%d/%Y")
+some.date
+# difference between dates
+difftime(some.date, date_time, units="weeks")
+weekdays(date_time)  # get day of the week
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date and Time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXct} for date and time objects,
+      \vskip1ex
+      The function \texttt{as.POSIXct()} converts a character string into a \texttt{POSIXct} object,
+      \vskip1ex
+      \texttt{format.POSIXct()} converts \texttt{POSIXct} objects to character strings,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the epoch (January 1, 1970 UTC),
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+rm(list=ls())
+date_time <- Sys.time()  # get today's date and time
+date_time
+class(date_time)  # date and time is are POSIXct objects
+as.numeric(date_time)  # get internal integer representation
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2014-08-15 15:30:10")
+format(date_time)  # convert POSIXct to character string
+class(format(date_time))  # character string
+date_time + 20  # add 20 seconds
+as.POSIXct(as.Date(date_time)+1)  # add a day
+trunc(date_time, units="hours")  # truncate to closest hour
+as.POSIXct(as.character(as.Date(date_time)))  # truncate to closest day
+methods(trunc)  # trunc methods
+trunc.POSIXt
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXlt} Date and Time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXlt} for date and time objects,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,
+      \vskip1ex
+      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes of the more general \texttt{POSIXt} class,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2013-06-15 18:30:10")
+date_time
+class(date_time)
+aperm(as.matrix(unclass(date_time)))  # get internal representation
+
+date_time + 20  # add 20 seconds
+class(date_time + 20)  # implicit coercion to POSIXct
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones and Class Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Date objects require a time zone to be specified,
+      \vskip1ex
+      The function \texttt{Sys.setenv()} can be used to set the default time zone,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+Sys.timezone()  # get time-zone
+
+format(date_time, tz="EDT")  # convert to character in different TZ
+
+as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
+
+Sys.setenv(tz="America/New_York")  # set time-zone to EDT
+format(Sys.time(), tz="")
+format(Sys.time(), tz="UTC")
+as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Review of Date and Time Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series,
+      \vskip1ex
+      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series,
+      \vskip1ex
+      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \texttt{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series,
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=3:30>>=
+rm(list=ls())
+library(zoo)  # load package zoo
+date_time <- Sys.Date()  # create date series of class 'Date'
+daily.index <- date_time + 0:365  # daily series over one year
+head(daily.index, 4)  # print first few dates
+format(head(daily.index, 4), "%m/%d/%Y")  # print first few dates
+# create daily date and time series of class 'POSIXct'
+daily.index <- seq(Sys.time(), by="days", length.out=365)
+head(daily.index, 4)  # print first few dates
+format(head(daily.index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
+# create series of monthly dates of class 'zoo'
+monthly.index <- yearmon(2010+0:36/12)
+head(monthly.index, 4)  # print first few dates
+# create series of quarterly dates of class 'zoo'
+qrtly.index <- yearqtr(2010+0:16/4)
+head(qrtly.index, 4)  # print first few dates
+# convert quarterly 'zoo' dates to POSIXct
+Sys.setenv(tz="UTC")
+as.POSIXct(head(qrtly.index, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ts()} creates time-series objects,
+      \vskip1ex
+      \texttt{stats} is a base package and contains functions for statistical calculations and random number generation,
+
+        <<rand_ts,eval=TRUE,fig.show='hide'>>=
+set.seed(1121)  # for reproducibility
+my_var <- 100
+# create monthly time series starting 1990
+ts_var <- ts(data=cumsum(rnorm(my_var)), 
+             frequency=12, start=c(1990, 1))
+class(ts_var)  # class 'ts'
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(ts_var, type="l",  # perform plot
+     col="red", lty="solid", xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+# window the time series
+ts.new <- window(ts_var, start=1992, end=1997)
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rand_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EuStockMarkets}
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Data}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} includes a number of 'base' packages that are already installed and loaded,
+      \vskip1ex
+      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},
+      \vskip1ex
+      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,
+
+        <<eustx_ts,echo=2:30,eval=TRUE,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+class(EuStockMarkets)  # multiple ts object
+dim(EuStockMarkets)
+head(EuStockMarkets)  # get first six rows
+plot(EuStockMarkets, main="", xlab="")  # plot all the columns
+title(main="EuStockMarkets", line=-1)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_ts}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Returns}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram,
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density,
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points,
+
+        <<eustx_rets,echo=2:30,eval=TRUE,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# calculate percentage returns
+ts.rets <- diff(log(EuStockMarkets))
+# calculate mean and standard deviation of returns
+c(mean(ts.rets[, 1]), sd(ts.rets[, 1]))
+# plot histogram
+hist(ts.rets[, 1], breaks=30, main="", xlim=c(-0.04, 0.04), 
+     ylim=c(0, 60), xlab="", ylab="", freq = FALSE)
+lines(density(ts.rets[, 1]),  # draw a line
+      col='red', lwd=2)
+ch.title <- paste(colnames(EuStockMarkets)[1], 'returns')
+title(main=ch.title, line=-1)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_rets}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulation Using '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      '\texttt{while}' loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of random prices hitting a barrier level,
+        <<rand_while,echo=7:30,fig.show='hide'>>=
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set axis title and labels
+par(mar=c(5, 1, 1, 1))  # set plot margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # for reproducibility
+max.simu <- 1000  # max simulation trials
+v.simu <- 0*1:max.simu  # initialize trials
+barrier.level <- 20  # barrier level
+v.simu[1] <- rnorm(1)  # first simulation value
+sim.index <- 2  # initialize simulation index
+while ((sim.index <= max.simu) && 
+         (v.simu[sim.index - 1] < barrier.level)) {
+  v.simu[sim.index] <- v.simu[sim.index - 1] + rnorm(1)
+  sim.index <- sim.index + 1
+}  # end while
+if (sim.index <= max.simu) {  # fill zero prices
+  v.simu[sim.index:max.simu] <- v.simu[sim.index - 1]
+}
+# create daily time series starting 2011
+ts_var <- ts(data=v.simu, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # perform plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier.level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rand_while}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[t]{\subsecname}
+
+\begin{block}{Required}
+  \begin{itemize}[]
+    \item Create an \texttt{R} script for simulating 1000 random prices using rnorm(),
+    \item Use a '\texttt{while}' loop to stop the simulation if the prices first cross barrier.level1=-10, and then cross barrier.level2=10,
+    \item Plot the prices and the two barrier levels,
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 9, 10, 13: \fullcite{website:rintro}
+    \item Read chapters 7, 8: \citetitle{matlofftexbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
