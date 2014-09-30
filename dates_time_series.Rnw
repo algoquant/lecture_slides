@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -25,7 +25,7 @@ knit_theme$set(thm)
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
 % \bibliographystyle{amsalpha} % doesn't work
-\addbibresource{FRE6811_bib.bib}
+\addbibresource{FRE6871_bib.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
 \renewcommand\bibfont{\footnotesize}
 \renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
@@ -270,6 +270,41 @@ as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
 
 
 %%%%%%%%%%%%%%%
+\subsection{\texttt{RQuantLib} Calendar Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
+      \vskip1ex
+      The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=3:30>>=
+rm(list=ls())
+library(zoo)  # load zoo
+library(RQuantLib)  # load RQuantLib
+
+# create daily date series of class 'Date'
+date_index <- Sys.Date() + -5:2
+date_index
+
+# create logical vector of business days
+bus.days <- isBusinessDay(  # RQuantLib calendar
+  calendar="UnitedStates/GovernmentBond", date_index)
+
+# create daily series of business days
+bus_index <- date_index[bus.days]
+bus_index
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Review of Date and Time Classes in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -287,22 +322,22 @@ as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
 rm(list=ls())
 library(zoo)  # load package zoo
 date_time <- Sys.Date()  # create date series of class 'Date'
-daily.index <- date_time + 0:365  # daily series over one year
-head(daily.index, 4)  # print first few dates
-format(head(daily.index, 4), "%m/%d/%Y")  # print first few dates
+date_index <- date_time + 0:365  # daily series over one year
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y")  # print first few dates
 # create daily date and time series of class 'POSIXct'
-daily.index <- seq(Sys.time(), by="days", length.out=365)
-head(daily.index, 4)  # print first few dates
-format(head(daily.index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
+date_index <- seq(Sys.time(), by="days", length.out=365)
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
 # create series of monthly dates of class 'zoo'
-monthly.index <- yearmon(2010+0:36/12)
-head(monthly.index, 4)  # print first few dates
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # print first few dates
 # create series of quarterly dates of class 'zoo'
-qrtly.index <- yearqtr(2010+0:16/4)
-head(qrtly.index, 4)  # print first few dates
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # print first few dates
 # convert quarterly 'zoo' dates to POSIXct
 Sys.setenv(tz="UTC")
-as.POSIXct(head(qrtly.index, 4))
+as.POSIXct(head(qrtly_index, 4))
       @
   \end{columns}
 \end{block}
@@ -326,7 +361,7 @@ as.POSIXct(head(qrtly.index, 4))
       \vskip1ex
       \texttt{stats} is a base package and contains functions for statistical calculations and random number generation,
 
-        <<rand_ts,eval=TRUE,fig.show='hide'>>=
+        <<rand_ts,fig.show='hide'>>=
 set.seed(1121)  # for reproducibility
 my_var <- 100
 # create monthly time series starting 1990
@@ -343,7 +378,7 @@ plot(ts_var, type="l",  # perform plot
      col="red", lty="solid", xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
 # window the time series
-ts.new <- window(ts_var, start=1992, end=1997)
+ts_new <- window(ts_var, start=1992, end=1997)
       @
 
     \column{0.5\textwidth}
@@ -368,7 +403,7 @@ ts.new <- window(ts_var, start=1992, end=1997)
       \vskip1ex
       The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,
 
-        <<eustx_ts,echo=2:30,eval=TRUE,fig.show='hide'>>=
+        <<eustx_ts,echo=2:30,fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
@@ -399,19 +434,19 @@ title(main="EuStockMarkets", line=-1)  # add title
       \vskip1ex
       The function \texttt{lines()} draws a line through specified points,
 
-        <<eustx_rets,echo=2:30,eval=TRUE,fig.show='hide'>>=
+        <<eustx_rets,echo=2:30,fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # calculate percentage returns
-ts.rets <- diff(log(EuStockMarkets))
+ts_rets <- diff(log(EuStockMarkets[, 1]))
 # calculate mean and standard deviation of returns
-c(mean(ts.rets[, 1]), sd(ts.rets[, 1]))
+c(mean(ts_rets), sd(ts_rets))
 # plot histogram
-hist(ts.rets[, 1], breaks=30, main="", xlim=c(-0.04, 0.04), 
+hist(ts_rets, breaks=30, main="", xlim=c(-0.04, 0.04), 
      ylim=c(0, 60), xlab="", ylab="", freq = FALSE)
-lines(density(ts.rets[, 1]),  # draw a line
+lines(density(ts_rets),  # draw a line
       col='red', lwd=2)
-ch.title <- paste(colnames(EuStockMarkets)[1], 'returns')
-title(main=ch.title, line=-1)  # add title
+plot_title <- paste(colnames(EuStockMarkets)[1], 'returns')
+title(main=plot_title, line=-1)  # add title
       @
 
     \column{0.5\textwidth}
@@ -429,34 +464,33 @@ title(main=ch.title, line=-1)  # add title
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A $Q-Q$ plot is a plot of points from two probability distributions with the same quantiles,
+      A \texttt{Q-Q} plot is a plot of points from two probability distributions with the same quantiles,
       \vskip1ex
       The function \texttt{qqnorm()} produces a normal Q-Q plot,
       \vskip1ex
       The function \texttt{qqline()} fits a line to the normal quantiles,
       \vskip1ex
-      The $DAX$ Q-Q plot shows that the $DAX$ return distribution has fat tails,
-
-        <<eustx_qq,echo=4:30,eval=TRUE,fig.show='hide'>>=
+      The \texttt{DAX} Q-Q plot shows that the \texttt{DAX} return distribution has fat tails,
+        <<eustx_qq,echo=2:30,fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # calculate percentage returns
-ts.rets <- diff(log(EuStockMarkets))
+ts_rets <- diff(log(EuStockMarkets[, 1]))
 # create normal Q-Q plot
-qqnorm(ts.rets[, 1], ylim=c(-0.04, 0.04), 
+qqnorm(ts_rets, ylim=c(-0.04, 0.04), 
        xlab='Normal Quantiles', main='')
 # fit a line to the normal quantiles
-qqline(ts.rets[, 1], col='red', lwd=2)
-ch.title <- paste(colnames(EuStockMarkets)[1], 
+qqline(ts_rets, col='red', lwd=2)
+plot_title <- paste(colnames(EuStockMarkets)[1], 
                   'Q-Q Plot')
-title(main=ch.title, line=-1)  # add title
-shapiro.test(ts.rets[, 1])  # Shapiro-Wilk test
+title(main=plot_title, line=-1)  # add title
+shapiro.test(ts_rets)  # Shapiro-Wilk test
       @
 
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_qq}
-      \vskip1ex
-      The p-value of the $Shapiro-Wilk$ test is very small, which shows that the $DAX$ returns are not normal,
+      \vskip2ex
+      The \emph{p}-value of the \emph{Shapiro-Wilk} test is very small, which shows that the \texttt{DAX} returns are not normal,
   \end{columns}
 \end{block}
 
@@ -481,18 +515,18 @@ par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # create daily dates
-my.index <- as.Date("2010-06-15") + 1:1000
+date_index <- as.Date("2010-06-15") + 1:1000
 # create zoo time series
-ts.random <- zoo(cumsum(rnorm(1000)), 
-                 order.by=my.index)
-class(ts.random)  # class 'zoo'
-tail(ts.random, 4)  # get last few elements
-write.zoo(ts.random, file="ts.random.txt")
-rm(ts.random)  # remove zoo object
-ts.random <- read.zoo("ts.random.txt")  # read it back
-tail(ts.random, 4)  # get last few elements
+zoo_series <- zoo(cumsum(rnorm(1000)), 
+                 order.by=date_index)
+class(zoo_series)  # class 'zoo'
+tail(zoo_series, 4)  # get last few elements
+write.zoo(zoo_series, file="zoo_series.txt")
+rm(zoo_series)  # remove zoo object
+zoo_series <- read.zoo("zoo_series.txt")  # read it back
+tail(zoo_series, 4)  # get last few elements
 # call plot.zoo
-plot(ts.random, xlab="", ylab="")
+plot(zoo_series, xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
       @
     \column{0.5\textwidth}
@@ -523,18 +557,18 @@ title(main="Random Prices", line=-1)  # add title
 rm(list=ls())
 library(zoo)  # load package zoo
 # create zoo time series
-daily.index <- Sys.Date() + 0:3
-zoo.ts <- zoo(rnorm(length(daily.index)), 
-               order.by=daily.index)
-zoo.ts
-index(zoo.ts)  # extract time index
-coredata(zoo.ts)  # extract coredata
-zoo.ts[start(zoo.ts)]  # first element
-zoo.ts[end(zoo.ts)]  # last element
-coredata(zoo.ts) <- rep(1, 4)  # replace coredata
-cumsum(zoo.ts)  # cumulative sum
-cummax(cumsum(zoo.ts))
-cummin(cumsum(zoo.ts))
+date_index <- Sys.Date() + 0:3
+zoo_series <- zoo(rnorm(length(date_index)), 
+               order.by=date_index)
+zoo_series
+index(zoo_series)  # extract time index
+coredata(zoo_series)  # extract coredata
+zoo_series[start(zoo_series)]  # first element
+zoo_series[end(zoo_series)]  # last element
+coredata(zoo_series) <- rep(1, 4)  # replace coredata
+cumsum(zoo_series)  # cumulative sum
+cummax(cumsum(zoo_series))
+cummin(cumsum(zoo_series))
       @
   \end{columns}
 \end{block}
@@ -557,10 +591,10 @@ cummin(cumsum(zoo.ts))
     \column{0.6\textwidth}
       <<echo=2:30>>=
 library(zoo)  # load package zoo
-coredata(zoo.ts) <- 1:4  # replace coredata
-zoo.ts
-diff(zoo.ts)  # diff with one day lag
-lag(zoo.ts, 2)  # two day lag
+coredata(zoo_series) <- 1:4  # replace coredata
+zoo_series
+diff(zoo_series)  # diff with one day lag
+lag(zoo_series, 2)  # two day lag
       @
   \end{columns}
 \end{block}
@@ -586,21 +620,21 @@ par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # create daily date series of class 'Date'
-daily.index1 <- Sys.Date() + 0:365
+date_index1 <- Sys.Date() + 0:365
 # create zoo time series
-zoo.ts1 <- zoo(rnorm(length(daily.index1)), 
-                 order.by=daily.index1)
+zoo_series1 <- zoo(rnorm(length(date_index1)), 
+                 order.by=date_index1)
 # create another zoo time series
-daily.index2 <- Sys.Date() + 365:730
-zoo.ts2 <- zoo(rnorm(length(daily.index2)), 
-                 order.by=daily.index2)
+date_index2 <- Sys.Date() + 365:730
+zoo_series2 <- zoo(rnorm(length(date_index2)), 
+                 order.by=date_index2)
 # rbind the two time series
-zoo.ts3 <- rbind(zoo.ts1,  # ts1 supersedes ts2
-                 zoo.ts2[index(zoo.ts2) > 
-                           end(zoo.ts1)])
-plot(cumsum(zoo.ts3), xlab="", ylab="")
+zoo_series3 <- rbind(zoo_series1,  # ts1 supersedes ts2
+                 zoo_series2[index(zoo_series2) > 
+                           end(zoo_series1)])
+plot(cumsum(zoo_series3), xlab="", ylab="")
 # add vertical line at stitch point
-abline(v=index(tail(zoo.ts1, 1)), col="red", lty="dashed")
+abline(v=index(tail(zoo_series1, 1)), col="red", lty="dashed")
 title(main="Random Prices", line=-1)  # add title
       @
     \column{0.5\textwidth}
@@ -630,16 +664,16 @@ title(main="Random Prices", line=-1)  # add title
       <<echo=2:30>>=
 rm(list=ls())
 # create daily date series of class 'Date'
-daily.index1 <- Sys.Date() + -3:1
+date_index1 <- Sys.Date() + -3:1
 # create zoo time series
-zoo.ts1 <- zoo(rnorm(length(daily.index1)), 
-               order.by=daily.index1)
+zoo_series1 <- zoo(rnorm(length(date_index1)), 
+               order.by=date_index1)
 # create another zoo time series
-daily.index2 <- Sys.Date() + -1:3
-zoo.ts2 <- zoo(rnorm(length(daily.index2)), 
-               order.by=daily.index2)
-merge(zoo.ts1, zoo.ts2)  # union of dates
-merge(zoo.ts1, zoo.ts2, all=FALSE)  # intersection of dates
+date_index2 <- Sys.Date() + -1:3
+zoo_series2 <- zoo(rnorm(length(date_index2)), 
+               order.by=date_index2)
+merge(zoo_series1, zoo_series2)  # union of dates
+merge(zoo_series1, zoo_series2, all=FALSE)  # intersection of dates
       @
   \end{columns}
 \end{block}
@@ -666,13 +700,13 @@ merge(zoo.ts1, zoo.ts2, all=FALSE)  # intersection of dates
 rm(list=ls())
 library(zoo)  # load package zoo
 # create zoo time series
-zoo.ts <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
-zoo.ts[3] <- NA
-zoo.ts
+zoo_series <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
+zoo_series[3] <- NA
+zoo_series
 
-na.locf(zoo.ts)  # replace NA's using locf
+na.locf(zoo_series)  # replace NA's using locf
 
-na.omit(zoo.ts)  # remove NA's using omit
+na.omit(zoo_series)  # remove NA's using omit
       @
   \end{columns}
 \end{block}
@@ -698,25 +732,25 @@ par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # create zoo time series
-daily.index <- Sys.Date() + 0:365
-zoo.ts <- zoo(rnorm(length(daily.index)), 
-                 order.by=daily.index)
+date_index <- Sys.Date() + 0:365
+zoo_series <- zoo(rnorm(length(date_index)), 
+                 order.by=date_index)
 # create monthly dates
-dates.agg <- as.Date(as.yearmon(index(zoo.ts)))
+dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 # perform monthly 'mean' aggregation
-zoo.agg <- aggregate(zoo.ts, by=dates.agg, 
+zoo_agg <- aggregate(zoo_series, by=dates_agg, 
                      FUN=mean)
 # merge with original zoo - union of dates
-zoo.agg <- merge(zoo.ts, zoo.agg)
+zoo_agg <- merge(zoo_series, zoo_agg)
 # replace NA's using locf
-zoo.agg <- na.locf(zoo.agg)
+zoo_agg <- na.locf(zoo_agg)
 # extract aggregated zoo
-zoo.agg <- zoo.agg[index(zoo.ts), 2]
+zoo_agg <- zoo_agg[index(zoo_series), 2]
 # plot original and aggregated zoo
-plot(cumsum(zoo.ts), xlab="", ylab="")
-lines(cumsum(zoo.agg), lwd=2, col="red")
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
 # add legend
-legend("topright", inset=0.15, title="Aggregated Prices", 
+legend("topright", inset=0.05, cex=0.8, title="Aggregated Prices", 
        leg=c("orig prices", "agg prices"), lwd=2, 
        col=c("black", "red"))
       @
@@ -749,19 +783,19 @@ par(mar=c(5, 1, 1, 1))  # set plot margins
 par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # perform monthly 'mean' aggregation
-zoo.agg <- aggregate(zoo.ts, by=dates.agg, 
+zoo_agg <- aggregate(zoo_series, by=dates_agg, 
                      FUN=mean)
 # merge with original zoo - union of dates
-zoo.agg <- merge(zoo.ts, zoo.agg)
+zoo_agg <- merge(zoo_series, zoo_agg)
 # replace NA's using linear interpolation
-zoo.agg <- na.approx(zoo.agg)
+zoo_agg <- na.approx(zoo_agg)
 # extract interpolated zoo
-zoo.agg <- zoo.agg[index(zoo.ts), 2]
+zoo_agg <- zoo_agg[index(zoo_series), 2]
 # plot original and interpolated zoo
-plot(cumsum(zoo.ts), xlab="", ylab="")
-lines(cumsum(zoo.agg), lwd=2, col="red")
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
 # add legend
-legend("topright", inset=0.15, title="Interpolated Prices", 
+legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices", 
        leg=c("orig prices", "interpol prices"), lwd=2, 
        col=c("black", "red"))
       @
@@ -796,55 +830,23 @@ par(mar=c(5, 1, 1, 1))  # set plot margins
 par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # perform monthly 'mean' aggregation
-zoo.mean <- rollapply(zoo.ts, width=11, FUN=mean)
+zoo_mean <- rollapply(zoo_series, width=11, FUN=mean)
 # merge with original zoo - union of dates
-zoo.mean <- merge(zoo.ts, zoo.mean)
+zoo_mean <- merge(zoo_series, zoo_mean)
 # replace NA's using na.locf
-zoo.mean <- na.locf(zoo.mean, fromLast=TRUE)
+zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
 # extract mean zoo
-zoo.mean <- zoo.mean[index(zoo.ts), 2]
+zoo_mean <- zoo_mean[index(zoo_series), 2]
 # plot original and interpolated zoo
-plot(cumsum(zoo.ts), xlab="", ylab="")
-lines(cumsum(zoo.mean), lwd=2, col="red")
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_mean), lwd=2, col="red")
 # add legend
-legend("topright", inset=0.15, title="Mean Prices", 
+legend("topright", inset=0.05, cex=0.8, title="Mean Prices", 
        leg=c("orig prices", "mean prices"), lwd=2, 
        col=c("black", "red"))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_roll}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{RQuantLib} Calendar Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
-      \vskip1ex
-      The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<echo=3:30>>=
-rm(list=ls())
-library(zoo)  # load zoo
-library(RQuantLib)  # load RQuantLib
-# create daily date series of class 'Date'
-daily.index <- Sys.Date() + -5:2
-daily.index
-# create logical vector of business days
-bus.days <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", daily.index)
-# create daily series of business days
-bus.index <- daily.index[bus.days]
-bus.index
-      @
   \end{columns}
 \end{block}
 
@@ -868,18 +870,18 @@ par(cex.lab=0.8,  # set font scales
     cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(tseries)  # load package tseries
 suppressWarnings(  # load MSFT data
-  zoo.msft <- get.hist.quote(instrument="MSFT", 
+  zoo_msft <- get.hist.quote(instrument="MSFT", 
                            start=Sys.Date()-365, 
                            end=Sys.Date(), 
                            origin="1970-01-01")
   )  # end suppressWarnings
-class(zoo.msft)
-dim(zoo.msft)
-tail(zoo.msft, 4)
+class(zoo_msft)
+dim(zoo_msft)
+tail(zoo_msft, 4)
 
-sharpe(zoo.msft[, "Close"], r=0.01)  # calculate Sharpe ratio
+sharpe(zoo_msft[, "Close"], r=0.01)  # calculate Sharpe ratio
 
-plot(zoo.msft[, "Close"], xlab="", ylab="")
+plot(zoo_msft[, "Close"], xlab="", ylab="")
 title(main="MSFT Close Prices", line=-1)  # add title
       @
     \column{0.5\textwidth}
@@ -913,25 +915,25 @@ suppressWarnings(  # load EUR/USD data
     origin="1970-01-01")
   )  # end suppressWarnings
 # bind and scrub data
-zoo.msfteur <- merge(zoo.eurusd, 
-                     zoo.msft[, "Close"])
-colnames(zoo.msfteur) <- c("EURUSD", "MSFT")
-zoo.msfteur <- 
-  zoo.msfteur[complete.cases(zoo.msfteur),]
+zoo_msfteur <- merge(zoo.eurusd, 
+                     zoo_msft[, "Close"])
+colnames(zoo_msfteur) <- c("EURUSD", "MSFT")
+zoo_msfteur <- 
+  zoo_msfteur[complete.cases(zoo_msfteur),]
 ### plot with two "y" axes
 par(las=1)  # set text printing to "horizontal"
 # plot first ts
-plot(zoo.msfteur[, 1], xlab=NA, ylab=NA)
+plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
 # set range for second "y" axis
-par(usr=c(par("usr")[1:2], range(zoo.msfteur[,2])))
-lines(zoo.msfteur[, 2], col="red")  # second plot
+par(usr=c(par("usr")[1:2], range(zoo_msfteur[,2])))
+lines(zoo_msfteur[, 2], col="red")  # second plot
 axis(side=4, col="red")  # second "y" axis on right
 # print axis labels
-mtext(colnames(zoo.msfteur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo.msfteur)[2], col="red", side=4, padj=-2, line=-3)
+mtext(colnames(zoo_msfteur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo_msfteur)[2], col="red", side=4, padj=-2, line=-3)
 title(main="EUR and MSFT", line=-1)  # add title
 # add legend without box
-legend("bottomright", legend=colnames(zoo.msfteur), 
+legend("bottomright", legend=colnames(zoo_msfteur), 
        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
 
 
@@ -939,21 +941,21 @@ legend("bottomright", legend=colnames(zoo.msfteur),
 
 # slightly different method using par(new=TRUE)
 # par(las=1)  # set text printing to "horizontal"
-# plot(zoo.msfteur[, 1], xlab=NA, ylab=NA)
+# plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
 # par(new=TRUE)  # allow new plot on same chart
-# plot(zoo.msfteur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# plot(zoo_msfteur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
 # axis(side=4, col="red")  # second "y" axis on right
-# mtext(colnames(zoo.msfteur)[1], side=2, padj=-6, line=-4)
-# mtext(colnames(zoo.msfteur)[2], col="red", side=4, padj=-2, line=-3)
+# mtext(colnames(zoo_msfteur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo_msfteur)[2], col="red", side=4, padj=-2, line=-3)
 # title(main="EUR and MSFT", line=-1)  # add title
-# legend("bottomright", legend=colnames(zoo.msfteur), 
+# legend("bottomright", legend=colnames(zoo_msfteur), 
 #        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
 
 ##########
 
 # "x" axis with monthly ticks - doesn't work
 # plot first ts wthout "x" axis
-# plot(zoo.msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
+# plot(zoo_msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
 # # add "x" axis with monthly ticks
 # month.ticks <- unique(as.yearmon(index(zoo.eurusd)))
 # axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
@@ -985,16 +987,16 @@ legend("bottomright", legend=colnames(zoo.msfteur),
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=1:30>>=
-ts.msft <- as.ts(zoo.msft)
-class(ts.msft)
+ts_msft <- as.ts(zoo_msft)
+class(ts_msft)
 # rename colnames
-colnames(ts.msft) <- paste0("MSFT.", colnames(ts.msft))
-tail(ts.msft, 4)
+colnames(ts_msft) <- paste0("MSFT.", colnames(ts_msft))
+tail(ts_msft, 4)
 
 library(timeSeries)
-tser.msft <- as.timeSeries(zoo.msft)
-class(ts.msft)
-tail(tser.msft, 4)
+tser_msft <- as.timeSeries(zoo_msft)
+class(ts_msft)
+tail(tser_msft, 4)
       @
   \end{columns}
 \end{block}

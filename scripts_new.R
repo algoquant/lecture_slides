@@ -153,6 +153,54 @@ funcTestFunc <- function(inputFunc, ...) {
 
 
 #################################
+### extra unused code
+#################################
+
+random_var <- rpois(100, 4)  # produce 100 Poisson random numbers
+
+# contingency table doesn't return zero for bins with missing values (hist does)
+pois_table <- table(random_var)  # calculate contingency table
+pois_table <- pois_table/sum(pois_table)  # calculate frequency table
+pois_table
+names(pois_table)  # get names of table
+
+# open Windows graphics device
+x11(width=11, height=7, title="function plot")
+
+# create barplot
+barplot(pois_table, col="blue", ylab="Frequency of events", xlab="No. of events", main="Poisson distribution")
+x_var <- 0:max(random_var)
+lines(x=x_var, y=dpois(x_var, lambda=4), lwd=2, col="red")
+
+graphics.off()  # close all graphics devices
+
+# combines together first two values
+hist(random_var, freq=FALSE, col="grey", breaks=x_var)
+
+hist(random_var, freq=FALSE, col="grey", breaks="FD")
+
+# doesn't work
+curve(expr=dpois(x, lambda=6), xlim=c(0, 11), ylab="", 
+      lwd=2, col="red")
+curve(expr=dpois(x, lambda=4), add=TRUE, xlim=c(0, 11), ylab="", 
+      lwd=2, col="blue")
+# doesn't work
+plot(x=dpois(x, lambda=6), type="l", xlim=c(0, 11), ylab="", lwd=2, col="red")
+plot(x=dnorm, type="l", xlim=c(-2, 2), ylab="", lwd=2, col="red")
+plot(x=dnorm(x, mean=1), type="l", xlim=c(-1, 3), ylab="", lwd=2, col="red")
+curve(expr=dnorm(x, mean=1), type="l", xlim=c(-1, 3), ylab="", lwd=2, col="red")
+
+
+# add title
+title(main="sine and cosine functions", cex=1.5, line=0.1)
+# add legend
+legend(x="topright", legend=c("sine", "cosine"),
+       title="legend", inset=0.05, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("red", "blue"))
+
+
+
+#################################
 ### misc stuff for deletion
 #################################
 

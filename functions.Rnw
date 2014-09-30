@@ -100,7 +100,7 @@ baseenv()  # get base environment
 globalenv()  # get global environment
 environment()  # get current environment
 class(environment())  # get environment class
-n.globvar <- 1  # define variable in current environment
+glob_var <- 1  # define variable in current environment
 ls(environment())  # get objects in current environment
 
 env.new <- new.env()  # create new environment
@@ -204,12 +204,53 @@ MyFunc()  # use default values of arguments
 # define function that uses enclosure environment
 MyFunc <- function(my_var1=2, my_var2=1) {
 # default values can be specified in the argument list
-  my_var1 + 2*my_var2 + n.globvar
+  my_var1 + 2*my_var2 + glob_var
 # the function returns the last evaluated statement
 }  # end MyFunc
-MyFunc(3, 2)  # n.globvar doesn't exist yet!
-n.globvar <- 10
+MyFunc(3, 2)  # glob_var doesn't exist yet!
+glob_var <- 10
 MyFunc(3, 2)  # now works
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body, 
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FibRec <- function(n.num) {
+  if (n.num > 2) {
+    fib.seq <- FibRec(n.num-1)  # recursion
+    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
+  } else {
+    c(1, 1)  # initialize and return
+  }
+}  # end FibRec
+FibRec(10)
+tail(FibRec(10), 2)
       @
   \end{columns}
 \end{block}
@@ -235,7 +276,7 @@ MyFunc(3, 2)  # now works
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-ts.rets <- diff(log(EuStockMarkets))[, 1]  # DAX returns
+ts.rets <- diff(log(EuStockMarkets[, 1]))  # DAX returns
 
 # define function CalcSkew to calculate the skew
 CalcSkew <- function(ts.data=rnorm(1000)) {  # default is normal
@@ -276,50 +317,6 @@ CalcSkew()  # use default value of arguments
 CalcSkew  # show the function code
 
 getAnywhere(CalcSkew)  # display function
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Robust Argument Handling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} provides many ways to handle various unexpected argument values, by checking them before making any calculations,
-      \vskip1ex
-      Assigning default values to formal arguments allows for better control over their values,
-      \vskip1ex
-      The function \texttt{stopifnot()} stops function execution and produces an error if its argument is \texttt{FALSE},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-FunRobust <- function(v.in1, v.in2=NA) {
-# returns the sum of its two arguments
-  if (is.numeric(v.in2)) {  # check if v.in2 was input
-    v.in1 + v.in2  # v.in2 was input
-  } else {
-    v.in1  # v.in2 wasn't input
-  }
-}  # end FunRobust
-FunRobust(1, 2)
-FunRobust(5, 'a')
-FunRobust <- function(v.in1, v.in2) {  # even more robust
-  stopifnot((!missing(v.in1) && is.numeric(v.in1)) || 
-               (!missing(v.in2) && is.numeric(v.in2)))
-  if (!missing(v.in2) && is.numeric(v.in2)) {  # check if v.in2 is valid input
-    v.in1 + v.in2  # v.in2 was input
-  } else {
-    v.in1  # v.in2 wasn't input
-  }
-}  # end FunRobust
-FunRobust(5, 'a')
-FunRobust('a')
       @
   \end{columns}
 \end{block}
@@ -396,163 +393,6 @@ paste('a', 'b', se = ':')  # partial name matching fails!
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function Environments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      When a function is called, a new \emph{evaluation} environment is created,
-      \vskip1ex
-      The \emph{evaluation} environment contains the function arguments and locally defined variables,
-      \vskip1ex
-      The enclosure of the \emph{evaluation} environment is the environment where the function was defined (the global environment for functions defined in the workspace),
-      \vskip1ex
-      Functions defined in packages with namespaces have the package namespace as their enclosure,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-n.globvar <- 1  # define a global variable
-ls(environment())  # get all variables in environment
-MyFunc <- function() {  # function for exploring environments
-  n.locvar <- 1  # define a local variable
-  cat('objects in parent environment:\t', 
-      ls(parent.env(environment())), '\n')
-  cat('objects in function environment:\t', 
-      ls(environment()), '\n')
-  cat('this is the parent environment:')
-  parent.env(environment())  # return parent environment
-}  # end MyFunc
-MyFunc()
-environment(MyFunc)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function Scope}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{free} variable is a variable that's not included in the \emph{evaluation} environment,
-      \vskip1ex
-      Scoping rules determine how \emph{free} variables are evaluated,
-      \vskip1ex
-      By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the \emph{enclosing} environment in which the function was \emph{defined}, and so on,
-      \vskip1ex
-      \emph{Dynamic} scoping means that variables are evaluated in the calling environment from which the function was \emph{called},
-      \vskip1ex
-      The standard assignment operator "\texttt{<-}" creates a variable in the \emph{evaluation} environment,
-      \vskip1ex
-      The special assignment operator "\texttt{<<-}" modifies or creates a variable in the \emph{enclosing} environment,
-
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-n.globvar <- 1  # define a global variable
-MyFunc <- function() {  # function for exploring scope
-  n.locvar <- 1  # define a local variable
-  new.globvar <<- 11  # define a global variable
-  cat('objects in parent environment:\t', 
-      ls(parent.env(environment())), '\n')
-  cat('objects in function environment:\t', 
-      ls(environment()), '\n')
-  cat('this is n.globvar:\t', n.globvar, '\n')
-  n.globvar <- 10  # re-define the global variable
-  cat('this is re-defined n.globvar:\t', n.globvar, '\n')
-}  # end MyFunc
-MyFunc()
-n.globvar  # global variable is restored
-new.globvar  # new.globvar is preserved
-n.locvar  # local variable is gone!
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Super-assignment Operator "\texttt{<<-}"}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The standard assignment operator "\texttt{<-}" operates on a \emph{local} variable in the \emph{evaluation} environment,
-      \vskip1ex
-      The super-assignment operator "\texttt{<<-}" modifies or creates a variable in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping),
-      \vskip1ex
-      If the function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment and the "\texttt{<<-}" operator operates on variables in the \emph{global} environment,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-n.globvar <- 1  # define a global variable
-MyFunc <- function() {  # function for exploring scope
-  cat('this is the global n.globvar:\t', n.globvar, '\n')
-  n.globvar <- 10  # define local 'n.globvar' variable
-  n.globvar <<- 2  # re-define the global variable
-  cat('this is a local n.globvar:\t', n.globvar, '\n')
-}  # end MyFunc
-MyFunc()
-n.globvar  # the global variable
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Recursive Function for Calculating Fibonacci Sequence}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Recursive} functions call themselves in their own body, 
-      \vskip1ex
-      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
-      \begin{displaymath}
-        F_{n} = F_{n-1} + F_{n-2},
-      \end{displaymath}
-      \begin{displaymath}
-        F_{1} = 1, F_{2} = 1,
-      \end{displaymath}
-      \begin{displaymath}
-        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
-      \end{displaymath}
-      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-FibRec <- function(n.num) {
-  if (n.num > 2) {
-    fib.seq <- FibRec(n.num-1)  # recursion
-    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
-  } else {
-    c(1, 1)  # initialize and return
-  }
-}  # end FibRec
-FibRec(10)
-tail(FibRec(10), 2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Recursive\hskip0.5em\secname\hskip0.5em with '\texttt{...}' Argument}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -581,6 +421,123 @@ SumDots(1, 2, 3, 4)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Function Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      When a function is called, a new \emph{evaluation} environment is created,
+      \vskip1ex
+      The \emph{evaluation} environment contains the function arguments and locally defined variables,
+      \vskip1ex
+      The enclosure of the \emph{evaluation} environment is the environment where the function was defined (the global environment for functions defined in the workspace),
+      \vskip1ex
+      Functions defined in packages with namespaces have the package namespace as their enclosure,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+glob_var <- 1  # define a global variable
+ls(environment())  # get all variables in environment
+func_env <- function() {  # function for exploring environments
+  loc_var <- 1  # define a local variable
+  cat('objects in evaluation environment:\t', 
+      ls(environment()), '\n')
+  cat('objects in enclosing environment:\t', 
+      ls(parent.env(environment())), '\n')
+  cat('this is the enclosing environment:')
+  parent.env(environment())  # return enclosing environment
+}  # end func_env
+func_env()
+
+environment(func_env)
+environment(print)  # package namespace is the enclosure
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lexical Function Scope}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{free} variable is a variable that's not included in the \emph{evaluation} environment,
+      \vskip1ex
+      Scoping rules determine how \emph{free} variables are evaluated,
+      \vskip1ex
+      By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the \emph{enclosing} environment in which the function was \emph{defined}, and so on,
+      \vskip1ex
+      \emph{Dynamic} scoping means that variables are evaluated in the environment from which the function was \emph{called},
+      \vskip1ex
+      The standard assignment operator "\texttt{<-}" modifies variables in the \emph{evaluation} environment,
+      \vskip1ex
+      The special assignment operator "\texttt{<<-}" modifies variables in the \emph{enclosing} environment,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+glob_var <- 1  # define a global variable
+func_scope <- function() {  # function for exploring scope
+  loc_var <- 2*glob_var  # define a local variable
+  new_globvar <<- 11  # define a global variable
+  cat('objects in evaluation environment:\t', 
+      ls(environment()), '\n')
+  cat('this is a local loc_var:\t', loc_var, '\n')
+  cat('objects in enclosing environment:\n', 
+      ls(parent.env(environment())), '\n')
+  cat('this is glob_var:\t', glob_var, '\n')
+  glob_var <- 10  # define local glob_var
+  cat('this is the local glob_var:\t', glob_var, '\n')
+}  # end func_scope
+func_scope()
+glob_var  # global variable is unaffected
+new_globvar  # new_globvar is preserved
+loc_var  # local variable is gone!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Super-assignment Operator "\texttt{<<-}"}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The super-assignment operator "\texttt{<<-}" modifies or creates variables in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping),
+      \vskip1ex
+      If the function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment and the "\texttt{<<-}" operator operates on variables in the \emph{global} environment,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+glob_var <- 1  # define a global variable
+func_scope <- function() {  # function for exploring scope
+  cat('this is the global glob_var:\t', glob_var, '\n')
+  glob_var <- 10  # define local 'glob_var' variable
+  glob_var <<- 2  # re-define the global variable
+  cat('this is a local glob_var:\t', glob_var, '\n')
+}  # end func_scope
+func_scope()
+glob_var  # the global variable
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{\secname\hskip0.5em as First Class Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -598,10 +555,10 @@ SumDots(1, 2, 3, 4)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-FuncStat <- function(FuncArg) {  # function is input
+FuncStat <- function(func_arg) {  # function is input
 # calculates statistic on random numbers
   set.seed(1)
-  FuncArg(runif(1e4))  # apply the function name
+  func_arg(runif(1e4))  # apply the function name
 }  # end FuncStat
 FuncStat(mean)
 FuncStat(sd)
@@ -679,7 +636,7 @@ m.totals
 %%%%%%%%%%%%%%%
 \subsection{The \texttt{apply()} Function with '\texttt{...}' Argument}
 \begin{frame}[fragile,t]{\subsecname}
-\vspace{-2em}
+\vspace{-1em}
 \begin{block}{}
   The '\texttt{...}' argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
   \begin{columns}[T]
@@ -752,7 +709,7 @@ FuncDots(FuncIn=function(x, y, z) {x*y*z}, 2, 3, 4)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-ts.rets <- 100*diff(log(EuStockMarkets))[, 1]  # DAX percent returns
+ts.rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
 library("moments")  # load library"moments"
 str(moment)  # get list of arguments
 moment(x=ts.rets, order=3)  # the moment function
@@ -1039,22 +996,22 @@ FunRobust(5)
 rm(list=ls())
 '+' (2, 3)  # infix operator applied using prefix syntax
 
-n.globvar <- 1  # define a global variable
-MyFunc <- function() {  # function for exploring scope
-  n.locvar <- 1  # define a local variable
-  new.globvar <<- 11  # define a global variable
+glob_var <- 1  # define a global variable
+func_scope <- function() {  # function for exploring scope
+  loc_var <- 1  # define a local variable
+  new_globvar <<- 11  # define a global variable
   cat('objects in parent environment:\t', 
       ls(parent.env(environment())), '\n')
   cat('objects in function environment:\t', 
       ls(environment()), '\n')
-  cat('this is n.globvar:\t', n.globvar, '\n')
-  n.globvar <- 10  # re-define the global variable
-  cat('this is re-defined n.globvar:\t', n.globvar, '\n')
-}  # end MyFunc
-MyFunc()
-n.globvar  # global variable is restored
-new.globvar  # new.globvar is preserved
-n.locvar  # local variable is gone!
+  cat('this is glob_var:\t', glob_var, '\n')
+  glob_var <- 10  # re-define the global variable
+  cat('this is re-defined glob_var:\t', glob_var, '\n')
+}  # end func_scope
+func_scope()
+glob_var  # global variable is restored
+new_globvar  # new_globvar is preserved
+loc_var  # local variable is gone!
       @
   \end{columns}
 \end{block}

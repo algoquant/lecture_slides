@@ -1,0 +1,163 @@
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[Backup Slides Deleted from Other Files]{Backup Slides Deleted from Other Files}
+\subtitle{FRE6871 R in Finance, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Backup Slides Deleted from Other Files}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Barplots in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{barplot()} creates bar plots of discrete data, such as frequency distributions,
+      \vskip1ex
+      The \emph{Poisson} distribution gives the probability of the number of events occurring in intervals of space or time (for example the amount of mail received each day),
+      \vskip1ex
+        The \emph{Poisson} distribution has one parameter $\lambda$ that determines the average number of events per interval,
+      \vskip1ex
+      The function \texttt{rpois()} produces random numbers from the Poisson distribution,
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
+        <<poisbarplot,fig.show='hide'>>=
+poisson_var <- rpois(100, 4)  # produce 100 Poisson random numbers
+pois_table <- table(poisson_var)  # calculate contingency table
+pois_table <- pois_table/sum(pois_table)  # calculate frequency table
+pois_table
+names(pois_table)  # get names of table
+
+# open Windows graphics device
+x11(width=11, height=7, title="function plot")
+
+# create histogram of Poisson variables
+library(MASS)
+truehist(poisson_var, nbins="FD", col="blue", xlab="No. of events", ylab="Frequency of events", main="Poisson histogram")
+# add Poisson density
+x_var <- 0:max(poisson_var)
+lines(x=x_var, y=dpois(x_var, lambda=4), lwd=4, col="red")
+# add legend
+legend(x="topright", legend="Poisson density",
+       title="", inset=0.05, cex=1.0, bg="white",
+       lwd=4, lty=1, col="red")
+
+graphics.off()  # close all graphics devices
+      @
+
+    \column{0.5\textwidth}
+    \vspace{-2em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/poisbarplot}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Poisson Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Poisson} distribution gives the probability of the number of events in intervals of space or time (for example the amount of mail received each day),
+      \vskip1ex
+      The Poisson probability function is given by:
+      \begin{displaymath}
+        P(k; \lambda) = \frac{{\lambda^k}{\cdot}{e^{-\lambda}}}{k!}
+      \end{displaymath}
+      The parameter $\lambda$ determines the average number of events per interval,
+        <<poiss_dist,echo=2:30,fig.show='hide'>>=
+rm(list=ls())
+poisson_func <- function(x, lambda) 
+                    {exp(-lambda)*lambda^x/factorial(x)}
+poisson_events <- 0:11  # Poisson events
+poisson_dist <- dpois(poisson_events, lambda=4)  # Poisson probabilities
+names(poisson_dist) <- as.character(poisson_events)
+poisson_dist
+x11(width=11, height=7, title="function plot")
+barplot(poisson_dist, ylab="Frequency of events", xlab="No. of events", main="Poisson distribution")
+curve(expr=poisson_func(x, lambda=4), add=TRUE, xlim=c(0, 11), ylab="", lwd=2, col="red")
+legend(x="topright", legend="Poisson density", title="", 
+       inset=0.1, cex=1.0, bg="white", lwd=4, lty=1, col="red")
+graphics.off()  # close all graphics devices
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/poiss_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
