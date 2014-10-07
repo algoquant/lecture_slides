@@ -4,9 +4,55 @@ par(las=1)  # set text printing to "horizontal"
 
 
 #################################
+### dates and time series
+#################################
+
+### create zoo objects
+
+## coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo_series) <- as.Date(365*(index(zoo_series)-1970))
+
+
+## coerce Garch data frame into zoo
+library(Ecdat)  # load package Ecdat
+head(Garch)
+# from field Garch$date create vector of strings in format "yyyy-mm-dd", using nested paste() and substring()
+zoo_index <- paste(paste(19, substring(Garch$date, 1, 2), sep=""), 
+                   substring(Garch$date, 3, 4), 
+                   substring(Garch$date, 5, 6), 
+                   sep="-")
+head(zoo_index)
+# coerce strings into POSIXct dates using as.POSIXct()
+zoo_index <- as.POSIXct(zoo_index)
+head(zoo_index)
+# create zoo object from field Garch$dm
+zoo_series <- zoo(Garch$dm, order.by=zoo_index)
+
+# count the number of NA values using is.na()
+sum(is.na(zoo_series))
+# remove NAs using na.omit()
+zoo_series <- na.omit(zoo_series)
+
+# save zoo to text file using write.zoo()
+write.zoo(zoo_series, file="zoo_series.txt")
+
+# subset zoo object using either logical operators or window()
+zoo_subindex <- (zoo_index > as.POSIXct("1982-01-01")) & (zoo_index < as.POSIXct("1986-01-01"))
+zoo_subseries <- zoo_series[zoo_subindex]
+# or
+zoo_subseries <- window(zoo_series, start=as.POSIXct("1982-01-01"), end=as.POSIXct("1984-01-01"))
+# plot zoo object and add title containing name of field Garch$dm, using paste() and colnames()
+plot(zoo_subseries, main=paste("rate", colnames(Garch)[3]))
+
+
+#################################
 ### Regression
 #################################
 
+
+### Regression
 # Draw a scatter plot
 plot(x,y, xlab="x axis", ylab="y axis", main="my plot", ylim=c(0,20), xlim=c(0,20), pch=15, col="blue")
 # fit a reg line to the points
@@ -17,10 +63,6 @@ summary(myline.fit)
 abline(myline.fit)
 
 
-# coerce mts object into zoo
-zoo.eustx <- as.zoo(EuStockMarkets)
-# coerce index into class 'Dates'
-index(zoo.eustx) <- as.Date(365*(index(zoo.eustx)-1970))
 
 
 #################################
@@ -28,14 +70,14 @@ index(zoo.eustx) <- as.Date(365*(index(zoo.eustx)-1970))
 #################################
 
 # ggplot2 in multiple panes
-autoplot(zoo.eustx, facets=Series ~ .)
+autoplot(zoo_series, facets=Series ~ .)
 
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 library(gridExtra)
 
 # ggplot2 in single pane
-ggp.zoo1 <- autoplot(zoo.eustx, main="Eu Stox", 
+ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox", 
                      facets=NULL) + xlab("") + 
   theme(legend.position=c(0.1, 0.5), 
         plot.title=element_text(vjust=-2.0), 
@@ -44,7 +86,7 @@ ggp.zoo1 <- autoplot(zoo.eustx, main="Eu Stox",
   )
 
 # ggplot2 in multiple panes
-ggp.zoo2 <- autoplot(zoo.eustx, main="Eu Stox", 
+ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox", 
                      facets=Series ~ .) + xlab("") + 
   theme(legend.position=c(0.1, 0.5), 
         plot.title=element_text(vjust=-2.0), 

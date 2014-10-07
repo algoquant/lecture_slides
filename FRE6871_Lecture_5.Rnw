@@ -1,0 +1,661 @@
+% FRE6871_Lecture_5
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6871 Lecture \#5]{FRE6871 R in Finance}
+\subtitle{Lecture \#5, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{October 6, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em as First Class Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Functions in \texttt{R} are \emph{first class objects}, which means they can be treated like any other \texttt{R} object:
+      \begin{itemize}
+        \item Functions can be passed as arguments to other functions,
+        \item Functions can be nested (defined inside other functions),
+        \item Functions can return functions as their return value,
+      \end{itemize}
+      \emph{Higher-order} functions are \texttt{R} functions that either take a function as input or return a function as output,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FuncStat <- function(func_arg) {  # function is input
+# calculates statistic on random numbers
+  set.seed(1)
+  func_arg(runif(1e4))  # apply the function name
+}  # end FuncStat
+FuncStat(mean)
+FuncStat(sd)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functionals with '\texttt{...}' Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \emph{Functionals} are functions that accept a function as its input argument,
+      \vskip1ex
+      The '\texttt{...}' argument in \emph{functionals} can be used to pass additional arguments to the function being called by the \emph{functional},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FuncDots <- function(FuncIn, ...) {
+# functional accepts function and additional '...' arguments
+  FuncIn(...)  # apply input function to '...' arguments
+}  # end FuncDots
+FuncDots(sum, 1, 2, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()}\hskip0.5em\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      An important example of \emph{functionals} are the \texttt{apply()} functions,
+      \vskip1ex
+      The function \texttt{apply()} returns the result of applying a function to the rows or columns of an array or matrix,
+      \vskip1ex
+      If \texttt{MARGIN=1} then the function will be applied over the matrix \emph{rows,}
+      \vskip1ex
+      If \texttt{MARGIN=2} then the function will be applied over the matrix \emph{columns},
+      \vskip1ex
+      The function \texttt{apply()} can replace '\texttt{for}' loops,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+str(apply)  # get list of arguments
+my_var <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
+my_var
+# sum the rows and columns
+row.sums <- apply(my_var, 1, sum)
+col.sums <- apply(my_var, 2, sum)
+m.totals <- cbind(c(sum(row.sums), row.sums), 
+                  rbind(col.sums, my_var))
+dimnames(m.totals) <- list(c("col.sums", "row1", "row2"), 
+                           c("row.sums", "col1", "col2", "col3"))
+m.totals
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()} Function with '\texttt{...}' Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  The '\texttt{...}' argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<echo=2:30>>=
+rm(list=ls())
+str(apply)  # get list of arguments
+my_var <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
+my_var
+apply(my_var, 2, sort)  # sort matrix columns
+apply(my_var, 2, sort, decreasing=TRUE)  # sort decreasing order
+      @
+    \column{0.5\textwidth}
+        <<>>=
+my_var[2, 2] <- NA  # introduce NA value
+my_var
+# calculate median of columns
+apply(my_var, 2, median)
+# calculate median of columns with na.rm=TRUE
+apply(my_var, 2, median, na.rm=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functionals with Anonymous Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} allows defining functions without assigning a name to them,
+      \vskip1ex
+      \emph{Anonymous} functions are functions that are not assigned to a name,
+      \vskip1ex
+      \emph{Anonymous} functions can be passed as arguments to \emph{functionals},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FuncDots <- function(..., FuncIn=function(x, y, z) {x+y+z}) {
+# functional accepts function and additional '...' arguments
+  FuncIn(...)  # apply input function to '...' arguments
+}  # end FuncDots
+FuncDots(FuncIn=sum, 2, 3, 4)
+FuncDots(2, 3, 4)
+FuncDots(2, 3, 4, 5)
+FuncDots(FuncIn=function(x, y, z) {x*y*z}, 2, 3, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()} Function with Anonymous Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{apply()} function combined with \emph{anonymous} functions can be used to loop over function parameters,
+      \vskip1ex
+  The '\texttt{...}' argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+ts.rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
+library("moments")  # load library"moments"
+str(moment)  # get list of arguments
+moment(x=ts.rets, order=3)  # the moment function
+v.orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
+# anonymous function allows looping over function parameters
+apply(X=v.orders, MARGIN=1, 
+      FUN=function(n.order) {moment(x=ts.rets, order=n.order)})
+# another way of passing data into moment() function
+apply(X=v.orders, MARGIN=1, FUN=moment, x=ts.rets)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Functions \texttt{lapply()} and  \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{lapply()} and  \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+      \vskip1ex
+      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+iris.list <- as.list(iris[1:5, 1:3])  # create list
+iris.list
+lapply(iris.list, mean)  # compute list of means of list elements
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# compute vector of means of list elements
+sapply(iris.list, mean)
+
+# create a matrix
+my_var <- matrix(sample(12), nrow=3, ncol=4)
+# calculate row sums
+apply(my_var, 1, sum)
+
+# now the same calculation using sapply
+sapply(1:nrow(my_var), function(n.row) {  # anonymous function
+    sum(my_var[n.row, ])
+  }  # end anonymous function
+)  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em That Return \secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions can also return a function as their value,
+      \vskip1ex
+      Functions returned by a function are called \emph{closures},
+      \vskip1ex
+      Functions that return closures can be used as \emph{function factories},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+FuncPower <- function(n.exp) {  # wrapper function
+# a power function factory
+  function(n.arg) {  # anonymous closure
+    n.arg^n.exp
+  }
+}  # end FuncPower
+FuncSquare <- FuncPower(2)  # define square power
+FuncSquare(4)
+FuncCube <- FuncPower(3)  # define cube power
+FuncCube(2)
+FuncCubeRoot <- FuncPower(1/3)  # define cube root
+FuncCubeRoot(8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mutable States}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{mutable state} is an object that is preserved between function calls,
+      \vskip1ex
+      Functions that return closures can also be used for creating \emph{mutable states},
+      \vskip1ex
+      A function \emph{evaluation} environment is only temporary and disappears after the function returns its value,
+      \vskip1ex
+      But a \emph{closure} assigned to a name maintains access to the environment in which it was created,
+      \vskip1ex
+      Therefore the \emph{closure} maintains access to its parent function's arguments and locally defined variables,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+MuteCounter <- function() {
+# counter function with mutable state
+  i.count <- 0  # initialize counter
+  cat('counter = ', i.count)
+  function() {  # return anonymous advance function
+    i.count <<- i.count + 1  # advance counter
+    cat('counter = ', i.count)
+  }  # end advance function
+}  # end MuteCounter
+CounterOne <- MuteCounter()  # create new counter
+CounterOne()  # advance counter
+CounterOne()  # advance counter
+CounterTwo <- MuteCounter()  # create another counter
+CounterTwo()  # advance counter two
+CounterOne()  # advance counter one
+CounterTwo()  # advance counter two
+CounterOne()  # advance counter one
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pseudo-Random Generating Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \emph{Mutable states} can be used to implement pseudo-random number generators,
+        <<echo=2:30>>=
+rm(list=ls())
+RandomSeed <- function(seed) {  # seed must be an integer
+# Returns pseudo-random generating function based on logistic map
+# the formal argument 'seed' exists in the evaluation environment of RandomSeed
+  pseudo.random <- as.numeric(paste('0.', seed, sep=''))  # initialize
+  RandomVector <- function(n.rand=1) {  # assign function name for recursion
+# Returns a vector of pseudo-random numbers of length n.rand
+    pseudo.random <<- 4*pseudo.random*(1 - pseudo.random)  # logistic map
+    if(n.rand == 1) {
+      return(pseudo.random)
+    } else {
+      return(c(pseudo.random, RandomVector(n.rand - 1)))
+    }
+  }
+}  # end RandomSeed
+
+PseudoRandom <- RandomSeed(88)  # set seed
+PseudoRandom(10)  #  calculate vector of 10 pseudo-random numbers
+ls(environment(PseudoRandom))  # list objects in scope of PseudoRandom
+      @
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bank Account Using Mutable States}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-2em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+        <<echo=4:30>>=
+rm(list=ls())
+# the super-assignment operator '<<-' adjusts the balance
+# 'balance' exists in OpenAccount evaluation environment
+# bank account example (from Venables) demonstrates mutable states
+# 'balance' is persistent between function calls
+OpenAccount <- function(balance) {
+# returns function list for account operations
+  list(
+    deposit = function(amount) {  # make deposit
+      if(amount > 0) {
+        balance <<- balance + amount  # '<<-' super-assignment operator
+        cat(amount, "deposited. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("Deposits must be positive!\n")
+      }
+    },  # end deposit
+    withdraw = function(amount) {  # make withdrawal
+      if(amount <= balance) {
+        balance <<- balance - amount  # '<<-' super-assignment operator
+        cat(amount, "withdrawn. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("You don't have that much money!\n")
+      }
+    },  # end withdraw
+    get.balance = function() {  # get balance
+      cat("Your current balance is:", balance, "\n")
+    }  # end get.balance
+  )  # end list
+}  # end OpenAccount
+@
+    \column{0.5\textwidth}
+        <<>>=
+# perform account operations
+# open an account with 100 deposit
+my.account <- OpenAccount(100)
+ls(my.account)  # my.account is a list
+# add my.account to search path
+attach(my.account)
+withdraw(30)  # withdrawal to buy groceries
+deposit(100)  # deposit paycheck to account
+withdraw(200)  # withdrawal to buy Gucci bag
+get.balance()  # get account balance
+
+# list objects in scope of get.balance
+ls(environment(get.balance))
+
+detach(my.account)  # remove my.account from search path
+@
+  \end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{tseries} for Time Series Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<tseries_intro,echo=2:30,eval=TRUE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(tseries)  # load package tseries
+suppressWarnings(  # load MSFT data
+  zoo_msft <- get.hist.quote(instrument="MSFT", 
+                           start=Sys.Date()-365, 
+                           end=Sys.Date(), 
+                           origin="1970-01-01")
+  )  # end suppressWarnings
+class(zoo_msft)
+dim(zoo_msft)
+tail(zoo_msft, 4)
+
+sharpe(zoo_msft[, "Close"], r=0.01)  # calculate Sharpe ratio
+
+plot(zoo_msft[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/tseries_intro}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Time Series Data Using Package \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<zoo_plot_2y,echo=2:30,eval=TRUE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+suppressWarnings(  # load EUR/USD data
+  zoo.eurusd <- get.hist.quote(
+    instrument="EUR/USD", provider="oanda",
+    start=Sys.Date()-365, 
+    end=Sys.Date(), 
+    origin="1970-01-01")
+  )  # end suppressWarnings
+# bind and scrub data
+zoo_msfteur <- merge(zoo.eurusd, 
+                     zoo_msft[, "Close"])
+colnames(zoo_msfteur) <- c("EURUSD", "MSFT")
+zoo_msfteur <- 
+  zoo_msfteur[complete.cases(zoo_msfteur),]
+### plot with two "y" axes
+par(las=1)  # set text printing to "horizontal"
+# plot first ts
+plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
+# set range for second "y" axis
+par(usr=c(par("usr")[1:2], range(zoo_msfteur[,2])))
+lines(zoo_msfteur[, 2], col="red")  # second plot
+axis(side=4, col="red")  # second "y" axis on right
+# print axis labels
+mtext(colnames(zoo_msfteur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo_msfteur)[2], col="red", side=4, padj=-2, line=-3)
+title(main="EUR and MSFT")  # add title
+# add legend without box
+legend("bottomright", legend=colnames(zoo_msfteur), bg="white", 
+       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+
+##########
+
+# slightly different method using par(new=TRUE)
+# par(las=1)  # set text printing to "horizontal"
+# plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
+# par(new=TRUE)  # allow new plot on same chart
+# plot(zoo_msfteur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# axis(side=4, col="red")  # second "y" axis on right
+# mtext(colnames(zoo_msfteur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo_msfteur)[2], col="red", side=4, padj=-2, line=-3)
+# title(main="EUR and MSFT", line=-1)  # add title
+# legend("bottomright", legend=colnames(zoo_msfteur), 
+#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# "x" axis with monthly ticks - doesn't work
+# plot first ts wthout "x" axis
+# plot(zoo_msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
+# # add "x" axis with monthly ticks
+# month.ticks <- unique(as.yearmon(index(zoo.eurusd)))
+# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
+
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_plot_2y}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has a number of different time series classes:
+      \begin{itemize}
+        \item Class \texttt{ts} from base package \texttt{stats},
+        \item Class \texttt{zoo} ordered observations,
+        \item Class \texttt{xts} extension of \texttt{zoo} class,
+        \item Class \texttt{timeSeries} from the \emph{Rmetrics} suite,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=1:30>>=
+ts_msft <- as.ts(zoo_msft)
+class(ts_msft)
+# rename colnames
+colnames(ts_msft) <- paste0("MSFT.", colnames(ts_msft))
+tail(ts_msft, 4)
+
+library(timeSeries)
+tser_msft <- as.timeSeries(zoo_msft)
+class(ts_msft)
+tail(tser_msft, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+\begin{block}{Required}
+  \begin{itemize}
+    \item Download the \texttt{zoo} Quickref manual from CRAN, and read how to query the Oanda database,
+    \item Download from Yahoo the EOD CLOSE quotes for \texttt{MSFT} stock, starting from Sep/01/2013,
+    \item Download from Oanda the EOD CLOSE quotes for \texttt{eur} currency, starting from Sep/01/2013,
+    \item Smooth each time series using \texttt{rollmean()} over an 11 period window,
+    \item Replace \texttt{NA} values using \texttt{na.locf()}, first going forward, and then backward in time,
+    \item Plot each time series combined with its smoothed version,
+    \item Bind the two original time series together using \texttt{merge()},
+    \item Remove observations containing \texttt{NA} values,
+    \item Plot the \texttt{MSFT} stock and \texttt{eur} currency time series together on a plot with two \texttt{y} axes,
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}
+    \item Read chapters 7, 12: \fullcite{website:rintro}
+    \item Read chapters 10, 11, 12: \citetitle{matlofftexbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
