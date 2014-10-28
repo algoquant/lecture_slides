@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -80,24 +80,31 @@ knit_theme$set(thm)
     \column{0.4\textwidth}
       \texttt{R} has a \texttt{Date} class for date objects (but without time),
       \vskip1ex
-      The function \texttt{as.Date()} converts a character string into a date object,
+      The function \texttt{as.Date()} parses a \texttt{character} string into a date object,
       \vskip1ex
-      \texttt{R} stores \texttt{Date} objects as the number of days since January 1, 1970,
+      \texttt{R} stores \texttt{Date} objects as the number of days since the \texttt{epoch} (January 1, 1970),
+      \vskip1ex
+      \texttt{Numeric} objects can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()},
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
 Sys.Date()  # get today's date
-date_time <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
 date_time
-class(date_time)
-as.Date("06-15-2013", "%m-%d-%Y")  # specify format
+class(date_time)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # specify format
 date_time + 20  # add 20 days
 as.numeric(date_time)  # get internal integer representation
-some.date <- as.Date("11/22/2013", "%m/%d/%Y")
-some.date
+date_old <- as.Date("07/14/2013", "%m/%d/%Y")
+date_old
 # difference between dates
-difftime(some.date, date_time, units="weeks")
+difftime(date_time, date_old, units="weeks")
 weekdays(date_time)  # get day of the week
+# coerce numeric into date-times
+date_time <- 0
+attributes(date_time) <- list(class="Date")
+date_time  # "Date" object
+structure(0, class="Date")  # "Date" object
       @
   \end{columns}
 \end{block}
@@ -106,21 +113,19 @@ weekdays(date_time)  # get day of the week
 
 
 %%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXct} Date and Time Objects}
+\subsection{\texttt{POSIXct} Date-time Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXct} for date and time objects,
+      \texttt{R} has a class \texttt{POSIXct} for Date-time (date-time) objects,
       \vskip1ex
-      The function \texttt{as.POSIXct()} converts a character string into a \texttt{POSIXct} object,
+      The function \texttt{as.POSIXct()} parses a \texttt{character} string into a \texttt{POSIXct} object,
       \vskip1ex
-      \texttt{format.POSIXct()} converts \texttt{POSIXct} objects to character strings,
+      \texttt{format.POSIXct()} parses \texttt{POSIXct} objects to \texttt{character} strings,
       \vskip1ex
-      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the epoch (January 1, 1970 UTC),
-      \vskip1ex
-      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the \texttt{epoch} (January 1, 1970 UTC),
       \vskip1ex
       \texttt{POSIX} is an acronym for "Portable Operating System Interface",
     \column{0.7\textwidth}
@@ -128,10 +133,10 @@ weekdays(date_time)  # get day of the week
       <<>>=
 date_time <- Sys.time()  # get today's date and time
 date_time
-class(date_time)  # date and time is are POSIXct objects
+class(date_time)  # POSIXct object
 as.numeric(date_time)  # get internal integer representation
-# convert character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-as.POSIXct("2014-08-15 15:30:10")
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2014-07-14 13:30:10")
 format(date_time)  # convert POSIXct to character string
 class(format(date_time))  # character string
 date_time + 20  # add 20 seconds
@@ -148,28 +153,28 @@ trunc.POSIXt
 
 
 %%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXlt} Date and Time Objects}
+\subsection{\texttt{POSIXlt} Date-time Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXlt} for date and time objects,
+      \texttt{R} has a class \texttt{POSIXlt} for \texttt{date-time} objects,
       \vskip1ex
       \texttt{R} stores \texttt{POSIXlt} objects as a list,
       \vskip1ex
-      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,
+      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
       \vskip1ex
-      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
       \vskip1ex
       \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes of the more general \texttt{POSIXt} class,
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
-# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2013-06-15 18:30:10")
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
 date_time
-class(date_time)
+class(date_time)  # POSIXlt object
 aperm(as.matrix(unclass(date_time)))  # get internal representation
 
 date_time + 20  # add 20 seconds
@@ -182,30 +187,91 @@ class(date_time + 20)  # implicit coercion to POSIXct
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Zones and Class Conversion}
+\subsection{Time Zones and Date-time Conversion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Date objects require a time zone to be specified,
+      For \texttt{date-time} objects to be uniquely specified, they require a time zone,
+      \vskip1ex
+      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      \texttt{EST} stands for "Eastern Standard Time", \texttt{UTC} - 5 hours,
+      \vskip1ex
+      \texttt{EDT} stands for "Eastern Daylight Time", \texttt{UTC} - 4 hours,
       \vskip1ex
       The function \texttt{Sys.setenv()} can be used to set the default time zone,
+      \vskip1ex
+      \texttt{format()} converts \texttt{date-time} objects to \texttt{character} strings, given a time zone,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+Sys.timezone()  # get time-zone
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+date_time <- Sys.time()  # today's date and time
+# convert to character in different TZ
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# parse back to POSIXct
+as.POSIXct(format(date_time, tz="America/New_York"))
+# difference between local time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) - 
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXt} Class and Class Coercion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXlt} for \texttt{date-time} objects,
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class
+      POSIXct is internally a \texttt{numeric} value that allows \texttt{numeric} calculations,
+      POSIXlt is internally a list
+      beware of coercion to \texttt{POSIXct},
+      coercion between the two \texttt{date-time} classes requires a timezone,
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
 Sys.time()  # get today's date and time
 Sys.timezone()  # get time-zone
 Sys.setenv(tz="UTC")  # set time-zone to UTC
-Sys.timezone()  # get time-zone
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2014-07-14 18:30:10")
+Sys.setenv(tz="America/New_York")  # set time-zone to "New York"
+date_time <- as.POSIXlt("2014-07-14 18:30:10", tz="America/New_York")
+date_time
+class(date_time)  # POSIXlt object
+date_time + 20  # add 20 seconds
 
-format(date_time, tz="EDT")  # convert to character in different TZ
+class(as.POSIXlt("2014-07-14")+3600)  # coercion to POSIXct
 
-as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
-
-Sys.setenv(tz="America/New_York")  # set time-zone to EDT
-format(Sys.time(), tz="")
-format(Sys.time(), tz="UTC")
+as.numeric(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXlt(format(date_time, tz="UTC"))  # parse back to POSIXlt
 as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
   as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
       @
@@ -216,49 +282,170 @@ as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
 
 
 %%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXt} Class and Class Conversion}
+\subsection{Manipulating Date-time Objects Using \texttt{lubridate}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXlt} for date and time objects,
+    \column{0.4\textwidth}
+      The package \texttt{lubridate} contains functions for converting and manipulating date-time objects,
       \vskip1ex
-      The function \texttt{as.POSIXlt()} converts a character string into a \texttt{POSIXlt} object,
+      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} objects into \texttt{POSIXct} objects,
       \vskip1ex
-      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to character strings,
+      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components,
       \vskip1ex
-      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} objects,
       \vskip1ex
-      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
-      \vskip1ex
-      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class
-      POSIXct is internally a numeric value that allows numeric calculations,
-      POSIXlt is internally a list
-      beware of coercion to \texttt{POSIXct},
-      conversions between the two date-time classes requires a timezone,
-      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
-    \column{0.7\textwidth}
+      The function \texttt{date\_decimal()} converts \texttt{numeric} objects into \texttt{POSIXct} objects,
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-Sys.time()  # get today's date and time
-Sys.timezone()  # get time-zone
-Sys.setenv(tz="UTC")  # set time-zone to UTC
-# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-as.POSIXlt("2013-06-15 18:30:10")
-Sys.setenv(tz="America/New_York")  # set time-zone to EDT
-date_time <- as.POSIXlt("2013-06-15 18:30:10", tz="America/New_York")
+library(lubridate)  # load lubridate
+# parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+date_time <- mdy("07-14-2014", tz="America/New_York")
 date_time
-class(date_time)
-date_time + 20  # add 20 seconds
+class(date_time)  # POSIXct object
+dmy("14.07.2014", tz="America/New_York")
 
-class(as.POSIXlt("2014-08-19")+3600)  # coercion to POSIXct
+# parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y", 
+                        tz="America/New_York")
+dmy(14072014, tz="America/New_York")
 
-as.numeric(date_time)  # get internal integer representation
-format(date_time, tz="UTC")  # convert to character in different TZ
-as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
-as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
-  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
+# parse decimal to date-times
+decimal_date(date_time)
+date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(date_time), tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones Using \texttt{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{lubridate} simplifies time zone calculations,
+      \vskip1ex
+      The \emph{moment of time} is the time in the \texttt{UTC} time zone,
+      \vskip1ex
+      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local time zone,
+      \vskip1ex
+      The same \emph{moment of time} corresponds to different \emph{clock times} in different time zones,
+      \vskip1ex
+      The same \emph{clock times} in different time zones correspond to different \emph{moments of time},
+      \vskip1ex
+      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different time zone,
+      \vskip1ex
+      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different time zone,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, 
+                     tz="America/New_York")
+date_time
+
+# get same moment of time in "UTC" time zone
+with_tz(date_time, "UTC")
+as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
+
+# get same clock time in "UTC" time zone
+force_tz(date_time, "UTC")
+as.POSIXct(format(date_time), tz="UTC")
+
+# same moment of time
+date_time - with_tz(date_time, "UTC")
+
+# different moments of time
+date_time - force_tz(date_time, "UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{lubridate} Time Span Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{lubridate} has two time span classes: \texttt{durations} and \texttt{periods},
+      \vskip1ex
+      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
+      \vskip1ex
+      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects,
+      \vskip1ex
+      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
+      \vskip1ex
+      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years,
+      \vskip1ex
+      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+library(lubridate)  # load lubridate
+# Daylight Savings Time handling periods vs durations
+date_time <- as.POSIXct("2013-03-09 11:00:00", 
+                        tz="America/New_York")
+date_time
+date_time + ddays(1)  # add duration
+date_time + days(1)  # add period
+
+leap_year(2012)  # leap year
+date_time <- dmy(01012012, tz="America/New_York")
+date_time
+date_time + dyears(1)  # add duration
+date_time + years(1)  # add period
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Time Spans to Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year,
+      \vskip1ex
+      Adding \texttt{periods} can create invalid dates,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, tz="America/New_York")
+date_time
+# add periods to a date-time
+c(date_time + seconds(1), date_time + minutes(1), 
+date_time + days(1), date_time + months(1))
+
+# create vectors of dates
+date_time <- ymd(20140714, tz="America/New_York")
+date_time + 0:2 * months(1)  # monthly dates
+date_time + months(0:2)
+date_time + 0:2 * months(2)  # bi-monthly dates
+date_time + seq(0, 5, by=2) * months(1)
+seq(date_time, length=3, by="2 months")
+
+# adding monthly periods can create invalid dates
+date_time <- ymd(20120131, tz="America/New_York")
+date_time + 0:2 * months(1)
+date_time + months(1)
+date_time + months(2)
       @
   \end{columns}
 \end{block}
@@ -272,11 +459,11 @@ as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
       \vskip1ex
       The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=2:30>>=
 library(zoo)  # load zoo
@@ -301,7 +488,7 @@ bus_index
 
 
 %%%%%%%%%%%%%%%
-\subsection{Review of Date and Time Classes in \texttt{R}}
+\subsection{Review of Date-time Classes in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -320,7 +507,7 @@ date_time <- Sys.Date()  # create date series of class 'Date'
 date_index <- date_time + 0:365  # daily series over one year
 head(date_index, 4)  # print first few dates
 format(head(date_index, 4), "%m/%d/%Y")  # print first few dates
-# create daily date and time series of class 'POSIXct'
+# create daily date-time series of class 'POSIXct'
 date_index <- seq(Sys.time(), by="days", length.out=365)
 head(date_index, 4)  # print first few dates
 format(head(date_index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
@@ -330,7 +517,7 @@ head(monthly_index, 4)  # print first few dates
 # create series of quarterly dates of class 'zoo'
 qrtly_index <- yearqtr(2010+0:16/4)
 head(qrtly_index, 4)  # print first few dates
-# convert quarterly 'zoo' dates to POSIXct
+# parse quarterly 'zoo' dates to POSIXct
 Sys.setenv(tz="UTC")
 as.POSIXct(head(qrtly_index, 4))
       @
@@ -372,7 +559,7 @@ title(main="Random Prices", line=-1)  # add title
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/ts_obj}
       \vspace{-5em}
-      The function \texttt{ts()} creates a \texttt{ts} time series object from a numeric vector or matrix containing the values, and associated \texttt{date-time} information (the number of years),
+      The function \texttt{ts()} creates a \texttt{ts} time series object from a \texttt{numeric} vector or matrix containing the values, and associated \texttt{date-time} information (the number of years),
   \end{columns}
 \end{block}
 
@@ -424,13 +611,13 @@ title(main="EuStockMarkets", line=-1)  # add title
         <<eustx_rets,echo=2:30,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # calculate percentage returns
-ts_rets <- diff(log(EuStockMarkets[, 1]))
+rets_series <- diff(log(EuStockMarkets[, 1]))
 # calculate mean and standard deviation of returns
-c(mean(ts_rets), sd(ts_rets))
+c(mean(rets_series), sd(rets_series))
 # plot histogram
-hist(ts_rets, breaks=30, main="", xlim=c(-0.04, 0.04), 
+hist(rets_series, breaks=30, main="", xlim=c(-0.04, 0.04), 
      ylim=c(0, 60), xlab="", ylab="", freq = FALSE)
-lines(density(ts_rets),  # draw a line
+lines(density(rets_series),  # draw a line
       col='red', lwd=2)
 plot_title <- paste(colnames(EuStockMarkets)[1], 'returns')
 title(main=plot_title, line=-1)  # add title
@@ -460,16 +647,16 @@ title(main=plot_title, line=-1)  # add title
         <<eustx_qq,echo=2:30,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # calculate percentage returns
-ts_rets <- diff(log(EuStockMarkets[, 1]))
+rets_series <- diff(log(EuStockMarkets[, 1]))
 # create normal Q-Q plot
-qqnorm(ts_rets, ylim=c(-0.04, 0.04), 
+qqnorm(rets_series, ylim=c(-0.04, 0.04), 
        xlab='Normal Quantiles', main='')
 # fit a line to the normal quantiles
-qqline(ts_rets, col='red', lwd=2)
+qqline(rets_series, col='red', lwd=2)
 plot_title <- paste(colnames(EuStockMarkets)[1], 
                   'Q-Q Plot')
 title(main=plot_title, line=-1)  # add title
-shapiro.test(ts_rets)  # Shapiro-Wilk test
+shapiro.test(rets_series)  # Shapiro-Wilk test
       @
 
     \column{0.5\textwidth}
@@ -491,15 +678,15 @@ shapiro.test(ts_rets)  # Shapiro-Wilk test
     \column{0.5\textwidth}
       The package \texttt{zoo} is designed for managing \emph{time series} and ordered objects,
       \vskip1ex
-      The function \texttt{zoo()} creates a \texttt{zoo} object from a numeric vector or matrix, and an associated \texttt{date-time} index,
+      The function \texttt{zoo()} creates a \texttt{zoo} object from a \texttt{numeric} vector or matrix, and an associated \texttt{date-time} index,
       \vskip1ex
-      The \texttt{zoo()} index is a vector of \texttt{date-time} objects, and can be from any date-time class,
+      The \texttt{zoo()} index is a vector of \texttt{date-time} objects, and can be from any \texttt{date-time} class,
       <<zoo_ts,echo=3:30,fig.show='hide'>>=
 set.seed(1121)  # initialize the random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # create index of daily dates
-date_index <- seq(from=as.Date("2013-06-15"), 
+date_index <- seq(from=as.Date("2014-07-14"), 
                   by="day", length.out=1000)
 # create zoo time series
 zoo_series <- zoo(cumsum(rnorm(length(date_index))), 
@@ -819,39 +1006,37 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{ts} Objects Into \texttt{zoo}}
+\subsection{Coercing Time Series Objects Into \texttt{zoo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{ts} time series can be coerced into \texttt{zoo} objects using the generic function \texttt{as.zoo},
+      The generic function \texttt{as.zoo} converts objects into \texttt{zoo} time series,
       \vskip1ex
-      But this creates a \texttt{zoo} object with a numeric \texttt{date-time} index
-
-      The function \texttt{zoo()} creates a \texttt{zoo} object from a numeric vector or matrix, and an associated \texttt{date-time} index,
+      Coercing a \texttt{ts} time series creates a \texttt{zoo} object with a \texttt{numeric} \texttt{date-time} index, with \texttt{date-time} encoded as a \texttt{year-fraction},
       \vskip1ex
-      The \texttt{zoo()} index is a vector of \texttt{date-time} objects, and can be from any date-time class,
-An extra step is required to 
-            beware of coercion to \texttt{POSIXct},
-      conversions between the two date-time classes requires a timezone,
-
-      There are two dedicated functions for managing \texttt{NA} values in time series: 
-      \begin{itemize}
-        \item \texttt{na.omit()} removes observations containing \texttt{NA} values,
-        \item \texttt{na.locf()} carries the last non-\texttt{NA} observation forward,
-      \end{itemize}
+      The \texttt{year-fraction} can be \emph{approximately} converted to a \texttt{Date} object by first calculating the number of days since the \texttt{epoch} (\texttt{1970}), and then coercing the \texttt{numeric} days using \texttt{as.Date()},
+      \vskip1ex
+      The function \texttt{date\_decimal()} from package \texttt{lubridate} converts \texttt{numeric} objects into \texttt{POSIXct} objects,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=2:30>>=
+      <<echo=4:30>>=
+library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
+# methods(as.zoo)  # many methods of coercing into zoo
 class(EuStockMarkets)  # multiple ts object
-# coerce mts object into zoo
+# convert mts object into zoo
 zoo_series <- as.zoo(EuStockMarkets)
 class(index(zoo_series))  # index is numeric
-# coerce index into class 'Dates'
+head(zoo_series, 3)
+# approximately convert index into class 'Dates'
 index(zoo_series) <- as.Date(365*(index(zoo_series)-1970))
-head(zoo_series)
+head(zoo_series, 3)
+# convert index into class 'Dates'
+zoo_series <- as.zoo(EuStockMarkets)
+index(zoo_series) <- date_decimal(index(zoo_series))
+head(zoo_series, 3)
       @
   \end{columns}
 \end{block}
@@ -901,17 +1086,18 @@ title(main="MSFT Close Prices", line=-1)  # add title
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-2em}
-      <<zoo_plot_2y,echo=2:30,eval=FALSE,fig.show='hide'>>=
+      <<zoo_plot_2y,echo=3:30,eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(tseries)  # load package tseries
 suppressWarnings(  # load EUR/USD data
-  zoo.eurusd <- get.hist.quote(
+  zoo_eurusd <- get.hist.quote(
     instrument="EUR/USD", provider="oanda",
     start=Sys.Date()-365, 
     end=Sys.Date(), 
     origin="1970-01-01")
   )  # end suppressWarnings
 # bind and scrub data
-zoo_msfteur <- merge(zoo.eurusd, 
+zoo_msfteur <- merge(zoo_eurusd, 
                      zoo_msft[, "Close"])
 colnames(zoo_msfteur) <- c("EURUSD", "MSFT")
 zoo_msfteur <- 
@@ -920,7 +1106,7 @@ zoo_msfteur <-
 par(las=1)  # set text printing to "horizontal"
 # plot first ts
 plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
-# set range for second "y" axis
+# set range of "y" coordinates for second axis
 par(usr=c(par("usr")[1:2], range(zoo_msfteur[,2])))
 lines(zoo_msfteur[, 2], col="red")  # second plot
 axis(side=4, col="red")  # second "y" axis on right
@@ -953,7 +1139,7 @@ legend("bottomright", legend=colnames(zoo_msfteur), bg="white",
 # plot first ts wthout "x" axis
 # plot(zoo_msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
 # # add "x" axis with monthly ticks
-# month.ticks <- unique(as.yearmon(index(zoo.eurusd)))
+# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
 # axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
 
       @

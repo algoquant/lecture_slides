@@ -1,0 +1,481 @@
+% FRE6871_Lecture_7
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6871 Lecture \#7]{FRE6871 R in Finance}
+\subtitle{Lecture \#7, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+\date{October 27, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{The \texttt{split-apply-combine} Procedure}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # extract list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{sapply()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{sapply()} function is a specialized version of the \texttt{apply()} function,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      \vskip1ex
+      When \texttt{sapply()} is given a data frame, it interprets it as a list, and applies the function to each element (column) of the data frame,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+sapply(6:10, sqrt)  # sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+
+# calculate means of iris data frame columns
+sapply(iris, mean)  # returns NA for Species
+
+# create a matrix
+mat_rix <- matrix(sample(100), ncol=4)
+# calculate column means using apply
+apply(mat_rix, 2, mean)
+
+# calculate column means using sapply, with anonymous function
+sapply(1:ncol(mat_rix), 
+       function(col_index) {  # anonymous function
+         mean(mat_rix[, col_index])
+  }  # end anonymous function
+)  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{lapply()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{lapply()} function is a specialized version of the \texttt{apply()} function,
+      \vskip1ex
+      \texttt{lapply()} applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The function \texttt{unlist()} converts a list into a vector,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+sapply(iris[, -5], mean)  # vector of means of numeric columns
+lapply(iris[, -5], mean)  # calculate means of numeric columns
+# calculate means of numeric columns using anonymous function
+unlist(lapply(iris, 
+              function(col_umn) {
+                if (is.numeric(col_umn)) mean(col_umn)
+              }  # end anonymous function
+              )  # end sapply
+       )  # end unlist
+unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?mtcars  # get information on mtcars - data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp   Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a factor (attribute),
+      \vskip1ex
+      The list's \texttt{names} attribute is made equal to the factor levels,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(iris$Species)  # Species takes on three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute),
+        \item applying a function to each list element,
+        \item combining the results,
+      \end{itemize}
+      The \texttt{split-apply-combine} procedure, by Hadley Wickham:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{figure/splitapply.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{tapply()} function applies a function to sub-vectors aggregated using a factor,
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
+      \vskip1ex
+      The \texttt{aggregate()} function applies a function to aggregations of an object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# split the mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# get mean mpg for each cylinder group
+unlist(lapply(split_cars, function(x) mean(x$mpg)))
+# Which is identical to the tapply function
+tapply(mtcars$mpg, mtcars$cyl, mean)
+# using "with" environment
+with(mtcars, tapply(mpg, cyl, mean))
+# can also use the functions by() and aggregate()
+with(mtcars, by(mpg, cyl, mean))
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Formula Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the "\texttt{+}" operator,
+      \vskip1ex
+      Formulas can be defined as separate objects, manipulated, and passed to functions,
+      \vskip1ex
+      For example the formula "\texttt{z} \textasciitilde{} \texttt{model}" means the response variable \texttt{z} is explained by the \texttt{model},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: $z = ax  + by + c$,
+      \vskip1ex
+      The formula "\texttt{y \textasciitilde{} x - 1}" or "\texttt{y \textasciitilde{} x + 0}" represents a linear model with zero intercept: $y = ax$,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=1:30>>=
+# linear model with zero intercept
+my_form <- z ~ x + y -1
+my_form
+
+# formula from text string
+my_form <- as.formula(  # coerce text strings to formula
+              paste("y ~ ", 
+                paste(paste0("x", 1:5), collapse="+")
+                )  # end paste
+            )  # end as.formula
+class(my_form)
+my_form
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simple Regression Example}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \emph{null} hypothesis for linear regression is that the regression coefficients are \emph{zero},
+      \vskip1ex
+      The function \texttt{lm()} from the base package \texttt{stats} fits a linear model (regression) into the data,
+      \vskip1ex
+      A small \emph{p}-value for a given coefficient means that this coefficient is very likely to be non-zero,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=3:30,fig.show='hide'>>=
+# rm(list=ls())
+set.seed(1121)  # initialize random number generator
+v.xvar <- 0.1*1:30  # independent variable
+v.yvar <- 3 + 2*v.xvar + rnorm(30)  # dependent variable plus noise
+my_form <- v.yvar ~ v.xvar  # specify model
+my_reg <- lm(my_form)  # perform regression
+summary(my_reg)  # regression summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting a Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Objects of class "\texttt{lm}" have their own plot method, designed to plot diagnostic tests,
+      \vskip1ex
+      Calling \texttt{plot()} and \texttt{abline()} on the regression formula produces a scatterplot with the regression line,
+        <<simple_reg,echo=6:30,fig.show='hide'>>=
+set.seed(1121)  # initialize random number generator
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # axis title and labels
+par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+indep_var <- 0.1*1:30
+depend_var <- 3 + 2*indep_var + rnorm(30)
+# perform regression
+simple_reg <- lm(depend_var ~ indep_var)
+
+# plot scatterplot
+plot(depend_var ~ indep_var)
+title(main="Simple Regression", line=-1)
+# add reg line
+abline(simple_reg, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simple_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting a Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+        <<scatter_plot,echo=6:30,fig.show='hide'>>=
+set.seed(1121)  # initialize random number generator
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # axis title and labels
+par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+attach(mtcars)  # add mtcars to search path
+# specify model of horsepower vs miles per gallon
+mtcars_model <- hp ~ mpg
+# plot scatterplot horsepower vs miles per gallon
+plot(mtcars_model, xlab="", ylab="", 
+     main="horsepower vs miles per gallon")
+
+# perform regression
+mtcars_reg <- lm(mtcars_model)
+# summary(mtcars_reg)  # regression summary
+abline(mtcars_reg, col="red")  # add reg line
+
+# add scatterplot using wordcloud labels 
+# to prevent label overlaps
+library(wordcloud)
+textplot(x=mtcars$mpg, y=mtcars$hp, words=rownames(mtcars))
+
+# don't forget to detach!!!
+detach(mtcars)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/scatter_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+\begin{block}{No homework!}
+  \hskip10.0em\includegraphics[scale=0.1]{figure/smile.png}
+\end{block}
+
+\begin{block}{Recommended}
+  \begin{itemize}
+    \item Read chapters 10: \fullcite{website:rintro}
+    \item Read chapters 13, 14: \citetitle{matlofftexbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

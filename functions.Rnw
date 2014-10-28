@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -131,7 +131,7 @@ env.new[['new_var1']]  # environments are subset like lists
         \item package environments,
         \item base environment,
       \end{itemize}
-      The function \texttt{search()} returns the current search path for \texttt{R} objects,
+      The function \texttt{search()} returns the search path for dereferencing \texttt{R} objects,
       \vskip1ex
       The function \texttt{attach()} attaches objects to the search path,
       \vskip1ex
@@ -150,13 +150,13 @@ env.new[['new_var1']]  # environments are subset like lists
 rm(list=ls())
 search()  # get search path for R objects
 loadedNamespaces()
-my_var <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
+my_list <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
                         'trees'=c('pine', 'oak', 'maple'))
-my_var$trees
-attach(my_var)
+my_list$trees
+attach(my_list)
 trees
 search()  # get search path for R objects
-detach(my_var)
+detach(my_list)
       @
   \end{columns}
 \end{block}
@@ -193,23 +193,23 @@ detach(my_var)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-MyFunc <- function(my_var1=2, my_var2=1) {  # define function MyFunc
+explore_func <- function(arg_var1=2, arg_var2=1) {  # define function explore_func
 # default values can be specified in the argument list
-  my_var1 + 2*my_var2
+  arg_var1 + 2*arg_var2
 # the function returns the last evaluated statement
-}  # end MyFunc
-MyFunc(my_var1=3, my_var2=2)  # match arguments by name
-MyFunc(3, 2)  # match arguments by position
-MyFunc()  # use default values of arguments
+}  # end explore_func
+explore_func(arg_var1=3, arg_var2=2)  # match arguments by name
+explore_func(3, 2)  # match arguments by position
+explore_func()  # use default values of arguments
 # define function that uses enclosure environment
-MyFunc <- function(my_var1=2, my_var2=1) {
+explore_func <- function(arg_var1=2, arg_var2=1) {
 # default values can be specified in the argument list
-  my_var1 + 2*my_var2 + glob_var
+  arg_var1 + 2*arg_var2 + glob_var
 # the function returns the last evaluated statement
-}  # end MyFunc
-MyFunc(3, 2)  # glob_var doesn't exist yet!
+}  # end explore_func
+explore_func(3, 2)  # glob_var doesn't exist yet!
 glob_var <- 10
-MyFunc(3, 2)  # now works
+explore_func(3, 2)  # now works
       @
   \end{columns}
 \end{block}
@@ -241,16 +241,16 @@ MyFunc(3, 2)  # now works
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-FibRec <- function(n.num) {
-  if (n.num > 2) {
-    fib.seq <- FibRec(n.num-1)  # recursion
+fibo_nacci <- function(seq_length) {
+  if (seq_length > 2) {
+    fib.seq <- fibo_nacci(seq_length-1)  # recursion
     c(fib.seq, sum(tail(fib.seq, 2)))  # return this
   } else {
     c(1, 1)  # initialize and return
   }
-}  # end FibRec
-FibRec(10)
-tail(FibRec(10), 2)
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(10), 2)
       @
   \end{columns}
 \end{block}
@@ -276,22 +276,23 @@ tail(FibRec(10), 2)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-ts.rets <- diff(log(EuStockMarkets[, 1]))  # DAX returns
+rets_series <- diff(log(EuStockMarkets[, 1]))  # DAX returns
 
-# define function CalcSkew to calculate the skew
-CalcSkew <- function(ts.data=rnorm(1000)) {  # default is normal
+# define function calc_skew to calculate the skew
+calc_skew <- function(time_series=rnorm(1000)) {  # default is normal
 # Calculates the skew of a time series of returns.
-  i.num <- length(ts.data)  # number of observations
-  n.mean <- mean(ts.data)
-  n.sd <- sd(ts.data)
+  length_series <- length(time_series)  # number of observations
+  mean_series <- mean(time_series)
+  sd_series <- sd(time_series)
 # the last statement is what is returned
-  i.num*sum(((ts.data - n.mean)/n.sd)^3)/((i.num-1)*(i.num-2))
-}  # end CalcSkew
+  length_series*sum(((time_series - mean_series)/sd_series)^3)/
+  ((length_series-1)*(length_series-2))
+}  # end calc_skew
 
 # calculate skewness of DAX returns
-CalcSkew(ts.data=ts.rets)  # match arguments by name
-CalcSkew(ts.rets)  # match arguments by position
-CalcSkew()  # use default value of arguments
+calc_skew(time_series=rets_series)  # match arguments by name
+calc_skew(rets_series)  # match arguments by position
+calc_skew()  # use default value of arguments
       @
   \end{columns}
 \end{block}
@@ -314,9 +315,9 @@ CalcSkew()  # use default value of arguments
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
-CalcSkew  # show the function code
+calc_skew  # show the function code
 
-getAnywhere(CalcSkew)  # display function
+getAnywhere(calc_skew)  # display function
       @
   \end{columns}
 \end{block}
@@ -340,17 +341,17 @@ getAnywhere(CalcSkew)  # display function
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-MyFunc <- function(my_var1, my_var2) {  # define function MyFunc
-  2*my_var1  # just multiply first argument
-}  # end MyFunc
-MyFunc(3, 2)  # match arguments by position
-MyFunc(3)  # second argument was never evaluated!
-MyFunc <- function(my_var1, my_var2) {  # define function MyFunc
-  cat(my_var1, '\n')  # write to output
-  cat(my_var2)  # write to output
-}  # end MyFunc
-MyFunc(3, 2)  # match arguments by position
-MyFunc(3)  # first argument written to output
+lazy_func <- function(arg_var1, arg_var2) {  # define function lazy_func
+  2*arg_var1  # just multiply first argument
+}  # end lazy_func
+lazy_func(3, 2)  # match arguments by position
+lazy_func(3)  # second argument was never evaluated!
+lazy_func <- function(arg_var1, arg_var2) {  # define function lazy_func
+  cat(arg_var1, '\n')  # write to output
+  cat(arg_var2)  # write to output
+}  # end lazy_func
+lazy_func(3, 2)  # match arguments by position
+lazy_func(3)  # first argument written to output
       @
   \end{columns}
 \end{block}
@@ -374,14 +375,14 @@ MyFunc(3)  # first argument written to output
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-MySum <- function(my_var1=2, my_var2=1, ...) {  # define function MySum
+match_dots <- function(arg_var1=2, arg_var2=1, ...) {  # define function match_dots
 # default values can be specified in the argument list
-  my_var1 + 2*my_var2 + sum(...)
+  arg_var1 + 2*arg_var2 + sum(...)
 # the function returns the last evaluated statement
-}  # end MySum
-MySum(3, 2)  # match arguments by position
-MySum(3, 2, 5, 8)  # extra arguments
-MySum()  # use default value of arguments
+}  # end match_dots
+match_dots(3, 2)  # match arguments by position
+match_dots(3, 2, 5, 8)  # extra arguments
+match_dots()  # use default value of arguments
 str(paste)  # function 'paste' can take many arguments
 paste('a', 'b', sep = ':')  # match arguments by name
 paste('a', 'b', se = ':')  # partial name matching fails!
@@ -404,15 +405,15 @@ paste('a', 'b', se = ':')  # partial name matching fails!
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-SumDots <- function(my_var, ...) {  # define recursive function
+sum_dots <- function(arg_var, ...) {  # define recursive function
 # returns the sum of its argument list
   if (length(list(...)) == 0) {
-    return(my_var)  # just one argument left
+    return(arg_var)  # just one argument left
   } else {
-    my_var + SumDots(...)  # sum remaining arguments
+    arg_var + sum_dots(...)  # sum remaining arguments
   }
-}  # end SumDots
-SumDots(1, 2, 3, 4)
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
       @
   \end{columns}
 \end{block}
@@ -440,7 +441,7 @@ SumDots(1, 2, 3, 4)
 rm(list=ls())
 glob_var <- 1  # define a global variable
 ls(environment())  # get all variables in environment
-func_env <- function() {  # function for exploring environments
+func_env <- function() {  # explore function environments
   loc_var <- 1  # define a local variable
   cat('objects in evaluation environment:\t', 
       ls(environment()), '\n')
@@ -484,7 +485,7 @@ environment(print)  # package namespace is the enclosure
         <<echo=2:30>>=
 rm(list=ls())
 glob_var <- 1  # define a global variable
-func_scope <- function() {  # function for exploring scope
+probe_scope <- function() {  # explore function scope
   loc_var <- 2*glob_var  # define a local variable
   new_globvar <<- 11  # define a global variable
   cat('objects in evaluation environment:\t', 
@@ -495,8 +496,8 @@ func_scope <- function() {  # function for exploring scope
   cat('this is glob_var:\t', glob_var, '\n')
   glob_var <- 10  # define local glob_var
   cat('this is the local glob_var:\t', glob_var, '\n')
-}  # end func_scope
-func_scope()
+}  # end probe_scope
+probe_scope()
 glob_var  # global variable is unaffected
 new_globvar  # new_globvar is preserved
 loc_var  # local variable is gone!
@@ -522,13 +523,13 @@ loc_var  # local variable is gone!
         <<echo=2:30>>=
 rm(list=ls())
 glob_var <- 1  # define a global variable
-func_scope <- function() {  # function for exploring scope
+probe_scope <- function() {  # explore function scope
   cat('this is the global glob_var:\t', glob_var, '\n')
   glob_var <- 10  # define local 'glob_var' variable
   glob_var <<- 2  # re-define the global variable
   cat('this is a local glob_var:\t', glob_var, '\n')
-}  # end func_scope
-func_scope()
+}  # end probe_scope
+probe_scope()
 glob_var  # the global variable
       @
   \end{columns}
@@ -553,15 +554,15 @@ glob_var  # the global variable
       \emph{Higher-order} functions are \texttt{R} functions that either take a function as input or return a function as output,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-FuncStat <- function(func_arg) {  # function is input
+        <<>>=
+# create functional that accepts a function as input argument
+func_tional <- function(func_arg) {
 # calculates statistic on random numbers
   set.seed(1)
   func_arg(runif(1e4))  # apply the function name
-}  # end FuncStat
-FuncStat(mean)
-FuncStat(sd)
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
       @
   \end{columns}
 \end{block}
@@ -583,11 +584,11 @@ FuncStat(sd)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-FuncDots <- function(FuncIn, ...) {
+func_tional <- function(func_arg, ...) {
 # functional accepts function and additional '...' arguments
-  FuncIn(...)  # apply input function to '...' arguments
-}  # end FuncDots
-FuncDots(sum, 1, 2, 3)
+  func_arg(...)  # apply input function to '...' arguments
+}  # end func_tional
+func_tional(sum, 1, 2, 3)
       @
   \end{columns}
 \end{block}
@@ -616,16 +617,16 @@ FuncDots(sum, 1, 2, 3)
         <<echo=2:30>>=
 rm(list=ls())
 str(apply)  # get list of arguments
-my_var <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
-my_var
+mat_rix <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
+mat_rix
 # sum the rows and columns
-row.sums <- apply(my_var, 1, sum)
-col.sums <- apply(my_var, 2, sum)
-m.totals <- cbind(c(sum(row.sums), row.sums), 
-                  rbind(col.sums, my_var))
-dimnames(m.totals) <- list(c("col.sums", "row1", "row2"), 
-                           c("row.sums", "col1", "col2", "col3"))
-m.totals
+row_sums <- apply(mat_rix, 1, sum)
+col_sums <- apply(mat_rix, 2, sum)
+mat_rix <- cbind(c(sum(row_sums), row_sums), 
+                  rbind(col_sums, mat_rix))
+dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"), 
+                           c("row_sums", "col1", "col2", "col3"))
+mat_rix
       @
   \end{columns}
 \end{block}
@@ -638,25 +639,49 @@ m.totals
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  The '\texttt{...}' argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
   \begin{columns}[T]
     \column{0.5\textwidth}
-      <<echo=2:30>>=
-rm(list=ls())
+      The '\texttt{...}' argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+      <<>>=
 str(apply)  # get list of arguments
-my_var <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
-my_var
-apply(my_var, 2, sort)  # sort matrix columns
-apply(my_var, 2, sort, decreasing=TRUE)  # sort decreasing order
+mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
+mat_rix
+apply(mat_rix, 2, sort)  # sort matrix columns
+apply(mat_rix, 2, sort, decreasing=TRUE)  # sort decreasing order
       @
     \column{0.5\textwidth}
         <<>>=
-my_var[2, 2] <- NA  # introduce NA value
-my_var
+mat_rix[2, 2] <- NA  # introduce NA value
+mat_rix
 # calculate median of columns
-apply(my_var, 2, median)
+apply(mat_rix, 2, median)
 # calculate median of columns with na.rm=TRUE
-apply(my_var, 2, median, na.rm=TRUE)
+apply(mat_rix, 2, median, na.rm=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Anonymous Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} allows defining functions without assigning a name to them,
+      \vskip1ex
+      \emph{Anonymous} functions are functions that are not assigned to a name,
+      \vskip1ex
+      \emph{Anonymous} functions can be passed as arguments to \emph{functionals},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# simple anonymous function
+(function(x) (x + 3)) (10)
+
       @
   \end{columns}
 \end{block}
@@ -671,23 +696,30 @@ apply(my_var, 2, median, na.rm=TRUE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      \texttt{R} allows defining functions without assigning a name to them,
+      \emph{Anonymous} functions are most often passed as arguments to \emph{functionals},
       \vskip1ex
-      \emph{Anonymous} functions are functions that are not assigned to a name,
-      \vskip1ex
-      \emph{Anonymous} functions can be passed as arguments to \emph{functionals},
+      \emph{Anonymous} functions can also be used as default values for function arguments,
     \column{0.7\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-FuncDots <- function(..., FuncIn=function(x, y, z) {x+y+z}) {
+      \vspace{-2em}
+        <<>>=
 # functional accepts function and additional '...' arguments
-  FuncIn(...)  # apply input function to '...' arguments
-}  # end FuncDots
-FuncDots(FuncIn=sum, 2, 3, 4)
-FuncDots(2, 3, 4)
-FuncDots(2, 3, 4, 5)
-FuncDots(FuncIn=function(x, y, z) {x*y*z}, 2, 3, 4)
+func_tional <- function(func_arg, ...) {
+  func_arg(...)  # apply input function to '...' arguments
+}  # end func_tional
+func_tional(sum, 2, 3, 4)
+func_tional(mean, 1:10)
+func_tional((func_arg=function(x) (x + 3)), 5)
+# anonymous function can be a default value
+func_tional <- function(..., 
+                        func_arg=function(x, y, z) {x+y+z}) {
+  func_arg(...)  # apply input function to '...' arguments
+}  # end func_tional
+func_tional(2, 3, 4)  # use default func_arg
+func_tional(func_arg=sum, 2, 3, 4)  # func_arg matched by name
+func_tional(func_arg=sum, 2, 3, 4, 5)
+func_tional(2, 3, 4, 5)
+# pass anonymous function to func_arg
+func_tional(func_arg=function(x, y, z) {x*y*z}, 2, 3, 4)
       @
   \end{columns}
 \end{block}
@@ -709,16 +741,23 @@ FuncDots(FuncIn=function(x, y, z) {x*y*z}, 2, 3, 4)
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-ts.rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
+rets_series <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
 library("moments")  # load library"moments"
 str(moment)  # get list of arguments
-moment(x=ts.rets, order=3)  # the moment function
-v.orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
+
+moment(x=rets_series, order=3)  # apply moment function
+
+moment_orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
+
 # anonymous function allows looping over function parameters
-apply(X=v.orders, MARGIN=1, 
-      FUN=function(n.order) {moment(x=ts.rets, order=n.order)})
-# another way of passing data into moment() function
-apply(X=v.orders, MARGIN=1, FUN=moment, x=ts.rets)
+apply(X=moment_orders, MARGIN=1, 
+      FUN=function(moment_order) {
+          moment(x=rets_series, order=moment_order)
+        }  # end anonymous function
+      )  # end apply
+
+# another way of passing parameters into moment() function
+apply(X=moment_orders, MARGIN=1, FUN=moment, x=rets_series)
       @
   \end{columns}
 \end{block}
@@ -727,40 +766,69 @@ apply(X=v.orders, MARGIN=1, FUN=moment, x=ts.rets)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Functions \texttt{lapply()} and  \texttt{sapply()}}
+\subsection{The \texttt{sapply()} Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{lapply()} and  \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+    \column{0.3\textwidth}
+      The \texttt{sapply()} function is a specialized version of the \texttt{apply()} function,
       \vskip1ex
-      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
       \vskip1ex
-      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-iris.list <- as.list(iris[1:5, 1:3])  # create list
-iris.list
-lapply(iris.list, mean)  # compute list of means of list elements
-      @
-    \column{0.5\textwidth}
+      When \texttt{sapply()} is given a data frame, it interprets it as a list, and applies the function to each element (column) of the data frame,
+    \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
-# compute vector of means of list elements
-sapply(iris.list, mean)
+sapply(6:10, sqrt)  # sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+
+# calculate means of iris data frame columns
+sapply(iris, mean)  # returns NA for Species
 
 # create a matrix
-my_var <- matrix(sample(12), nrow=3, ncol=4)
-# calculate row sums
-apply(my_var, 1, sum)
+mat_rix <- matrix(sample(100), ncol=4)
+# calculate column means using apply
+apply(mat_rix, 2, mean)
 
-# now the same calculation using sapply
-sapply(1:nrow(my_var), function(n.row) {  # anonymous function
-    sum(my_var[n.row, ])
+# calculate column means using sapply, with anonymous function
+sapply(1:ncol(mat_rix), 
+       function(col_index) {  # anonymous function
+         mean(mat_rix[, col_index])
   }  # end anonymous function
 )  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{lapply()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{lapply()} function is a specialized version of the \texttt{apply()} function,
+      \vskip1ex
+      \texttt{lapply()} applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The function \texttt{unlist()} converts a list into a vector,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+sapply(iris[, -5], mean)  # vector of means of numeric columns
+lapply(iris[, -5], mean)  # calculate means of numeric columns
+# calculate means of numeric columns using anonymous function
+unlist(lapply(iris, 
+              function(col_umn) {
+                if (is.numeric(col_umn)) mean(col_umn)
+              }  # end anonymous function
+              )  # end sapply
+       )  # end unlist
+unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
       @
   \end{columns}
 \end{block}
@@ -782,20 +850,20 @@ sapply(1:nrow(my_var), function(n.row) {  # anonymous function
       Functions that return closures can be used as \emph{function factories},
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-FuncPower <- function(n.exp) {  # wrapper function
-# a power function factory
-  function(n.arg) {  # anonymous closure
-    n.arg^n.exp
+        <<>>=
+# define a power function factory
+make_func <- function(arg_param) {  # wrapper function
+  function(arg_var) {  # anonymous closure
+    arg_var^arg_param
   }
-}  # end FuncPower
-FuncSquare <- FuncPower(2)  # define square power
-FuncSquare(4)
-FuncCube <- FuncPower(3)  # define cube power
-FuncCube(2)
-FuncCubeRoot <- FuncPower(1/3)  # define cube root
-FuncCubeRoot(8)
+}  # end make_func
+
+square_func <- make_func(2)  # define square function
+square_func(4)
+cube_func <- make_func(3)  # define cube function
+cube_func(2)
+cube_root_func <- make_func(1/3)  # define cube root function
+cube_root_func(8)
       @
   \end{columns}
 \end{block}
@@ -821,25 +889,25 @@ FuncCubeRoot(8)
       Therefore the \emph{closure} maintains access to its parent function's arguments and locally defined variables,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-MuteCounter <- function() {
+        <<>>=
+make_counter <- function() {
 # counter function with mutable state
-  i.count <- 0  # initialize counter
-  cat('counter = ', i.count)
+  counter <- 0  # initialize counter
+  cat('counter = ', counter)
   function() {  # return anonymous advance function
-    i.count <<- i.count + 1  # advance counter
-    cat('counter = ', i.count)
+    counter <<- counter + 1  # advance counter
+    cat('counter = ', counter)
   }  # end advance function
-}  # end MuteCounter
-CounterOne <- MuteCounter()  # create new counter
-CounterOne()  # advance counter
-CounterOne()  # advance counter
-CounterTwo <- MuteCounter()  # create another counter
-CounterTwo()  # advance counter two
-CounterOne()  # advance counter one
-CounterTwo()  # advance counter two
-CounterOne()  # advance counter one
+}  # end make_counter
+
+advance_counter <- make_counter()  # create new counter
+advance_counter()  # advance counter
+advance_counter()  # advance counter
+advance_counter_two <- make_counter()  # create another counter
+advance_counter_two()  # advance counter two
+advance_counter()  # advance counter one
+advance_counter_two()  # advance counter two
+advance_counter()  # advance counter one
       @
   \end{columns}
 \end{block}
@@ -853,26 +921,27 @@ CounterOne()  # advance counter one
 \vspace{-1em}
 \begin{block}{}
   \emph{Mutable states} can be used to implement pseudo-random number generators,
-        <<echo=2:30>>=
-rm(list=ls())
-RandomSeed <- function(seed) {  # seed must be an integer
-# Returns pseudo-random generating function based on logistic map
-# the formal argument 'seed' exists in the evaluation environment of RandomSeed
-  pseudo.random <- as.numeric(paste('0.', seed, sep=''))  # initialize
-  RandomVector <- function(n.rand=1) {  # assign function name for recursion
-# Returns a vector of pseudo-random numbers of length n.rand
-    pseudo.random <<- 4*pseudo.random*(1 - pseudo.random)  # logistic map
-    if(n.rand == 1) {
-      return(pseudo.random)
+        <<>>=
+# Returns the pseudo-random generating function random_generator
+# the formal argument 'seed' persists in the evaluation environment of seed_random
+seed_random <- function(seed) {  # seed must be an integer
+  random_number <- as.numeric(paste0('0.', seed))  # initialize
+# random_generator returns a vector of pseudo-random numbers of length length_rand
+  random_generator <- function(length_rand=1) {  # assign function name for recursion
+# Returns a vector of pseudo-random numbers of length length_rand
+    random_number <<- 4*random_number*(1 - random_number)  # logistic map
+    if (length_rand==1) {
+      return(random_number)
     } else {
-      return(c(pseudo.random, RandomVector(n.rand - 1)))
-    }
-  }
-}  # end RandomSeed
+      return(c(random_number, random_generator(length_rand - 1)))
+    }  # end if
+  }  # end random_generator
+}  # end seed_random
 
-PseudoRandom <- RandomSeed(88)  # set seed
-PseudoRandom(10)  #  calculate vector of 10 pseudo-random numbers
-ls(environment(PseudoRandom))  # list objects in scope of PseudoRandom
+# create a random number generating function and set seed
+make_random <- seed_random(88)
+make_random(10)  #  calculate vector of 10 pseudo-random numbers
+ls(environment(make_random))  # list objects in scope of make_random
       @
 \end{block}
 
@@ -888,10 +957,10 @@ ls(environment(PseudoRandom))  # list objects in scope of PseudoRandom
         <<echo=4:30>>=
 rm(list=ls())
 # the super-assignment operator '<<-' adjusts the balance
-# 'balance' exists in OpenAccount evaluation environment
+# 'balance' exists in open_account evaluation environment
 # bank account example (from Venables) demonstrates mutable states
 # 'balance' is persistent between function calls
-OpenAccount <- function(balance) {
+open_account <- function(balance) {
 # returns function list for account operations
   list(
     deposit = function(amount) {  # make deposit
@@ -912,65 +981,31 @@ OpenAccount <- function(balance) {
         cat("You don't have that much money!\n")
       }
     },  # end withdraw
-    get.balance = function() {  # get balance
+    get_balance = function() {  # get balance
       cat("Your current balance is:", balance, "\n")
-    }  # end get.balance
+    }  # end get_balance
   )  # end list
-}  # end OpenAccount
+}  # end open_account
 @
     \column{0.5\textwidth}
         <<>>=
 # perform account operations
 # open an account with 100 deposit
-my.account <- OpenAccount(100)
-ls(my.account)  # my.account is a list
-# add my.account to search path
-attach(my.account)
+my_account <- open_account(100)
+ls(my_account)  # my_account is a list
+# add my_account to search path
+attach(my_account)
 withdraw(30)  # withdrawal to buy groceries
 deposit(100)  # deposit paycheck to account
 withdraw(200)  # withdrawal to buy Gucci bag
-get.balance()  # get account balance
+get_balance()  # get account balance
 
-# list objects in scope of get.balance
-ls(environment(get.balance))
+# list objects in scope of get_balance
+ls(environment(get_balance))
 
-detach(my.account)  # remove my.account from search path
+detach(my_account)  # remove my_account from search path
 @
   \end{columns}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Warning and Error Messages in\hskip0.5em\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A simple way to produce a message from within a function is to call the \texttt{cat()} function,
-      \vskip1ex
-      A better way to produce messages from within a function is to call the \texttt{warning()} and \texttt{error()} functions,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-FunRobust <- function(in_var1=NULL, in_var2=NULL) {
-# returns the sum of its two arguments
-  if (is.na(in_var2)) {  # check if in_var2 was input
-    warning("in_var2 wasn't input")
-    in_var1  # in_var2 wasn't input
-  } else if (is.na(in_var2)) {
-    in_var1 + in_var2  # in_var2 wasn't input
-  } else {
-    in_var1 + in_var2  # in_var2 was input
-  }
-  }
-}  # end FunRobust
-FunRobust(1, 2)
-FunRobust(5)
-      @
-  \end{columns}
-\end{block}
 
 \end{frame}
 
@@ -1000,7 +1035,7 @@ rm(list=ls())
 '+' (2, 3)  # infix operator applied using prefix syntax
 
 glob_var <- 1  # define a global variable
-func_scope <- function() {  # function for exploring scope
+probe_scope <- function() {  # exploring scope
   loc_var <- 1  # define a local variable
   new_globvar <<- 11  # define a global variable
   cat('objects in parent environment:\t', 
@@ -1010,8 +1045,8 @@ func_scope <- function() {  # function for exploring scope
   cat('this is glob_var:\t', glob_var, '\n')
   glob_var <- 10  # re-define the global variable
   cat('this is re-defined glob_var:\t', glob_var, '\n')
-}  # end func_scope
-func_scope()
+}  # end probe_scope
+probe_scope()
 glob_var  # global variable is restored
 new_globvar  # new_globvar is preserved
 loc_var  # local variable is gone!
@@ -1035,30 +1070,48 @@ loc_var  # local variable is gone!
     \column{0.4\textwidth}
       \texttt{S3} is the standard object oriented (OO) programming system in \texttt{R},
       \vskip1ex
-      The \texttt{S3} system is based on the \texttt{R} class system and on \emph{generic functions},
+      The \texttt{S3} system is based on the \texttt{R} \emph{class} system and on \emph{generic} functions,
       \vskip1ex
-      \emph{Generic functions} have different \emph{methods} that are dispatched depending on the \emph{class} of the object,
+      \emph{Generic} functions have different \emph{methods} that are dispatched depending on the \emph{class} of the object,
       \vskip1ex
-      The actual function that is executed (called a \emph{method}) is determined by the class of the object on which the \emph{generic function} is called,
+      The actual function that is executed (called a \emph{method}) is determined by the class of the object on which the \emph{generic} function is called,
       \vskip1ex
-      For example \texttt{plot()} and \texttt{cbind()} are \emph{generic functions},
-      \vskip1ex
-      \emph{Generic function} methods follow the naming convention \texttt{gmethod.class()},
-      \vskip1ex
-      The \emph{generic function} \texttt{cbind()} has many \emph{methods} with names \texttt{cbind.*()},
-      \vskip1ex
-      The \texttt{cbind()} method dispatched to \texttt{zoo} objects is called \texttt{cbind.zoo()},
+      For example \texttt{plot()} and \texttt{cbind()} are \emph{generic} functions,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=3:30>>=
-rm(list=ls())
+      <<>>=
 library(zoo)  # load package zoo
 # get all methods for generic function "cbind"
 methods("cbind")
 
 # show the method of "cbind" applied to "zoo" objects
 cbind.zoo
+      @
+  \end{columns}
+\end{block}
 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generic Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Generic} functions follow the naming convention \texttt{function.classname()},
+      \vskip1ex
+      The \emph{generic} function \texttt{cbind()} has many \emph{methods} with names \texttt{cbind.*()},
+      \vskip1ex
+      The \texttt{cbind()} method dispatched to \texttt{zoo} objects is called \texttt{cbind.zoo()},
+      \vskip1ex
+      The function \texttt{methods()} lists all methods for a generic function, or all methods for a class,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+library(zoo)  # load package zoo
+# get all methods for generic function "cbind"
 # get generic function methods applied to "zoo" objects
 methods(class="zoo")
       @
@@ -1138,84 +1191,24 @@ getAnywhere(plot)  # display function
       \vspace{-1em}
       <<echo=2:30>>=
 rm(list=ls())
-my.ts <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
-class(my.ts)
-length(my.ts)
+my_zoo <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
+class(my_zoo)
+length(my_zoo)
 
 # coerce "zoo" object to new class "newts"
-class(my.ts) <- "newts"
-class(my.ts)
+class(my_zoo) <- "newts"
+class(my_zoo)
 
 # define "length" method for class "newts"
-length.newts <- function(in.ts) {
+length.newts <- function(in_ts) {
 # "length" method for class" "newts"
-  cat("getting length of object from newts class\n")
-  length(unclass(in.ts))
+  cat("length of object from newts class\n")
+  length(unclass(in_ts))
 }  # end length.newts
 
 # apply new "length" method
-length(my.ts)
+length(my_zoo)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\section{Regression}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simple \secname\hskip0.5em Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},
-
-    \column{0.7\textwidth}
-      \vspace{-1em}
-        <<echo=2:30,fig.show='hide'>>=
-rm(list=ls())
-set.seed(1121)  # initialize random number generator
-v.xvar <- 0.1*1:30  # independent variable
-v.yvar <- 3 + 2*v.xvar + rnorm(30)  # dependent variable plus noise
-lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
-summary(lm.simp)  # regression summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Plotting a \secname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},
-        <<simp_reg,echo=2:30,fig.show='hide'>>=
-rm(list=ls())
-set.seed(1121)  # initialize random number generator
-v.xvar <- 0.1*1:30
-v.yvar <- 3 + 2*v.xvar + rnorm(30)
-lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
-# set plot paramaters - margins and font scale
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 0.5, 0))  # axis title and labels
-par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-plot(v.yvar ~ v.xvar)  # plot scatterplot
-title(main="Simple Regression", line=-1)
-abline(lm.simp, col="red")  # add reg line
-      @
-
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simp_reg}
   \end{columns}
 \end{block}
 

@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -80,7 +80,7 @@ knit_theme$set(thm)
     \column{0.5\textwidth}
       Homogeneous data structures contain objects of the same class,
       \vskip1ex
-      Heterogeneous structures can contain objects of different classes,
+      Heterogeneous structures can contain objects of different \texttt{types},
     \column{0.5\textwidth}
 %      \vspace{-1em}
       \renewcommand\arraystretch{1.5} % scale table rows
@@ -403,11 +403,11 @@ c('a', letters[5:10])  # combine two vectors of letters
 vec_var <- runif(5)
 vec_var
 
-vec_var> 0.5  # logical vector
+vec_var > 0.5  # logical vector
 
-vec_var[vec_var>0.5]  # filter elements > 0.5
+vec_var[vec_var > 0.5]  # filter elements > 0.5
 
-which(vec_var>0.5)  # index of elements > 0.5
+which(vec_var > 0.5)  # index of elements > 0.5
       @
   \end{columns}
 \end{block}
@@ -623,7 +623,7 @@ cbind(vec_var1, vec_var2)  # recycling rule applied
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Lists are a type of vector that contain elements of different classes,
+      Lists are a type of vector that contain elements of different \texttt{types},
       \vskip1ex
       Lists are recursive object types,
       \vskip1ex
@@ -663,13 +663,11 @@ list_var$second[3]  # get third element of second element
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different classes,
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \texttt{types},
       \vskip1ex
       Data frames can be thought of as lists of vectors of the same length,
       \vskip1ex
       The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
-      \vskip1ex
-      Data frames can be subset in a similar way to lists and matrices,
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
@@ -683,8 +681,28 @@ dim(data_frame)  # get dimension attribute
 colnames(data_frame)  # get the colnames attribute
 rownames(data_frame)  # get the rownames attribute
 class(data_frame)  # get object class
+typeof(data_frame)  # data frames are lists
+is.data.frame(data_frame)
+
 class(data_frame$type)  # get column class
 class(data_frame$price)  # get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
 data_frame[2, 3]  # get second row and third column
 data_frame[[3]]  # get third column
 data_frame$color[3]  # get third row from column 'color'
@@ -789,9 +807,333 @@ order(c(2, 1:4), 1:5)  # there's a tie
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # extract list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
-\section{Data Types and Classes}
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?mtcars  # get information on mtcars - data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a factor (attribute),
+      \vskip1ex
+      The list's \texttt{names} attribute is made equal to the factor levels,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(iris$Species)  # Species takes on three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute),
+        \item applying a function to each list element,
+        \item combining the results,
+      \end{itemize}
+      The \texttt{split-apply-combine} procedure, by Hadley Wickham:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{figure/splitapply.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{tapply()} function applies a function to sub-vectors aggregated using a factor,
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
+      \vskip1ex
+      The \texttt{aggregate()} function applies a function to aggregations of an object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# split the mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# get mean mpg for each cylinder group
+unlist(lapply(split_cars, function(x) mean(x$mpg)))
+# Which is identical to the tapply function
+tapply(mtcars$mpg, mtcars$cyl, mean)
+# using "with" environment
+with(mtcars, tapply(mpg, cyl, mean))
+# can also use the functions by() and aggregate()
+with(mtcars, by(mpg, cyl, mean))
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{split-apply-combine} Procedure ChickWeight}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      taken from: basic good examples
+http://rollingyours.wordpress.com/2013/02/14/welcome/
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+data(ChickWeight)
+# ?ChickWeight
+
+# get grouping variables
+sapply(ChickWeight, function(x) length(unique(x)))
+
+# get mean weight of the chickens
+tapply(ChickWeight$weight, ChickWeight$Diet, mean)
+
+# access individual groups
+# create list of my.splits corresponding to individual Diet values
+my.splits = split(ChickWeight, ChickWeight$Diet)
+length(my.splits)
+names(my.splits)
+head(my.splits[[1]])
+
+# apply is passing each element to a function - performs for loop "under the hood"
+# get all the chicks from each group that weigh less that 40 grams
+my.results.lapply = lapply(my.splits, subset, weight <= 40)
+# longer way with anonymous function:
+my.results.lapply = lapply(my.splits, function(x) subset(x, weight <= 40) )
+
+# fold back into a data frame
+my.df = do.call(rbind, my.results.lapply)
+my.df
+
+# a different way:
+sorted.chickens = ChickWeight[order(ChickWeight$Diet), ]
+(sorted.chickens = subset(sorted.chickens, weight <= 40))
+
+# same with for-loop:
+my.results.for = list() 
+for (ii in 1:length(my.splits)) {
+     my.results.for[[ii]] = subset(my.splits[[ii]], weight <= 40)
+}
+names(my.results.for) = names(my.splits)
+all.equal(my.results.lapply, my.results.for) # Should be equal to my.results.lapply
+
+# or in one line:
+lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)
+# or
+(do.call(rbind, lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Compare \texttt{for()} Loops With \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      from: Wickham Split Apply Combine for Data Analysis
+      \vskip1ex
+      The \texttt{split-apply-combine} procedure allows for analyzing data frames, by spliting an analysis into smaller steps, and then combining them together,
+      \vskip1ex
+      in data preparation, for performing group-wise ranking, standardization, or normalization,
+      \vskip1ex
+      creating summaries (aggregations) of data by groups,
+      \vskip1ex
+      During modeling, for fitting separate models to individual panels of data,
+      \vskip1ex
+      The \texttt{split-apply-combine} procedure is similar to the \texttt{map-reduce} procedure for processing large data,
+      \vskip1ex
+      also similar to \texttt{pivot tables} in Excel,
+      \vskip1ex
+      The \texttt{split()}, \texttt{apply()} and \texttt{combine} Procedure
+      \vskip1ex
+      The \texttt{lapply()} and \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+      \vskip1ex
+      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+library(plyr)
+one <- ozone[1, 1, ]
+month <- ordered(rep(1:12, length = 72))
+model <- rlm(one ~ month - 1)
+deseas <- resid(model)
+deseasf <- function(value) rlm(value ~ month - 1)
+
+# For loops
+models <- as.list(rep(NA, 24 * 24))
+dim(models) <- c(24, 24)
+deseas <- array(NA, c(24, 24, 72))
+dimnames(deseas) <- dimnames(ozone)
+for (i in seq_len(24)) {
+for(j in seq_len(24)) {
+mod <- deseasf(ozone[i, j, ])
+models[[i, j]] <- mod
+deseas[i, j, ] <- resid(mod)
+}
+}
+
+# apply functions
+models <- apply(ozone, 1:2, deseasf)
+resids_list <- lapply(models, resid)
+resids <- unlist(resids_list)
+dim(resids) <- c(72, 24, 24)
+deseas <- aperm(resids, c(2, 3, 1))
+dimnames(deseas) <- dimnames(ozone)
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      from: 
+      http://4dpiecharts.com/2011/12/16/a-quick-primer-on-split-apply-combine-problems/
+      \vskip1ex
+      we have a data frame with one column containing the values to calculate a statistic for and another column containing the group to which that value belongs
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# InsectSprays dataset
+head(InsectSprays)
+
+# split the count column by the spray column.
+count_by_spray <- with(InsectSprays, split(count, spray))
+
+# next apply the statistic to each element of the list. Lets use the mean here.
+mean_by_spray <- lapply(count_by_spray, mean)
+
+# finally combine the list as a vector
+unlist(mean_by_spray)
+
+# or in one line
+sapply(count_by_spray, mean)
+
+# can also use the functions tapply(), aggregate() and by():
+with(InsectSprays, tapply(count, spray, mean))
+with(InsectSprays, by(count, spray, mean))
+aggregate(count ~ spray, InsectSprays, mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{\texttt{R} Object Attributes}
 
 
 %%%%%%%%%%%%%%%
@@ -853,11 +1195,47 @@ c(typeof(my_var), mode(my_var), class(my_var))
     \column{0.4\textwidth}
       \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \texttt{class}, etc., 
       \vskip1ex
+      The attributes of an object is a named \texttt{list} of \texttt{tag=value} pairs,
+      \vskip1ex
       The function \texttt{attributes()} returns the attributes of an object,
       \vskip1ex
+      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
+      \vskip1ex
+      The function \texttt{structure()} adds attributes to an object (specified as \texttt{tag=value} pairs), and returns it,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+attributes(5:10)  # a simple vector has no attributes
+my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+attributes(my_var)  # named vector has "names" attribute
+my_var <- 1:10
+is.vector(my_var)  # is the object a vector?
+attributes(my_var) <- list(dim=c(2, 5))
+is.matrix(my_var)  # is the object a matrix?
+my_var  # matrix object
+structure(1:10, dim=c(2, 5))  # matrix object
+
+my_var <- 0
+attributes(my_var) <- list(class="Date")
+my_var  # "Date" object
+structure(0, class="Date")  # "Date" object
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modifying \texttt{class} Attributes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
       Objects without an explicit \texttt{class} don't have a \texttt{class} attribute, and the function \texttt{class()} returns the implicit \texttt{class},
       \vskip1ex
-      The \texttt{class} of an object can be assigned explicitly using the \texttt{"class() <-"} assignment,
+      The \texttt{class} of an object can be modified using the \texttt{"class() <-"} assignment,
       \vskip1ex
       An object can have a main \texttt{class}, and also an inherited \texttt{class} (the \texttt{class} attribute can be a vector of strings),
       \vskip1ex
@@ -865,15 +1243,13 @@ c(typeof(my_var), mode(my_var), class(my_var))
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-attributes(5:10)  # a simple vector has no attributes
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-attributes(my_var)  # a named vector has 'names' attribute
 my_var <- matrix(runif(10), 2, 5)
-attributes(my_var)  # no explicit 'class' attribute
+class(my_var)  # has implicit class
+attributes(my_var)  # but no explicit "class" attribute
 c(typeof(my_var), mode(my_var), class(my_var))
-class(my_var) <- "my_class"
-attributes(my_var)  # has explicit 'class' attribute
-c(typeof(my_var), mode(my_var), class(my_var))
+class(my_var) <- "my_class"  # assign explicit "class" attribute
+class(my_var)  # has explicit "class"
+attributes(my_var)  # has explicit "class" attribute
 is.matrix(my_var)  # is the object a matrix?
 is.vector(my_var)  # is the object a vector?
 attributes(unclass(my_var))
@@ -891,7 +1267,7 @@ attributes(unclass(my_var))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Coercion} means changing the \texttt{type}, \texttt{mode}, or \texttt{class} of an object,
+      \emph{Coercion} means changing the \texttt{type}, \texttt{mode}, or \texttt{class} of an object, without changing the underlying data,
       \vskip1ex
       Changing the \texttt{mode} of an object can change its \texttt{class} as well, but not always,
       \vskip1ex
@@ -901,11 +1277,11 @@ attributes(unclass(my_var))
       \vskip1ex
       Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \texttt{mode},
       \vskip1ex
+      Implicit coercion can cause bugs that are difficult to trace,
+      \vskip1ex
       The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
       \vskip1ex
       Coercion can introduce bad data, such as \texttt{NA} values,
-      \vskip1ex
-      Implicit coercion can cause bugs that are difficult to trace,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=

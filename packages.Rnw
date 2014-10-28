@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -145,7 +145,9 @@ Most packages need to be loaded before they can be used,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<eval=FALSE>>=
-library("MASS") or require("MASS")
+library("MASS")
+# or
+require("MASS")
       @
   \end{columns}
 \end{block}
@@ -153,20 +155,200 @@ library("MASS") or require("MASS")
 \pause
 
 \begin{block}{Difference between \texttt{library()} and \texttt{require()}}
-\texttt{library()} halts execution if the package can't be loaded,\\
-\texttt{require()} returns a logical value, TRUE if the package is loaded, FALSE if it isn't.\\
+  \texttt{library()} halts execution if the package can't be loaded,\\
+  \texttt{require()} returns a logical value, TRUE if the package is loaded, FALSE if it isn't.\\
 \end{block}
 \pause
 
 \begin{block}{\color{red}{Rule of Thumb}}
-Use \texttt{library()} in script files that might be sourced,\\
-Use \texttt{require()} inside other functions.\\
+  Use \texttt{library()} in script files that might be sourced,\\
+  Use \texttt{require()} inside other functions.\\
 \end{block}
 \pause
 
 \begin{block}{Installing Packages}
-Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
-But most packages need to be $installed$ before they can be loaded,\\
+  Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
+  But most packages need to be $installed$ before they can be loaded,\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Packages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{Ecdat} contains data sets for econometric analysis,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+      The data frame \texttt{Garch} contains daily currency prices,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library()  # list all packages installed on the system
+search()  # list all loaded packages on search path
+
+# get documentation for package "Ecdat"
+packageDescription("Ecdat")  # get short description
+help(package="Ecdat")  # load help page
+library(Ecdat)  # load package "Ecdat"
+data(package="Ecdat")  # list all datasets in "Ecdat"
+ls("package:Ecdat")  # list all objects in "Ecdat"
+detach("package:Ecdat")  # remove Ecdat from search path
+      @
+
+      <<>>=
+library("Ecdat")  # load econometric data sets
+class(Garch)  # Garch is a data frame from "Ecdat"
+dim(Garch)  # daily currency prices
+head(Garch[, -2])  # col 'dm' is Deutsch Mark
+detach("package:Ecdat")  # remove Ecdat from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package Namespaces}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Package \texttt{namespaces}:
+      \begin{itemize}
+        \item Provide a mechanism for calling objects from a package,
+        \item Hide functions and data internal to the package,
+        \item Prevent naming conflicts between user and package names,
+      \end{itemize}
+      When a package is loaded using \texttt{library()} or \texttt{require()}, its \texttt{namespace} is attached to the search path,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+search()  # get search path for R objects
+library("MASS")  # load package "MASS"
+head(ls("package:MASS"))  # list some objects in "MASS"
+detach("package:MASS")  # remove "MASS" from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package Namespaces and the Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Packages may be loaded without their \texttt{namespace} being attached to the search path,
+      \vskip1ex
+      When packages are loaded, then packages they depend on are also loaded, but their \texttt{namespaces} aren't necessarily attached to the search path,
+      \vskip1ex
+      The function \texttt{loadedNamespaces()} lists all loaded \texttt{namespaces}, including those that aren't on the search path,
+      \vskip1ex
+      The function \texttt{search()} returns the current search path for \texttt{R} objects,
+      \vskip1ex
+      \texttt{search()} returns many package \texttt{namespaces}, but not all the loaded \texttt{namespaces},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+loadedNamespaces()  # get names of loaded namespaces
+
+search()  # get search path for R objects
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Not Attached Namespaces}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{sessionInfo()} returns information about the current \texttt{R} session, including packages that are loaded, but \emph{not attached} to the search path,
+      \vskip1ex
+      \texttt{sessionInfo()} lists those packages as "loaded via a \texttt{namespace} (and not attached)"
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# get session info,
+# including packages not attached to the search path
+sessionInfo()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Non-Visible Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Non-visible objects are either:
+      \begin{itemize}
+        \item objects from \emph{not attached} \texttt{namespaces},
+        \item objects \emph{not exported} outside a package,
+      \end{itemize}
+      Objects from packages that aren't attached can be accessed using the double-colon operator "\texttt{::}",
+      \vskip1ex
+      Objects that are \emph{not exported} outside a package can be accessed using the triple-colon operator "\texttt{:::}",
+      \vskip1ex
+      Colon operators automatically load the associated package,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+plot.xts  # package xts isn't loaded and attached
+head(xts::plot.xts, 3)
+methods("cbind")  # get all methods for function "cbind"
+stats::cbind.ts  # cbind isn't exported from package stats
+stats:::cbind.ts  # view the non-visible function
+getAnywhere("cbind.ts")
+library("MASS")  # load package 'MASS'
+select  # code of primitive function from package 'MASS'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Namespaces and Non-Visible Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{getAnywhere()} displays information about \texttt{R} objects, including non-visible objects,
+      \vskip1ex
+      Objects referenced \texttt{within} packages have different search paths than other objects:\\
+      Their search path starts in the package \texttt{namespace}, then the global environment and then finally the regular search path,
+      \vskip1ex
+      This way references to objects from \texttt{within} a package are resolved to the package, and they're not masked by objects of the same name in other environments,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+getAnywhere("cbind.ts")
+      @
+  \end{columns}
 \end{block}
 
 \end{frame}
@@ -176,43 +358,44 @@ But most packages need to be $installed$ before they can be loaded,\\
 \subsection{Installing Packages}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
-\begin{block}{Installing Packages from \texttt{CRAN}}
-Most of the widely used packages are available on \texttt{CRAN},\\
-For example package \texttt{AER}:\\
-\hskip1em\url{http://cran.r-project.org/web/packages/AER/}\\
+\begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      Install and load package \texttt{AER} in \texttt{R} Session:
-    \column{0.5\textwidth}
+    \column{0.4\textwidth}
+      Installing a package means downloading its executable files, and saving them to the local drive, so they can be called by the \texttt{R} system,
+      \vskip1ex
+      The function \texttt{install.packages()} installs packages from the \texttt{R} command line,
+      \vskip1ex
+      Most widely used packages (like \texttt{AER}) are available on \texttt{CRAN}:\\
+      \url{http://cran.r-project.org/web/packages/AER/}
+      \vskip1ex
+      Packages that aren't available on \texttt{CRAN} may be available on \texttt{R-Forge} or \texttt{GitHub},\\
+      \hskip1em\url{https://r-forge.r-project.org/}\\
+      \hskip1em\url{https://github.com/}
+      \vskip1ex
+      The function \texttt{installed.packages()} returns a matrix of all packages installed on the system,
+      \vskip1ex
+      Packages can also be installed in \texttt{RStudio} from the menu (go to \alert{Tools} and then \alert{Install packages}),\\
+    \column{0.6\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-install.packages("AER")  # install AER
-library("AER")  # load AER
+      <<>>=
+getOption("repos")  # get default package source
+.libPaths()  # get package save directory
       @
-  \end{columns}
-\end{block}
-\pause
-
-\begin{block}{Installing packages in \texttt{RStudio}}
-Go to \alert{Tools} and then \alert{Install packages}\\
-Then enter package name, for example \texttt{AER}
-\end{block}
-\pause
-
-\begin{block}{Packages on $R-Forge$}
-Many other packages are available on $R-Forge$:\\
-\hskip1em\url{https://r-forge.r-project.org/}\\
-For example packages which are part of the $ReturnAnalytics$ project,\\
-\hskip1em\url{https://r-forge.r-project.org/projects/returnanalytics/}\\
-\hskip1em\url{https://r-forge.r-project.org/R/?group_id=579}\\
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      Install package $PerformanceAnalytics$
-    \column{0.7\textwidth}
-      \vspace{-1em}
+      \vspace{-2em}
       <<eval=FALSE>>=
-install.packages("PerformanceAnalytics", 
-                 repos="http://R-Forge.R-project.org")
+install.packages("AER")  # install "AER" from CRAN
+# install "PerformanceAnalytics" from R-Forge
+install.packages(pkgs="PerformanceAnalytics",  # name
+                 lib="C:/Users/Jerzy/Downloads",  # directory
+                 repos="http://R-Forge.R-project.org")  # source
+      @
+      \vspace{-2em}
+      <<>>=
+pack_info <- installed.packages()  # matrix of packages
+dim(pack_info)
+# get a few package names and their versions
+pack_info[sample(x=1:100, 5), c("Package", "Version")]
+pack_info["xts", ]  # get info for package "xts"
       @
   \end{columns}
 \end{block}
@@ -272,132 +455,6 @@ install.packages("PerformanceAnalytics",
     \vspace{-1em}
     \includegraphics[height=1.0\textwidth]{CRAN_Views.png}
 \end{columns}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{Ecdat} contains data sets for econometric analysis,
-      \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package,
-      \vskip1ex
-      The data frame \texttt{Garch} contains daily currency prices,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library()  # get all packages installed on your system
-# get documentation for package "Ecdat"
-packageDescription("Ecdat")  # get short description
-help(package="Ecdat")  # get help
-data(package="Ecdat")  # show all datasets
-library(Ecdat)  # load package Ecdat
-ls("package:Ecdat")  # list all objects in package
-detach("package:Ecdat")  # remove Ecdat from search path
-      @
-
-      <<>>=
-library("Ecdat")  # data sets for econometric analysis
-class(Garch)
-dim(Garch)  # daily currency prices
-head(Garch[, -2])  # col 'dm' is Deutsch Mark
-detach("package:Ecdat")  # remove Ecdat from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package Namespaces}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Package \texttt{namespaces}:
-      \begin{itemize}
-        \item Provide a mechanism for calling objects from a package,
-        \item Hide functions and data internal to the package,
-        \item Prevent naming conflicts between user and package names,
-      \end{itemize}
-      When a package is loaded using \texttt{library()} or \texttt{require()}, its \texttt{namespace} is attached to the search path,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-search()  # get search path for R objects
-library("MASS")  # load package 'MASS'
-search()  # get search path for R objects
-ls("package:MASS")
-detach("package:MASS")  # remove MASS from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Namespaces}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Typing an object name from a package whose \texttt{namespace} isn't attached produces an error,
-      \vskip1ex
-      A package must be loaded for its \texttt{namespace} to be attached to the search path,
-      \vskip1ex
-      But packages may be loaded without their \texttt{namespace} being attached to the search path,
-      \vskip1ex
-      The function \texttt{loadedNamespaces()} lists all loaded \texttt{namespaces}, including those that are not on the search path,
-      \vskip1ex
-      Objects from packages that aren't attached can be accessed using the double-colon operator \texttt{::},
-      \vskip1ex
-      Not all package objects are exported outside a package,
-      \vskip1ex
-      The triple-colon operator \texttt{:::} allows access to hidden objects that aren't exported,\\
-      \vskip1ex
-      Colon operators automatically load the associated package,
-      \vskip1ex
-      The function \texttt{getAnywhere()} displays package objects, even not attached and hidden objects,
-      \vskip1ex
-      Objects referenced in packages have different search paths than other objects:\\
-      Their search path starts in the package \texttt{namespace}, then the global environment and then finally the regular search path,
-      \vskip1ex
-      This way references to objects from a package are resolved to the package, and they're not masked by objects of the same name in other environments,
-      \vskip1ex
-      Packages that depend on other packages load them but they don't attach their \texttt{namespaces} to the search path,
-      \vskip1ex
-      loaded \texttt{namespaces} aren't always attached to the search path
-      \vskip1ex
-      they are reported as "loaded via a \texttt{namespace} (and not attached)"
-      \texttt{tools::file\_ext}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-loadedNamespaces()  # get names of loaded namespaces
-methods("cbind")  # get all methods for function "cbind"
-getAnywhere("cbind.ts")
-stats::cbind.ts  # cbind isn't exported from package stats
-stats:::cbind.ts  # view the non-visible function
-search()  # get search path for R objects
-plot.xts  # package xts isn't loaded and attached
-head(xts::plot.xts)
-loadedNamespaces()  # get names of loaded namespaces
-library("MASS")  # load package 'MASS'
-search()  # get search path for R objects
-select  # code of primitive function from package 'MASS'
-      @
-  \end{columns}
-\end{block}
 
 \end{frame}
 

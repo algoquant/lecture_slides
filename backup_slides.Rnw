@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -71,6 +71,127 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \section{Backup Slides Deleted from Other Files}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Argument Handling in Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} provides many ways to handle various unexpected argument values, by checking them before making any calculations,
+      \vskip1ex
+      Assigning default values to formal arguments allows for better control over \emph{erroneous} values,
+      \vskip1ex
+      The function \texttt{stopifnot()} stops function execution and produces an \emph{error} if its argument is \texttt{FALSE},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+catch_missing <- function(in_var1, in_var2=NULL) {
+# returns the sum of its two arguments
+  if (is.numeric(in_var2)) {  # check if in_var2 was input
+    in_var1 + in_var2  # in_var2 was input
+  } else {
+    in_var1  # in_var2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5, 'a')
+catch_missing <- function(in_var1, in_var2) {  # even more robust
+  stopifnot((!missing(in_var1) && is.numeric(in_var1)) || 
+               (!missing(in_var2) && is.numeric(in_var2)))
+  if (!missing(in_var2) && is.numeric(in_var2)) {  # check if in_var2 is valid input
+    in_var1 + in_var2  # in_var2 was input
+  } else {
+    in_var1  # in_var2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(5, 'a')
+catch_missing('a')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Warning and Error Messages in Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A simple way to produce a message from within a function is to call the \texttt{cat()} function,
+      \vskip1ex
+      A better way to produce messages from within a function is to call the \texttt{warning()} and \texttt{error()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+catch_missing <- function(in_var1=NULL, in_var2=NULL) {
+# returns the sum of its two arguments
+  if (is.null(in_var2)) {  # check if in_var2 was input
+    warning("in_var2 wasn't input")
+    in_var1  # in_var2 wasn't input
+  } else if (is.null(in_var2)) {
+    in_var1 + in_var2  # in_var2 wasn't input
+  } else {
+    in_var1 + in_var2  # in_var2 was input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Conditions} are \texttt{R} objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+        <<echo=2:30>>=
+rm(list=ls())
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(e.cond)  # handler captures error condition
+    print(paste("error handler: ", e.cond)),
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -481,6 +602,47 @@ col_names  # this is a string!
 col_names <- strsplit(col_names, s=',')[[1]]  # convert to char vector
 colnames(mat_in) <- col_names  # restore colnames
 mat_in
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Namespaces}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Typing an object name from a package whose \texttt{namespace} isn't attached produces an error,
+      \vskip1ex
+      In addition, not all package objects are exported outside a package,
+      \vskip1ex
+      Objects from packages that aren't attached can be accessed using the double-colon operator "\texttt{::}",
+      \vskip1ex
+      The triple-colon operator "\texttt{:::}" provides access to objects that aren't exported,\\
+      \vskip1ex
+      Colon operators automatically load the associated package,
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays package objects, even not attached and non-visible objects,
+      \vskip1ex
+      Objects referenced \texttt{within} packages have different search paths than other objects:\\
+      Their search path starts in the package \texttt{namespace}, then the global environment and then finally the regular search path,
+      \vskip1ex
+      This way references to objects from \texttt{within} a package are resolved to the package, and they're not masked by objects of the same name in other environments,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+methods("cbind")  # get all methods for function "cbind"
+stats::cbind.ts  # cbind isn't exported from package stats
+stats:::cbind.ts  # view the non-visible function
+getAnywhere("cbind.ts")
+plot.xts  # package xts isn't loaded and attached
+head(xts::plot.xts)
+library("MASS")  # load package 'MASS'
+select  # code of primitive function from package 'MASS'
       @
   \end{columns}
 \end{block}
