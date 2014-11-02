@@ -143,7 +143,6 @@ env.new[['new_var1']]  # environments are subset like lists
         \vskip1ex
         Make sure to \texttt{detach()} objects once they're not needed,
       \end{block}
-
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=2:30>>=
@@ -162,6 +161,7 @@ detach(my_list)
 \end{block}
 
 \end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -183,33 +183,106 @@ detach(my_list)
       \end{itemize}
       An \texttt{R} function plus its environment is referred to as a function closure,
       \vskip1ex
-      Formal arguments can be matched to actual arguments by position or by name,
+      The function body must be enclosed in curly braces \texttt{\{\}},
       \vskip1ex
-      Formal arguments can have default values so that when actual arguments are missing then their default values are used,
+      The function body doesn't require a return statement, since by default \texttt{R} functions return the last statement evaluated in the body,
       \vskip1ex
-      The function body doesn't require a return statement, since by default \texttt{R} functions return the last evaluated statement,
-
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-explore_func <- function(arg_var1=2, arg_var2=1) {  # define function explore_func
+        <<>>=
+# define a function with two arguments
+test_func <- function(first_arg, second_arg) {  # body
+  first_arg + second_arg  # returns last evaluated statement
+}  # end test_func
+
+test_func(1, 2)  # apply the function
+args(test_func)  # display argument
+
+# define function that uses variable from enclosure environment
+test_func <- function(first_arg, second_arg) {
+  first_arg + second_arg + glob_var
+}  # end test_func
+
+test_func(3, 2)  # error - glob_var doesn't exist yet!
+glob_var <- 10  # create glob_var
+test_func(3, 2)  # now works
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binding Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The formal arguments of a function are defined in its argument list,
+      \vskip1ex
+      When a function is applied, it's passed a list of actual function arguments,
+      \vskip1ex
+      Formal arguments can be \texttt{bound} to actual arguments either by name or by position:
+      \begin{itemize}
+        \item by name: formal arguments are \texttt{bound} to actual arguments with the same name,
+        \item by position: the first formal argument is \texttt{bound} to the first actual argument, etc.
+      \end{itemize}
+      \texttt{Binding} by name takes precedence over \texttt{binding} by position: first all the named arguments are \texttt{bound}, then the remaining arguments are \texttt{bound} by position,
+      \vskip1ex
+      Partial argument names are matched to full names,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+test_func <- function(first_arg=2, second_arg=1) {
 # default values can be specified in the argument list
-  arg_var1 + 2*arg_var2
-# the function returns the last evaluated statement
-}  # end explore_func
-explore_func(arg_var1=3, arg_var2=2)  # match arguments by name
-explore_func(3, 2)  # match arguments by position
-explore_func()  # use default values of arguments
-# define function that uses enclosure environment
-explore_func <- function(arg_var1=2, arg_var2=1) {
-# default values can be specified in the argument list
-  arg_var1 + 2*arg_var2 + glob_var
-# the function returns the last evaluated statement
-}  # end explore_func
-explore_func(3, 2)  # glob_var doesn't exist yet!
-glob_var <- 10
-explore_func(3, 2)  # now works
+  first_arg + 2*second_arg
+}  # end test_func
+
+test_func(first_arg=3, second_arg=2)  # bind by name
+test_func(first=3, second=2)  # partial name matching
+test_func(3, 2)  # bind by position
+test_func(second_arg=2, 3)  # mixed binding
+test_func()  # use default values of arguments
+test_func(3, 2, 1)  # too many arguments
+      @
+      All the actual arguments must be \texttt{bound} to formal arguments, and if not then an error \texttt{"unused argument"} is produced,
+      \vskip1ex
+      Formal arguments may be assigned default values so that when actual arguments are missing then their default values are used instead,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Executing Function Calls Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Quite often we need to pass a list of arguments into a function that accepts multiple arguments,
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call on a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements one by one, instead of passing the whole list as one argument,
+      \vskip1ex
+      \texttt{do.call()} is often used to convert lists of vectors to matrices,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+str(sum)  # "sum" accepts multiple arguments
+# passing a list of arguments to "sum" produces an error
+sum(list(1, 2, 3, 4))
+# do.call passes the list elements into "sum" one by one
+do.call(sum, list(1, 2, 3, 4))
+
+num_list <- list(1, 2, 3, 4)  # create numeric list
+do.call(rbind, num_list)  # returns single column matrix
+do.call(cbind, num_list)  # returns single row matrix
       @
   \end{columns}
 \end{block}
@@ -267,18 +340,17 @@ tail(fibo_nacci(10), 2)
     \column{0.3\textwidth}
       \texttt{R} provides an easy way for users to write functions,
       \vskip1ex
-      Function arguments can be matched by position or by name,
+      Function arguments can be bound by position or by name,
       \vskip1ex
       If the function arguments are missing then the default value is used,
       \vskip1ex
       Functions return the value of the last expression that is evaluated,
     \column{0.7\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
+        <<>>=
 rets_series <- diff(log(EuStockMarkets[, 1]))  # DAX returns
 
-# define function calc_skew to calculate the skew
+# define function calc_skew for calculating the skew
 calc_skew <- function(time_series=rnorm(1000)) {  # default is normal
 # Calculates the skew of a time series of returns.
   length_series <- length(time_series)  # number of observations
@@ -290,8 +362,8 @@ calc_skew <- function(time_series=rnorm(1000)) {  # default is normal
 }  # end calc_skew
 
 # calculate skewness of DAX returns
-calc_skew(time_series=rets_series)  # match arguments by name
-calc_skew(rets_series)  # match arguments by position
+calc_skew(time_series=rets_series)  # bind arguments by name
+calc_skew(rets_series)  # bind arguments by position
 calc_skew()  # use default value of arguments
       @
   \end{columns}
@@ -326,7 +398,7 @@ getAnywhere(calc_skew)  # display function
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function Argument Lazy Evaluation}
+\subsection{Lazy Evaluation of Function Arguments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -341,16 +413,16 @@ getAnywhere(calc_skew)  # display function
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-lazy_func <- function(arg_var1, arg_var2) {  # define function lazy_func
-  2*arg_var1  # just multiply first argument
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  2*arg1  # just multiply first argument
 }  # end lazy_func
-lazy_func(3, 2)  # match arguments by position
+lazy_func(3, 2)  # bind arguments by position
 lazy_func(3)  # second argument was never evaluated!
-lazy_func <- function(arg_var1, arg_var2) {  # define function lazy_func
-  cat(arg_var1, '\n')  # write to output
-  cat(arg_var2)  # write to output
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  cat(arg1, '\n')  # write to output
+  cat(arg2)  # write to output
 }  # end lazy_func
-lazy_func(3, 2)  # match arguments by position
+lazy_func(3, 2)  # bind arguments by position
 lazy_func(3)  # first argument written to output
       @
   \end{columns}
@@ -370,21 +442,21 @@ lazy_func(3)  # first argument written to output
       \vskip1ex
       The '...' argument is also used when the number of arguments isn't known in advance,
       \vskip1ex
-      Any arguments that appear after '...' in the argument list cannot be partially matched,
+      Any arguments that appear after '...' in the argument list cannot be partially bound,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
-match_dots <- function(arg_var1=2, arg_var2=1, ...) {  # define function match_dots
+match_dots <- function(arg1=2, arg2=1, ...) {  # define function match_dots
 # default values can be specified in the argument list
-  arg_var1 + 2*arg_var2 + sum(...)
+  arg1 + 2*arg2 + sum(...)
 # the function returns the last evaluated statement
 }  # end match_dots
 match_dots(3, 2)  # match arguments by position
 match_dots(3, 2, 5, 8)  # extra arguments
 match_dots()  # use default value of arguments
 str(paste)  # function 'paste' can take many arguments
-paste('a', 'b', sep = ':')  # match arguments by name
+paste('a', 'b', sep = ':')  # bind arguments by name
 paste('a', 'b', se = ':')  # partial name matching fails!
       @
   \end{columns}
@@ -403,15 +475,14 @@ paste('a', 'b', se = ':')  # partial name matching fails!
       \emph{Recursive} functions can also accept the '\texttt{...}' argument, 
     \column{0.7\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
+        <<>>=
 sum_dots <- function(arg_var, ...) {  # define recursive function
 # returns the sum of its argument list
-  if (length(list(...)) == 0) {
+  if (missing(...)) {  # check if dots are empty
     return(arg_var)  # just one argument left
   } else {
     arg_var + sum_dots(...)  # sum remaining arguments
-  }
+  }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
       @
@@ -571,7 +642,7 @@ func_tional(sd)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Functionals with '\texttt{...}' Argument}
+\subsection{Functionals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -579,15 +650,52 @@ func_tional(sd)
     \column{0.3\textwidth}
       \emph{Functionals} are functions that accept a function as its input argument,
       \vskip1ex
+      The function \texttt{match.fun()} produces a function specified by its name,
+      \vskip1ex
+      \texttt{match.fun()} produces an error condition if it fails to find a function with the specified name,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+func_tional <- function(func_arg, arg_var) {
+# functional accepts function name and one additional argument
+  func_arg <- match.fun(func_arg)  # produce function from name
+  func_arg(arg_var)  # apply input function
+}  # end func_tional
+
+func_tional(sqrt, 4)
+
+# if argument is a list, then we need to call "do.call", to pass them one by one
+# Passing a function as a list: first element is function name, remaining elements are arguments
+func_tional <- function(list_arg) {
+  func_arg <- match.fun(list_arg[[1]])  # produce function from name
+  do.call(func_arg, list(as.numeric(list_arg[-1])))
+}  # end func_tional
+
+arg_list <- list("mean", 1, 2, 3, 4)
+func_tional(arg_list)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functionals with '\texttt{...}' Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
       The '\texttt{...}' argument in \emph{functionals} can be used to pass additional arguments to the function being called by the \emph{functional},
     \column{0.7\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
+        <<>>=
 func_tional <- function(func_arg, ...) {
 # functional accepts function and additional '...' arguments
   func_arg(...)  # apply input function to '...' arguments
 }  # end func_tional
+
 func_tional(sum, 1, 2, 3)
       @
   \end{columns}
@@ -715,7 +823,7 @@ func_tional <- function(...,
   func_arg(...)  # apply input function to '...' arguments
 }  # end func_tional
 func_tional(2, 3, 4)  # use default func_arg
-func_tional(func_arg=sum, 2, 3, 4)  # func_arg matched by name
+func_tional(func_arg=sum, 2, 3, 4)  # func_arg bound by name
 func_tional(func_arg=sum, 2, 3, 4, 5)
 func_tional(2, 3, 4, 5)
 # pass anonymous function to func_arg
@@ -815,7 +923,7 @@ sapply(1:ncol(mat_rix),
       \vskip1ex
       \texttt{lapply()} applies a function to a list of objects and returns a list,
       \vskip1ex
-      The function \texttt{unlist()} converts a list into a vector,
+      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list,
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
@@ -930,7 +1038,7 @@ seed_random <- function(seed) {  # seed must be an integer
   random_generator <- function(length_rand=1) {  # assign function name for recursion
 # Returns a vector of pseudo-random numbers of length length_rand
     random_number <<- 4*random_number*(1 - random_number)  # logistic map
-    if (length_rand==1) {
+    if (length_rand == 1) {
       return(random_number)
     } else {
       return(c(random_number, random_generator(length_rand - 1)))
