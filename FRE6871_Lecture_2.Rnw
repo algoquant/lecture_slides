@@ -5,7 +5,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -57,7 +57,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
 % \email{jp3900@poly.edu}
-\date{September 15, 2014}
+\date{November 10, 2014}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -71,16 +71,115 @@ knit_theme$set(thm)
 \maketitle
 
 
-%%%%%%%%%%%%%%%
-% \begin{frame}[t]{Outline}
-% You might wish to add the option [pausesections]
-%   \tableofcontents
-% \end{frame}
-
-
 
 %%%%%%%%%%%%%%%
 \section{Heterogeneous Data Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lists}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Lists are a type of vector that contain elements of different \texttt{types},
+      \vskip1ex
+      Lists are recursive object types,
+      \vskip1ex
+      The function \texttt{list()} creates a list from a list of vectors,
+      \vskip1ex
+      \texttt{list()} creates a named list from a list of symbol-value pairs,
+      \vskip1ex
+      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion),
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<>>=
+# create a list with two elements
+list_var <- list(c('a', 'b'), 1:4)
+list_var
+c(class(list_var), typeof(list_var))
+c(is.vector(list_var), is.list(list_var))
+length(list_var)
+# create named list
+list_var <- list(first=c('a', 'b'), second=1:4)
+list_var
+names(list_var)
+unlist(list_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Lists can be subset (indexed) using:
+      \begin{itemize}
+        \item the '\texttt{[}' operator (returns sublist),
+        \item the '\texttt{[[}' operator (returns an element),
+        \item the '\texttt{\$}' operator (for named lists only),
+      \end{itemize}
+      \vskip1ex
+      Partial name matching allows subsetting with partial name, as long as it can be resolved, 
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+list_var[2]  # get second element as sublist
+list_var[[2]]  # get second element
+list_var[[2]][3]  # get third element of second element
+list_var[[c(2, 3)]]  # get third element of second element
+list_var$second  # get second element
+list_var$s  # get second element - partial name matching
+list_var$second[3]  # get third element of second element
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Factors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Factors are similar to vectors, but their elements can only take values from a set of \emph{levels},
+      \vskip1ex
+      Factors are designed for categorical data which can only take certain values,
+      \vskip1ex
+      The function \texttt{factor()} converts a vector into a factor,
+      \vskip1ex
+      Factors have two attributes: \texttt{class} (equal to "\texttt{factor}") and \texttt{levels} (the allowed values),
+      \vskip1ex
+      The function \texttt{as.vector()} coerces a factor to a character vector,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+# create factor vector
+fact_var <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fact_var
+fact_var[3]
+
+attributes(fact_var)  # get factor attributes
+levels(fact_var)  # get allowed values
+
+table(fact_var)  # get contingency (frequency) table
+
+is.vector(fact_var)
+as.vector(fact_var)  # coerce factor to character vector
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -90,30 +189,29 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Data frames are 2-D objects (like matrices), but the columns can be of different classes,
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \texttt{types},
       \vskip1ex
-      Data frames can also be thought of as lists in which all the elements are vectors of the same length,\\
-      Each list element is a column of elements of the same class,
+      Data frames can be thought of as lists of vectors of the same length,
       \vskip1ex
-      Data frames share properties of both lists and matrices,
+      The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
     \column{0.7\textwidth}
       \vspace{-1em}
-      <<echo=2:30>>=
-rm(list=ls())
-v.type <- c('rose', 'daisy', 'tulip')  # character vector
-v.color <- c('red', 'white', 'yellow')  # character vector
-v.price <- c(1.5, 0.5, 1.0)  # numeric vector
-df.florist <- data.frame(v.type,  # create a data frame
-                         v.color, v.price)
-rownames(df.florist) <- c('flower1',  # assign rownames
-                          'flower2', 'flower3')
-df.florist
-dim(df.florist)  # get dimension attribute
-colnames(df.florist)  # get the colnames attribute
-rownames(df.florist)  # get the rownames attribute
-class(df.florist)  # get object class
-class(df.florist$v.type)  # get column class
-class(df.florist$v.price)  # get column class
+      <<>>=
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0)
+                    )  # end data.frame
+data_frame
+dim(data_frame)  # get dimension attribute
+colnames(data_frame)  # get the colnames attribute
+rownames(data_frame)  # get the rownames attribute
+class(data_frame)  # get object class
+typeof(data_frame)  # data frames are lists
+is.data.frame(data_frame)
+
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
       @
   \end{columns}
 \end{block}
@@ -130,19 +228,46 @@ class(df.florist$v.price)  # get column class
       Data frames can be subset in a similar way to lists and matrices,
     \column{0.7\textwidth}
       \vspace{-1em}
-      <<echo=6:30>>=
-v.type <- c('rose', 'daisy', 'tulip')  # character vector
-v.color <- c('red', 'white', 'yellow')  # character vector
-v.price <- c(1.5, 0.5, 1.0)  # numeric vector
-df.florist <- data.frame(v.type,  # create a data frame
-                         v.color, v.price)
-rownames(df.florist) <- c('flower1',  # assign rownames
-                          'flower2', 'flower3')
-df.florist
-df.florist[2, ]  # get second row
-df.florist[2, 3]  # get second row and third column
-df.florist[[3]]  # get third column
-df.florist$v.color[3]  # get third row from column 'v.color'
+      <<>>=
+data_frame[2, 3]  # get second row and third column
+data_frame[[3]]  # get third column
+data_frame$color[3]  # get third row from column 'color'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname\hskip0.5emand Factors}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()},
+      \vskip1ex
+      The function \texttt{options()} sets global \texttt{options}, that determine how \texttt{R} computes and displays its results,
+      \vskip1ex
+      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+# don't coerce character vectors to factors
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+default.stringsAsFactors()
+
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0),
+                      row.names=c('flower1', 'flower2', 'flower3'),
+                      stringsAsFactors=FALSE
+                    )  # end data.frame
+data_frame
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
       @
   \end{columns}
 \end{block}
@@ -156,21 +281,13 @@ df.florist$v.color[3]  # get third row from column 'v.color'
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      The function \texttt{str()} compactly displays the structure of an \texttt{R} object,
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
       \vskip1ex
       The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
     \column{0.7\textwidth}
       \vspace{-1em}
-      <<echo=6:30>>=
-v.type <- c('rose', 'daisy', 'tulip')  # character vector
-v.color <- c('red', 'white', 'yellow')  # character vector
-v.price <- c(1.5, 0.5, 1.0)  # numeric vector
-df.florist <- data.frame(v.type,  # create a data frame
-                         v.color, v.price)
-rownames(df.florist) <- c('flower1',  # assign rownames
-                          'flower2', 'flower3')
-df.florist
-str(df.florist)  # display the object structure
+      <<>>=
+str(data_frame)  # display the object structure
 dim(cars)  # the cars data frame has 50 rows
 head(cars, n=5)  # get first five rows
 tail(cars, n=5)  # get last five rows
@@ -189,27 +306,134 @@ tail(cars, n=5)  # get last five rows
     \column{0.3\textwidth}
       Data frames can be sorted on any column,
       \vskip1ex
-      The function \texttt{order()} returns a permutation vector,
+      The function \texttt{sort()} returns a sorted vector,
+      \vskip1ex
+      The function \texttt{order()} returns a permutation index,
       \vskip1ex
       \texttt{order()} can take several vectors as input, to break any ties,
     \column{0.7\textwidth}
       \vspace{-1em}
-      <<echo=6:30>>=
-v.type <- c('rose', 'daisy', 'tulip')  # character vector
-v.color <- c('red', 'white', 'yellow')  # character vector
-v.price <- c(1.5, 0.5, 1.0)  # numeric vector
-df.florist <- data.frame(v.type,  # create a data frame
-                         v.color, v.price)
-rownames(df.florist) <- c('flower1',  # assign rownames
-                          'flower2', 'flower3')
-df.florist
-order(df.florist$v.price)  # permute on price
-df.florist[order(df.florist$v.price), ]  # sort on price
-df.florist[order(df.florist$v.color), ]  # sort on color
+      <<echo=8:30>>=
+type <- c('rose', 'daisy', 'tulip')  # character vector
+color <- c('red', 'white', 'yellow')  # character vector
+price <- c(1.5, 0.5, 1.0)  # numeric vector
+# create a data frame
+data_frame <- data.frame(type, color, price)
+# assign rownames
+rownames(data_frame) <- c('flower1', 'flower2', 'flower3')
+sort_data <- sample(1:6)  # permute data
+sort_data
+sort(sort_data)  # sorted data
+order(sort_data)  # permution index
+sort_data[order(sort_data)]  # permution index
+order(data_frame$price)  # permute on price
+data_frame[order(data_frame$price), ]  # sort on price
+data_frame[order(data_frame$color), ]  # sort on color
 order(c(2, 1:4))  # there's a tie
 order(c(2, 1:4), 1:5)  # there's a tie
 # read sort() Examples
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      \vskip1ex
+      \texttt{sapply()} performs a loop over the list of objects, and replaces '\texttt{for}' loops in \texttt{R},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # extract list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?mtcars  # get information on mtcars - data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp   Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{Cars93} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      "\texttt{FD}" stands for the Freedman-Diaconis rule for calculating histogram breaks,
+        <<Cars93_hist,fig.show='hide'>>=
+library(MASS)
+# ?Cars93  # get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # extract list of car types
+# sapply(Cars93, mean)  # calculate means of Cars93 columns
+# plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1", 
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/Cars93_hist-1}
   \end{columns}
 \end{block}
 
@@ -231,7 +455,7 @@ order(c(2, 1:4), 1:5)  # there's a tie
       Possible sources of bad data are: imported data, class coercion, numeric overflow,
       \vskip1ex
       Types of bad data:
-      \begin{itemize}[]
+      \begin{itemize}
         \item \texttt{NA} means Not Available (missing) data,
         \item \texttt{NaN} means Not a Number data,
         \item \texttt{Inf} means numeric overflow - divide by zero,
@@ -247,14 +471,14 @@ rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
 1/0  # Inf from divide by zero
-is.na(c(NA, 0/0, 1/0))  # test for NA
-is.nan(c(NA, 0/0, 1/0))  # test for NaN
+is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
 NA*1:4  # create vector of Nas
-v.na <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
-mean(v.na)  # returns NA, when NAs are input
-mean(v.na, na.rm=TRUE)  # remove NAs from input data
-v.na[!is.na(v.na)]  # delete the NA values
-sum(!is.na(v.na))  # count non-NA values
+bad_data <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+mean(bad_data)  # returns NA, when NAs are input
+mean(bad_data, na.rm=TRUE)  # remove NAs from input data
+bad_data[!is.na(bad_data)]  # delete the NA values
+sum(!is.na(bad_data))  # count non-NA values
       @
   \end{columns}
 \end{block}
@@ -302,18 +526,413 @@ head(airquality[!complete.cases(airquality), ])  # display some NAs
       \vspace{-1em}
       <<echo=2:30>>=
 rm(list=ls())
-good.air <- airquality[complete.cases(airquality), ]  # remove NAs
-dim(good.air)
-head(good.air)  # NAs removed
+good_air <- airquality[complete.cases(airquality), ]  # remove NAs
+dim(good_air)
+head(good_air)  # NAs removed
 library(zoo)  # load package zoo
-good.air <- na.locf(airquality)  # replace NAs
-dim(good.air)
-head(good.air)  # NAs replaced
+good_air <- na.locf(airquality)  # replace NAs
+dim(good_air)
+head(good_air)  # NAs replaced
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.4emin \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions have three components: 
+      \begin{itemize}
+        \item a list of formal arguments,
+        \item a body containing \texttt{R} code,
+        \item an environment,
+      \end{itemize}
+      An \texttt{R} function plus its environment is referred to as a function closure,
+      \vskip1ex
+      The function body must be enclosed in curly braces \texttt{\{\}},
+      \vskip1ex
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
+      \vskip1ex
+      \texttt{args()} displays the formal arguments of a function,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function with two arguments
+test_func <- function(first_arg, second_arg) {  # body
+  first_arg + second_arg  # returns last evaluated statement
+}  # end test_func
+
+test_func(1, 2)  # apply the function
+args(test_func)  # display argument
+
+# define function that uses variable from enclosure environment
+test_func <- function(first_arg, second_arg) {
+  first_arg + second_arg + glob_var
+}  # end test_func
+
+test_func(3, 2)  # error - glob_var doesn't exist yet!
+glob_var <- 10  # create glob_var
+test_func(3, 2)  # now works
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binding Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The formal arguments of a function are defined in its argument list,
+      \vskip1ex
+      When a function is called, it's passed a list of actual function arguments,
+      \vskip1ex
+      Formal arguments can be \texttt{bound} to actual arguments either by name or by position:
+      \begin{itemize}
+        \item by name: formal arguments are \texttt{bound} to actual arguments with the same name,
+        \item by position: the first formal argument is \texttt{bound} to the first actual argument, etc.
+      \end{itemize}
+      \texttt{Binding} by name takes precedence over \texttt{binding} by position: first all the named arguments are \texttt{bound}, then the remaining arguments are \texttt{bound} by position,
+      \vskip1ex
+      Partial argument names are matched to full names,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+test_func <- function(first_arg=2, second_arg=1) {
+# default values can be specified in the argument list
+  first_arg + 2*second_arg
+}  # end test_func
+
+test_func(first_arg=3, second_arg=2)  # bind by name
+test_func(first=3, second=2)  # partial name matching
+test_func(3, 2)  # bind by position
+test_func(second_arg=2, 3)  # mixed binding
+test_func()  # use default values of arguments
+test_func(3, 2, 1)  # too many arguments
+      @
+      All the actual arguments must be \texttt{bound} to formal arguments, and if not then an error \texttt{"unused argument"} is produced,
+      \vskip1ex
+      Formal arguments may be assigned default values so that when actual arguments are missing then their default values are used instead,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Values of \secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
+      \vskip1ex
+      \texttt{return()} statements are inserted in logical branches to terminate function execution and return its intended value,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function that returns invisibly
+test_func <- function(arg_var) {
+  if (!is.numeric(arg_var)) {
+    warning(paste("argument", arg_var, "isn't numeric"))
+    return(NULL)
+  }
+  2*arg_var
+}  # end test_func
+
+test_func(2)
+test_func("hello")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.4emThat Return \texttt{invisible}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If a return value is wrapped in the function \texttt{invisible()} then the return value isn't printed,
+      \vskip1ex
+      But if the function is assigned to a variable, then its return value is assigned to that variable,
+      \vskip1ex
+      \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function that returns invisibly
+return_invisible <- function(arg_var) {
+  invisible(arg_var)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Executing Function Calls Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Quite often we need to pass a list of arguments into a function that accepts multiple arguments,
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call on a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements one by one, instead of passing the whole list as one argument,
+      \vskip1ex
+      \texttt{do.call()} is often used to convert lists of vectors to matrices,
+      \vskip1ex
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+str(sum)  # "sum" accepts multiple arguments
+# passing a list of arguments to "sum" produces an error
+sum(list(1, 2, 3, 4))
+# do.call passes the list elements into "sum" one by one
+do.call(sum, list(1, 2, 3, 4))
+
+num_list <- list(1, 2, 3, 4)  # create numeric list
+do.call(rbind, num_list)  # returns single column matrix
+do.call(cbind, num_list)  # returns single row matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body, 
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+fibo_nacci <- function(seq_length) {
+  if (seq_length > 2) {
+    fib.seq <- fibo_nacci(seq_length-1)  # recursion
+    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
+  } else {
+    c(1, 1)  # initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(10), 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Calculating Skew}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} provides an easy way for users to write functions,
+      \vskip1ex
+      Function arguments can be bound by position or by name,
+      \vskip1ex
+      If the function arguments are missing then the default value is used,
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+rets_series <- diff(log(EuStockMarkets[, 1]))  # DAX returns
+
+# define function calc_skew for calculating the skew
+calc_skew <- function(time_series=rnorm(1000)) {  # default is normal
+# Calculates the skew of a time series of returns.
+  len_data <- length(time_series)  # number of observations
+# normalize time_series
+  time_series <- (time_series - mean(time_series))/sd(time_series)
+# calculate skew - last statement is automatically returned
+  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
+}  # end calc_skew
+
+# calculate skewn of DAX returns
+calc_skew(time_series=rets_series)  # bind arguments by name
+calc_skew(rets_series)  # bind arguments by position
+calc_skew()  # use default value of arguments
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
+      \vskip1ex
+      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+calc_skew  # show the function code
+
+getAnywhere(calc_skew)  # display function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lazy Evaluation of Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions delay evaluation of their arguments until they're needed by their \texttt{R} code,
+      \vskip1ex
+      This is called \emph{lazy} evaluation,
+      \vskip1ex
+      If the function body doesn't evaluate an argument, then the function won't throw an error, even if the argument is missing,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  2*arg1  # just multiply first argument
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # second argument was never evaluated!
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  cat(arg1, '\n')  # write to output
+  cat(arg2)  # write to output
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # first argument written to output
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The '...' Function Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '...' argument represents additional unknown arguments, that may be passed on to another nested function,
+      \vskip1ex
+      The '...' argument is also used when the number of arguments isn't known in advance,
+      \vskip1ex
+      Any arguments that appear after '...' in the argument list cannot be partially bound,
+      \vskip1ex
+      It's better practice to bind by name after the '...' in argument,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=2:30>>=
+rm(list=ls())
+match_dots <- function(arg1=2, arg2=1, ...) {  # define function match_dots
+# default values can be specified in the argument list
+  arg1 + 2*arg2 + sum(...)
+# the function returns the last evaluated statement
+}  # end match_dots
+match_dots(3, 2)  # match arguments by position
+match_dots(3, 2, 5, 8)  # extra arguments
+match_dots()  # use default value of arguments
+str(paste)  # function 'paste' can take many arguments
+paste('a', 'b', sep = ':')  # bind arguments by name
+paste('a', 'b', se = ':')  # partial name matching fails!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive \secname\hskip0.4emwith '\texttt{...}' Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \emph{Recursive} functions can also accept the '\texttt{...}' argument, 
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+sum_dots <- function(arg_var, ...) {  # define recursive function
+# returns the sum of its argument list
+  if (missing(...)) {  # check if dots are empty
+    return(arg_var)  # just one argument left
+  } else {
+    arg_var + sum_dots(...)  # sum remaining arguments
+  }  # end if
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -331,52 +950,52 @@ head(good.air)  # NAs replaced
   \vskip1ex
   Most packages need to be \emph{loaded} into \texttt{R} before they can be used,
   \vskip1ex
-  \texttt{R} includes a number of \emph{base} packages that are already installed and loaded,
+  \texttt{R} includes a number of \texttt{base} packages that are already installed and loaded,
   \vskip1ex
   There's also a special package called the \texttt{base} package, which is responsible for all the basic \texttt{R} functionality,
   \vskip1ex
-  \texttt{datasets} is a \emph{base} package containing various datasets, for example \texttt{EuStockMarkets},
-  \vskip1ex
+  \texttt{datasets} is a \texttt{base} package containing various datasets, for example \texttt{EuStockMarkets},
 \end{block}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Loading Packages}
+\subsection{\texttt{base} Packages}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
-\begin{block}{Loading Packages}
-\texttt{R} can run external libraries of functions called packages,\\
-Most packages need to be loaded before they can be used,
+\begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      There are two ways of loading package \texttt{MASS}
+      \texttt{R} includes a number of packages that are pre-installed (often called \texttt{base} packages),\\
+      Some \texttt{base} packages:
+      \begin{itemize}
+        \item \texttt{base} - basic \texttt{R} functionality,
+        \item \texttt{stats} - statistical functions and random number generation,
+        \item \texttt{graphics} - basic graphics,
+        \item \texttt{utils} - utility functions,
+        \item \texttt{datasets} - popular datasets,
+        \item \texttt{parallel} - support for parallel computation,
+      \end{itemize}
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library("MASS") or require("MASS")
-      @
+      Very popular packages:
+      \begin{itemize}
+        \item \texttt{MASS} - functions and datasets for "Modern Applied Statistics with S",
+        \item \texttt{ggplot2} - grammar of graphics plots,
+        \item \texttt{shiny} - interactive web graphics from R,
+        \item \texttt{slidify} - HTML5 slide shows from R,
+        \item \texttt{devtools} - create R packages,
+        \item \texttt{roxygen2} - document R packages,
+        \item \texttt{Rcpp} - integrate C++ code with R,
+        \item \texttt{RcppArmadillo} - interface to Armadillo linear algebra library,
+        \item \texttt{forecast} - linear models and forecasting,
+        \item \texttt{tseries} - time series analysis and computational finance,
+        \item \texttt{zoo} - time series and ordered objects,
+        \item \texttt{xts} - advanced time series objects,
+        \item \texttt{quantmod} - quantitative financial modeling framework,
+        \item \texttt{caTools} - moving window statistics for graphics and time series objects,
+      \end{itemize}
   \end{columns}
-\end{block}
-%\vskip1ex
-\pause
-
-\begin{block}{Difference between \texttt{library()} and \texttt{require()}}
-\texttt{library()} halts execution if the package can't be loaded,\\
-\texttt{require()} returns a logical value, TRUE if the package is loaded, FALSE if it isn't.\\
-\end{block}
-\pause
-
-\begin{block}{\color{red}{Rule of Thumb}}
-Use \texttt{library()} in script files that might be sourced,\\
-Use \texttt{require()} inside other functions.\\
-\end{block}
-\pause
-
-\begin{block}{Installing Packages}
-Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
-But most packages need to be $installed$ before they can be loaded,\\
 \end{block}
 
 \end{frame}
@@ -386,43 +1005,44 @@ But most packages need to be $installed$ before they can be loaded,\\
 \subsection{Installing Packages}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
-\begin{block}{Installing Packages from \texttt{CRAN}}
-Most of the widely used packages are available on \texttt{CRAN},\\
-For example package \texttt{AER}:\\
-\hskip1em\url{http://cran.r-project.org/web/packages/AER/}\\
+\begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      Install and load package \texttt{AER} in \texttt{R} Session:
-    \column{0.5\textwidth}
+    \column{0.4\textwidth}
+      Installing a package means downloading its executable files, and saving them to the local drive, so they can be called by the \texttt{R} system,
+      \vskip1ex
+      The function \texttt{install.packages()} installs packages from the \texttt{R} command line,
+      \vskip1ex
+      Most widely used packages (like \texttt{AER}) are available on \texttt{CRAN}:\\
+      \url{http://cran.r-project.org/web/packages/AER/}
+      \vskip1ex
+      Packages that aren't available on \texttt{CRAN} may be available on \texttt{R-Forge} or \texttt{GitHub},\\
+      \hskip1em\url{https://r-forge.r-project.org/}\\
+      \hskip1em\url{https://github.com/}
+      \vskip1ex
+      The function \texttt{installed.packages()} returns a matrix of all packages installed on the system,
+      \vskip1ex
+      Packages can also be installed in \texttt{RStudio} from the menu (go to \alert{Tools} and then \alert{Install packages}),\\
+    \column{0.6\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-install.packages("AER")  # install AER
-library("AER")  # load AER
+      <<>>=
+getOption("repos")  # get default package source
+.libPaths()  # get package save directory
       @
-  \end{columns}
-\end{block}
-\pause
-
-\begin{block}{Installing packages in \texttt{RStudio}}
-Go to \alert{Tools} and then \alert{Install packages}\\
-Then enter package name, for example \texttt{AER}
-\end{block}
-\pause
-
-\begin{block}{Packages on $R-Forge$}
-Many other packages are available on $R-Forge$:\\
-\hskip1em\url{https://r-forge.r-project.org/}\\
-For example packages which are part of the $ReturnAnalytics$ project,\\
-\hskip1em\url{https://r-forge.r-project.org/projects/returnanalytics/}\\
-\hskip1em\url{https://r-forge.r-project.org/R/?group_id=579}\\
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      Install package $PerformanceAnalytics$
-    \column{0.7\textwidth}
-      \vspace{-1em}
+      \vspace{-2em}
       <<eval=FALSE>>=
-install.packages("PerformanceAnalytics", 
-                 repos="http://R-Forge.R-project.org")
+install.packages("AER")  # install "AER" from CRAN
+# install "PerformanceAnalytics" from R-Forge
+install.packages(pkgs="PerformanceAnalytics",  # name
+                 lib="C:/Users/Jerzy/Downloads",  # directory
+                 repos="http://R-Forge.R-project.org")  # source
+      @
+      \vspace{-2em}
+      <<>>=
+pack_info <- installed.packages()  # matrix of packages
+dim(pack_info)
+# get a few package names and their versions
+pack_info[sample(x=1:100, 5), c("Package", "Version")]
+pack_info["xts", ]  # get info for package "xts"
       @
   \end{columns}
 \end{block}
@@ -431,9 +1051,52 @@ install.packages("PerformanceAnalytics",
 
 
 %%%%%%%%%%%%%%%
+\subsection{Loading Packages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      Most packages need to be \emph{loaded} before they can be used in an \texttt{R} session,
+      \vskip1ex
+      Loading a package means attaching the package \texttt{namespace} to the search path of an \texttt{R} session,
+      \vskip1ex
+      This allows \texttt{R} to call the package functions and data,
+      \vskip1ex
+      The functions \texttt{library()} and \texttt{require()} load packages, but in slightly different ways,
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library("MASS")
+# or
+require("MASS")
+      @
+  \end{columns}
+\end{block}
+%\vskip1ex
+
+\begin{block}{Difference between \texttt{library()} and \texttt{require()}}
+  \texttt{library()} halts execution if the package can't be loaded,\\
+  \texttt{require()} returns a logical value, TRUE if the package is loaded successfully, FALSE if it isn't.\\
+\end{block}
+
+\begin{block}{\color{red}{Rule of Thumb}}
+  Use \texttt{library()} in script files that might be sourced,\\
+  Use \texttt{require()} inside other functions.\\
+\end{block}
+
+\begin{block}{Installing Packages}
+  Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
+  But most packages need to be $installed$ before they can be loaded,\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{\texttt{CRAN} Package Views}
 \begin{frame}[fragile,t]{\subsecname}
-
+\vspace{-1em}
 \begin{columns}[T]
   \column{0.4\textwidth}
     \begin{block}{}
@@ -450,8 +1113,10 @@ install.packages("PerformanceAnalytics",
         \item Dependencies on other packages.
       \end{itemize}
     \end{block}
+    \begin{block}{}
+      The package source code can be downloaded by clicking on the \href{package source}{package source} link,
+    \end{block}
   \column{0.6\textwidth}
-    \vspace{-1em}
     \includegraphics[height=1.0\textwidth]{CRAN_Package.png}
 \end{columns}
 
@@ -490,126 +1155,33 @@ install.packages("PerformanceAnalytics",
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The package \texttt{Ecdat} contains data sets for econometric analysis,
       \vskip1ex
       The function \texttt{data()} loads external data or lists data sets in a package,
       \vskip1ex
       The data frame \texttt{Garch} contains daily currency prices,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<eval=FALSE>>=
+library()  # list all packages installed on the system
+search()  # list all loaded packages on search path
+
+# get documentation for package "Ecdat"
 packageDescription("Ecdat")  # get short description
-help(package="Ecdat")  # get documentation for package "Ecdat"
-data(package="Ecdat")  # show all datasets in package "Ecdat"
-library(Ecdat)  # load package Ecdat
-ls("package:Ecdat")  # list all objects in package "Ecdat"
+help(package="Ecdat")  # load help page
+library(Ecdat)  # load package "Ecdat"
+data(package="Ecdat")  # list all datasets in "Ecdat"
+ls("package:Ecdat")  # list all objects in "Ecdat"
 detach("package:Ecdat")  # remove Ecdat from search path
       @
 
       <<>>=
-library("Ecdat")  # data sets for econometric analysis
-class(Garch)
+library("Ecdat")  # load econometric data sets
+class(Garch)  # Garch is a data frame from "Ecdat"
 dim(Garch)  # daily currency prices
 head(Garch[, -2])  # col 'dm' is Deutsch Mark
 detach("package:Ecdat")  # remove Ecdat from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-n.globvar <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
-
-env.new <- new.env()  # create new environment
-parent.env(env.new)  # get calling environment of new environment
-assign("new_var1", 3, envir=env.new)  # assign Value to Name
-env.new$new_var2 <- 11  # create object in new environment
-ls(env.new)  # get objects in new environment
-ls(environment())  # get objects in current environment
-env.new$new_var1  # environments are subset like lists
-env.new[['new_var1']]  # environments are subset like lists
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
-      \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
-      \end{itemize}
-      The function \texttt{search()} returns the current search path for \texttt{R} objects,
-      \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
-      \vskip1ex
-      This allows referencing variables by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-search()  # get search path for R objects
-loadedNamespaces()
-my_var <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
-                        'trees'=c('pine', 'oak', 'maple'))
-my_var$trees
-attach(my_var)
-trees
-search()  # get search path for R objects
-detach(my_var)
       @
   \end{columns}
 \end{block}
@@ -624,22 +1196,21 @@ detach(my_var)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Package \emph{namespaces}:
-      \begin{itemize}[]
+      Package \texttt{namespaces}:
+      \begin{itemize}
         \item Provide a mechanism for calling objects from a package,
         \item Hide functions and data internal to the package,
         \item Prevent naming conflicts between user and package names,
       \end{itemize}
-      When a package is loaded using \texttt{library()} or \texttt{require()}, its \emph{namespace} is attached to the search path,
+      When a package is loaded using \texttt{library()} or \texttt{require()}, its \texttt{namespace} is attached to the search path,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=2:30>>=
 rm(list=ls())
 search()  # get search path for R objects
-library("MASS")  # load package 'MASS'
-search()  # get search path for R objects
-ls("package:MASS")
-detach("package:MASS")  # remove MASS from search path
+library("MASS")  # load package "MASS"
+head(ls("package:MASS"))  # list some objects in "MASS"
+detach("package:MASS")  # remove "MASS" from search path
       @
   \end{columns}
 \end{block}
@@ -647,135 +1218,52 @@ detach("package:MASS")  # remove MASS from search path
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Functions}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname\hskip0.5em in \texttt{R}}
+\subsection{Package Namespaces and the Search Path}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{R} functions have three components: 
-      \begin{itemize}
-        \item a list of formal arguments,
-        \item a body containing \texttt{R} code,
-        \item an environment,
-      \end{itemize}
-      An \texttt{R} function plus its environment is referred to as a function closure,
+      Packages may be loaded without their \texttt{namespace} being attached to the search path,
       \vskip1ex
-      Formal arguments can be matched to actual arguments by position or by name,
+      When packages are loaded, then packages they depend on are also loaded, but their \texttt{namespaces} aren't necessarily attached to the search path,
       \vskip1ex
-      Formal arguments can have default values so that when actual arguments are missing then their default values are used,
+      The function \texttt{loadedNamespaces()} lists all loaded \texttt{namespaces}, including those that aren't on the search path,
       \vskip1ex
-      The function body doesn't require a return statement, since by default \texttt{R} functions return the last evaluated statement,
-
+      The function \texttt{search()} returns the current search path for \texttt{R} objects,
+      \vskip1ex
+      \texttt{search()} returns many package \texttt{namespaces}, but not all the loaded \texttt{namespaces},
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-MyFunc <- function(my_var1=2, my_var2=1) {  # define function MyFunc
-# default values can be specified in the argument list
-  my_var1 + 2*my_var2
-# the function returns the last evaluated statement
-}  # end MyFunc
-MyFunc(my_var1=3, my_var2=2)  # match arguments by name
-MyFunc(3, 2)  # match arguments by position
-MyFunc()  # use default values of arguments
-# define function that uses enclosure environment
-MyFunc <- function(my_var1=2, my_var2=1) {
-# default values can be specified in the argument list
-  my_var1 + 2*my_var2 + n.globvar
-# the function returns the last evaluated statement
-}  # end MyFunc
-MyFunc(3, 2)  # n.globvar doesn't exist yet!
-n.globvar <- 10
-MyFunc(3, 2)  # now works
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function for Calculating Moments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} provides an easy way for users to write functions,
-      \vskip1ex
-      Function arguments can be matched by position or by name,
-      \vskip1ex
-      If the function arguments are missing then the default value is used,
-      \vskip1ex
-      Functions return the value of the last expression that is evaluated,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-ts.rets <- diff(log(EuStockMarkets))[, 1]  # DAX returns
-
-# define function CalcSkew to calculate the skew
-CalcSkew <- function(ts.data=rnorm(1000)) {  # default is normal
-# Calculates the skew of a time series of returns.
-  i.num <- length(ts.data)  # number of observations
-  n.mean <- mean(ts.data)
-  n.sd <- sd(ts.data)
-# the last statement is what is returned
-  i.num*sum(((ts.data - n.mean)/n.sd)^3)/((i.num-1)*(i.num-2))
-}  # end CalcSkew
-
-# calculate skewness of DAX returns
-CalcSkew(ts.data=ts.rets)  # match arguments by name
-CalcSkew(ts.rets)  # match arguments by position
-CalcSkew()  # use default value of arguments
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
-      \vskip1ex
-      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
-      \vskip1ex
-      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
-    \column{0.7\textwidth}
-      \vspace{-1em}
         <<>>=
-CalcSkew  # show the function code
+loadedNamespaces()  # get names of loaded namespaces
 
-getAnywhere(CalcSkew)  # display function
+search()  # get search path for R objects
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
 
 
 %%%%%%%%%%%%%%%
 \subsection{Homework Assignment}
 \begin{frame}[t]{\subsecname}
-
+\vspace{-1em}
 \begin{block}{Required}
   \begin{itemize}[]
-    \item Create a function for calculating the kurtosis of a time series of returns,
-    \item Using this function calculate the kurtosis of DAX returns, and of t-distribution returns with four degrees of freedom (use the same number of data points in both cases),
-    \item Plot the probability density of DAX returns together with t-distribution returns with four degrees of freedom on a single plot,
+    \item Using the function \texttt{which()} perform the following:
+    \item Create a data frame that is a subset of \texttt{mtcars} and that contains only cars with 6 cylinders,
+    \item Find the name of the car with the highest horsepower among 6 cylinder cars,
+    \item Calculate the horsepower and the weight of that car,
+    \item Create a \texttt{function} called "mult\_dots", which takes a '...' argument, and a single numeric argument called "fac\_tor", as follows: function (..., fac\_tor),
+    \item The \texttt{function} "mult\_dots" should sum up the '...' argument, multiply the sum by "fac\_tor", and return the result,
+    \item Apply the \texttt{function} "mult\_dots" so that it adds "1, 2, 3" and then multiplies the sum by "2",
   \end{itemize}
 \end{block}
 \pause

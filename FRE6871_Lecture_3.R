@@ -1,7 +1,7 @@
 
 
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -11,12 +11,12 @@ knit_theme$set(thm)
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
-my_var1 <- c(2, 4, 6)
-my_var1 < 5
-(my_var1 < 5) & (my_var1 > 3)
-my_var1[(my_var1 < 5) & (my_var1 > 3)]
-my_var2 <- c(-10, 0, 10)
-my_var1 < my_var2
+vec_var1 <- c(2, 4, 6)
+vec_var1 < 5
+(vec_var1 < 5) & (vec_var1 > 3)
+vec_var1[(vec_var1 < 5) & (vec_var1 > 3)]
+vec_var2 <- c(-10, 0, 10)
+vec_var1 < vec_var2
 c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
 
@@ -25,55 +25,84 @@ c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
 rm(list=ls())
 c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
-FuncTrue = function() {cat("FuncTrue\t"); TRUE}
-FuncFalse = function() {cat("FuncFalse\t"); FALSE}
-FuncTrue() | FuncFalse()
-FuncTrue() || FuncFalse()  # FuncFalse() isn't evaluated at all!
-my_var <- c(2, 4, 6)
+echo_true = function() {cat("echo_true\t"); TRUE}
+echo_false = function() {cat("echo_false\t"); FALSE}
+echo_true() | echo_false()
+echo_true() || echo_false()  # echo_false() isn't evaluated at all!
+vec_var <- c(2, 4, 6)
 # works (does nothing) using '&&'
-if (is.matrix(my_var) && (my_var[2, 3] > 0)) {
-  my_var[2, 3] <- 1
+if (is.matrix(vec_var) && (vec_var[2, 3] > 0)) {
+  vec_var[2, 3] <- 1
 }
 # no short-circuit so fails (throws an error)
-if (is.matrix(my_var) & (my_var[2, 3] > 0)) {
-  my_var[2, 3] <- 1
+if (is.matrix(vec_var) & (vec_var[2, 3] > 0)) {
+  vec_var[2, 3] <- 1
 }
 
 
 
-rm(list=ls())
-my_var1 <- -1
-if (my_var1) {  # positive numbers are TRUE, otherwise FALSE
-  my_var2 <- 4
-} else if (my_var1 == 0) {  # 'else if' together on same line
-  my_var2 <- 0
-} else {  # keep 'else' together with curly braces
-  my_var2 <- -4
-}
-my_var2
+num_var <- 2
+num_var==2
+identical(num_var, 2)
+
+identical(num_var, NULL) 
+num_var==NULL
+
+vec_var <- c(2, 4, 6)
+vec_var==2
+identical(vec_var, 2)
+
+
+
+table_values <- sample(1:10)
+table_values
+which(table_values==5)
+which(table_values>5)
+which.max(table_values)
+which.min(table_values)
+match(5, table_values)
+match(-5, table_values)
+5 %in% table_values
+-5 %in% table_values
+c(5, -5) %in% table_values
 
 
 
 rm(list=ls())
-# create two vectors
-my_var1 <- sin(0.25*pi*1:10)
-my_var2 <- cos(0.25*pi*1:10)
+num_var1 <- 1
+
+if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+  num_var2 <- 4
+} else if (num_var1 == 0) {  # 'else if' together on same line
+  num_var2 <- 0
+} else {  # 'else' together with curly braces
+  num_var2 <- -4
+}  # end if
+
+num_var2
+
+
+
+rm(list=ls())
+# create two numeric vectors
+vec_var1 <- sin(0.25*pi*1:10)
+vec_var2 <- cos(0.25*pi*1:10)
 # create third vector using 'ifelse'
-my_var3 <- ifelse(my_var1 > my_var2, my_var1, 
-         my_var2)
+vec_var3 <- ifelse(vec_var1 > vec_var2, 
+          vec_var1, vec_var2)
 # cbind all three together
-my_var4 <- cbind(my_var1, my_var2, my_var3)
+vec_var4 <- cbind(vec_var1, vec_var2, vec_var3)
 
 # set plotting parameters
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
     cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
     cex.sub=0.5)
 # plot matrix
-matplot(my_var4, type="l", lty="solid", 
+matplot(vec_var4, type="l", lty="solid", 
 col=c("green", "blue", "red"), 
 lwd=c(2, 2, 2), xlab="", ylab="")
 # add legend
-legend(x="bottomright", legend=colnames(my_var4), 
+legend(x="bottomright", legend=colnames(vec_var4), 
        title="", inset=0.05, cex=0.8, lwd=2, 
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
 
@@ -97,142 +126,150 @@ while (some.index < 4) {  # while loop
 
 
 rm(list=ls())
-fib.seq <- c()  # create empty vector
+fib.seq <- numeric()  # create zero length numeric vector
 fib.seq[1] <- 1  # initialize
 fib.seq[2] <- 1  # initialize
+
 for (i in 3:10) {  # perform recurrence loop
   fib.seq[i] <- fib.seq[i-1] + fib.seq[i-2]
 }  # end for
+
 fib.seq
 
 
 
 rm(list=ls())
-FibRec <- function(n.num) {
-  if (n.num > 2) {
-    fib.seq <- FibRec(n.num-1)  # recursion
+fibo_nacci <- function(seq_length) {
+  if (seq_length > 2) {
+    fib.seq <- fibo_nacci(seq_length-1)  # recursion
     c(fib.seq, sum(tail(fib.seq, 2)))  # return this
   } else {
     c(1, 1)  # initialize and return
   }
-}  # end FibRec
-FibRec(10)
-tail(FibRec(10), 2)
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(10), 2)
 
 
 
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-v.xval <- seq(-5, 7, length=100)
-v.yval <- dnorm(v.xval, mean=1.0, sd=2.0)
-plot(v.xval, v.yval, type="l", lty="solid", 
-     xlab="", ylab="")
-title(main="Normal Density Function", line=0.5)
-n.low <- 3; n.up <- 5  # set lower and upper bounds
-# set polygon base
-v.reg <- ((v.xval >= n.low) & (v.xval <= n.up))
-polygon(c(n.low, v.xval[v.reg], n.up),  # draw polygon
-c(-1, v.yval[v.reg], -1), col="red")
+x_var <- seq(-2*pi, 2*pi, len=100)  # x values
 
+# open Windows graphics device
+x11(width=11, height=7, title="simple plot")
 
-
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-v.xval <- seq(-4, 4, length=100)
-v.sigma <- c(0.5, 1, 1.5, 2)  # sigma values
-# create plot colors
-v.colors <- c("red", "black", "blue", "green")
-# create legend labels
-v.labels <- paste("sigma", v.sigma, sep='=')
-# plot an empty chart
-plot(v.xval, dnorm(v.xval, sd=v.sigma[1]), 
-     type="n", xlab="", ylab="", 
-     main="Normal Distributions")
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(v.xval, dnorm(v.xval, sd=v.sigma[in_dex]), 
-lwd=2, col=v.colors[in_dex])
-}
+# plot a sine function using basic line plot
+plot(x=x_var, y=sin(x_var), xlab="x-val", 
+     ylab="y-val", type='l', lwd=2, col="red")
+# add a cosine function
+lines(x=x_var, y=cos(x_var), lwd=2, col="blue")
+# add title
+title(main="sine and cosine functions", line=0.1)
 # add legend
-legend("topright", inset=0.05, title="Sigmas", 
-       v.labels, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=v.colors)
+legend(x="topright", legend=c("sine", "cosine"),
+       title="legend", inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("red", "blue"))
+graphics.off()  # close all graphics devices
 
 
 
-rm(list=ls())
+par(mar=c(5, 3, 1, 1), oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+attach(mtcars)  # add mtcars to search path
+# plot scatterplot horsepower vs miles per gallon
+plot(hp, mpg, 
+     main="miles per gallon vs horsepower")
+
+# add labels using wordcloud, to prevent overlaps
+library(wordcloud)
+textplot(x=hp, y=mpg, words=rownames(mtcars))
+
+# don't forget to detach!!!
+detach(mtcars)
+
+
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-v.xval <- seq(0, 20, length=100)
-v.df <- c(2, 5, 8, 11)  # df values
-# create plot colors
-v.colors <- c("red", "black", "blue", "green")
-# create legend labels
-v.labels <- paste("df", v.df, sep='=')
-# plot an empty chart
-plot(v.xval, dchisq(v.xval, df=v.df[1]), 
-     type="n", xlab="", ylab="", 
-     main="Chi-squared Distributions")
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(v.xval, dchisq(v.xval, df=v.df[in_dex]), 
-lwd=2, col=v.colors[in_dex])
-}
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-3, 3), 
+      xlab="", ylab="", lwd=2, col="blue")
+# add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE, 
+      type="l", lwd=2, col="red")
+
+# add title
+title(main="Normal probability distribution functions", 
+      line=0.1)
 # add legend
-legend("topright", inset=0.05, 
-       title="Degrees of freedom", v.labels, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=v.colors)
+legend(x="topright", legend=c("Normal", "shifted"),
+       title="legend", inset=0.05, cex=0.8, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "red"))
 
 
 
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-v.xval <- seq(-5, 5, length=100)
-v.df <- c(3, 6, 9)  # df values
-# create plot colors
-v.colors <- c("black", "red", "blue", "green")
-# create legend labels
-v.labels <- c('normal', paste("df", v.df, sep='='))
-# plot chart of normal distribution
-plot(v.xval, dnorm(v.xval), type="l", 
-     lwd=2, xlab="", ylab="", 
-     main="t-distributions")
-# add lines to plot
-for (in_dex in 1:3) {
-  lines(v.xval, dt(v.xval, df=v.df[in_dex]), 
-lwd=2, col=v.colors[in_dex+1])
-}
+par(mar=c(7, 4, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+pois_vector <- rpois(100, 4)  # Poisson numbers
+# calculate contingency table
+pois_table <- table(pois_vector)
+pois_table <- pois_table/sum(pois_table)
+pois_table
+
+library(MASS)  # create histogram of Poisson variables
+truehist(pois_vector, nbins="FD", col="blue", xlab="No. of events", 
+ ylab="Frequency of events", main="Poisson histogram")
+x_var <- 0:max(pois_vector)  # add Poisson density
+lines(x=x_var, y=dpois(x_var, lambda=4), lwd=4, col="red")
 # add legend
-legend("topright", inset=0.05, 
-       title="Degrees\n of freedom", v.labels, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=v.colors)
+legend(x="topright", legend="Poisson density", title="", inset=0.05, 
+       cex=0.8, bg="white", lwd=4, lty=1, col="red")
 
 
 
-rm(list=ls())
+graph_params <- par()  # get existing parameters
+par("mar")  # get plot margins
+par(mar=c(2, 1, 2, 1))  # set plot margins
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set title and label margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(las=1)  # set axis labels to horizontal
+par(ask=TRUE)  # pause, ask before plotting
+par(mfrow=c(2, 2))  # plot on 2x2 grid by rows
+for (i in 1:4) {  # plot 4 panels
+  barplot(sample(1:6), main=paste("panel", i), 
+  col=rainbow(6), border=NA, axes=FALSE)
+  box()
+}
+par(ask=FALSE)  # restore automatic plotting
+par(new=TRUE)  # allow new plot on same chart
+par(graph_params)  # restore original parameters
+
+
+
 Sys.Date()  # get today's date
-date_time <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
 date_time
-class(date_time)
-as.Date("06-15-2013", "%m-%d-%Y")  # specify format
+class(date_time)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # specify format
 date_time + 20  # add 20 days
 as.numeric(date_time)  # get internal integer representation
-some.date <- as.Date("11/22/2013", "%m/%d/%Y")
-some.date
+date_old <- as.Date("07/14/2013", "%m/%d/%Y")
+date_old
 # difference between dates
-difftime(some.date, date_time, units="weeks")
+difftime(date_time, date_old, units="weeks")
 weekdays(date_time)  # get day of the week
+# coerce numeric into date-times
+date_time <- 0
+attributes(date_time) <- list(class="Date")
+date_time  # "Date" object
+structure(0, class="Date")  # "Date" object
 
 
 
-rm(list=ls())
 date_time <- Sys.time()  # get today's date and time
 date_time
-class(date_time)  # date and time is are POSIXct objects
+class(date_time)  # POSIXct object
 as.numeric(date_time)  # get internal integer representation
-# convert character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-as.POSIXct("2014-08-15 15:30:10")
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2014-07-14 13:30:10")
 format(date_time)  # convert POSIXct to character string
 class(format(date_time))  # character string
 date_time + 20  # add 20 seconds
@@ -244,10 +281,10 @@ trunc.POSIXt
 
 
 
-# convert character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2013-06-15 18:30:10")
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
 date_time
-class(date_time)
+class(date_time)  # POSIXlt object
 aperm(as.matrix(unclass(date_time)))  # get internal representation
 
 date_time + 20  # add 20 seconds
@@ -255,114 +292,158 @@ class(date_time + 20)  # implicit coercion to POSIXct
 
 
 
-Sys.time()  # get today's date and time
 Sys.timezone()  # get time-zone
 Sys.setenv(tz="UTC")  # set time-zone to UTC
 Sys.timezone()  # get time-zone
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+date_time <- Sys.time()  # today's date and time
+# convert to character in different TZ
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# parse back to POSIXct
+as.POSIXct(format(date_time, tz="America/New_York"))
+# difference between local time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) - 
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
 
-format(date_time, tz="EDT")  # convert to character in different TZ
-
-as.POSIXlt(format(date_time, tz="UTC"))  # convert back to POSIXlt
-
-Sys.setenv(tz="America/New_York")  # set time-zone to EDT
-format(Sys.time(), tz="")
-format(Sys.time(), tz="UTC")
-as.POSIXlt(format(Sys.time(), tz="UTC")) - # difference between
-  as.POSIXlt(format(Sys.time(), tz=""))  # local time and UTC
 
 
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2014-07-14 18:30:10")
+class(as.POSIXlt("2014-07-14 18:30:10")+3600)  # coercion to POSIXct
+Sys.setenv(tz="America/New_York")  # set time-zone to "New York"
+date_time <- as.POSIXct("2014-07-14 18:30:10", tz="America/New_York")
+date_time
+class(date_time)  # POSIXct object
+date_time + 20  # add 20 seconds
+as.numeric(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXct(format(date_time, tz="UTC"))  # parse back to POSIXct
+as.POSIXct(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXct(format(Sys.time(), tz=""))  # local time and UTC
 
-rm(list=ls())
+
+
+library(lubridate)  # load lubridate
+# parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+date_time <- mdy("07-14-2014", tz="America/New_York")
+date_time
+class(date_time)  # POSIXct object
+dmy("14.07.2014", tz="America/New_York")
+
+# parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y", 
+                  tz="America/New_York")
+dmy(14072014, tz="America/New_York")
+
+# parse decimal to date-times
+decimal_date(date_time)
+date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(date_time), tz="America/New_York")
+
+
+
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, 
+               tz="America/New_York")
+date_time
+
+# get same moment of time in "UTC" time zone
+with_tz(date_time, "UTC")
+as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
+
+# get same clock time in "UTC" time zone
+force_tz(date_time, "UTC")
+as.POSIXct(format(date_time), tz="UTC")
+
+# same moment of time
+date_time - with_tz(date_time, "UTC")
+
+# different moments of time
+date_time - force_tz(date_time, "UTC")
+
+
+
+library(lubridate)  # load lubridate
+# Daylight Savings Time handling periods vs durations
+date_time <- as.POSIXct("2013-03-09 11:00:00", 
+                  tz="America/New_York")
+date_time
+date_time + ddays(1)  # add duration
+date_time + days(1)  # add period
+
+leap_year(2012)  # leap year
+date_time <- dmy(01012012, tz="America/New_York")
+date_time
+date_time + dyears(1)  # add duration
+date_time + years(1)  # add period
+
+
+
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, tz="America/New_York")
+date_time
+# add periods to a date-time
+c(date_time + seconds(1), date_time + minutes(1), 
+date_time + days(1), date_time + months(1))
+
+# create vectors of dates
+date_time <- ymd(20140714, tz="America/New_York")
+date_time + 0:2 * months(1)  # monthly dates
+date_time + months(0:2)
+date_time + 0:2 * months(2)  # bi-monthly dates
+date_time + seq(0, 5, by=2) * months(1)
+seq(date_time, length=3, by="2 months")
+
+# adding monthly periods can create invalid dates
+date_time <- ymd(20120131, tz="America/New_York")
+date_time + 0:2 * months(1)
+date_time + months(1)
+date_time + months(2)
+
+
+
+library(zoo)  # load zoo
+library(RQuantLib)  # load RQuantLib
+
+# create daily date series of class 'Date'
+date_index <- Sys.Date() + -5:2
+date_index
+
+# create logical vector of business days
+bus.days <- isBusinessDay(  # RQuantLib calendar
+  calendar="UnitedStates/GovernmentBond", date_index)
+
+# create daily series of business days
+bus_index <- date_index[bus.days]
+bus_index
+
+
+
 library(zoo)  # load package zoo
 date_time <- Sys.Date()  # create date series of class 'Date'
-daily.index <- date_time + 0:365  # daily series over one year
-head(daily.index, 4)  # print first few dates
-format(head(daily.index, 4), "%m/%d/%Y")  # print first few dates
-# create daily date and time series of class 'POSIXct'
-daily.index <- seq(Sys.time(), by="days", length.out=365)
-head(daily.index, 4)  # print first few dates
-format(head(daily.index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
+date_index <- date_time + 0:365  # daily series over one year
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y")  # print first few dates
+# create daily date-time series of class 'POSIXct'
+date_index <- seq(Sys.time(), by="days", length.out=365)
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
 # create series of monthly dates of class 'zoo'
-monthly.index <- yearmon(2010+0:36/12)
-head(monthly.index, 4)  # print first few dates
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # print first few dates
 # create series of quarterly dates of class 'zoo'
-qrtly.index <- yearqtr(2010+0:16/4)
-head(qrtly.index, 4)  # print first few dates
-# convert quarterly 'zoo' dates to POSIXct
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # print first few dates
+# parse quarterly 'zoo' dates to POSIXct
 Sys.setenv(tz="UTC")
-as.POSIXct(head(qrtly.index, 4))
-
-
-
-set.seed(1121)  # for reproducibility
-my_var <- 100
-# create monthly time series starting 1990
-ts_var <- ts(data=cumsum(rnorm(my_var)), 
-     frequency=12, start=c(1990, 1))
-class(ts_var)  # class 'ts'
-# set plot paramaters - margins and font scale
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 1, 0))  # set axis title and labels
-par(mar=c(5, 1, 1, 1))  # set plot margins
-par(cex.lab=0.8,  # set font scales
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-plot(ts_var, type="l",  # perform plot
-     col="red", lty="solid", xlab="", ylab="")
-title(main="Random Prices", line=-1)  # add title
-# window the time series
-ts.new <- window(ts_var, start=1992, end=1997)
-
-
-
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-class(EuStockMarkets)  # multiple ts object
-dim(EuStockMarkets)
-head(EuStockMarkets)  # get first six rows
-plot(EuStockMarkets, main="", xlab="")  # plot all the columns
-title(main="EuStockMarkets", line=-1)  # add title
-
-
-
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# calculate percentage returns
-ts.rets <- diff(log(EuStockMarkets))
-# calculate mean and standard deviation of returns
-c(mean(ts.rets[, 1]), sd(ts.rets[, 1]))
-# plot histogram
-hist(ts.rets[, 1], breaks=30, main="", xlim=c(-0.04, 0.04), 
-     ylim=c(0, 60), xlab="", ylab="", freq = FALSE)
-lines(density(ts.rets[, 1]),  # draw a line
-      col='red', lwd=2)
-ch.title <- paste(colnames(EuStockMarkets)[1], 'returns')
-title(main=ch.title, line=-1)  # add title
-
-
-
-# set plot paramaters - margins and font scale
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 1, 0))  # set axis title and labels
-par(mar=c(5, 1, 1, 1))  # set plot margins
-par(cex.lab=0.8,  # set font scales
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # for reproducibility
-max.simu <- 1000  # max simulation trials
-v.simu <- 0*1:max.simu  # initialize trials
-barrier.level <- 20  # barrier level
-v.simu[1] <- rnorm(1)  # first simulation value
-sim.index <- 2  # initialize simulation index
-while ((sim.index <= max.simu) && 
- (v.simu[sim.index - 1] < barrier.level)) {
-  v.simu[sim.index] <- v.simu[sim.index - 1] + rnorm(1)
-  sim.index <- sim.index + 1
-}  # end while
-if (sim.index <= max.simu) {  # fill zero prices
-  v.simu[sim.index:max.simu] <- v.simu[sim.index - 1]
-}
-# create daily time series starting 2011
-ts_var <- ts(data=v.simu, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # perform plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier.level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
+as.POSIXct(head(qrtly_index, 4))
 
 

@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -165,7 +165,7 @@ c(1, 'b', 'c')  # create vector using c() combine function
       "\texttt{\textbackslash{}n}" for new-line,\\
       "\texttt{\textbackslash{}}\texttt{\textbackslash{}}" for a (single) backslash character
       \vskip1ex
-      The function \texttt{cat()} concatenates strings and writes to output, without returning any values,
+      The function \texttt{cat()} concatenates strings and echos them to console, without returning any values,
       \vskip1ex
       The function \texttt{cat()} is useful in user-defined functions,
     \column{0.6\textwidth}
@@ -196,7 +196,9 @@ cat("Enter\\backslash")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{paste()} concatenates its arguments into a string, and coerces them to characters if needed,
+      The function \texttt{paste()} concatenates its arguments into a string, coerces them to characters if needed, and returns the string,
+      \vskip1ex
+      If a vector or list is passed to \texttt{paste()}, together with a \texttt{collapse} string, then \texttt{paste()} concatenates the elements into a string, separated by the \texttt{collapse} string,
       \vskip1ex
       The function \texttt{strsplit()} splits the elements of a character vector,
       \vskip1ex
@@ -209,19 +211,18 @@ cat("Enter\\backslash")
 str_var1 <- "Hello"  # define a character string
 str_var2 <- "World!"  # define a character string
 
-paste(str_var1, str_var2, sep=' ')  # concatenate
-
+paste(str_var1, str_var2, sep=' ')  # concatenate and return value
+cat(str_var1, str_var2)  # concatenate and echo to console
 paste('a', 1:4, sep='-')  # convert, recycle and concatenate
 
-cat(str_var1, str_var2)  # concatenate and write to output
-
-strsplit("Hello World", split='r')  # split string
-
-substring("Hello World", 3, 6)  # extract characters from 3 to 6
+paste(c("a1", "a2", "a3"), collapse="+")  # collapse vector to string
+paste(list("a1", "a2", "a3"), collapse="+")
 
 paste("Today is", Sys.time())  # coerce and concatenate strings
-
 paste("Today is", format(Sys.time(), "%B-%d-%Y"))
+
+strsplit("Hello World", split='r')  # split string
+substring("Hello World", 3, 6)  # extract characters from 3 to 6
       @
   \end{columns}
 \end{block}
@@ -277,31 +278,24 @@ glob2rx("*.doc")
         \item characters,
         \item logical vectors,
       \end{itemize}
+      \vskip1ex
+      Vectors can be multiplied and squared element by element,
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
 vec_var <- c(pi, exp(1), -digamma(1))  # define a vector
 vec_var
+
 vec_var[2]  # get second element
 vec_var[-2]  # get all elements, except the second element
-vec_var[c(F, T, T)]  # get second and third elements
+
+vec_var[c(FALSE, TRUE, TRUE)]  # get second and third elements
 vec_var == vec_var[2]  # logical vector of elements equal to the second one
+vec_var[vec_var == vec_var[2]]  # get all elements equal to the second one
+
 vec_var < 1  # logical vector of elements less than one
 vec_var[vec_var > 1]  # get all elements greater than one
-      @
-  \end{columns}
-\end{block}
-\pause
 
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      Vectors can be multiplied and squared element by element,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<echo=2:30>>=
-vec_var <- c(pi, exp(1), -digamma(1))
-vec_var
 2*vec_var  # multiply all elements by 2
 vec_var^2  # square all elements
       @
@@ -339,7 +333,7 @@ seq(10)  # sequence from 1 to 10
 seq(along=(-5:5))  # instead of 1:length(obj)
 seq(from=0, to=1, len=11)  # vector of decimals from 0 to 1.0
 seq(from=0, to=1, by=0.1)  # vector of decimals from 0 to 1.0
-seq(-2,2, len=10)  # 10 evenly distributed numbers from -2 to 2
+seq(-2,2, len=11)  # 10 evenly distributed numbers from -2 to 2
 rep(100, times=5)  # replicate a number
 character(5)  # create empty character vector
 numeric(5)  # create empty numeric vector
@@ -357,7 +351,9 @@ numeric(0)  # create zero length vector
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Vector elements can be assigned \texttt{names},
+      Vector elements can be assigned \texttt{names} using a list of symbol-value pairs,
+      \vskip1ex
+      The \texttt{names} of a vector can be modified using the "\texttt{names() <-}" assignment,
       \vskip1ex
       Vectors can be combined together and appended,
       \vskip1ex
@@ -385,7 +381,7 @@ c('a', letters[5:10])  # combine two vectors of letters
 
 
 %%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Filtering\hskip0.5em\subsecname}
+\begin{frame}[fragile,t]{Filtering Vectors}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
@@ -472,9 +468,9 @@ mat_var  # by default matrices are constructed column-wise
 
 mat_var[2, 3]  # get third element from second row
 mat_var[2, ]  # get second row
-mat_var[ ,3]  # get third column
+mat_var[, 3]  # get third column
 mat_var[, c(1,3)]  # get first and third column
-mat_var[ ,-2]  # remove second column
+mat_var[, -2]  # remove second column
       @
   \end{columns}
 \end{block}
@@ -504,7 +500,6 @@ mat_var[ ,-2]  # remove second column
 attributes(mat_var)  # get matrix attributes
 dim(mat_var)  # get dimension attribute
 class(mat_var)  # get class attribute
-
 rownames(mat_var) <- c("row1", "row2")  # set the rownames attribute
 colnames(mat_var) <- c("col1", "col2", "col3")  # set the colnames attribute
 mat_var
@@ -809,20 +804,26 @@ tail(cars, n=5)  # get last five rows
     \column{0.3\textwidth}
       Data frames can be sorted on any column,
       \vskip1ex
-      The function \texttt{order()} returns a permutation vector,
+      The function \texttt{sort()} returns a sorted vector,
+      \vskip1ex
+      The function \texttt{order()} returns a permutation index,
       \vskip1ex
       \texttt{order()} can take several vectors as input, to break any ties,
     \column{0.7\textwidth}
       \vspace{-1em}
-      <<echo=6:30>>=
+      <<echo=8:30>>=
 type <- c('rose', 'daisy', 'tulip')  # character vector
 color <- c('red', 'white', 'yellow')  # character vector
 price <- c(1.5, 0.5, 1.0)  # numeric vector
-data_frame <- data.frame(type,  # create a data frame
-                         color, price)
-rownames(data_frame) <- c('flower1',  # assign rownames
-                          'flower2', 'flower3')
-data_frame
+# create a data frame
+data_frame <- data.frame(type, color, price)
+# assign rownames
+rownames(data_frame) <- c('flower1', 'flower2', 'flower3')
+sort_data <- sample(1:6)  # permute data
+sort_data
+sort(sort_data)  # sorted data
+order(sort_data)  # permution index
+sort_data[order(sort_data)]  # permution index
 order(data_frame$price)  # permute on price
 data_frame[order(data_frame$price), ]  # sort on price
 data_frame[order(data_frame$color), ]  # sort on color
@@ -848,6 +849,10 @@ order(c(2, 1:4), 1:5)  # there's a tie
       \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
       \vskip1ex
       The function \texttt{unique()} extracts unique elements of an object,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      \vskip1ex
+      \texttt{sapply()} performs a loop over the list of objects, and replaces '\texttt{for}' loops in \texttt{R},
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
@@ -905,12 +910,15 @@ sapply(mtcars, mean)  # calculate means of mtcars columns
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{mtcars} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
+    \column{0.5\textwidth}
+      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
       \vskip1ex
-    \column{0.7\textwidth}
-      \vspace{-1em}
-        <<Cars93_hist>>=
+      The function \texttt{hist()} calculates and plots a histogram,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      "\texttt{FD}" stands for the Freedman-Diaconis rule for calculating histogram breaks,
+        <<Cars93_hist,fig.show='hide'>>=
 library(MASS)
 # ?Cars93  # get information on Cars93
 dim(Cars93)
@@ -918,11 +926,11 @@ head(colnames(Cars93))
 # head(Cars93, 2)
 unique(Cars93$Type)  # extract list of car types
 # sapply(Cars93, mean)  # calculate means of Cars93 columns
-# plot histogram of Highway MPG
-hist(Cars93$MPG.highway, col="lightblue1", main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+# plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1", 
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
       @
-      \vspace{-2em}
-      \hspace*{1em}
+    \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/Cars93_hist-1}
   \end{columns}
 \end{block}
@@ -994,7 +1002,9 @@ head(split_iris$setosa, 2)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      The \texttt{tapply()} function applies a function to sub-vectors aggregated using a factor,
+      The \texttt{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \texttt{split-apply-combine} procedure in a single function call, 
       \vskip1ex
       The \texttt{by()} function is a wrapper for \texttt{tapply()},
       \vskip1ex
@@ -1018,6 +1028,39 @@ with(mtcars, tapply(mpg, cyl, mean))
 # can also use the functions by() and aggregate()
 with(mtcars, by(mpg, cyl, mean))
 aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \texttt{split-apply-combine} Returning Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Sometimes the \texttt{split-apply-combine} procedure returns a list of vectors,
+      \vskip1ex
+      Lists of vectors can be flattened into matrices using the function \texttt{do.call()},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+data_cars <- sapply(split_cars,  # get several mpg stats for each cylinder group
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+is.list(data_cars)  # lapply produces a list
+do.call(cbind, data_cars)  # do.call flattens list into a matrix
       @
   \end{columns}
 \end{block}
@@ -1255,13 +1298,13 @@ c(typeof(my_var), mode(my_var), class(my_var))
     \column{0.4\textwidth}
       \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \texttt{class}, etc., 
       \vskip1ex
-      The attributes of an object is a named \texttt{list} of \texttt{tag=value} pairs,
+      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
       \vskip1ex
       The function \texttt{attributes()} returns the attributes of an object,
       \vskip1ex
       The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
       \vskip1ex
-      The function \texttt{structure()} adds attributes to an object (specified as \texttt{tag=value} pairs), and returns it,
+      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
@@ -1400,14 +1443,14 @@ rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
 1/0  # Inf from divide by zero
-is.na(c(NA, 0/0, 1/0))  # test for NA
-is.nan(c(NA, 0/0, 1/0))  # test for NaN
+is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
 NA*1:4  # create vector of Nas
-v.na <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
-mean(v.na)  # returns NA, when NAs are input
-mean(v.na, na.rm=TRUE)  # remove NAs from input data
-v.na[!is.na(v.na)]  # delete the NA values
-sum(!is.na(v.na))  # count non-NA values
+bad_data <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+mean(bad_data)  # returns NA, when NAs are input
+mean(bad_data, na.rm=TRUE)  # remove NAs from input data
+bad_data[!is.na(bad_data)]  # delete the NA values
+sum(!is.na(bad_data))  # count non-NA values
       @
   \end{columns}
 \end{block}
@@ -1455,13 +1498,13 @@ head(airquality[!complete.cases(airquality), ])  # display some NAs
       \vspace{-1em}
       <<echo=2:30>>=
 rm(list=ls())
-good.air <- airquality[complete.cases(airquality), ]  # remove NAs
-dim(good.air)
-head(good.air)  # NAs removed
+good_air <- airquality[complete.cases(airquality), ]  # remove NAs
+dim(good_air)
+head(good_air)  # NAs removed
 library(zoo)  # load package zoo
-good.air <- na.locf(airquality)  # replace NAs
-dim(good.air)
-head(good.air)  # NAs replaced
+good_air <- na.locf(airquality)  # replace NAs
+dim(good_air)
+head(good_air)  # NAs replaced
       @
   \end{columns}
 \end{block}

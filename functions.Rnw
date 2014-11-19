@@ -68,108 +68,13 @@ knit_theme$set(thm)
 \maketitle
 
 
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-glob_var <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
-
-env.new <- new.env()  # create new environment
-parent.env(env.new)  # get calling environment of new environment
-assign("new_var1", 3, envir=env.new)  # assign Value to Name
-env.new$new_var2 <- 11  # create object in new environment
-ls(env.new)  # get objects in new environment
-ls(environment())  # get objects in current environment
-env.new$new_var1  # environments are subset like lists
-env.new[['new_var1']]  # environments are subset like lists
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
-      \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
-      \end{itemize}
-      The function \texttt{search()} returns the search path for dereferencing \texttt{R} objects,
-      \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
-      \vskip1ex
-      This allows referencing variables by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=2:30>>=
-rm(list=ls())
-search()  # get search path for R objects
-loadedNamespaces()
-my_list <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
-                        'trees'=c('pine', 'oak', 'maple'))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 
 %%%%%%%%%%%%%%%
 \section{Functions}
 
 
 %%%%%%%%%%%%%%%
-\subsection{\secname\hskip0.5em in \texttt{R}}
+\subsection{\secname\hskip0.4emin \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -185,9 +90,9 @@ detach(my_list)
       \vskip1ex
       The function body must be enclosed in curly braces \texttt{\{\}},
       \vskip1ex
-      The function body doesn't require a return statement, since by default \texttt{R} functions return the last statement evaluated in the body,
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
       \vskip1ex
-      The function \texttt{str()} displays the structure of an \texttt{R} object,
+      \texttt{args()} displays the formal arguments of a function,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -223,7 +128,7 @@ test_func(3, 2)  # now works
     \column{0.4\textwidth}
       The formal arguments of a function are defined in its argument list,
       \vskip1ex
-      When a function is applied, it's passed a list of actual function arguments,
+      When a function is called, it's passed a list of actual function arguments,
       \vskip1ex
       Formal arguments can be \texttt{bound} to actual arguments either by name or by position:
       \begin{itemize}
@@ -258,6 +163,68 @@ test_func(3, 2, 1)  # too many arguments
 
 
 %%%%%%%%%%%%%%%
+\subsection{Return Values of \secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
+      \vskip1ex
+      \texttt{return()} statements are inserted in logical branches to terminate function execution and return its intended value,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function that returns invisibly
+test_func <- function(arg_var) {
+  if (!is.numeric(arg_var)) {
+    warning(paste("argument", arg_var, "isn't numeric"))
+    return(NULL)
+  }
+  2*arg_var
+}  # end test_func
+
+test_func(2)
+test_func("hello")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.4emThat Return \texttt{invisible}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If a return value is wrapped in the function \texttt{invisible()} then the return value isn't printed,
+      \vskip1ex
+      But if the function is assigned to a variable, then its return value is assigned to that variable,
+      \vskip1ex
+      \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function that returns invisibly
+return_invisible <- function(arg_var) {
+  invisible(arg_var)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Executing Function Calls Using \texttt{do.call()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -271,6 +238,8 @@ test_func(3, 2, 1)  # too many arguments
       \texttt{do.call()} passes the list elements one by one, instead of passing the whole list as one argument,
       \vskip1ex
       \texttt{do.call()} is often used to convert lists of vectors to matrices,
+      \vskip1ex
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -332,7 +301,7 @@ tail(fibo_nacci(10), 2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function for Calculating Moments}
+\subsection{Function for Calculating Skew}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -353,15 +322,14 @@ rets_series <- diff(log(EuStockMarkets[, 1]))  # DAX returns
 # define function calc_skew for calculating the skew
 calc_skew <- function(time_series=rnorm(1000)) {  # default is normal
 # Calculates the skew of a time series of returns.
-  length_series <- length(time_series)  # number of observations
-  mean_series <- mean(time_series)
-  sd_series <- sd(time_series)
-# the last statement is what is returned
-  length_series*sum(((time_series - mean_series)/sd_series)^3)/
-  ((length_series-1)*(length_series-2))
+  len_data <- length(time_series)  # number of observations
+# normalize time_series
+  time_series <- (time_series - mean(time_series))/sd(time_series)
+# calculate skew - last statement is automatically returned
+  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
 }  # end calc_skew
 
-# calculate skewness of DAX returns
+# calculate skewn of DAX returns
 calc_skew(time_series=rets_series)  # bind arguments by name
 calc_skew(rets_series)  # bind arguments by position
 calc_skew()  # use default value of arguments
@@ -443,6 +411,8 @@ lazy_func(3)  # first argument written to output
       The '...' argument is also used when the number of arguments isn't known in advance,
       \vskip1ex
       Any arguments that appear after '...' in the argument list cannot be partially bound,
+      \vskip1ex
+      It's better practice to bind by name after the '...' in argument,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=2:30>>=
@@ -466,7 +436,7 @@ paste('a', 'b', se = ':')  # partial name matching fails!
 
 
 %%%%%%%%%%%%%%%
-\subsection{Recursive\hskip0.5em\secname\hskip0.5em with '\texttt{...}' Argument}
+\subsection{Recursive \secname\hskip0.4emwith '\texttt{...}' Argument}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -610,7 +580,7 @@ glob_var  # the global variable
 
 
 %%%%%%%%%%%%%%%
-\subsection{\secname\hskip0.5em as First Class Objects}
+\subsection{\secname\hskip0.4emas First Class Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -705,7 +675,7 @@ func_tional(sum, 1, 2, 3)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{apply()}\hskip0.5em\secname}
+\subsection{The \texttt{apply()} \secname}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -945,7 +915,7 @@ unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
 
 
 %%%%%%%%%%%%%%%
-\subsection{\secname\hskip0.5em That Return \secname}
+\subsection{\secname\hskip0.4emThat Return \secname}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}

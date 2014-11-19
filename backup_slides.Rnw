@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -236,7 +236,7 @@ graphics.off()  # close all graphics devices
 
     \column{0.5\textwidth}
     \vspace{-2em}
-    \includegraphics[width=0.5\paperwidth,valign=t]{figure/poisbarplot}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/poisbarplot-1}
   \end{columns}
 \end{block}
 
@@ -274,7 +274,7 @@ graphics.off()  # close all graphics devices
       @
     \column{0.5\textwidth}
       \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/poiss_dist}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/poiss_dist-1}
   \end{columns}
 \end{block}
 
@@ -643,6 +643,329 @@ plot.xts  # package xts isn't loaded and attached
 head(xts::plot.xts)
 library("MASS")  # load package 'MASS'
 select  # code of primitive function from package 'MASS'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_{k} = \frac{1}{\sigma^2} {\sum_{i=k+1}^{n} (x_{i}-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      The package \texttt{forecast} contains functions for univariate time series forecasting,
+        <<eustx_acf,echo=5:30,fig.height=8,eval=TRUE,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+par(mfrow=c(2,1))  # set plot panels
+library(forecast)  # load forecast
+# autocorrelation from "stats"
+acf(dax_rets, lag=5, xlab=NA)
+title(main="acf (base package)", line=-1)
+# autocorrelation from "forecast"
+Acf(dax_rets, lag=5, xlab=NA)
+title(main="acf (forecast package)", line=-1)
+      @
+      The horizontal dashed lines are confidence intervals of the mean estimator (corresponding to the 95\% significance level), and are only meant as reference levels,
+      \vskip1ex
+      The DAX time series does not appear to have statistically significant autocorrelations,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering \texttt{zoo} Time Series - with index conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_zoo_filter,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# coerce DAX time series to zoo
+dax_zoo <- as.zoo(EuStockMarkets)[, 1]
+index(dax_zoo) <-  # index to class 'Dates'
+  as.Date(365*(index(dax_zoo)-1970))
+# filter past values only (sides=1)
+dax_filt <- filter(dax_zoo, 
+                   filter=rep(1/5,5), sides=1)
+dax_filt <- zoo(coredata(dax_filt), 
+                order.by=index(dax_zoo))
+dax_filt <- merge(dax_zoo, dax_filt)
+dax_filt <- na.omit(dax_filt)
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt, 
+                   start=as.Date("1997-01-01"), 
+                   end=as.Date("1998-01-01"))
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX", facets=NULL
+      ) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5), 
+    plot.title=element_text(vjust=-2.0), 
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_zoo_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{ggplot2} is a very popular \texttt{R} package for advanced plotting,
+      \vskip1ex
+      The function \texttt{autoplot()} creates a \texttt{ggplot2} object,
+      \vskip1ex
+      The function \texttt{theme()} allows customizing \texttt{ggplot2} objects,
+      <<quantlib,echo=3:30,fig.width=6,fig.height=4,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize the random number generator
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+# coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo_series) <- as.Date(365*(index(zoo_series)-1970))
+# create simple ggplot2 in single pane
+gg2.zoo <- autoplot(zoo_series, main="Eu Stox", 
+                    facets=NULL)
+# customize ggplot2 using 'theme' function
+gg2.zoo + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.background=element_blank())
+
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-3em}
+      \includegraphics[width=0.55\paperwidth,valign=t]{figure/quantlib-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series Using \texttt{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<quantlib_plot,echo=3:30,fig.width=6,fig.height=7,fig.show='hide'>>=
+rm(list=ls())
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)
+# coerce to zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo_series) <- 
+  as.Date(365*(index(zoo_series)-1970))
+# plot ggplot2 in single pane
+ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox", 
+         facets=NULL) + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+  )
+# plot ggplot2 in multiple panes
+ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox", 
+         facets=Series ~ .) + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+  )
+# create plot ggplot2 in multiple panes
+grid.arrange(ggp.zoo1, ggp.zoo2, ncol=1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/quantlib_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{acf()} from the base package \texttt{stats} has two problems:
+      returns the lag-zero autocorrelation (which is simply \texttt{1}),
+      \vskip1ex
+      We can easily create a wrapper function for \texttt{acf()} that omits the lag-zero autocorrelation,
+      <<echo=5:30>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+library(forecast)  # load forecast
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# autocorrelation from "stats"
+dax_acf <- acf(dax_rets, plot=FALSE)
+str(dax_acf)  # get the structure of the "acf" object
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      If a return value is wrapped in the function \texttt{invisible()} then it isn't printed automatically when the function is called,
+      <<>>=
+# wrapper for base acf()
+acf_plus <- function (ts_data, plot=TRUE, xlab="", 
+                      ylab="", main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+  acf_data$acf <-  # remove first element
+    array(data=acf_data$acf[-1], 
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  # remove first element
+    array(data=acf_data$lag[-1], 
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if(plot) {
+    kurtosis <- sum(((ts_data - mean(ts_data))/
+                     sd(ts_data))^4)/length(ts_data)
+    ci <- qnorm((1 + 0.95)/2)*sqrt(kurtosis/length(ts_data))
+    ylim <- max(ci, max(abs(range(acf_data$acf[-1, , 1]))))
+    plot(acf_data, xlab=xlab, ylab=ylab, ylim=c(-ylim, ylim), main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_{k} = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^{n} (x_{i}-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \texttt{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
+        <<acf_func,echo=2:30,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# autocorrelation from "stats"
+acf(coredata(dax_rets), lag=5, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      The package \texttt{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      \texttt{coredata} extracts the core underlying data from a complex object,
+    \column{0.5\textwidth}
+      \vspace{-2.5em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/acf_func-1}
+      \vspace{-3.5em}
+      The horizontal dashed lines are confidence intervals of the mean estimator (at 95\% significance level), and are only meant as reference levels,
+      \vskip1ex
+      The DAX time series does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has two drawbacks:\\
+      it plots the lag-zero autocorrelation (which is simply \texttt{1}),\\
+      it plots the confidence intervals of the mean estimator, instead of the variance estimator,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Inspection of the data that is invisibly returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=2:30>>=
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(dax_rets), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation, and plots the correct confidence intervals of the variance estimator,
+      this has a bug - variance of autocorrelation estimator is 1, not kurtosis
+      <<>>=
+acf_plus <- function (ts_data, plot=TRUE, 
+                      xlab="Lag", ylab="", 
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1], 
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1], 
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if(plot) {
+    kurtosis <- sum(((ts_data-mean(ts_data))/
+               sd(ts_data))^4)/length(ts_data)
+    ci <- qnorm((1+0.95)/2)*sqrt(kurtosis/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1, , 1])),
+              max(ci, range(acf_data$acf[-1, , 1])))
+    plot(acf_data, xlab=xlab, ylab=ylab, 
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
       @
   \end{columns}
 \end{block}
