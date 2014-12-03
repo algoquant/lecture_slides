@@ -610,6 +610,141 @@ mat_in
 
 
 %%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \texttt{.csv} format files,
+      \vskip1ex
+      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
+      \vskip1ex
+      \texttt{read.csv()} reads row names as an extra column,
+      \vskip1ex
+      The \texttt{*.csv()} functions are very inefficient for large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=4:30>>=
+data_frame <- data.frame(
+              type=c('rose', 'daisy', 'tulip'), 
+              color=c('red', 'white', 'yellow'), 
+              price=c(1.5, 0.5, 1.0), 
+              row.names=c('flower1', 'flower2', 'flower3')
+              )  # end data_frame
+mat_var <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_var) <- paste("row", 1:nrow(mat_var), sep="")
+# write data frame to CSV file, and then read it back
+write.csv(data_frame, file='florist.csv')
+data_frame <- read.csv(file='florist.csv')
+data_frame  # the rownames are read in as extra column
+# restore rownames
+rownames(data_frame) <- as.character(data_frame[, 1])
+data_frame <- data_frame[, -1]  # remove extra column
+
+# write matrix to csv file, and then read it back
+write.csv(mat_var, file='matrix.csv')
+mat_var <- read.csv(file='matrix.csv')
+mat_var  # write.csv() coerced matrix to data frame
+class(mat_var)
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+# coerce from data frame back to matrix
+mat_var <- as.matrix(mat_var)
+class(mat_var)
+mat_var  # a matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Very often when data is read from external sources, it contains fields with bad data,
+      \vskip1ex
+      Coercion of bad data elements to \texttt{numeric} introduces \texttt{NA} values,
+      \vskip1ex
+      Additional code is needed to scrub bad data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+mat_var <- read.csv(file='badmatrix.csv')
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+dim_names <- dimnames(mat_var)  # save dimnames
+num_col <- ncol(mat_var)  # save num columns
+mat_var  # data frame with bad data
+class(mat_var)
+class(mat_var[, 1])
+class(mat_var[, 2])  # numeric coerced to factor by bad data
+# convert non-numeric to NA by coercing to matrix and then to numeric
+mat_var <- as.numeric(as.matrix(mat_var))
+mat_var  # vector with NAs
+mat_var[is.na(mat_var)] <- 0  # overwrite NAs
+# coerce from vector back to matrix
+mat_var <- matrix(mat_var, ncol=num_col, dimnames=dim_names)
+mat_var  # matrix without NAs
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      There are many other ways of reading and writing matrices from files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      The function \texttt{write.matrix()} is part of library \texttt{MASS},
+      \vskip1ex
+      The advantage of using the function \texttt{scan()} is its speed, but it doesn't handle rownames,
+      \vskip1ex
+      Reading and writing matrices without rownames can be simplified,
+      \vskip1ex
+      The function \texttt{system.time()} measures CPU time spent on executing code,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+mat_var <- matrix(1:6, nrow=2, ncol=3,  # create a matrix without rownames
+                dimnames=list(NULL, c("col1", "col2", "col3")))
+mat_var  # matrix without rownames
+library('MASS')  # load library 'MASS'
+# write to CSV file by row - it's very SLOW!!!
+write.matrix(mat_var, file='matrix.csv', sep=',')
+system.time(  # scan reads faster - skip first line with colnames
+  mat_var <- scan(file='matrix.csv', sep=',', 
+                  skip=1, what=numeric()))
+col_names <- readLines(con='matrix.csv', n=1)  # read colnames
+col_names  # this is a string!
+col_names <- strsplit(col_names, s=',')[[1]]  # convert to char vector
+mat_var  # mat_var is a vector, not matrix!
+# coerce by row to matrix
+mat_var <- matrix(mat_var, ncol=length(col_names), 
+                  byrow=TRUE)
+colnames(mat_var) <- col_names  # restore colnames
+mat_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Exploring Namespaces}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}

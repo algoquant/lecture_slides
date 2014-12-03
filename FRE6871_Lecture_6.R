@@ -8,6 +8,55 @@ knit_theme$set(thm)
 
 
 
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # for reproducibility
+simu_max <- 1000  # max simulation trials
+simu_prices <- 0*1:simu_max  # initialize prices
+barrier_level <- 20  # barrier level
+simu_prices[1] <- 0  # first simulated price
+simu_index <- 2  # initialize simulation index
+while ((simu_index <= simu_max) && 
+ (simu_prices[simu_index - 1] < barrier_level)) {
+  simu_prices[simu_index] <- # simulate next price
+    simu_prices[simu_index - 1] + rnorm(1)
+  simu_index <- simu_index + 1  # advance simu_index
+}  # end while
+if (simu_index <= simu_max) {  # fill zero prices
+  simu_prices[simu_index:simu_max] <- simu_prices[simu_index - 1]
+}
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+
+
+
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # for reproducibility
+simu_max <- 1000  # max simulation trials
+barrier_level <- 20  # barrier level
+# simulated prices
+simu_prices <- cumsum(rnorm(simu_max))
+# simu_index is "1" after prices cross barrier_level
+simu_index <- cummax(simu_prices > barrier_level)
+# find index when prices cross barrier_level
+which_index <- which(diff(simu_index)==1)
+# fill prices after crossing barrier_level
+if (length(which_index)>0) {
+  simu_prices[as.logical(simu_index)] <- 
+    simu_prices[which_index + 1]
+}  # end if
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+
+
+
 big_matrix <- matrix(1:1000000, ncol=10)
 # allocate memory
 row_sums <- vector(mode="numeric", length=nrow(big_matrix))
@@ -142,125 +191,97 @@ catch_missing()
 str(tryCatch)  # get arguments of tryCatch()
 tryCatch(  # without error handler
   {  # evaluate expressions
-    my_var <- 101  # assign
+    num_var <- 101  # assign
     stop('my error')  # throw error
   }, 
-  finally=print(paste("my_var=", my_var))
+  finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 
 tryCatch(  # with error handler
   {  # evaluate expressions
-    my_var <- 101  # assign
+    num_var <- 101  # assign
     stop('my error')  # throw error
   }, 
   error=function(error_cond)  # handler captures error condition
     print(paste("error handler: ", error_cond)),
-  finally=print(paste("my_var=", my_var))
+  finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 
 
 
 rm(list=ls())
 # apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(my_var) {  # anonymous function
-    stopifnot(my_var != 3)  # check for error
-    cat("(cat) my_var=", my_var)  # broadcast
-    paste("(return) my_var=", my_var)  # return value
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    stopifnot(num_var != 3)  # check for error
+    cat("(cat) num_var =", num_var, "\n")  # broadcast
+    paste("(return) num_var =", num_var)  # return value
   }  # end anonymous function
 )  # end apply
 
 
 
 # apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(my_var) {  # anonymous function
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     tryCatch(  # with error handler
 {  # body
-  stopifnot(my_var != 3)  # check for error
-  cat("(cat) my_var=", my_var)  # broadcast
-  paste("(return) my_var=", my_var)  # return value
+  stopifnot(num_var != 3)  # check for error
+  cat("(cat) num_var =", num_var, "\t")  # broadcast
+  paste("(return) num_var =", num_var)  # return value
 },
 error=function(error_cond)  # handler captures error condition
   paste("handler: ", error_cond),
-finally=print(paste("(finally) my_var=", my_var))
+finally=print(paste("(finally) num_var =", num_var))
     )  # end tryCatch
   }  # end anonymous function
 )  # end apply
 
 
 
-library(zoo)  # load package zoo
-# get all methods for generic function "cbind"
-methods("cbind")
-
-# show the method of "cbind" applied to "zoo" objects
-cbind.zoo
-
-
-
-library(zoo)  # load package zoo
-# get all methods for generic function "cbind"
-# get generic function methods applied to "zoo" objects
-methods(class="zoo")
-
-
-
-loadedNamespaces()  # get names of loaded namespaces
-
-search()  # get search path for R objects
+unique(iris$Species)  # Species takes on three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
 
 
 
-# get session info,
-# including packages not attached to the search path
-sessionInfo()
+unique(mtcars$cyl)  # cyl has three unique values
+# split the mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# get mean mpg for each cylinder group
+unlist(lapply(split_cars, function(x) mean(x$mpg)))
+# Which is identical to the tapply function
+tapply(mtcars$mpg, mtcars$cyl, mean)
+# using "with" environment
+with(mtcars, tapply(mpg, cyl, mean))
+# can also use the functions by() and aggregate()
+with(mtcars, by(mpg, cyl, mean))
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
 
 
 
-plot.xts  # package xts isn't loaded and attached
-head(xts::plot.xts, 3)
-methods("cbind")  # get all methods for function "cbind"
-stats::cbind.ts  # cbind isn't exported from package stats
-stats:::cbind.ts  # view the non-visible function
-getAnywhere("cbind.ts")
-library("MASS")  # load package 'MASS'
-select  # code of primitive function from package 'MASS'
-
-
-
-getAnywhere("cbind.ts")
-
-
-
-cbind.ts  # can't view code of non-visible functions
-getAnywhere(cbind.ts)  # display function
-stats:::cbind.ts  # display function
-
-
-
-# get all methods for generic function "plot"
-methods("plot")
-
-getAnywhere(plot)  # display function
-
-
-
-rm(list=ls())
-my.ts <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
-class(my.ts)
-length(my.ts)
-
-# coerce "zoo" object to new class "newts"
-class(my.ts) <- "newts"
-class(my.ts)
-
-# define "length" method for class "newts"
-length.newts <- function(in.ts) {
-# "length" method for class" "newts"
-  cat("getting length of object from newts class\n")
-  length(unclass(in.ts))
-}  # end length.newts
-
-# apply new "length" method
-length(my.ts)
+data_cars <- sapply(split_cars,  # get several mpg stats for each cylinder group
+      function(x) {
+        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+      }  # end anonymous function
+      )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+      function(x) {
+        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+      }  # end anonymous function
+      )  # end sapply
+is.list(data_cars)  # lapply produces a list
+do.call(cbind, data_cars)  # do.call flattens list into a matrix
 
 

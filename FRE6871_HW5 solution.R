@@ -1,100 +1,69 @@
 #################################
 ### HW #5 Solution
 #################################
-# Max score 30pts
+# Max score xxpts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
-# comment:
-# Most of this homework required just copying and pasting from the lecture notes,
 
-# Homework assignment:
-
-# 1. (5pts) Download the zoo Quickref manual from CRAN, and read how to query the Oanda database,
-# Download from Yahoo the EOD CLOSE quotes for MSFT stock, starting from Sep/01/2013,
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
-# load MSFT data
-suppressWarnings(
-  zoo_msft <- get.hist.quote(instrument="MSFT", 
-                             start=as.POSIXct("2013-09-01"), 
-                             end=Sys.Date(), 
-                             origin="1970-01-01")
-)  # end suppressWarnings
-# extract only EOD CLOSE quotes
-zoo_msft <- zoo_msft[, "Close"]
-
-# Download from Oanda the EOD CLOSE quotes for eur currency, starting from Sep/01/2013,
-suppressWarnings(  # load EUR/USD data
-  zoo_eurusd <- get.hist.quote(
-    instrument="EUR/USD", provider="oanda",
-    start=as.POSIXct("2013-09-01"), 
-    end=Sys.Date(), 
-    origin="1970-01-01")
-)  # end suppressWarnings
+# download from Yahoo the \texttt{EOD CLOSE} quotes for \texttt{MSFT} stock, starting from Sep/01/2013,
+# smooth the time series using \texttt{rollmean()} over a 7-day window,
+# bind the original time series together with its smoothed version using \texttt{merge()},
+# replace \texttt{NA} values using \texttt{na.locf()}, first going forward, and then backward in time,
+# plot the two time series together on the same plot,
+# find what is the \texttt{class} of the \texttt{index} of the time series,
+# create a vector of weekly dates of class \texttt{Date} corresponding to every Monday, starting with: \texttt{as.Date("2013-09-02")}, until the most recent Monday (use \texttt{lubridate} function \texttt{weeks()}),
+# find the \texttt{MSFT} \texttt{CLOSE} quotes for every Monday, by subsetting the original time series,
+# calculate the weekly returns, and find the weeks with the highest and lowest returns,
 
 
+# 1. (15pts) Create a function called "re_move", which takes two arguments:
+#    the first argument can be a numeric or string, the second argument must be a vector,
+#    "re_move" removes the first argument from the second argument, and returns the result,
+#    if the first argument isn't among the elements of the second argument, 
+#    then "re_move" just returns the second argument unchanged,
+#    you can use the functions "match", "which", or the operator "%in%", but you don't have to,
+re_move <- function(zap_it, vec_tor) {
+  name_match <- match(zap_it, vec_tor)
+  if (is.na(name_match))
+    vec_tor
+  else
+    vec_tor[-name_match]
+}  # end re_move
 
-# 2. (5pts) Create smooth version of each time series using rollmean over an 11 period window,
-zoo_msft_smooth <- rollmean(x=zoo_msft, k=11)
-zoo_eurusd_smooth <- rollmean(x=zoo_eurusd, k=11)
+# 1. (cont.) call the function "re_move" as follows, to make sure it works properly:
+re_move(3, 1:5)
+re_move(6, 1:5)
+re_move("bye", c("hello", "there"))
 
 
 
-# 3. (5pts) Replace NA values using na.locf, first going forward, and then backward in time,
-zoo_msft_smooth <- na.locf(zoo_msft_smooth)
-zoo_msft_smooth <- na.locf(zoo_msft_smooth, fromLast=TRUE)
-zoo_eurusd_smooth <- na.locf(zoo_eurusd_smooth)
-zoo_eurusd_smooth <- na.locf(zoo_eurusd_smooth, fromLast=TRUE)
+# 2. (5pts) Extract (subset) the DAX index from the EuStockMarkets dataset, 
+#    and coerce it into a single "zoo" time series object called "dax_series",
+#    the index of "dax_series" will have dates in "year-fraction" format, 
+#    convert the "dax_series" index dates into "POSIXct" objects using 
+#    functions from the package "lubridate",
+dax_series <- as.zoo(EuStockMarkets[, 1])
+library(lubridate)
+index(dax_series) <- date_decimal(index(dax_series))
 
 
-
-# 4. (5pts) Plot each time series combined with its smoothed version,
-# first plot MSFT
-plot(zoo_msft, type="l", lwd=2, xlab="", ylab="")
-# add smoothed MSFT
-lines(zoo_msft_smooth, col="red", lwd=2)
-# add legend
-legend("bottomright", title="MSFT smoothed", legend=c("MSFT", "MSFT-smooth"), 
-       inset=0.05, cex=0.8, lwd=2, lty=c(1, 1), col=c("black", "red"))
-
-# this is a version with better X-axis date labels (not required for full credit)
-# first plot without X-axis
-plot(zoo_msft, type="l", lwd=2, xlab="", ylab="", xaxt="n")
-# create X-axis date labels
-axis_dates <- seq(from=as.Date("2013-09-01"), to=Sys.Date(), by="quarter")
-# add X-axis
-axis(side=1, at=axis_dates, labels=format(axis_dates, "%b-%y"))
-# add smoothed MSFT
-lines(zoo_msft_smooth, col="red", lwd=2)
-# add legend
-legend("bottomright", title="MSFT smoothed", legend=c("MSFT", "MSFT-smooth"), 
-       inset=0.05, cex=0.8, lwd=2, lty=c(1, 1), col=c("black", "red"))
+# 3. (5pts) create a "zoo" time series called "zoo_series", with exactly the same index as "dax_series",
+#    the values of "zoo_series" should be random prices generated using a "cumsum" of "rnorm",
+zoo_series <- zoo(cumsum(rnorm(length(dax_series))), order.by=index(dax_series))
 
 
+# 4. (5pts) merge "zoo_series" with "dax_series" into a single "zoo" time series called "zoo_series", with two columns,
+#    rename the columns of "zoo_series" to "random prices" and "DAX",
+#    plot "zoo_series" in two panels,
+zoo_series <- merge(zoo_series, dax_series)
+colnames(zoo_series) <- c("random prices", "DAX")
+plot(zoo_series, main="Random prices and DAX")
 
-# 5. (5pts) Bind the two original time series together using merge,
-# Remove observations containing NA values,
-zoo_msfteur <- merge(zoo_eurusd, zoo_msft)
-colnames(zoo_msfteur) <- c("EURUSD", "MSFT")
-zoo_msfteur <- zoo_msfteur[complete.cases(zoo_msfteur), ]
+# 5. (5pts) save "zoo_series" to a comma-delimited CSV file called "zoo_series.csv", using write.zoo(),
+#    save "zoo_series" to a binary file called "zoo_series.Rdata", using save(),
+write.zoo(zoo_series, file='zoo_series.csv', sep=",")
+save(zoo_series, file='zoo_series.Rdata')
 
-
-
-# 6. (5pts) Plot the MSFT stock and eur currency time series together on a plot with two y axes,
-# plot first ts
-plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
-# set range of "y" coordinates for second axis
-par(usr=c(par("usr")[1:2], range(zoo_msfteur[,2])))
-lines(zoo_msfteur[, 2], col="red")  # second plot
-axis(side=4, col="red")  # second "y" axis on right
-# print axis labels
-par(las=1)  # set text printing to "horizontal"
-mtext(colnames(zoo_msfteur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo_msfteur)[2], col="red", side=4, padj=-2, line=-3)
-title(main="EUR and MSFT")  # add title
-# add legend without box
-legend("bottom", legend=colnames(zoo_msfteur), bg="white", 
-       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
 

@@ -8,173 +8,72 @@ knit_theme$set(thm)
 
 
 
-rm(list=ls())
-FuncStat <- function(func_arg) {  # function is input
-# calculates statistic on random numbers
-  set.seed(1)
-  func_arg(runif(1e4))  # apply the function name
-}  # end FuncStat
-FuncStat(mean)
-FuncStat(sd)
-
-
-
-rm(list=ls())
-FuncDots <- function(FuncIn, ...) {
-# functional accepts function and additional '...' arguments
-  FuncIn(...)  # apply input function to '...' arguments
-}  # end FuncDots
-FuncDots(sum, 1, 2, 3)
-
-
-
-rm(list=ls())
-str(apply)  # get list of arguments
-my_var <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
-my_var
-# sum the rows and columns
-row.sums <- apply(my_var, 1, sum)
-col.sums <- apply(my_var, 2, sum)
-m.totals <- cbind(c(sum(row.sums), row.sums), 
-          rbind(col.sums, my_var))
-dimnames(m.totals) <- list(c("col.sums", "row1", "row2"), 
-                   c("row.sums", "col1", "col2", "col3"))
-m.totals
-
-
-
-rm(list=ls())
-str(apply)  # get list of arguments
-my_var <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
-my_var
-apply(my_var, 2, sort)  # sort matrix columns
-apply(my_var, 2, sort, decreasing=TRUE)  # sort decreasing order
-
-
-
-my_var[2, 2] <- NA  # introduce NA value
-my_var
-# calculate median of columns
-apply(my_var, 2, median)
-# calculate median of columns with na.rm=TRUE
-apply(my_var, 2, median, na.rm=TRUE)
-
-
-
-rm(list=ls())
-FuncDots <- function(..., FuncIn=function(x, y, z) {x+y+z}) {
-# functional accepts function and additional '...' arguments
-  FuncIn(...)  # apply input function to '...' arguments
-}  # end FuncDots
-FuncDots(FuncIn=sum, 2, 3, 4)
-FuncDots(2, 3, 4)
-FuncDots(2, 3, 4, 5)
-FuncDots(FuncIn=function(x, y, z) {x*y*z}, 2, 3, 4)
-
-
-
-rm(list=ls())
-ts.rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
-library("moments")  # load library"moments"
-str(moment)  # get list of arguments
-moment(x=ts.rets, order=3)  # the moment function
-v.orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
-# anonymous function allows looping over function parameters
-apply(X=v.orders, MARGIN=1, 
-      FUN=function(n.order) {moment(x=ts.rets, order=n.order)})
-# another way of passing data into moment() function
-apply(X=v.orders, MARGIN=1, FUN=moment, x=ts.rets)
-
-
-
-rm(list=ls())
-iris.list <- as.list(iris[1:5, 1:3])  # create list
-iris.list
-lapply(iris.list, mean)  # compute list of means of list elements
-
-
-
-# compute vector of means of list elements
-sapply(iris.list, mean)
-
-# create a matrix
-my_var <- matrix(sample(12), nrow=3, ncol=4)
-# calculate row sums
-apply(my_var, 1, sum)
-
-# now the same calculation using sapply
-sapply(1:nrow(my_var), function(n.row) {  # anonymous function
-    sum(my_var[n.row, ])
-  }  # end anonymous function
-)  # end sapply
-
-
-
-rm(list=ls())
-FuncPower <- function(n.exp) {  # wrapper function
-# a power function factory
-  function(n.arg) {  # anonymous closure
-    n.arg^n.exp
+# define a power function factory
+make_func <- function(arg_param) {  # wrapper function
+  function(arg_var) {  # anonymous closure
+    arg_var^arg_param
   }
-}  # end FuncPower
-FuncSquare <- FuncPower(2)  # define square power
-FuncSquare(4)
-FuncCube <- FuncPower(3)  # define cube power
-FuncCube(2)
-FuncCubeRoot <- FuncPower(1/3)  # define cube root
-FuncCubeRoot(8)
+}  # end make_func
+
+square_func <- make_func(2)  # define square function
+square_func(4)
+cube_func <- make_func(3)  # define cube function
+cube_func(2)
+cube_root_func <- make_func(1/3)  # define cube root function
+cube_root_func(8)
 
 
 
-rm(list=ls())
-MuteCounter <- function() {
+make_counter <- function() {
 # counter function with mutable state
-  i.count <- 0  # initialize counter
-  cat('counter = ', i.count)
+  counter <- 0  # initialize counter
+  cat('counter = ', counter)
   function() {  # return anonymous advance function
-    i.count <<- i.count + 1  # advance counter
-    cat('counter = ', i.count)
+    counter <<- counter + 1  # advance counter
+    cat('counter = ', counter)
   }  # end advance function
-}  # end MuteCounter
-CounterOne <- MuteCounter()  # create new counter
-CounterOne()  # advance counter
-CounterOne()  # advance counter
-CounterTwo <- MuteCounter()  # create another counter
-CounterTwo()  # advance counter two
-CounterOne()  # advance counter one
-CounterTwo()  # advance counter two
-CounterOne()  # advance counter one
+}  # end make_counter
+
+advance_counter <- make_counter()  # create new counter
+advance_counter()  # advance counter
+advance_counter()  # advance counter
+advance_counter_two <- make_counter()  # create another counter
+advance_counter_two()  # advance counter two
+advance_counter()  # advance counter one
+advance_counter_two()  # advance counter two
+advance_counter()  # advance counter one
 
 
 
-rm(list=ls())
-RandomSeed <- function(seed) {  # seed must be an integer
-# Returns pseudo-random generating function based on logistic map
-# the formal argument 'seed' exists in the evaluation environment of RandomSeed
-  pseudo.random <- as.numeric(paste('0.', seed, sep=''))  # initialize
-  RandomVector <- function(n.rand=1) {  # assign function name for recursion
-# Returns a vector of pseudo-random numbers of length n.rand
-    pseudo.random <<- 4*pseudo.random*(1 - pseudo.random)  # logistic map
-    if(n.rand == 1) {
-      return(pseudo.random)
+# Returns the pseudo-random generating function random_generator
+# the formal argument 'seed' persists in the evaluation environment of seed_random
+seed_random <- function(seed) {  # seed must be an integer
+  random_number <- as.numeric(paste0('0.', seed))  # initialize
+# random_generator returns a vector of pseudo-random numbers of length length_rand
+  random_generator <- function(length_rand=1) {  # assign function name for recursion
+# Returns a vector of pseudo-random numbers of length length_rand
+    random_number <<- 4*random_number*(1 - random_number)  # logistic map
+    if (length_rand == 1) {
+      return(random_number)
     } else {
-      return(c(pseudo.random, RandomVector(n.rand - 1)))
-    }
-  }
-}  # end RandomSeed
+      return(c(random_number, random_generator(length_rand - 1)))
+    }  # end if
+  }  # end random_generator
+}  # end seed_random
 
-PseudoRandom <- RandomSeed(88)  # set seed
-PseudoRandom(10)  #  calculate vector of 10 pseudo-random numbers
-ls(environment(PseudoRandom))  # list objects in scope of PseudoRandom
+# create a random number generating function and set seed
+make_random <- seed_random(88)
+make_random(10)  #  calculate vector of 10 pseudo-random numbers
+ls(environment(make_random))  # list objects in scope of make_random
 
 
 
 rm(list=ls())
 # the super-assignment operator '<<-' adjusts the balance
-# 'balance' exists in OpenAccount evaluation environment
+# 'balance' exists in open_account evaluation environment
 # bank account example (from Venables) demonstrates mutable states
 # 'balance' is persistent between function calls
-OpenAccount <- function(balance) {
+open_account <- function(balance) {
 # returns function list for account operations
   list(
     deposit = function(amount) {  # make deposit
@@ -195,40 +94,174 @@ cat(amount, "withdrawn. Your balance is now:",
 cat("You don't have that much money!\n")
       }
     },  # end withdraw
-    get.balance = function() {  # get balance
+    get_balance = function() {  # get balance
       cat("Your current balance is:", balance, "\n")
-    }  # end get.balance
+    }  # end get_balance
   )  # end list
-}  # end OpenAccount
+}  # end open_account
 
 
 
 # perform account operations
 # open an account with 100 deposit
-my.account <- OpenAccount(100)
-ls(my.account)  # my.account is a list
-# add my.account to search path
-attach(my.account)
+my_account <- open_account(100)
+ls(my_account)  # my_account is a list
+# add my_account to search path
+attach(my_account)
 withdraw(30)  # withdrawal to buy groceries
 deposit(100)  # deposit paycheck to account
 withdraw(200)  # withdrawal to buy Gucci bag
-get.balance()  # get account balance
+get_balance()  # get account balance
 
-# list objects in scope of get.balance
-ls(environment(get.balance))
+# list objects in scope of get_balance
+ls(environment(get_balance))
 
-detach(my.account)  # remove my.account from search path
+detach(my_account)  # remove my_account from search path
+
+
+
+library(zoo)  # load package zoo
+# get all methods for generic function "cbind"
+methods("cbind")
+
+# show the method of "cbind" applied to "zoo" objects
+cbind.zoo
+
+
+
+library(zoo)  # load package zoo
+# get all methods for generic function "cbind"
+# get generic function methods applied to "zoo" objects
+methods(class="zoo")
+
+
+
+cbind.ts  # can't view code of non-visible functions
+getAnywhere(cbind.ts)  # display function
+stats:::cbind.ts  # display function
+
+
+
+# get all methods for generic function "plot"
+methods("plot")
+
+getAnywhere(plot)  # display function
+
+
+
+rm(list=ls())
+my_zoo <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
+class(my_zoo)
+length(my_zoo)
+
+# coerce "zoo" object to new class "newts"
+class(my_zoo) <- "newts"
+class(my_zoo)
+
+# define "length" method for class "newts"
+length.newts <- function(in_ts) {
+# "length" method for class" "newts"
+  cat("length of object from newts class\n")
+  length(unclass(in_ts))
+}  # end length.newts
+
+# apply new "length" method
+length(my_zoo)
+
+
+
+set.seed(1121)  # for reproducibility
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create zoo time series
+date_index <- Sys.Date() + 0:365
+zoo_series <- zoo(rnorm(length(date_index)), order.by=date_index)
+# create monthly dates
+dates_agg <- as.Date(as.yearmon(index(zoo_series)))
+# perform monthly 'mean' aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg, 
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- merge(zoo_series, zoo_agg)
+# replace NA's using locf
+zoo_agg <- na.locf(zoo_agg)
+# extract aggregated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
+# plot original and aggregated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8, title="Aggregated Prices", 
+ leg=c("orig prices", "agg prices"), lwd=2, bg="white", 
+ col=c("black", "red"))
+
+
+
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# perform monthly 'mean' aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg, 
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- merge(zoo_series, zoo_agg)
+# replace NA's using linear interpolation
+zoo_agg <- na.approx(zoo_agg)
+# extract interpolated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices", 
+ leg=c("orig prices", "interpol prices"), lwd=2, bg="white", 
+ col=c("black", "red"))
+
+
+
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# perform monthly 'mean' aggregation
+zoo_mean <- rollapply(zoo_series, width=11, FUN=mean)
+# merge with original zoo - union of dates
+zoo_mean <- merge(zoo_series, zoo_mean)
+# replace NA's using na.locf
+zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
+# extract mean zoo
+zoo_mean <- zoo_mean[index(zoo_series), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_mean), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8, title="Mean Prices", 
+ leg=c("orig prices", "mean prices"), lwd=2, bg="white", 
+ col=c("black", "red"))
+
+
+
+library(lubridate)  # load lubridate
+library(zoo)  # load package zoo
+# methods(as.zoo)  # many methods of coercing into zoo
+class(EuStockMarkets)  # multiple ts object
+# convert mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+class(index(zoo_series))  # index is numeric
+head(zoo_series, 3)
+# approximately convert index into class 'Dates'
+index(zoo_series) <- as.Date(365*(index(zoo_series)-1970))
+head(zoo_series, 3)
+# convert index into class 'Dates'
+zoo_series <- as.zoo(EuStockMarkets)
+index(zoo_series) <- date_decimal(index(zoo_series))
+head(zoo_series, 3)
 
 
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(tseries)  # load package tseries
-suppressWarnings(  # load MSFT data
-  zoo_msft <- get.hist.quote(instrument="MSFT", 
-                     start=Sys.Date()-365, 
-                     end=Sys.Date(), 
-                     origin="1970-01-01")
-  )  # end suppressWarnings
+zoo_msft <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT", 
+           start=Sys.Date()-365, 
+           end=Sys.Date(), 
+           origin="1970-01-01")
+)  # end suppressWarnings
 class(zoo_msft)
 dim(zoo_msft)
 tail(zoo_msft, 4)
@@ -241,15 +274,16 @@ title(main="MSFT Close Prices", line=-1)  # add title
 
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-suppressWarnings(  # load EUR/USD data
-  zoo.eurusd <- get.hist.quote(
+library(tseries)  # load package tseries
+zoo_eurusd <- suppressWarnings(  # load EUR/USD data
+  get.hist.quote(
     instrument="EUR/USD", provider="oanda",
     start=Sys.Date()-365, 
     end=Sys.Date(), 
     origin="1970-01-01")
-  )  # end suppressWarnings
+)  # end suppressWarnings
 # bind and scrub data
-zoo_msfteur <- merge(zoo.eurusd, 
+zoo_msfteur <- merge(zoo_eurusd, 
                zoo_msft[, "Close"])
 colnames(zoo_msfteur) <- c("EURUSD", "MSFT")
 zoo_msfteur <- 
@@ -258,7 +292,7 @@ zoo_msfteur <-
 par(las=1)  # set text printing to "horizontal"
 # plot first ts
 plot(zoo_msfteur[, 1], xlab=NA, ylab=NA)
-# set range for second "y" axis
+# set range of "y" coordinates for second axis
 par(usr=c(par("usr")[1:2], range(zoo_msfteur[,2])))
 lines(zoo_msfteur[, 2], col="red")  # second plot
 axis(side=4, col="red")  # second "y" axis on right
@@ -291,7 +325,7 @@ legend("bottomright", legend=colnames(zoo_msfteur), bg="white",
 # plot first ts wthout "x" axis
 # plot(zoo_msfteur[, 1], xaxt="n", xlab=NA, ylab=NA)
 # # add "x" axis with monthly ticks
-# month.ticks <- unique(as.yearmon(index(zoo.eurusd)))
+# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
 # axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
 
 

@@ -6,62 +6,52 @@
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
-# comment:
-# In general, the solution requires two loops: one over columns of EuStockMarkets,
-# and another loop over moments.
-# The two loops can be combinations of "for" and "apply", so many slightly different solutions are possible.
+# 1. (15pts) Create a function called "re_move", which takes two arguments:
+#    the first argument can be a numeric or string, the second argument must be a vector,
+#    "re_move" removes the first argument from the second argument, and returns the result,
+#    if the first argument isn't among the elements of the second argument, 
+#    then "re_move" just returns the second argument unchanged,
+#    you can use the functions "match", "which", or the operator "%in%", but you don't have to,
+re_move <- function(zap_it, vec_tor) {
+  name_match <- match(zap_it, vec_tor)
+  if (is.na(name_match))
+    vec_tor
+  else
+    vec_tor[-name_match]
+}  # end re_move
 
-# Homework assignment:
-# Create an R script for calculating the first four moments of all four time series in the EuStockMarkets data (DAX, SMI, CAC, FTSE),
-# Your script should produce a 4x4 matrix containing all 16 moments, with row and column names,
-# You can choose to use 'for' loops and/or apply() functions,
-# Your script should use iteration, instead of manually repeating the same calculation for each index,
-
-
-# setup:
-# Calculate percentage returns of EuStockMarkets.
-ts_rets <- diff(log(EuStockMarkets))
-# Load package "moments".
-library("moments")
-# create 4x1 matrix of moment orders - for using "apply"
-moment_orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
-
-
-
-#############
-# first solution: perform two sapply loops
-#############
-# 35pts
-
-eu_moments <- sapply(colnames(ts_rets), 
-                     FUN=function(col_name) {
-                        sapply(1:4, FUN=moment, x=ts_rets[, col_name])
-                  # or instead you could use apply:
-                  #  apply(X=moment_orders, MARGIN=1, FUN=moment, x=ts_rets[, col_name])
-                     }  # end anonymous function
-)  # end sapply
-
-# add rownames
-rownames(eu_moments) <- paste0("moment", 1:4)
+# 1. (cont.) call the function "re_move" as follows, to make sure it works properly:
+re_move(3, 1:5)
+re_move(6, 1:5)
+re_move("bye", c("hello", "there"))
 
 
 
-#############
-# second solution: perform one "for" loop, and one sapply loop
-#############
+# 2. (5pts) Extract (subset) the DAX index from the EuStockMarkets dataset, 
+#    and coerce it into a single "zoo" time series object called "dax_series",
+#    the index of "dax_series" will have dates in "year-fraction" format, 
+#    convert the "dax_series" index dates into "POSIXct" objects using 
+#    functions from the package "lubridate",
+dax_series <- as.zoo(EuStockMarkets[, 1])
+library(lubridate)
+index(dax_series) <- date_decimal(index(dax_series))
 
-# first allocate the matrix eu_moments 
-eu_moments <- matrix(0.0*(1:16), ncol=ncol(ts_rets))
 
-# then perform sapply loop nested in "for" loop
-for (col_num in 1:ncol(ts_rets)) {
-    eu_moments[, col_num] <- sapply(1:4, FUN=moment, x=ts_rets[, col_num])
-# or instead you could use apply:
-#  eu_moments[, col_num] <- apply(X=moment_orders, MARGIN=1, FUN=moment, x=ts_rets[, col_num])
-}  # end for
+# 3. (5pts) create a "zoo" time series called "zoo_series", with exactly the same index as "dax_series",
+#    the values of "zoo_series" should be random prices generated using a "cumsum" of "rnorm",
+zoo_series <- zoo(cumsum(rnorm(length(dax_series))), order.by=index(dax_series))
 
-# add colnames
-colnames(eu_moments) <- colnames(ts_rets)
-# add rownames
-rownames(eu_moments) <- paste0("moment", 1:4)
+
+# 4. (5pts) merge "zoo_series" with "dax_series" into a single "zoo" time series called "zoo_series", with two columns,
+#    rename the columns of "zoo_series" to "random prices" and "DAX",
+#    plot "zoo_series" in two panels,
+zoo_series <- merge(zoo_series, dax_series)
+colnames(zoo_series) <- c("random prices", "DAX")
+plot(zoo_series, main="Random prices and DAX")
+
+# 5. (5pts) save "zoo_series" to a comma-delimited CSV file called "zoo_series.csv", using write.zoo(),
+#    save "zoo_series" to a binary file called "zoo_series.Rdata", using save(),
+write.zoo(zoo_series, file='zoo_series.csv', sep=",")
+save(zoo_series, file='zoo_series.Rdata')
+
 

@@ -204,20 +204,26 @@ identical(vec_var, 2)
       \texttt{match()} accepts two arguments, and returns the index of the first value in its second argument, that matches its first argument,
       \vskip1ex
       The binary operator \texttt{\%in\%} returns a logical \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
+      \vskip1ex
+      \texttt{any()} returns \texttt{TRUE} if at least one element of a logical vector is \texttt{TRUE}, otherwise \texttt{FALSE},
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-table_values <- sample(1:10)
-table_values
-which(table_values==5)
-which(table_values>5)
-which.max(table_values)
-which.min(table_values)
-match(5, table_values)
-match(-5, table_values)
-5 %in% table_values
--5 %in% table_values
-c(5, -5) %in% table_values
+some_values <- sample(1:10)
+some_values
+which(some_values==5)
+which(some_values>5)
+which.max(some_values)
+which.min(some_values)
+match(5, some_values)
+match(-5, some_values)
+5 %in% some_values
+-5 %in% some_values
+c(5, -5) %in% some_values
+some_values <- rnorm(10) + 1
+some_values
+if(any(some_values < 0))
+  cat("vector contains negative values\n")
       @
   \end{columns}
 \end{block}
@@ -498,18 +504,18 @@ properly, so \alert{Use Them With Care!}
     \column{0.6\textwidth}
         <<echo=2:30>>=
 rm(list=ls())
-my.colors <- list("red", "white", "blue")
-for (some.color in my.colors) {  # loop over list
-  print(some.color)
+color_list <- list("red", "white", "blue")
+for (some_color in color_list) {  # loop over list
+  print(some_color)
 }
-for (some.index in 1:3) {  # loop over vector
-  print(my.colors[[some.index]])
+for (in_dex in 1:3) {  # loop over vector
+  print(color_list[[in_dex]])
 }
 
-some.index <- 1  # 'while' loops need initialization
-while (some.index < 4) {  # while loop
-  print(my.colors[[some.index]])
-  some.index <- some.index + 1
+in_dex <- 1  # 'while' loops need initialization
+while (in_dex < 4) {  # while loop
+  print(color_list[[in_dex]])
+  in_dex <- in_dex + 1
 }
       @
   \end{columns}
@@ -537,17 +543,19 @@ while (some.index < 4) {  # while loop
       \end{displaymath}
       The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
     \column{0.6\textwidth}
-        <<echo=2:30>>=
+        <<echo=(-1)>>=
 rm(list=ls())
-fib.seq <- numeric()  # create zero length numeric vector
-fib.seq[1] <- 1  # initialize
-fib.seq[2] <- 1  # initialize
+# fib_seq <- numeric()  # zero length numeric vector
+# pre-allocate vector instead of "growing" it
+fib_seq <- numeric(10)
+fib_seq[1] <- 0  # initialize
+fib_seq[2] <- 1  # initialize
 
 for (i in 3:10) {  # perform recurrence loop
-  fib.seq[i] <- fib.seq[i-1] + fib.seq[i-2]
+  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
 
-fib.seq
+fib_seq
       @
   \end{columns}
 \end{block}
@@ -572,15 +580,15 @@ simu_max <- 1000  # max simulation trials
 simu_prices <- 0*1:simu_max  # initialize prices
 barrier_level <- 20  # barrier level
 simu_prices[1] <- 0  # first simulated price
-simu_index <- 2  # initialize simulation index
-while ((simu_index <= simu_max) && 
-         (simu_prices[simu_index - 1] < barrier_level)) {
-  simu_prices[simu_index] <- # simulate next price
-    simu_prices[simu_index - 1] + rnorm(1)
-  simu_index <- simu_index + 1  # advance simu_index
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= simu_max) && 
+         (simu_prices[in_dex - 1] < barrier_level)) {
+  simu_prices[in_dex] <- # simulate next price
+    simu_prices[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
 }  # end while
-if (simu_index <= simu_max) {  # fill zero prices
-  simu_prices[simu_index:simu_max] <- simu_prices[simu_index - 1]
+if (in_dex <= simu_max) {  # fill zero prices
+  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
 }
 # create daily time series starting 2011
 ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
@@ -613,13 +621,13 @@ simu_max <- 1000  # max simulation trials
 barrier_level <- 20  # barrier level
 # simulated prices
 simu_prices <- cumsum(rnorm(simu_max))
-# simu_index is "1" after prices cross barrier_level
-simu_index <- cummax(simu_prices > barrier_level)
+# in_dex is "1" after prices cross barrier_level
+in_dex <- cummax(simu_prices > barrier_level)
 # find index when prices cross barrier_level
-which_index <- which(diff(simu_index)==1)
+which_index <- which(diff(in_dex)==1)
 # fill prices after crossing barrier_level
 if (length(which_index)>0) {
-  simu_prices[as.logical(simu_index)] <- 
+  simu_prices[as.logical(in_dex)] <- 
     simu_prices[which_index + 1]
 }  # end if
 # create daily time series starting 2011
@@ -655,9 +663,9 @@ title(main="Random Prices", line=0)  # add title
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-big_matrix <- matrix(1:1000000, ncol=10)
+big_matrix <- matrix(rnorm(1000000), ncol=10)
 # allocate memory
-row_sums <- vector(mode="numeric", length=nrow(big_matrix))
+row_sums <- numeric(nrow(big_matrix))
 
 system.time(
   for(i in 1:nrow(big_matrix)) {
@@ -706,6 +714,311 @@ system.time(row_sums <- rowSums(big_matrix))
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Data Frames}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a factor (attribute),
+      \vskip1ex
+      The list's \texttt{names} attribute is made equal to the factor levels,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(iris$Species)  # Species takes on three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute),
+        \item applying a function to each list element,
+        \item combining the results,
+      \end{itemize}
+      The \texttt{split-apply-combine} procedure is similar to \texttt{pivot tables} in Excel,
+      \vskip1ex
+      The \texttt{split-apply-combine} procedure, by Hadley Wickham:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{splitapply.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \texttt{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \texttt{split-apply-combine} procedure in a single function call, 
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
+      \vskip1ex
+      The \texttt{aggregate()} function applies a function to aggregations of an object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# split the mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# get mean mpg for each cylinder group
+unlist(lapply(split_cars, function(x) mean(x$mpg)))
+# Which is identical to the tapply function
+tapply(mtcars$mpg, mtcars$cyl, mean)
+# using "with" environment
+with(mtcars, tapply(mpg, cyl, mean))
+# can also use the functions by() and aggregate()
+with(mtcars, by(mpg, cyl, mean))
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \texttt{split-apply-combine} Returning Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Sometimes the \texttt{split-apply-combine} procedure returns a list of vectors,
+      \vskip1ex
+      Lists of vectors can be flattened into matrices using the function \texttt{do.call()},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+data_cars <- sapply(split_cars,  # get several mpg stats for each cylinder group
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+is.list(data_cars)  # lapply produces a list
+do.call(cbind, data_cars)  # do.call flattens list into a matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{split-apply-combine} Procedure ChickWeight (draft)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      taken from: basic good examples
+http://rollingyours.wordpress.com/2013/02/14/welcome/
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+data(ChickWeight)
+# ?ChickWeight
+
+# get grouping variables
+sapply(ChickWeight, function(x) length(unique(x)))
+
+# get mean weight of the chickens
+tapply(ChickWeight$weight, ChickWeight$Diet, mean)
+
+# access individual groups
+# create list of my.splits corresponding to individual Diet values
+my.splits = split(ChickWeight, ChickWeight$Diet)
+length(my.splits)
+names(my.splits)
+head(my.splits[[1]])
+
+# apply is passing each element to a function - performs for loop "under the hood"
+# get all the chicks from each group that weigh less that 40 grams
+my.results.lapply = lapply(my.splits, subset, weight <= 40)
+# longer way with anonymous function:
+my.results.lapply = lapply(my.splits, function(x) subset(x, weight <= 40) )
+
+# fold back into a data frame
+my.df = do.call(rbind, my.results.lapply)
+my.df
+
+# a different way:
+sorted.chickens = ChickWeight[order(ChickWeight$Diet), ]
+(sorted.chickens = subset(sorted.chickens, weight <= 40))
+
+# same with for-loop:
+my.results.for = list() 
+for (ii in 1:length(my.splits)) {
+     my.results.for[[ii]] = subset(my.splits[[ii]], weight <= 40)
+}
+names(my.results.for) = names(my.splits)
+all.equal(my.results.lapply, my.results.for) # Should be equal to my.results.lapply
+
+# or in one line:
+lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)
+# or
+(do.call(rbind, lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Compare \texttt{for()} Loops With \texttt{split-apply-combine} Procedure (draft)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      from: Wickham Split Apply Combine for Data Analysis
+      \vskip1ex
+      The \texttt{split-apply-combine} procedure allows for analyzing data frames, by spliting an analysis into smaller steps, and then combining them together,
+      \vskip1ex
+      in data preparation, for performing group-wise ranking, standardization, or normalization,
+      \vskip1ex
+      creating summaries (aggregations) of data by groups,
+      \vskip1ex
+      During modeling, for fitting separate models to individual panels of data,
+      \vskip1ex
+      The \texttt{split-apply-combine} procedure is similar to the \texttt{map-reduce} procedure for processing large data,
+      \vskip1ex
+      also similar to \texttt{pivot tables} in Excel,
+      \vskip1ex
+      The \texttt{split()}, \texttt{apply()} and \texttt{combine} Procedure
+      \vskip1ex
+      The \texttt{lapply()} and \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+      \vskip1ex
+      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+library(plyr)
+one <- ozone[1, 1, ]
+month <- ordered(rep(1:12, length = 72))
+model <- rlm(one ~ month - 1)
+deseas <- resid(model)
+deseasf <- function(value) rlm(value ~ month - 1)
+
+# For loops
+models <- as.list(rep(NA, 24 * 24))
+dim(models) <- c(24, 24)
+deseas <- array(NA, c(24, 24, 72))
+dimnames(deseas) <- dimnames(ozone)
+for (i in seq_len(24)) {
+for(j in seq_len(24)) {
+mod <- deseasf(ozone[i, j, ])
+models[[i, j]] <- mod
+deseas[i, j, ] <- resid(mod)
+}
+}
+
+# apply functions
+models <- apply(ozone, 1:2, deseasf)
+resids_list <- lapply(models, resid)
+resids <- unlist(resids_list)
+dim(resids) <- c(72, 24, 24)
+deseas <- aperm(resids, c(2, 3, 1))
+dimnames(deseas) <- dimnames(ozone)
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of \texttt{split-apply-combine} Procedure (draft)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      from: 
+      http://4dpiecharts.com/2011/12/16/a-quick-primer-on-split-apply-combine-problems/
+      \vskip1ex
+      we have a data frame with one column containing the values to calculate a statistic for and another column containing the group to which that value belongs
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+# InsectSprays dataset
+head(InsectSprays)
+
+# split the count column by the spray column.
+count_by_spray <- with(InsectSprays, split(count, spray))
+
+# next apply the statistic to each element of the list. Lets use the mean here.
+mean_by_spray <- lapply(count_by_spray, mean)
+
+# finally combine the list as a vector
+unlist(mean_by_spray)
+
+# or in one line
+sapply(count_by_spray, mean)
+
+# can also use the functions tapply(), aggregate() and by():
+with(InsectSprays, tapply(count, spray, mean))
+with(InsectSprays, by(count, spray, mean))
+aggregate(count ~ spray, InsectSprays, mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%

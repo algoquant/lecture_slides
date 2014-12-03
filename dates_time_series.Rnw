@@ -419,8 +419,6 @@ date_time + years(1)  # add period
   \begin{columns}[T]
     \column{0.4\textwidth}
       \texttt{periods} allow calculating future dates with the same day of the month, or month of the year,
-      \vskip1ex
-      Adding \texttt{periods} can create invalid dates,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=2:30>>=
@@ -438,12 +436,37 @@ date_time + months(0:2)
 date_time + 0:2 * months(2)  # bi-monthly dates
 date_time + seq(0, 5, by=2) * months(1)
 seq(date_time, length=3, by="2 months")
+      @
+  \end{columns}
+\end{block}
 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{End-of-month Dates}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Adding monthly \texttt{periods} can create invalid dates,
+      \vskip1ex
+      The operators \texttt{\%m+\%} and \texttt{\%m-\%} add or subtract monthly \texttt{periods} to account for the varible number of days per month,
+      \vskip1ex
+      This allows creating vectors of end-of-month dates,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=2:30>>=
+library(lubridate)  # load lubridate
 # adding monthly periods can create invalid dates
 date_time <- ymd(20120131, tz="America/New_York")
 date_time + 0:2 * months(1)
 date_time + months(1)
 date_time + months(2)
+
+# create vector of end-of-month dates
+date_time %m-% months(13:1)
       @
   \end{columns}
 \end{block}
@@ -538,6 +561,7 @@ as.POSIXct(head(qrtly_index, 4))
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \texttt{stats} package contains functions for manipulating time series objects of class \texttt{ts},
+        \vspace{-1em}
         <<ts_obj,echo=3:30,fig.show='hide'>>=
 set.seed(1121)  # for reproducibility
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -546,9 +570,9 @@ ts_series <- ts(data=cumsum(rnorm(96)),
              frequency=12, start=c(1990, 1))
 class(ts_series)  # class 'ts'
 attributes(ts_series)
-methods(class=class(ts_series))[3:8]
+matrix(methods(class="ts")[3:8], ncol=2)
 # window the time series
-window(ts_series, start=1992, end=1992.5)
+window(ts_series, start=1992, end=1992.25)
 
 plot(ts_series, type="l",  # create plot
      col="red", lty="solid", xlab="", ylab="")
@@ -580,7 +604,7 @@ title(main="Random Prices", line=-1)  # add title
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
-head(EuStockMarkets)  # get first six rows
+head(EuStockMarkets, 3)  # get first three rows
 plot(EuStockMarkets, main="", xlab="")  # plot all the columns
 title(main="EuStockMarkets", line=-1)  # add title
       @
@@ -667,6 +691,44 @@ shapiro.test(dax_rets)  # Shapiro-Wilk test
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_qq-1}
       \vskip2ex
       The \emph{p}-value of the \emph{Shapiro-Wilk} test is very small, which shows that the \texttt{DAX} returns are not normal,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Boxplots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of values,
+      \vskip1ex
+      The \emph{box} represents the upper and lower quartiles, \\
+      the vertical lines (whiskers) represent values beyond the quartiles, \\
+      and open circles represent values beyond the nominal range (outliers),
+      \vskip1ex
+      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of values,
+      \vskip1ex
+      \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames},
+      <<box_plots,echo=3:30,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(1.5, 0.5, 0), mar=c(2.5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars, 
+        main="Mileage by number of cylinders", 
+        xlab="Cylinders", ylab="Miles per gallon")
+
+# calculate EuStockMarkets percentage returns
+eu_rets <- diff(log(EuStockMarkets))
+# boxplot method for data frame
+boxplot(x=eu_rets)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/box_plots-1}
   \end{columns}
 \end{block}
 
@@ -870,7 +932,7 @@ merge(zoo_series1, zoo_series2, all=FALSE)
       <<echo=2:30>>=
 library(zoo)  # load package zoo
 # create zoo time series
-zoo_series <- zoo(rnorm(4), 
+zoo_series <- zoo(sample(4), 
                   order.by=(Sys.Date() + 0:3))
 # add NA
 zoo_series[3] <- NA
@@ -1209,29 +1271,28 @@ setwd("C:/Develop/data")
 library(xtable)
 # ETF symbols for asset allocation
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
-              "DBC", "XLY", "XLP", "XLE", 
-              "XLF", "XLV", "XLI", "XLB", 
-              "XLK", "XLU", "IWB", "IWD", 
-              "IWF", "IWM", "IWN", "IWO", 
-              "IWP", "IWR", "IWS", "IWV", 
-              "IUSV", "IUSG")
+  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", 
+  "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", 
+  "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", 
+  "IWS", "IWV", "IUSV", "IUSG")
 # read etf database into data frame
 etf_list <- read.csv(file='etf_list.csv', 
                      stringsAsFactors=FALSE)
+rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
-etf_list <- 
-  etf_list[etf_list$Symbol %in% sym_bols, ]
+etf_list <- etf_list[sym_bols, ]
 # shorten names
 etf_names <- sapply(etf_list$Name, 
                     function(name) {
   name_split <- strsplit(name, split=" ")[[1]]
   name_split <- 
     name_split[c(-1, -length(name_split))]
+  name_match <- match("Select", name_split)
+  if (!is.na(name_match))
+    name_split <- name_split[-name_match]
   paste(name_split, collapse=" ")
 })  # end sapply
-etf_list$Name <- etf_list$Name
-rownames(etf_list) <- NULL
-etf_list <- etf_list[match(sym_bols, etf_list$Symbol), ]
+etf_list$Name <- etf_names
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1264,6 +1325,7 @@ ls()
 getSymbols(sym_bols, env=data_env)
 ls(data_env)
 class(data_env$VTI)
+colnames(data_env$VTI)
 head(data_env$VTI, 3)
       @
     \column{0.5\textwidth}
@@ -1303,32 +1365,39 @@ etf_gg
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Series Analysis Using Package \texttt{PerformanceAnalytics}}
+\subsection{Performance Measurement Using \texttt{PerformanceAnalytics}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-2em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=1:30,eval=TRUE>>=
+      <<echo=1:30>>=
 library(quantmod)
 load(file="C:/Develop/data/etf_series_large.RData")
-etf_series_ad <- etf_series_ad[complete.cases(etf_series_ad)]
-etf_rets <- lapply(etf_series_ad, function(x_ts) {
+etf_series_ad <- 
+  etf_series_ad[complete.cases(etf_series_ad)]
+colnames(etf_series_ad)
+# calculate returns from adjusted prices
+etf_rets <- lapply(etf_series_ad, 
+                   function(x_ts) {
   daily_return <- dailyReturn(x_ts)
   colnames(daily_return) <- names(x_ts)
   daily_return
 })  # end lapply
 etf_rets <- do.call(merge, etf_rets)
 class(etf_rets)
+dim(etf_rets)
+
+library(PerformanceAnalytics)
+SharpeRatio(etf_rets[, "VTI"])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=1:30,eval=TRUE>>=
+      <<echo=1:30>>=
 library(quantmod)
 library(PerformanceAnalytics)
 CalmarRatio(etf_rets[, "VTI"])
-SharpeRatio(etf_rets[, "VTI"])
 SortinoRatio(etf_rets[, "VTI"])
 table.CAPM(Ra=etf_rets[, "XLE"], 
            Rb=etf_rets[, "VTI"], scale=252)
@@ -1347,7 +1416,7 @@ table.CAPM(Ra=etf_rets[, "XLE"],
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-2em}
-      <<drawdown_plot,echo=2:30,eval=TRUE,fig.show='hide'>>=
+      <<drawdown_plot,echo=2:30,fig.show='hide'>>=
 library(quantmod)
 library(PerformanceAnalytics)
 table.Drawdowns(etf_rets[, "VTI"])
@@ -1370,7 +1439,7 @@ chart.Drawdown(etf_rets[, "VTI"])
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<corr_plot,echo=2:30,eval=TRUE,fig.show='hide'>>=
+      <<corr_plot,echo=2:30,fig.show='hide'>>=
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
@@ -1413,7 +1482,7 @@ corrRect.hclust(corr_matrix_ordered,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      <<cluster_plot,echo=1:30,eval=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
+      <<cluster_plot,echo=1:30,fig.width=6,fig.height=6,fig.show='hide'>>=
 # Perform hierarchical clustering analysis
 data_dist <- as.dist(1-corr_matrix_ordered)
 data_cluster <- hclust(data_dist)
@@ -1438,7 +1507,7 @@ plot(data_cluster,
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<pca_plot,echo=3:30,eval=TRUE,fig.height=5,fig.show='hide'>>=
+      <<pca_plot,echo=3:30,fig.height=5,fig.show='hide'>>=
 par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 ### Perform principal component analysis PCA

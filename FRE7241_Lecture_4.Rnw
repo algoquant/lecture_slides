@@ -1,0 +1,861 @@
+% FRE7241_Lecture_4
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE7241 Lecture\#4]{FRE7241 Algorithmic Portfolio Management}
+\subtitle{Lecture\#4, Fall 2014}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@poly.edu}
+\date{November 25, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calculating Returns from Adjusted Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2))>>=
+library(quantmod)
+load(file="C:/Develop/data/etf_series_large.RData")
+# scrub NA values
+etf_series_ad <- 
+  etf_series_ad[complete.cases(etf_series_ad)]
+colnames(etf_series_ad)
+
+# calculate returns from adjusted prices
+library(quantmod)
+etf_rets <- lapply(etf_series_ad, 
+                   function(x_ts) {
+  daily_return <- dailyReturn(x_ts)
+  colnames(daily_return) <- names(x_ts)
+  daily_return
+})  # end lapply
+
+# "etf_rets" is a list of xts
+class(etf_rets[[1]])
+
+# flatten list of xts into a single xts
+etf_rets <- do.call(merge, etf_rets)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+class(etf_rets)
+dim(etf_rets)
+head(etf_rets[, 1:3])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{PerformanceAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{PerformanceAnalytics} contains \texttt{functions} and \texttt{data sets} for performance and risk analysis,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+      \texttt{managers} is an \texttt{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# get documentation for package "PerformanceAnalytics"
+packageDescription("PerformanceAnalytics")  # get short description
+help(package="PerformanceAnalytics")  # load help page
+data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
+ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
+detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+      @
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+perf_data <- 
+  unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+data(managers)  # load "managers" data set
+class(managers)
+dim(managers)
+head(managers, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ", 
+                      "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="", 
+        legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns", 
+      line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{PerformanceSummary} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{charts.PerformanceSummary()} plots three charts: cumulative returns, return bars, and drawdowns,
+      <<performance_summary,echo=(-(1:2)),eval=FALSE,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+data(managers)  # load "managers" data set
+charts.PerformanceSummary(ham_1, 
+  main="", lwd=2, ylog=TRUE)
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/performance_summary-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{ETF \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  etf_rets[, c("XLF", "XLP", "IEF")], lwd=2, 
+  ylab="", legend.loc="topleft", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/etf_cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<drawdown_plot,eval=TRUE,echo=(-1),tidy=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+options(width=200)
+library(PerformanceAnalytics)
+chart.Drawdown(etf_rets[, "VTI"], ylab="", 
+               main="VTI drawdowns")
+
+
+
+
+
+
+
+
+
+
+
+
+
+table.Drawdowns(etf_rets[, "VTI"])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/drawdown_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Histogram}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_hist,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+chart.Histogram(etf_rets[, 1], main="", 
+  xlim=c(-0.06, 0.06), 
+  methods = c("add.density", "add.normal"))
+# add title
+title(main=paste(colnames(etf_rets[, 1]), 
+                 "density"), line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Boxplots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_box,echo=(-1),eval=FALSE,fig.width=6,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)
+chart.Boxplot(etf_rets[, 
+  c(rownames(head(ret_stats, 3)), 
+    rownames(tail(ret_stats, 3)))])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \hspace*{-8em}\includegraphics[width=0.65\paperwidth,valign=t]{figure/returns_box-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_scatter,echo=(-1),fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+tail(table.Stats(etf_rets[, 
+  c("VTI", "IEF", "DBC", "IUSG")]), 3)
+ret_stats <- table.Stats(etf_rets)
+class(ret_stats)
+# Transpose the data frame
+ret_stats <- as.data.frame(t(ret_stats))
+# plot scatterplot
+plot(Kurtosis ~ Skewness, data=ret_stats,
+     main="Kurtosis vs Skewness")
+# add labels
+text(x=ret_stats$Skewness, y=ret_stats$Kurtosis, 
+          labels=colnames(etf_rets), 
+          pos=1, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Statistics Ranking}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# add skew_kurt column
+ret_stats$skew_kurt <- 
+  ret_stats$Skewness/ret_stats$Kurtosis
+# sort on skew_kurt
+ret_stats <- ret_stats[
+  order(ret_stats$skew_kurt, 
+        decreasing=TRUE), ]
+# add names column
+ret_stats$Name <- 
+  etf_list[rownames(ret_stats), ]$Name
+      @
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+ret_stats[, c("Name", "Skewness", "Kurtosis")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk vs. Return Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<risk_return_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+chart.RiskReturnScatter(etf_rets, Rf=0.01/12)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/risk_return_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk-adjusted Returns Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Sharpe} ratio measures the excess return per unit of risk, and is equal to the excess returns (over a risk-free return) divided by the standard deviation of the returns:
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_{f}]}{\sigma}
+      \end{displaymath}
+      The \emph{Sortino} ratio is equal to the excess returns divided by the \emph{downside deviation} (standard deviation of returns below a target rate of return),
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_{t}]}{\sqrt{\sum_{i=1}^{k} ([R_{i}-R_{t}]_{-})^2}}
+      \end{displaymath}
+      The \emph{Calmar} ratio is equal to the excess returns divided by the maximum drawdown of the returns:
+      \begin{displaymath}
+        C_{r}=\frac{E[R-R_{f}]}{DD}
+      \end{displaymath}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)
+vti_ief <- etf_rets[, c("VTI", "IEF")]
+SharpeRatio(vti_ief)
+
+SortinoRatio(vti_ief)
+
+CalmarRatio(vti_ief)
+tail(table.Stats(vti_ief), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression of Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# specify regression formula
+reg_formula <- XLP ~ VTI
+# perform regression
+reg_model <- lm(reg_formula, data=etf_rets)
+# plot scatterplot of returns
+plot(reg_formula, data=etf_rets)
+title(main="Regression XLP ~ VTI", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+
+
+
+
+reg_model_sum <- summary(reg_model)
+coef(reg_model_sum)
+# Durbin-Watson test autocorrelation residuals
+library(lmtest)
+dwtest(reg_model)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_regress-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression Summary Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+library(lmtest)  # load lmtest
+# perform regressions and collect statistics
+etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
+                        function(etf_name) {
+# specify regression formula
+  reg_formula <- as.formula(
+    paste(etf_name, "~ VTI"))
+# perform regression
+  reg_model <- lm(reg_formula, data=etf_rets)
+# get regression summary
+  reg_model_sum <- summary(reg_model)
+# collect regression statistics
+  etf_reg_stats <- with(reg_model_sum, 
+    c(coefficients[1, 1], coefficients[1, 4], 
+      coefficients[2, 1], coefficients[2, 4]))
+  etf_reg_stats <- c(etf_reg_stats, 
+               dwtest(reg_model)$p.value)
+  names(etf_reg_stats) <- c("alpha", "p-alpha", 
+                   "beta", "p-beta", "p-dw")
+  etf_reg_stats
+})  # end sapply
+etf_reg_stats <- t(etf_reg_stats)
+# sort by p-alpha
+etf_reg_stats <- etf_reg_stats[
+  order(etf_reg_stats[, "p-alpha"]), ]
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+etf_reg_stats[, 1:3]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\subsection{Capital Asset Pricing Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Capital Asset Pricing Model} is a linear model explaining an asset's returns in terms of the market (benchmark) returns:
+      \begin{displaymath}
+        R = R_{f} + {\alpha} + \beta (R_{m} - R_{f}) + {\varepsilon}
+      \end{displaymath}
+      The term proportional to $\beta$ represents the \emph{systematic} returns, and $\varepsilon$ represents \emph{idiosyncratic} returns,
+      \vskip1ex
+      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and its benchmark:
+      \begin{displaymath}
+        \beta = \frac{\sum_{i=1}^{k} (R_{i}-\bar{R}) (R_{i,b}-\bar{R_{b}})} {\sum_{i=1}^{k} (R_{i,b}-\bar{R_{b}})^2}
+      \end{displaymath}
+      $\alpha$ are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active managers performance,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)
+CAPM.beta(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
+CAPM.beta.bull(Ra=etf_rets[, "XLP"], 
+  Rb=etf_rets[, "VTI"])
+CAPM.beta.bear(Ra=etf_rets[, "XLP"], 
+  Rb=etf_rets[, "VTI"])
+
+CAPM.alpha(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
+
+InformationRatio(Ra=etf_rets[, "XLP"], 
+           Rb=etf_rets[, "VTI"])
+      @
+      The \emph{Information} ratio measures the excess return (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
+      \begin{displaymath}
+        I_{r} = \frac{E[R-R_{b}]} {\sqrt{\sum_{i=1}^{k} (R_{i}-R_{i,b})^2}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CAPM Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<capm_scatter,echo=(-1),fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+etf_betas <- sapply(etf_rets, CAPM.beta, 
+            Rb=etf_rets[, "VTI"])
+etf_annrets <- sapply(etf_rets, 
+            Return.annualized)
+# plot scatterplot
+plot(etf_annrets ~ etf_betas, xlab="betas", 
+            ylab="ann. rets", xlim=c(-0.25, 1.6))
+points(x=1, y=etf_annrets["VTI"], col="red", 
+       lwd=3, pch=21)
+abline(a=0, b=etf_annrets["VTI"])
+label_names <- rownames(etf_reg_stats)[1:13]
+# add labels
+text(x=1, y=etf_annrets["VTI"], labels="VTI", 
+     pos=2)
+text(x=etf_betas[label_names], 
+     y=etf_annrets[label_names], 
+     labels=label_names, pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{CAPM Summary Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)
+table.CAPM(Ra=etf_rets[, c("XLP", "XLF")], 
+           Rb=etf_rets[, "VTI"], scale=252)
+      @
+      \vspace{-2em}
+      <<eval=FALSE,echo=(-1)>>=
+library(PerformanceAnalytics)
+etf_perf_stats <- table.CAPM(Ra=etf_rets[, -1], 
+              Rb=etf_rets[, "VTI"], scale=252)
+colnames(etf_perf_stats) <- 
+  sapply(colnames(etf_perf_stats), 
+  function (str) {strsplit(str, split=" ")[[1]][1]})
+etf_perf_stats <- as.matrix(etf_perf_stats)
+etf_perf_stats <- t(etf_perf_stats)
+etf_perf_stats <- etf_perf_stats[
+  order(etf_perf_stats[, "Annualized Alpha"], 
+        decreasing=TRUE), ]
+save(file="C:/Develop/data/etf_series_large.RData")
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<>>=
+etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Correlation Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<corr_plot,echo=(-1),fig.show='hide'>>=
+library(quantmod)
+### Perform pair-wise correlation analysis
+# Calculate correlation matrix
+corr_matrix <- cor(etf_rets)
+colnames(corr_matrix) <- colnames(etf_rets)
+rownames(corr_matrix) <- colnames(etf_rets)
+# Reorder the correlation matrix based on clusters
+# Calculate permutation vector
+library(corrplot)
+corr_order <- corrMatOrder(corr_matrix, 
+              order="hclust", 
+              hclust.method="complete")
+# Apply permutation vector
+corr_matrix_ordered <- 
+  corr_matrix[corr_order, corr_order]
+# Plot the correlation matrix
+col3 <- colorRampPalette(c("red", "white", "blue"))
+corrplot(corr_matrix_ordered, 
+    tl.col="black", tl.cex=0.8, 
+    method="square", col=col3(8), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# Draw rectangles on the correlation matrix plot
+corrRect.hclust(corr_matrix_ordered, 
+      k=13, method="complete", col="red")
+      @
+    \vspace{-1em}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/corr_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hierarchical Clustering Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<cluster_plot,echo=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
+# Perform hierarchical clustering analysis
+data_dist <- as.dist(1-corr_matrix_ordered)
+data_cluster <- hclust(data_dist)
+plot(data_cluster, 
+     main="Dissimilarity = 1-Correlation", 
+     xlab="", ylab="")
+      @
+    \vspace{-2em}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cluster_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<pca_plot,echo=(-(1:2)),fig.height=5,fig.show='hide'>>=
+par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+### Perform principal component analysis PCA
+etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
+barplot(etf_pca$sdev[1:10], 
+        names.arg=colnames(etf_pca$rotation)[1:10], 
+        las=3, ylab="STDEV", xlab="PCVec", 
+        main="PCA Explain VAR")
+# Show first three principal component loadings
+head(etf_pca$rotation[,1:3], 3)
+# Permute second principal component loadings by size
+pca_vec2 <- as.matrix(
+  etf_pca$rotation[order(etf_pca$rotation[, 2], 
+  decreasing=TRUE), 2])
+colnames(pca_vec2) <- "pca2"
+head(pca_vec2, 3)
+# The option las=3 rotates the names.arg labels
+barplot(as.vector(pca_vec2), 
+        names.arg=rownames(pca_vec2), 
+        las=3, ylab="Loadings", 
+        xlab="Symbol", main="Loadings pca2")
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<pca_vec,echo=(-(1:2)),fig.height=5,fig.show='hide'>>=
+par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(3,1))  # set plot panels
+# get list of principal component vectors
+pca_vecs <- lapply(1:3, function(in_dex) {
+  pca_vec <- as.matrix(
+    etf_pca$rotation[
+    order(etf_pca$rotation[, in_dex], 
+    decreasing=TRUE), in_dex])
+  colnames(pca_vec) <- paste0("pca", in_dex)
+  pca_vec
+})  # end sapply
+names(pca_vecs) <- c("pca1", "pca2", "pca3")
+# The option las=3 rotates the names.arg labels
+for (in_dex in 1:3) {
+  barplot(as.vector(pca_vecs[[in_dex]]), 
+        names.arg=rownames(pca_vecs[[in_dex]]), 
+        las=3, ylab="", xlab="", 
+        main=paste("Loadings", 
+          colnames(pca_vecs[[in_dex]])))
+}  # end for
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_vec-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{PCA \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<pca_cum_returns,echo=(-1),eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+dim(etf_pca$x)
+head(etf_pca$x[, 1:3], 3)
+class(etf_pca$x)
+
+pca_rets <- xts(etf_pca$x/100, 
+    order.by=index(etf_rets))
+chart.CumReturns(
+  pca_rets[, 1:3], lwd=2, geometric=FALSE,
+  ylab="", legend.loc="bottomright", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\secname}
+\vspace{-1em}
+\begin{block}{Required (due Dec. 9th)}
+  \begin{itemize}[]
+    \item Perform PCA as follows:  \texttt{etf\_pca <- prcomp(etf\_rets, center=TRUE, scale=TRUE)}
+    \item \texttt{etf\_rets} is an xts time series of ETF returns,
+    \item the principal component vectors are contained in the following matrix:  \texttt{etf\_pca\$rotation}
+    \item the time series of principal component returns are contained in the matrix:  \texttt{etf\_pca\$x}
+    \item calculate the time series of PCA returns from \texttt{etf\_pca\$rotation} and \texttt{etf\_rets},
+    \item hint: you need to first scale \texttt{etf\_rets} using function "scale",
+    \item compare your calculated PCA returns to \texttt{etf\_pca\$x}, to verify they are exactly the same,
+    \item convert the PCA returns matrix to a xts time series, and rescale (divide) them by 100, so they are decimals, not percentages,
+    \item calculate CAPM Summary Statistics for the first three PCA returns,
+  \end{itemize}
+\end{block}
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 3-5: \fullcite{website:Farnsworth}
+    \item Read chapters 4, 5, 9-10: \citetitle{rupperttexbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
