@@ -1,12 +1,12 @@
 #################################
 ### HW #6 Solution
 #################################
-# Max score 35pts
+# Max score 40pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
-# 1. (15pts) Create a function called "read_numeric" that reads numbers input by the user, and returns them in a vector,
+# 1. (40pts) Create a function called "read_numeric" that reads numbers input by the user, and returns them in a vector,
 #    "read_numeric" should ask the user to input a number, and should read the input using the function "readline",
 #    "read_numeric" should read numbers from the console in a "while" loop,
 #    "read_numeric" should validate the inputs, and produce errors and Warnings,

@@ -30,7 +30,8 @@ head(cbind(etf_pca$x[, 2], pca_rets[, 2]))
 library(xts)
 pca_rets <- xts(pca_rets/100, order.by=index(etf_rets))
 
-# 3. (5pts) calculate CAPM Summary Statistics for the first three PCA returns,
+
+# 4. (5pts) calculate CAPM Summary Statistics for the first three PCA returns,
 library(PerformanceAnalytics)
 table.CAPM(Ra=pca_rets[, 1:3], Rb=etf_rets[, "VTI"], scale=252)
 

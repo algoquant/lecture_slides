@@ -1,61 +1,37 @@
 #################################
 ### HW #2 Solution
 #################################
+# Max score 25pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
-# Max score 35pts
 
-### HW #2:
-
+# 1. (5pts) using the function which() perform the following,
+#     create a data frame that is a subset of mtcars, 
+#     and that contains only cars with 6 cylinders,
 mtcars_6cyl <- mtcars[mtcars$cyl==6, ]
 which(mtcars_6cyl$hp==max(mtcars_6cyl$hp))
+
+
+# 2. (5pts) find the name of the car with the highest horsepower among 6 cylinder cars,
 best_car <- mtcars_6cyl[which(mtcars_6cyl$hp==max(mtcars_6cyl$hp)), ]
 rownames(best_car)
+
+#     calculate the horsepower and the weight of that car,
 best_car$hp
 best_car$wt
 
+
+# 3. (15pts) create a function called "mult_dots", which takes a '...' argument, 
+#     and a single numeric argument called "fac_tor", as follows: function (..., fac_tor),
+#     The function "mult_dots" should sum up the '...' argument, 
+#     multiply the sum by "fac_tor", and return the result,
 mult_dots <- function (..., fac_tor) {
   fac_tor*sum(...)
 }  #  end mult_dots
 
+#     apply the function "mult_dots" so that it adds "1, 2, 3", 
+#     and then multiplies the sum by "2",
 mult_dots(1, 2, 3, fac_tor=2)
-
-
-# 5pts
-# 1. Create a function for calculating the kurtosis of a time series of returns,
-
-calc_kurtosis <- function(in_data=rnorm(1000)) {  # default is normal
-# Calculates the kurtosis of a time series of returns.
-  len_data <- length(in_data)
-  mean_data <- mean(in_data)
-  sd_data <- sd(in_data)
-  len_data*(len_data+1)*sum(((in_data - mean_data)/sd_data)^4)/((len_data-1)^3)
-}  # end calc_kurtosis
-
-
-
-# 10pts
-# 2. Using this function calculate the kurtosis of DAX returns, and of t-distribution returns with four degrees of freedom (use the same number of data points in both cases),
-
-# DAX returns in scale 1% = 1.0
-ts_rets <- 100*diff(log(EuStockMarkets[, 1]))
-# calculate kurtosis of DAX returns
-calc_kurtosis(in_data=ts_rets)
-# calculate kurtosis of t-distribution
-calc_kurtosis(in_data=rt(n=length(ts_rets), df=4))
-
-
-
-# 20pts (even without legend)
-# 3. Plot the probability density of DAX returns together with t-distribution returns with four degrees of freedom on a single plot,
-# plot t-distribution
-x_var <- seq(-5, 5, length=100)
-plot(x=x_var, y=dt(x_var, df=4), type="l", lwd=2, xlab="", ylab="", ylim=c(0, 0.6))
-# add line for density of DAX returns
-lines(density(ts_rets), col="red", lwd=2)
-# add legend
-legend("topright", title="DAX vs t-distr", legend=c("t-distr", "DAX"), 
-       inset=0.05, cex=0.8, lwd=2, lty=c(1, 1), col=c("black", "red"))
 
 

@@ -201,6 +201,7 @@ portf_maxSR <- add.objective(
 
 
 
+## load(file="C:/Develop/data/portf_optim.RData")
 ## library(PortfolioAnalytics)
 ## # perform optimization of weights
 ## maxSR_DEOpt <- optimize.portfolio(
@@ -209,10 +210,11 @@ portf_maxSR <- add.objective(
 ##   optimize_method="DEoptim", # use DEoptim
 ##   maxSR=TRUE,  # maximize Sharpe
 ##   trace=TRUE, traceDE=0)
-## # visualize optimization
+## # plot optimization
 ## chart.RiskReward(maxSR_DEOpt,
 ##   risk.col="StdDev",
 ##   return.col="mean")
+
 
 
 library(PortfolioAnalytics)
@@ -220,6 +222,36 @@ load(file="C:/Develop/data/portf_optim.RData")
 maxSR_DEOpt$weights
 maxSR_DEOpt$objective_measures$mean[1]
 maxSR_DEOpt$objective_measures$StdDev[[1]]
+
+
+
+## library(PortfolioAnalytics)
+## # plot optimization
+## chart.RiskReward(maxSR_DEOpt,
+##   risk.col="StdDev",
+##   return.col="mean")
+## 
+## # plot risk/ret points in portfolio scatterplot
+## risk_ret_points <- function(rets=etf_rets,
+##   risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
+##   risk <- match.arg(risk)  # match to arg list
+##   if (risk=="ETL") {
+##     stopifnot(
+## "package:PerformanceAnalytics" %in% search() ||
+## require("PerformanceAnalytics", quietly=TRUE))
+##   }  # end if
+##   risk <- match.fun(risk)  # match to function
+##   risk_ret <- t(sapply(rets[, sym_bols],
+##      function(x_ts)
+##  c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
+##   points(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
+##    col="red", lwd=3, pch=21)
+##   text(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
+##  labels=rownames(risk_ret), col="red",
+##  lwd=2, pos=4)
+## }  # end risk_ret_points
+## 
+## risk_ret_points()
 
 
 
@@ -279,6 +311,7 @@ maxSR_DEOpt$objective_measures$StdDev[[1]]
 
 
 
+## load(file="C:/Develop/data/portf_optim.RData")
 ## library(PortfolioAnalytics)
 ## # perform optimization of weights
 ## maxSRN_DEOpt <- optimize.portfolio(
@@ -287,11 +320,23 @@ maxSR_DEOpt$objective_measures$StdDev[[1]]
 ##   optimize_method="DEoptim", # use DEoptim
 ##   maxSR=TRUE,  # maximize Sharpe
 ##   trace=TRUE, traceDE=0)
-## 
-## # visualize optimization
+## # plot optimization
 ## chart.RiskReward(maxSRN_DEOpt,
 ##   risk.col="StdDev",
-##   return.col="mean")
+##   return.col="mean",
+##   xlim=c(
+##     maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001,
+##     0.016))
+##   points(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+##    y=maxSR_DEOpt$objective_measures$mean[1],
+##    col="green", lwd=3, pch=21)
+##   text(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+##    y=maxSR_DEOpt$objective_measures$mean[1],
+##  labels="maxSR", col="green",
+##  lwd=2, pos=4)
+## # plot risk/ret points in portfolio scatterplot
+## risk_ret_points()
+
 
 
 library(PortfolioAnalytics)
@@ -308,98 +353,21 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]]
 
 
 
+## library(PerformanceAnalytics)
+## load(file="C:/Develop/data/portf_optim.RData")
+## chart.CumReturns(
+##   cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts),
+##   lwd=2, ylab="",
+##   legend.loc="topleft", main="")
+
+
+
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts), 
-  lwd=2, ylab="", 
-  legend.loc="topleft", main="")
-
-
-
-
-
-
-
-
 rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSRN_DEOpt$objective_measures$mean)
 c(maxSR_DEOpt$objective_measures$StdDev[[1]],
 maxSRN_DEOpt$objective_measures$StdDev[[1]])
-
-
-
-## library(PortfolioAnalytics)
-## # add constraints
-## portf_maxSTARR <- add.constraint(
-##   portfolio=portf_init,  # initial portfolio
-##   type="weight_sum",  # constraint sum weights
-##   min_sum=0.9, max_sum=1.1)
-## # add constraints
-## portf_maxSTARR <- add.constraint(
-##   portfolio=portf_maxSTARR,
-##   type="long_only")  # box constraint min=0, max=1
-## # add objectives
-## portf_maxSTARR <- add.objective(
-##   portfolio=portf_maxSTARR,
-##   type="return",  # maximize mean return
-##   name="mean")
-## # add objectives
-## portf_maxSTARR <- add.objective(
-##   portfolio=portf_maxSTARR,
-##   type="risk",  # minimize StdDev
-##   name="ES")
-
-
-
-## library(PortfolioAnalytics)
-## # perform optimization of weights
-## maxSTARR_DEOpt <- optimize.portfolio(
-##   R=etf_rets[, portf_names],  # specify returns
-##   portfolio=portf_maxSTARR,  # specify portfolio
-##   optimize_method="DEoptim", # use DEoptim
-##   maxSR=TRUE,  # maximize Sharpe
-##   trace=TRUE, traceDE=0)
-## 
-## # visualize optimization
-## chart.RiskReward(maxSTARR_DEOpt,
-##   risk.col="ES",
-##   return.col="mean")
-
-
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-maxSTARR_DEOpt$weights
-maxSTARR_DEOpt$objective_measures$mean[1]
-maxSTARR_DEOpt$objective_measures$ES[[1]]
-
-
-
-## library(PortfolioAnalytics)
-## maxSTARR_DEOpt_xts <-
-##   plot_portf(portfolio=maxSTARR_DEOpt)
-
-
-
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts), 
-  lwd=2, ylab="", 
-  legend.loc="topleft", main="")
-
-
-
-
-
-
-
-
-rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-maxSTARR_DEOpt$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-maxSTARR_DEOpt$objective_measures$ES[[1]])
 
 

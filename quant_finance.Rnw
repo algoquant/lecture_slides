@@ -80,8 +80,9 @@ knit_theme$set(thm)
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-(1:3))>>=
+      <<echo=(-(1:4))>>=
 rm(list=ls())
+options(digits=3)
 setwd("C:/Develop/data")
 library(xtable)
 # ETF symbols for asset allocation
@@ -273,7 +274,7 @@ head(managers, 3)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
       <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 # load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
@@ -326,7 +327,7 @@ charts.PerformanceSummary(ham_1,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
       <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
@@ -1198,14 +1199,14 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
 library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
 # get documentation for package "PortfolioAnalytics"
 packageDescription("PortfolioAnalytics")  # get short description
+
 help(package="PortfolioAnalytics")  # load help page
+
 data(package="PortfolioAnalytics")  # list all datasets in "PortfolioAnalytics"
+
 ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
+
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
-      @
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PortfolioAnalytics)
       @
   \end{columns}
 \end{block}
@@ -1280,7 +1281,8 @@ portf_maxSR <- add.objective(
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_basic,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_SR_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
@@ -1289,11 +1291,12 @@ maxSR_DEOpt <- optimize.portfolio(
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
   trace=TRUE, traceDE=0)
-# visualize optimization
+# plot optimization
 chart.RiskReward(maxSR_DEOpt, 
   risk.col="StdDev", 
   return.col="mean")
       @
+
       <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -1304,6 +1307,52 @@ maxSR_DEOpt$objective_measures$StdDev[[1]]
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_scatter,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot optimization
+chart.RiskReward(maxSR_DEOpt, 
+  risk.col="StdDev", 
+  return.col="mean")
+
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points <- function(rets=etf_rets, 
+        risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
+  risk <- match.arg(risk)  # match to arg list
+  if (risk=="ETL") {
+    stopifnot(
+      "package:PerformanceAnalytics" %in% search() || 
+      require("PerformanceAnalytics", quietly=TRUE))
+  }  # end if
+  risk <- match.fun(risk)  # match to function
+  risk_ret <- t(sapply(rets[, sym_bols], 
+     function(x_ts) 
+       c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
+  points(x=risk_ret[, "risk"], y=risk_ret[, "ret"], 
+         col="red", lwd=3, pch=21)
+  text(x=risk_ret[, "risk"], y=risk_ret[, "ret"], 
+       labels=rownames(risk_ret), col="red", 
+       lwd=2, pos=4)
+}  # end risk_ret_points
+
+risk_ret_points()
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_scatter-1}
   \end{columns}
 \end{block}
 
@@ -1406,7 +1455,8 @@ portf_maxSRN <- add.objective(
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_leverage,echo=(-1),eval=FALSE,tidy=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_SR_leverage,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
@@ -1415,12 +1465,26 @@ maxSRN_DEOpt <- optimize.portfolio(
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
   trace=TRUE, traceDE=0)
-
-# visualize optimization
+# plot optimization
 chart.RiskReward(maxSRN_DEOpt, 
   risk.col="StdDev", 
-  return.col="mean")
+  return.col="mean", 
+  xlim=c(
+    maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001, 
+    0.016))
+  points(x=maxSR_DEOpt$objective_measures$StdDev[[1]], 
+         y=maxSR_DEOpt$objective_measures$mean[1], 
+         col="green", lwd=3, pch=21)
+  text(x=maxSR_DEOpt$objective_measures$StdDev[[1]], 
+         y=maxSR_DEOpt$objective_measures$mean[1], 
+       labels="maxSR", col="green", 
+       lwd=2, pos=4)
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points()
       @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
       <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -1428,9 +1492,6 @@ maxSRN_DEOpt$weights
 maxSRN_DEOpt$objective_measures$mean[1]
 maxSRN_DEOpt$objective_measures$StdDev[[1]]
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
   \end{columns}
 \end{block}
 
@@ -1466,22 +1527,19 @@ maxSRN_DEOpt_xts <-
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_SRN_vis,echo=(-(1:2)),eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_SRN_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 chart.CumReturns(
   cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts), 
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
-
-
-
-
-
-
-
-
+      @
+      \vskip13ex
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSRN_DEOpt$objective_measures$mean)
@@ -1544,20 +1602,23 @@ portf_maxSTARR <- add.objective(
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_STARR,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_STARR,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
   R=etf_rets[, portf_names],  # specify returns
   portfolio=portf_maxSTARR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
+  maxSTARR=TRUE,  # maximize STARR
   trace=TRUE, traceDE=0)
 
-# visualize optimization
+# plot optimization
 chart.RiskReward(maxSTARR_DEOpt, 
   risk.col="ES", 
   return.col="mean")
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points(risk="ETL")
       @
       <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
 library(PortfolioAnalytics)
@@ -1604,22 +1665,19 @@ maxSTARR_DEOpt_xts <-
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_STARR_vis,echo=(-(1:2)),eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_STARR_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 chart.CumReturns(
   cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts), 
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
-
-
-
-
-
-
-
-
+      @
+      \vskip13ex
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSTARR_DEOpt$objective_measures$mean)
@@ -1633,6 +1691,742 @@ maxSTARR_DEOpt$objective_measures$ES[[1]])
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Frontier}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_eff_front,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot the efficient frontier
+chart.EfficientFrontier(maxSR_DEOpt, 
+                match.col="StdDev", 
+                n.portfolios=15, type="l")
+points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
+         y=maxSRN_DEOpt$objective_measures$mean[1], 
+         col="green", lwd=3, pch=21)
+text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
+         y=maxSRN_DEOpt$objective_measures$mean[1], 
+       labels="maxSRN", col="green", 
+       lwd=2, pos=4)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_eff_front-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{minES Portfolio Constraints}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective constraint applies to risk or return,
+      \vspace{-1em}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PortfolioAnalytics)
+# add constraints
+portf_minES <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_minES <- add.constraint(
+  portfolio=portf_minES, 
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_minES <- add.objective(
+  portfolio=portf_minES, 
+  type="risk",  # minimize ES
+  name="ES")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{minES Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_minES,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+minES_ROI <- optimize.portfolio(
+  R=etf_rets[, portf_names],  # specify returns
+  portfolio=portf_minES,  # specify portfolio
+  optimize_method="ROI", # use ROI
+  trace=TRUE, traceDE=0)
+
+# plot optimization
+chart.RiskReward(maxSTARR_DEOpt, 
+  risk.col="ES", 
+  return.col="mean")
+  points(x=minES_ROI$objective_measures$ES[[1]], 
+         y=mean(minES_ROI_xts), 
+         col="green", lwd=3, pch=21)
+  text(x=minES_ROI$objective_measures$ES[[1]], 
+         y=mean(minES_ROI_xts), 
+       labels="minES", col="green", 
+       lwd=2, pos=4)
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points(risk="ETL")
+      @
+      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+library(PortfolioAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+minES_ROI$weights
+minES_ROI$objective_measures$ES[[1]]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized minES Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_minES_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(PortfolioAnalytics)
+minES_ROI_xts <- 
+  plot_portf(portfolio=minES_ROI)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sharpe minES \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_minES_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+chart.CumReturns(
+  cbind(maxSR_DEOpt_xts, minES_ROI_xts), 
+  lwd=2, ylab="", 
+  legend.loc="topleft", main="")
+      @
+      \vskip13ex
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+rbind(maxSR_DEOpt$weights, minES_ROI$weights)
+c(maxSR_DEOpt$objective_measures$mean,
+minES_ROI$objective_measures$mean)
+c(maxSR_DEOpt$objective_measures$StdDev[[1]],
+minES_ROI$objective_measures$ES[[1]])
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_minES_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_1h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+maxSR_DEOpt <- optimize.portfolio(
+  R=etf_rets["/2011", portf_names],  # specify returns
+  portfolio=portf_maxSR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+weights_1h <- maxSR_DEOpt$weights
+
+# plot optimization
+maxSR_DEOpt_xts <- 
+  plot_portf(portfolio=maxSR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_1h-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolios (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_2h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+maxSR_DEOpt <- optimize.portfolio(
+  R=etf_rets["2011/", portf_names],  # specify returns
+  portfolio=portf_maxSR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+weights_2h <- maxSR_DEOpt$weights
+
+# plot optimization
+maxSR_DEOpt_xts <- 
+  plot_portf(portfolio=maxSR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_2h-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_weights,echo=(-(1:3)),fig.height=5,fig.show='hide'>>=
+options(width=50)
+par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+weights_1h
+weights_2h
+weights_1h - weights_2h
+barplot(weights_1h, 
+        names.arg=names(weights_1h), 
+        las=3, ylab="", xlab="", 
+        main="Portfolio Weights First Half")
+barplot(weights_2h, 
+        names.arg=names(weights_2h), 
+        las=3, ylab="", xlab="", 
+        main="Portfolio Weights Second Half")
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_weights-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Factor Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{factorAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{factorAnalytics} performs estimation and risk analysis of linear factor models for portfolio asset returns,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(factorAnalytics)  # load package "factorAnalytics"
+# get documentation for package "factorAnalytics"
+packageDescription("factorAnalytics")  # get short description
+help(package="factorAnalytics")  # load help page
+      @
+      \vspace{-1em}
+      <<eval=TRUE,echo=(-(1:2)),tidy=TRUE>>=
+options(width=50)
+library(factorAnalytics)  # load package "factorAnalytics"
+# list all objects in "factorAnalytics"
+ls("package:factorAnalytics")
+
+# list all datasets in "factorAnalytics"
+# data(package="factorAnalytics")
+
+# remove factorAnalytics from search path
+detach("package:factorAnalytics")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Factor Models Using PCA}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-1),eval=TRUE>>=
+library(factorAnalytics)
+# load ETF returns
+load(file="C:/Develop/data/etf_analysis.RData")
+# fit a three-factor model using PCA
+factor_pca <- fitSfm(etf_rets, k=3)
+head(factor_pca$loadings, 3)  # factor loadings
+# factor realizations (time series)
+head(factor_pca$factors)
+# residuals from regression
+factor_pca$residuals[1:3, 1:3]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-1),eval=TRUE>>=
+library(factorAnalytics)
+factor_pca$alpha  # estimated alphas
+factor_pca$r2  # R-squared regression
+# covariance matrix estimated by factor model
+factor_pca$Omega[1:3, 4:6]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Factor Loadings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
+library(factorAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+plot(factor_pca, which.plot.group=3, 
+     n.max=30, loop=FALSE)
+# ?plot.sfm
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_load-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series of Factors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_tsplot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot factor cumulative returns
+chart.CumReturns(factor_pca$factors, 
+    lwd=2, ylab="", legend.loc="topleft", 
+    main="")
+
+# plot time series of factor returns
+# plot(factor_pca, which.plot.group=2, 
+#   loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_tsplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_corr_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=7,fig.show='hide'>>=
+# asset correlations "hclust" hierarchical clustering order
+plot(factor_pca, which.plot.group=7, 
+     loop=FALSE, order="hclust", 
+     method="ellipse")
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_corr_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series of Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot residual cumulative returns
+chart.CumReturns(
+  factor_pca$residuals[, c("IEF", 
+                  "DBC", "XLF")], 
+  lwd=2, ylab="", legend.loc="topleft", 
+  main="")
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Residual Returns Histogram}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_hist,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot residual histogram with normal curve
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=8, 
+     plot.single=TRUE, loop=FALSE, 
+     xlim=c(-0.007, 0.007))
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Residual Returns \texttt{Q-Q} Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_qq,eval=TRUE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# residual Q-Q plot
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=9, 
+     plot.single=TRUE, loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_qq-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_autocorr,eval=FALSE,echo=TRUE,fig.width=7,fig.height=9,fig.show='hide'>>=
+# SACF and PACF of residuals
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=5, 
+     plot.single=TRUE, loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_autocorr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Active Investment Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Investment Strategy Backtesting Framework}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_analysis.RData")
+# rebalancing period
+re_balance <- "weeks"
+# look-back period in number of re_balance
+win_dow <- 40
+
+# create index of rebalancing period end points
+end_points <- endpoints(etf_rets, 
+                      on=re_balance)
+end_points[1] <- 1
+
+# create index of rebalancing periods
+periods <- lapply(win_dow:(length(end_points)-1),
+    function(point)
+      list(back=end_points[point-win_dow+1]:(end_points[point]-1),
+        fwd=end_points[point]:end_points[point+1])
+    )  # end lapply
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# calculate risk&ret stats for some symbols, over a range of dates
+risk_ret_stats <- function(x_ts=etf_rets,  # daily returns
+                       sym_bols=colnames(x_ts),  # names
+                       range=index(x_ts),  # date range
+                       ret="mean",  # return stat
+                       risk="mad") {  # risk stat
+  ret <- match.fun(ret)  # match to function
+  risk <- match.fun(risk)  # match to function
+  stats <- sapply(x_ts[range, sym_bols], 
+        function(ts)
+          c(ret=ret(ts), risk=risk(ts))
+  )  # end sapply
+  t(stats)
+}  # end risk_ret_stats
+
+# example
+head(risk_ret_stats(range=
+              periods[[1]]$back))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Backtesting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# calculate stats over overlaping period date windows
+period_stats <- lapply(periods,
+         function(point)
+           cbind(risk_ret_stats(range=point$back),
+            fut_ret=sapply(etf_rets[point$fwd, ], sum))
+)  # end lapply
+head(period_stats[[1]])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate pnl for a given period
+pnl_period <- function(period_stat, de_mean=FALSE) {
+  weights <- period_stat[, "ret"]/
+    period_stat[, "risk"]
+  weights <- weights - de_mean*mean(weights)
+  weights <- weights/sum(abs(weights))
+c(sum(period_stat[, "fut_ret"]*weights), weights)
+}  # end pnl_period
+
+# calculate pnls over all windows
+pnl_xts <- t(sapply(period_stats, pnl_period))
+pnl_xts <- xts(pnl_xts,
+     order.by=index(etf_rets)
+ [end_points[win_dow:(length(end_points)-1)]]
+ )  # end xts
+colnames(pnl_xts)[1] <- "pnl"
+
+# calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
+co_sts[1, ] <- 0
+co_sts <- rowSums(co_sts)
+pnl_xts[, "pnl"] <- pnl_xts[, "pnl"] - co_sts
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtest Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<back_perform,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# plot cumulative pnl of strategy
+plot(cumsum(pnl_xts[, "pnl"]), 
+  main=colnames(pnl_xts[, "pnl"]))
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_perform-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      <<back_weights,eval=FALSE,echo=TRUE,fig.width=15,fig.height=7,fig.show='hide'>>=
+# plot portfolio weights
+plot.zoo(pnl_xts[, portf_names], main="")
+      @
+\vspace{-2em}
+      \includegraphics[width=1.0\paperwidth,valign=t]{figure/back_weights-1}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Strategy Market Beta}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<back_beta,eval=FALSE,echo=TRUE,fig.width=8,fig.height=11,fig.show='hide'>>=
+# calculate xts of net beta
+betas <- c(1, etf_reg_stats[, 3])
+names(betas)[1] <- colnames(pnl_xts[, 2])
+# weights times betas
+betas <- pnl_xts[, -1] * betas
+betas <- xts(rowSums(betas), 
+    order.by=index(pnl_xts))
+colnames(betas) <- "betas"
+plot.zoo(cbind(betas, 
+    cumsum(etf_rets[, 1])[index(betas)]),
+    main="betas & VTI", xlab="")
+      @
+    \column{0.6\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_beta-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Strategy Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<back_optim,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# create trading function
+tot_pnl <- function(win_dow) {
+  periods <- lapply(win_dow:(length(end_points)-1),
+    function(point)
+      list(back=
+      end_points[point-win_dow+1]:(end_points[point]-1),
+         fwd=end_points[point]:end_points[point+1])
+  )  # end sapply
+  period_stats <- lapply(periods,
+       function(point)
+         cbind(risk_ret_stats(range=point$back),
+           fut_ret=sapply(etf_rets[point$fwd, ], sum))
+  )  # end lapply
+  pnl_xts <- t(sapply(period_stats, pnl_period))
+  co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
+  co_sts <- rowSums(co_sts)
+  co_sts <- c(0, co_sts)
+  pnl_xts[, 1] <- pnl_xts[, 1] - co_sts
+  sum(pnl_xts[, 1])
+}  # end tot_pnl
+strat_profile <- sapply(4*(5:15), tot_pnl)
+plot(cbind(4*(5:15), strat_profile), t="l")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_optim-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 

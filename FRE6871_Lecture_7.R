@@ -8,168 +8,366 @@ knit_theme$set(thm)
 
 
 
-# ?iris  # get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # extract list of unique elements of iris
-class(unique(iris$Species))
-# find which columns of iris are numeric
-sapply(iris, is.numeric)
-# calculate means of iris columns
-sapply(iris, mean)  # returns NA for Species
+sessionInfo()  # get R version and other session info
 
 
 
-sapply(6:10, sqrt)  # sapply on vector
-sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+Sys.getenv()[5:7]  # list some environment variables
 
-# calculate means of iris data frame columns
-sapply(iris, mean)  # returns NA for Species
+Sys.getenv("Home")  # get R user HOME directory
 
-# create a matrix
-mat_rix <- matrix(sample(100), ncol=4)
-# calculate column means using apply
-apply(mat_rix, 2, mean)
+Sys.setenv(Home='C:/Develop')  # set HOME directory
 
-# calculate column means using sapply, with anonymous function
-sapply(1:ncol(mat_rix), 
-       function(col_index) {  # anonymous function
- mean(mat_rix[, col_index])
-  }  # end anonymous function
-)  # end sapply
+Sys.getenv("Home")  # get user HOME directory
+
+Sys.getenv("R_home")  # get R_HOME directory
+
+R.home()  # get R_HOME directory
+
+R.home("etc")  # get "etc" sub-directory of R_HOME
 
 
 
-sapply(iris[, -5], mean)  # vector of means of numeric columns
-lapply(iris[, -5], mean)  # calculate means of numeric columns
-# calculate means of numeric columns using anonymous function
-unlist(lapply(iris, 
-      function(col_umn) {
-        if (is.numeric(col_umn)) mean(col_umn)
-      }  # end anonymous function
-      )  # end sapply
-       )  # end unlist
-unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
+## # ?options  # long list of global options
+## 
+## # interpret strings as characters, not factors
+## options("stringsAsFactors")
+## options(stringsAsFactors=FALSE)
+## 
+## # number of digits printed for numeric values
+## options(digits=3)
+## 
+## # number of items printed to console
+## options(max.print=80)
+## 
+## # warning levels options
+## # negative - warnings are ignored
+## options(warn=-1)
+## # zero - warnings are stored and printed after top-level function has completed
+## options(warn=0)
+## # one - warnings are printed as they occur
+## options(warn=1)
+## # two or larger - warnings are turned into errors
+## options(warn=2)
 
 
 
-# ?mtcars  # get information on mtcars - data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp   Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # extract list of car cylinders
-sapply(mtcars, mean)  # calculate means of mtcars columns
+# R startup (site) directory
+paste(R.home(), 'etc', sep='/')
+
+file.path(R.home(), 'etc')  # better way
+
+# perform tilde-expansions and convert to readable format
+normalizePath(file.path(R.home(), 'etc'), winslash="/")
+
+normalizePath(R.home("etc"), winslash="/")
 
 
 
-unique(iris$Species)  # Species takes on three distinct values
-# split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
-# split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
+normalizePath('~', winslash="/")  # Windows user HOME directory
+
+Sys.getenv("Home")  # R user HOME directory
+
+setwd("C:/Develop/R")
+getwd()  # current working directory
+
+# R startup (site) directory
+normalizePath(file.path(R.home(), 'etc'), winslash="/")
+
+# R executable directory
+normalizePath(file.path(R.home(), 'bin/x64'), winslash="/")
+
+# R documentation directory
+normalizePath(file.path(R.home(), 'doc/manual'), winslash="/")
 
 
 
-unique(mtcars$cyl)  # cyl has three unique values
-# split the mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
-names(split_cars)
-# get mean mpg for each cylinder group
-unlist(lapply(split_cars, function(x) mean(x$mpg)))
-# Which is identical to the tapply function
-tapply(mtcars$mpg, mtcars$cyl, mean)
-# using "with" environment
-with(mtcars, tapply(mpg, cyl, mean))
-# can also use the functions by() and aggregate()
-with(mtcars, by(mpg, cyl, mean))
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+setwd("C:/Develop/data")
+sample(dir(), 5)  # get 5 file names - dir() lists all files
+dir(pattern="csv")  # list files containing "csv"
+list.files(R.home())  # all files in R_HOME directory
+list.files(R.home("etc"))  # all files in "etc" sub-directory of R_HOME directory
+list.dirs()  # directories in cwd
+list.dirs(R.home("etc"))  # directories in "etc" sub-directory
+Sys.glob("*.csv")
+Sys.glob(R.home("etc"))
 
 
 
-# linear model with zero intercept
-my_form <- z ~ x + y -1
-my_form
-
-# formula from text string
-my_form <- as.formula(  # coerce text strings to formula
-        paste("y ~ ", 
-          paste(paste0("x", 1:5), collapse="+")
-          )  # end paste
-      )  # end as.formula
-class(my_form)
-my_form
+getwd()  # get cwd
 
 
 
-# rm(list=ls())
-set.seed(1121)  # initialize random number generator
-v.xvar <- 0.1*1:30  # independent variable
-v.yvar <- 3 + 2*v.xvar + rnorm(30)  # dependent variable plus noise
-my_form <- v.yvar ~ v.xvar  # specify model
-my_reg <- lm(my_form)  # perform regression
-summary(my_reg)  # regression summary
+setwd("C:/Develop/R")
+# help(Startup)  # description of R session startup mechanism
+
+# files in R startup directory directory
+dir(normalizePath(file.path(R.home(), 'etc'), winslash="/"))
+
+# *.R* files in cwd directory
+getwd()
+dir(getwd(), all.files=TRUE, pattern="\\.R")
+dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
 
 
 
-set.seed(1121)  # initialize random number generator
-# set plot paramaters - margins and font scale
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 0.5, 0))  # axis title and labels
-par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-indep_var <- 0.1*1:30
-depend_var <- 3 + 2*indep_var + rnorm(30)
-# perform regression
-simple_reg <- lm(depend_var ~ indep_var)
-
-# plot scatterplot
-plot(depend_var ~ indep_var)
-title(main="Simple Regression", line=-1)
-# add reg line
-abline(simple_reg, col="red")
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(-5, 7, length=100)
+y_var <- dnorm(x_var, mean=1.0, sd=2.0)
+plot(x_var, y_var, type="l", lty="solid", 
+     xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+star_t <- 3; fin_ish <- 5  # set lower and upper bounds
+# set polygon base
+are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
+polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
+c(-1, y_var[are_a], -1), col="red")
 
 
 
-set.seed(1121)  # initialize random number generator
-# set plot paramaters - margins and font scale
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 0.5, 0))  # axis title and labels
-par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-attach(mtcars)  # add mtcars to search path
-# specify model of horsepower vs miles per gallon
-mtcars_model <- hp ~ mpg
-# plot scatterplot horsepower vs miles per gallon
-plot(mtcars_model, xlab="", ylab="", 
-     main="horsepower vs miles per gallon")
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+pal_let <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep='=')
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dnorm(x, sd=sig_mas[in_dex]), 
+      type="l", xlim=c(-4, 4), 
+      xlab="", ylab="", lwd=2, 
+      col=pal_let[in_dex], 
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas", 
+       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
 
-# perform regression
-mtcars_reg <- lm(mtcars_model)
-# summary(mtcars_reg)  # regression summary
-abline(mtcars_reg, col="red")  # add reg line
 
-# add scatterplot using wordcloud labels 
-# to prevent label overlaps
-library(wordcloud)
-textplot(x=mtcars$mpg, y=mtcars$hp, words=rownames(mtcars))
 
-# don't forget to detach!!!
-detach(mtcars)
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(-4, 4, length=100)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+pal_let <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep='=')
+# plot an empty chart
+plot(x_var, dnorm(x_var, sd=sig_mas[1]), 
+     type="n", xlab="", ylab="", 
+     main="Normal Distributions")
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]), 
+lwd=2, col=pal_let[in_dex])
+}
+# add legend
+legend("topright", inset=0.05, title="Sigmas", 
+       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
+
+
+
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+d_free <- c(2, 5, 8, 11)  # df values
+# create plot colors
+pal_let <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("df", d_free, sep='=')
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dchisq(x, df=d_free[in_dex]), 
+      type="l", xlim=c(0, 20), ylim=c(0, 0.3), 
+      xlab="", ylab="", lwd=2, 
+      col=pal_let[in_dex], 
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Chi-squared Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees of freedom", lab_els, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
+
+
+
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(0, 20, length=100)
+d_free <- c(2, 5, 8, 11)  # df values
+# create plot colors
+pal_let <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("df", d_free, sep='=')
+# plot an empty chart
+plot(x_var, dchisq(x_var, df=d_free[1]), 
+     type="n", xlab="", ylab="", ylim=c(0, 0.3), 
+     main="Chi-squared Distributions")
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(x_var, dchisq(x_var, df=d_free[in_dex]), 
+lwd=2, col=pal_let[in_dex])
+}
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees of freedom", lab_els, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
+
+
+
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+d_free <- c(3, 6, 9)  # df values
+# create plot colors
+pal_let <- c("black", "red", "blue", "green")
+# create legend labels
+lab_els <- c('normal', paste("df", d_free, sep='='))
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-4, 4), 
+      xlab="", ylab="", lwd=2)
+for (in_dex in 1:3) {  # plot three curves
+curve(expr=dt(x, df=d_free[in_dex]), 
+      type="l", xlab="", ylab="", lwd=2, 
+      col=pal_let[in_dex+1], add=TRUE)
+}  # end for
+# add title
+title(main="t-distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees\n of freedom", lab_els, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
+
+
+
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(-4, 4, length=100)
+d_free <- c(3, 6, 9)  # df values
+# create plot colors
+pal_let <- c("black", "red", "blue", "green")
+# create legend labels
+lab_els <- c('normal', paste("df", d_free, sep='='))
+# plot chart of normal distribution
+plot(x_var, dnorm(x_var), type="l", 
+     lwd=2, xlab="", ylab="", 
+     main="t-distributions")
+# add lines to plot
+for (in_dex in 1:3) {
+  lines(x_var, dt(x_var, df=d_free[in_dex]), 
+lwd=2, col=pal_let[in_dex+1])
+}
+# add legend
+legend("topright", inset=0.05, 
+       title="Degrees\n of freedom", lab_els, 
+       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
+       col=pal_let)
+
+
+
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+poisson_events <- 0:11  # Poisson events
+poisson_freq <- dpois(poisson_events, lambda=4)
+names(poisson_freq) <- as.character(poisson_events)
+poisson_freq
+poisson_func <- function(x, lambda)  # Poisson function
+            {exp(-lambda)*lambda^x/factorial(x)}
+curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
+      xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
+legend(x="topright", legend="Poisson density", title="", 
+       inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
+
+
+
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+my_ggplot <- ggplot(  # specify data and aesthetics
+  data=mtcars, mapping=aes(x=hp, y=mpg)) + 
+  geom_point() +  # plot points
+  ggtitle("basic scatterplot") +  # add title
+  theme(  # customize plot object
+  plot.title=element_text(vjust=-2.0), 
+  plot.background=element_blank()
+  )  # end theme
+my_ggplot  # render the plot
+
+
+
+# install.packages("directlabels", repo="http://r-forge.r-project.org")
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+library(gridExtra)  # load gridExtra
+library(directlabels)  # load directlabels
+my_ggplot <- ggplot(  # data and aesthetics
+  data=mtcars, mapping=aes(x=hp, y=mpg)) + 
+  geom_point() +  # plot points
+  theme(  # customize plot object
+  legend.position="none", 
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.0,0.0,-0.5,0.0),"cm"), 
+  plot.background=element_blank()
+  ) + 
+  scale_colour_discrete(guide="none")  # no label guide
+car_names <- rownames(mtcars)
+gg_labels <- geom_text(aes(  # ggplot2 labels
+  label=car_names, color=car_names, size=5))
+d_labels <- geom_dl(mapping=aes(  # directlabels
+  label=car_names, color=car_names), 
+  method=list('last.bumpup', cex=0.7, 
+        hjust=1))
+# render plots in single column
+grid.arrange(my_ggplot + 
+  ggtitle("ggplot2 labels") + gg_labels, 
+  my_ggplot + ggtitle("directlabels") + 
+    d_labels, ncol=1)  # end grid.arrange
+
+
+
+my_ggplot <- ggplot(data=iris, 
+    mapping=aes(Petal.Length, Sepal.Length)) +
+  geom_point(aes(shape=Species, color=Species)) +
+  geom_dl(aes(label=Species, color=Species), 
+  method="smart.grid") +
+  scale_shape_manual(values=c(setosa=1, 
+    virginica=6, versicolor=3), guide="none") + 
+  scale_colour_discrete(guide="none")  # no label guide
+my_ggplot  # render the plot
+
+
+
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+library(gridExtra)  # load gridExtra
+# coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# create ggplot2 theme object
+auto_theme <- theme(
+  legend.position="none", 
+  plot.title=element_text(vjust=-2.0), 
+  plot.margin=unit(c(-0.0,0.0,-0.5,0.0),"cm"), 
+#  axis.text.y=element_blank(),
+  plot.background=element_blank()
+  )  # end theme
+# ggplot2 object for plotting in single panel
+ggp_zoo_single <- autoplot(zoo_series, 
+            main="Eu Stox single panel", 
+            facets=NULL) + xlab("") +
+            auto_theme
+# ggplot2 object for plotting in multiple panels
+ggp_zoo_multiple <- autoplot(zoo_series, 
+            main="Eu Stox multiple panels", 
+            facets="Series ~ .") + xlab("") +
+            facet_grid("Series ~ .", 
+            scales="free_y") + auto_theme
+# render plots in single column
+grid.arrange(ggp_zoo_single + 
+         theme(legend.position=c(0.1, 0.5)), 
+       ggp_zoo_multiple, ncol=1)
 
 
