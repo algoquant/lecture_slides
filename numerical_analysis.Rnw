@@ -1,0 +1,279 @@
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE6871_bib.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+
+% Title page setup
+\title[Numerical Analysis]{Numerical Analysis}
+\subtitle{FRE7241 Algorithmic Portfolio Management}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \texorpdfstring{(\textit{\color{blue}{\footnotesize{jp3900@nyu.edu}}})}{}}
+% \email{jp3900@nyu.edu}
+\date{\today}
+
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Likelihood Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector of normal variables
+target_vector <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  sum(2*log(parm[2]) + 
+    ((target - parm[1])/parm[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, target)
+    object_ive(c(mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(
+  objective_grid==min(objective_grid), 
+  arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_objective,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization quasi-Newton method
+optim_run <- optim(par=par_init, 
+             fn=object_ive, 
+             target=target_vector,
+             method="L-BFGS-B",
+             upper=c(10, 10),
+             lower=c(-10, 0.1))
+# optimal parameters
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+curve(expr=dnorm(x, mean=optim_run$par["mean"],
+                 sd=optim_run$par["sd"]), 
+      add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Model Likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector is mixture of normal distributions
+target_vector <- c(rnorm(100, sd=1.0), 
+                   rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  likelihood <- parm[1]/parm[3] * 
+  dnorm((target-parm[2])/parm[3]) +
+  (1-parm[1])/parm[5]*dnorm((target-parm[4])/parm[5])
+  if(any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, target)
+    object_ive(c(w, m1, s1, mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector,
+          w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Mixture Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_run <- optim(par=par_init, 
+            fn=object_ive, 
+            target=target_vector,
+            method="L-BFGS-B",
+            upper=c(1,10,10,10,10),
+            lower=c(0,-10,0.2,-10,0.2))
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+fit_func <- function(x, parm) {
+  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) + 
+    (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
+      type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\end{document}
