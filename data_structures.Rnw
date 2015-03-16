@@ -49,7 +49,7 @@ knit_theme$set(thm)
 
 
 % Title page setup
-\title[\texttt{R} Data Structures]{\texttt{R} Data Structures}
+\title[\texttt{R} Data Objects]{\texttt{R} Data Objects}
 \subtitle{FRE6871 R in Finance, Fall 2014}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
@@ -68,26 +68,31 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Data Structures}
+\section{Data Objects}
 
 
 %%%%%%%%%%%%%%%
 \subsection{\secname\hskip0.5em in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
-
+\vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Homogeneous data structures contain objects of the same class,
+      All data objects in \texttt{R} are \emph{vectors},
       \vskip1ex
-      Heterogeneous structures can contain objects of different \texttt{types},
-    \column{0.5\textwidth}
-%      \vspace{-1em}
+      Single numbers and character strings are vectors of length \texttt{1},
+      \vskip1ex
+      \emph{Atomic} vectors are \emph{homogeneous} objects whose elements are all of the same \emph{mode} (type), 
+      \vskip1ex
+      \emph{Lists} and \emph{data frames} are \emph{recursive} (heterogeneous) objects, whose elements can be vectors of different \emph{mode},
+      \vskip1ex
+      The functions \texttt{is.atomic()} and \texttt{is.recursive()} return logical values depending on whether their arguments are \emph{atomic} or \emph{recursive},
+      \vskip1ex
       \renewcommand\arraystretch{1.5} % scale table rows
       \renewcommand\tabcolsep{8pt} % set table column width - 6pt is default
-      \centering{{\color{blue}{\texttt{R} Data Structures}}}\\[1ex]
+      \centering{{\color{blue}{\texttt{R} Data Objects}}}\\[1ex]
       \begin{tabular}{c||c|c|}
-        & \text{Homogeneous} & \text{Heterogeneous} \\
+        & \text{\emph{Atomic}} & \text{\emph{Recursive}} \\
         \hline
         \hline
         \text{1-dim} & Vectors & Lists \\
@@ -96,6 +101,21 @@ knit_theme$set(thm)
         \hline
         \text{n-dim} & Arrays & NA \\
       \end{tabular}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# single numbers are vectors of length 1
+1
+# character strings are vectors of length 1
+"a"
+# strings without quotes are variable names
+a  # variable "a" doesn't exist
+# list elements can have different mode
+list(aa=c('a', 'b'), bb=1:5)
+data.frame(aa=c('a', 'b'), bb=1:2)
+is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
+is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+      @
   \end{columns}
 \end{block}
 
@@ -103,7 +123,211 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Homogeneous Data Structures}
+\subsection{Type, Mode, and Class of Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{type}, \emph{mode}, and \emph{class} are \texttt{character} strings representing various object properties,
+      \vskip1ex
+      The \emph{type} of an atomic object represents how it's stored in memory (\texttt{logical}, \texttt{character}, \texttt{integer}, \texttt{double}, etc.)
+      \vskip1ex
+      The \emph{mode} of an atomic object is the kind of data it represents (\texttt{logical}, \texttt{character}, \texttt{numeric}, etc.)
+      \vskip1ex
+      The \emph{mode} of an object often coincides with its \emph{type} (except for \texttt{integer} and \texttt{double} types),
+      \vskip1ex
+      Recursive objects (such as \texttt{lists}) have both \emph{type} and \emph{mode} equal to the recursive type (\texttt{list}, etc.),
+      \vskip1ex
+      The \emph{class} of an object is either an explicit \emph{class} attribute, or is derived from the object \texttt{dim} attribute, or its \emph{mode} (implicit \emph{class}), 
+      \vskip1ex
+      The function \texttt{class()} returns the explicit or implicit \emph{class} of an object,
+      \vskip1ex
+      The \emph{class} attribute is used for function dispatching in the \texttt{S3} object-oriented programming system in \texttt{R},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+my_var <- "hello"
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- runif(5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(1:10, 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(runif(10), 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- list(aa=c('a', 'b'), bb=1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Implicit Class of Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If an object has a \texttt{dim} attribute, then its implicit \emph{class} is \texttt{matrix} or \texttt{array}, 
+      \vskip1ex
+      If an object has no explicit \emph{class} nor \texttt{dim} attributes, then its implicit \emph{class} is derived from its \emph{mode} (except for \texttt{integer} vectors have implicit class "\texttt{integer}"), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+my_var <- matrix(1:10, 2)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- vector(mode="numeric", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- vector(mode="integer", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{R} Object Attributes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \emph{class}, etc., 
+      \vskip1ex
+      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
+      \vskip1ex
+      The function \texttt{attributes()} returns the attributes of an object,
+      \vskip1ex
+      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
+      \vskip1ex
+      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+attributes(5:10)  # a simple vector has no attributes
+my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+attributes(my_var)  # named vector has "names" attribute
+my_var <- 1:10
+is.vector(my_var)  # is the object a vector?
+attributes(my_var) <- list(dim=c(2, 5))
+is.matrix(my_var)  # is the object a matrix?
+my_var  # matrix object
+structure(1:10, dim=c(2, 5))  # matrix object
+
+my_var <- 0
+attributes(my_var) <- list(class="Date")
+my_var  # "Date" object
+structure(0, class="Date")  # "Date" object
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modifying class Attributes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Objects without an explicit \emph{class} don't have a \emph{class} attribute, and the function \texttt{class()} returns the implicit \emph{class},
+      \vskip1ex
+      The \emph{class} of an object can be modified using the \texttt{"class() <-"} assignment,
+      \vskip1ex
+      An object can have a main \emph{class}, and also an inherited \emph{class} (the \emph{class} attribute can be a vector of strings),
+      \vskip1ex
+      The function \texttt{unclass()} removes the explicit class attribute from an object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+my_var <- matrix(runif(10), 2, 5)
+class(my_var)  # has implicit class
+attributes(my_var)  # but no explicit "class" attribute
+c(typeof(my_var), mode(my_var), class(my_var))
+class(my_var) <- "my_class"  # assign explicit "class" attribute
+class(my_var)  # has explicit "class"
+attributes(my_var)  # has explicit "class" attribute
+is.matrix(my_var)  # is the object a matrix?
+is.vector(my_var)  # is the object a vector?
+attributes(unclass(my_var))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Object Coercion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Coercion} means changing the \emph{type}, \emph{mode}, or \emph{class} of an object, without changing the underlying data,
+      \vskip1ex
+      Changing the \emph{mode} of an object can change its \emph{class} as well, but not always,
+      \vskip1ex
+      Objects can be explicitly coerced using the "\texttt{as.*}" coercion functions,
+      \vskip1ex
+      Most coercion functions strip the attributes from the object,
+      \vskip1ex
+      Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \emph{mode},
+      \vskip1ex
+      Implicit coercion can cause bugs that are difficult to trace,
+      \vskip1ex
+      The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
+      \vskip1ex
+      Coercion can introduce bad data, such as \texttt{NA} values,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+
+mode(my_var) <- "character"  # coerce to "character"
+my_var
+c(typeof(my_var), mode(my_var), class(my_var))
+my_var <- as.character(1:5)  # explicitly coerce to "character"
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(1:10, 2, 5)
+my_var <- as.character(my_var)  # explicitly coerce to "character"
+c(typeof(my_var), mode(my_var), class(my_var))
+is.matrix(my_var)  # is the object a matrix?
+
+as.logical(0:3)  # explicit coercion to "logical"
+
+c(1:3, 'a')  # implicit coercion to "character"
+as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Atomic Data Objects}
 
 
 %%%%%%%%%%%%%%%
@@ -313,13 +537,13 @@ vec_var^2  # square all elements
     \column{0.3\textwidth}
       The colon operator ("\texttt{:}") provides a simple way of creating a numeric vector,
       \vskip1ex
-      The function \texttt{vector()} returns a vector of the specified \texttt{mode},
+      The function \texttt{vector()} returns a vector of the specified \emph{mode},
       \vskip1ex
       The function \texttt{seq()} returns a vector of numbers,
       \vskip1ex
       The function \texttt{rep()} replicates an object multiple times,
       \vskip1ex
-      The functions \texttt{numeric()} and \texttt{character()} return empty vectors of the specified \texttt{type},
+      The functions \texttt{numeric()} and \texttt{character()} return empty vectors of the specified \emph{type},
       \vskip1ex
       Zero length vectors are not \texttt{NULL},
     \column{0.7\textwidth}
@@ -426,7 +650,7 @@ which(vec_var > 0.5)  # index of elements > 0.5
       \vskip1ex
       The function \texttt{factor()} converts a vector into a factor,
       \vskip1ex
-      Factors have two attributes: \texttt{class} (equal to "\texttt{factor}") and \texttt{levels} (the allowed values),
+      Factors have two attributes: \emph{class} (equal to "\texttt{factor}") and \texttt{levels} (the allowed values),
       \vskip1ex
       The function \texttt{as.vector()} coerces a factor to a character vector,
     \column{0.7\textwidth}
@@ -527,7 +751,7 @@ attributes(mat_var)  # get matrix attributes
       \vskip1ex
       This is an example of implicit coercion in \texttt{R}, which can cause difficult to trace bugs,
       \vskip1ex
-      Subsetting with the parameter \texttt{"drop=FALSE"} prevents the implicit coercion and preserves the matrix \texttt{class},
+      Subsetting with the parameter \texttt{"drop=FALSE"} prevents the implicit coercion and preserves the matrix \emph{class},
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
@@ -587,7 +811,7 @@ mat_var
     \column{0.3\textwidth}
       Vectors can be bound into matrices using the functions \texttt{cbind()} and \texttt{rbind()},
       \vskip1ex
-      The \alert{recycling rule} allows operations on vectors of different lengths:\\
+      The \emph{recycling rule} allows operations on vectors of different lengths:\\
       \begin{enumerate}
         \item Vectors are scanned from left to right,
         \item Shorter vectors are extended in length by recycling their values until they match the length of longer vectors,
@@ -595,11 +819,11 @@ mat_var
     \column{0.7\textwidth}
       \vspace{-1em}
       <<>>=
-vec_var1 <- c(1, 2, 3)
-vec_var2 <- c(4, 5, 6)
+vec_var1 <- 1:3  # define vector
+vec_var2 <- 6:4  # define vector
 cbind(vec_var1, vec_var2)  # bind into columns
 rbind(vec_var1, vec_var2)  # bind into rows
-vec_var2 <- c(4, 5, 6, 7)  # extend second vector to four elements
+vec_var2 <- c(vec_var2, 7)  # extend second vector to four elements
 cbind(vec_var1, vec_var2)  # recycling rule applied
 1:6 + c(10, 20)  # another example of recycling rule
       @
@@ -609,9 +833,69 @@ cbind(vec_var1, vec_var2)  # recycling rule applied
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Matrix Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \emph{operator} \texttt{*} performs \emph{element-by-element} multiplication on vectors and matrices,
+      \vskip1ex
+      The \emph{operator} \texttt{\%*\%} performs \emph{vector} multiplication on vectors and matrices,
+      \vskip1ex
+      In \emph{vector} multiplication the dimensions of the objects must be \emph{conformable}, otherwise the \emph{recycling rule} is applied or an error is produced,
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+vec_var1
+vec_var2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_var1 * vec_var2
+# calculate scalar ("inner") product
+vec_var1 %*% vec_var2
+# calculate inner product and drop dimensions
+drop(vec_var1 %*% vec_var2)
+mat_var
+# multiply vector by matrix
+mat_var %*% vec_var1  # single column matrix
+drop(mat_var %*% vec_var1)  # vector
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
-\section{Heterogeneous Data Structures}
+\subsection{Matrix Transpose}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{t()} returns the transpose of a matrix,
+      \vskip1ex
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+# multiply matrix by vector
+# fails because dimensions of objects aren't conformable
+vec_var1 %*% mat_var
+# works after transpose
+drop(vec_var1 %*% t(mat_var))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Recursive Data Objects}
 
 
 %%%%%%%%%%%%%%%
@@ -621,7 +905,7 @@ cbind(vec_var1, vec_var2)  # recycling rule applied
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Lists are a type of vector that contain elements of different \texttt{types},
+      Lists are a type of vector that contain elements of different \emph{types},
       \vskip1ex
       Lists are recursive object types,
       \vskip1ex
@@ -694,7 +978,7 @@ names(list_var)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \texttt{types},
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types},
       \vskip1ex
       Data frames can be thought of as lists of vectors of the same length,
       \vskip1ex
@@ -944,184 +1228,6 @@ hist(Cars93$MPG.highway, col="lightblue1",
 
 \end{frame}
 
-
-
-%%%%%%%%%%%%%%%
-\section{\texttt{R} Object Attributes}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Type, Mode, and Class of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{type} of an atomic object represents how it's stored in memory (\texttt{logical}, \texttt{integer}, \texttt{double}, \texttt{character}, etc.)
-      \vskip1ex
-      The \texttt{mode} of an atomic object is the kind of data it represents (\texttt{logical}, \texttt{numeric}, \texttt{character}, etc.)
-      \vskip1ex
-      The \texttt{mode} of an object often coincides with its \texttt{type} (except for \texttt{integer} and \texttt{double} types),
-      \vskip1ex
-      Recursive objects (such as \texttt{lists}) have both \texttt{type} and \texttt{mode} equal to the recursive type (\texttt{list}, etc.),
-      \vskip1ex
-      The \texttt{class} of an object is an attribute used for function dispatching in the \texttt{S3 OO} system (\texttt{classes} are \texttt{numeric}, \texttt{matrix}, \texttt{character}, \texttt{factor}, \texttt{list}, etc.)
-      \vskip1ex
-      Objects are assigned an implicit \texttt{class} when they are created, derived from either their \texttt{type}, \texttt{mode}, or their data structure (\texttt{matrix}, \texttt{data.frame}, etc.)
-      \vskip1ex
-      The function \texttt{class()} returns the explicit or implicit \texttt{class} of an object,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- "hello"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- runif(5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(runif(10), 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- list(aa=c('a', 'b'), bb=1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} Object Attributes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \texttt{class}, etc., 
-      \vskip1ex
-      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
-      \vskip1ex
-      The function \texttt{attributes()} returns the attributes of an object,
-      \vskip1ex
-      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
-      \vskip1ex
-      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-attributes(5:10)  # a simple vector has no attributes
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-attributes(my_var)  # named vector has "names" attribute
-my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
-attributes(my_var) <- list(dim=c(2, 5))
-is.matrix(my_var)  # is the object a matrix?
-my_var  # matrix object
-structure(1:10, dim=c(2, 5))  # matrix object
-
-my_var <- 0
-attributes(my_var) <- list(class="Date")
-my_var  # "Date" object
-structure(0, class="Date")  # "Date" object
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \texttt{class} Attributes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Objects without an explicit \texttt{class} don't have a \texttt{class} attribute, and the function \texttt{class()} returns the implicit \texttt{class},
-      \vskip1ex
-      The \texttt{class} of an object can be modified using the \texttt{"class() <-"} assignment,
-      \vskip1ex
-      An object can have a main \texttt{class}, and also an inherited \texttt{class} (the \texttt{class} attribute can be a vector of strings),
-      \vskip1ex
-      The function unclass() removes the explicit class attribute from an object,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- matrix(runif(10), 2, 5)
-class(my_var)  # has implicit class
-attributes(my_var)  # but no explicit "class" attribute
-c(typeof(my_var), mode(my_var), class(my_var))
-class(my_var) <- "my_class"  # assign explicit "class" attribute
-class(my_var)  # has explicit "class"
-attributes(my_var)  # has explicit "class" attribute
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
-attributes(unclass(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Object Coercion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Coercion} means changing the \texttt{type}, \texttt{mode}, or \texttt{class} of an object, without changing the underlying data,
-      \vskip1ex
-      Changing the \texttt{mode} of an object can change its \texttt{class} as well, but not always,
-      \vskip1ex
-      Objects can be explicitly coerced using the \texttt{as.*} coercion functions,
-      \vskip1ex
-      Most coercion functions strip the attributes from the object,
-      \vskip1ex
-      Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \texttt{mode},
-      \vskip1ex
-      Implicit coercion can cause bugs that are difficult to trace,
-      \vskip1ex
-      The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
-      \vskip1ex
-      Coercion can introduce bad data, such as \texttt{NA} values,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-mode(my_var) <- "character"  # coerce to "character"
-my_var
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- as.character(1:5)  # explicitly coerce to "character"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-my_var <- as.character(my_var)  # explicitly coerce to "character"
-c(typeof(my_var), mode(my_var), class(my_var))
-is.matrix(my_var)  # is the object a matrix?
-
-as.logical(0:3)  # explicit coercion to "logical"
-
-c(1:3, 'a')  # implicit coercion to "character"
-as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%

@@ -1,3 +1,133 @@
+#################################
+### Homework ideas
+#################################
+
+rm(list=ls())
+
+###########
+# classes and inheritance
+
+# create new generic function and method for "string" class, based on: "reverse", "trim", "pad", "scramble",
+# create "stringy" class, derived from "string" class
+# create new methods for "stringy" class, based on existing generic functions: "length", "+", "print"
+# create new methods for "stringy" class, based on "string" generic functions: "", "", ""
+# show that "stringy" inherits methods from "string" class
+
+# derive (not create!) new "string" class from "character" object
+# simply add "string" to class vector
+as.string <- function(x) {
+  if(!inherits(x, "string"))
+    class(x) <- c("string", class(x))
+  x  # return "x"
+}
+
+# derive (not create!) new "string" class from "character" object
+# define generic "string" class converter
+as.string <- function (x, ...) 
+  UseMethod("as.string")
+# default "string" class converter
+as.string.default <- function (x, ...) {
+  if(!inherits(x, "string"))
+    x <- structure(x, class=c("string", class(x)), ...)
+  x  # return "x"
+}  # end as.string.default
+# numeric "string" class converter
+as.string.numeric <- function (x, ...) {
+  if(!inherits(x, "string"))
+    x <- structure(as.character(x), class=c("string", class(x)), ...)
+  x  # return "x"
+}  # end as.string.numeric
+is.string <- function (x)
+  inherits(x=x, what="string")
+# define "string" object
+obj_string <- as.string("how are you today?")
+obj_string
+class(obj_string)
+is.string(obj_string)
+is.string("hello")
+as.string(123)
+is.string(as.string(123))
+
+# overload "+" function for "string" class
+"+.string" <- function (a, b, ...) {
+  paste(a, "plus", b)
+}  # end +.string
+# adds character indices and returns character with index equal to the sum
+"+.string" <- function (a, b, ...) {
+  in_dex <- (which(letters==substring(a, 1, 1)) + which(letters==substring(b, 1, 1))) %% length(letters)
+  letters[in_dex]
+}  # end +.string
+methods("+")  # view methods for "+" operator
+string1 <- structure("hello", class="string")
+string2 <- structure("there", class="string")
+class(string1)
+string1 + string2  # add two "string" objects
+
+# borrow from "stringr": "check_string", "str_length"
+# overload "print" function for "string" class
+print.string <- function (str_ing) {
+  print(
+    paste(strsplit(str_ing, split=" ")[[1]],
+          collapse=" + "))
+}  # end print.string
+print(my_string)
+
+# define generic "first" function (if not defined by "xts")
+first <- function (x, ...) 
+  UseMethod("first")
+# define "first" method for "string" class
+first.string <- function (str_ing, ...) {
+  unclass(substring(str_ing, 1, 1))
+}  # end first.string
+first(string1)
+last.string <- function (str_ing, ...) {
+  unclass(substring(str_ing, nchar(str_ing), nchar(str_ing)))
+}  # end last.string
+last(string1)
+
+
+### function that adds "character" class objects
+add_char <- function (char1, char2) {
+# test for "character" class and throw error
+  stopifnot(is.character(char1) && is.character(char1))
+  in_dex <- (which(letters==substr(char1, 1, 1)) + which(letters==substr(char2, 1, 1))) %% length(letters)
+  letters[in_dex]
+}  # end add_char
+
+add_char("c", "b")
+add_char("1", "b")
+add_char(1, "b")
+a <- "efg"
+b <- "opq"
+add_char(a, b)
+
+
+class(my_stringy) <- c("stringy", "string")
+
+"+.stringy" <- function (a, b, ...) {
+  paste(a, "plus", b)
+}  # end +.stringy
+
+# create "base5" arithmetic class, derived from "numeric" class
+# create new methods for "base5" class, based on existing generic functions: "+", "-", "*", "/"
+
+
+baz <- function(x) UseMethod("baz", x)
+baz.A <- function(x) "A"
+baz.B <- function(x) "B"
+ab <- 1
+class(ab) <- c("A", "B")
+ba <- 2
+class(ba) <- c("B", "A")
+
+ab <- structure(1, class = c("A", "B"))
+ba <- structure(1, class = c("B", "A"))
+baz(ab)
+baz(ba)
+
+"+.character" <- function(a, b, ...){
+  NextMethod()
+}
 
 
 
