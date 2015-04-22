@@ -1,51 +1,63 @@
 #################################
-### HW #3 Solution
+### HW #3 Solution FRE6871 R in Finance
 #################################
-# Max score 25pts
+# Max score xxx pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-# 1. (5pts) plot two Normal probability distributions on the same plot,
-# one with (mean=0, sd=1), and another with (mean=0, sd=2),
-# set the x scale to (-6, 6),
-# plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-6, 6), 
-      xlab="", ylab="", lwd=2, col="blue")
-# add shifted Normal probability distribution
-curve(expr=dnorm(x, sd=2), add=TRUE, 
-      type="l", lwd=2, col="red")
-# add title
-title(main="Normal probability distribution functions", 
-      line=0.1)
-# add legend
-legend(x="topright", legend=c("Standard", "Normal"),
-       title="legend", inset=0.05, cex=0.8, bg="white",
-       lwd=2, lty=c(1, 1), col=c("blue", "red"))
+
+##################################
+# 1. (30pts) create a function called "my_sqrt" that calculates the square root of its single argument,
+# "my_sqrt" should check if the input is both numeric and positive,
+# - if the input is numeric and positive, then "my_sqrt" should return the square root,
+# - if the input is numeric and negative, then "my_sqrt" should broadcast a warning using "cat", 
+# and return the square root of the absolute value,
+# - if the input is not numeric, then "my_sqrt" should broadcast a different warning using "cat", 
+# and return NA,
+# Use "if" and "else" statements.
+my_sqrt <- function(arg_var) {
+  if (is.numeric(arg_var) && arg_var>=0) {
+    sqrt(arg_var)
+  } else if (is.numeric(arg_var)) {
+    cat("negative input!\t")
+    sqrt(abs(arg_var))
+  } else {
+    cat("not numeric input!\t")
+    NULL
+  }
+}  # end my_sqrt
+my_sqrt(4)
+my_sqrt(-4)
+my_sqrt("a")
 
 
-# 2. (5pts) create a vector of decimal dates as follows:
-#   date_time <- 2014 + (1:5)/12
-# convert them to POSIXct dates, using a lubridate function,
-library(lubridate)
-date_time <- 2014 + (1:5)/12
-date_decimal(date_time)
-# or
-date_decimal(date_time, tz="America/New_York")
+##################################
+# 2. (15pts) create a function called "mult_dots", which takes a '...' argument, 
+#     and a single numeric argument called "fac_tor", as follows: function (..., fac_tor),
+#     The function "mult_dots" should sum up the '...' argument, 
+#     multiply the sum by "fac_tor", and return the result,
+mult_dots <- function (..., fac_tor) {
+  fac_tor*sum(...)
+}  #  end mult_dots
+
+#     call the function "mult_dots" on a list of arguments,
+#     so that it adds up "3, 4, 5", and then multiplies the sum by "2",
+mult_dots(3, 4, 5, fac_tor=2)
 
 
-# 3. (15pts) create a vector of 5 weekly POSIXct dates corresponding to 
-#   Monday 09:30AM, starting with:
-date_time <- as.POSIXct("2014-01-27 09:30:00", tz="America/New_York")
+##################################
+# 3. (15pts) create a vector of 20 random normal numbers:
+vec_tor <- rnorm(20)
+# find the indices of numbers greater than 1:
+which(vec_tor>1)
+# find the numbers greater than 1:
+vec_tor[which(vec_tor>1)]
+# find the index of the max number:
+which.max(vec_tor)
+# find the max number (don't use max()):
+vec_tor[which.max(vec_tor)]
 
-#   use lubridate function weeks(),
-mon_days <- date_time + weeks(1)*(0:4)
-
-# this is just an extra comment:
-# three different ways of getting day of week - all OK
-wday(mon_days, TRUE)
-as.POSIXlt(mon_days)$wday
-weekdays(mon_days)
 
 

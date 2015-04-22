@@ -1,0 +1,1124 @@
+% FRE6871_Lecture_3
+
+% Define knitr options
+% !Rnw weave = knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% amsmath package for math symbols
+% \usepackage{amsmath}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
+\subtitle{Lecture\#3, Spring 2015}
+% \subject{Getting Started With R}
+\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
+\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+% \email{jp3900@poly.edu}
+\date{November 17, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Operators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has the following logical operators:
+      \begin{itemize}
+        \item '\texttt{<}' less than,
+        \item '\texttt{<=}' less than or equal to,
+        \item '\texttt{>}' greater than,
+        \item '\texttt{>=}' greater than or equal to,
+        \item '\texttt{==}' exactly equal to,
+        \item '\texttt{!=}' not equal to,
+        \item '\texttt{!x}' Not \texttt{x},
+        \item '\texttt{x \& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x | y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators are applied to vectors element-wise,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+TRUE | FALSE
+TRUE | NA
+vec_var1 <- c(2, 4, 6)
+vec_var1 < 5
+(vec_var1 < 5) & (vec_var1 > 3)
+vec_var1[(vec_var1 < 5) & (vec_var1 > 3)]
+vec_var2 <- c(-10, 0, 10)
+vec_var1 < vec_var2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Long Form Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} also has two long form logical operators:
+      \begin{itemize}
+        \item '\texttt{x \&\& y}' \texttt{x} AND \texttt{y},
+        \item '\texttt{x || y}' \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators differ from the short form operators in two ways:
+      \begin{itemize}
+        \item They only evaluate the first elements of their vector arguments,
+        \item They short-circuit (stop evaluation as soon as the expression is determined),
+      \end{itemize}
+      {\color{red}{Rule of Thumb}}
+      \begin{itemize}
+        \item Use '\texttt{\&\&}' and '\texttt{||}' in if-clauses,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+echo_true = function() {cat("echo_true\t"); TRUE}
+echo_false = function() {cat("echo_false\t"); FALSE}
+echo_true() | echo_false()
+echo_true() || echo_false()  # echo_false() isn't evaluated at all!
+vec_var <- c(2, 4, 6)
+# works (does nothing) using '&&'
+if (is.matrix(vec_var) && (vec_var[2, 3] > 0)) {
+  vec_var[2, 3] <- 1
+}
+# no short-circuit so fails (throws an error)
+if (is.matrix(vec_var) & (vec_var[2, 3] > 0)) {
+  vec_var[2, 3] <- 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Comparing Objects With \texttt{identical()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{identical()} tests if two objects are exactly equal, and always returns a logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
+      \vskip1ex
+      For atomic arguments \texttt{identical()} often gives the same result as the '\texttt{==}' operator, but it's not synonymous with it in general,
+      \vskip1ex
+      The '\texttt{==}' operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns single logical values,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+num_var <- 2
+num_var==2
+identical(num_var, 2)
+
+identical(num_var, NULL) 
+num_var==NULL
+
+vec_var <- c(2, 4, 6)
+vec_var==2
+identical(vec_var, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lookup and Matching}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{which()} accepts a logical \texttt{vector}, and returns a \texttt{vector} of indices corresponding to the \texttt{TRUE} elements,
+      \vskip1ex
+      \texttt{match()} accepts two arguments, and returns the index of the first value in its second argument, that matches its first argument,
+      \vskip1ex
+      The binary operator \texttt{\%in\%} returns a logical \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+table_values <- sample(1:10)
+table_values
+which(table_values==5)
+which(table_values>5)
+which.max(table_values)
+which.min(table_values)
+match(5, table_values)
+match(-5, table_values)
+5 %in% table_values
+-5 %in% table_values
+c(5, -5) %in% table_values
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{'\texttt{if}' statements}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
+      \vskip1ex
+      The logical conditions must be either a logical or numeric type, otherwise an error is thrown,
+      \vskip1ex
+      The '\texttt{else}' statement can also be omitted,
+      \vskip1ex
+      '\texttt{if}' statements can be nested using multiple '\texttt{else if}' statements,
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+num_var1 <- 1
+
+if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+  num_var2 <- 4
+} else if (num_var1 == 0) {  # 'else if' together on same line
+  num_var2 <- 0
+} else {  # 'else' together with curly braces
+  num_var2 <- -4
+}  # end if
+
+num_var2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ifelse()} performs vectorized \texttt{if-else} statements on vectors,
+      \vskip1ex
+      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
+        <<func_ifelse,echo=(-1),fig.show='hide'>>=
+rm(list=ls())
+# create two numeric vectors
+vec_var1 <- sin(0.25*pi*1:10)
+vec_var2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_var3 <- ifelse(vec_var1 > vec_var2, 
+                  vec_var1, vec_var2)
+# cbind all three together
+vec_var4 <- cbind(vec_var1, vec_var2, vec_var3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_var4, type="l", lty="solid", 
+        col=c("green", "blue", "red"), 
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_var4), 
+       title="", inset=0.05, cex=0.8, lwd=2, 
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Iteration Using '\texttt{for}' and '\texttt{while}' Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '\texttt{for() \{...\}}' statement iterates over elements of a vector or list,
+      \vskip1ex
+      \texttt{R} also has a '\texttt{while() \{...\}}' loop,
+      \vskip1ex
+      '\texttt{while}' loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
+      \vskip1ex
+      But '\texttt{while}' loops risk producing infinite loops if not written
+properly, so \alert{Use Them With Care!}
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+my.colors <- list("red", "white", "blue")
+for (some.color in my.colors) {  # loop over list
+  print(some.color)
+}
+for (some.index in 1:3) {  # loop over vector
+  print(my.colors[[some.index]])
+}
+
+some.index <- 1  # 'while' loops need initialization
+while (some.index < 4) {  # while loop
+  print(my.colors[[some.index]])
+  some.index <- some.index + 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fibonacci Sequence Using '\texttt{for}' Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+fib.seq <- numeric()  # create zero length numeric vector
+fib.seq[1] <- 1  # initialize
+fib.seq[2] <- 1  # initialize
+
+for (i in 3:10) {  # perform recurrence loop
+  fib.seq[i] <- fib.seq[i-1] + fib.seq[i-2]
+}  # end for
+
+fib.seq
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body, 
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+fibo_nacci <- function(seq_length) {
+  if (seq_length > 2) {
+    fib.seq <- fibo_nacci(seq_length-1)  # recursion
+    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
+  } else {
+    c(1, 1)  # initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(10), 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Plotting With the \texttt{graphics} Package}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plotting functions:
+      \vskip1ex
+      \texttt{x11()} opens a \texttt{Windows} graphics device,
+      \vskip1ex
+      \texttt{plot()} creates a generic plot,
+      \vskip1ex
+      \texttt{lines()} adds lines to a plot,
+      \vskip1ex
+      \texttt{title()} adds a title to a plot,
+      \vskip1ex
+      \texttt{legend()} adds a legend to a plot,
+        <<sincosplot,fig.show='hide'>>=
+x_var <- seq(-2*pi, 2*pi, len=100)  # x values
+
+# open Windows graphics device
+x11(width=11, height=7, title="simple plot")
+
+# plot a sine function using basic line plot
+plot(x=x_var, y=sin(x_var), xlab="x-val", 
+     ylab="y-val", type='l', lwd=2, col="red")
+# add a cosine function
+lines(x=x_var, y=cos(x_var), lwd=2, col="blue")
+# add title
+title(main="sine and cosine functions", line=0.1)
+# add legend
+legend(x="topright", legend=c("sine", "cosine"),
+       title="legend", inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("red", "blue"))
+graphics.off()  # close all graphics devices
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/sincosplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting a Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{graphics} package is one of the base packages in \texttt{R}, and offers a number of plotting capabilities,
+        <<scatter_plot,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 3, 1, 1), oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+attach(mtcars)  # add mtcars to search path
+# plot scatterplot horsepower vs miles per gallon
+plot(hp, mpg, 
+     main="miles per gallon vs horsepower")
+
+# add labels using wordcloud, to prevent overlaps
+library(wordcloud)
+textplot(x=hp, y=mpg, words=rownames(mtcars))
+
+# don't forget to detach!!!
+detach(mtcars)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/scatter_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Mathematical Functions in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} has dedicated functions for plotting mathematical functions,
+      \vskip1ex
+      The function \texttt{curve()} plots a function given by its name,
+        <<funplot,echo=(-1),fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-3, 3), 
+      xlab="", ylab="", lwd=2, col="blue")
+# add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE, 
+      type="l", lwd=2, col="red")
+
+# add title
+title(main="Normal probability distribution functions", 
+      line=0.1)
+# add legend
+legend(x="topright", legend=c("Normal", "shifted"),
+       title="legend", inset=0.05, cex=0.8, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "red"))
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/funplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Barplots in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{rpois()} produces random numbers from the Poisson distribution,
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
+      \vskip1ex
+      The function \texttt{truehist()} (from package \texttt{MASS}) plots histograms,
+      \vspace{-1em}
+        <<poisbarplot,echo=(-1),fig.show='hide'>>=
+par(mar=c(7, 4, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+pois_vector <- rpois(100, 4)  # Poisson numbers
+# calculate contingency table
+pois_table <- table(pois_vector)
+pois_table <- pois_table/sum(pois_table)
+pois_table
+
+library(MASS)  # create histogram of Poisson variables
+truehist(pois_vector, nbins="FD", col="blue", xlab="No. of events", 
+         ylab="Frequency of events", main="Poisson histogram")
+x_var <- 0:max(pois_vector)  # add Poisson density
+lines(x=x_var, y=dpois(x_var, lambda=4), lwd=4, col="red")
+# add legend
+legend(x="topright", legend="Poisson density", title="", inset=0.05, 
+       cex=0.8, bg="white", lwd=4, lty=1, col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/poisbarplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Graphical Parameters}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{par()} sets graphical parameters used for plotting, and invisibly returns existing parameters as a named list,
+        <<par_ams,fig.show='hide'>>=
+graph_params <- par()  # get existing parameters
+par("mar")  # get plot margins
+par(mar=c(2, 1, 2, 1))  # set plot margins
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set title and label margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(las=1)  # set axis labels to horizontal
+par(ask=TRUE)  # pause, ask before plotting
+par(mfrow=c(2, 2))  # plot on 2x2 grid by rows
+for (i in 1:4) {  # plot 4 panels
+  barplot(sample(1:6), main=paste("panel", i), 
+          col=rainbow(6), border=NA, axes=FALSE)
+  box()
+}
+par(ask=FALSE)  # restore automatic plotting
+par(new=TRUE)  # allow new plot on same chart
+par(graph_params)  # restore original parameters
+      @
+    \column{0.5\textwidth}
+      \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/par_ams-1}
+      \vspace{-3em}
+      Some graphical parameters:
+      \begin{itemize}
+        \item \texttt{cex} set graphic scales,
+        \item \texttt{mar} \& \texttt{oma} set plot margins,
+        \item \texttt{mgp} set title and label margins,
+        \item \texttt{las} set orientation of axis labels,
+        \item \texttt{mfcol} \& \texttt{mfrow} set number of plot panels,
+      \end{itemize}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Date and Time Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has a \texttt{Date} class for date objects (but without time),
+      \vskip1ex
+      The function \texttt{as.Date()} parses a \texttt{character} string into a date object,
+      \vskip1ex
+      \texttt{R} stores \texttt{Date} objects as the number of days since the \texttt{epoch} (January 1, 1970),
+      \vskip1ex
+      \texttt{Numeric} objects can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+Sys.Date()  # get today's date
+date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time
+class(date_time)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # specify format
+date_time + 20  # add 20 days
+as.numeric(date_time)  # get internal integer representation
+date_old <- as.Date("07/14/2013", "%m/%d/%Y")
+date_old
+# difference between dates
+difftime(date_time, date_old, units="weeks")
+weekdays(date_time)  # get day of the week
+# coerce numeric into date-times
+date_time <- 0
+attributes(date_time) <- list(class="Date")
+date_time  # "Date" object
+structure(0, class="Date")  # "Date" object
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXct} for Date-time (date-time) objects,
+      \vskip1ex
+      The function \texttt{as.POSIXct()} parses a \texttt{character} string into a \texttt{POSIXct} object,
+      \vskip1ex
+      \texttt{format.POSIXct()} parses \texttt{POSIXct} objects to \texttt{character} strings,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the \texttt{epoch} (January 1, 1970 UTC),
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+date_time <- Sys.time()  # get today's date and time
+date_time
+class(date_time)  # POSIXct object
+as.numeric(date_time)  # get internal integer representation
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+as.POSIXct("2014-07-14 13:30:10")
+format(date_time)  # convert POSIXct to character string
+class(format(date_time))  # character string
+date_time + 20  # add 20 seconds
+as.POSIXct(as.Date(date_time)+1)  # add a day
+trunc(date_time, units="hours")  # truncate to closest hour
+as.POSIXct(as.character(as.Date(date_time)))  # truncate to closest day
+methods(trunc)  # trunc methods
+trunc.POSIXt
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXlt} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXlt} for \emph{date-time} objects,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
+      \vskip1ex
+      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes of the more general \texttt{POSIXt} class,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
+date_time
+class(date_time)  # POSIXlt object
+aperm(as.matrix(unclass(date_time)))  # get internal representation
+
+date_time + 20  # add 20 seconds
+class(date_time + 20)  # implicit coercion to POSIXct
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones and Date-time Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \emph{date-time} objects require a time zone to be uniquely specified,
+      \vskip1ex
+      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      \texttt{EST} stands for "Eastern Standard Time", \texttt{UTC} - 5 hours,
+      \vskip1ex
+      \texttt{EDT} stands for "Eastern Daylight Time", \texttt{UTC} - 4 hours,
+      \vskip1ex
+      The function \texttt{Sys.setenv()} can be used to set the default time zone,
+      \vskip1ex
+      \texttt{format()} converts \emph{date-time} objects to \texttt{character} strings, given a time zone,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+Sys.timezone()  # get time-zone
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+date_time <- Sys.time()  # today's date and time
+# convert to character in different TZ
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# parse back to POSIXct
+as.POSIXct(format(date_time, tz="America/New_York"))
+# difference between local time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) - 
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXt} Class and Class Coercion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} has a class \texttt{POSIXlt} for \emph{date-time} objects,
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
+      \vskip1ex
+      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
+      \vskip1ex
+      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      \vskip1ex
+      \texttt{UTC} is an acronym for "Universal Time Coordinated", is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
+      \vskip1ex
+      POSIXct and POSIXlt objects are two specific types of the more general POSIXt class
+      POSIXct is internally a \texttt{numeric} value that allows \texttt{numeric} calculations,
+      POSIXlt is internally a list
+      beware of coercion to \texttt{POSIXct},
+      coercion between the two \emph{date-time} classes requires a timezone,
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<>>=
+Sys.time()  # get today's date and time
+Sys.timezone()  # get time-zone
+Sys.setenv(tz="UTC")  # set time-zone to UTC
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+as.POSIXlt("2014-07-14 18:30:10")
+class(as.POSIXlt("2014-07-14 18:30:10")+3600)  # coercion to POSIXct
+Sys.setenv(tz="America/New_York")  # set time-zone to "New York"
+date_time <- as.POSIXct("2014-07-14 18:30:10", tz="America/New_York")
+date_time
+class(date_time)  # POSIXct object
+date_time + 20  # add 20 seconds
+as.numeric(date_time)  # get internal integer representation
+format(date_time, tz="UTC")  # convert to character in different TZ
+as.POSIXct(format(date_time, tz="UTC"))  # parse back to POSIXct
+as.POSIXct(format(Sys.time(), tz="UTC")) - # difference between
+  as.POSIXct(format(Sys.time(), tz=""))  # local time and UTC
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Manipulating Date-time Objects Using \texttt{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{lubridate} contains functions for converting and manipulating date-time objects,
+      \vskip1ex
+      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} objects into \texttt{POSIXct} objects,
+      \vskip1ex
+      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components,
+      \vskip1ex
+      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} objects,
+      \vskip1ex
+      The function \texttt{date\_decimal()} converts \texttt{numeric} objects into \texttt{POSIXct} objects,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+library(lubridate)  # load lubridate
+# parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+date_time <- mdy("07-14-2014", tz="America/New_York")
+date_time
+class(date_time)  # POSIXct object
+dmy("14.07.2014", tz="America/New_York")
+
+# parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y", 
+                        tz="America/New_York")
+dmy(14072014, tz="America/New_York")
+
+# parse decimal to date-times
+decimal_date(date_time)
+date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(date_time), tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones Using \texttt{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{lubridate} simplifies time zone calculations,
+      \vskip1ex
+      The \emph{moment of time} is the time in the \texttt{UTC} time zone,
+      \vskip1ex
+      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local time zone,
+      \vskip1ex
+      The same \emph{moment of time} corresponds to different \emph{clock times} in different time zones,
+      \vskip1ex
+      The same \emph{clock times} in different time zones correspond to different \emph{moments of time},
+      \vskip1ex
+      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different time zone,
+      \vskip1ex
+      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different time zone,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, 
+                     tz="America/New_York")
+date_time
+
+# get same moment of time in "UTC" time zone
+with_tz(date_time, "UTC")
+as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
+
+# get same clock time in "UTC" time zone
+force_tz(date_time, "UTC")
+as.POSIXct(format(date_time), tz="UTC")
+
+# same moment of time
+date_time - with_tz(date_time, "UTC")
+
+# different moments of time
+date_time - force_tz(date_time, "UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{lubridate} Time Span Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{lubridate} has two time span classes: \texttt{durations} and \texttt{periods},
+      \vskip1ex
+      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
+      \vskip1ex
+      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects,
+      \vskip1ex
+      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
+      \vskip1ex
+      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years,
+      \vskip1ex
+      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(lubridate)  # load lubridate
+# Daylight Savings Time handling periods vs durations
+date_time <- as.POSIXct("2013-03-09 11:00:00", 
+                        tz="America/New_York")
+date_time
+date_time + ddays(1)  # add duration
+date_time + days(1)  # add period
+
+leap_year(2012)  # leap year
+date_time <- dmy(01012012, tz="America/New_York")
+date_time
+date_time + dyears(1)  # add duration
+date_time + years(1)  # add period
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Time Spans to Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year,
+      \vskip1ex
+      Adding \texttt{periods} can create invalid dates,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(lubridate)  # load lubridate
+date_time <- ymd_hms(20140714142010, tz="America/New_York")
+date_time
+# add periods to a date-time
+c(date_time + seconds(1), date_time + minutes(1), 
+date_time + days(1), date_time + months(1))
+
+# create vectors of dates
+date_time <- ymd(20140714, tz="America/New_York")
+date_time + 0:2 * months(1)  # monthly dates
+date_time + months(0:2)
+date_time + 0:2 * months(2)  # bi-monthly dates
+date_time + seq(0, 5, by=2) * months(1)
+seq(date_time, length=3, by="2 months")
+
+# adding monthly periods can create invalid dates
+date_time <- ymd(20120131, tz="America/New_York")
+date_time + 0:2 * months(1)
+date_time + months(1)
+date_time + months(2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{RQuantLib} Calendar Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
+      \vskip1ex
+      The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # load zoo
+library(RQuantLib)  # load RQuantLib
+
+# create daily date series of class 'Date'
+date_index <- Sys.Date() + -5:2
+date_index
+
+# create logical vector of business days
+bus.days <- isBusinessDay(  # RQuantLib calendar
+  calendar="UnitedStates/GovernmentBond", date_index)
+
+# create daily series of business days
+bus_index <- date_index[bus.days]
+bus_index
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Review of Date-time Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series,
+      \vskip1ex
+      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series,
+      \vskip1ex
+      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \texttt{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series,
+    \column{0.7\textwidth}
+      \vspace{-2em}
+      <<echo=(-1)>>=
+library(zoo)  # load package zoo
+date_time <- Sys.Date()  # create date series of class 'Date'
+date_index <- date_time + 0:365  # daily series over one year
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y")  # print first few dates
+# create daily date-time series of class 'POSIXct'
+date_index <- seq(Sys.time(), by="days", length.out=365)
+head(date_index, 4)  # print first few dates
+format(head(date_index, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
+# create series of monthly dates of class 'zoo'
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # print first few dates
+# create series of quarterly dates of class 'zoo'
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # print first few dates
+# parse quarterly 'zoo' dates to POSIXct
+Sys.setenv(tz="UTC")
+as.POSIXct(head(qrtly_index, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+\begin{block}{Required}
+  \begin{itemize}[]
+    \item plot two Normal probability distributions on the same plot,
+    \item one with \texttt{(mean=0, sd=1)}, and another with \texttt{(mean=0, sd=2)},
+    \item set the x scale to \texttt{(-6, 6)},
+    \item create a vector of decimal dates as follows:
+    \item \texttt{date\_time <- 2014 + (1:5)/12}
+    \item convert them to \texttt{POSIXct} dates, using a \texttt{lubridate} function,
+    \item create a vector of 5 weekly POSIXct dates corresponding to Monday 09:30AM, starting with:
+    \item \texttt{date\_time <- as.POSIXct("2014-01-27 09:30:00", tz="America/New\_York")}
+    \item use \texttt{lubridate} function \texttt{weeks()},
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 9, 10, 13: \fullcite{website:rintro}
+    \item Read chapters 7, 8: \citetitle{matloffbook}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

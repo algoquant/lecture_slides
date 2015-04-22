@@ -1,10 +1,11 @@
 #################################
-### FRE7241 HW #1 Solution
+### HW #1 due April 27, 2015
 #################################
-# Max score 60 pts
+# Max score 60pts
 
-# The below solutions are examples,
-# Slightly different solutions are also possible.
+# Please write in this file the R code needed to perform the tasks below, 
+# rename it to your_name_hw2.R
+# and send this file to Luping Liu (ll2525@nyu.edu)
 
 
 
@@ -19,22 +20,23 @@ library(xts)
 # starting from "2015-01-01" to "2015-01-31",
 # set the POSIXct timezone to "America/New_York", 
 # use function seq.POSIXt() 
-min_ticks <- seq.POSIXt(from=as.POSIXct("2015-01-01", tz="America/New_York"), 
-                        to=as.POSIXct("2015-01-31"), by="min")
+
+### write your code here
+
 
 # extract the timezone from "min_ticks" to verify that it's correct, 
 # use function tz() from package "lubridate",
-tz(min_ticks)
+
+### write your code here
 
 # Create an "xts" time series of rnorm data with a "min_ticks" index, and call it "xts_min_ticks",
 # use function xts() from package "xts",
-xts_min_ticks <- xts(rnorm(length(min_ticks)), order.by=min_ticks)
+
+### write your code here
 
 # remove weekends from "xts_min_ticks", using function weekdays()
-week_days <- weekdays(min_ticks)
-is_weekday <- !((week_days == "Saturday") | 
-                  (week_days == "Sunday"))
-xts_min_ticks <- xts_min_ticks[is_weekday]
+
+### write your code here
 
 
 # subset the minute ticks in "xts_min_ticks" to trading hours,
@@ -44,11 +46,13 @@ xts_min_ticks <- xts_min_ticks[is_weekday]
 # http://stackoverflow.com/questions/12891232/exclude-specific-time-periods-in-r
 # and by Chinmay Patil here:
 # http://stackoverflow.com/questions/15284943/cut-a-posixct-by-specific-time-for-daily-means
-xts_min_ticks <- xts_min_ticks["T09:30:00/T16:00:00", ]
+
+### write your code here
 
 # extract the timezone from "xts_min_ticks" to verify that it's correct, 
 # use function tzone() from package xts,
-tzone(xts_min_ticks)
+
+### write your code here
 
 
 
@@ -62,13 +66,16 @@ tzone(xts_min_ticks)
 library("Ecdat")  # load econometric data sets
 library(lubridate)
 head(Yen)  # explore the data
-in_dex <- ymd(Yen$date, tz="America/New_York")
+
+### write your code here
 
 # Create an "xts" from the column Yen$date and "in_dex", and call it "xts_yen",
-xts_yen <- xts(Yen$s, order.by=in_dex)
+
+### write your code here
 
 # plot "xts_yen", using generic function plot(),
-plot(xts_yen)
+
+### write your code here
 
 
 
@@ -82,32 +89,42 @@ plot(xts_yen)
 library(lubridate)
 library(xts)
 # coerce mts object into zoo
-zoo_series <- as.zoo(EuStockMarkets)
+
+### write your code here
+
 # coerce index into class "POSIXct"
-index(zoo_series) <- date_decimal(index(zoo_series))
+
+### write your code here
 
 # calculate the rolling mean of the "DAX" column of "zoo_series", and call it "zoo_mean",
-zoo_mean <- rollmean(zoo_series[, "DAX"], k=11)
+
+### write your code here
 
 # merge "zoo_mean" with the "DAX" column of "zoo_series", and call it "zoo_mean",
-zoo_mean <- merge(zoo_series[, "DAX"], zoo_mean)
+
+### write your code here
+
 # replace NA's using na.locf, both forward and backward in time,
-zoo_mean <- na.locf(zoo_mean)
-zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
+
+### write your code here
+
 
 # calculate the number of NA's in "zoo_mean", to make sure there none
-sum(is.na(zoo_mean))
+
+### write your code here
 
 # Coerce "zoo_mean" to "xts", and call it "xts_series",
 # use function as.xts() from package "xts",
-xts_series <- as.xts(zoo_mean)
+
+### write your code here
 
 # plot both columns of "xts_series" in one panel, starting in 1997,
 # with original series in black, and mean series in red,
 # use generic function plot(),
-plot(xts_series["1997-01-01/", ])
+
+### write your code here
+
 # add legend on topleft
-legend("topleft", inset=0.05, cex=0.8, title="DAX Rolling Mean Prices", 
-       leg=c("orig prices", "mean prices"), lwd=2, bg="white", 
-       col=c("black", "red"))
+
+### write your code here
 

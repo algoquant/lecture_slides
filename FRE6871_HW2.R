@@ -1,10 +1,11 @@
 #################################
-### HW #2 Solution FRE6871 R in Finance
+### HW #2 FRE6871 R in Finance
 #################################
 # Max score 60pts
 
-# The below solutions are examples,
-# Slightly different solutions are also possible.
+# Please write in this file the R code needed to perform the tasks below, 
+# rename it to your_name_hw2.R
+# and send this file to Harjinder Singh (harjinder.singh@nyu.edu)
 
 
 ##################################
@@ -16,17 +17,12 @@
 # - if the input is not numeric, then "my_sqrt" should broadcast a different warning using "cat", 
 # and return NA,
 # Use "if" and "else" statements.
+
 my_sqrt <- function(arg_var) {
-  if (is.numeric(arg_var) && arg_var>=0) {
-    sqrt(arg_var)
-  } else if (is.numeric(arg_var)) {
-    cat("negative input!\t")
-    sqrt(abs(arg_var))
-  } else {
-    cat("not numeric input!\t")
-    NULL
-  }
+### write your code here
 }  # end my_sqrt
+
+# call the function "my_sqrt" as follows to verify it works properly:
 my_sqrt(4)
 my_sqrt(-4)
 my_sqrt("a")
@@ -37,27 +33,33 @@ my_sqrt("a")
 #     and a single numeric argument called "fac_tor", as follows: function (..., fac_tor),
 #     The function "mult_dots" should sum up the '...' argument, 
 #     multiply the sum by "fac_tor", and return the result,
+
 mult_dots <- function (..., fac_tor) {
-  fac_tor*sum(...)
+### write your code here
 }  #  end mult_dots
 
 #     call the function "mult_dots" on a list of arguments,
 #     so that it adds up "3, 4, 5", and then multiplies the sum by "2",
-mult_dots(3, 4, 5, fac_tor=2)
+
+### write your code here
+
 
 
 ##################################
 # 3. (15pts) create a vector of 20 random normal numbers:
 vec_tor <- rnorm(20)
-# find the indices of numbers greater than 1:
-which(vec_tor>1)
-# find the numbers greater than 1:
-vec_tor[which(vec_tor>1)]
-# find the index of the max number:
-which.max(vec_tor)
-# find the max number (don't use max()):
-vec_tor[which.max(vec_tor)]
 
+# find the indices of numbers greater than 1:
+### write your code here
+
+# find the numbers greater than 1:
+### write your code here
+
+# find the index of the max number:
+### write your code here
+
+# find the max number (don't use max()):
+### write your code here
 
 
 
