@@ -311,7 +311,7 @@ print(xtable(etf_list), comment=FALSE, size="tiny")
 ## write.zoo(etf_series,
 ##      file='etf_series.csv', sep=",")
 ## save(etf_series, etf_series_ad,
-##      file='etf_analysis.Rdata')
+##      file='etf_data.Rdata')
 ## etf_gg <- autoplot(etf_series_ad[, 1],
 ##              main=etf_list$Name[1]) +
 ##   xlab("") + ylab("") +
@@ -323,7 +323,7 @@ print(xtable(etf_list), comment=FALSE, size="tiny")
 ## # render ggplot
 ## etf_gg
 library(quantmod)
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 # scrub NA values
 etf_series_ad <- 
   etf_series_ad[complete.cases(etf_series_ad)]

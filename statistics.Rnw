@@ -779,7 +779,7 @@ title(main="DAX filtered partial autocorrelations",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{autoregressive} time series process for asset returns is defined by the formula:
+      An \emph{autoregressive} process for asset returns of order \emph{n} (\emph{AR(n)}) is defined as:
       \begin{displaymath}
         r_{i} = {\varphi}_{1} r_{i-1} + {\varphi}_{2} r_{i-2} + \ldots + {\varphi}_{p} r_{i-p} + {\varepsilon}_{i}
       \end{displaymath}
@@ -793,13 +793,13 @@ library(ggplot2)  # load ggplot2
 library(gridExtra)  # load gridExtra
 daily_index <- Sys.Date() + 0:728  # two year daily series
 set.seed(1121)  # reset random numbers
-ar_zoo <- zoo(  # AR time series of returns
+zoo_arima <- zoo(  # AR time series of returns
   x=arima.sim(n=729, model=list(ar=0.2)),
-  order.by=daily_index)  # ar_zoo
-ar_zoo <- cbind(ar_zoo, cumsum(ar_zoo))
-colnames(ar_zoo) <- c("AR returns", "AR prices")
+  order.by=daily_index)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
 # plot AR returns
-autoplot(object=ar_zoo, 
+autoplot(object=zoo_arima, 
      facets="Series ~ .", 
      main="Autoregressive process (phi=0.2)") + 
   facet_grid("Series ~ .", scales="free_y") +
@@ -832,15 +832,15 @@ theme(
       Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
       <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
 ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
-ar_zoo <- sapply(  # create three AR time series
+zoo_arima <- sapply(  # create three AR time series
   ar_coeff, function(phi) {
     set.seed(1121)  # reset random numbers
     arima.sim(n=729, model=list(ar=phi))
   } )
-ar_zoo <- zoo(x=ar_zoo, order.by=daily_index)
-ar_zoo <- cumsum(ar_zoo)  # returns to prices
-colnames(ar_zoo) <- paste("autocorr", ar_coeff)
-autoplot(ar_zoo, main="AR prices", 
+zoo_arima <- zoo(x=zoo_arima, order.by=daily_index)
+zoo_arima <- cumsum(zoo_arima)  # returns to prices
+colnames(zoo_arima) <- paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices", 
          facets=Series ~ .) + 
     facet_grid(Series ~ ., scales="free_y") +
 xlab("") + 
@@ -868,20 +868,20 @@ theme(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{autoregressive} process of order \emph{one} \emph{AR}(1) is defined by the formula:
+      An \emph{autoregressive} process of order \emph{one} \emph{AR(1)} is defined by the formula:
       \begin{displaymath}
         r_{i} = {\varphi}_{1} r_{i-1} + {\varepsilon}_{i}
       \end{displaymath}
-      An \emph{AR}(1) process has an exponentially declining ACF and a non-zero PACF at lag one,
+      An \emph{AR(1)} process has an exponentially declining ACF and a non-zero PACF at lag one,
       <<ar_acf,eval=FALSE,echo=(-(1:2)),fig.height=8,fig.show='hide'>>=
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # ACF of AR(1) process
-acf_plus(na.omit(diff(ar_zoo[, 3])), lag=10, 
+acf_plus(na.omit(diff(zoo_arima[, 3])), lag=10, 
        xlab="", ylab="", main="ACF of AR(1) process")
 
 # PACF of AR(1) process
-pacf(na.omit(diff(ar_zoo[, 3])), lag=10,
+pacf(na.omit(diff(zoo_arima[, 3])), lag=10,
      xlab="", ylab="", main="PACF of AR(1) process")
       @
     \column{0.5\textwidth}
@@ -904,7 +904,7 @@ pacf(na.omit(diff(ar_zoo[, 3])), lag=10,
       \begin{displaymath}
         p_{i}={\sum_{i=1}^{n}r_{i}}
       \end{displaymath}
-      If returns follow an \emph{AR}(1) process:
+      If returns follow an \emph{AR(1)} process:
       \begin{displaymath}
         r_{i} = {\varphi}_{1} r_{i-1} + {\varepsilon}_{i}
       \end{displaymath}
@@ -914,7 +914,7 @@ pacf(na.omit(diff(ar_zoo[, 3])), lag=10,
       \end{displaymath}
       If ${\varphi}_{1}=1$ then asset returns follow a \emph{Wiener} process (random walk),
       \vskip1ex
-      A \emph{Wiener} process is a special case of a \emph{unit-root}) process,
+      A \emph{Wiener} process is a special case of a \emph{unit-root} process,
       \vskip1ex
       \emph{Unit-root} processes are not stationary, since they don't have constant \emph{variance},
       \vskip1ex
@@ -964,7 +964,7 @@ par(mfrow=c(2,1))  # set plot panels
 ar3_zoo <- zoo(  # AR(3) time series of returns
   x=arima.sim(n=365, 
           model=list(ar=c(0.1, 0.5, 0.1))),
-  order.by=daily_index)  # ar_zoo
+  order.by=daily_index)  # zoo_arima
 # ACF of AR(3) process
 acf_plus(ar3_zoo, lag=10, 
        xlab="", ylab="", main="ACF of AR(3) process")
@@ -1019,7 +1019,7 @@ auto.arima(ar3_zoo)  # fit ARIMA model
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the "\texttt{+}" operator,
+      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
       \vskip1ex
       Formulas can be defined as separate objects, manipulated, and passed to functions,
       \vskip1ex

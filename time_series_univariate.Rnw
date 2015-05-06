@@ -127,54 +127,170 @@ print(xtable(etf_list), comment=FALSE, size="tiny")
 
 
 %%%%%%%%%%%%%%%
+\subsection{Package \texttt{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{quantmod} contains \texttt{functions}:
+      \begin{itemize}
+        \item \texttt{getSymbols()} for downloading time series data,
+        \item \texttt{getFinancials()} for downloading financial statements,
+        \item for extracting and manipulating time series data, 
+        \item for calculating periodic returns,
+        \item \texttt{chartSeries} for plotting time series data, 
+      \end{itemize}
+      \texttt{quantmod} uses time series objects of class\texttt{"xts"},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(quantmod)  # load package "quantmod"
+# get documentation for package "quantmod"
+packageDescription("quantmod")  # get short description
+help(package="quantmod")  # load help page
+data(package="quantmod")  # list all datasets in "quantmod"
+ls("package:quantmod")  # list all objects in "quantmod"
+detach("package:quantmod")  # remove quantmod from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Downloading Time Series Data Using Package \texttt{quantmod}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
+    \column{0.4\textwidth}
+      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      \vskip1ex
+      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
+      \vskip1ex
+      It then assigns the data to those objects, without returning them as a function value,
+      \vskip1ex
+      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
+      \vskip1ex
+      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+    \column{0.6\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-library(quantmod)
-library(ggplot2)
-sym_bols <- sym_bols[c(1, 2)]
+      <<echo=(-(1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+# create new environment for data
 data_env <- new.env()
-ls()
+# download data for sym_bols into data_env
 getSymbols(sym_bols, env=data_env)
-ls(data_env)
+      @
+      \vspace{-2em}
+      <<echo=(-(1:2)),eval=TRUE>>=
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+ls(data_env)  # list files in data_env
+# get class of object in data_env
+class(get(x=sym_bols[1], envir=data_env))
+# another way
 class(data_env$VTI)
 colnames(data_env$VTI)
 head(data_env$VTI, 3)
       @
-    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adjusting Prices Using Package \texttt{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
+      \vskip1ex
+      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices, 
+      \vskip1ex
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
+      \vskip1ex
+      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
-library(ggplot2)
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+# adjust single OHLC object using its name
+data_env$VTI <- adjustOHLC(data_env$VTI, 
+                           use.Adjusted=TRUE)
+
+# adjust OHLC object using string as name
+assign(sym_bols[1], adjustOHLC(
+    get(x=sym_bols[1], envir=data_env), 
+    use.Adjusted=TRUE), 
+  envir=data_env)
+
+# adjust objects in environment using vector of strings
+for (sym_bol in sym_bols) {
+  assign(sym_bol, 
+         adjustOHLC(get(sym_bol, envir=data_env), 
+                    use.Adjusted=TRUE), 
+         envir=data_env)
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Extracting Prices Using Package \texttt{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \texttt{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      A list of \texttt{xts} can be flattened into a single \texttt{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
+      The function \texttt{eapply()} is similar \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+# extract and merge data for vector of strings
 etf_series <- do.call(merge, 
                   as.list(data_env)[sym_bols])
+
+# extract adjusted prices and merge into xts
 etf_series_ad <- do.call(merge, 
                   eapply(data_env, Ad)[sym_bols])
-col_names <- strsplit(
-  colnames(etf_series_ad), split="[.]")
-col_names <- as.data.frame(col_names, 
-                    stringsAsFactors=FALSE)[1, ]
-colnames(etf_series_ad) <- unlist(col_names)
+
+# drop ".Adjusted" from colnames
+colnames(etf_series_ad) <- 
+  sapply(colnames(etf_series_ad), 
+    function(col_name) 
+      strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(etf_series_ad[, 1:2], 3)
+
+# save xts to csv file
 write.zoo(etf_series, 
      file='etf_series.csv', sep=",")
-save(etf_series, etf_series_ad, 
-     file='etf_analysis.Rdata')
-etf_gg <- autoplot(etf_series_ad[, 1], 
-                   main=etf_list$Name[1]) + 
-  xlab("") + ylab("") + 
-  theme(
-    legend.position=c(0.1, 0.5), 
-    plot.title=element_text(vjust=-2.0), 
-    plot.background=element_blank()
-  )  # end theme
-# render ggplot
-etf_gg
+
+# save data to .Rdata file
+save(data_env, etf_series, etf_series_ad, 
+     file='etf_data.Rdata')
       @
   \end{columns}
 \end{block}
@@ -192,7 +308,7 @@ etf_gg
       \vspace{-1em}
       <<echo=(-(1:2))>>=
 library(quantmod)
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 # scrub NA values
 etf_series_ad <- 
   etf_series_ad[complete.cases(etf_series_ad)]
@@ -220,6 +336,32 @@ class(etf_rets)
 dim(etf_rets)
 head(etf_rets[, 1:3])
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chartSeries()} from package \texttt{quantmod} plots candlecharts of \emph{OHLC} time series, including volume,
+      \vskip1ex
+      <<chartSeries_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# plot OHLC candlechart with volume
+chartSeries(data_env$VTI["2014-11"], 
+            name="VTI", 
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_basic-1}
   \end{columns}
 \end{block}
 
@@ -353,24 +495,18 @@ title(main="ETF cumulative returns", line=-1)
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<drawdown_plot,eval=TRUE,echo=(-1),tidy=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<drawdown_plot,eval=FALSE,echo=(-(1:2)),fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/etf_data.Rdata")
 options(width=200)
 library(PerformanceAnalytics)
 chart.Drawdown(etf_rets[, "VTI"], ylab="", 
                main="VTI drawdowns")
-
-
-
-
-
-
-
-
-
-
-
-
-
+      @
+      \vskip27ex
+      <<eval=TRUE,echo=(-(1:3))>>=
+load(file="C:/Develop/data/etf_data.Rdata")
+options(width=200)
+library(PerformanceAnalytics)
 table.Drawdowns(etf_rets[, "VTI"])
       @
     \column{0.5\textwidth}
@@ -475,7 +611,8 @@ text(x=ret_stats$Skewness, y=ret_stats$Kurtosis,
   \begin{columns}[T]
     \column{0.45\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
+      <<echo=(-(1))>>=
+load(file="C:/Develop/data/etf_data.Rdata")
 # add skew_kurt column
 ret_stats$skew_kurt <- 
   ret_stats$Skewness/ret_stats$Kurtosis

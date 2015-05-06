@@ -56,8 +56,8 @@ knit_theme$set(thm)
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
-% \email{jp3900@nyu.edu}
-\date{April 28, 2015}
+% \email{jp3900@poly.edu}
+\date{November 25, 2014}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -73,7 +73,51 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Risk and Return Analysis}
+\section{Time Series Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calculating Returns from Adjusted Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2))>>=
+library(quantmod)
+load(file="C:/Develop/data/etf_series_large.RData")
+# scrub NA values
+etf_series_ad <- 
+  etf_series_ad[complete.cases(etf_series_ad)]
+colnames(etf_series_ad)
+
+# calculate returns from adjusted prices
+library(quantmod)
+etf_rets <- lapply(etf_series_ad, 
+                   function(x_ts) {
+  daily_return <- dailyReturn(x_ts)
+  colnames(daily_return) <- names(x_ts)
+  daily_return
+})  # end lapply
+
+# "etf_rets" is a list of xts
+class(etf_rets[[1]])
+
+# flatten list of xts into a single xts
+etf_rets <- do.call(merge, etf_rets)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+class(etf_rets)
+dim(etf_rets)
+head(etf_rets[, 1:3])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -124,7 +168,7 @@ head(managers, 3)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
       <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 # load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
@@ -177,7 +221,7 @@ charts.PerformanceSummary(ham_1,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      \texttt{charts.CumReturns()} plots the cumulative returns of a time series of returns,
       <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
@@ -203,8 +247,7 @@ title(main="ETF cumulative returns", line=-1)
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<drawdown_plot,eval=TRUE,echo=(-(1:2)),tidy=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/etf_data.Rdata")
+      <<drawdown_plot,eval=TRUE,echo=(-1),tidy=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 options(width=200)
 library(PerformanceAnalytics)
 chart.Drawdown(etf_rets[, "VTI"], ylab="", 
@@ -290,7 +333,7 @@ chart.Boxplot(etf_rets[,
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
+      <<returns_scatter,echo=(-1),fig.width=5,fig.height=5,fig.show='hide'>>=
 library(PerformanceAnalytics)
 tail(table.Stats(etf_rets[, 
   c("VTI", "IEF", "DBC", "IUSG")]), 3)
@@ -298,9 +341,6 @@ ret_stats <- table.Stats(etf_rets)
 class(ret_stats)
 # Transpose the data frame
 ret_stats <- as.data.frame(t(ret_stats))
-      @
-      \vspace{-1em}
-      <<returns_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # plot scatterplot
 plot(Kurtosis ~ Skewness, data=ret_stats,
      main="Kurtosis vs Skewness")
@@ -408,11 +448,6 @@ tail(table.Stats(vti_ief), 4)
 \end{frame}
 
 
-
-%%%%%%%%%%%%%%%
-\section{Asset Pricing Models}
-
-
 %%%%%%%%%%%%%%%
 \subsection{Linear Regression of Returns}
 \begin{frame}[fragile,t]{\subsecname}
@@ -422,8 +457,6 @@ tail(table.Stats(vti_ief), 4)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform regression
@@ -433,6 +466,8 @@ plot(reg_formula, data=etf_rets)
 title(main="Regression XLP ~ VTI", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
+
+
 
 
 reg_model_sum <- summary(reg_model)
@@ -476,10 +511,10 @@ etf_reg_stats <- sapply(colnames(etf_rets)[-1],
       coefficients[2, 1], coefficients[2, 4]))
   etf_reg_stats <- c(etf_reg_stats, 
                dwtest(reg_model)$p.value)
+  names(etf_reg_stats) <- c("alpha", "p-alpha", 
+                   "beta", "p-beta", "p-dw")
   etf_reg_stats
 })  # end sapply
-rownames(etf_reg_stats) <- c("alpha", "p-alpha", 
-                      "beta", "p-beta", "p-dw")
 etf_reg_stats <- t(etf_reg_stats)
 # sort by p-alpha
 etf_reg_stats <- etf_reg_stats[
@@ -496,7 +531,7 @@ etf_reg_stats[, 1:3]
 \end{frame}
 
 %%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
+\subsection{Capital Asset Pricing Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -512,7 +547,7 @@ etf_reg_stats[, 1:3]
       \begin{displaymath}
         \beta = \frac{\sum_{i=1}^{k} (R_{i}-\bar{R}) (R_{i,b}-\bar{R_{b}})} {\sum_{i=1}^{k} (R_{i,b}-\bar{R_{b}})^2}
       \end{displaymath}
-      $\alpha$ are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active manager performance,
+      $\alpha$ are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active managers performance,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
@@ -539,18 +574,14 @@ InformationRatio(Ra=etf_rets[, "XLP"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect \emph{CAPM} Scatterplot}
+\subsection{CAPM Scatterplot}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Alpha} ($\alpha$) is the return in excess of the return due to the whole market going up or down,
-      \vskip1ex
-      The \emph{CAPM} model says that if an investor takes bigger risk ($\beta$) then they should receive higher returns,
-      \vskip1ex
-      \emph{Alpha} is the excess return investors receive, beyond the $\beta$ risk they take,
-      <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+      \vspace{-1em}
+      <<capm_scatter,echo=(-1),fig.width=5,fig.height=5,fig.show='hide'>>=
 library(PerformanceAnalytics)
 etf_betas <- sapply(etf_rets, CAPM.beta, 
             Rb=etf_rets[, "VTI"])
@@ -605,7 +636,7 @@ etf_perf_stats <- t(etf_perf_stats)
 etf_perf_stats <- etf_perf_stats[
   order(etf_perf_stats[, "Annualized Alpha"], 
         decreasing=TRUE), ]
-save(file="C:/Develop/data/etf_data.Rdata")
+save(file="C:/Develop/data/etf_series_large.RData")
       @
     \column{0.45\textwidth}
       \vspace{-1em}
@@ -626,7 +657,7 @@ etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<corr_plot,echo=(-1),eval=FALSE,fig.show='hide'>>=
+      <<corr_plot,echo=(-1),fig.show='hide'>>=
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
@@ -653,6 +684,7 @@ corrplot(corr_matrix_ordered,
 corrRect.hclust(corr_matrix_ordered, 
       k=13, method="complete", col="red")
       @
+    \vspace{-1em}
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/corr_plot-1}
   \end{columns}
@@ -668,7 +700,7 @@ corrRect.hclust(corr_matrix_ordered,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      <<cluster_plot,echo=TRUE,eval=FALSE,fig.width=6,fig.height=6,fig.show='hide'>>=
+      <<cluster_plot,echo=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
 # Perform hierarchical clustering analysis
 data_dist <- as.dist(1-corr_matrix_ordered)
 data_cluster <- hclust(data_dist)
@@ -733,7 +765,7 @@ barplot(as.vector(pca_vec2),
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<pca_vec,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+      <<pca_vec,echo=(-(1:2)),fig.height=5,fig.show='hide'>>=
 par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(3,1))  # set plot panels
 # get list of principal component vectors
@@ -765,63 +797,29 @@ for (in_dex in 1:3) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Returns Time Series}
+\subsection{PCA \texttt{CumReturns} Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=(-1)>>=
+      <<pca_cum_returns,echo=(-1),eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# PC returns from rotation and scaled etf_rets
-etf_rets_scaled <- apply(etf_rets, 2, scale)
-pca_rets <- etf_rets_scaled %*% etf_pca$rotation
-# "x" matrix contains time series of PC returns
 dim(etf_pca$x)
-class(etf_pca$x)
 head(etf_pca$x[, 1:3], 3)
-# convert PC matrix to xts and rescale to decimals
+class(etf_pca$x)
+
 pca_rets <- xts(etf_pca$x/100, 
     order.by=index(etf_rets))
-      @
-\vspace{-1em}
-      <<pca_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
-  pca_rets[, 1:3], lwd=2, ylab="", 
-  legend.loc="topright", main="")
+  pca_rets[, 1:3], lwd=2, geometric=FALSE,
+  ylab="", legend.loc="bottomright", main="")
 # add title
 title(main="ETF cumulative returns", line=-1)
       @
     \column{0.5\textwidth}
     \vspace{-2em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_cum_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Principal Component Returns Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)
-# Calculate PC correlation matrix
-corr_matrix <- cor(pca_rets)
-colnames(corr_matrix) <- colnames(pca_rets)
-rownames(corr_matrix) <- colnames(pca_rets)
-corr_matrix[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3], 
-    Rb=etf_rets[, "VTI"], scale=252)
-      @
-    \column{0.5\textwidth}
   \end{columns}
 \end{block}
 
@@ -837,15 +835,23 @@ table.CAPM(Ra=pca_rets[, 1:3],
 \subsection{Homework Assignment}
 \begin{frame}[t]{\secname}
 \vspace{-1em}
-\begin{block}{Required}
-  A file with the homework will be uploaded to NYU Classes,
+\begin{block}{Required (due Dec. 9th)}
+  \begin{itemize}[]
+    \item Perform PCA as follows:  \texttt{etf\_pca <- prcomp(etf\_rets, center=TRUE, scale=TRUE)}
+    \item \texttt{etf\_rets} is an xts time series of ETF returns,
+    \item the principal component vectors are contained in the following matrix:  \texttt{etf\_pca\$rotation}
+    \item the time series of principal component returns are contained in the matrix:  \texttt{etf\_pca\$x}
+    \item calculate the time series of PCA returns from \texttt{etf\_pca\$rotation} and \texttt{etf\_rets},
+    \item hint: you need to first scale \texttt{etf\_rets} using function "scale",
+    \item compare your calculated PCA returns to \texttt{etf\_pca\$x}, to verify they are exactly the same,
+    \item convert the PCA returns matrix to a xts time series, and rescale (divide) them by 100, so they are decimals, not percentages,
+    \item calculate CAPM Summary Statistics for the first three PCA returns,
+  \end{itemize}
 \end{block}
-
 \begin{block}{Recommended}
   \begin{itemize}[]
-    \item Read chapters 1-3: \fullcite{website:rintro}
-    \item Read chapters 1, 2, 11: \citetitle{matloffbook}
-    \item Read: \fullcite{website:googlestyler}
+    \item Read chapters 3-5: \fullcite{website:Farnsworth}
+    \item Read chapters 4, 5, 9-10: \citetitle{ruppertbook}
   \end{itemize}
 \end{block}
 

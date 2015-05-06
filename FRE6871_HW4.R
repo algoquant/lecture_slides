@@ -1,10 +1,11 @@
 #################################
-### FRE6871 HW #4 Solution
+### FRE6871 HW #4 due 05-11-15
 #################################
 # Max score 50pts
 
-# The below solutions are examples,
-# Slightly different solutions are also possible.
+# Please write in this file the R code needed to perform the tasks below, 
+# rename it to your_name_hw3.R
+# and send this file to Harjinder Singh (harjinder.singh@nyu.edu)
 
 
 ##################################
@@ -21,10 +22,8 @@
 # to skip over the header when reading the data,
 # also use the proper argument "stringsAsFactors" to avoid creating factors,
 
-data_frame <- read.table(file="time_series.txt", 
-                         skip=1, 
-                         stringsAsFactors=FALSE)
-head(data_frame)
+
+### write your code here
 
 
 
@@ -34,7 +33,7 @@ head(data_frame)
 # and call them "date_time",
 # use function paste(),
 
-date_time <- paste(data_frame[, 1], data_frame[, 2])
+### write your code here
 
 
 # convert the vector of strings into "POSIXct" in the UTC time zone, 
@@ -42,10 +41,7 @@ date_time <- paste(data_frame[, 1], data_frame[, 2])
 # use the proper argument "format" that is appropriate for the strings,
 # read help under ?as.POSIXct to learn more about "format",
 
-date_time <- as.POSIXct(date_time, 
-                        format="%m/%d/%Y %H:%M:%S",
-                        tz="UTC")
-head(date_time)
+### write your code here
 
 
 
@@ -54,14 +50,14 @@ head(date_time)
 # and call it "data_frame",
 # use function data.frame(),
 
-data_frame <- data.frame(date_time, data_frame[, 3])
+### write your code here
 
 
 # read the first line of the file "time_series.txt" which contains the header, 
 # and call it "col_names",
 # use function readLines(),
 
-col_names <- readLines(con="time_series.txt", n=1)
+### write your code here
 
 
 # "col_names" contains a single string which is the concatenation 
@@ -69,10 +65,10 @@ col_names <- readLines(con="time_series.txt", n=1)
 # extract the header strings from "col_names" 
 # using function strsplit(), with the proper argument "split",
 
-col_names <- strsplit(col_names, split=" ")[[1]]
+### write your code here
+
 
 # assign the header strings to the column names of "data_frame"
 # using function colnames(), 
 
-colnames(data_frame) <- col_names
-head(data_frame)
+### write your code here

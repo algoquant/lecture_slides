@@ -171,7 +171,7 @@ minES_ROI$objective_measures$ES[[1]])
 
 
 
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights

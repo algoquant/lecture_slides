@@ -1,10 +1,12 @@
+% FRE7241_Lecture_5
+
 % Define knitr options
 % !Rnw weave = knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+options(width=600, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -47,16 +49,18 @@ knit_theme$set(thm)
 \setbeamerfont{block body}{size=\footnotesize}
 
 
-
 % Title page setup
-\title[Portfolio Construction]{Portfolio Construction}
-\subtitle{FRE7241 Algorithmic Portfolio Management}
+\title[FRE7241 Lecture\#5]{FRE7241 Algorithmic Portfolio Management}
+\subtitle{Lecture\#5, Spring 2015}
+% \subject{Getting Started With R}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
-% \email{jp3900@nyu.edu}
-\date{\today}
-
+% \email{jp3900@poly.edu}
+\date{December 2, 2014}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
 
 
 %%%%%%%%%%%%%%%
@@ -70,6 +74,210 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \section{Portfolio Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Likelihood Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector of normal variables
+target_vector <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  sum(2*log(parm[2]) + 
+    ((target - parm[1])/parm[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, target)
+    object_ive(c(mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(
+  objective_grid==min(objective_grid), 
+  arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_objective,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization quasi-Newton method
+optim_run <- optim(par=par_init, 
+             fn=object_ive, 
+             target=target_vector,
+             method="L-BFGS-B",
+             upper=c(10, 10),
+             lower=c(-10, 0.1))
+# optimal parameters
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+curve(expr=dnorm(x, mean=optim_run$par["mean"],
+                 sd=optim_run$par["sd"]), 
+      add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Model Likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector is mixture of normal distributions
+target_vector <- c(rnorm(100, sd=1.0), 
+                   rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  likelihood <- parm[1]/parm[3] * 
+  dnorm((target-parm[2])/parm[3]) +
+  (1-parm[1])/parm[5]*dnorm((target-parm[4])/parm[5])
+  if(any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, target)
+    object_ive(c(w, m1, s1, mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector,
+          w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Mixture Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_run <- optim(par=par_init, 
+            fn=object_ive, 
+            target=target_vector,
+            method="L-BFGS-B",
+            upper=c(1,10,10,10,10),
+            lower=c(0,-10,0.2,-10,0.2))
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+fit_func <- function(x, parm) {
+  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) + 
+    (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
+      type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -89,14 +297,14 @@ knit_theme$set(thm)
 library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
 # get documentation for package "PortfolioAnalytics"
 packageDescription("PortfolioAnalytics")  # get short description
-
 help(package="PortfolioAnalytics")  # load help page
-
 data(package="PortfolioAnalytics")  # list all datasets in "PortfolioAnalytics"
-
 ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
-
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
+      @
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PortfolioAnalytics)
       @
   \end{columns}
 \end{block}
@@ -345,7 +553,7 @@ portf_maxSRN <- add.objective(
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_leverage,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_SR_leverage,echo=(-(1:2)),eval=FALSE,tidy=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
@@ -445,411 +653,55 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]])
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{STARR Portfolio Constraints}
-\begin{frame}[fragile,t]{\subsecname}
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\secname}
 \vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The objective constraint applies to risk or return,
-      \vspace{-1em}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add constraints
-portf_maxSTARR <- add.constraint(
-  portfolio=portf_init,  # initial portfolio
-  type="weight_sum",  # constraint sum weights
-  min_sum=0.9, max_sum=1.1)
-# add constraints
-portf_maxSTARR <- add.constraint(
-  portfolio=portf_maxSTARR, 
-  type="long_only")  # box constraint min=0, max=1
-# add objectives
-portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
-  type="return",  # maximize mean return
-  name="mean")
-# add objectives
-portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
-  type="risk",  # minimize StdDev
-  name="ES")
-      @
-  \end{columns}
+\begin{block}{Required (due Dec. 16th)}
+  \begin{itemize}[]
+    \item load ETF returns from "\texttt{etf\_analysis.RData}" file,
+    \item create a list of symbols for creating an optimized portfolio,
+    \item create a named vector of portfolio weights all equal to "1",
+    \item create an objective function proportional to the Sharpe ratio ("\texttt{mean}" divided by "\texttt{sd}"),
+    \item the objective function should be a function of the vector of portfolio weights,
+    \item the objective function should be at a minimum when the Sharpe ratio is at a maximum, because the optimization function "\texttt{optim}" searches for the minimum,
+    \item vectorize the objective function with respect to the weights for "\texttt{VNQ}" and "\texttt{XLP}",
+    \item create vectors of weights for "\texttt{VNQ}" and "\texttt{XLP}", with 50 values from -1, to 1,
+    \item calculate the objective function on the 2-d parameter grid of "\texttt{VNQ}" and "\texttt{XLP}" weights, and set the weights of "\texttt{IEF}" and "\texttt{VTI}" equal to 0.5 and 0.1,
+    \item create a perspective plot of the objective function,
+    \item perform optimization using function "\texttt{optim}", to find the weight vector with the maximum Sharpe ratio,
+    \item set the "\texttt{upper}" and "\texttt{lower}" weights for "\texttt{IEF}" to 1.1, and 0.9,
+  \end{itemize}
 \end{block}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{STARR Optimization}
-\begin{frame}[fragile,t]{\subsecname}
+\subsection{Homework Assignment (cont.)}
+\begin{frame}[t]{\secname}
 \vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_STARR,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSTARR_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
-  portfolio=portf_maxSTARR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSTARR=TRUE,  # maximize STARR
-  trace=TRUE, traceDE=0)
-
-# plot optimization
-chart.RiskReward(maxSTARR_DEOpt, 
-  risk.col="ES", 
-  return.col="mean")
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points(risk="ETL")
-      @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-maxSTARR_DEOpt$weights
-maxSTARR_DEOpt$objective_measures$mean[1]
-maxSTARR_DEOpt$objective_measures$ES[[1]]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR-1}
-  \end{columns}
+\begin{block}{Required (due Dec. 16th)}
+  \begin{itemize}[]
+    \item calculate the Sharpe ratio for the optimal weights,
+    \item calculate the xts of returns of the portfolio with optimal weights, and assign colnames to this xts,
+    \item plot the optimal portfolio weights using "\texttt{barplot}",
+    \item plot the cumulative returns of the optimal portfolio, together with "\texttt{IEF}" and "\texttt{VTI}", using "\texttt{chart.CumReturns}",
+  \end{itemize}
+\end{block}
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 6-11: \fullcite{website:Farnsworth}
+    \item Read chapters 7, 8, 13, 14: \citetitle{ruppertbook}
+  \end{itemize}
 \end{block}
 
 \end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized STARR Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_STARR_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-maxSTARR_DEOpt_xts <- 
-  plot_portf(portfolio=maxSTARR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sharpe STARR \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_STARR_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts), 
-  lwd=2, ylab="", 
-  legend.loc="topleft", main="")
-      @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-maxSTARR_DEOpt$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-maxSTARR_DEOpt$objective_measures$ES[[1]])
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_STARR_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Efficient Frontier}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_eff_front,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot the efficient frontier
-chart.EfficientFrontier(maxSR_DEOpt, 
-                match.col="StdDev", 
-                n.portfolios=15, type="l")
-points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSRN_DEOpt$objective_measures$mean[1], 
-         col="green", lwd=3, pch=21)
-text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSRN_DEOpt$objective_measures$mean[1], 
-       labels="maxSRN", col="green", 
-       lwd=2, pos=4)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_eff_front-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{minES Portfolio Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The objective constraint applies to risk or return,
-      \vspace{-1em}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add constraints
-portf_minES <- add.constraint(
-  portfolio=portf_init,  # initial portfolio
-  type="weight_sum",  # constraint sum weights
-  min_sum=0.9, max_sum=1.1)
-# add constraints
-portf_minES <- add.constraint(
-  portfolio=portf_minES, 
-  type="long_only")  # box constraint min=0, max=1
-# add objectives
-portf_minES <- add.objective(
-  portfolio=portf_minES, 
-  type="risk",  # minimize ES
-  name="ES")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{minES Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_minES,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-minES_ROI <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
-  portfolio=portf_minES,  # specify portfolio
-  optimize_method="ROI", # use ROI
-  trace=TRUE, traceDE=0)
-
-# plot optimization
-chart.RiskReward(maxSTARR_DEOpt, 
-  risk.col="ES", 
-  return.col="mean")
-  points(x=minES_ROI$objective_measures$ES[[1]], 
-         y=mean(minES_ROI_xts), 
-         col="green", lwd=3, pch=21)
-  text(x=minES_ROI$objective_measures$ES[[1]], 
-         y=mean(minES_ROI_xts), 
-       labels="minES", col="green", 
-       lwd=2, pos=4)
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points(risk="ETL")
-      @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-minES_ROI$weights
-minES_ROI$objective_measures$ES[[1]]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized minES Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_minES_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-minES_ROI_xts <- 
-  plot_portf(portfolio=minES_ROI)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sharpe minES \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_minES_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, minES_ROI_xts), 
-  lwd=2, ylab="", 
-  legend.loc="topleft", main="")
-      @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, minES_ROI$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-minES_ROI$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-minES_ROI$objective_measures$ES[[1]])
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_minES_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_1h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["/2011", portf_names],  # specify returns
-  portfolio=portf_maxSR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-weights_1h <- maxSR_DEOpt$weights
-
-# plot optimization
-maxSR_DEOpt_xts <- 
-  plot_portf(portfolio=maxSR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_1h-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolios (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_2h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["2011/", portf_names],  # specify returns
-  portfolio=portf_maxSR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-weights_2h <- maxSR_DEOpt$weights
-
-# plot optimization
-maxSR_DEOpt_xts <- 
-  plot_portf(portfolio=maxSR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_2h-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolio Weights}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_weights,echo=(-(1:3)),fig.height=5,fig.show='hide'>>=
-options(width=50)
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-weights_1h
-weights_2h
-weights_1h - weights_2h
-barplot(weights_1h, 
-        names.arg=names(weights_1h), 
-        las=3, ylab="", xlab="", 
-        main="Portfolio Weights First Half")
-barplot(weights_2h, 
-        names.arg=names(weights_2h), 
-        las=3, ylab="", xlab="", 
-        main="Portfolio Weights Second Half")
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_weights-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 \end{document}

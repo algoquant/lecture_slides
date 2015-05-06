@@ -30,7 +30,7 @@ detach("package:factorAnalytics")
 
 library(factorAnalytics)
 # load ETF returns
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 # fit a three-factor model using PCA
 factor_pca <- fitSfm(etf_rets, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
@@ -111,7 +111,7 @@ plot(factor_pca, asset.name="VTI",
 
 
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 # rebalancing period
 re_balance <- "weeks"
 # look-back period in number of re_balance

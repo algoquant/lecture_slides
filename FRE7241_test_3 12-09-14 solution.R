@@ -9,7 +9,7 @@
 
 
 # 1. (10pts) create a portfolio object with equal weights,
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 portf_names <- c("VTI", "IEF", "DBC", "XLF", 
                  "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # create portfolio object with equal weights

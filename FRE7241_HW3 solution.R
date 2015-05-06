@@ -1,12 +1,10 @@
 #################################
-### HW #3 due May 4, 2015
+### FRE7241 HW #3 Solution
 #################################
-# Max score 40 pts
+# Max score xxx pts
 
-# Please write in this file the R code needed to perform the tasks below, 
-# rename it to your_name_hw3.R
-# and send this file to Luping Liu (ll2525@nyu.edu)
-
+# The below solutions are examples,
+# Slightly different solutions are also possible.
 
 
 ##################################
@@ -26,7 +24,11 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # you should obtain the same "ts_arima" series as above, 
 # remember to reset the random number generator by calling set.seed(1121),
 
-### write your code here
+set.seed(1121)
+ts_arima <- numeric(10)
+ts_arima[1] <- rnorm(1)
+sapply(2:10, function(in_dex) ts_arima[in_dex] <<- 0.5*ts_arima[in_dex-1] + rnorm(1))
+
 
 
 ######
@@ -35,7 +37,10 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # you should obtain the same "ts_arima" series as above, 
 # remember to reset the random number generator by calling set.seed(1121),
 
-### write your code here
+set.seed(1121)
+ts_arima <- as.ts(rnorm(10))
+ts_arima <- filter(x=ts_arima, filter=0.5, method="recursive")
+
 
 
 
@@ -49,7 +54,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # Call the resulting "ts" time series "ts_arima", 
 # remember to reset the random number generator by calling set.seed(1121),
 
-### write your code here
+set.seed(1121)
+ts_arima <- arima.sim(n=1000, model=list(ar=c(0.2, 0.3)))
 
 
 
@@ -60,7 +66,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # Create a series lagged by two periods from "ts_arima", and call it "ts_arima_lag2",
 # use function lag() with the proper argument "k",
 
-### write your code here
+ts_arima_lag <- lag(ts_arima, k=-1)
+ts_arima_lag2 <- lag(ts_arima, k=-2)
 
 
 
@@ -69,7 +76,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # note the rows containing NAs at the beginning, and remove those rows,
 # use functions cbind() and na.omit(),
 
-### write your code here
+ts_lagged <- na.omit(cbind(ts_arima, ts_arima_lag, ts_arima_lag2))
+head(ts_lagged)
 
 
 
@@ -78,7 +86,9 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # After applying cbind(), na.omit() and subsetting, all three time series 
 # should be properly alligned and of the same length,
 
-### write your code here
+ts_arima <- ts_lagged[, 1]
+ts_arima_lag <- ts_lagged[, 2]
+ts_arima_lag2 <- ts_lagged[, 3]
 
 
 
@@ -88,7 +98,10 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # The function acf() returns an object of class "acf", so you must extract 
 # the vector of autocorrelation coefficients from an object of class "acf",
 
-### write your code here
+vec_acf <- drop(acf(ts_arima, lag=5, plot=FALSE)$acf)
+is.vector(vec_acf)  # check
+# plot not required
+acf_plus(ts_arima, lag=5)
 
 
 
@@ -98,7 +111,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # use function cor(),
 # verify that "auto_corr" is almost equal to vec_acf[2],
 
-### write your code here
+auto_corr <- cor(ts_arima, ts_arima_lag)
+auto_corr - vec_acf[2]
 
 
 
@@ -108,7 +122,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # "ts_arima_1" represents the part of "ts_arima" that is not correlated to "ts_arima_lag",
 # verify that the correlation is almost zero, using function cor(),
 
-### write your code here
+ts_arima_1 <- ts_arima - auto_corr*sd(ts_arima)*ts_arima_lag/sd(ts_arima_lag)
+cor(ts_arima_lag, ts_arima_1)
 
 
 
@@ -119,7 +134,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # Explain in writing in one sentence why they should be almost equal,
 # answer: because "ts_arima" is stationary,
 
-### write your code here
+auto_corr <- cor(ts_arima_lag2, ts_arima_lag)
+auto_corr - vec_acf[2]
 
 
 
@@ -129,7 +145,8 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # "ts_arima_2" represents the part of "ts_arima_lag2" that is not correlated to "ts_arima_lag",
 # verify that the correlation is almost zero, using function cor(),
 
-### write your code here
+ts_arima_2 <- ts_arima_lag2 - auto_corr*sd(ts_arima_lag2)*ts_arima_lag/sd(ts_arima_lag)
+cor(ts_arima_lag, ts_arima_2)
 
 
 
@@ -137,7 +154,7 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # Calculate the correlation between "ts_arima_1" and "ts_arima_2", and call it "pauto_corr",
 # "ts_arima_2" represents the part of "ts_arima_lag2" that is not correlated to "ts_arima_lag",
 
-### write your code here
+pauto_corr <- cor(ts_arima_1, ts_arima_2)
 
 
 
@@ -148,6 +165,7 @@ ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
 # the vector of partial autocorrelation coefficients from an object of class "acf",
 # verify that "pauto_corr" is almost equal to vec_pacf[2],
 
-### write your code here
+vec_pacf <- drop(pacf(ts_arima, lag=5, plot=FALSE)$acf)
+pauto_corr - vec_pacf[2]
 
 

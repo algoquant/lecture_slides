@@ -1,10 +1,15 @@
 #################################
-### HW #3 Solution FRE6871 R in Finance
+### HW #3 FRE6871 R in Finance
 #################################
-# Max score 60 pts
+# Max score 60pts
 
-# The below solutions are examples,
-# Slightly different solutions are also possible.
+# Please write in this file the R code needed to perform the tasks below, 
+# rename it to your_name_hw3.R
+# and send this file to Harjinder Singh (harjinder.singh@nyu.edu)
+
+
+### write your code here
+
 
 
 
@@ -25,10 +30,7 @@ student_names <- c("Chloe", "Olivia", "Madison", "Ethan", "James", "Amelia", "An
 # "Corporate", "Computational", "InfoTech", "Risk"
 # Use functions sample() and as.factor(), 
 
-tra_ck <- as.factor(sample(
-  x=c("Corporate", "Computational", "InfoTech", "Risk"),
-  size=20,
-  replace=TRUE))
+### write your code here
 
 
 
@@ -36,10 +38,7 @@ tra_ck <- as.factor(sample(
 # Create the data frame "student_scores" from vectors "student_names" and "tra_ck",
 # Use function data.frame() with "stringsAsFactors=FALSE" to avoid coercing "character" to "factor",
 
-student_scores <- data.frame(
-  name=student_names, 
-  finance_track=tra_ck,
-  stringsAsFactors=FALSE)
+### write your code here
 
 
 
@@ -48,7 +47,7 @@ student_scores <- data.frame(
 # and assign to it random integer scores between 30 and 60,
 # Use functions sample() and matrix(), 
 
-sco_res <- matrix(sample(x=30:60, size=120, replace=TRUE), ncol=6)
+### write your code here
 
 
 
@@ -56,12 +55,12 @@ sco_res <- matrix(sample(x=30:60, size=120, replace=TRUE), ncol=6)
 # calculate a vector containing average scores for each student, and bind it to "sco_res",
 # Use functions cbind() and rowMeans(), 
 
-sco_res <- cbind(sco_res, rowMeans(sco_res))
+### write your code here
 
 # Assign the following column names to "sco_res":
 # "HW1_score", "HW2_score", "HW3_score", "HW4_score", "test1_score", "test2_score", "avg_score",
-colnames(sco_res) <- c("HW1_score", "HW2_score", "HW3_score", "HW4_score", "test1_score", "test2_score", "avg_score")
-head(sco_res)
+
+### write your code here
 
 
 
@@ -90,24 +89,23 @@ names(brea_ks) <- c("C-", "C", "C+", "B-", "B", "B+", "A-", "A")
 # for() loop, and/or if() and else(), and/or logical operators "<", ">", etc., 
 
 # first create vector "letter_grades" containing empty strings:
-letter_grades <- character(20)
+
+### write your code here
+
 # next populate "letter_grades" with letter grades using for() loop:
-for (brea_k in 2:8) {
-  in_dex <- (sco_res[, "avg_score"] < brea_ks[brea_k]) & (sco_res[, "avg_score"] >= brea_ks[brea_k-1])
-  letter_grades[in_dex] <- names(brea_ks[brea_k])
-}  # end for
-letter_grades <- as.factor(letter_grades)
+
+### write your code here
+
 
 # In the second approach you can use function findInterval() and the names of "brea_ks",
-letter_grades <- names(brea_ks[findInterval(x=sco_res[, "avg_score"], vec=brea_ks)+1])
-cbind(sco_res[, "avg_score"], letter_grades)
-letter_grades <- as.factor(letter_grades)
+
+### write your code here
 
 
 ######
 # cbind "sco_res" and "letter_grades" to the data frame "student_scores",
-student_scores <- cbind(student_scores, sco_res, letter_grades)
-head(student_scores)
+
+### write your code here
 
 
 
@@ -116,17 +114,14 @@ head(student_scores)
 # 2. (15pts) Sort "student_scores" by "avg_score" column, 
 # first in descending order, then in ascending order,
 # use function order()
-student_scores <- student_scores[order(student_scores$avg_score), ]
-head(student_scores)
-student_scores <- student_scores[order(student_scores$avg_score, decreasing=TRUE), ]
-head(student_scores)
+
+### write your code here
 
 
 # Calculate the average scores for students for each "finance_track" category,
 # use the split-apply-combine procedure, and use functions with() and tapply(),
-with(student_scores, 
-     tapply(avg_score, finance_track, mean)  # end tapply
-     )  # end with
+
+### write your code here
 
 
 
@@ -137,17 +132,18 @@ with(student_scores,
 # There are at least two ways of doing this, but you only need to do it one way.
 # In the first approach you can use column "student_scores$avg_score" and function hist(), 
 # and the vector "brea_ks",
-hist(student_scores$avg_score, breaks=brea_ks)
+
+### write your code here
 
 # In the second approach you can use column "student_scores$letter_grade", 
 # and functions table() and barplot(), 
-cont_table <- table(student_scores$letter_grade)
-cont_table <- cont_table[order(names(cont_table), decreasing=TRUE)]
-barplot(cont_table)
+
+### write your code here
 
 
 # extract the "class" of the columns of "student_scores" using functions class() and sapply(),
 # make sure that none of the columns are factors, except for "finance_track" and "letter_grades",
-sapply(student_scores, class)
+
+### write your code here
 
 

@@ -82,19 +82,24 @@ knit_theme$set(thm)
       \vskip1ex
       The function \texttt{as.Date()} parses a \texttt{character} string into a date object,
       \vskip1ex
-      \texttt{R} stores \texttt{Date} objects as the number of days since the \texttt{epoch} (January 1, 1970),
+      \texttt{R} stores \texttt{Date} objects as the number of days since the \emph{epoch} (January 1, 1970),
+      \vskip1ex
+      The function \texttt{difftime()} calculates the difference between \texttt{Date} objects, and returns a time interval object of class \texttt{difftime},
+      \vskip1ex
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators and the \texttt{"<"} and \texttt{">"} logical comparison operators are overloaded to allow these operations directly on \texttt{Date} objects,
       \vskip1ex
       \texttt{numeric} \emph{year-fraction} dates can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()},
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
 Sys.Date()  # get today's date
-date_time <- as.Date("2012-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
 date_time
 class(date_time)  # Date object
 as.Date("07-14-2014", "%m-%d-%Y")  # specify format
 date_time + 20  # add 20 days
-as.numeric(date_time)  # get internal integer representation
+# extract internal representation to integer
+as.numeric(date_time)
 date_old <- as.Date("07/14/2013", "%m/%d/%Y")
 date_old
 # difference between dates
@@ -105,6 +110,7 @@ date_time <- 0
 attributes(date_time) <- list(class="Date")
 date_time  # "Date" object
 structure(0, class="Date")  # "Date" object
+structure(10000.25, class="Date")
       @
   \end{columns}
 \end{block}
@@ -118,35 +124,163 @@ structure(0, class="Date")  # "Date" object
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXct} for Date-time (date-time) objects,
+    \column{0.4\textwidth}
+      The \texttt{POSIXct} class in \texttt{R} represents \emph{date-time} objects, that can store both the date and time,
       \vskip1ex
-      The function \texttt{as.POSIXct()} parses a \texttt{character} string into a \texttt{POSIXct} object,
+      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local \emph{time zone},
       \vskip1ex
-      \texttt{format()} converts \emph{date-time} objects to \texttt{character} strings, given a time zone,
+      The \emph{moment of time} is the \emph{clock time} in the \texttt{UTC} \emph{time zone},
       \vskip1ex
-      \texttt{format.POSIXct()} parses \texttt{POSIXct} objects to \texttt{character} strings,
+      \texttt{POSIXct} objects are stored as the number of seconds that have elapsed since the \emph{epoch} (January 1, 1970) in the \texttt{UTC} \emph{time zone},
       \vskip1ex
-      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the \texttt{epoch} (January 1, 1970 UTC),
+      \texttt{POSIXct} objects are stored as the \emph{moment of time}, but are printed out as the \emph{clock time} in the local \emph{time zone},
+      \vskip1ex
+      A \emph{clock time} together with a \emph{time zone} uniquely specifies a \emph{moment of time},
+      \vskip1ex
+      The function \texttt{as.POSIXct()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXct} object,
       \vskip1ex
       \texttt{POSIX} is an acronym for "Portable Operating System Interface",
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
 date_time <- Sys.time()  # get today's date and time
 date_time
 class(date_time)  # POSIXct object
-as.numeric(date_time)  # get internal integer representation
+# POSIXct stored as integer moment of time
+as.numeric(date_time)
 # parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-as.POSIXct("2012-07-14 13:30:10")
-format(date_time)  # convert POSIXct to character string
+date_time <- as.POSIXct("2014-07-14 13:30:10")
+# different time zones can have same clock time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# format argument allows parsing different date-time string formats
+as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
+           tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operations on \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators are overloaded to allow addition and subtraction operations on \texttt{POSIXct} objects,
+      \vskip1ex
+      The \texttt{"<"} and \texttt{">"} logical comparison operators are also overloaded to allow direct comparisons between \texttt{POSIXct} objects,
+      \vskip1ex
+      Operations on \texttt{POSIXct} objects are equivalent to the same operations on the internal integer representation of \texttt{POSIXct} (number of seconds since the \emph{epoch}),
+      \vskip1ex
+      Subtracting \texttt{POSIXct} objects creates a time interval object of class \texttt{difftime},
+      \vskip1ex
+      The method \texttt{seq.POSIXt} creates a vector of \texttt{POSIXct} \emph{date-times},
+      \vskip1ex
+      difftime
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# same moment of time corresponds to different clock times
+time_ny <- as.POSIXct("2014-07-14 13:30:10", 
+           tz="America/New_York")
+time_ldn <- as.POSIXct("2014-07-14 13:30:10", 
+           tz="UTC")
+# add five hours to POSIXct
+time_ny + 5*60*60
+# subtract POSIXct
+time_ny - time_ldn
+class(time_ny - time_ldn)
+# compare POSIXct
+time_ny > time_ldn
+# create vector of POSIXct times during trading hours
+trading_times <- seq(
+  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"), 
+  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"), 
+  by="10 min")
+head(trading_times, 3)
+tail(trading_times, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moment of Time and Clock Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{as.POSIXct()} can also coerce \texttt{integer} objects into \texttt{POSIXct}, given an \texttt{origin} in time,
+      \vskip1ex
+      The same \emph{moment of time} corresponds to different \emph{clock times} in different \emph{time zones},
+      \vskip1ex
+      The same \emph{clock times} in different \emph{time zones} correspond to different \emph{moments of time},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# POSIXct is stored as integer moment of time
+int_time <- as.numeric(date_time)
+# same moment of time corresponds to different clock times
+as.POSIXct(int_time, origin="1970-01-01", 
+           tz="America/New_York")
+as.POSIXct(int_time, origin="1970-01-01", 
+           tz="UTC")
+# same clock time corresponds to different moments of time
+as.POSIXct("2014-07-14 13:30:10", 
+           tz="America/New_York") - 
+  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# add 20 seconds to POSIXct
+date_time + 20
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Methods for Manipulating \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
+      \vskip1ex
+      The method \texttt{format.POSIXct()} parses \texttt{POSIXct} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone},
+      \vskip1ex
+      The method \texttt{as.POSIXct.Date()} parses \texttt{Date} objects into \texttt{POSIXct}, and assigns to them the \emph{moment of time} corresponding to midnight \texttt{UTC},
+      \vskip1ex
+      The method \texttt{as.POSIXct.Date()} parses \texttt{Date} objects into \texttt{POSIXct}, and assigns to them the \emph{moment of time} corresponding to midnight \texttt{UTC},
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+date_time  # POSIXct date and time
+# parse POSIXct to string representing the clock time
+format(date_time)
 class(format(date_time))  # character string
-date_time + 20  # add 20 seconds
-as.POSIXct(as.Date(date_time)+1)  # add a day
-trunc(date_time, units="hours")  # truncate to closest hour
-as.POSIXct(as.character(as.Date(date_time)))  # truncate to closest day
-methods(trunc)  # trunc methods
-trunc.POSIXt
+# get clock times in different time zones
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# format with custom format strings
+format(date_time, "%m/%Y")
+format(date_time, "%m-%d-%Y %H hours")
+# trunc to hour
+format(date_time, "%m-%d-%Y %H:00:00")
+# Date converted to midnight UTC moment of time
+as.POSIXct(Sys.Date())
+as.POSIXct(as.numeric(as.POSIXct(Sys.Date())), 
+           origin="1970-01-01",
+           tz="UTC")
       @
   \end{columns}
 \end{block}
@@ -160,29 +294,36 @@ trunc.POSIXt
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXlt} for \emph{date-time} objects,
+    \column{0.4\textwidth}
+      The \texttt{POSIXlt} class in \texttt{R} represents \emph{date-time} objects, that are stored internally as a list,
       \vskip1ex
-      \texttt{R} stores \texttt{POSIXlt} objects as a list,
+      The function \texttt{as.POSIXlt()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXlt} object,
       \vskip1ex
-      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
+      The method \texttt{format.POSIXlt()} parses \texttt{POSIXlt} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone},
       \vskip1ex
-      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
+      The function \texttt{as.POSIXlt()} can also parse a \texttt{POSIXct} object into a \texttt{POSIXlt} object, and \texttt{as.POSIXct()} can perform the reverse,
       \vskip1ex
       Adding a number to \texttt{POSIXlt} causes implicit coercion to \texttt{POSIXct},
       \vskip1ex
       \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes of the more general \texttt{POSIXt} class,
-    \column{0.7\textwidth}
+      \vskip1ex
+      The methods \texttt{round.POSIXt()} and \texttt{trunc.POSIXt()} round and truncate \texttt{POSIXt} objects, and return \texttt{POSIXlt} objects,
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
 # parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2012-07-14 18:30:10")
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
 date_time
 class(date_time)  # POSIXlt object
-aperm(as.matrix(unclass(date_time)))  # get internal representation
-
+as.POSIXct(date_time)  # coerce to POSIXct object
+# extract internal list representation to vector
+unlist(date_time)
 date_time + 20  # add 20 seconds
 class(date_time + 20)  # implicit coercion to POSIXct
+trunc(date_time, units="hours")  # truncate to closest hour
+trunc(date_time, units="days")  # truncate to closest day
+methods(trunc)  # trunc methods
+trunc.POSIXt
       @
   \end{columns}
 \end{block}
@@ -196,8 +337,8 @@ class(date_time + 20)  # implicit coercion to POSIXct
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      \emph{date-time} objects require a time zone to be uniquely specified,
+    \column{0.4\textwidth}
+      \emph{date-time} objects require a \emph{time zone} to be uniquely specified,
       \vskip1ex
       \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
       \vskip1ex
@@ -205,8 +346,8 @@ class(date_time + 20)  # implicit coercion to POSIXct
       \vskip1ex
       \texttt{EDT} stands for "Eastern Daylight Time", \texttt{UTC} - 4 hours,
       \vskip1ex
-      The function \texttt{Sys.setenv()} can be used to set the default time zone,
-    \column{0.7\textwidth}
+      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone},
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
 Sys.timezone()  # get time-zone
@@ -239,7 +380,7 @@ as.POSIXct(format(Sys.time(), tz="UTC")) -
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The package \texttt{lubridate} contains functions for converting and manipulating date-time objects,
+      The package \texttt{lubridate} contains functions for manipulating \texttt{POSIXct} date-time objects,
       \vskip1ex
       The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
       \vskip1ex
@@ -282,19 +423,13 @@ date_decimal(decimal_date(date_time), tz="America/New_York")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{lubridate} simplifies time zone calculations,
+      \texttt{lubridate} simplifies \emph{time zone} calculations,
       \vskip1ex
-      The \emph{moment of time} is the time in the \texttt{UTC} time zone,
+      \texttt{lubridate} uses the \emph{UTC} \emph{time zone} as default,
       \vskip1ex
-      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local time zone,
+      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different \emph{time zone},
       \vskip1ex
-      The same \emph{moment of time} corresponds to different \emph{clock times} in different time zones,
-      \vskip1ex
-      The same \emph{clock times} in different time zones correspond to different \emph{moments of time},
-      \vskip1ex
-      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different time zone,
-      \vskip1ex
-      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different time zone,
+      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different \emph{time zone},
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
@@ -898,12 +1033,12 @@ lag(zoo_series, 2)  # two day lag
   \begin{columns}[T]
     \column{0.5\textwidth}
       \texttt{zoo} time series can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.zoo()} method,
-      <<zoo_ts,echo=(-(1:2)),fig.show='hide'>>=
+      <<zoo_ts,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # initialize the random number generator
 library(zoo)  # load package zoo
 # create index of daily dates
-in_dex <- seq(from=as.Date("2012-07-14"), 
+in_dex <- seq(from=as.Date("2014-07-14"), 
                   by="day", length.out=1000)
 # create vector of data
 zoo_data <- cumsum(rnorm(length(in_dex)))
@@ -942,10 +1077,10 @@ library(zoo)  # load package zoo
 zoo_series[459:463, 1]
 # subset zoo using window()
 window(zoo_series, 
-       start=as.Date("2013-10-15"), 
-       end=as.Date("2013-10-19"))
+       start=as.Date("2014-10-15"), 
+       end=as.Date("2014-10-19"))
 # subset zoo using Date object
-zoo_series[as.Date("2013-10-15")]
+zoo_series[as.Date("2014-10-15")]
       @
   \end{columns}
 \end{block}
@@ -1163,7 +1298,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
       \vspace{-1em}
       <<zoo_roll,echo=(-1),fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# perform monthly 'mean' aggregation
+# "mean" aggregation over window with width=11
 zoo_mean <- rollapply(zoo_series, width=11, FUN=mean)
 # merge with original zoo - union of dates
 zoo_mean <- merge(zoo_series, zoo_mean)
@@ -1198,7 +1333,7 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
       \vskip1ex
       \texttt{as.zoo()} creates a \texttt{zoo} object with a \texttt{numeric} \emph{date-time} index, with \emph{date-time} encoded as a \emph{year-fraction},
       \vskip1ex
-      The \emph{year-fraction} can be \emph{approximately} converted to a \texttt{Date} object by first calculating the number of days since the \texttt{epoch} (\texttt{1970}), and then coercing the \texttt{numeric} days using \texttt{as.Date()},
+      The \emph{year-fraction} can be \emph{approximately} converted to a \texttt{Date} object by first calculating the number of days since the \emph{epoch} (\texttt{1970}), and then coercing the \texttt{numeric} days using \texttt{as.Date()},
       \vskip1ex
       The function \texttt{date\_decimal()} from package \texttt{lubridate} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
       \vskip1ex
@@ -1250,7 +1385,7 @@ library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 set.seed(1121)  # initialize the random number generator
 # create index of daily dates
-in_dex <- seq(from=as.Date("2012-07-14"), 
+in_dex <- seq(from=as.Date("2014-07-14"), 
                   by="day", length.out=1000)
 # create vector of data
 zoo_data <- cumsum(rnorm(length(in_dex)))
@@ -1396,6 +1531,37 @@ title(main="MSFT Prices")  # add title
 
 
 %%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{xts} Using Package \texttt{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{xts} time series can be plotted using the package \texttt{ggplot2},
+      <<xts_ggplot,echo=(-(1:3)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(ggplot2)
+load(file="C:/Develop/data/etf_data.Rdata")
+# create ggplot object
+etf_gg <- autoplot(etf_series_ad[, 1], 
+                   main=names(etf_series_ad[, 1])) + 
+  xlab("") + ylab("") + 
+  theme(
+    legend.position=c(0.1, 0.5), 
+    plot.title=element_text(vjust=-2.0), 
+    plot.background=element_blank()
+  )  # end theme
+# render ggplot object
+etf_gg
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_ggplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Subsetting \texttt{xts} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1404,7 +1570,7 @@ title(main="MSFT Prices")  # add title
     \column{0.4\textwidth}
       \texttt{xts} time series can be subset in similar ways to \texttt{zoo}, 
       \vskip1ex
-      In addition, \texttt{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2013-10-15/2014-01-10"]}, 
+      In addition, \texttt{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2014-10-15/2015-01-10"]}, 
       \vskip1ex
       \texttt{xts} time series can be subset by year, week, days, or even seconds,
       \vskip1ex
@@ -1414,7 +1580,7 @@ title(main="MSFT Prices")  # add title
       <<echo=(-(1))>>=
 library(xts)  # load package xts
 # subset xts using a date range string
-xts_sub <- xts_stx["2013-10-15/2014-01-10", 1:4]
+xts_sub <- xts_stx["2014-10-15/2015-01-10", 1:4]
 first(xts_sub)
 last(xts_sub)
 # subset Nov 2014 using a date string

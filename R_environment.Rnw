@@ -1209,11 +1209,11 @@ mat_read
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Very often when data is read from external sources, it contains fields with bad data,
+      Very often data that is read from external sources contains elements with bad data,
       \vskip1ex
-      Coercion of bad data elements to \texttt{numeric} introduces \texttt{NA} values,
+      An example of bad data are \texttt{character} strings in \texttt{numeric} data,
       \vskip1ex
-      Additional code is needed to scrub bad data,
+      Columns containing bad data elements are coerced to \texttt{character} or \texttt{factor},
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
@@ -1228,13 +1228,43 @@ mat_read  # data frame with bad data
 class(mat_read)
 class(mat_read[, 1])
 class(mat_read[, 2])  # numeric coerced to factor by bad data
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scrubbing Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{as.numeric()} convets bad data to \texttt{NA},
+      \vskip1ex
+      \texttt{as.numeric()} removes the \texttt{dim} attribute of matrices, and so they must be restored,
+      \vskip1ex
+      An \texttt{sapply()} loop over the columns of the input \texttt{data frame} coerces the columns to numeric vectors,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
 # convert non-numeric to NA by coercing to matrix and then to numeric
-mat_read <- as.numeric(as.matrix(mat_read))
-mat_read  # vector with NAs
-mat_read[is.na(mat_read)] <- 0  # overwrite NAs
+mat_scrub <- as.numeric(as.matrix(mat_read))
+mat_scrub  # vector with NAs
 # coerce from vector back to matrix
-mat_read <- matrix(mat_read, ncol=num_col, dimnames=dim_names)
-mat_read  # matrix without NAs
+mat_scrub <- matrix(mat_scrub, ncol=num_col, dimnames=dim_names)
+mat_scrub
+# perform sapply over columns and coerce to numeric vectors
+mat_scrub <- sapply(mat_read, function(col_umn) {
+  as.numeric(as.vector(col_umn))
+}  # end anon function
+)  # end sapply
+dimnames(mat_scrub) <- dimnames(mat_read)
+# overwrite NAs with zero
+mat_scrub[is.na(mat_scrub)] <- 0
+mat_scrub  # matrix without NAs
       @
   \end{columns}
 \end{block}

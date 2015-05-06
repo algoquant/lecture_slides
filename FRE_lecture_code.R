@@ -17,15 +17,6 @@ stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 
 
-########################
-### optimization examples
-
-
-
-
-########################
-### ideas for HW and tests
-
 
 ### seed_random() returns the pseudo-random generating function random_generator
 # this version is with for loop instead of recursion
@@ -155,6 +146,11 @@ autoplot(z) +
 
 
 ########################
+### optimization examples
+
+
+
+########################
 ### optimization generic
 
 ### single variable optimization
@@ -278,7 +274,7 @@ library(PortfolioAnalytics)
 library(DEoptim)
 
 # load ETF returns
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 
 
 ### portfolio setup
@@ -836,7 +832,7 @@ period_windows <- xts(period_windows,
 ########################
 ### factorAnalytics
 
-load(file="C:/Develop/data/etf_analysis.RData")
+load(file="C:/Develop/data/etf_data.Rdata")
 load(file="C:/Develop/data/portf_optim.RData")
 library(factorAnalytics)
 

@@ -15,6 +15,47 @@ library(zoo)
 stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 
+#####################
+### temp stuff ###
+
+
+zoomChart("2010")
+zoomChart("2010-04/2010-06")
+
+########
+
+blah <- merge(roll_max, roll_min)
+plot(blah, main="range stats")
+legend("topleft", legend=colnames(blah), bg="white", 
+       lty=c(1, 1, 1), lwd=c(2, 2, 2), col=c("black", "red", "blue"))
+
+
+reg_model <- lm(range~volume, data=range_volume["2008/2009"])
+plot(reg_model)
+
+reg_model <- lm(range~volume, data=diff(range_volume))
+reg_model <- lm(range~volume, data=diff(range_volume["2010/"], lag=11))
+reg_model <- lm(range~volume, data=diff(range_volume["2008/2009"]))
+summary(reg_model)
+plot(range~volume, data=diff(range_volume["2010/"]))
+
+adf.test(range_volume[, "range"])
+adf.test(cumsum(rnorm(nrow(range_volume))))
+
+cor(x=range_volume[, "range"], y=range_volume[, "volume"], method="pearson")
+cor.test(x=range_volume[, "range"], y=range_volume[, "volume"], method="pearson")
+cor(x=range_volume[, "range"], y=range_volume[, "volume"], method="kendall")
+cor.test(x=range_volume[, "range"], y=range_volume[, "volume"], method="kendall")
+cor(x=range_volume[, "range"], y=range_volume[, "volume"], method="spearman")
+cor.test(x=range_volume[, "range"], y=range_volume[, "volume"], method="spearman")
+
+
+#####################
+### end temp stuff ###
+
+
+#####################
+
 
 ### assign names to vector elements using the function paste()
 vec_tor <- rnorm(10)
@@ -166,6 +207,7 @@ with(mtcars[mtcars$cyl==6, ], barplot(mpg))
 ###############
 # The package "Ecdat" contains a data.frame called "Cigarette".
 # Subset "Cigarette" to extract data only for "state"=="NY", and call it "data_ny",
+library("Ecdat")  # load econometric data sets
 data_ny <- Cigarette[Cigarette[, "state"]=="WY", ]
 
 
@@ -177,6 +219,7 @@ dates_ny <- as.Date(paste(data_ny$year, "-01-01", sep=""))
 
 # Create a "zoo" from data_ny, excluding the columns "state" and "year", 
 # and the index "dates_ny", and call it "zoo_ny", 
+library("zoo")
 zoo_ny <- zoo(x=data_ny[, -(1:2)], order.by=dates_ny)
 
 # plot the column "income", and add title "Cigarette tax income in NY state",
@@ -208,25 +251,34 @@ as.POSIXct(
 )
 
 
-
-
-###############
-# The package "Ecdat" contains a data.frame called "Yen".
-# the column Yen$date contains dates as strings in the format "yyyymmdd",
+# 1. (5pts) Convert integers representing dates to "POSIXct" date-time objects,
+# Load the package "Ecdat", which contains a data frame called "Yen",
+# the column Yen$date contains integers representing dates, in the format "yyyymmdd",
 # from the column Yen$date create a vector of "POSIXct" dates, and call it "in_dex", 
-# set the POSIXct timezone to "America/New_York", 
-# use function ymd() from package "lubridate",
+# set the POSIXct timezone to "UTC", 
+# hint: you can either use functions as.character() and as.POSIXct() (with a "format" argument), 
+# or function ymd() from package "lubridate",
 
-library("Ecdat")  # load econometric data sets
+library("Ecdat")  # load Ecdat
 library(lubridate)
 head(Yen)  # explore the data
-in_dex <- ymd(Yen$date, tz="America/New_York")
 
-# Create an "xts" from the column Yen$date and "in_dex", and call it "xts_yen",
+# first method
+in_dex <- as.POSIXct(as.character(Yen$date), format="%Y%m%d", tz="UTC")
+
+# second method
+in_dex <- ymd(Yen$date, tz="UTC")
+
+
+# Create an "xts" object from the column Yen$s and "in_dex", and call it "xts_yen",
+
+library("xts")
 xts_yen <- xts(Yen$s, order.by=in_dex)
 
 # plot "xts_yen", using generic function plot(),
+
 plot(xts_yen)
+
 
 
 
@@ -283,6 +335,135 @@ weekdays(as.Date("2013-09-02") + 0:5)
 # create weekday logical vector
 zoo_series <- zoo_series[is_weekday, ]
 
+
+
+##################################
+# 3. (20pts) Download data for symbols "VTI" and "VEU" from Yahoo, 
+# and save the data to a new environment called "data_env",
+# use functions new.env() and getSymbols(),
+# package quantmod
+
+data_env <- new.env()
+getSymbols(c("VTI", "VEU"), env=data_env)
+
+
+######
+# Extract the adjusted price columns from all the variables contained in "data_env", 
+# and call it "etf_series_ad", 
+# Extract the volume columns from all the variables contained in "data_env", 
+# and call it "etf_series_vo", 
+# use functions do.call(), merge(), eapply(), Ad(), and Vo(),
+
+etf_series_ad <- do.call(merge, eapply(data_env, Ad))
+etf_series_vo <- do.call(merge, eapply(data_env, Vo))
+
+
+
+########################
+### stochastic processes
+
+
+### autocorrelations of absolute deviations
+
+# EuStockMarkets autocorrelation
+# extract lag=5 vector of autocorrelation coefficients using functions acf() and drop(),
+drop(acf(na.omit(diff(log(EuStockMarkets[, 1]))), lag=5, plot=FALSE)$acf)[-1]
+
+# extract autocorrelations of absolute deviations
+drop(acf(na.omit(diff(abs(na.omit(diff(log(EuStockMarkets[, 1])))))), lag=5, plot=FALSE)$acf)[-1]
+# plot
+acf_plus(na.omit(diff(abs(na.omit(diff(log(EuStockMarkets[, 1])))))), lag=5)
+
+
+# rnorm autocorrelation
+len_gth <- length(EuStockMarkets[, 1])
+rand_walk <- zoo(rnorm(len_gth), order.by=(Sys.Date()+0:(len_gth-1)))
+
+# extract autocorrelations of absolute deviations
+drop(acf(na.omit(diff(abs(rand_walk))), lag=5, plot=FALSE)$acf)[-1]
+# plot
+acf_plus(na.omit(diff(abs(rand_walk))), lag=5)
+
+
+
+### partial autocorrelations of time series
+
+# create ARIMA time series of class "ts"
+set.seed(1121)
+zoo_arima <- zoo(
+  x=arima.sim(n=1000, model=list(ar=c(0.2, 0.3))),
+  order.by=(Sys.Date()-0:999))
+
+# calculate autocorrelations using acf()
+vec_acf <- drop(acf(zoo_arima, lag=5, plot=FALSE)$acf)
+
+
+# create ARIMA time series pure vector
+zoo_arima <- coredata(arima.sim(n=1000, model=list(ar=c(0.2, 0.3))))
+
+# calculate autocorrelations by hand
+# first lag time series
+zoo_arima_lag <- zoo_arima
+zoo_arima_lag <- zoo_arima_lag[-length(zoo_arima_lag)]
+zoo_arima <- zoo_arima[-1]
+head(cbind(zoo_arima, zoo_arima_lag))
+tail(cbind(zoo_arima, zoo_arima_lag))
+# sqrt(sum(zoo_arima_lag^2)/length(zoo_arima_lag))
+# sum((zoo_arima-mean(zoo_arima))*(zoo_arima_lag-mean(zoo_arima_lag)))/(sd(zoo_arima-mean(zoo_arima))*sd(zoo_arima_lag))/(length(zoo_arima)-1)
+
+# autocorrelation equal to cor of time series with its lag
+auto_corr <- cor(zoo_arima, zoo_arima_lag)
+
+
+# create time series that's not correlated with the lagged series,
+# but doesn't mean its not correlated with its own lag,
+zoo_arima_1 <- zoo_arima - auto_corr*sd(zoo_arima)*zoo_arima_lag/sd(zoo_arima_lag)
+zoo_arima_1 <- zoo_arima - vec_acf[2]*sd(zoo_arima)*zoo_arima_lag/sd(zoo_arima_lag)
+
+cor(zoo_arima_lag, zoo_arima_1)
+
+
+
+### below are scratch or incorrect - doesn't work properly:
+
+######
+# Create a series lagged by one period from "ts_arima", and call it "ts_arima_lag",
+# The value of "ts_arima_lag" in a given period should be equal to 
+# the value of "ts_arima" in the previous period,
+# Create a series lagged by two periods from "ts_arima", and call it "ts_arima_lag2",
+# use function lag() with the proper argument "k",
+
+# create ARIMA time series of class "ts"
+zoo_arima <- arima.sim(n=1000, model=list(ar=c(0.2, 0.3)))
+
+
+# verify that "ts_arima_lag" and "ts_arima_lag2" are correctly lagged by inspecting them,
+# use functions head() and cbind(),
+
+head(cbind(ts_arima, ts_arima_lag, ts_arima_lag2))
+tail(cbind(ts_arima, ts_arima_lag, ts_arima_lag2))
+
+######
+# Create a linear combination of "ts_arima_1" and its lag=2 series, and call it "ts_arima_2",
+# such that the lag=2 autocorrelation of "ts_arima_2" is equal to zero, or is very close to zero,
+
+ts_arima_2 <- ts_arima_1 - vec_acf_1[3]*lag(ts_arima_1, k=-2)
+vec_acf_2 <- drop(acf(ts_arima_2, lag=5, plot=FALSE)$acf)
+# plot
+acf_plus(ts_arima_2, lag=5)
+
+
+
+######
+# Create a linear combination of "zoo_arima" and "zoo_arima_lag", and call it "zoo_arima_1" (decorrelated),
+# such that its lag=1 autocorrelation coefficient is equal to zero, or is very close to zero,
+# Extract the lag=5 autocorrelation vector of "zoo_arima_1", and call it "vec_acf_1",
+# verify that the lag=1 autocorrelation is very close to zero,
+
+zoo_arima_1 <- zoo_arima - vec_acf[2]*sd(zoo_arima)*zoo_arima_lag/sd(zoo_arima_lag)
+vec_acf_1 <- drop(acf(zoo_arima_1, lag=5, plot=FALSE)$acf)
+# plot
+acf_plus(zoo_arima_1, lag=5)
 
 
 

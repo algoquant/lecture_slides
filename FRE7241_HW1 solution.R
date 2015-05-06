@@ -64,7 +64,7 @@ library(lubridate)
 head(Yen)  # explore the data
 in_dex <- ymd(Yen$date, tz="America/New_York")
 
-# Create an "xts" from the column Yen$date and "in_dex", and call it "xts_yen",
+# Create an "xts" from the column Yen$s and "in_dex", and call it "xts_yen",
 xts_yen <- xts(Yen$s, order.by=in_dex)
 
 # plot "xts_yen", using generic function plot(),

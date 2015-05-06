@@ -69,7 +69,7 @@ head(Yen)  # explore the data
 
 ### write your code here
 
-# Create an "xts" from the column Yen$date and "in_dex", and call it "xts_yen",
+# Create an "xts" from the column Yen$s and "in_dex", and call it "xts_yen",
 
 ### write your code here
 
