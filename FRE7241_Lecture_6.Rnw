@@ -1,3 +1,5 @@
+% FRE7241_Lecture_6
+
 % Define knitr options
 % !Rnw weave = knitr
 % Set global chunk options
@@ -47,16 +49,18 @@ knit_theme$set(thm)
 \setbeamerfont{block body}{size=\footnotesize}
 
 
-
 % Title page setup
-\title[Time Series Multivariate]{Time Series Multivariate}
-\subtitle{FRE7241 Algorithmic Portfolio Management}
+\title[FRE7241 Lecture\#6]{FRE7241 Algorithmic Portfolio Management}
+\subtitle{Lecture\#6, Spring 2015}
+% \subject{Getting Started With R}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{\today}
-
+\date{May 12, 2015}
+% \date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
 
 
 %%%%%%%%%%%%%%%
@@ -69,40 +73,60 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Asset Pricing Models}
+\section{Backtesting Active Investment Strategies}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Linear Regression of Returns}
+\subsection{Backtesting Framework}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.Rdata")
-# specify regression formula
-reg_formula <- XLP ~ VTI
-# perform regression
-reg_model <- lm(reg_formula, data=etf_rets)
-# plot scatterplot of returns
-plot(reg_formula, data=etf_rets)
-title(main="Regression XLP ~ VTI", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
+# rebalancing period
+re_balance <- "weeks"
+# look-back period in number of re_balance
+win_dow <- 40
 
+# create index of rebalancing period end points
+end_points <- endpoints(etf_rets, 
+                      on=re_balance)
+end_points[1] <- 1
 
-reg_model_sum <- summary(reg_model)
-coef(reg_model_sum)
-# Durbin-Watson test autocorrelation residuals
-library(lmtest)
-dwtest(reg_model)
+# create index of rebalancing periods
+periods <- lapply(win_dow:(length(end_points)-1),
+    function(point)
+      list(
+  back=end_points[point-win_dow+1]:(end_points[point]-1),
+  fwd=end_points[point]:end_points[point+1])  # end list
+    )  # end lapply
       @
     \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_regress-1}
+    \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# calculate risk&ret stats for some symbols, over a range of dates
+risk_ret_stats <- function(x_ts=etf_rets,  # daily returns
+                       sym_bols=colnames(x_ts),  # names
+                       range=index(x_ts),  # date range
+                       ret="mean",  # return stat
+                       risk="mad") {  # risk stat
+  ret <- match.fun(ret)  # match to function
+  risk <- match.fun(risk)  # match to function
+  stats <- sapply(x_ts[range, sym_bols], 
+        function(ts)
+          c(ret=ret(ts), risk=risk(ts))
+  )  # end sapply
+  t(stats)
+}  # end risk_ret_stats
+
+# example
+head(risk_ret_stats(range=
+              periods[[1]]$back))
+      @
   \end{columns}
 \end{block}
 
@@ -110,87 +134,71 @@ dwtest(reg_model)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Linear Regression Summary Statistics}
+\subsection{Performing Backtesting}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.55\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
-library(lmtest)  # load lmtest
-# perform regressions and collect statistics
-etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
-                        function(etf_name) {
-# specify regression formula
-  reg_formula <- as.formula(
-    paste(etf_name, "~ VTI"))
-# perform regression
-  reg_model <- lm(reg_formula, data=etf_rets)
-# get regression summary
-  reg_model_sum <- summary(reg_model)
-# collect regression statistics
-  etf_reg_stats <- with(reg_model_sum, 
-    c(coefficients[1, 1], coefficients[1, 4], 
-      coefficients[2, 1], coefficients[2, 4]))
-  etf_reg_stats <- c(etf_reg_stats, 
-               dwtest(reg_model)$p.value)
-  etf_reg_stats
-})  # end sapply
-rownames(etf_reg_stats) <- c("alpha", "p-alpha", 
-                      "beta", "p-beta", "p-dw")
-etf_reg_stats <- t(etf_reg_stats)
-# sort by p-alpha
-etf_reg_stats <- etf_reg_stats[
-  order(etf_reg_stats[, "p-alpha"]), ]
+      <<echo=TRUE,eval=TRUE>>=
+# calculate stats over overlaping period date windows
+period_stats <- lapply(periods,
+         function(point)
+           cbind(risk_ret_stats(range=point$back),
+            fut_ret=sapply(etf_rets[point$fwd, ], sum))
+)  # end lapply
+head(period_stats[[1]])
       @
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-etf_reg_stats[, 1:3]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate pnl for a given period
+pnl_period <- function(period_stat, de_mean=FALSE) {
+  weights <- period_stat[, "ret"]/
+    period_stat[, "risk"]
+  weights <- weights - de_mean*mean(weights)
+  weights <- weights/sum(abs(weights))
+c(sum(period_stat[, "fut_ret"]*weights), weights)
+}  # end pnl_period
+
+# calculate pnls over all windows
+pnl_xts <- t(sapply(period_stats, pnl_period))
+pnl_xts <- xts(pnl_xts,
+     order.by=index(etf_rets)
+ [end_points[win_dow:(length(end_points)-1)]]
+ )  # end xts
+colnames(pnl_xts)[1] <- "pnl"
+
+# calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
+co_sts[1, ] <- 0
+co_sts <- rowSums(co_sts)
+pnl_xts[, "pnl"] <- pnl_xts[, "pnl"] - co_sts
       @
   \end{columns}
 \end{block}
 
 \end{frame}
 
+
 %%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
+\subsection{Backtest Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \emph{Capital Asset Pricing Model} is a linear model explaining an asset's returns in terms of the market (benchmark) returns:
-      \begin{displaymath}
-        R = R_{f} + {\alpha} + \beta (R_{m} - R_{f}) + {\varepsilon}
-      \end{displaymath}
-      The term proportional to $\beta$ represents the \emph{systematic} returns, and $\varepsilon$ represents \emph{idiosyncratic} returns,
-      \vskip1ex
-      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and its benchmark:
-      \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^{k} (R_{i}-\bar{R}) (R_{i,b}-\bar{R_{b}})} {\sum_{i=1}^{k} (R_{i,b}-\bar{R_{b}})^2}
-      \end{displaymath}
-      $\alpha$ are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active manager performance,
+      \vspace{-1em}
+      <<back_perform,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# plot cumulative pnl of strategy
+plot(cumsum(pnl_xts[, "pnl"]), 
+  main=colnames(pnl_xts[, "pnl"]))
+      @
     \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)
-CAPM.beta(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
-CAPM.beta.bull(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-CAPM.beta.bear(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-
-CAPM.alpha(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
-
-InformationRatio(Ra=etf_rets[, "XLP"], 
-           Rb=etf_rets[, "VTI"])
-      @
-      The \emph{Information} ratio measures the excess return (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
-      \begin{displaymath}
-        I_{r} = \frac{E[R-R_{b}]} {\sqrt{\sum_{i=1}^{k} (R_{i}-R_{i,b})^2}}
-      \end{displaymath}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_perform-1}
   \end{columns}
 \end{block}
 
@@ -198,40 +206,47 @@ InformationRatio(Ra=etf_rets[, "XLP"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{CAPM} Scatterplot}
+\subsection{Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      <<back_weights,eval=FALSE,echo=(-1),fig.width=15,fig.height=9,fig.show='hide'>>=
+portf_names <- c("VTI", "IEF", "DBC", "XLF", "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
+# plot portfolio weights
+plot.zoo(pnl_xts[, portf_names], main="")
+      @
+\vspace{-2em}
+\hspace*{-1em}
+      \includegraphics[width=1.0\paperwidth,valign=t]{figure/back_weights-1}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Strategy Market Beta}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Alpha} ($\alpha$) is the return in excess of the return due to the whole market going up or down,
-      \vskip1ex
-      The \emph{CAPM} model says that if an investor takes bigger risk ($\beta$) then they should receive higher returns,
-      \vskip1ex
-      \emph{Alpha} is the excess return investors receive, beyond the $\beta$ risk they take,
-      <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-library(PerformanceAnalytics)
-etf_betas <- sapply(etf_rets, CAPM.beta, 
-            Rb=etf_rets[, "VTI"])
-etf_annrets <- sapply(etf_rets, 
-            Return.annualized)
-# plot scatterplot
-plot(etf_annrets ~ etf_betas, xlab="betas", 
-            ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=etf_annrets["VTI"], col="red", 
-       lwd=3, pch=21)
-abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_reg_stats)[1:13]
-# add labels
-text(x=1, y=etf_annrets["VTI"], labels="VTI", 
-     pos=2)
-text(x=etf_betas[label_names], 
-     y=etf_annrets[label_names], 
-     labels=label_names, pos=2, cex=0.8)
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<back_beta,eval=FALSE,echo=TRUE,fig.width=8,fig.height=11,fig.show='hide'>>=
+# calculate xts of net beta
+betas <- c(1, etf_reg_stats[, 3])
+names(betas)[1] <- colnames(pnl_xts[, 2])
+# weights times betas
+betas <- pnl_xts[, -1] * betas
+betas <- xts(rowSums(betas), 
+    order.by=index(pnl_xts))
+colnames(betas) <- "betas"
+plot.zoo(cbind(betas, 
+    cumsum(etf_rets[, 1])[index(betas)]),
+    main="betas & VTI", xlab="")
       @
-    \column{0.5\textwidth}
+    \column{0.6\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_beta-1}
   \end{columns}
 \end{block}
 
@@ -239,42 +254,49 @@ text(x=etf_betas[label_names],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{CAPM} Summary Statistics}
+\subsection{Strategy Optimization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.55\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)
-table.CAPM(Ra=etf_rets[, c("XLP", "XLF")], 
-           Rb=etf_rets[, "VTI"], scale=252)
+      <<back_optim,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# create trading function
+tot_pnl <- function(win_dow) {
+  periods <- lapply(win_dow:(length(end_points)-1),
+    function(point)
+      list(back=
+      end_points[point-win_dow+1]:(end_points[point]-1),
+         fwd=end_points[point]:end_points[point+1])
+  )  # end sapply
+  period_stats <- lapply(periods,
+       function(point)
+         cbind(risk_ret_stats(range=point$back),
+           fut_ret=sapply(etf_rets[point$fwd, ], sum))
+  )  # end lapply
+  pnl_xts <- t(sapply(period_stats, pnl_period))
+  co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
+  co_sts <- rowSums(co_sts)
+  co_sts <- c(0, co_sts)
+  pnl_xts[, 1] <- pnl_xts[, 1] - co_sts
+  sum(pnl_xts[, 1])
+}  # end tot_pnl
+strat_profile <- sapply(4*(5:15), tot_pnl)
+plot(cbind(4*(5:15), strat_profile), t="l")
       @
-      \vspace{-2em}
-      <<eval=FALSE,echo=(-1)>>=
-library(PerformanceAnalytics)
-etf_perf_stats <- table.CAPM(Ra=etf_rets[, -1], 
-              Rb=etf_rets[, "VTI"], scale=252)
-colnames(etf_perf_stats) <- 
-  sapply(colnames(etf_perf_stats), 
-  function (str) {strsplit(str, split=" ")[[1]][1]})
-etf_perf_stats <- as.matrix(etf_perf_stats)
-etf_perf_stats <- t(etf_perf_stats)
-etf_perf_stats <- etf_perf_stats[
-  order(etf_perf_stats[, "Annualized Alpha"], 
-        decreasing=TRUE), ]
-      @
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE,echo=(-1)>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
-      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_optim-1}
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Factor Analysis}
 
 
 %%%%%%%%%%%%%%%
@@ -489,11 +511,6 @@ table.CAPM(Ra=pca_rets[, 1:3],
 \end{block}
 
 \end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Factor Analysis}
 
 
 %%%%%%%%%%%%%%%
@@ -739,4 +756,28 @@ plot(factor_pca, asset.name="VTI",
 
 
 
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\secname}
+\vspace{-1em}
+\begin{block}{Required}
+  A file with the homework will be uploaded to NYU Classes,
+\end{block}
+
+\begin{block}{Recommended}
+  \begin{itemize}[]
+    \item Read chapters 1-3: \fullcite{website:rintro}
+    \item Read chapters 1, 2, 11: \citetitle{matloffbook}
+    \item Read: \fullcite{website:googlestyler}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
 \end{document}
+

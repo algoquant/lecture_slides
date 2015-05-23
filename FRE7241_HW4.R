@@ -34,7 +34,7 @@ win_dow <- 22
 # of adjusted prices over the sliding "win_dow", and call them "roll_max" and "roll_min",
 # at every point in time, the value of "roll_max" should be equal to the maximum 
 # adjusted price from points in the past covered by "win_dow",
-# use function rollmax() form package "zoo", with the proper "k" and "align" arguments,
+# use function rollmax() from package "zoo", with the proper "k" and "align" arguments,
 
 library(zoo)
 
@@ -96,7 +96,7 @@ colnames(roll_volume) <- "volume"
 # perform Durbin-Watson test for the autocorrelations of regression residuals,
 # write what is the null hypothesis?
 # can the null hypothesis be rejected?
-# use function dwtest(), form package lmtest,
+# use function dwtest(), from package lmtest,
 
 library(lmtest)  # load lmtest
 ### write your code here

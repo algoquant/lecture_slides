@@ -1218,7 +1218,9 @@ mat_read
       \vspace{-1em}
       <<echo=(-1)>>=
 setwd("C:/Develop/data")
-mat_read <- read.csv(file="badmatrix.csv")
+mat_read <- read.csv(
+  file="badmatrix.csv",
+  stringsAsFactors=FALSE)
 # restore rownames
 rownames(mat_read) <- as.character(mat_read[, 1])
 mat_read <- mat_read[, -1]  # remove extra column
@@ -1227,7 +1229,8 @@ num_col <- ncol(mat_read)  # save num columns
 mat_read  # data frame with bad data
 class(mat_read)
 class(mat_read[, 1])
-class(mat_read[, 2])  # numeric coerced to factor by bad data
+# numeric data column coerced to character by bad data
+class(mat_read[, 2])
       @
   \end{columns}
 \end{block}
@@ -1242,7 +1245,7 @@ class(mat_read[, 2])  # numeric coerced to factor by bad data
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{as.numeric()} convets bad data to \texttt{NA},
+      \texttt{as.numeric()} converts bad numeric data (strings) to \texttt{NA} values,
       \vskip1ex
       \texttt{as.numeric()} removes the \texttt{dim} attribute of matrices, and so they must be restored,
       \vskip1ex
@@ -1250,21 +1253,21 @@ class(mat_read[, 2])  # numeric coerced to factor by bad data
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-# convert non-numeric to NA by coercing to matrix and then to numeric
-mat_scrub <- as.numeric(as.matrix(mat_read))
-mat_scrub  # vector with NAs
-# coerce from vector back to matrix
-mat_scrub <- matrix(mat_scrub, ncol=num_col, dimnames=dim_names)
-mat_scrub
-# perform sapply over columns and coerce to numeric vectors
+# perform sapply over columns
 mat_scrub <- sapply(mat_read, function(col_umn) {
-  as.numeric(as.vector(col_umn))
+# coerce to numeric
+  col_umn <- as.numeric(col_umn)
+# replace NAs with zero
+  col_umn[is.na(col_umn)] <- 0
+  col_umn
 }  # end anon function
 )  # end sapply
+# restore dimnames
 dimnames(mat_scrub) <- dimnames(mat_read)
-# overwrite NAs with zero
-mat_scrub[is.na(mat_scrub)] <- 0
-mat_scrub  # matrix without NAs
+# coerce to matrix
+mat_scrub <- as.matrix(mat_scrub)
+# matrix without NAs
+mat_scrub
       @
   \end{columns}
 \end{block}
@@ -1357,7 +1360,7 @@ tail(zoo_series, 3)
     \column{0.4\textwidth}
       Very often \emph{csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting,
       \vskip1ex
-      The \texttt{FUN} argument of \texttt{read.zoo()} accepts a function for coercing columns of the input data into a \emph{date-time} object suitable for the \texttt{zoo} index,
+      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing columns of the input data into a \emph{date-time} object suitable for the \texttt{zoo} index,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2))>>=

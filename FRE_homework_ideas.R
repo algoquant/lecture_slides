@@ -54,13 +54,8 @@ cor.test(x=range_volume[, "range"], y=range_volume[, "volume"], method="spearman
 ### end temp stuff ###
 
 
-#####################
-
-
-### assign names to vector elements using the function paste()
-vec_tor <- rnorm(10)
-names(vec_tor) <- paste("el", 1:10, sep='')
-names(vec_tor) <- gsub("el", "num", names(vec_tor))
+########################
+### functions
 
 ### create function that throws error if argument is negative
 test_func <- function(arg_var) {
@@ -177,6 +172,34 @@ legend("topright", title="DAX vs t-distr", legend=c("t-distr", "DAX"),
 
 
 
+########################
+### expressions
+
+
+### while loops
+
+### Calculate the row and column index (number) containing the specified value of a matrix
+# without using which()
+
+# create matrix
+set.seed(1121)
+mat_rix <- matrix(sample(x=1:9, replace=FALSE), ncol=3)
+# select some value from matrix
+val_ue <- median(mat_rix)
+# find index of column value of matrix
+in_dex <- (val_ue==apply(mat_rix, 2, median))
+c_ol <- (1:length(in_dex))[in_dex]
+co_lumn <- mat_rix[, in_dex]
+in_dex <- (val_ue==co_lumn)
+r_ow <- (1:length(in_dex))[in_dex]
+
+
+### assign names to vector elements using the function paste()
+vec_tor <- rnorm(10)
+names(vec_tor) <- paste("el", 1:10, sep='')
+names(vec_tor) <- gsub("el", "num", names(vec_tor))
+
+
 ###############
 ### using mtcars data, plot a boxplot of mpg of cars with six cylinders
 boxplot(mtcars[mtcars$cyl==6, ]$mpg)
@@ -204,6 +227,7 @@ with(mtcars[mtcars$cyl==6, ], barplot(mpg))
 
 
 
+
 ###############
 # The package "Ecdat" contains a data.frame called "Cigarette".
 # Subset "Cigarette" to extract data only for "state"=="NY", and call it "data_ny",
@@ -226,6 +250,9 @@ zoo_ny <- zoo(x=data_ny[, -(1:2)], order.by=dates_ny)
 plot(zoo_ny[, "income"], xlab="", ylab="", main="Cigarette tax income in NY state")
 
 
+
+########################
+### dates and times
 
 ###############
 # The package "Ecdat" contains a data.frame called "Garch".
@@ -281,10 +308,8 @@ plot(xts_yen)
 
 
 
-
-###############
-# time series
-###############
+########################
+### time series
 
 
 ###############

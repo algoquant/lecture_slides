@@ -1,7 +1,7 @@
 #################################
 ### FRE7241 HW #3 Solution
 #################################
-# Max score xxx pts
+# Max score 40 pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.

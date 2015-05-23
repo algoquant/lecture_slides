@@ -68,8 +68,503 @@ knit_theme$set(thm)
 
 
 
+
 %%%%%%%%%%%%%%%
-\section{Risk and Return Analysis}
+\section{Package \texttt{tseries} for Time Series Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{tseries} for Time Series Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{tseries} contains functions for time series analysis and computational finance, such as:
+      \begin{itemize}
+        \item downloading historical data,
+        \item plotting time series,
+        \item calculating risk and performance measures,
+        \item statistical \emph{hypothesis testing},
+        \item fitting models to time series,
+        \item portfolio optimization, 
+      \end{itemize}
+      Package \texttt{tseries} accepts time series objects of class \texttt{"ts"} and \texttt{"zoo"}, and also has its own class \texttt{"irts"} for irregular spaced time-series objects,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# get documentation for package "tseries"
+packageDescription("tseries")  # get short description
+
+help(package="tseries")  # load help page
+
+library(tseries)  # load package "tseries"
+
+data(package="tseries")  # list all datasets in "tseries"
+
+ls("package:tseries")  # list all objects in "tseries"
+
+detach("package:tseries")  # remove tseries from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \texttt{ts} Data From \protect\emph{Yahoo} Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{get.hist.quote()} can download daily historical data in \texttt{ts} format using the argument \texttt{"retclass="ts"},
+      \vskip1ex
+      \texttt{get.hist.quote()} returns a \texttt{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates,
+      \vskip1ex
+      The \texttt{ts} contains \texttt{NA} values for weekends and holidays,
+      <<echo=(-1),eval=FALSE>>=
+library(tseries)  # load package tseries
+# download MSFT data in ts format
+ts_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT", 
+    start=Sys.Date()-3*365, 
+    end=Sys.Date(), 
+    retclass="ts",
+    quote=c("Open","High","Low","Close",
+            "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
+      @
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=(-1),eval=TRUE>>=
+load(file="C:/Develop/data/zoo_data.RData")
+# create price adjustment vector
+adj_close <- ts_stx[, "AdjClose"] - 
+  ts_stx[, "Close"]
+# adjust OHLC prices
+ts_stx_adj <- ts_stx
+ts_stx_adj[, c("Open","High","Low","Close")] <- 
+  ts_stx[, c("Open","High","Low","Close")] + adj_close
+# inspect the data
+tsp(ts_stx_adj)  # frequency=1
+head(time(ts_stx_adj))
+head(ts_stx_adj)
+tail(ts_stx_adj)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \texttt{zoo} Data From \protect\emph{Yahoo} Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{get.hist.quote()} downloads historical data from online sources,
+      \vskip1ex
+      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
+      \vskip1ex
+      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
+      \vskip1ex
+      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
+      \vskip1ex
+      The \texttt{"AdjClose"} data field is for the \emph{close} price adjusted for stock splits and dividends, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(tseries)  # load package tseries
+# download MSFT data
+zoo_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT", 
+    start=Sys.Date()-3*365, 
+    end=Sys.Date(), 
+    quote=c("Open","High","Low","Close",
+            "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
+      @
+      \vspace{-2em}
+      <<echo=(-1),eval=TRUE>>=
+load(file="C:/Develop/data/zoo_data.RData")
+class(zoo_stx)
+dim(zoo_stx)
+head(zoo_stx, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adjusting \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Stock prices experience jumps due to stock splits and dividends,
+      \vskip1ex
+      \emph{Adjusted} stock prices are stock prices that have been adjusted so they don't have jumps,
+      \vskip1ex
+      \emph{OHLC} data can be adjusted for stock splits and dividends, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(tseries)  # load package tseries
+load(file="C:/Develop/data/zoo_data.RData")
+# create price adjustment vector
+adj_close <- zoo_stx[, "AdjClose"] - zoo_stx[, "Close"]
+head(adj_close, 5)
+tail(adj_close, 5)
+# adjust OHLC prices
+zoo_stx_adj <- zoo_stx
+zoo_stx_adj[, c("Open","High","Low","Close")] <- 
+  zoo_stx[, c("Open","High","Low","Close")] + adj_close
+head(zoo_stx_adj)
+tail(zoo_stx_adj)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Data From \protect\emph{Oanda} Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Oanda} is a foreign exchange broker that also provides free historical currency rates data,
+      \vskip1ex
+      The function \texttt{get.hist.quote()} downloads historical data from online sources,
+      \vskip1ex
+      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
+      \vskip1ex
+      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
+      \vskip1ex
+      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(tseries)  # load package tseries
+# download EUR/USD data
+zoo_eurusd <- suppressWarnings(
+  get.hist.quote(
+    instrument="EUR/USD", 
+    provider="oanda",
+    start=Sys.Date()-3*365, 
+    end=Sys.Date(), 
+    origin="1970-01-01")
+)  # end suppressWarnings
+# bind and scrub data
+zoo_stxeur <- merge(zoo_eurusd, 
+                     zoo_stx[, "AdjClose"])
+colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
+zoo_stxeur <- 
+  zoo_stxeur[complete.cases(zoo_stxeur),]
+save(zoo_stx, zoo_stx_adj, 
+     ts_stx, ts_stx_adj, 
+     zoo_eurusd, zoo_stxeur, 
+     file="C:/Develop/data/zoo_data.RData")
+      @
+      \vspace{-2em}
+      <<echo=(-1),eval=TRUE>>=
+load(file="C:/Develop/data/zoo_data.RData")
+# inspect the data
+class(zoo_eurusd)
+tail(zoo_eurusd, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{plotOHLC()} from package \texttt{tseries} plots \emph{OHLC} time series, 
+      <<tseries_OHLC,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+# get start and end dates
+in_dex <- time(ts_stx_adj)
+e_nd <- in_dex[length(in_dex)]
+st_art <- round((4*e_nd + in_dex[1])/5)
+# plot using plotOHLC
+plotOHLC(window(ts_stx_adj, 
+                start=st_art, 
+                end=e_nd)[, 1:4], 
+         xlab="", ylab="")
+title(main="MSFT OHLC Prices")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/tseries_OHLC-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Two Time Series Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{seqplot.ts()} from package \texttt{tseries} plots \emph{OHLC} time series, 
+      \vskip1ex
+      The package \texttt{tseries} contains functions for plotting time series:
+      \begin{itemize}
+        \item \texttt{seqplot.ts()} for plotting two time series in same panel, 
+        \item \texttt{plotOHLC()} for plotting \emph{OHLC} time series, 
+      \end{itemize}
+      \vspace{-1em}
+      <<tseries_intro,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+# plot using plot.zoo method
+seqplot.ts(zoo_stx[, "AdjClose"], xlab="", ylab="")
+title(main="MSFT AdjClose Prices", line=-1)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/tseries_intro-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Two Time Series With Two \texttt{"y"} axes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{par()} sets graphical parameters used for plotting, and invisibly returns existing parameters as a named list,
+      \vskip1ex
+      The function \texttt{axis()} plots an axis to the current plot,
+      \vskip1ex
+      The function \texttt{lines()} plots a line to the current plot,
+      <<zoo_plot_2y,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+### plot with two "y" axes
+par(las=1)  # set text printing to "horizontal"
+# plot first ts
+plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# set range of "y" coordinates for second axis
+par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
+lines(zoo_stxeur[, 2], col="red")  # second plot
+axis(side=4, col="red")  # second "y" axis on right
+# print axis labels
+mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+title(main="EUR and MSFT")  # add title
+# add legend without box
+legend("bottomright", legend=colnames(zoo_stxeur), bg="white", 
+       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# slightly different method using par(new=TRUE)
+# par(las=1)  # set text printing to "horizontal"
+# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# par(new=TRUE)  # allow new plot on same chart
+# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# axis(side=4, col="red")  # second "y" axis on right
+# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+# title(main="EUR and MSFT", line=-1)  # add title
+# legend("bottomright", legend=colnames(zoo_stxeur), 
+#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# "x" axis with monthly ticks - doesn't work
+# plot first ts wthout "x" axis
+# plot(zoo_stxeur[, 1], xaxt="n", xlab=NA, ylab=NA)
+# # add "x" axis with monthly ticks
+# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
+# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
+
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_plot_2y-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk and Performance Estimation Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{tseries} contains functions for calculating risk and performance:
+      \begin{itemize}
+        \item \texttt{maxdrawdown()} for calculating the maximum drawdown, 
+        \item \texttt{sharpe()} for calculating the \emph{Sharpe} ratio (defined as the excess return divided by the standard deviation), 
+        \item \texttt{sterling()} for calculating the \emph{Sterling} ratio (defined as the return divided by the maximum drawdown), 
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=TRUE>>=
+library(tseries)  # load package tseries
+load(file="C:/Develop/data/zoo_data.RData")
+# calculate maximum drawdown
+maxdrawdown(na.remove(ts_stx[, "AdjClose"]))
+# calculate Sharpe ratio
+sharpe(na.remove(ts_stx[, "AdjClose"]))
+# calculate Sterling ratio
+sterling(na.remove(ts_stx[, "AdjClose"]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hypothesis Testing Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{tseries} contains functions for testing statistical hypothesis on time series:
+      \begin{itemize}
+        \item \texttt{jarque.bera.test()} \emph{Jarque-Bera} test for normality of distribution of returns,
+        \item \texttt{adf.test()} \emph{Augmented Dickey-Fuller} test for existence of unit roots,
+        \item \texttt{pp.test()} \emph{Phillips-Perron} test for existence of unit roots,
+        \item \texttt{kpss.test()} \emph{KPSS} test for stationarity,
+        \item \texttt{po.test()} \emph{Phillips-Ouliaris} test for cointegration,
+        \item \texttt{bds.test()} \emph{BDS} test for randomness,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE,fig.show='hide'>>=
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT", 
+                 start=Sys.Date()-365, 
+                 end=Sys.Date(), 
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Time Series Models Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{tseries} contains functions for fitting models to time series:
+      \begin{itemize}
+        \item \texttt{garch()} for fitting \texttt{GARCH} volatility models, 
+        \item \texttt{arma()} for fitting \texttt{ARMA} models, 
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE,fig.show='hide'>>=
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT", 
+                 start=Sys.Date()-365, 
+                 end=Sys.Date(), 
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using \texttt{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{tseries} contains functions for miscellaneous functions:
+      \vskip1ex
+      \texttt{portfolio.optim()} for calculating mean-variance efficient portfolios, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE,fig.show='hide'>>=
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT", 
+                 start=Sys.Date()-365, 
+                 end=Sys.Date(), 
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \texttt{quantmod} for Downloading and Plotting Data}
 
 
 %%%%%%%%%%%%%%%
@@ -174,16 +669,18 @@ detach("package:quantmod")  # remove quantmod from search path
       \vskip1ex
       By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
       \vskip1ex
-      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      The method \texttt{getSymbols.yahoo} accepts arguments \texttt{"from"} and \texttt{"to"} which specify the date range for the data,
+      \vskip1ex
+      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1)),eval=FALSE>>=
 load(file="C:/Develop/data/etf_data.Rdata")
 library(quantmod)  # load package "quantmod"
-# create new environment for data
-data_env <- new.env()
+data_env <- new.env()  # new environment for data
 # download data for sym_bols into data_env
-getSymbols(sym_bols, env=data_env)
+getSymbols(sym_bols, env=data_env, 
+    from="2007-01-03", to="2015-05-01")
       @
       \vspace{-2em}
       <<echo=(-(1:2)),eval=TRUE>>=
@@ -214,9 +711,13 @@ head(data_env$VTI, 3)
       \vskip1ex
       The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices, 
       \vskip1ex
+      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
       The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
       \vskip1ex
       The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
+      \vskip1ex
+      If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
@@ -349,23 +850,121 @@ head(etf_rets[, 1:3])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chartSeries()} from package \texttt{quantmod} plots candlecharts of \emph{OHLC} time series, including volume,
+      A \emph{candlestick chart} is a type of plot designed to visualize \emph{OHLC} time series,
       \vskip1ex
+      Each \emph{candlestick} displays one period of data, and consists of a vertical line representing the \emph{High} and \emph{Low} prices, and a box representing the \emph{Open} and \emph{Close} prices,
+      \vskip1ex
+      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
+      \vskip1ex
+      The function \texttt{chartSeries()} from package \texttt{quantmod} can produce a variety of plots, including candlestick charts for \emph{OHLC} time series, including volume,
       <<chartSeries_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 load(file="C:/Develop/data/etf_data.Rdata")
+# is it an OHLC time series?
+is.OHLC(data_env$VTI)
 # plot OHLC candlechart with volume
-chartSeries(data_env$VTI["2014-11"], 
+chartSeries(data_env$VTI, 
             name="VTI", 
+            theme=chartTheme("white"))
+# redraw plot only for Nov-2014
+reChart(type="candlesticks", subset="2014-11")
+# plot OHLC bar chart with volume
+chartSeries(data_env$VTI["2014-11"], 
+            type="bars",
+            name="VTI",
             theme=chartTheme("white"))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_basic-1}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_basic-1}\\
+      The function \texttt{reChart()} redraws plots using additional parameters,
+      \vskip1ex
+      The argument \texttt{"type"} allows for plotting bar charts and line graphs,
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The argument \texttt{"TA"} allows adding technical indicators to the plot,
+      \vskip1ex
+      The technical indicators are functions provided by the package \texttt{TTR},
+      \vskip1ex
+      The function \texttt{newTA()} allows defining new technical indicators,
+      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# candlechart with Bollinger Bands
+chartSeries(data_env$VTI["2014"],
+            TA="addBBands();addBBands(draw='percent');addVo()",
+            name="VTI with Bollinger Bands",
+            theme=chartTheme("white"))
+# candlechart with two Moving Averages
+chartSeries(data_env$VTI["2014"],
+            TA="addVo();addEMA(10);addEMA(30)",
+            name="VTI with Moving Averages",
+            theme=chartTheme("white"))
+# candlechart with Commodity Channel Index
+chartSeries(data_env$VTI["2014"], 
+            TA="addVo();addBBands();addCCI()",
+            name="VTI with Technical Indicators",
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_addTA-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{FRED} Time Series Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
+      \hskip1em\url{http://research.stlouisfed.org/fred2/}
+      \vskip1ex
+      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
+      <<chartSeries_fred,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE", 
+                  auto.assign=FALSE, 
+                  src="FRED")
+# plot U.S. unemployment rate data
+chartSeries(unemp_rate["1990/"], 
+            name="U.S. unemployment rate",
+            theme=chartTheme("white"))
+# download 10-Year Treasury constant maturity rate
+trs_10yr <- getSymbols("DGS10", 
+                  auto.assign=FALSE, 
+                  src="FRED")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_fred-1}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \texttt{PerformanceAnalytics} for Risk and Return Analysis}
 
 
 %%%%%%%%%%%%%%%

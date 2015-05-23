@@ -16,7 +16,40 @@ library(zoo)
 stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 
+########################
+### temp stuff
 
+cor.test(x=ann_alpha[, 1], y=ann_alpha[, 2], method="pearson")
+cor.test(x=ann_alpha[, 2], y=ann_alpha[, 3], method="pearson")
+cor.test(x=blah[, 1], y=blah[, 2], method="kendall")
+cor.test(x=blah[, 2], y=blah[, 3], method="kendall")
+
+
+###
+# Autocorrelation of Squared Returns
+period_rets <- 100*as.numeric(etf_rets[, "VTI"])
+period_vol <- period_rets^2
+period_rets <- rnorm(length(etf_rets[, "VTI"]))
+period_vol <- period_rets^2
+
+plot.zoo(period_vol)
+
+acf_plus(period_rets)
+acf_plus(period_vol)
+
+
+########################
+### end temp stuff
+
+
+########################
+### expressions and control statements
+
+
+
+
+########################
+### statistics
 
 ### seed_random() returns the pseudo-random generating function random_generator
 # this version is with for loop instead of recursion
@@ -47,6 +80,141 @@ ls(environment(make_random))  # list objects in scope of make_random
 ########################
 ### dates and time series
 
+
+### Quandl
+
+# use Quandl Kenneth French Fama/French factors
+# https://www.quandl.com/data/KFRENCH/FACTORS_D
+
+library(Quandl)
+library(quantmod)
+
+fama_french <- Quandl("KFRENCH/FACTORS_D", type="xts",
+                      start_date=start(data_env$VTI),
+                      end_date=end(data_env$VTI)
+)  # end Quandl
+
+fama_french <- as.xts(fama_french[,-1],order.by=fama_french[,1])
+
+plot.zoo(fama_french, main=NA)
+mtext(
+  text="Fama/French Factors from Quandl", 
+  adj=0, 
+  outer=T, 
+  line=-2, 
+  cex=2
+)
+
+
+
+### calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3), 
+                        order.by=(Sys.Date()+0:99)))
+
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(length(dax_rets)))
+
+# Jarque-Bera test for DAX returns
+jarque.bera.test(dax_rets)
+
+jarque.bera.test(Ad(data_env$VTI))
+jarque.bera.test(cumsum(rnorm(nrows(data_env$VTI))))
+jarque.bera.test(cumsum(rnorm(nrow(data_env$VTI))))
+jarque.bera.test(etf_rets[, 1])
+jarque.bera.test(rnorm(nrow(data_env$VTI)))
+
+
+
+### ARIMA and ADF test
+
+adf.test(EuStockMarkets[, 1])
+adf.test(diff(log(EuStockMarkets[, 1])))
+
+len_gth <- length(EuStockMarkets[, 1])
+ar_coeff <- c(-0.8, 0.8, 0.99)  # AR coefficients
+
+# create three AR time series
+ts_arima <- sapply(ar_coeff, 
+                   suppressWarnings(function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=len_gth, model=list(ar=phi))
+  }) )  # end sapply
+colnames(ts_arima) <- paste0("autocorr=", ar_coeff)
+
+apply(ts_arima, 2, function(t_s) {
+  adf.test(t_s)
+} )  # end sapply
+
+
+###
+
+set.seed(1121)
+ran_dom <- rnorm(10000)
+
+
+###
+
+ts_arima <- filter(x=ran_dom, filter=0.5, method="recursive")
+adf.test(ts_arima)
+
+
+###
+
+ar_coeff <- seq(0.999, 1.0, length.out=5)
+
+adf_stats <- sapply(ar_coeff, function(co_eff) {
+  adf_test <- adf.test(
+    filter(x=ran_dom, filter=co_eff, method="recursive"))
+  c(
+    adf_test=unname(adf_test$statistic), 
+    p_val=unname(adf_test$p.value))
+} )  # end sapply
+colnames(adf_stats) <- paste0("ar=", ar_coeff)
+adf_stats <- t(adf_stats)
+adf_stats
+
+
+###
+
+rand_walk <- sapply(ar_coeff, filter, x=ran_dom, method="recursive")
+colnames(rand_walk) <- paste0("ar=", ar_coeff)
+
+plot.zoo(
+  rand_walk, 
+  main="Random walks", 
+  xlab="", ylab="", plot.type="single", 
+  col=c("blue", "green", "yellow", "red", "black"))
+
+# add legend
+legend(x="bottomleft",
+       legend=colnames(rand_walk), 
+       col=c("blue", "green", "yellow", "red", "black"), lty=1)
+
+###
+
+rand_walk <- cumsum(ran_dom)
+
+len_gths <- seq(length(ran_dom)/50, length(ran_dom), length.out=5)
+
+adf_stats <- sapply(len_gths, function(len_gth) {
+  adf_test <- adf.test(rand_walk[1:len_gth])
+  c(
+    adf_test=unname(adf_test$statistic), 
+    p_val=unname(adf_test$p.value))
+} )  # end sapply
+colnames(adf_stats) <- paste0("len=", len_gths)
+adf_stats <- t(adf_stats)
+adf_stats
+
+
+###
+
+adf.test(etf_rets[, 1])
+adf.test(rnorm(nrow(etf_rets[, 1])))
+adf.test(Ad(data_env$VTI))
 
 
 ########################
@@ -130,8 +298,8 @@ autoplot(z, facets=NULL) + geom_point()
 autoplot(z, facets=NULL) + scale_colour_grey() + theme_bw()
 
 autoplot(z) +
-  aes(colour = NULL, linetype = NULL) + 
-  facet_grid("Series ~ .", scales = "free_y")
+  aes(colour=NULL, linetype=NULL) + 
+  facet_grid("Series ~ .", scales="free_y")
 
 
 
@@ -565,8 +733,8 @@ chart.Weights.EF(efficient_front, colorset=bluemono, match.col="StdDev", main=""
 MAR <- 0.005 # ~6%/year
 
 # Example 1 maximize Sortino Ratio
-SortinoConstr <- constraint(assets = colnames(indexes[,1:4]), min = 0.05, max = 1, min_sum=.99, max_sum=1.01, weight_seq = generatesequence(by=.001))
-SortinoConstr <- add.objective(constraints=SortinoConstr, type="return", name="SortinoRatio",  enabled=TRUE, arguments = list(MAR=MAR))
+SortinoConstr <- constraint(assets=colnames(indexes[,1:4]), min=0.05, max=1, min_sum=.99, max_sum=1.01, weight_seq=generatesequence(by=.001))
+SortinoConstr <- add.objective(constraints=SortinoConstr, type="return", name="SortinoRatio",  enabled=TRUE, arguments=list(MAR=MAR))
 SortinoConstr <- add.objective(constraints=SortinoConstr, type="return", name="mean",  enabled=TRUE, multiplier=0) # multiplier 0 makes it availble for plotting, but not affect optimization
 
 # Use random portfolio engine
@@ -793,11 +961,11 @@ for (ret_ind in 1:10) {
 
 # plot histogram
 persp(ret_vec[1:10], risk_vec[1:10], fut_ret_mat,
-      theta = 45, phi = 30,
-      shade = 0.5,
-      col = rainbow(50),
-      border = "green",
-      main = "fut_ret")
+      theta=45, phi=30,
+      shade=0.5,
+      col=rainbow(50),
+      border="green",
+      main="fut_ret")
 
 
 

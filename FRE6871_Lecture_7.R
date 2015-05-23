@@ -1,373 +1,194 @@
-
-
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  if (is.null(in_var)) {
+    return("double_it: in_var is missing")
+  } else if (is.numeric(in_var)) {
+    2*in_var
+  } else {
+    cat("double_it: in_var is not numeric")
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
 
+double_it <- function(in_var) {
+# check if argument is valid and return double
+  if (missing(in_var)) {
+    return("double_it: in_var is missing")
+  } else if (is.numeric(in_var)) {
+    2*in_var
+  } else {
+    cat("double_it: in_var is not numeric")
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  if (missing(in_var)) {
+    stop("double_it: in_var is missing")
+  } else if (!is.numeric(in_var)) {
+    stop("double_it: in_var is not numeric")
+  } else {
+    2*in_var
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  stopifnot(!is.null(in_var) && is.numeric(in_var))
+  2*in_var
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "sum_two" returns the sum of its two arguments
+sum_two <- function(in_var1, in_var2) {  # even more robust
+# check if at least one argument is not missing
+  stopifnot(!missing(in_var1) || !missing(in_var2))
+# check if arguments are valid and return sum
+  if (is.numeric(in_var1) && is.numeric(in_var2)) {
+    in_var1 + in_var2  # both valid
+  } else if (is.numeric(in_var1)) {
+    cat("in_var2 is not numeric")
+    in_var1  # in_var1 is valid
+  } else if (is.numeric(in_var2)) {
+    cat("in_var1 is not numeric")
+    in_var2  # in_var2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+# ?options
+getOption("warn")
+getOption("error")
+catch_missing <- function(in_var) {
+# returns its argument
+  if (missing(in_var)) {
+    warning("catch_missing: in_var was missing")
+  } else {
+    in_var
+  }
+}  # end catch_missing
+catch_missing(5)
+options(warn=-1)
+catch_missing()
+options(warn=0)
+catch_missing()
+options(warn=1)
+catch_missing()
+options(warn=3)
+catch_missing()
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
 
-
-sessionInfo()  # get R version and other session info
-
-
-
-Sys.getenv()[5:7]  # list some environment variables
-
-Sys.getenv("Home")  # get R user HOME directory
-
-Sys.setenv(Home='C:/Develop')  # set HOME directory
-
-Sys.getenv("Home")  # get user HOME directory
-
-Sys.getenv("R_home")  # get R_HOME directory
-
-R.home()  # get R_HOME directory
-
-R.home("etc")  # get "etc" sub-directory of R_HOME
-
-
-
-## # ?options  # long list of global options
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(error_cond)  # handler captures error condition
+    print(paste("error handler: ", error_cond)),
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    stopifnot(num_var != 3)  # check for error
+    cat("(cat) num_var =", num_var, "\n")  # broadcast
+    paste("(return) num_var =", num_var)  # return value
+  }  # end anonymous function
+)  # end apply
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    tryCatch(  # with error handler
+{  # body
+  stopifnot(num_var != 3)  # check for error
+  cat("(cat) num_var =", num_var, "\t")  # broadcast
+  paste("(return) num_var =", num_var)  # return value
+},
+error=function(error_cond)  # handler captures error condition
+  paste("handler: ", error_cond),
+finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+getOption("repos")  # get default package source
+.libPaths()  # get package save directory
+## install.packages("AER")  # install "AER" from CRAN
+## # install "PerformanceAnalytics" from R-Forge
+## install.packages(pkgs="PerformanceAnalytics",  # name
+##            lib="C:/Users/Jerzy/Downloads",  # directory
+##            repos="http://R-Forge.R-project.org")  # source
+## # install devtools from CRAN
+## install.packages("devtools")
+## # load devtools
+## library(devtools)
+## # install package "babynames" from GitHub
+## install_github(repo="hadley/babynames")
+## library("MASS")
+## # or
+## require("MASS")
+getOption("defaultPackages")
+pack_info <- installed.packages()  # matrix of packages
+# get a few package names and their versions
+pack_info[sample(x=1:100, 5), c("Package", "Version")]
+t(pack_info["xts", ])  # get info for package "xts"
+## library()  # list all packages installed on the system
+## search()  # list all loaded packages on search path
 ## 
-## # interpret strings as characters, not factors
-## options("stringsAsFactors")
-## options(stringsAsFactors=FALSE)
-## 
-## # number of digits printed for numeric values
-## options(digits=3)
-## 
-## # number of items printed to console
-## options(max.print=80)
-## 
-## # warning levels options
-## # negative - warnings are ignored
-## options(warn=-1)
-## # zero - warnings are stored and printed after top-level function has completed
-## options(warn=0)
-## # one - warnings are printed as they occur
-## options(warn=1)
-## # two or larger - warnings are turned into errors
-## options(warn=2)
-
-
-
-# R startup (site) directory
-paste(R.home(), 'etc', sep='/')
-
-file.path(R.home(), 'etc')  # better way
-
-# perform tilde-expansions and convert to readable format
-normalizePath(file.path(R.home(), 'etc'), winslash="/")
-
-normalizePath(R.home("etc"), winslash="/")
-
-
-
-normalizePath('~', winslash="/")  # Windows user HOME directory
-
-Sys.getenv("Home")  # R user HOME directory
-
-setwd("C:/Develop/R")
-getwd()  # current working directory
-
-# R startup (site) directory
-normalizePath(file.path(R.home(), 'etc'), winslash="/")
-
-# R executable directory
-normalizePath(file.path(R.home(), 'bin/x64'), winslash="/")
-
-# R documentation directory
-normalizePath(file.path(R.home(), 'doc/manual'), winslash="/")
-
-
-
-setwd("C:/Develop/data")
-sample(dir(), 5)  # get 5 file names - dir() lists all files
-dir(pattern="csv")  # list files containing "csv"
-list.files(R.home())  # all files in R_HOME directory
-list.files(R.home("etc"))  # all files in "etc" sub-directory of R_HOME directory
-list.dirs()  # directories in cwd
-list.dirs(R.home("etc"))  # directories in "etc" sub-directory
-Sys.glob("*.csv")
-Sys.glob(R.home("etc"))
-
-
-
-getwd()  # get cwd
-
-
-
-setwd("C:/Develop/R")
-# help(Startup)  # description of R session startup mechanism
-
-# files in R startup directory directory
-dir(normalizePath(file.path(R.home(), 'etc'), winslash="/"))
-
-# *.R* files in cwd directory
-getwd()
-dir(getwd(), all.files=TRUE, pattern="\\.R")
-dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
-
-
-
+## # get documentation for package "Ecdat"
+## packageDescription("Ecdat")  # get short description
+## help(package="Ecdat")  # load help page
+## library(Ecdat)  # load package "Ecdat"
+## data(package="Ecdat")  # list all datasets in "Ecdat"
+## ls("package:Ecdat")  # list all objects in "Ecdat"
+## detach("package:Ecdat")  # remove Ecdat from search path
+library("Ecdat")  # load econometric data sets
+class(Garch)  # Garch is a data frame from "Ecdat"
+dim(Garch)  # daily currency prices
+head(Garch[, -2])  # col 'dm' is Deutsch Mark
+detach("package:Ecdat")  # remove Ecdat from search path
 rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(-5, 7, length=100)
-y_var <- dnorm(x_var, mean=1.0, sd=2.0)
-plot(x_var, y_var, type="l", lty="solid", 
-     xlab="", ylab="")
-title(main="Normal Density Function", line=0.5)
-star_t <- 3; fin_ish <- 5  # set lower and upper bounds
-# set polygon base
-are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
-polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
-c(-1, y_var[are_a], -1), col="red")
+search()  # get search path for R objects
+library("MASS")  # load package "MASS"
+head(ls("package:MASS"))  # list some objects in "MASS"
+detach("package:MASS")  # remove "MASS" from search path
+loadedNamespaces()  # get names of loaded namespaces
 
-
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
-# create plot colors
-pal_let <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep='=')
-for (in_dex in 1:4) {  # plot four curves
-curve(expr=dnorm(x, sd=sig_mas[in_dex]), 
-      type="l", xlim=c(-4, 4), 
-      xlab="", ylab="", lwd=2, 
-      col=pal_let[in_dex], 
-      add=as.logical(in_dex-1))
-}  # end for
-# add title
-title(main="Normal Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, title="Sigmas", 
-       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(-4, 4, length=100)
-sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
-# create plot colors
-pal_let <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep='=')
-# plot an empty chart
-plot(x_var, dnorm(x_var, sd=sig_mas[1]), 
-     type="n", xlab="", ylab="", 
-     main="Normal Distributions")
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]), 
-lwd=2, col=pal_let[in_dex])
-}
-# add legend
-legend("topright", inset=0.05, title="Sigmas", 
-       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-d_free <- c(2, 5, 8, 11)  # df values
-# create plot colors
-pal_let <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("df", d_free, sep='=')
-for (in_dex in 1:4) {  # plot four curves
-curve(expr=dchisq(x, df=d_free[in_dex]), 
-      type="l", xlim=c(0, 20), ylim=c(0, 0.3), 
-      xlab="", ylab="", lwd=2, 
-      col=pal_let[in_dex], 
-      add=as.logical(in_dex-1))
-}  # end for
-# add title
-title(main="Chi-squared Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, 
-       title="Degrees of freedom", lab_els, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(0, 20, length=100)
-d_free <- c(2, 5, 8, 11)  # df values
-# create plot colors
-pal_let <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("df", d_free, sep='=')
-# plot an empty chart
-plot(x_var, dchisq(x_var, df=d_free[1]), 
-     type="n", xlab="", ylab="", ylim=c(0, 0.3), 
-     main="Chi-squared Distributions")
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(x_var, dchisq(x_var, df=d_free[in_dex]), 
-lwd=2, col=pal_let[in_dex])
-}
-# add legend
-legend("topright", inset=0.05, 
-       title="Degrees of freedom", lab_els, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-d_free <- c(3, 6, 9)  # df values
-# create plot colors
-pal_let <- c("black", "red", "blue", "green")
-# create legend labels
-lab_els <- c('normal', paste("df", d_free, sep='='))
-# plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-4, 4), 
-      xlab="", ylab="", lwd=2)
-for (in_dex in 1:3) {  # plot three curves
-curve(expr=dt(x, df=d_free[in_dex]), 
-      type="l", xlab="", ylab="", lwd=2, 
-      col=pal_let[in_dex+1], add=TRUE)
-}  # end for
-# add title
-title(main="t-distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, 
-       title="Degrees\n of freedom", lab_els, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(-4, 4, length=100)
-d_free <- c(3, 6, 9)  # df values
-# create plot colors
-pal_let <- c("black", "red", "blue", "green")
-# create legend labels
-lab_els <- c('normal', paste("df", d_free, sep='='))
-# plot chart of normal distribution
-plot(x_var, dnorm(x_var), type="l", 
-     lwd=2, xlab="", ylab="", 
-     main="t-distributions")
-# add lines to plot
-for (in_dex in 1:3) {
-  lines(x_var, dt(x_var, df=d_free[in_dex]), 
-lwd=2, col=pal_let[in_dex+1])
-}
-# add legend
-legend("topright", inset=0.05, 
-       title="Degrees\n of freedom", lab_els, 
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1), 
-       col=pal_let)
-
-
-
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-poisson_events <- 0:11  # Poisson events
-poisson_freq <- dpois(poisson_events, lambda=4)
-names(poisson_freq) <- as.character(poisson_events)
-poisson_freq
-poisson_func <- function(x, lambda)  # Poisson function
-            {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
-      xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
-legend(x="topright", legend="Poisson density", title="", 
-       inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
-
-
-
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-library(scales)  # load scales
-my_ggplot <- ggplot(  # specify data and aesthetics
-  data=mtcars, mapping=aes(x=hp, y=mpg)) + 
-  geom_point() +  # plot points
-  ggtitle("basic scatterplot") +  # add title
-  theme(  # customize plot object
-  plot.title=element_text(vjust=-2.0), 
-  plot.background=element_blank()
-  )  # end theme
-my_ggplot  # render the plot
-
-
-
-# install.packages("directlabels", repo="http://r-forge.r-project.org")
-library(ggplot2)  # load ggplot2
-library(scales)  # load scales
-library(gridExtra)  # load gridExtra
-library(directlabels)  # load directlabels
-my_ggplot <- ggplot(  # data and aesthetics
-  data=mtcars, mapping=aes(x=hp, y=mpg)) + 
-  geom_point() +  # plot points
-  theme(  # customize plot object
-  legend.position="none", 
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.0,0.0,-0.5,0.0),"cm"), 
-  plot.background=element_blank()
-  ) + 
-  scale_colour_discrete(guide="none")  # no label guide
-car_names <- rownames(mtcars)
-gg_labels <- geom_text(aes(  # ggplot2 labels
-  label=car_names, color=car_names, size=5))
-d_labels <- geom_dl(mapping=aes(  # directlabels
-  label=car_names, color=car_names), 
-  method=list('last.bumpup', cex=0.7, 
-        hjust=1))
-# render plots in single column
-grid.arrange(my_ggplot + 
-  ggtitle("ggplot2 labels") + gg_labels, 
-  my_ggplot + ggtitle("directlabels") + 
-    d_labels, ncol=1)  # end grid.arrange
-
-
-
-my_ggplot <- ggplot(data=iris, 
-    mapping=aes(Petal.Length, Sepal.Length)) +
-  geom_point(aes(shape=Species, color=Species)) +
-  geom_dl(aes(label=Species, color=Species), 
-  method="smart.grid") +
-  scale_shape_manual(values=c(setosa=1, 
-    virginica=6, versicolor=3), guide="none") + 
-  scale_colour_discrete(guide="none")  # no label guide
-my_ggplot  # render the plot
-
-
-
-library(ggplot2)  # load ggplot2
-library(scales)  # load scales
-library(gridExtra)  # load gridExtra
-# coerce mts object into zoo
-zoo_series <- as.zoo(EuStockMarkets)
-# create ggplot2 theme object
-auto_theme <- theme(
-  legend.position="none", 
-  plot.title=element_text(vjust=-2.0), 
-  plot.margin=unit(c(-0.0,0.0,-0.5,0.0),"cm"), 
-#  axis.text.y=element_blank(),
-  plot.background=element_blank()
-  )  # end theme
-# ggplot2 object for plotting in single panel
-ggp_zoo_single <- autoplot(zoo_series, 
-            main="Eu Stox single panel", 
-            facets=NULL) + xlab("") +
-            auto_theme
-# ggplot2 object for plotting in multiple panels
-ggp_zoo_multiple <- autoplot(zoo_series, 
-            main="Eu Stox multiple panels", 
-            facets="Series ~ .") + xlab("") +
-            facet_grid("Series ~ .", 
-            scales="free_y") + auto_theme
-# render plots in single column
-grid.arrange(ggp_zoo_single + 
-         theme(legend.position=c(0.1, 0.5)), 
-       ggp_zoo_multiple, ncol=1)
-
-
+search()  # get search path for R objects
+# get session info,
+# including packages not attached to the search path
+sessionInfo()
+plot.xts  # package xts isn't loaded and attached
+head(xts::plot.xts, 3)
+methods("cbind")  # get all methods for function "cbind"
+stats::cbind.ts  # cbind isn't exported from package stats
+stats:::cbind.ts  # view the non-visible function
+getAnywhere("cbind.ts")
+library("MASS")  # load package 'MASS'
+select  # code of primitive function from package 'MASS'
+getAnywhere("cbind.ts")

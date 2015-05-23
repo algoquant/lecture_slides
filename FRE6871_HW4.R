@@ -4,7 +4,7 @@
 # Max score 50pts
 
 # Please write in this file the R code needed to perform the tasks below, 
-# rename it to your_name_hw3.R
+# rename it to your_name_hw4.R
 # and send this file to Harjinder Singh (harjinder.singh@nyu.edu)
 
 
