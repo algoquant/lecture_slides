@@ -1,153 +1,123 @@
 #################################
-### HW #3 Solution FRE6871 R in Finance
+### FRE6871 Homework #3 Solution
 #################################
-# Max score 60 pts
+# Max score 50pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-
 ##################################
-# 1. (30pts) Create a data frame containing the homework and test scores for 20 students, 
-# call the data frame "student_scores",
-# 
-# The data frame "student_scores" should have a column called "name" (character), 
-# equal to the vector "student_names":
+# 1. (20pts) Create a function called my_sqrt() that calculates 
+# the square root of its single argument,
+# my_sqrt() should check if the input is both numeric and positive,
+# if the input is numeric and positive, 
+#  then my_sqrt() should return the square root,
+# if the input is numeric and negative, 
+#  then my_sqrt() should issue a warning using warning(), 
+#  and return the square root of the absolute value,
+# if the input is not numeric, 
+#  then my_sqrt() should halt execution using stop(), 
+#  and not return anything,
+# use "if" and "else" statements,
+# you can use functions sqrt(), is.numeric(), warning(), stop(), 
+# and the operator "&&",
 
-student_names <- c("Chloe", "Olivia", "Madison", "Ethan", "James", "Amelia", "Anthony", 
-                   "Joseph", "Evelyn", "Matthew", "Michael", "Liam", "Allison", "Mason", 
-                   "Emma", "Jayden", "Emily", "William", "Ella", "Elizabeth")
+my_sqrt <- function(arg_var) {
+  if (is.numeric(arg_var) && arg_var>=0) {
+    sqrt(arg_var)
+  } else if (is.numeric(arg_var)) {
+    warning("negative input - taking square root of absolute!\n")
+    sqrt(abs(arg_var))
+  } else {
+    stop(paste0("argument \"", arg_var, "\" isn't numeric"))
+  }  # end if
+}  # end my_sqrt
 
-
-# Create a factor variable called "tra_ck" of length(student_names),
-# and assign to it random values sampled from the vector of strings:
-# "Corporate", "Computational", "InfoTech", "Risk"
-# Use functions sample() and as.factor(), 
-
-tra_ck <- as.factor(sample(
-  x=c("Corporate", "Computational", "InfoTech", "Risk"),
-  size=20,
-  replace=TRUE))
-
-
-
-######
-# Create the data frame "student_scores" from vectors "student_names" and "tra_ck",
-# Use function data.frame() with "stringsAsFactors=FALSE" to avoid coercing "character" to "factor",
-
-student_scores <- data.frame(
-  name=student_names, 
-  finance_track=tra_ck,
-  stringsAsFactors=FALSE)
-
-
-
-######
-# Create a numeric matrix with six columns, called "sco_res", 
-# and assign to it random integer scores between 30 and 60,
-# Use functions sample() and matrix(), 
-
-sco_res <- matrix(sample(x=30:60, size=120, replace=TRUE), ncol=6)
-
-
-
-######
-# calculate a vector containing average scores for each student, and bind it to "sco_res",
-# Use functions cbind() and rowMeans(), 
-
-sco_res <- cbind(sco_res, rowMeans(sco_res))
-
-# Assign the following column names to "sco_res":
-# "HW1_score", "HW2_score", "HW3_score", "HW4_score", "test1_score", "test2_score", "avg_score",
-colnames(sco_res) <- c("HW1_score", "HW2_score", "HW3_score", "HW4_score", "test1_score", "test2_score", "avg_score")
-head(sco_res)
-
-
-
-######
-# Assign letter grades to each student, based on their "avg_score", 
-# using the following table:
-# "A" if "avg_score" >= 50.0
-# "A-" if "avg_score" >= 47.5
-# "B+" if "avg_score" >= 45.0
-# "B" if "avg_score" >= 42.5
-# "B-" if "avg_score" >= 40.0
-# "C+" if "avg_score" >= 37.5
-# "C" if "avg_score" >= 35.0
-
-# Create a numeric vector of breakpoints for "avg_score", called "brea_ks" as follows: 
-
-brea_ks <- seq(from=35, to=52.5, length.out=8)
-names(brea_ks) <- c("C-", "C", "C+", "B-", "B", "B+", "A-", "A")
-
-
-######
-# Create a factor variable  containing letter grades, called "letter_grades", 
-# 
-# There are at least two ways of doing this, but you only need to do it one way.
-# In the first approach you can use the names of "brea_ks", and either 
-# for() loop, and/or if() and else(), and/or logical operators "<", ">", etc., 
-
-# first create vector "letter_grades" containing empty strings:
-letter_grades <- character(20)
-# next populate "letter_grades" with letter grades using for() loop:
-for (brea_k in 2:8) {
-  in_dex <- (sco_res[, "avg_score"] < brea_ks[brea_k]) & (sco_res[, "avg_score"] >= brea_ks[brea_k-1])
-  letter_grades[in_dex] <- names(brea_ks[brea_k])
-}  # end for
-letter_grades <- as.factor(letter_grades)
-
-# In the second approach you can use function findInterval() and the names of "brea_ks",
-letter_grades <- names(brea_ks[findInterval(x=sco_res[, "avg_score"], vec=brea_ks)+1])
-cbind(sco_res[, "avg_score"], letter_grades)
-letter_grades <- as.factor(letter_grades)
-
-
-######
-# cbind "sco_res" and "letter_grades" to the data frame "student_scores",
-student_scores <- cbind(student_scores, sco_res, letter_grades)
-head(student_scores)
-
+# call my_sqrt() as follows, to make sure it works properly:
+my_sqrt(4)
+my_sqrt(-4)
+my_sqrt("a")
 
 
 
 ##################################
-# 2. (15pts) Sort "student_scores" by "avg_score" column, 
-# first in descending order, then in ascending order,
-# use function order()
-student_scores <- student_scores[order(student_scores$avg_score), ]
-head(student_scores)
-student_scores <- student_scores[order(student_scores$avg_score, decreasing=TRUE), ]
-head(student_scores)
-
-
-# Calculate the average scores for students for each "finance_track" category,
-# use the split-apply-combine procedure, and use functions with() and tapply(),
-with(student_scores, 
-     tapply(avg_score, finance_track, mean)  # end tapply
-     )  # end with
-
-
-
-##################################
-# 3. (15pts) Plot a histogram of the number of students in each "letter_grade" category,
-# you can use the lecture slide titled "Cars93 Data Frame",
+# 2. (30pts) Simulate random events using a "while" loop.
+# "while" loops are often used in simulations, 
+# when the number of required loops is unknown in advance,
 # 
-# There are at least two ways of doing this, but you only need to do it one way.
-# In the first approach you can use column "student_scores$avg_score" and function hist(), 
-# and the vector "brea_ks",
-hist(student_scores$avg_score, breaks=brea_ks)
+# Perform a simulation of randomly flipping a coin,
+# record the number of heads, and stop when the number 
+# of heads (stored in "he_ads") reaches "heads_max=10", 
+# record the number of simulation loops "num_loops",
+# use functions while() and runif(),
+# 
+# the coin may be biased, that is, the probability of 
+# obtaining heads or tails may not be equal to 0.5,
+# let "coin_bias" be the probability of obtaining heads,
+# perform the simulation for a biased coin, with "coin_bias=0.4"
 
-# In the second approach you can use column "student_scores$letter_grade", 
-# and functions table() and barplot(), 
-cont_table <- table(student_scores$letter_grade)
-cont_table <- cont_table[order(names(cont_table), decreasing=TRUE)]
-barplot(cont_table)
+set.seed(1121)  # for reproducibility
+heads_max <- 10  # max number of heads
+coin_bias <- 0.4  # probability of obtaining heads
+he_ads <- 0  # initialize heads counter
+num_loops <- 0  # initialize loop counter
+while (he_ads < heads_max) {
+# flip coin and record it if it's heads
+  he_ads <- he_ads + (runif(1) < coin_bias)
+# or for unbiased coins:
+#  he_ads <- he_ads + sample(0:1, 1)
+# advance loop counter
+  num_loops <- num_loops + 1
+}  # end while
 
 
-# extract the "class" of the columns of "student_scores" using functions class() and sapply(),
-# make sure that none of the columns are factors, except for "finance_track" and "letter_grades",
-sapply(student_scores, class)
+# Create a function called coin_flip(), that calculates the 
+# number of coin flips needed to obtain a certain number of heads, 
+# equal to "heads_max", 
+# coin_flip() should perform a simulation of randomly flipping 
+# a biased coin, using a "while" loop,
+# coin_flip() should take two arguments:
+# "heads_max" for the number of heads that need to be tossed
+# before the simulation ends, and 
+# "coin_bias" the probability of obtaining heads (with default
+# value equal to 0.5),
+# coin_flip() should return the number of simulation loops that 
+# were performed before "heads_max" heads were tossed,
+# coin_flip() should call set.seed(1121), for reproducibility,
 
+coin_flip <- function(heads_max, coin_bias=0.5) {
+  set.seed(1121)  # for reproducibility
+  he_ads <- 0  # initialize heads counter
+  num_loops <- 0  # initialize loop counter
+  while (he_ads < heads_max) {
+# flip coin and record it if it's heads
+    he_ads <- he_ads + (runif(1) < coin_bias)
+# advance loop counter
+    num_loops <- num_loops + 1
+  }  # end while
+  num_loops
+}  # end coin_flip
+
+
+# call coin_flip() as follows, to make sure it works properly:
+coin_flip(heads_max=10, coin_bias=0.5)
+coin_flip(heads_max=100, coin_bias=0.5)
+coin_flip(heads_max=10, coin_bias=0.1)
+coin_flip(heads_max=10, coin_bias=0.9)
+
+
+# Calculate the number of coin flips needed to obtain 
+# a certain number of heads, using different "coin_bias" 
+# parameters, from 0.2 to 0.8, in 0.1 increments, 
+# with "heads_max=10",
+# 
+# perform an sapply() loop over a vector of "coin_bias" parameters,
+# and pass "heads_max=10" to coin_flip() using the "..." argument,
+# plot the vector returned by sapply(), and give proper names to 
+# the axis labels,
+coin_biases <- seq(from=0.2, to=0.8, by=0.1)
+num_flips <- sapply(coin_biases, coin_flip, heads_max=10)
+plot(x=coin_biases, y=num_flips, t="l", 
+     xlab="coin bias", ylab="number of coin flips")
 

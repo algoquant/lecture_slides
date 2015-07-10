@@ -1,12 +1,13 @@
 % FRE6871_Lecture_3
 
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -51,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#3, Spring 2015}
+\subtitle{Lecture\#3, Summer 2015}
 % \subject{Getting Started With R}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 20, 2015}
+\date{June 15, 2015}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -73,46 +74,53 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Data Input and Output}
+\section{Data Objects}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Text Strings}
+\subsection{Data Objects in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{cat()} concatenates strings and writes them to standard output or to files,
+    \column{0.5\textwidth}
+      All data objects in \texttt{R} are \emph{vectors}, or consist of \emph{vectors},
       \vskip1ex
-      \texttt{cat()} interprets its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value,
+      Single numbers and character strings are vectors of length \texttt{"1"},
       \vskip1ex
-      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it,
+      \emph{Atomic} vectors are \emph{homogeneous} objects whose elements are all of the same \emph{mode} (type), 
       \vskip1ex
-      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object,
+      \emph{Lists} and \emph{data frames} are \emph{recursive} (heterogeneous) objects, whose elements can be vectors of different \emph{mode},
       \vskip1ex
-      The function \texttt{save()} writes objects to a binary file,
-    \column{0.6\textwidth}
+      The functions \texttt{is.atomic()} and \texttt{is.recursive()} return logical values depending on whether their arguments are \emph{atomic} or \emph{recursive},
+      \vskip1ex
+      \renewcommand\arraystretch{1.5} % scale table rows
+      \renewcommand\tabcolsep{8pt} % set table column width - 6pt is default
+      \centering{{\color{blue}{\texttt{R} Data Objects}}}\\[1ex]
+      \begin{tabular}{c||c|c|}
+        & \text{\emph{Atomic}} & \text{\emph{Recursive}} \\
+        \hline
+        \hline
+        \text{1-dim} & Vectors & Lists \\
+        \hline
+        \text{2-dim} & Matrices & Data frames \\
+        \hline
+        \text{n-dim} & Arrays & NA \\
+      \end{tabular}
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
-setwd("C:/Develop/data")
-cat("Enter\ttab")  # cat() interprets backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # print() returns its argument
-
-# create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # write to text file
-
-cat("Title: My Text",  # write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,", 
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.Rdata")  # write to binary file
+        <<>>=
+# single numbers are vectors of length 1
+1
+# character strings are vectors of length 1
+"a"
+# strings without quotes are variable names
+a  # variable "a" doesn't exist
+# list elements can have different mode
+list(aa=c('a', 'b'), bb=1:5)
+data.frame(aa=c('a', 'b'), bb=1:2)
+is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
+is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
       @
   \end{columns}
 \end{block}
@@ -121,38 +129,50 @@ save(my_text, file="mytext.Rdata")  # write to binary file
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Text from Files}
+\subsection{Type, Mode, and Class of Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list,
+    \column{0.5\textwidth}
+      The \emph{type}, \emph{mode}, and \emph{class} are \texttt{character} strings representing various object properties,
       \vskip1ex
-      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings,
+      The \emph{type} of an atomic object represents how it's stored in memory (\texttt{logical}, \texttt{character}, \texttt{integer}, \texttt{double}, etc.)
       \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string,
+      The \emph{mode} of an atomic object is the kind of data it represents (\texttt{logical}, \texttt{character}, \texttt{numeric}, etc.)
       \vskip1ex
-      The function \texttt{file.show()} reads text or data from a file and displays in editor,
-    \column{0.6\textwidth}
+      The \emph{mode} of an object often coincides with its \emph{type} (except for \texttt{integer} and \texttt{double} types),
+      \vskip1ex
+      Recursive objects (such as \texttt{lists}) have both \emph{type} and \emph{mode} equal to the recursive type (\texttt{list}, etc.),
+      \vskip1ex
+      The \emph{class} of an object is either an explicit \emph{class} attribute, or is derived from the object \texttt{dim} attribute, or its \emph{mode} (implicit \emph{class}), 
+      \vskip1ex
+      The function \texttt{class()} returns the explicit or implicit \emph{class} of an object,
+      \vskip1ex
+      The \emph{class} attribute is used for function dispatching in the \texttt{S3} object-oriented programming system in \texttt{R},
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
-setwd("C:/Develop/data")
-# read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
+      <<>>=
+my_var <- "hello"
+c(typeof(my_var), mode(my_var), class(my_var))
 
-# read lines from file
-readLines(con="mytext.txt")
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
 
-# read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
-# coerce to numeric
-in_put <- as.numeric(in_put)
+my_var <- runif(5)
+c(typeof(my_var), mode(my_var), class(my_var))
 
-# read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
+my_var <- matrix(1:10, 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(runif(10), 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- list(aa=c('a', 'b'), bb=1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
       @
   \end{columns}
 \end{block}
@@ -161,45 +181,26 @@ in_put <- as.numeric(in_put)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading and Writing Data from \protect\emph{Text} Files}
+\subsection{Implicit Class of Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from text files,
+    \column{0.5\textwidth}
+      If an object has a \texttt{dim} attribute, then its implicit \emph{class} is \texttt{matrix} or \texttt{array}, 
       \vskip1ex
-      \texttt{write.table()} coerces objects to data frames before it writes them,
-      \vskip1ex
-      \texttt{read.table()} returns a data frame, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
-      \vskip1ex
-      \texttt{read.table()} and \texttt{write.table()} can be used to read and write matrices from text files, but they have to be coerced back to matrices,
-      \vskip1ex
-      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
-    \column{0.6\textwidth}
+      If an object has no explicit \emph{class} nor \texttt{dim} attributes, then its implicit \emph{class} is derived from its \emph{mode} (except for \texttt{integer} vectors have implicit class \texttt{"integer"}), 
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:3))>>=
-data_frame <- data.frame(
-              type=c("rose", "daisy", "tulip"), 
-              color=c("red", "white", "yellow"), 
-              price=c(1.5, 0.5, 1.0), 
-              row.names=c("flower1", "flower2", "flower3")
-              )  # end data_frame
-mat_var <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_var) <- paste("row", 1:nrow(mat_var), sep="")
-# write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # a data frame
+      <<>>=
+my_var <- matrix(1:10, 2)
+c(typeof(my_var), mode(my_var), class(my_var))
 
-# write matrix to text file, and then read it back
-write.table(mat_var, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
+my_var <- vector(mode="numeric", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- vector(mode="integer", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
       @
   \end{columns}
 \end{block}
@@ -208,85 +209,38 @@ class(mat_read)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Copying Data Frames Between the \texttt{clipboard} and \texttt{R}}
+\subsection{\texttt{R} Object Attributes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Data frames stored in the \texttt{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()},
+      \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \emph{class}, etc., 
       \vskip1ex
-      Data frames in \texttt{R} can be copied into the \texttt{clipboard} using the function \texttt{write.table()},
+      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
       \vskip1ex
-      This allows convenient copying of data frames between \texttt{Excel} and \texttt{R},
+      The function \texttt{attributes()} returns the attributes of an object,
       \vskip1ex
-      Data frames can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-setwd("C:/Develop/data")
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t", 
-                      header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write.clip <- function(data, row.names=FALSE, 
-                       col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t", 
-              row.names=row.names, col.names=col.names, ...)
-}  # end write.clip
-
-write.clip(data=data_frame)
-
-# launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Data from \protect\emph{csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \emph{csv} format files,
+      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
       \vskip1ex
-      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
-      \vskip1ex
-      \texttt{read.csv()} coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
-      \vskip1ex
-      \texttt{read.csv()} reads row names as an extra column,
-      \vskip1ex
-      The \texttt{*.csv()} functions are very inefficient for large data sets,
+      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-# write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv", 
-                       stringsAsFactors=FALSE)
-data_read  # the rownames are read in as extra column
-# restore rownames
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # remove extra column
-data_read
+attributes(5:10)  # a simple vector has no attributes
+my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+attributes(my_var)  # named vector has "names" attribute
+my_var <- 1:10
+is.vector(my_var)  # is the object a vector?
+attributes(my_var) <- list(dim=c(2, 5))
+is.matrix(my_var)  # is the object a matrix?
+my_var  # matrix object
+structure(1:10, dim=c(2, 5))  # matrix object
+
+my_var <- 0
+attributes(my_var) <- list(class="Date")
+my_var  # "Date" object
+structure(0, class="Date")  # "Date" object
       @
   \end{columns}
 \end{block}
@@ -295,31 +249,32 @@ data_read
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading and Writing Matrices from \protect\emph{csv} Files}
+\subsection{Modifying \protect\emph{class} Attributes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed,
+      Objects without an explicit \emph{class} don't have a \emph{class} attribute, and the function \texttt{class()} returns the implicit \emph{class},
       \vskip1ex
-      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write matrices from \emph{csv} format files,
+      The \emph{class} of an object can be modified using the \texttt{"class() <-"} assignment,
+      \vskip1ex
+      An object can have a main \emph{class}, and also an inherited \emph{class} (the \emph{class} attribute can be a vector of strings),
+      \vskip1ex
+      The function \texttt{unclass()} removes the explicit class attribute from an object,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-# write matrix to csv file, and then read it back
-write.csv(mat_var, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", 
-                     stringsAsFactors=FALSE)
-mat_read  # read.csv() read matrix as data frame
-class(mat_read)
-# restore rownames
-rownames(mat_read) <- mat_read[, 1]
-mat_read <- mat_read[, -1]  # remove extra column
-# coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-mat_read  # a matrix
+my_var <- matrix(runif(10), 2, 5)
+class(my_var)  # has implicit class
+attributes(my_var)  # but no explicit "class" attribute
+c(typeof(my_var), mode(my_var), class(my_var))
+class(my_var) <- "my_class"  # assign explicit "class" attribute
+class(my_var)  # has explicit "class"
+attributes(my_var)  # has explicit "class" attribute
+is.matrix(my_var)  # is the object a matrix?
+is.vector(my_var)  # is the object a vector?
+attributes(unclass(my_var))
       @
   \end{columns}
 \end{block}
@@ -328,41 +283,48 @@ mat_read  # a matrix
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading and Writing Matrices (cont.)}
+\subsection{Object Coercion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its rownames,
+      \emph{Coercion} means changing the \emph{type}, \emph{mode}, or \emph{class} of an object, often without changing the underlying data,
       \vskip1ex
-      \texttt{write.matrix()} is part of package \texttt{MASS},
+      Changing the \emph{mode} of an object can change its \emph{class} as well, but not always,
       \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle rownames easily,
+      Objects can be explicitly coerced using the \texttt{"as.*"} coercion functions,
       \vskip1ex
-      Removing rownames simplifies the reading and writing of matrices,
+      Most coercion functions strip the attributes from the object,
       \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings,
+      Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \emph{mode},
       \vskip1ex
-      The function \texttt{system.time()} measures CPU time spent on executing code,
+      Implicit coercion can cause bugs that are difficult to trace,
+      \vskip1ex
+      The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
+      \vskip1ex
+      Coercion can introduce bad data, such as \texttt{NA} values,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-library("MASS")  # load library "MASS"
-# write to CSV file by row - it's very SLOW!!!
-write.matrix(mat_var, file="matrix.csv", sep=",")
-system.time(  # scan reads faster - skip first line with colnames
-  mat_read <- scan(file="matrix.csv", sep=",", 
-                  skip=1, what=numeric()))
-col_names <- readLines(con="matrix.csv", n=1)  # read colnames
-col_names  # this is a string!
-col_names <- strsplit(col_names, s=",")[[1]]  # convert to char vector
-mat_read  # mat_read is a vector, not matrix!
-# coerce by row to matrix
-mat_read <- matrix(mat_read, ncol=length(col_names), 
-                  byrow=TRUE)
-colnames(mat_read) <- col_names  # restore colnames
-mat_read
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+
+mode(my_var) <- "character"  # coerce to "character"
+my_var
+c(typeof(my_var), mode(my_var), class(my_var))
+my_var <- as.character(1:5)  # explicitly coerce to "character"
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(1:10, 2, 5)
+my_var <- as.character(my_var)  # explicitly coerce to "character"
+c(typeof(my_var), mode(my_var), class(my_var))
+is.matrix(my_var)  # is the object a matrix?
+
+as.logical(0:3)  # explicit coercion to "logical"
+
+c(1:3, 'a')  # implicit coercion to "character"
+as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
       @
   \end{columns}
 \end{block}
@@ -370,92 +332,76 @@ mat_read
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Reading Matrices Containing Bad Data}
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{"if"} statements}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Very often when data is read from external sources, it contains fields with bad data,
+      \texttt{R} has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
       \vskip1ex
-      Coercion of bad data elements to \texttt{numeric} introduces \texttt{NA} values,
+      The logical conditions must be either a logical or numeric type, otherwise an error is produced,
       \vskip1ex
-      Additional code is needed to scrub bad data,
+      The '\texttt{else}' statement can also be omitted,
+      \vskip1ex
+      \texttt{"if"} statements can be nested using multiple '\texttt{else if}' statements,
     \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-mat_read <- read.csv(file="badmatrix.csv")
-# restore rownames
-rownames(mat_read) <- as.character(mat_read[, 1])
-mat_read <- mat_read[, -1]  # remove extra column
-dim_names <- dimnames(mat_read)  # save dimnames
-num_col <- ncol(mat_read)  # save num columns
-mat_read  # data frame with bad data
-class(mat_read)
-class(mat_read[, 1])
-class(mat_read[, 2])  # numeric coerced to factor by bad data
-# convert non-numeric to NA by coercing to matrix and then to numeric
-mat_read <- as.numeric(as.matrix(mat_read))
-mat_read  # vector with NAs
-mat_read[is.na(mat_read)] <- 0  # overwrite NAs
-# coerce from vector back to matrix
-mat_read <- matrix(mat_read, ncol=num_col, dimnames=dim_names)
-mat_read  # matrix without NAs
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Saving Output of \texttt{R} to a File}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding \emph{graphics}) to a file, or ends the diversion,
-      \vskip1ex
-      Remember to call \texttt{sink()} to end the diversion!
-      \vskip1ex
-      The function \texttt{pdf()} diverts \emph{graphics} output to a pdf file (text output isn't diverted), in vector graphics format,
-      \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert \emph{graphics} output to graphics files (text output isn't diverted), in pixel graphics format,
-      \vskip1ex
-      The function \texttt{dev.off()} ends the diversion,
-    \column{0.6\textwidth}
-      \vspace{-1em}
         <<echo=(-1)>>=
-setwd("C:/Develop/data")
-{
-sink("sinkdata.txt")# redirect text output to file
+rm(list=ls())
+num_var1 <- 1
 
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
+if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+  num_var2 <- 4
+} else if (num_var1 == 0) {  # 'else if' together on same line
+  num_var2 <- 0
+} else {  # 'else' together with curly braces
+  num_var2 <- -4
+}  # end if
 
-sink()  # turn redirect off
+num_var2
+      @
+  \end{columns}
+\end{block}
 
-pdf("Rgraph.pdf", width=7, height=4)  # redirect graphics to pdf file
+\end{frame}
 
-cat("Redirect data from R into pdf file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
 
-dev.off()  # turn pdf output off
+%%%%%%%%%%%%%%%
+\subsection{Iteration Using \texttt{"for"} and \texttt{"while"} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '\texttt{for() \{...\}}' statement iterates over elements of a vector or list,
+      \vskip1ex
+      \texttt{R} also has a '\texttt{while() \{...\}}' loop,
+      \vskip1ex
+      \texttt{"while"} loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
+      \vskip1ex
+      But \texttt{"while"} loops risk producing infinite loops if not written
+properly, so \alert{Use Them With Care!}
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+color_list <- list("red", "white", "blue")
+for (some_color in color_list) {  # loop over list
+  print(some_color)
+}
+for (in_dex in 1:3) {  # loop over vector
+  print(color_list[[in_dex]])
+}
 
-png("Rgraph.png")  # redirect output to png file
-
-cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn png output off
+in_dex <- 1  # while loops need initialization
+while (in_dex < 4) {  # while loop
+  print(color_list[[in_dex]])
+  in_dex <- in_dex + 1
 }
       @
   \end{columns}
@@ -464,9 +410,54 @@ dev.off()  # turn png output off
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Fibonacci Sequence Using \texttt{"for"} Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 0, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration,
+      \vskip1ex
+      A more efficicent way to perform iteration is by pre-allocating the vector,
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+# fib_seq <- numeric()  # zero length numeric vector
+# pre-allocate vector instead of "growing" it
+fib_seq <- numeric(10)
+fib_seq[1] <- 0  # initialize
+fib_seq[2] <- 1  # initialize
+for (i in 3:10) {  # perform recurrence loop
+  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
+}  # end for
+fib_seq
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
-\section{Functionals}
+\section{Higher-order Functions}
 
 
 %%%%%%%%%%%%%%%
@@ -499,6 +490,46 @@ func_tional(sd)
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions That Return Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions can also return a function as their value,
+      \vskip1ex
+      Functions returned by a function are called \emph{closures},
+      \vskip1ex
+      Functions that return closures can be used as \emph{function factories},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a power function factory
+make_func <- function(arg_param) {  # wrapper function
+  function(arg_var) {  # anonymous closure
+    arg_var^arg_param
+  }
+}  # end make_func
+
+square_func <- make_func(2)  # define square function
+square_func(4)
+cube_func <- make_func(3)  # define cube function
+cube_func(2)
+cube_root_func <- make_func(1/3)  # define cube root function
+cube_root_func(8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Functionals}
 
 
 %%%%%%%%%%%%%%%
@@ -579,7 +610,7 @@ func_tional(sum, 1, 2, 3)
       \vskip1ex
       If \texttt{MARGIN=2} then the function will be applied over the matrix \emph{columns},
       \vskip1ex
-      The function \texttt{apply()} can replace \texttt{"for"} loops,
+      \texttt{apply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
     \column{0.7\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
@@ -610,6 +641,8 @@ mat_rix
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+      \vskip1ex
+      The additional arguments to \texttt{apply()} should be matched by their full (complete) names,
       <<>>=
 str(apply)  # get list of arguments
 mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
@@ -676,7 +709,7 @@ func_tional <- function(func_arg, ...) {
 }  # end func_tional
 func_tional(sum, 2, 3, 4)
 func_tional(mean, 1:10)
-func_tional((func_arg=function(x) (x + 3)), 5)
+func_tional(func_arg=(function(x) (x + 3)), 5)
 # anonymous function can be a default value
 func_tional <- function(..., 
                         func_arg=function(x, y, z) {x+y+z}) {
@@ -704,7 +737,9 @@ func_tional(func_arg=function(x, y, z) {x*y*z}, 2, 3, 4)
     \column{0.3\textwidth}
       The \texttt{apply()} function combined with \emph{anonymous} functions can be used to loop over function parameters,
       \vskip1ex
-  The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+      The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+      \vskip1ex
+      The additional arguments to \texttt{apply()} should be matched by their full (complete) names,
     \column{0.7\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
@@ -734,37 +769,36 @@ apply(X=moment_orders, MARGIN=1, FUN=moment, x=dax_rets)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{sapply()} Function}
+\subsection{\texttt{sapply()} Returning Matrices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      The \texttt{sapply()} function is a specialized version of the \texttt{apply()} function,
+      If the function called by \texttt{sapply()} returns a vector, then \texttt{sapply()} returns a matrix, if possible,
       \vskip1ex
-      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      The returned vectors form columns of the matrix returned by \texttt{sapply()},
       \vskip1ex
-      When \texttt{sapply()} is given a data frame, it interprets it as a list, and applies the function to each element (column) of the data frame,
+      But if the function returns vectors of different lengths, then \texttt{sapply()} cannot return a matrix, and returns a list instead,
+      \vskip1ex
+      This behavior of \texttt{sapply()} can cause run-time errors,
+      \vskip1ex
+      The function \texttt{vapply()} is similar to \texttt{sapply()}, but it always attempts to simplify its output to a matrix, and if it can't then it produces an error,
+      \vskip1ex
+      \texttt{vapply()} requires the argument \texttt{FUN.VALUE} that specifes the output format,
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
-sapply(6:10, sqrt)  # sapply on vector
-sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
-
-# calculate means of iris data frame columns
-sapply(iris, mean)  # returns NA for Species
-
-# create a matrix
-mat_rix <- matrix(sample(100), ncol=4)
-# calculate column means using apply
-apply(mat_rix, 2, mean)
-
-# calculate column means using sapply, with anonymous function
-sapply(1:ncol(mat_rix), 
-       function(col_index) {  # anonymous function
-         mean(mat_rix[, col_index])
-  }  # end anonymous function
-)  # end sapply
+# vectors form columns of matrix returned by sapply
+sapply(2:4, function(num) c(el1=num, el2=2*num))
+# vectors of different lengths returned as list
+sapply(2:4, function(num) 1:num)
+# vapply is similar to sapply
+vapply(2:4, function(num) c(el1=num, el2=2*num), 
+       FUN.VALUE=c(0,0))
+# vapply produces an error if it can't simplify
+vapply(2:4, function(num) 1:num, 
+       FUN.VALUE=c(0,0))
       @
   \end{columns}
 \end{block}
@@ -791,12 +825,12 @@ sapply(iris[, -5], mean)  # vector of means of numeric columns
 lapply(iris[, -5], mean)  # calculate means of numeric columns
 # calculate means of numeric columns using anonymous function
 unlist(lapply(iris, 
-              function(col_umn) {
-                if (is.numeric(col_umn)) mean(col_umn)
+              function(co_lumn) {
+                if (is.numeric(co_lumn)) mean(co_lumn)
               }  # end anonymous function
               )  # end sapply
        )  # end unlist
-unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
+unlist(sapply(iris, function(co_lumn) {if (is.numeric(co_lumn)) mean(co_lumn)}))
       @
   \end{columns}
 \end{block}
@@ -807,108 +841,6 @@ unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
 
 %%%%%%%%%%%%%%%
 \section{Manipulating Data Frames}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{iris} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
-      \vskip1ex
-      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object,
-      \vskip1ex
-      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
-      \vskip1ex
-      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
-    \column{0.7\textwidth}
-      \vspace{-1em}
-        <<>>=
-# ?iris  # get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # extract list of unique elements of iris
-class(unique(iris$Species))
-# find which columns of iris are numeric
-sapply(iris, is.numeric)
-# calculate means of iris columns
-sapply(iris, mean)  # returns NA for Species
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{mtcars} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
-      \vskip1ex
-    \column{0.7\textwidth}
-      \vspace{-1em}
-        <<>>=
-# ?mtcars  # get information on mtcars - data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp   Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # extract list of car cylinders
-sapply(mtcars, mean)  # calculate means of mtcars columns
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Cars93} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
-      \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram,
-      \vskip1ex
-      The parameter \texttt{breaks} is the number of cells of the histogram,
-      \vskip1ex
-      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
-        <<Cars93_hist,fig.show='hide'>>=
-library(MASS)
-# ?Cars93  # get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # extract list of car types
-# sapply(Cars93, mean)  # calculate means of Cars93 columns
-# plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1", 
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/Cars93_hist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%
@@ -945,21 +877,21 @@ head(split_iris$setosa, 2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{split-apply-combine} Procedure}
+\subsection{The \protect\emph{split-apply-combine} Procedure}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \texttt{split-apply-combine} procedure consists of:
+      The \emph{split-apply-combine} procedure consists of:
       \begin{itemize}
         \item dividing an object into a list, according to a factor (attribute),
         \item applying a function to each list element,
         \item combining the results,
       \end{itemize}
-      The \texttt{split-apply-combine} procedure is similar to \texttt{pivot tables} in Excel,
+      The \emph{split-apply-combine} procedure is similar to \emph{pivot tables} in Excel,
       \vskip1ex
-      The \texttt{split-apply-combine} procedure, by Hadley Wickham:\\
+      The \emph{split-apply-combine} procedure, by Hadley Wickham:\\
       \url{http://www.jstatsoft.org/v40/i01/paper}
       \vskip1ex
     \column{0.6\textwidth}
@@ -971,26 +903,26 @@ head(split_iris$setosa, 2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Example \texttt{split-apply-combine} Procedure}
+\subsection{Example \protect\emph{split-apply-combine} Procedure}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+    \column{0.4\textwidth}
+      The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
       \vskip1ex
-      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \texttt{split-apply-combine} procedure in a single function call, 
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call, 
       \vskip1ex
       The \texttt{by()} function is a wrapper for \texttt{tapply()},
       \vskip1ex
       The \texttt{with()} function evaluates an expression in an environment constructed from the data,
       \vskip1ex
       The \texttt{aggregate()} function applies a function to aggregations of an object,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 unique(mtcars$cyl)  # cyl has three unique values
-# split the mtcars data frame based on number of cylinders
+# split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
@@ -1011,19 +943,26 @@ aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Example \texttt{split-apply-combine} Returning Matrices}
+\subsection{Example \protect\emph{split-apply-combine} Returning Matrices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
-      Sometimes the \texttt{split-apply-combine} procedure returns a list of vectors,
+    \column{0.4\textwidth}
+      Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
       \vskip1ex
-      Lists of vectors can be flattened into matrices using the function \texttt{do.call()},
-    \column{0.7\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-data_cars <- sapply(split_cars,  # get several mpg stats for each cylinder group
+# get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
               function(x) {
                 c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
               }  # end anonymous function
@@ -1035,106 +974,8 @@ data_cars <- lapply(split_cars,  # now same using lapply
               }  # end anonymous function
               )  # end sapply
 is.list(data_cars)  # lapply produces a list
-do.call(cbind, data_cars)  # do.call flattens list into a matrix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\section{Data Management and Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bad Data}
-\begin{frame}[fragile,t]{Types of \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Possible sources of bad data are: imported data, class coercion, numeric overflow,
-      \vskip1ex
-      Types of bad data:
-      \begin{itemize}
-        \item \texttt{NA} means Not Available (missing) data,
-        \item \texttt{NaN} means Not a Number data,
-        \item \texttt{Inf} means numeric overflow - divide by zero,
-      \end{itemize}
-      \vskip1ex
-      The functions \texttt{is.na()} and \texttt{is.nan()} test for NA and NaN values,
-      \vskip1ex
-      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-as.numeric(c(1:3, "a"))  # NA from coercion
-0/0  # NaN from ambiguous math
-1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
-NA*1:4  # create vector of Nas
-bad_data <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
-mean(bad_data)  # returns NA, when NAs are input
-mean(bad_data, na.rm=TRUE)  # remove NAs from input data
-bad_data[!is.na(bad_data)]  # delete the NA values
-sum(!is.na(bad_data))  # count non-NA values
-      @
-  \end{columns}
-\end{block}
-
-\begin{block}{}
-  \texttt{NULL} isn't bad data, but is a reserved word and represents a null object,\\
-  \texttt{NULL} is returned by functions whose value is undefined,\\
-  Very often variables are initialized to \texttt{NULL} before iteration,\\
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-head(airquality)  # airquality data has some NAs
-dim(airquality)
-sum(!complete.cases(airquality))  # number of NAs
-head(airquality[!complete.cases(airquality), ])  # display some NAs
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      Rows containing bad data may be either removed or replaced with an estimated value,
-      \vskip1ex
-      The function \texttt{na.locf()} from library \texttt{zoo} replaces NAs with most recent non-NA prior to it,
-      \vskip1ex
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-good_air <- airquality[complete.cases(airquality), ]  # remove NAs
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-good_air <- na.locf(airquality)  # replace NAs
-dim(good_air)
-head(good_air)  # NAs replaced
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
       @
   \end{columns}
 \end{block}

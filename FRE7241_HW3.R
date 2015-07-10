@@ -1,153 +1,89 @@
 #################################
-### HW #3 due May 4, 2015
+### FRE7241 HW #3 due July 3, 2015
 #################################
-# Max score 40 pts
+# Max score 45pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw3.R
-# and send this file to Luping Liu (ll2525@nyu.edu)
+# and send this file to Jaimin Doshi (jbd316@nyu.edu)
 
 
 
 ##################################
-# 1. (20pts) simulate an ARIMA AR(1) process for returns using function arima.sim(),
-# set the burn-in period to zero, and reset random number generator by calling set.seed(1121),
-# as follows: 
+# extract price & volume columns using eapply() from all the objects contained in "env_data"
+# use assign() to create new objects (returns) in env_data
 
-set.seed(1121)
-ts_arima <- arima.sim(n=10, model=list(ar=0.5), start.innov=rep(0, 10))
-
-
-
-######
-# simulate the same AR(1) returns process as above, but now recursively, 
-# by calculating current returns from previous returns in a sapply() or for() loop, 
-# use functions rnorm() and either sapply() or for(),
-# you should obtain the same "ts_arima" series as above, 
-# remember to reset the random number generator by calling set.seed(1121),
-
-### write your code here
-
-
-######
-# simulate the same AR(1) process as above recursively, using functions rnorm() and filter(),
-# use method="recursive" in filter(),
-# you should obtain the same "ts_arima" series as above, 
-# remember to reset the random number generator by calling set.seed(1121),
+# 1. (5pts) Load time series data from file "etf_series.Rdata",
+# create a new environment called "env_data", for storing the "xts" 
+# containing stock prices,
+# load data from the file "etf_series.Rdata" into "env_data",
+# use functions new.env() and load(), with the "envir" argument,
 
 ### write your code here
 
 
 
-##################################
-# 2. (20pts) Calculate partial autocorrelation coefficients
-
-
-######
-# simulate an AR(2) process of length 1000, with coefficients equal to 0.2 and 0.3, 
-# Use the function arima.sim(), with the proper "model" argument,
-# Call the resulting "ts" time series "ts_arima", 
-# remember to reset the random number generator by calling set.seed(1121),
-
-### write your code here
-
-
-
-######
-# Create a "ts" series lagged by one period from "ts_arima", and call it "ts_arima_lag",
-# The value of "ts_arima_lag" in a given period should be equal to the value 
-# of "ts_arima" in the previous period,
-# Create a series lagged by two periods from "ts_arima", and call it "ts_arima_lag2",
-# use function lag() with the proper argument "k",
+# 2. (20pts) create a function called get_returns_volume(), 
+# that accepts an "xts" argument ("x_ts") and an environment 
+# argument ("envir"), 
+# get_returns_volume() should:
+# - extract adjusted prices and volume data from the "xts",
+# - calculate returns from adjusted prices,
+# - extract the symbol name from the columns of "xts" ("symbol_name"),
+# - merge returns with volume data into a single "xts" ("return_volume"),
+# - rename the colnames of "return_volume" to "symbol_name.Return" 
+#   and "symbol_name.Volume", (replace "symbol_name" with the symbol name),
+# - assign (copy) "return_volume" to a object named "symbol_name_rets" 
+#   in the "envir" environment, 
+# get_returns_volume() should produce the side effect of creating 
+# an "xts" object in the "envir" environment containing returns and 
+# volume data "from the input "x_ts",
+# get_returns_volume() should return invisible the "symbol_name",
+# you can use functions Ad(), Vo(), strsplit(), colnames(), 
+# paste() (or paste0), assign(), invisible(), and dailyReturn(),
 
 ### write your code here
 
 
 
-######
-# cbind "ts_arima" with "ts_arima_lag" and "ts_arima_lag2", and call it "ts_lagged",
-# note the rows containing NAs at the beginning, and remove those rows,
-# use functions cbind() and na.omit(),
+# 2. (20pts) create a new environment called "env_returns", 
+# for storing "xts" containing stock return and volume data,
+# use function new.env(),
+
+### write your code here
+
+
+# apply function get_returns_volume() to a single "xts", to verify 
+# it works correctly:
 
 ### write your code here
 
 
 
-######
-# Extract "ts_arima", "ts_arima_lag", and "ts_arima_lag2" from "ts_lagged" by subsetting,
-# After applying cbind(), na.omit() and subsetting, all three time series 
-# should be properly alligned and of the same length,
+# perform an eapply() loop to apply get_returns_volume() to all  
+# the objects in "env_data", and copy to "env_returns",
+# use functions get_returns_volume() and eapply(),
 
 ### write your code here
 
 
-
-######
-# Extract the lag=5 vector of autocorrelation coefficients of "ts_arima", and call it "vec_acf", 
-# use functions acf() and drop(), drop() removes array dimensions that are equal to 1,
-# The function acf() returns an object of class "acf", so you must extract 
-# the vector of autocorrelation coefficients from an object of class "acf",
+# remove all files from "env_returns",
 
 ### write your code here
 
 
-
-######
-# Calculate the autocorrelation of lag=1 as the correlation between 
-# "ts_arima" and its own lag "ts_arima_lag", and call it "auto_corr",
-# use function cor(),
-# verify that "auto_corr" is almost equal to vec_acf[2],
+# perform a for() loop to apply get_returns_volume() to all  
+# the objects in "env_data", and copy to "env_returns",
+# use functions get_returns_volume() and for(),
 
 ### write your code here
 
 
-
-######
-# Create a linear combination of "ts_arima" and "ts_arima_lag", and call it "ts_arima_1",
-# such that "ts_arima_1" has zero correlation with "ts_arima_lag",
-# "ts_arima_1" represents the part of "ts_arima" that is not correlated to "ts_arima_lag",
-# verify that the correlation is almost zero, using function cor(),
-
-### write your code here
-
-
-
-######
-# Calculate the correlation between "ts_arima_lag2" and "ts_arima_lag", and call it "auto_corr",
-# use function cor(),
-# verify that "auto_corr" is almost equal to vec_acf[2],
-# Explain in writing in one sentence why they should be almost equal,
-# answer: because "ts_arima" is stationary,
+# save all the objects in the environment "env_returns" 
+# to a binary file called "etf_rets_volume.Rdata", 
+# use function save(), with the "list" and "envir" arguments,
+# make sure to save the objects in the environment, 
+# not the environment itself,
 
 ### write your code here
-
-
-
-######
-# Create a linear combination of "ts_arima_lag2" and "ts_arima_lag", and call it "ts_arima_2",
-# such that "ts_arima_2" has zero correlation with "ts_arima_lag",
-# "ts_arima_2" represents the part of "ts_arima_lag2" that is not correlated to "ts_arima_lag",
-# verify that the correlation is almost zero, using function cor(),
-
-### write your code here
-
-
-
-######
-# Calculate the correlation between "ts_arima_1" and "ts_arima_2", and call it "pauto_corr",
-# "ts_arima_2" represents the part of "ts_arima_lag2" that is not correlated to "ts_arima_lag",
-
-### write your code here
-
-
-
-######
-# Extract the lag=5 vector of partial autocorrelation coefficients of "ts_arima", and call it "vec_pacf", 
-# use functions pacf() and drop(), drop() removes array dimensions that are equal to 1,
-# The function pacf() returns an object of class "acf", so you must extract 
-# the vector of partial autocorrelation coefficients from an object of class "acf",
-# verify that "pauto_corr" is almost equal to vec_pacf[2],
-
-### write your code here
-
 

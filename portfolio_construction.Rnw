@@ -1,9 +1,10 @@
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(digits=3)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -69,7 +70,176 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Portfolio Analysis}
+\section{Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      \vskip1ex
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
+      \vskip1ex
+      \vspace{-1em}
+        <<eval=TRUE,echo=(-(1:1))>>=
+load(file="C:/Develop/data/etf_data.Rdata")
+# create list of symbols for optimized portfolio
+sym_bols <- c("VTI", "VNQ", "DBC")
+# create initial vector of portfolio weights
+portf_weights <- rep(1, length(sym_bols))
+names(portf_weights) <- sym_bols
+# objective equal to minus Sharpe ratio
+object_ive <- function(weights) {
+  portf_ts <- etf_rets[, sym_bols] %*% weights
+  -mean(portf_ts)/sd(portf_ts)
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(portf_weights)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_optim_one_dim-1}
+      \vspace{-5em}
+        <<portf_optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# vectorize objective function with respect to third weight
+vec_objective <- Vectorize(
+  FUN=function(weight) object_ive(c(1, 1, weight)),
+  vectorize.args="weight"
+)  # end Vectorize
+# plot objective function with respect to third weight
+curve(expr=vec_objective, 
+      type="l", xlim=c(-4.0, 1.0),
+      xlab=paste("weight of", names(portf_weights[3])), 
+      ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Perspective Plot of Portfolio Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(w1, w2, w3)
+    object_ive(c(w1, w2, w3)),
+  vectorize.args=c("w2", "w3")
+)  # end Vectorize
+# create vectors of weights
+w2 <- seq(-5, 5, length=50)
+w3 <- seq(-5, 5, length=50)
+# calculate objective on 2-d (w2 x w3) parameter grid
+objective_grid <- outer(w2, w3, vec_objective, w1=1)
+rownames(objective_grid) <- round(w2, 2)
+colnames(objective_grid) <- round(w3, 2)
+# perspective plot of objective function
+persp(w2, w3, -objective_grid,
+      theta=45, phi=30,
+      shade=0.5,
+      col=rainbow(50),
+      border="green",
+      main="objective function")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_persp-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      \vskip1ex
+      The argument \texttt{"par"} are the initial parameter values,
+      \vskip1ex
+      The argument \texttt{"fn"} is the objective function to be minimized,
+      \vskip1ex
+      The argument \texttt{method="L-BFGS-B"} specifies the a quasi-Newton optimization method,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<>>=
+# optimization to find weights with maximum Sharpe ratio
+optim_run <- optim(par=portf_weights, 
+                   fn=object_ive, 
+                   method="L-BFGS-B",
+                   upper=c(1.1, 10, 10),
+                   lower=c(0.9, -10, -10))
+# optimal parameters
+optim_run$par
+# optimal Sharpe ratio
+-object_ive(optim_run$par)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized Portfolio Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimized portfolio has both long and short positions, and outperforms its individual component assets,
+      \vskip1ex
+      \vspace{-1em}
+      <<optim_portf_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PortfolioAnalytics)
+# returns of optimal portfolio
+optim_rets <- xts(etf_rets[, sym_bols] %*% 
+      optim_run$par, order.by=index(etf_rets))
+# assign colnames to this xts
+colnames(optim_rets) <- "optim_rets"
+# plot in two vertical panels
+layout(matrix(c(1,2), 2), 
+       widths=c(1,1), heights=c(1,3))
+# barplot of optimal portfolio weights
+barplot(optim_run$par, 
+        names.arg=names(optim_run$par), 
+        las=3, ylab="", xlab="Symbol", main="")
+# plot optimal returns with "VTI", "VNQ" and "DBC"
+chart.CumReturns(
+  cbind(optim_rets, etf_rets[, names(portf_weights)]), 
+  lwd=2, ylab="", legend.loc="topleft", main="")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \texttt{PortfolioAnalytics} for Portfolio Optimization}
 
 
 %%%%%%%%%%%%%%%
@@ -79,7 +249,7 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The package \texttt{PortfolioAnalytics} contains \texttt{functions} and \texttt{data sets} for portfolio optimization,
+      The package \texttt{PortfolioAnalytics} contains functions and data sets for portfolio optimization,
       \vskip1ex
       The function \texttt{data()} loads external data or lists data sets in a package,
       \vskip1ex
@@ -186,8 +356,9 @@ chart.RiskReward(maxSR_DEOpt,
   risk.col="StdDev", 
   return.col="mean")
       @
-
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 maxSR_DEOpt$weights
@@ -309,7 +480,7 @@ maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add leverage constraint abs(weight_sum)
 portf_maxSRN <- add.constraint(
@@ -375,6 +546,7 @@ risk_ret_points()
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
+    \vspace{-2em}
       <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -426,8 +598,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
@@ -456,7 +629,7 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]])
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_maxSTARR <- add.constraint(
@@ -510,7 +683,9 @@ chart.RiskReward(maxSTARR_DEOpt,
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 maxSTARR_DEOpt$weights
@@ -564,8 +739,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
@@ -625,7 +801,7 @@ text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_minES <- add.constraint(
@@ -680,7 +856,9 @@ chart.RiskReward(maxSTARR_DEOpt,
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 minES_ROI$weights
@@ -733,8 +911,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, minES_ROI$weights)
@@ -760,12 +939,13 @@ minES_ROI$objective_measures$ES[[1]])
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_1h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_SR_1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
+options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["/2011", portf_names],  # specify returns
+  R=etf_rets["/2011", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -793,12 +973,13 @@ maxSR_DEOpt_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_2h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_SR_2h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
+options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["2011/", portf_names],  # specify returns
+  R=etf_rets["2011/", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -826,13 +1007,16 @@ maxSR_DEOpt_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_weights,echo=(-(1:3)),fig.height=5,fig.show='hide'>>=
+      <<echo=(-(1:1)),eval=TRUE>>=
 options(width=50)
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
 weights_1h
 weights_2h
 weights_1h - weights_2h
+      @
+    \vspace{-2em}
+      <<optim_weights,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
 barplot(weights_1h, 
         names.arg=names(weights_1h), 
         las=3, ylab="", xlab="", 

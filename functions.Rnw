@@ -1,10 +1,11 @@
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -86,9 +87,9 @@ knit_theme$set(thm)
         \item a body containing \texttt{R} code,
         \item an environment,
       \end{itemize}
-      An \texttt{R} function plus its environment is referred to as a function closure,
+      An \texttt{R} function plus its environment is referred to as a function \emph{closures},
       \vskip1ex
-      The function body must be enclosed in curly braces \texttt{\{\}},
+      The function body should be enclosed in curly braces \texttt{\{\}}, unless it contains a single command, then it doesn't have to enclosed,
       \vskip1ex
       The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
       \vskip1ex
@@ -141,21 +142,61 @@ test_func(3, 2)  # now works
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-test_func <- function(first_arg=2, second_arg=1) {
-# default values can be specified in the argument list
+test_func <- function(first_arg, second_arg) {
+# last statement of function is return value
   first_arg + 2*second_arg
 }  # end test_func
-
 test_func(first_arg=3, second_arg=2)  # bind by name
 test_func(first=3, second=2)  # partial name matching
 test_func(3, 2)  # bind by position
 test_func(second_arg=2, 3)  # mixed binding
-test_func()  # use default values of arguments
 test_func(3, 2, 1)  # too many arguments
+test_func(2)  # not enough arguments
       @
-      All the actual arguments must be \emph{bound} to formal arguments, and if not then an error \texttt{"unused argument"} is produced,
+      \vspace{-1em}
+      All the actual arguments must be \emph{bound} to formal arguments, and if not then an \texttt{"unused argument"} error is produced,
       \vskip1ex
-      Formal arguments may be assigned default values so that when actual arguments are missing then their default values are used instead,
+      If there aren't enough formal arguments, then an \texttt{"argument is missing"} error is produced,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Default Values for Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Formal arguments may be assigned default values, so that when the actual arguments are missing then their default values are used instead,
+      \vskip1ex
+      Default values are often assigned to function parameters, that determine the function's behavior,
+      \vskip1ex
+      Default values can be specified as a vector of strings, representing the possible values of a function's parameter,
+      \vskip1ex
+      The function \texttt{match.arg} matches a string to one of the possible values, and returns the matched value, or produces an \texttt{error} if it can't match it,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# function "paste" has two arguments with default values
+str(paste)
+# default values of arguments can be specified in argument list
+test_func <- function(first_arg, fac_tor=1) {
+  fac_tor*first_arg
+}  # end test_func
+test_func(3)  # default value used for second argument
+test_func(3, 2)  # default value over-ridden
+# default values can be a vector of strings
+test_func <- function(in_put=c("first_val", "second_val")) {
+  in_put <- match.arg(in_put)  # match to arg list
+  in_put
+}  # end test_func
+test_func("second_val")
+test_func("se")  # partial string matching
+test_func("some_val")  # invalid string
+      @
   \end{columns}
 \end{block}
 
@@ -176,12 +217,12 @@ test_func(3, 2, 1)  # too many arguments
       \vspace{-1em}
         <<>>=
 # define a function that returns invisibly
-test_func <- function(arg_var) {
-  if (!is.numeric(arg_var)) {
-    warning(paste("argument", arg_var, "isn't numeric"))
+test_func <- function(in_put) {
+  if (!is.numeric(in_put)) {
+    warning(paste("argument", in_put, "isn't numeric"))
     return(NULL)
   }
-  2*arg_var
+  2*in_put
 }  # end test_func
 
 test_func(2)
@@ -205,18 +246,26 @@ test_func("hello")
       But if the function is assigned to a variable, then its return value is assigned to that variable,
       \vskip1ex
       \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
+      \vskip1ex
+      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 # define a function that returns invisibly
-return_invisible <- function(arg_var) {
-  invisible(arg_var)
+return_invisible <- function(in_put) {
+  invisible(in_put)
 }  # end return_invisible
 
 return_invisible(2)
 
 glob_var <- return_invisible(2)
 glob_var
+
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects
       @
   \end{columns}
 \end{block}
@@ -277,6 +326,55 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Binding of Lists Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+      But for large vectors this procedure can be very slow, and often causes an out of memory error,
+      \vskip1ex
+      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion, 
+      \vskip1ex
+      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \texttt{qmao}:\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(list_var) {
+  while (length(list_var) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=length(list_var), by=2)
+# bind neighboring elements and divide list_var by half
+    list_var <- lapply(odd_index, function(in_dex) {
+      if (in_dex==length(list_var)) {
+        return(list_var[[in_dex]])
+      }
+      return(rbind(list_var[[in_dex]], 
+                   list_var[[in_dex+1]]))
+    })  # end lapply
+  }  # end while
+# list_var has only one element - return it
+  list_var[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
       @
   \end{columns}
 \end{block}
@@ -403,7 +501,7 @@ getAnywhere(calc_skew)  # display function
       \vskip1ex
       This is called \emph{lazy} evaluation,
       \vskip1ex
-      If the function body doesn't evaluate an argument, then the function won't throw an error, even if the argument is missing,
+      If the function body doesn't evaluate an argument, then the function won't produce an error, even if the argument is missing,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
@@ -427,34 +525,40 @@ lazy_func(3)  # first argument written to output
 
 
 %%%%%%%%%%%%%%%
-\subsection{The '...' Function Argument}
+\subsection{The dots \texttt{"..."} Function Argument}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The '...' argument represents additional unknown arguments, that may be passed on to another nested function,
+      The dots \texttt{"..."} argument binds with any number of additional arguments, that aren't already bound by name or position,
       \vskip1ex
-      The '...' argument is also used when the number of arguments isn't known in advance,
+      The dots \texttt{"..."} argument is used when the number of arguments isn't known in advance, and allows functions to accept an indefinite number of arguments,
       \vskip1ex
-      Any arguments that appear after '...' in the argument list cannot be partially bound,
+      Arguments that appear after the dots \texttt{"..."} argument must be matched by their full name, and can't be partially name matched,
       \vskip1ex
-      It's better practice to bind by name after the '...' in argument,
+      The dots \texttt{"..."} argument is often passed on to another nested function,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
 rm(list=ls())
-match_dots <- function(arg1=2, arg2=1, ...) {  # define function match_dots
-# default values can be specified in the argument list
+match_dots <- function(in_put, ...) {
+  paste0("in_put=", in_put, "  dots=", ...)
+}  # end match_dots
+match_dots(10, 2)  # dots matched
+match_dots(2, in_put=10, 1)  # dots matched
+match_dots(10, 1, 2, 3)  # dots matched
+match_dots <- function(..., in_put) {
+  paste0("in_put=", in_put, "  dots=", ...)
+}  # end match_dots
+match_dots(2, 10)  # dots not matched
+# arguments after dots must be matched by full name
+match_dots(in_put=10, 1, 2, 3)
+match_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
-# the function returns the last evaluated statement
 }  # end match_dots
 match_dots(3, 2)  # match arguments by position
-match_dots(3, 2, 5, 8)  # extra arguments
-match_dots()  # use default value of arguments
-str(paste)  # function 'paste' can take many arguments
-paste('a', 'b', sep = ':')  # bind arguments by name
-paste('a', 'b', se = ':')  # partial name matching fails!
+match_dots(3, 2, 5, 8)  # extra arguments matched to dots
       @
   \end{columns}
 \end{block}
@@ -473,12 +577,12 @@ paste('a', 'b', se = ':')  # partial name matching fails!
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
-sum_dots <- function(arg_var, ...) {  # define recursive function
+sum_dots <- function(in_put, ...) {  # define recursive function
 # returns the sum of its argument list
   if (missing(...)) {  # check if dots are empty
-    return(arg_var)  # just one argument left
+    return(in_put)  # just one argument left
   } else {
-    arg_var + sum_dots(...)  # sum remaining arguments
+    in_put + sum_dots(...)  # sum remaining arguments
   }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
@@ -500,9 +604,15 @@ sum_dots(1, 2, 3, 4)
       \vskip1ex
       The \emph{evaluation} environment contains the function arguments and locally defined variables,
       \vskip1ex
-      The enclosure of the \emph{evaluation} environment is the environment where the function was defined (the global environment for functions defined in the workspace),
+      \texttt{R} evaluates variables inside functions by searching first in the \emph{evaluation} environment, then the \emph{enclosure} environment, then the \texttt{R} search path, 
       \vskip1ex
-      Functions defined in packages with namespaces have the package namespace as their enclosure,
+      The enclosure of the \emph{evaluation} environment is the environment where the function was defined,
+      \vskip1ex
+      The enclosure of functions defined in the workspace is the \emph{global} environment,
+      \vskip1ex
+      The enclosure of functions defined in packages is the package \emph{namespace},
+      \vskip1ex
+      Objects defined in the function enclosure can be referenced inside the function,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
@@ -544,9 +654,9 @@ environment(print)  # package namespace is the enclosure
       \vskip1ex
       \emph{Dynamic} scoping means that variables are evaluated in the environment from which the function was \emph{called},
       \vskip1ex
-      The standard assignment operator "\texttt{<-}" modifies variables in the \emph{evaluation} environment,
+      The standard assignment operator \texttt{"<-"} modifies variables in the \emph{evaluation} environment,
       \vskip1ex
-      The special assignment operator "\texttt{<<-}" modifies variables in the \emph{enclosing} environment,
+      The special assignment operator \texttt{"<<-"} modifies variables in the \emph{enclosing} environment,
 
     \column{0.6\textwidth}
       \vspace{-1em}
@@ -625,28 +735,41 @@ a  # variable "a" is unchanged
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Super-assignment Operator "\texttt{<<-}"}
+\subsection{The Super-assignment Operator \texttt{"<<-"}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The super-assignment operator "\texttt{<<-}" modifies or creates variables in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping),
+      The super-assignment operator \texttt{"<<-"} modifies or creates variables in the \emph{enclosing} environment in which a function was \emph{defined} (\emph{lexical} scoping),
       \vskip1ex
-      If the function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment and the "\texttt{<<-}" operator operates on variables in the \emph{global} environment,
+      If a function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment, and the \texttt{"<<-"} operator operates on variables in the \emph{global} environment,
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} allows operations on objects outside a function's \emph{evaluation} environment, which are called \emph{side effects}, 
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} allows creating functions that produce \emph{side effects}, 
+      \vskip1ex
+      The function \texttt{load()} is an example of a function that produces \emph{side effects}, 
+      \vskip1ex
+      \texttt{load()} reads data from an \texttt{*.RData} file, and creates objects in the workspace that are contained in the \texttt{*.RData} file,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
-rm(list=ls())
+rm(list=ls())  # remove all objects
 glob_var <- 1  # define a global variable
-probe_scope <- function() {  # explore function scope
+side_effect <- function() {  # explore function scope
   cat('this is the global glob_var:\t', glob_var, '\n')
   glob_var <- 10  # define local 'glob_var' variable
   glob_var <<- 2  # re-define the global variable
   cat('this is a local glob_var:\t', glob_var, '\n')
-}  # end probe_scope
-probe_scope()
-glob_var  # the global variable
+}  # end side_effect
+side_effect()
+glob_var  # global variable was modified as side effect
+rm(list=ls())  # remove all objects
+ls()  # list objects
+# load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # list objects
       @
   \end{columns}
 \end{block}
@@ -687,7 +810,7 @@ glob_var  # the global variable
     \column{0.4\textwidth}
       New \emph{infix} operators can be defined using the usual function definition syntax,
       \vskip1ex
-      All user defined \emph{infix} operators names must be nested between "\texttt{\%}" characters,
+      All user defined \emph{infix} operators names must be nested between \texttt{"\%"} characters,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -748,7 +871,7 @@ getAnywhere(plot)  # display function
       \vskip1ex
       The argument passed to the \emph{replacement} function is modified and returned by it,
       \vskip1ex
-      \emph{replacement} function names include the assignment arrow: "\texttt{name<-}",
+      \emph{replacement} function names include the assignment arrow: \texttt{"name<-"},
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -764,7 +887,7 @@ class(obj_string)
 }  # end last
 ls()
 x <- 1:10
-# throws error
+# produces error
 last(x) <- 11
 # this works!
 last <- function(vec_tor) {
@@ -833,8 +956,8 @@ func_tional(sd)
         <<>>=
 # define a power function factory
 make_func <- function(arg_param) {  # wrapper function
-  function(arg_var) {  # anonymous closure
-    arg_var^arg_param
+  function(in_put) {  # anonymous closure
+    in_put^arg_param
   }
 }  # end make_func
 
@@ -1001,27 +1124,36 @@ detach(my_account)  # remove my_account from search path
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       \emph{Functionals} are functions that accept a function as its input argument,
       \vskip1ex
       The function \texttt{match.fun()} produces a function specified by its name,
       \vskip1ex
       \texttt{match.fun()} produces an error condition if it fails to find a function with the specified name,
-    \column{0.7\textwidth}
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-func_tional <- function(func_arg, arg_var) {
 # functional accepts function name and one additional argument
-  func_arg <- match.fun(func_arg)  # produce function from name
-  func_arg(arg_var)  # apply input function
+func_tional <- function(func_arg, in_put) {
+# produce function name from argument
+  func_arg <- match.fun(func_arg)
+  func_arg(in_put)  # apply input function
 }  # end func_tional
 
 func_tional(sqrt, 4)
 
-# if argument is a list, then we need to call "do.call", to pass them one by one
-# Passing a function as a list: first element is function name, remaining elements are arguments
+# first list element is function name
+# remaining elements are arguments to function
 func_tional <- function(list_arg) {
-  func_arg <- match.fun(list_arg[[1]])  # produce function from name
+# produce function name from argument
+  func_arg <- match.fun(list_arg[[1]])
+# if arguments are in list, then need to use "do.call"
   do.call(func_arg, list(as.numeric(list_arg[-1])))
 }  # end func_tional
 
@@ -1040,14 +1172,16 @@ func_tional(arg_list)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The \texttt{"..."} argument in \emph{functionals} can be used to pass additional arguments to the function being called by the \emph{functional},
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
+# functional accepts function and '...' arguments
 func_tional <- function(func_arg, ...) {
-# functional accepts function and additional '...' arguments
-  func_arg(...)  # apply input function to '...' arguments
+  func_arg <- match.fun(list_arg[[1]])
+# apply input function to '...' arguments
+  func_arg(...)
 }  # end func_tional
 
 func_tional(sum, 1, 2, 3)
@@ -1064,7 +1198,7 @@ func_tional(sum, 1, 2, 3)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       An important example of \emph{functionals} are the \texttt{apply()} functions,
       \vskip1ex
       The function \texttt{apply()} returns the result of applying a function to the rows or columns of an array or matrix,
@@ -1074,12 +1208,13 @@ func_tional(sum, 1, 2, 3)
       If \texttt{MARGIN=2} then the function will be applied over the matrix \emph{columns},
       \vskip1ex
       \texttt{apply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
 rm(list=ls())
 str(apply)  # get list of arguments
-mat_rix <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
+# create a matrix
+mat_rix <- matrix(6:1, nrow=2, ncol=3)
 mat_rix
 # sum the rows and columns
 row_sums <- apply(mat_rix, 1, sum)
@@ -1087,7 +1222,7 @@ col_sums <- apply(mat_rix, 2, sum)
 mat_rix <- cbind(c(sum(row_sums), row_sums), 
                   rbind(col_sums, mat_rix))
 dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"), 
-                           c("row_sums", "col1", "col2", "col3"))
+                         c("row_sums", "col1", "col2", "col3"))
 mat_rix
       @
   \end{columns}
@@ -1134,13 +1269,13 @@ apply(mat_rix, 2, median, na.rm=TRUE)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       \texttt{R} allows defining functions without assigning a name to them,
       \vskip1ex
       \emph{Anonymous} functions are functions that are not assigned to a name,
       \vskip1ex
       \emph{Anonymous} functions can be passed as arguments to \emph{functionals},
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 # simple anonymous function
@@ -1159,11 +1294,11 @@ apply(mat_rix, 2, median, na.rm=TRUE)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       \emph{Anonymous} functions are most often passed as arguments to \emph{functionals},
       \vskip1ex
       \emph{Anonymous} functions can also be used as default values for function arguments,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-2em}
         <<>>=
 # functional accepts function and additional '...' arguments
@@ -1197,24 +1332,24 @@ func_tional(func_arg=function(x, y, z) {x*y*z}, 2, 3, 4)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The \texttt{apply()} function combined with \emph{anonymous} functions can be used to loop over function parameters,
       \vskip1ex
       The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
       \vskip1ex
       The additional arguments to \texttt{apply()} should be matched by their full (complete) names,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
 rm(list=ls())
-dax_rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
+# DAX percent returns
+dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
 library("moments")  # load library"moments"
 str(moment)  # get list of arguments
-
-moment(x=dax_rets, order=3)  # apply moment function
-
-moment_orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
-
+# apply moment function
+moment(x=dax_rets, order=3)
+# 4x1 matrix of moment orders
+moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1, 
       FUN=function(moment_order) {
@@ -1223,7 +1358,49 @@ apply(X=moment_orders, MARGIN=1,
       )  # end apply
 
 # another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment, x=dax_rets)
+apply(X=moment_orders, MARGIN=1, FUN=moment, 
+      x=dax_rets)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{sapply()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{sapply()} function is a specialized version of the \texttt{apply()} function,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
+      \vskip1ex
+      \texttt{sapply()} tries to return a vector, but if the elements can't be combined into a vector, then it returns a list,
+      \vskip1ex
+      When \texttt{sapply()} is given a data frame, it interprets it as a list, and applies the function to each element (column) of the data frame,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+sapply(6:10, sqrt)  # sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+
+# calculate means of iris data frame columns
+sapply(iris, mean)  # returns NA for Species
+
+# create a matrix
+mat_rix <- matrix(sample(100), ncol=4)
+# calculate column means using apply
+apply(mat_rix, 2, mean)
+
+# calculate column means using sapply, with anonymous function
+sapply(1:ncol(mat_rix), 
+       function(col_index) {  # anonymous function
+         mean(mat_rix[, col_index])
+  }  # end anonymous function
+)  # end sapply
       @
   \end{columns}
 \end{block}
@@ -1237,19 +1414,19 @@ apply(X=moment_orders, MARGIN=1, FUN=moment, x=dax_rets)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       If the function called by \texttt{sapply()} returns a vector, then \texttt{sapply()} returns a matrix, if possible,
       \vskip1ex
-      The returned vectors form columns of the matrix returned by \texttt{sapply()},
+      The vectors returned by the function are arranged to form columns of the matrix returned by \texttt{sapply()},
       \vskip1ex
       But if the function returns vectors of different lengths, then \texttt{sapply()} cannot return a matrix, and returns a list instead,
       \vskip1ex
       This behavior of \texttt{sapply()} can cause run-time errors,
       \vskip1ex
-      The function \texttt{vapply()} is similar to \texttt{sapply()}, but it always attempts to simplify its output to a matrix, and if it can't then it throws an error,
+      The function \texttt{vapply()} is similar to \texttt{sapply()}, but it always attempts to simplify its output to a matrix, and if it can't then it produces an error,
       \vskip1ex
-      \texttt{vapply()} requires the argument \texttt{FUN.VALUE} that specifes the output format,
-    \column{0.7\textwidth}
+      \texttt{vapply()} requires the argument \texttt{FUN.VALUE} that specifes the output format of the function called by \texttt{vapply()},
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 # vectors form columns of matrix returned by sapply
@@ -1258,10 +1435,10 @@ sapply(2:4, function(num) c(el1=num, el2=2*num))
 sapply(2:4, function(num) 1:num)
 # vapply is similar to sapply
 vapply(2:4, function(num) c(el1=num, el2=2*num), 
-       FUN.VALUE=c(0,0))
-# vapply throws an error if it can't simplify
+       FUN.VALUE=c(row1=0,row2=0))
+# vapply produces an error if it can't simplify
 vapply(2:4, function(num) 1:num, 
-       FUN.VALUE=c(0,0))
+       FUN.VALUE=c(row1=0,row1=0))
       @
   \end{columns}
 \end{block}
@@ -1275,25 +1452,25 @@ vapply(2:4, function(num) 1:num,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The \texttt{lapply()} function is a specialized version of the \texttt{apply()} function,
       \vskip1ex
       \texttt{lapply()} applies a function to a list of objects and returns a list,
       \vskip1ex
       The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 sapply(iris[, -5], mean)  # vector of means of numeric columns
-lapply(iris[, -5], mean)  # calculate means of numeric columns
-# calculate means of numeric columns using anonymous function
-unlist(lapply(iris, 
-              function(col_umn) {
-                if (is.numeric(col_umn)) mean(col_umn)
+lapply(iris[, -5], mean)  # list of means of numeric columns
+unlist(lapply(iris,  # lapply using anonymous function
+              function(co_lumn) {
+                if (is.numeric(co_lumn)) mean(co_lumn)
               }  # end anonymous function
               )  # end sapply
        )  # end unlist
-unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
+unlist(sapply(iris, function(co_lumn) {
+  if (is.numeric(co_lumn)) mean(co_lumn)}))
       @
   \end{columns}
 \end{block}
@@ -1587,7 +1764,7 @@ methods("+")  # view methods for "+" operator
     \column{0.4\textwidth}
       Most \emph{methods} can be viewed by simply calling their full name, unless they're non-visible,
       \vskip1ex
-      Non-visible \emph{methods} can be viewed using the triple-colon operator "\texttt{:::}",
+      Non-visible \emph{methods} can be viewed using the triple-colon operator \texttt{":::"},
       \vskip1ex
       Non-visible \emph{methods} can also be viewed by calling the function \texttt{getAnywhere()},
     \column{0.6\textwidth}
@@ -1683,7 +1860,7 @@ last(new_zoo)  # now works
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      A new "\texttt{string}" class can be created from a \texttt{character} object, by assigning to its \emph{class} attribute,
+      A new \texttt{"string"} class can be created from a \texttt{character} object, by assigning to its \emph{class} attribute,
       \vskip1ex
       The \emph{generic} function \texttt{as.string()} converts objects to class "\emph{string}",
       \vskip1ex
@@ -1823,7 +2000,7 @@ last(new_xts)  # apply "last" from "xts_xtra" class
 Download \texttt{R} Interpreter from \texttt{CRAN} (Comprehensive \texttt{R} Archive Network)\\
 \hskip1em\url{http://cran.r-project.org/}\\
 \vskip4ex
-Download \texttt{RStudio} IDE (Integrated Development Environment)\\
+Download \emph{RStudio} IDE (Integrated Development Environment)\\
 \hskip1em\url{http://www.rstudio.com/products/rstudio/}\\
 \vskip4ex
 

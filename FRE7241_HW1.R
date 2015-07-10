@@ -1,130 +1,94 @@
 #################################
-### HW #1 due April 27, 2015
+### FRE7241 HW #1 due June 15, 2015
 #################################
-# Max score 60pts
+# Max score 40 pts
 
 # Please write in this file the R code needed to perform the tasks below, 
-# rename it to your_name_hw2.R
-# and send this file to Luping Liu (ll2525@nyu.edu)
+# rename it to your_name_hw1.R
+# and send this file to Jaimin Doshi (jbd316@nyu.edu)
 
 
+###############
+# 1. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
+# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
+# use tseries function get.hist.quote(),
 
-##################################
-# 1. (20pts) Subset 1-minute tick data to weekdays and trading hours.
-
-# load packages "lubridate" and "xts",
-library(lubridate)
-library(xts)
-
-# Create a vector of 1-minute POSIXct date-times (ticks), and call it "min_ticks", 
-# starting from "2015-01-01" to "2015-01-31",
-# set the POSIXct timezone to "America/New_York", 
-# use function seq.POSIXt() 
+library(tseries)  # load package tseries
+library(zoo)  # load package zoo
 
 ### write your code here
 
 
-# extract the timezone from "min_ticks" to verify that it's correct, 
-# use function tz() from package "lubridate",
-
-### write your code here
-
-# Create an "xts" time series of rnorm data with a "min_ticks" index, and call it "xts_min_ticks",
-# use function xts() from package "xts",
-
-### write your code here
-
-# remove weekends from "xts_min_ticks", using function weekdays()
+# calculate the 50-day moving average of the "AdjClose" prices,
+# merge the moving average with "zoo_msft" by adding it as the last column,
+# rename the last column to "50DMA",
+# use function rollmean(), with the proper "align" argument, 
+# so that the averages are calculated using values from the past,
 
 ### write your code here
 
 
-# subset the minute ticks in "xts_min_ticks" to trading hours,
-# use the "T notation" for specifying recurring times,
-# see page 4 in xts reference manual:  "xts.pdf",
-# see also answer by Joshua Ulrich here:
-# http://stackoverflow.com/questions/12891232/exclude-specific-time-periods-in-r
-# and by Chinmay Patil here:
-# http://stackoverflow.com/questions/15284943/cut-a-posixct-by-specific-time-for-daily-means
+# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
+# starting from "2015-01-01",
+# use method plot.zoo() with the proper argument "plot.type",
+# add legend so that it doesn't obscure the plot,
 
 ### write your code here
 
-# extract the timezone from "xts_min_ticks" to verify that it's correct, 
-# use function tzone() from package xts,
+
+# calculate the vector of dates when zoo_msft[, "AdjClose"] 
+# crosses "50DMA", and call it "cross_es", 
+# "cross_es" should be TRUE for dates when a cross had just occurred, 
+# and FALSE otherwise,
+
+### write your code here
+
+
+# add vertical ablines to the plot above, at the dates of "cross_es",
 
 ### write your code here
 
 
 
-##################################
-# 2. (20pts) The package "Ecdat" contains a data.frame called "Yen".
-# The column Yen$date contains dates as strings in the format "yyyymmdd",
-# from the column Yen$date create a vector of "POSIXct" dates, and call it "in_dex", 
-# use function ymd() from package "lubridate",
-# set the POSIXct timezone to "America/New_York", 
-
-library("Ecdat")  # load econometric data sets
-library(lubridate)
-head(Yen)  # explore the data
-
-### write your code here
-
-# Create an "xts" from the column Yen$s and "in_dex", and call it "xts_yen",
-
-### write your code here
-
-# plot "xts_yen", using generic function plot(),
+###############
+# 3. (20pts) Calculate the 50-day rolling maximum and minimum of 
+# the "AdjClose" prices,
+# use function rollmax() with the proper "align" argument, so that 
+# the aggregations are calculated using values from the past,
+# calculate the difference between the rolling maximum and minimum, 
+# and call it "ba_nd",
 
 ### write your code here
 
 
-
-
-##################################
-# 3. (20pts) Coerce "EuStockMarkets" to "zoo", and call it "zoo_series",
-# coerce the "zoo_series" index into class "POSIXct",
-# use function date_decimal() from package "lubridate",
-# set the POSIXct timezone to "UTC", 
-
-library(lubridate)
-library(xts)
-# coerce mts object into zoo
-
-### write your code here
-
-# coerce index into class "POSIXct"
-
-### write your code here
-
-# calculate the rolling mean of the "DAX" column of "zoo_series", and call it "zoo_mean",
-
-### write your code here
-
-# merge "zoo_mean" with the "DAX" column of "zoo_series", and call it "zoo_mean",
-
-### write your code here
-
-# replace NA's using na.locf, both forward and backward in time,
+# calculate the rolling upper (lower) band as the moving average
+# plus (minus) one half of "ba_nd",
+# merge the rolling upper and lower bands with "zoo_msft" by adding 
+# them as the last columns,
+# rename the last columns to "Up_band" and "Low_band",
+# remove rows with NAs using function na.omit(), 
 
 ### write your code here
 
 
-# calculate the number of NA's in "zoo_mean", to make sure there none
+# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
+# same panel, starting from "2015-01-01",
+# use method plot.zoo() with the proper argument "plot.type",
+# add legend so that it doesn't obscure the plot,
 
 ### write your code here
 
-# Coerce "zoo_mean" to "xts", and call it "xts_series",
-# use function as.xts() from package "xts",
+
+# calculate the vector of dates when zoo_msft[, "AdjClose"] 
+# crosses any of the bands, and call it "cross_es", 
+# "cross_es" should be TRUE for dates when a cross had just occurred, 
+# and FALSE otherwise,
 
 ### write your code here
 
-# plot both columns of "xts_series" in one panel, starting in 1997,
-# with original series in black, and mean series in red,
-# use generic function plot(),
+
+# add vertical ablines to the plot above, at the dates of "cross_es",
 
 ### write your code here
 
-# add legend on topleft
-
-### write your code here
 

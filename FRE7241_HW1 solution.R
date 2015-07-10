@@ -1,113 +1,131 @@
 #################################
-### FRE7241 HW #1 Solution
+### FRE7241 HW #1 Solution due June 15, 2015
 #################################
-# Max score 60 pts
+# Max score 40pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
+###############
+# 1. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
+# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
+# use tseries function get.hist.quote(),
 
-##################################
-# 1. (20pts) Subset 1-minute tick data to weekdays and trading hours.
+library(tseries)  # load package tseries
+library(zoo)  # load package zoo
 
-# load packages "lubridate" and "xts",
-library(lubridate)
-library(xts)
-
-# Create a vector of 1-minute POSIXct date-times (ticks), and call it "min_ticks", 
-# starting from "2015-01-01" to "2015-01-31",
-# set the POSIXct timezone to "America/New_York", 
-# use function seq.POSIXt() 
-min_ticks <- seq.POSIXt(from=as.POSIXct("2015-01-01", tz="America/New_York"), 
-                        to=as.POSIXct("2015-01-31"), by="min")
-
-# extract the timezone from "min_ticks" to verify that it's correct, 
-# use function tz() from package "lubridate",
-tz(min_ticks)
-
-# Create an "xts" time series of rnorm data with a "min_ticks" index, and call it "xts_min_ticks",
-# use function xts() from package "xts",
-xts_min_ticks <- xts(rnorm(length(min_ticks)), order.by=min_ticks)
-
-# remove weekends from "xts_min_ticks", using function weekdays()
-week_days <- weekdays(min_ticks)
-is_weekday <- !((week_days == "Saturday") | 
-                  (week_days == "Sunday"))
-xts_min_ticks <- xts_min_ticks[is_weekday]
+# load MSFT data
+zoo_msft <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT", 
+    start=as.Date("2007-06-01"), 
+    end=Sys.Date(), 
+    quote=c("AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
 
 
-# subset the minute ticks in "xts_min_ticks" to trading hours,
-# use the "T notation" for specifying recurring times,
-# see page 4 in xts reference manual:  "xts.pdf",
-# see also answer by Joshua Ulrich here:
-# http://stackoverflow.com/questions/12891232/exclude-specific-time-periods-in-r
-# and by Chinmay Patil here:
-# http://stackoverflow.com/questions/15284943/cut-a-posixct-by-specific-time-for-daily-means
-xts_min_ticks <- xts_min_ticks["T09:30:00/T16:00:00", ]
+# calculate the 50-day moving average of the "AdjClose" prices,
+# merge the moving average with "zoo_msft" by adding it as the last column,
+# rename the last column to "50DMA",
+# use function rollmean(), with the proper "align" argument, 
+# so that the averages are calculated using values from the past,
 
-# extract the timezone from "xts_min_ticks" to verify that it's correct, 
-# use function tzone() from package xts,
-tzone(xts_min_ticks)
+roll_mean <- rollmean(x=zoo_msft[, "AdjClose"], k=50, align="right")
+zoo_msft <- na.omit(merge(zoo_msft, roll_mean))
+colnames(zoo_msft)[3] <- "50DMA"
 
 
+# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
+# starting from "2015-01-01",
+# use method plot.zoo() with the proper argument "plot.type",
+# add legend so that it doesn't obscure the plot,
 
-##################################
-# 2. (20pts) The package "Ecdat" contains a data.frame called "Yen".
-# The column Yen$date contains dates as strings in the format "yyyymmdd",
-# from the column Yen$date create a vector of "POSIXct" dates, and call it "in_dex", 
-# use function ymd() from package "lubridate",
-# set the POSIXct timezone to "America/New_York", 
-
-library("Ecdat")  # load econometric data sets
-library(lubridate)
-head(Yen)  # explore the data
-in_dex <- ymd(Yen$date, tz="America/New_York")
-
-# Create an "xts" from the column Yen$s and "in_dex", and call it "xts_yen",
-xts_yen <- xts(Yen$s, order.by=in_dex)
-
-# plot "xts_yen", using generic function plot(),
-plot(xts_yen)
-
-
-
-
-##################################
-# 3. (20pts) Coerce "EuStockMarkets" to "zoo", and call it "zoo_series",
-# coerce the "zoo_series" index into class "POSIXct",
-# use function date_decimal() from package "lubridate",
-# set the POSIXct timezone to "UTC", 
-
-library(lubridate)
-library(xts)
-# coerce mts object into zoo
-zoo_series <- as.zoo(EuStockMarkets)
-# coerce index into class "POSIXct"
-index(zoo_series) <- date_decimal(index(zoo_series))
-
-# calculate the rolling mean of the "DAX" column of "zoo_series", and call it "zoo_mean",
-zoo_mean <- rollmean(zoo_series[, "DAX"], k=11)
-
-# merge "zoo_mean" with the "DAX" column of "zoo_series", and call it "zoo_mean",
-zoo_mean <- merge(zoo_series[, "DAX"], zoo_mean)
-# replace NA's using na.locf, both forward and backward in time,
-zoo_mean <- na.locf(zoo_mean)
-zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
-
-# calculate the number of NA's in "zoo_mean", to make sure there none
-sum(is.na(zoo_mean))
-
-# Coerce "zoo_mean" to "xts", and call it "xts_series",
-# use function as.xts() from package "xts",
-xts_series <- as.xts(zoo_mean)
-
-# plot both columns of "xts_series" in one panel, starting in 1997,
-# with original series in black, and mean series in red,
-# use generic function plot(),
-plot(xts_series["1997-01-01/", ])
-# add legend on topleft
-legend("topleft", inset=0.05, cex=0.8, title="DAX Rolling Mean Prices", 
-       leg=c("orig prices", "mean prices"), lwd=2, bg="white", 
+plot(zoo_msft[(index(zoo_msft)>as.Date("2015-01-01")), 
+              c("AdjClose", "50DMA")], 
+     main="MSFT Prices and 50DMA", 
+     xlab="", ylab="", plot.type="single", 
+     col=c("black", "red"))
+# add legend
+legend("top", inset=0.05, cex=0.5, 
+       title="MSFT Prices and 50DMA", 
+       leg=c("MSFT", "50DMA"), lwd=2, bg="white", 
        col=c("black", "red"))
+
+
+# calculate the vector of dates when zoo_msft[, "AdjClose"] 
+# crosses "50DMA", and call it "cross_es", 
+# "cross_es" should be TRUE for dates when a cross had just occurred, 
+# and FALSE otherwise,
+
+cross_es <- !(diff(sign(zoo_msft[, "AdjClose"] - zoo_msft[, "50DMA"]))==0)
+cross_es <- index(zoo_msft[cross_es, ])
+
+
+# add vertical ablines to the plot above, at the dates of "cross_es",
+
+abline(v=cross_es[cross_es>as.Date("2015-01-01")], col="blue", lty="dashed")
+
+
+
+###############
+# 3. (20pts) Calculate the 50-day rolling maximum and minimum of 
+# the "AdjClose" prices,
+# use function rollmax() with the proper "align" argument, so that 
+# the aggregations are calculated using values from the past,
+# calculate the difference between the rolling maximum and minimum, 
+# and call it "ba_nd",
+
+roll_max <- rollmax(x=zoo_msft[, "AdjClose"], k=50, align="right")
+roll_min <- -rollmax(x=-zoo_msft[, "AdjClose"], k=50, align="right")
+ba_nd <- (roll_max-roll_min)
+
+
+# calculate the rolling upper (lower) band as the moving average
+# plus (minus) one half of "ba_nd",
+# merge the rolling upper and lower bands with "zoo_msft" by adding 
+# them as the last columns,
+# rename the last columns to "Up_band" and "Low_band",
+# remove rows with NAs using function na.omit(), 
+
+upper_band <- zoo_msft[, "50DMA"] + ba_nd/2
+lower_band <- zoo_msft[, "50DMA"] - ba_nd/2
+zoo_msft <- merge(zoo_msft, upper_band, lower_band)
+colnames(zoo_msft)[4:5] <- c("Up_band", "Low_band")
+zoo_msft <- na.omit(zoo_msft)
+
+
+# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
+# same panel, starting from "2015-01-01",
+# use method plot.zoo() with the proper argument "plot.type",
+# add legend so that it doesn't obscure the plot,
+
+plot(zoo_msft[(index(zoo_msft)>as.Date("2015-01-01")), 
+              c("AdjClose", "Up_band", "Low_band")], 
+     main="MSFT Prices with Bollinger Bands", 
+     xlab="", ylab="", plot.type="single", 
+     col=c("black", "red", "blue"))
+# add legend
+legend("top", inset=0.05, cex=0.5, 
+       title="MSFT Prices with Bollinger Bands", 
+       leg=c("MSFT", "Up_band", "Low_band"), 
+       lwd=2, bg="white", 
+       col=c("black", "red", "blue"))
+
+
+# calculate the vector of dates when zoo_msft[, "AdjClose"] 
+# crosses any of the bands, and call it "cross_es", 
+# "cross_es" should be TRUE for dates when a cross had just occurred, 
+# and FALSE otherwise,
+
+
+up_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Up_band"]
+low_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Low_band"]
+cross_es <- ((!(diff(sign(up_cross))==0)) | (!(diff(sign(low_cross))==0)))
+cross_es <- index(zoo_msft[cross_es, ])
+
+# add vertical ablines to the plot above, at the dates of "cross_es",
+
+abline(v=cross_es[cross_es>as.Date("2015-01-01")], col="green", lty="dashed")
 

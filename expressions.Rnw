@@ -1,10 +1,11 @@
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -98,12 +99,12 @@ knit_theme$set(thm)
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
-vec_var1 <- c(2, 4, 6)
-vec_var1 < 5
-(vec_var1 < 5) & (vec_var1 > 3)
-vec_var1[(vec_var1 < 5) & (vec_var1 > 3)]
-vec_var2 <- c(-10, 0, 10)
-vec_var1 < vec_var2
+vec_tor1 <- c(2, 4, 6)
+vec_tor1 < 5  # element-wise comparison
+(vec_tor1 < 5) & (vec_tor1 > 3)
+vec_tor1[(vec_tor1 < 5) & (vec_tor1 > 3)]
+vec_tor2 <- c(-10, 0, 10)
+vec_tor1 < vec_tor2
 c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
       @
@@ -140,18 +141,18 @@ c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
 rm(list=ls())
 c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
-echo_true = function() {cat("echo_true\t"); TRUE}
-echo_false = function() {cat("echo_false\t"); FALSE}
+echo_true <- function() {cat("echo_true\t"); TRUE}
+echo_false <- function() {cat("echo_false\t"); FALSE}
 echo_true() | echo_false()
 echo_true() || echo_false()  # echo_false() isn't evaluated at all!
-vec_var <- c(2, 4, 6)
+vec_tor <- c(2, 4, 6)
 # works (does nothing) using '&&'
-if (is.matrix(vec_var) && (vec_var[2, 3] > 0)) {
-  vec_var[2, 3] <- 1
+if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
 }
-# no short-circuit so fails (throws an error)
-if (is.matrix(vec_var) & (vec_var[2, 3] > 0)) {
-  vec_var[2, 3] <- 1
+# no short-circuit so fails (produces an error)
+if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
 }
       @
   \end{columns}
@@ -167,11 +168,11 @@ if (is.matrix(vec_var) & (vec_var[2, 3] > 0)) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{identical()} tests if two objects are exactly equal, and always returns a logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
+      The function \texttt{identical()} tests if two objects are exactly the same, and always returns a single logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
       \vskip1ex
       For atomic arguments \texttt{identical()} often gives the same result as the '\texttt{==}' operator, but it's not synonymous with it in general,
       \vskip1ex
-      The '\texttt{==}' operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns single logical values,
+      The '\texttt{==}' operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -181,10 +182,11 @@ identical(num_var, 2)
 
 identical(num_var, NULL) 
 num_var==NULL
+is.null(num_var)
 
-vec_var <- c(2, 4, 6)
-vec_var==2
-identical(vec_var, 2)
+vec_tor <- c(2, 4, 6)
+vec_tor==2
+identical(vec_tor, 2)
       @
   \end{columns}
 \end{block}
@@ -199,9 +201,44 @@ identical(vec_var, 2)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{which()} accepts a logical \texttt{vector}, and returns a \texttt{vector} of indices corresponding to the \texttt{TRUE} elements,
+      The function \texttt{which()} returns the indices of the \texttt{TRUE} elements of a logical \texttt{vector} or \texttt{array}, 
       \vskip1ex
-      \texttt{match()} accepts two arguments, and returns the index of the first value in its second argument, that matches its first argument,
+      If the argument is an \texttt{array} and \texttt{arr.ind=TRUE}, then \texttt{which()} returns a matrix with rows containing the indices of the \texttt{TRUE} elements,
+      \vskip1ex
+      The functions \texttt{which.max()} and \texttt{which.min()} return the index of the minimum or maximum of a \texttt{numeric} or \texttt{boolean} vector,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+vec_tor <- sample(1:9)
+mat_rix <- matrix(vec_tor, ncol=3)
+vec_tor
+which(vec_tor == 5)
+# equivalent but less efficient than above
+(1:length(vec_tor))[vec_tor == 5]
+which(vec_tor > 5)
+# find indices of TRUE elements of boolean matrix
+which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
+# equivalent but less efficient than above
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)), 
+         dim(mat_rix), dimnames(mat_rix))
+which.max(vec_tor)
+# equivalent but less efficient than above
+which(vec_tor == max(vec_tor))
+which.min(vec_tor)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{match()} returns the index of the first element of its second argument, that matches its first argument,
       \vskip1ex
       The binary operator \texttt{\%in\%} returns a logical \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
       \vskip1ex
@@ -209,20 +246,18 @@ identical(vec_var, 2)
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-some_values <- sample(1:10)
-some_values
-which(some_values==5)
-which(some_values>5)
-which.max(some_values)
-which.min(some_values)
-match(5, some_values)
-match(-5, some_values)
-5 %in% some_values
--5 %in% some_values
-c(5, -5) %in% some_values
-some_values <- rnorm(10) + 1
-some_values
-if(any(some_values < 0))
+match(5, vec_tor)
+# equivalent but less efficient than above
+which(vec_tor == 5)
+match(-5, vec_tor)
+5 %in% vec_tor
+# equivalent to above
+match(5, vec_tor, nomatch = 0) > 0
+-5 %in% vec_tor
+c(5, -5) %in% vec_tor
+any(vec_tor == 5)
+any(vec_tor == (-5))
+if(any(vec_tor < 0))
   cat("vector contains negative values\n")
       @
   \end{columns}
@@ -242,11 +277,17 @@ if(any(some_values < 0))
       \vskip1ex
       Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in \texttt{R},
       \vskip1ex
+      The \texttt{"<-"} operator may cause an error if \texttt{R} confuses it with the \texttt{"<"} logical operator,
+      \vskip1ex
       But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),
       \vskip1ex
       The \texttt{"="} operator is used for named arguments in function calls,
       \vskip1ex
       When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,
+      \vskip1ex
+      {\color{red}{Rule of Thumb}}:\\
+      Use \texttt{"<-"} in \texttt{R} scripts and inside functions,\\
+      Use \texttt{"="} only in function calls,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
@@ -254,19 +295,14 @@ num_var1 <- 3  # "<-" and "=" are valid assignment operators
 num_var1
 num_var1 = 3
 num_var1
+2<-3  # "<" operator confused with "<-"
+2 < -3  # add space or brackets to avoid confusion
 median(x = 1:10)  # "=" assignment within argument list
 x  # x doesn't exist outside the function
 median(x <- 1:10)  # "<-" assignment within argument list
 x  # x exists outside the function
       @
   \end{columns}
-\end{block}
-\pause
-
-\begin{block}{\color{red}{Rule of Thumb}}
-  Use \texttt{"<-"} in \texttt{R} scripts and inside functions,
-  \vskip1ex
-  Use \texttt{"="} only in function calls.
 \end{block}
 
 \end{frame}
@@ -291,7 +327,7 @@ x  # x exists outside the function
       \vskip1ex
       If a object name is passsed to \texttt{assign()}, then it evaluates that object to get the string it contains,
       \vskip1ex
-      If the object doesn't contain a string, then \texttt{assign()} throws an error,
+      If the object doesn't contain a string, then \texttt{assign()} produces an error,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
@@ -342,7 +378,9 @@ for (col_name in colnames(EuStockMarkets)) {
   assign(col_name, EuStockMarkets[, col_name])
 }  # end for
 ls()
-head(CAC)
+head(DAX)
+head(EuStockMarkets[, "DAX"])
+identical(DAX, EuStockMarkets[, "DAX"])
       @
   \end{columns}
 \end{block}
@@ -380,7 +418,7 @@ get("my_var1", envir=test_env)
 # retrieve and assign value to object
 assign("my_var1", 
        2*get("my_var1", envir=test_env), 
-      envir=test_env)
+       envir=test_env)
 get("my_var1", envir=test_env)
 # delete environment
 rm(test_env)
@@ -484,7 +522,7 @@ symbol_new
       \vskip1ex
       \texttt{substitute()} accepts named \texttt{lists} as \texttt{environments} in which objects are evaluated,
       \vskip1ex
-      \texttt{substitute()} is often used inside \texttt{functions} to substitute formal arguments with names of actual arguments,
+      \texttt{substitute()} is often used inside functions to substitute formal arguments with names of actual arguments,
       \vskip1ex
       \texttt{deparse()} converts \texttt{expressions} or \texttt{symbols} into character strings,
     \column{0.6\textwidth}
@@ -532,7 +570,7 @@ my_var
     \column{0.4\textwidth}
       \texttt{R} has the familiar '\texttt{if() \{...\} else \{...\}}' statement to control execution flow depending on logical conditions,
       \vskip1ex
-      The logical conditions must be either a logical or numeric type, otherwise an error is thrown,
+      The logical conditions must be either a logical or numeric type, otherwise an error is produced,
       \vskip1ex
       The '\texttt{else}' statement can also be omitted,
       \vskip1ex
@@ -614,6 +652,14 @@ while (in_dex < 4) {  # while loop
         F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
       \end{displaymath}
       The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration,
+      \vskip1ex
+      A more efficicent way to perform iteration is by pre-allocating the vector,
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
     \column{0.6\textwidth}
         <<echo=(-1)>>=
 rm(list=ls())
@@ -622,378 +668,10 @@ rm(list=ls())
 fib_seq <- numeric(10)
 fib_seq[1] <- 0  # initialize
 fib_seq[2] <- 1  # initialize
-
 for (i in 3:10) {  # perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
-
 fib_seq
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using \texttt{"while"} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{"while"} loops are often used in simulations, when the number of required loops is unknown in advance,
-      \vskip1ex
-      Below is an example of a simulation of random prices hitting a barrier level,
-        <<simu_while,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # for reproducibility
-simu_max <- 1000  # max simulation trials
-simu_prices <- 0*1:simu_max  # initialize prices
-barrier_level <- 20  # barrier level
-simu_prices[1] <- 0  # first simulated price
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_max) && 
-         (simu_prices[in_dex - 1] < barrier_level)) {
-  simu_prices[in_dex] <- # simulate next price
-    simu_prices[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-if (in_dex <= simu_max) {  # fill zero prices
-  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
-}
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_while-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{apply()} Instead of \texttt{"for"} and \texttt{"while"} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{"for"} and \texttt{"while"} loops are relatively inefficient and too slow for large computations,
-      \vskip1ex
-      \texttt{apply()} loops are similar in speed to \texttt{"for"} and \texttt{"while"} loops,
-      \vskip1ex
-      \texttt{lapply()} is slightly faster than \texttt{sapply()}, which is slightly faster than \texttt{apply()} loops,
-      \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  and is therefore preferred,
-      \vskip1ex
-      The function \texttt{system.time()} returns the CPU time used to evaluate a given expression,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# matrix with 500,000 rows
-big_matrix <- matrix(rnorm(1000000), ncol=2)
-# allocate memory for row sums
-row_sums <- numeric(nrow(big_matrix))
-# sum up row using "for" loop
-system.time(
-  for(i in 1:nrow(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
-  }  # end for
-)  # end system.time
-# row sums using "apply" loop
-system.time(row_sums <- apply(big_matrix, 1, sum))
-system.time(  # row sums using "sapply" loop
-  row_sums <- sapply(1:nrow(big_matrix), 
-                     function(in_dex) 
-                         sum(big_matrix[in_dex, ])))
-system.time(  # row sums using "lapply" loop
-  row_sums <- lapply(1:nrow(big_matrix), 
-                     function(in_dex) 
-                         sum(big_matrix[in_dex, ])))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Allocating Memory to Increase Speed}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} syntax doesn't require allocating memory for new objects, but allocating memory for large vectors and matrices increases the speed of \texttt{R} code,
-      \vskip1ex
-      \texttt{R} allocates memory for a full vector each time it calculates a new vector element that wasn't previously allocated,
-      \vskip1ex
-      A loop which calculates vector elements allocates memory for a full vector in each iteration, which is inefficient and slow,
-      \vskip1ex
-      So it's better to allocate memory for a large vector or matrix, before performing a loop that calculates its elements, 
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
-      \vskip1ex
-      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-big_vector <- rnorm(50000)
-### allocate zero memory for cumulative sum
-cum_sum <- numeric(0)
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for(i in 2:length(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-### allocate full memory for cumulative sum
-cum_sum <- numeric(length(big_matrix))
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for(i in 2:length(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Vector Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{apply()} and \texttt{"for"} loops are very inefficient for calculations on large vectors, because the loops are performed by \texttt{R} code,
-      \vskip1ex
-      \emph{Vectorized} functions accept \texttt{vectors} as arguments, pass them to compiled \texttt{C} code, and return a vector,
-      \vskip1ex
-      \emph{Vectorized} functions are very fast because the compiled \texttt{C} code performs the actual loops and other calculations, which is very fast,
-      \vskip1ex
-      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
-      \vskip1ex
-      The functions \texttt{ifelse()} and \texttt{which()} perform \emph{vectorized} logical operations,
-      \vskip1ex
-      \texttt{R} has very efficient functions for calculating cumulative values over large vectors:
-      \begin{itemize}
-        \item \texttt{cummax()}
-        \item \texttt{cummin()}
-        \item \texttt{cumsum()}
-        \item \texttt{cumprod()}
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-2em}
-        <<>>=
-vec_var1 <- rnorm(1000000)
-vec_var2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for(i in 1:length(vec_var1)) {
-    big_vector[i] <- vec_var1[i] + vec_var2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_var1 + vec_var2)
-# allocate memory for cumulative sum
-cum_sum <- numeric(length(big_vector))
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for(i in 2:length(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-# cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function \texttt{ifelse()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
-      \vskip1ex
-      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
-        <<func_ifelse,eval=FALSE,echo=(-1),fig.show='hide'>>=
-rm(list=ls())
-# create two numeric vectors
-vec_var1 <- sin(0.25*pi*1:10)
-vec_var2 <- cos(0.25*pi*1:10)
-# create third vector using 'ifelse'
-vec_var3 <- ifelse(vec_var1 > vec_var2, 
-                  vec_var1, vec_var2)
-# cbind all three together
-vec_var4 <- cbind(vec_var1, vec_var2, vec_var3)
-
-# set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
-    cex.sub=0.5)
-# plot matrix
-matplot(vec_var4, type="l", lty="solid", 
-        col=c("green", "blue", "red"), 
-        lwd=c(2, 2, 2), xlab="", ylab="")
-# add legend
-legend(x="bottomright", legend=colnames(vec_var4), 
-       title="", inset=0.05, cex=0.8, lwd=2, 
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
-      \vskip1ex
-      \texttt{R} has very efficient functions for calculating sums and means of rows and columns:
-      \begin{itemize}
-        \item \texttt{rowSums()}
-        \item \texttt{colSums()}
-        \item \texttt{rowMeans()}
-        \item \texttt{colMeans()}
-      \end{itemize}
-      \emph{vectorized} functions accept \texttt{vectors} as arguments, and call compiled \texttt{C} code for very fast calculations,
-      \vskip1ex
-      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-system.time(row_sums <- apply(big_matrix, 1, sum))
-
-str(rowSums)  # get list of arguments
-
-# calculate row sums
-system.time(row_sums <- rowSums(big_matrix))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre- computing a vector of random numbers, instead of generatng them one at a time in a loop,
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{"while"} loops,
-        <<simu_vector,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # for reproducibility
-simu_max <- 1000  # max simulation trials
-barrier_level <- 20  # barrier level
-# simulated prices
-simu_prices <- cumsum(rnorm(simu_max))
-# in_dex is "1" after prices cross barrier_level
-in_dex <- cummax(simu_prices > barrier_level)
-# find index when prices cross barrier_level
-which_index <- which(diff(in_dex)==1)
-# fill prices after crossing barrier_level
-if (length(which_index)>0) {
-  simu_prices[as.logical(in_dex)] <- 
-    simu_prices[which_index + 1]
-}  # end if
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_vector-1}
-      \vspace{-4em}
-      The trade-off is between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Efficient Binding of Lists Into Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
-      \vskip1ex
-      But for large vectors this procedure can be very slow, and often causes an out of memory error,
-      \vskip1ex
-      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix,
-      \vskip1ex
-      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion, 
-      \vskip1ex
-      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half,
-      \vskip1ex
-      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \texttt{qmao}:\\
-\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(list_var) {
-  while (length(list_var) > 1) {
-# index of odd list elements
-    odd_index <- seq(from=1, to=length(list_var), by=2)
-# bind neighboring elements and divide list_var by half
-    list_var <- lapply(odd_index, function(in_dex) {
-      if (in_dex==length(list_var)) {
-        return(list_var[[in_dex]])
-      }
-      return(rbind(list_var[[in_dex]], 
-                   list_var[[in_dex+1]]))
-    })  # end lapply
-  }  # end while
-# list_var has only one element - return it
-  list_var[[1]]
-}  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
       @
   \end{columns}
 \end{block}
@@ -1007,15 +685,15 @@ identical(mat_rix, do_call_rbind(list_vectors))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Splitting Data Frames}
+\subsection{Splitting Data Frames Using \texttt{factor} Categorical Variables}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.3\textwidth}
-      The function \texttt{split()} divides an object into a list of objects, according to a factor (attribute),
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable),
       \vskip1ex
-      The list's \texttt{names} attribute is made equal to the factor levels,
+      The list's \texttt{names} attribute is equal to the \texttt{factor} levels,
     \column{0.7\textwidth}
       \vspace{-1em}
         <<>>=
@@ -1071,7 +749,7 @@ head(split_iris$setosa, 2)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.3\textwidth}
+    \column{0.4\textwidth}
       The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
       \vskip1ex
       \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call, 
@@ -1081,11 +759,11 @@ head(split_iris$setosa, 2)
       The \texttt{with()} function evaluates an expression in an environment constructed from the data,
       \vskip1ex
       The \texttt{aggregate()} function applies a function to aggregations of an object,
-    \column{0.7\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 unique(mtcars$cyl)  # cyl has three unique values
-# split the mtcars data frame based on number of cylinders
+# split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
@@ -1115,6 +793,12 @@ aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
       Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
       \vskip1ex
       A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
@@ -1151,7 +835,7 @@ do.call(cbind, data_cars)
 http://rollingyours.wordpress.com/2013/02/14/welcome/
     \column{0.7\textwidth}
       \vspace{-1em}
-        <<>>=
+        <<eval=FALSE>>=
 data(ChickWeight)
 # ?ChickWeight
 
@@ -1231,7 +915,7 @@ lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)
       The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
     \column{0.7\textwidth}
       \vspace{-1em}
-        <<>>=
+        <<eval=FALSE>>=
 library(plyr)
 one <- ozone[1, 1, ]
 month <- ordered(rep(1:12, length = 72))
@@ -1313,54 +997,104 @@ aggregate(count ~ spray, InsectSprays, mean)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler,
+      \vskip1ex
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler,
+      \vskip1ex
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
+      \begin{itemize}
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
+        \item \emph{one} then warnings are printed as they occur,
+        \item \emph{two} or larger then warnings are turned into errors,
+      \end{itemize}
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?options  # get info on global options
+getOption("warn")  # get global option for "warn"
+options("warn")  # get global option for "warn"
+getOption("error")  # get global option for "error"
+sqrt_safe <- function(in_var) {
+# returns its argument
+  if (in_var<0) {
+    warning("sqrt_safe: in_var is negative")
+    NULL  # return negative for negative argument
+  } else {
+    sqrt(in_var)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Validating Function Arguments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{R} provides several ways to handle missing or unexpected argument values, 
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type},
       \vskip1ex
-      A popular method of catching missing actual arguments is to assign \texttt{NULL} default values to formal arguments, and then to call function \texttt{is.null()} on them,
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call,
       \vskip1ex
-      Another method is to call the function \texttt{missing()} on the arguments,
+      Missing arguments can be detected by:\\
+      - assigning the default value of \texttt{NULL} to formal arguments and then calling the function \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments,
       \vskip1ex
-      Object \emph{type} validation functions such as \texttt{is.numeric()} should be called before executing any further operations,
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
       \vskip1ex
       When the function \texttt{return()} is called inside a function body, it returns its argument and terminates futher function execution,
-      \vskip1ex
-      \texttt{cat()} statements in the function provide information about the state of its variables,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# function "double_it" returns the double of its argument
-double_it <- function(in_var=NULL) {
+# function vali_date validates its arguments
+vali_date <- function(in_var=NULL) {
 # check if argument is valid and return double
   if (is.null(in_var)) {
-    return("double_it: in_var is missing")
+    return("vali_date: in_var is missing")
   } else if (is.numeric(in_var)) {
     2*in_var
-  } else {
-    cat("double_it: in_var is not numeric")
-  }
-}  # end double_it
-double_it(3)
-double_it("a")
-double_it()
-
-double_it <- function(in_var) {
+  } else cat("vali_date: in_var is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates its arguments using missing
+vali_date <- function(in_var) {
 # check if argument is valid and return double
   if (missing(in_var)) {
-    return("double_it: in_var is missing")
+    return("vali_date: in_var is missing")
   } else if (is.numeric(in_var)) {
     2*in_var
-  } else {
-    cat("double_it: in_var is not numeric")
-  }
-}  # end double_it
-double_it(3)
-double_it("a")
-double_it()
+  } else cat("vali_date: in_var is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
       @
   \end{columns}
 \end{block}
@@ -1375,36 +1109,31 @@ double_it()
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      If assertions about variables inside functions are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution,
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution,
       \vskip1ex
-      The function \texttt{stop()} halts function execution, produces an \emph{error} condition, and returns its message to the error handler,
-      \vskip1ex
-      Using \texttt{stop()} inside a function allows debugging it, by executing the function after calling \texttt{debug()},
-      \vskip1ex
-      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or temporarily inserting \texttt{cat()} statements into the code,
-      \vskip1ex
-      Once debugging is finished, then \texttt{undebug()} should be called,
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code,
       \vskip1ex
       Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced,
       \vskip1ex
       The function \texttt{traceback()} prints the call stack that produced the \emph{error} condition,
+      \vskip1ex
+      \texttt{cat()} statements inside the function body provide information about the state of its variables,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# function "double_it" returns the double of its argument
-double_it <- function(in_var=NULL) {
+# vali_date validates its arguments and assertions
+vali_date <- function(in_var) {
 # check if argument is valid and return double
   if (missing(in_var)) {
-    stop("double_it: in_var is missing")
+    stop("vali_date: in_var is missing")
   } else if (!is.numeric(in_var)) {
-    stop("double_it: in_var is not numeric")
-  } else {
-    2*in_var
-  }
-}  # end double_it
-double_it(3)
-double_it("a")
-double_it()
+    cat("in_var=", in_var)
+    stop("vali_date: in_var is not numeric")
+  } else 2*in_var
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
       @
   \end{columns}
 \end{block}
@@ -1419,7 +1148,9 @@ double_it()
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{stopifnot()} stops function execution and produces an \emph{error} condition if its argument is \texttt{FALSE},
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()},
+      \vskip1ex
+      The function \texttt{stopifnot()} produces an \emph{error} condition, and halts function execution, if its argument is \texttt{FALSE},
       \vskip1ex
       \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if()} statements,
       \vskip1ex
@@ -1429,15 +1160,21 @@ double_it()
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# function "double_it" returns the double of its argument
-double_it <- function(in_var=NULL) {
-# check if argument is valid and return double
-  stopifnot(!is.null(in_var) && is.numeric(in_var))
+vali_date <- function(in_var) {
+# check argument using long form logical '&&' operator
+  stopifnot(!missing(in_var) && is.numeric(in_var))
   2*in_var
-}  # end double_it
-double_it(3)
-double_it("a")
-double_it()
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_var=NULL) {
+# check argument using standard logical '&' operator
+  stopifnot(!missing(in_var) & is.numeric(in_var))
+  2*in_var
+}  # end vali_date
+vali_date()
+vali_date("a")
       @
   \end{columns}
 \end{block}
@@ -1446,30 +1183,34 @@ double_it()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments and Debugging}
+\subsection{Validating Function Arguments and Assertions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()},
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE},
       \vskip1ex
-      A simple way to produce a message from within a function is to call the \texttt{cat()} function,
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions,
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function,
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error},
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
 # function "sum_two" returns the sum of its two arguments
 sum_two <- function(in_var1, in_var2) {  # even more robust
 # check if at least one argument is not missing
-  stopifnot(!missing(in_var1) || !missing(in_var2))
+  stopifnot(!missing(in_var1) && !missing(in_var2))
 # check if arguments are valid and return sum
   if (is.numeric(in_var1) && is.numeric(in_var2)) {
     in_var1 + in_var2  # both valid
   } else if (is.numeric(in_var1)) {
-    cat("in_var2 is not numeric")
+    cat("in_var2 is not numeric\n")
     in_var1  # in_var1 is valid
   } else if (is.numeric(in_var2)) {
-    cat("in_var1 is not numeric")
+    cat("in_var1 is not numeric\n")
     in_var2  # in_var2 is valid
   } else {
     stop("none of the arguments are numeric")
@@ -1488,49 +1229,29 @@ sum_two()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Exception Conditions: Errors and Warnings}
+\subsection{The \texttt{R} Debugger Facility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{Conditions} are \texttt{R} objects containing information about errors, warnings etc., produced while evaluating expressions,
+    \column{0.4\textwidth}
+      The function \texttt{debug()} allows exploring function execution step-by-step,
       \vskip1ex
-      The function \texttt{stop()} halts function execution, produces an \emph{error} condition, and returns its message to the error handler,
+      The call \texttt{"debug(my\_func)"} invokes the debugger after \texttt{my\_func()} is called,
       \vskip1ex
-      The function \texttt{warning()} produces an \emph{warning} condition, and returns its message to the error handler,
+      If the function \texttt{my\_func()} is called after calling \texttt{debug(my\_func)}, then the debugger is invoked,
       \vskip1ex
-      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
-      \begin{itemize}
-        \item \emph{negative} then warnings are ignored,
-        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
-        \item \emph{one} then warnings are printed as they occur,
-        \item \emph{two} or larger then warnings are turned into errors,
-      \end{itemize}
-      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings,
-    \column{0.5\textwidth}
+      Inside the debugger, the user can explore function arguments and variables,
+      \vskip1ex
+      The command \texttt{Q} exits the debugger,
+      \vskip1ex
+      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt turns off the debugger,
+    \column{0.6\textwidth}
       \vspace{-1em}
-        <<>>=
-# ?options
-getOption("warn")
-getOption("error")
-catch_missing <- function(in_var) {
-# returns its argument
-  if (missing(in_var)) {
-    warning("catch_missing: in_var was missing")
-  } else {
-    in_var
-  }
-}  # end catch_missing
-catch_missing(5)
-options(warn=-1)
-catch_missing()
-options(warn=0)
-catch_missing()
-options(warn=1)
-catch_missing()
-options(warn=3)
-catch_missing()
+        <<eval=FALSE>>=
+debug(vali_date)  # debug "vali_date"
+vali_date(3)  # calling "vali_date" starts debugger
+undebug(vali_date)  # turn debug off
       @
   \end{columns}
 \end{block}
@@ -1547,7 +1268,7 @@ catch_missing()
     \column{0.4\textwidth}
       The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
       \vskip1ex
-      \texttt{tryCatch()} first evaluates its \texttt{expression} argument,
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument,
       \vskip1ex
       If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression,
       \vskip1ex
@@ -1563,7 +1284,7 @@ str(tryCatch)  # get arguments of tryCatch()
 tryCatch(  # without error handler
   {  # evaluate expressions
     num_var <- 101  # assign
-    stop('my error')  # throw error
+    stop('my error')  # produce error
   }, 
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
@@ -1571,7 +1292,7 @@ tryCatch(  # without error handler
 tryCatch(  # with error handler
   {  # evaluate expressions
     num_var <- 101  # assign
-    stop('my error')  # throw error
+    stop('my error')  # produce error
   }, 
   error=function(error_cond)  # handler captures error condition
     print(paste("error handler: ", error_cond)),
@@ -1625,7 +1346,9 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     \column{0.5\textwidth}
       If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results,
       \vskip1ex
-      The values produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} that are supplied to \texttt{tryCatch()}, 
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}, 
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}, 
       \vskip1ex
       \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs,
     \column{0.5\textwidth}

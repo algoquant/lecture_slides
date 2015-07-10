@@ -1,122 +1,101 @@
 #################################
-### HW #2 due April 27, 2015
+### FRE7241 HW #2 due June 23, 2015
 #################################
-# Max score 45pts
+# Max score 40pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw2.R
-# and send this file to Luping Liu (ll2525@nyu.edu)
-
-
-##################################
-# 1. (30pts) Calculate the maximum drawdown of a time series.
-
-# load packages "lubridate", "xts", and "tseries",
-library(xts)
-
-
-# Create a "Date" vector of 100 daily dates, starting from "2015-01-04", and call it "in_dex", 
-# use functions as.Date() and seq(),
-
-### write your code here
-
-
-# Extract the class from "in_dex" to verify that it is "Date" class, 
-
-### write your code here
-
-
-# Create a vector of data of length "in_dex" as follows:
-da_ta <- sin(0.1*(1:length(in_dex))) + (1:length(in_dex))/50
-
-# Create an "xts" time series with the "da_ta" and the "in_dex", and call it "xts_series",
-# use function xts() from package "xts",
-
-### write your code here
-
-
-# plot "xts_series", using generic function plot(),
-
-### write your code here
-
-
-# The Cumulative maximum of a price series is the maximum price up to that point in time. 
-# Plot the Cumulative maximum of "xts_series" using function cummax(),
-
-### write your code here
-
-
-# A drawdown is a drop in price from its previous maximum.
-# Calculate the time series of drawdowns of "xts_series", as the difference 
-# between the cumulative maximum of "xts_series" minus "xts_series", and call it "draw_down", 
-
-### write your code here
-
-
-# plot "draw_down",
-
-### write your code here
-
-
-# Find the date when "draw_down" reaches its maximum, and call it "date_trough", 
-# and find the maximum value of "draw_down" on that date, and call it "max_draw_down", 
-# use function which.max(),
-
-### write your code here
-
-
-# Subset "draw_down" to dates before "date_trough", and call it "draw_down_pre", 
-
-### write your code here
-
-# Subset "draw_down" to dates after "date_trough", and call it "draw_down_post", 
-
-### write your code here
-
-
-# When the current price exceeds the previous maximum, then "draw_down" is zero, 
-# a drawdown starts when "draw_down" is first zero and then increases above zero.
-# Find the latest date when "draw_down_pre" was still zero before "date_trough", and call it "date_from",
-
-### write your code here
-
-
-# A drawdown ends when "draw_down" drops back to zero after "date_trough".
-# Find the first date when "draw_down_post" drops to zero after "date_trough", and call it "date_to",
-
-### write your code here
-
-
-# Combine the three dates into a named vector: from=date_from, trough=date_trough, to=date_to,
-# and call it "dates_draw_down",
-
-### write your code here
+# and send this file to Jaimin Doshi (jbd316@nyu.edu)
 
 
 
 ##################################
-# 2. (5pts) plot "xts_series", using generic function plot(),
-# read help: ?plot.xts and ?addEventLines
+# 1. (20pts) Download data for multiple symbols using get.hist.quote()
+# create a data directory on your computer, and save all files to that directory,
+# remember the location of the data directory for future use,
+# load package tseries,
+library(tseries)
+
+# create a vector of symbols called "sym_bols",
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ", "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", "IWS", "IWV", "IUSV", "IUSG")
+
+# download 10yrs of price and volume data for the list of sym_bols, 
+# and call it "zoo_series",
+# for each symbol download the fields "AdjClose" and "Volume",
+field_names <- c("AdjClose", "Volume")
+
+# use get.hist.quote() and an lapply() loop,
+# name the list returned by lapply as "zoo_series" (each list element is a zoo object),
 
 ### write your code here
 
-# add verical dashed red lines for the three dates: "date_from", "date_trough", "date_to",
-# use function addEventLines() from package "xts",
+
+# flatten zoo_series into a single zoo object, 
+# use functions do.call() and merge(),
 
 ### write your code here
+
+
+# assign new column names to zoo_series, 
+# in the format "symbol.Close", "symbol.Volume", etc.
+# use colnames(), sapply() and paste(),
+
+### write your code here
+
+
+# save zoo_series to a comma-separated CSV file called "zoo_series.csv", 
+# use function write.zoo(),
+
+### write your code here
+
+
+# save zoo_series to a binary file called "zoo_series.Rdata", using save(),
+
+### write your code here
+
 
 
 
 ##################################
-# 3. (10pts) Create function "max_drawdown()" that calculates the maximum drawdown of a time series of prices.
-# The function "max_drawdown()" should take one argument, a time series of prices (not returns),
-# "max_drawdown()" should return a named vector of three dates: from=date_from, trough=date_trough, to=date_to,
-# you can reuse the scripts from p.1,
+# 1. (20pts) simulate an ARIMA AR(1) process, and call it "ts_arima",
+# use function arima.sim(),
+# the length of the series should be 100,
+# the "model" argument should specify an ARIMA AR(1) process,
+# with a single coefficient equal to 0.5,
+# set the burn-in period to zero, by specifying the "start.innov"
+# argument equal to a vector of zeroes of length 100,
+# first reset the random number generator by calling set.seed(1121), 
+
+set.seed(1121)
 
 ### write your code here
 
-# call max_drawdown() with the argument "xts_series", to verify it works correctly,
+
+# simulate the same AR(1) process as above, but now recursively, 
+# by calculating current returns from previous returns in a for() loop, 
+# and call it "ts_arima_loop",
+# use functions rnorm() and for(),
+# you should obtain the same "ts_arima" series as above, 
+# remember to reset the random number generator by calling set.seed(1121),
+# use function numeric() to pre-allocate the vector "ts_arima" before 
+# the loop starts,
+set.seed(1121)
 
 ### write your code here
+
+
+# use function as.ts() to coerce "ts_arima_loop" to a "ts" time series,
+
+### write your code here
+
+
+# use the function identical() to confirm that the two methods give 
+# the exact same result, and that "ts_arima" and "ts_arima_loop"
+# are identical,
+
+### write your code here
+
+
+
 
 

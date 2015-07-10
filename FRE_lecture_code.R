@@ -90,8 +90,8 @@ library(Quandl)
 library(quantmod)
 
 fama_french <- Quandl("KFRENCH/FACTORS_D", type="xts",
-                      start_date=start(data_env$VTI),
-                      end_date=end(data_env$VTI)
+                      start_date=start(env_data$VTI),
+                      end_date=end(env_data$VTI)
 )  # end Quandl
 
 fama_french <- as.xts(fama_french[,-1],order.by=fama_french[,1])
@@ -120,11 +120,11 @@ jarque.bera.test(rnorm(length(dax_rets)))
 # Jarque-Bera test for DAX returns
 jarque.bera.test(dax_rets)
 
-jarque.bera.test(Ad(data_env$VTI))
-jarque.bera.test(cumsum(rnorm(nrows(data_env$VTI))))
-jarque.bera.test(cumsum(rnorm(nrow(data_env$VTI))))
+jarque.bera.test(Ad(env_data$VTI))
+jarque.bera.test(cumsum(rnorm(nrows(env_data$VTI))))
+jarque.bera.test(cumsum(rnorm(nrow(env_data$VTI))))
 jarque.bera.test(etf_rets[, 1])
-jarque.bera.test(rnorm(nrow(data_env$VTI)))
+jarque.bera.test(rnorm(nrow(env_data$VTI)))
 
 
 
@@ -214,7 +214,7 @@ adf_stats
 
 adf.test(etf_rets[, 1])
 adf.test(rnorm(nrow(etf_rets[, 1])))
-adf.test(Ad(data_env$VTI))
+adf.test(Ad(env_data$VTI))
 
 
 ########################

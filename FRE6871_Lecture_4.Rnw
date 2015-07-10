@@ -1,12 +1,13 @@
 % FRE6871_Lecture_4
 
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -51,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#4]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#4, Spring 2015}
+\subtitle{Lecture\#4, Summer 2015}
 % \subject{Getting Started With R}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 27, 2015}
+\date{June 19, 2015}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -73,905 +74,34 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Type, Mode, and Class of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{type}, \emph{mode}, and \emph{class} are \texttt{character} strings representing various object properties,
-      \vskip1ex
-      The \emph{type} of an atomic object represents how it's stored in memory (\texttt{logical}, \texttt{character}, \texttt{integer}, \texttt{double}, etc.)
-      \vskip1ex
-      The \emph{mode} of an atomic object is the kind of data it represents (\texttt{logical}, \texttt{character}, \texttt{numeric}, etc.)
-      \vskip1ex
-      The \emph{mode} of an object often coincides with its \emph{type} (except for \texttt{integer} and \texttt{double} types),
-      \vskip1ex
-      Recursive objects (such as \texttt{lists}) have both \emph{type} and \emph{mode} equal to the recursive type (\texttt{list}, etc.),
-      \vskip1ex
-      The \emph{class} of an object is either an explicit \emph{class} attribute, or is derived from the object \texttt{dim} attribute, or its \emph{mode} (implicit \emph{class}), 
-      \vskip1ex
-      The function \texttt{class()} returns the explicit or implicit \emph{class} of an object,
-      \vskip1ex
-      The \emph{class} attribute is used for function dispatching in the \texttt{S3} object-oriented programming system in \texttt{R},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- "hello"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- runif(5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(runif(10), 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- list(aa=c('a', 'b'), bb=1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Implicit Class of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If an object has a \texttt{dim} attribute, then its implicit \emph{class} is \texttt{matrix} or \texttt{array}, 
-      \vskip1ex
-      If an object has no explicit \emph{class} nor \texttt{dim} attributes, then its implicit \emph{class} is derived from its \emph{mode} (except for \texttt{integer} vectors have implicit class \texttt{"integer"}), 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- matrix(1:10, 2)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- vector(mode="numeric", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- vector(mode="integer", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} Object Attributes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \emph{class}, etc., 
-      \vskip1ex
-      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
-      \vskip1ex
-      The function \texttt{attributes()} returns the attributes of an object,
-      \vskip1ex
-      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
-      \vskip1ex
-      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-attributes(5:10)  # a simple vector has no attributes
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-attributes(my_var)  # named vector has "names" attribute
-my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
-attributes(my_var) <- list(dim=c(2, 5))
-is.matrix(my_var)  # is the object a matrix?
-my_var  # matrix object
-structure(1:10, dim=c(2, 5))  # matrix object
-
-my_var <- 0
-attributes(my_var) <- list(class="Date")
-my_var  # "Date" object
-structure(0, class="Date")  # "Date" object
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{class} Attributes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Objects without an explicit \emph{class} don't have a \emph{class} attribute, and the function \texttt{class()} returns the implicit \emph{class},
-      \vskip1ex
-      The \emph{class} of an object can be modified using the \texttt{"class() <-"} assignment,
-      \vskip1ex
-      An object can have a main \emph{class}, and also an inherited \emph{class} (the \emph{class} attribute can be a vector of strings),
-      \vskip1ex
-      The function \texttt{unclass()} removes the explicit class attribute from an object,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- matrix(runif(10), 2, 5)
-class(my_var)  # has implicit class
-attributes(my_var)  # but no explicit "class" attribute
-c(typeof(my_var), mode(my_var), class(my_var))
-class(my_var) <- "my_class"  # assign explicit "class" attribute
-class(my_var)  # has explicit "class"
-attributes(my_var)  # has explicit "class" attribute
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
-attributes(unclass(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Object Coercion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Coercion} means changing the \emph{type}, \emph{mode}, or \emph{class} of an object, without changing the underlying data,
-      \vskip1ex
-      Changing the \emph{mode} of an object can change its \emph{class} as well, but not always,
-      \vskip1ex
-      Objects can be explicitly coerced using the "\texttt{as.*}" coercion functions,
-      \vskip1ex
-      Most coercion functions strip the attributes from the object,
-      \vskip1ex
-      Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \emph{mode},
-      \vskip1ex
-      Implicit coercion can cause bugs that are difficult to trace,
-      \vskip1ex
-      The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
-      \vskip1ex
-      Coercion can introduce bad data, such as \texttt{NA} values,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-mode(my_var) <- "character"  # coerce to "character"
-my_var
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- as.character(1:5)  # explicitly coerce to "character"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-my_var <- as.character(my_var)  # explicitly coerce to "character"
-c(typeof(my_var), mode(my_var), class(my_var))
-is.matrix(my_var)  # is the object a matrix?
-
-as.logical(0:3)  # explicit coercion to "logical"
-
-c(1:3, 'a')  # implicit coercion to "character"
-as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Date and Time Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Date Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} has a \texttt{Date} class for date objects (but without time),
-      \vskip1ex
-      The function \texttt{as.Date()} parses a \texttt{character} string into a date object,
-      \vskip1ex
-      \texttt{R} stores \texttt{Date} objects as the number of days since the \texttt{epoch} (January 1, 1970),
-      \vskip1ex
-      \texttt{numeric} \emph{year-fraction} dates can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-Sys.Date()  # get today's date
-date_time <- as.Date("2012-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
-date_time
-class(date_time)  # Date object
-as.Date("07-14-2014", "%m-%d-%Y")  # specify format
-date_time + 20  # add 20 days
-as.numeric(date_time)  # get internal integer representation
-date_old <- as.Date("07/14/2013", "%m/%d/%Y")
-date_old
-# difference between dates
-difftime(date_time, date_old, units="weeks")
-weekdays(date_time)  # get day of the week
-# coerce numeric into date-times
-date_time <- 0
-attributes(date_time) <- list(class="Date")
-date_time  # "Date" object
-structure(0, class="Date")  # "Date" object
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXct} Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXct} for Date-time (date-time) objects,
-      \vskip1ex
-      The function \texttt{as.POSIXct()} parses a \texttt{character} string into a \texttt{POSIXct} object,
-      \vskip1ex
-      \texttt{format()} converts \emph{date-time} objects to \texttt{character} strings, given a time zone,
-      \vskip1ex
-      \texttt{format.POSIXct()} parses \texttt{POSIXct} objects to \texttt{character} strings,
-      \vskip1ex
-      \texttt{R} stores \texttt{POSIXct} objects as the number of seconds since the \texttt{epoch} (January 1, 1970 UTC),
-      \vskip1ex
-      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<>>=
-date_time <- Sys.time()  # get today's date and time
-date_time
-class(date_time)  # POSIXct object
-as.numeric(date_time)  # get internal integer representation
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-as.POSIXct("2012-07-14 13:30:10")
-format(date_time)  # convert POSIXct to character string
-class(format(date_time))  # character string
-date_time + 20  # add 20 seconds
-trunc(date_time, units="hours")  # truncate to closest hour
-as.POSIXct(format(as.Date(date_time)))  # truncate to closest day
-as.POSIXct(format(as.Date(date_time)+1))  # add one day
-methods(trunc)  # trunc methods
-trunc.POSIXt
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXlt} Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      \texttt{R} has a class \texttt{POSIXlt} for \emph{date-time} objects,
-      \vskip1ex
-      \texttt{R} stores \texttt{POSIXlt} objects as a list,
-      \vskip1ex
-      The function \texttt{as.POSIXlt()} parses a \texttt{character} string into a \texttt{POSIXlt} object,
-      \vskip1ex
-      \texttt{format.POSIXlt()} converts \texttt{POSIXlt} objects to \texttt{character} strings,
-      \vskip1ex
-      Adding a number to \texttt{POSIXlt} causes implicit coercion to \texttt{POSIXct},
-      \vskip1ex
-      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes of the more general \texttt{POSIXt} class,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<>>=
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2012-07-14 18:30:10")
-date_time
-class(date_time)  # POSIXlt object
-aperm(as.matrix(unclass(date_time)))  # get internal representation
-
-date_time + 20  # add 20 seconds
-class(date_time + 20)  # implicit coercion to POSIXct
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Zones and Date-time Conversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      \emph{date-time} objects require a time zone to be uniquely specified,
-      \vskip1ex
-      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
-      \vskip1ex
-      \texttt{EST} stands for "Eastern Standard Time", \texttt{UTC} - 5 hours,
-      \vskip1ex
-      \texttt{EDT} stands for "Eastern Daylight Time", \texttt{UTC} - 4 hours,
-      \vskip1ex
-      The function \texttt{Sys.setenv()} can be used to set the default time zone,
-    \column{0.7\textwidth}
-      \vspace{-1em}
-      <<>>=
-Sys.timezone()  # get time-zone
-Sys.setenv(tz="UTC")  # set time-zone to UTC
-Sys.timezone()  # get time-zone
-# Standard Time in effect
-as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-# Daylight Savings Time in effect
-as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
-date_time <- Sys.time()  # today's date and time
-# convert to character in different TZ
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# parse back to POSIXct
-as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between local time and UTC
-as.POSIXct(format(Sys.time(), tz="UTC")) - 
-  as.POSIXct(format(Sys.time(), tz="America/New_York"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Manipulating Date-time Objects Using \texttt{lubridate}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{lubridate} contains functions for converting and manipulating date-time objects,
-      \vskip1ex
-      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
-      \vskip1ex
-      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components,
-      \vskip1ex
-      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates,
-      \vskip1ex
-      The function \texttt{date\_decimal()} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-library(lubridate)  # load lubridate
-# parse strings into date-times
-as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
-date_time <- mdy("07-14-2014", tz="America/New_York")
-date_time
-class(date_time)  # POSIXct object
-dmy("14.07.2014", tz="America/New_York")
-
-# parse numeric into date-times
-as.POSIXct(as.character(14072014), format="%d%m%Y", 
-                        tz="America/New_York")
-dmy(14072014, tz="America/New_York")
-
-# parse decimal to date-times
-decimal_date(date_time)
-date_decimal(2014.25, tz="America/New_York")
-date_decimal(decimal_date(date_time), tz="America/New_York")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Zones Using \texttt{lubridate}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{lubridate} simplifies time zone calculations,
-      \vskip1ex
-      The \emph{moment of time} is the time in the \texttt{UTC} time zone,
-      \vskip1ex
-      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local time zone,
-      \vskip1ex
-      The same \emph{moment of time} corresponds to different \emph{clock times} in different time zones,
-      \vskip1ex
-      The same \emph{clock times} in different time zones correspond to different \emph{moments of time},
-      \vskip1ex
-      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different time zone,
-      \vskip1ex
-      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different time zone,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, 
-                     tz="America/New_York")
-date_time
-
-# get same moment of time in "UTC" time zone
-with_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
-
-# get same clock time in "UTC" time zone
-force_tz(date_time, "UTC")
-as.POSIXct(format(date_time), tz="UTC")
-
-# same moment of time
-date_time - with_tz(date_time, "UTC")
-
-# different moments of time
-date_time - force_tz(date_time, "UTC")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{lubridate} Time Span Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{lubridate} has two time span classes: \texttt{durations} and \texttt{periods},
-      \vskip1ex
-      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
-      \vskip1ex
-      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects,
-      \vskip1ex
-      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
-      \vskip1ex
-      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years,
-      \vskip1ex
-      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(lubridate)  # load lubridate
-# Daylight Savings Time handling periods vs durations
-date_time <- as.POSIXct("2013-03-09 11:00:00", 
-                        tz="America/New_York")
-date_time
-date_time + ddays(1)  # add duration
-date_time + days(1)  # add period
-
-leap_year(2012)  # leap year
-date_time <- dmy(01012012, tz="America/New_York")
-date_time
-date_time + dyears(1)  # add duration
-date_time + years(1)  # add period
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding Time Spans to Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, tz="America/New_York")
-date_time
-# add periods to a date-time
-c(date_time + seconds(1), date_time + minutes(1), 
-date_time + days(1), date_time + months(1))
-
-# create vectors of dates
-date_time <- ymd(20140714, tz="America/New_York")
-date_time + 0:2 * months(1)  # monthly dates
-date_time + months(0:2)
-date_time + 0:2 * months(2)  # bi-monthly dates
-date_time + seq(0, 5, by=2) * months(1)
-seq(date_time, length=3, by="2 months")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{End-of-month Dates}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Adding monthly \texttt{periods} can create invalid dates,
-      \vskip1ex
-      The operators \texttt{\%m+\%} and \texttt{\%m-\%} add or subtract monthly \texttt{periods} to account for the varible number of days per month,
-      \vskip1ex
-      This allows creating vectors of end-of-month dates,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(lubridate)  # load lubridate
-# adding monthly periods can create invalid dates
-date_time <- ymd(20120131, tz="America/New_York")
-date_time + 0:2 * months(1)
-date_time + months(1)
-date_time + months(2)
-
-# create vector of end-of-month dates
-date_time %m-% months(13:1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{RQuantLib} Calendar Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{RQuantLib} contains a large library of functions for pricing fixed-income instruments and options, and for risk management calculations,
-      \vskip1ex
-      The package \texttt{RQuantLib} contains calendar functions for determining holidays and business days in many different jurisdictions,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(zoo)  # load zoo
-library(RQuantLib)  # load RQuantLib
-
-# create daily date series of class 'Date'
-in_dex <- Sys.Date() + -5:2
-in_dex
-
-# create logical vector of business days
-bus.days <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", in_dex)
-
-# create daily series of business days
-bus_index <- in_dex[bus.days]
-bus_index
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Review of Date-time Classes in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series,
-      \vskip1ex
-      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series,
-      \vskip1ex
-      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \texttt{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series,
-    \column{0.7\textwidth}
-      \vspace{-2em}
-      <<echo=(-1)>>=
-library(zoo)  # load package zoo
-date_time <- Sys.Date()  # create date series of class 'Date'
-in_dex <- date_time + 0:365  # daily series over one year
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y")  # print first few dates
-# create daily date-time series of class 'POSIXct'
-in_dex <- seq(Sys.time(), by="days", length.out=365)
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
-# create series of monthly dates of class 'zoo'
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # print first few dates
-# create series of quarterly dates of class 'zoo'
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # print first few dates
-# parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(tz="UTC")
-as.POSIXct(head(qrtly_index, 4))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-glob_var <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
-
-new_env <- new.env()  # create new environment
-parent.env(new_env)  # get calling environment of new environment
-assign("new_var1", 3, envir=new_env)  # assign Value to Name
-new_env$new_var2 <- 11  # create object in new environment
-ls(new_env)  # get objects in new environment
-ls(environment())  # get objects in current environment
-new_env$new_var1  # environments are subset like lists
-new_env[["new_var1"]]  # environments are subset like lists
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
-      \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
-      \end{itemize}
-      The function \texttt{search()} returns the search path for \texttt{R} objects,
-      \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
-      \vskip1ex
-      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-search()  # get search path for R objects
-my_list <- list(flowers=c("rose", "daisy", "tulip"),  # create a list
-                        trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is part of the datasets base package
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Referencing Object Components \texttt{with()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
-      \vskip1ex
-      \texttt{with()} allows referencing object components by their names alone,
-      \vskip1ex
-      It's often better to use \texttt{with()} instead of \texttt{attach()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, c(mean(Girth), mean(Height), mean(Volume)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
 \section{Functions}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function Environments}
+\subsection{Return Values of \secname}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      When a function is called, a new \emph{evaluation} environment is created,
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
       \vskip1ex
-      The \emph{evaluation} environment contains the function arguments and locally defined variables,
-      \vskip1ex
-      The enclosure of the \emph{evaluation} environment is the environment where the function was defined (the global environment for functions defined in the workspace),
-      \vskip1ex
-      Functions defined in packages with namespaces have the package namespace as their enclosure,
+      \texttt{return()} statements are inserted in logical branches to terminate function execution and return its intended value,
     \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-glob_var <- 1  # define a global variable
-ls(environment())  # get all variables in environment
-func_env <- function() {  # explore function environments
-  loc_var <- 1  # define a local variable
-  cat('objects in evaluation environment:\t', 
-      ls(environment()), '\n')
-  cat('objects in enclosing environment:\t', 
-      ls(parent.env(environment())), '\n')
-  cat('this is the enclosing environment:')
-  parent.env(environment())  # return enclosing environment
-}  # end func_env
-func_env()
-
-environment(func_env)
-environment(print)  # package namespace is the enclosure
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Lexical Function Scope}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{free} variable is a variable that's not included in the \emph{evaluation} environment,
-      \vskip1ex
-      Scoping rules determine how \emph{free} variables are evaluated,
-      \vskip1ex
-      By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the \emph{enclosing} environment in which the function was \emph{defined}, and so on,
-      \vskip1ex
-      \emph{Dynamic} scoping means that variables are evaluated in the environment from which the function was \emph{called},
-      \vskip1ex
-      The standard assignment operator "\texttt{<-}" modifies variables in the \emph{evaluation} environment,
-      \vskip1ex
-      The special assignment operator "\texttt{<<-}" modifies variables in the \emph{enclosing} environment,
-
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-glob_var <- 1  # define a global variable
-probe_scope <- function() {  # explore function scope
-  loc_var <- 2*glob_var  # define a local variable
-  new_globvar <<- 11  # define a global variable
-  cat('objects in evaluation environment:\t', 
-      ls(environment()), '\n')
-  cat('this is a local loc_var:\t', loc_var, '\n')
-  cat('objects in enclosing environment:\n', 
-      ls(parent.env(environment())), '\n')
-  cat('this is glob_var:\t', glob_var, '\n')
-  glob_var <- 10  # define local glob_var
-  cat('this is the local glob_var:\t', glob_var, '\n')
-}  # end probe_scope
-probe_scope()
-glob_var  # global variable is unaffected
-new_globvar  # new_globvar is preserved
-loc_var  # local variable is gone!
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Argument Passing in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In general, arguments can be passed into functions either by \emph{value} or by \emph{reference},
-      \vskip1ex
-      When an argument is passed by \emph{value}, then a copy of that argument is passed to the function,
-      \vskip1ex
-      That way if the function modifies that argument, then the original object isn't modified,
-      \vskip1ex
-      When an argument is passed by \emph{reference}, then a \emph{pointer} to the original object is passed to the function,
-      \vskip1ex
-      If the function modifies that argument, then the original object is modified as well,
-      \vskip1ex
-      \texttt{R} uses a hybrid method of argument passing called \emph{copy-on-modify semantics},
-      \vskip1ex
-      \texttt{R} passes arguments by reference, thus saving memory space and time for copying,
-      \vskip1ex
-      But if the argument is modified within the function, then \texttt{R} makes a copy of it, so that the original object is unchanged,
-    \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
-a <- 1  # define a variable
-# new variable "b" points to value of "a"
-b <- a  # define a new variable
-# when "b" is modified, R makes a copy of it
-b <- b+1
-# function doubles its argument and returns it
-double_it <- function(in_var) {
-  in_var <- 2*in_var
-  cat("input argument was doubled to:", in_var, "\n")
-  in_var
-}
-double_it(a)
-a  # variable "a" is unchanged
+# define a function that returns invisibly
+test_func <- function(arg_var) {
+  if (!is.numeric(arg_var)) {
+    warning(paste("argument", arg_var, "isn't numeric"))
+    return(NULL)
+  }
+  2*arg_var
+}  # end test_func
+
+test_func(2)
+test_func("hello")
       @
-      \emph{Copy-on-modify semantics} has important implications for performance and memory usage,
-      \vskip1ex
-      \url{http://stackoverflow.com/questions/15759117/what-exactly-is-copy-on-modify-semantics-in-r-and-where-is-the-canonical-source}
   \end{columns}
 \end{block}
 
@@ -979,29 +109,1157 @@ a  # variable "a" is unchanged
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Super-assignment Operator "\texttt{<<-}"}
+\subsection{\secname\hskip0.4emThat Return \texttt{invisible}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The super-assignment operator "\texttt{<<-}" modifies or creates variables in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping),
+      If a return value is wrapped in the function \texttt{invisible()} then the return value isn't printed,
       \vskip1ex
-      If the function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment and the "\texttt{<<-}" operator operates on variables in the \emph{global} environment,
+      But if the function is assigned to a variable, then its return value is assigned to that variable,
+      \vskip1ex
+      \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
+      \vskip1ex
+      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a function that returns invisibly
+return_invisible <- function(arg_var) {
+  invisible(arg_var)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Executing Function Calls Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+      \vskip1ex
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+str(sum)  # "sum" accepts multiple arguments
+# passing a list of arguments to "sum" produces an error
+sum(list(1, 2, 3, 4))
+# do.call passes list elements into "sum" individually
+do.call(sum, list(1, 2, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Flattening a List of Vectors to a Matrix Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+      If the list contains vectors of different lengths, then \texttt{R} applies the recycling rule,
+      \vskip1ex
+      If the list contains a \texttt{NULL} element, that element is skipped,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+num_list <- list(1, 2, 3, 4)  # create numeric list
+do.call(rbind, num_list)  # returns single column matrix
+do.call(cbind, num_list)  # returns single row matrix
+# recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Binding of Lists Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+      But for large vectors this procedure can be very slow, and often causes an out of memory error,
+      \vskip1ex
+      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion, 
+      \vskip1ex
+      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \texttt{qmao}:\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(list_var) {
+  while (length(list_var) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=length(list_var), by=2)
+# bind neighboring elements and divide list_var by half
+    list_var <- lapply(odd_index, function(in_dex) {
+      if (in_dex==length(list_var)) {
+        return(list_var[[in_dex]])
+      }
+      return(rbind(list_var[[in_dex]], 
+                   list_var[[in_dex+1]]))
+    })  # end lapply
+  }  # end while
+# list_var has only one element - return it
+  list_var[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Data Frames}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a factor (attribute),
+      \vskip1ex
+      The list's \texttt{names} attribute is made equal to the factor levels,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(iris$Species)  # Species takes on three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute),
+        \item applying a function to each list element,
+        \item combining the results,
+      \end{itemize}
+      The \emph{split-apply-combine} procedure is similar to \emph{pivot tables} in Excel,
+      \vskip1ex
+      The \emph{split-apply-combine} procedure, by Hadley Wickham:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{splitapply.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \protect\emph{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call, 
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
+      \vskip1ex
+      The \texttt{aggregate()} function applies a function to aggregations of an object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# get mean mpg for each cylinder group
+unlist(lapply(split_cars, function(x) mean(x$mpg)))
+# Which is identical to the tapply function
+tapply(mtcars$mpg, mtcars$cyl, mean)
+# using "with" environment
+with(mtcars, tapply(mpg, cyl, mean))
+# can also use the functions by() and aggregate()
+with(mtcars, by(mpg, cyl, mean))
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Example \protect\emph{split-apply-combine} Returning Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
+      \vskip1ex
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+is.list(data_cars)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Data Input and Output}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Text Strings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{cat()} concatenates strings and writes them to standard output or to files,
+      \vskip1ex
+      \texttt{cat()} interprets its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value,
+      \vskip1ex
+      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it,
+      \vskip1ex
+      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object,
+      \vskip1ex
+      The function \texttt{save()} writes objects to a binary file,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+cat("Enter\ttab")  # cat() interprets backslash escape sequences
+print("Enter\ttab")
+
+my_text <- print("hello")
+my_text  # print() returns its argument
+
+# create string
+my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
+
+cat(my_text, file="mytext.txt")  # write to text file
+
+cat("Title: My Text",  # write several lines to text file
+    "Some numbers: 1,2,3,...",
+    "Rprofile files contain code executed at R startup,", 
+    file="mytext.txt", sep="\n")
+
+save(my_text, file="mytext.Rdata")  # write to binary file
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Text from Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list,
+      \vskip1ex
+      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings,
+      \vskip1ex
+      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string,
+      \vskip1ex
+      The function \texttt{file.show()} reads text or data from a file and displays in editor,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+# read text from file
+scan(file="mytext.txt", what=character(), sep="\n")
+
+# read lines from file
+readLines(con="mytext.txt")
+
+# read text from console
+in_put <- readline("Enter a number: ")
+class(in_put)
+# coerce to numeric
+in_put <- as.numeric(in_put)
+
+# read text from file and display in editor:
+# file.show("mytext.txt")
+# file.show("mytext.txt", pager="")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \protect\emph{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from text files,
+      \vskip1ex
+      \texttt{write.table()} coerces objects to data frames before it writes them,
+      \vskip1ex
+      \texttt{read.table()} returns a data frame, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} can be used to read and write matrices from text files, but they have to be coerced back to matrices,
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+setwd("C:/Develop/data")
+data_frame <- data.frame(
+              type=c("rose", "daisy", "tulip"), 
+              color=c("red", "white", "yellow"), 
+              price=c(1.5, 0.5, 1.0), 
+              row.names=c("flower1", "flower2", "flower3")
+              )  # end data_frame
+mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_rix) <- paste("row", 1:nrow(mat_rix), sep="")
+# write data frame to text file, and then read it back
+write.table(data_frame, file="florist.txt")
+data_read <- read.table(file="florist.txt")
+data_read  # a data frame
+
+# write matrix to text file, and then read it back
+write.table(mat_rix, file="matrix.txt")
+mat_read <- read.table(file="matrix.txt")
+mat_read  # write.table() coerced matrix to data frame
+class(mat_read)
+# coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Copying Data Frames Between the \protect\emph{clipboard} and \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()},
+      \vskip1ex
+      Data frames in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()},
+      \vskip1ex
+      This allows convenient copying of data frames between \emph{Excel} and \texttt{R},
+      \vskip1ex
+      Data frames can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+setwd("C:/Develop/data")
+data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+data_frame <- read.table("mydata.txt", header=TRUE)
+data_frame <- read.table("clipboard", header=TRUE)
+
+write.table(x=data_frame, file="clipboard", sep="\t")
+
+# wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t", 
+                      header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+data_frame <- read_clip()
+
+# wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write_clip <- function(data, row.names=FALSE, 
+                       col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t", 
+              row.names=row.names, col.names=col.names, ...)
+}  # end write_clip
+
+write_clip(data=data_frame)
+
+# launch spreadsheet-style data editor
+data_frame <- edit(data_frame)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \protect\emph{csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \emph{csv} format files,
+      \vskip1ex
+      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
+      \vskip1ex
+      \texttt{read.csv()} coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
+      \vskip1ex
+      \texttt{read.csv()} reads row names as an extra column,
+      \vskip1ex
+      The \texttt{*.csv()} functions are very inefficient for large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+# write data frame to CSV file, and then read it back
+write.csv(data_frame, file="florist.csv")
+data_read <- read.csv(file="florist.csv", 
+                       stringsAsFactors=FALSE)
+data_read  # the rownames are read in as extra column
+# restore rownames
+rownames(data_read) <- data_read[, 1]
+data_read <- data_read[, -1]  # remove extra column
+data_read
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices from \protect\emph{csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write matrices from \emph{csv} format files,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+# write matrix to csv file, and then read it back
+write.csv(mat_rix, file="matrix.csv")
+mat_read <- read.csv(file="matrix.csv", 
+                     stringsAsFactors=FALSE)
+mat_read  # read.csv() read matrix as data frame
+class(mat_read)
+# restore rownames
+rownames(mat_read) <- mat_read[, 1]
+mat_read <- mat_read[, -1]  # remove extra column
+# coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+mat_read  # a matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{write.matrix()} writes a matrix to a text file, without its rownames,
+      \vskip1ex
+      \texttt{write.matrix()} is part of package \texttt{MASS},
+      \vskip1ex
+      The advantage of function \texttt{scan()} is its speed, but it doesn't handle rownames easily,
+      \vskip1ex
+      Removing rownames simplifies the reading and writing of matrices,
+      \vskip1ex
+      The function \texttt{readLines} reads whole lines and returns them as single strings,
+      \vskip1ex
+      The function \texttt{system.time()} measures CPU time spent on executing code,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+library("MASS")  # load library "MASS"
+# write to CSV file by row - it's very SLOW!!!
+write.matrix(mat_rix, file="matrix.csv", sep=",")
+system.time(  # scan reads faster - skip first line with colnames
+  mat_read <- scan(file="matrix.csv", sep=",", 
+                  skip=1, what=numeric()))
+col_names <- readLines(con="matrix.csv", n=1)  # read colnames
+col_names  # this is a string!
+col_names <- strsplit(col_names, s=",")[[1]]  # convert to char vector
+mat_read  # mat_read is a vector, not matrix!
+# coerce by row to matrix
+mat_read <- matrix(mat_read, ncol=length(col_names), 
+                  byrow=TRUE)
+colnames(mat_read) <- col_names  # restore colnames
+mat_read
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Very often data that is read from external sources contains elements with bad data,
+      \vskip1ex
+      An example of bad data are \texttt{character} strings in \texttt{numeric} data,
+      \vskip1ex
+      Columns containing bad data elements are coerced to \texttt{character} or \texttt{factor},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+mat_read <- read.csv(
+  file="badmatrix.csv",
+  stringsAsFactors=FALSE)
+# restore rownames
+rownames(mat_read) <- as.character(mat_read[, 1])
+mat_read <- mat_read[, -1]  # remove extra column
+dim_names <- dimnames(mat_read)  # save dimnames
+num_col <- ncol(mat_read)  # save num columns
+mat_read  # data frame with bad data
+class(mat_read)
+class(mat_read[, 1])
+# numeric data column coerced to character by bad data
+class(mat_read[, 2])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scrubbing Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{as.numeric()} converts bad numeric data (strings) to \texttt{NA} values,
+      \vskip1ex
+      \texttt{as.numeric()} removes the \texttt{dim} attribute of matrices, and so they must be restored,
+      \vskip1ex
+      An \texttt{sapply()} loop over the columns of the input \texttt{data frame} coerces the columns to numeric vectors,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# perform sapply over columns
+mat_scrub <- sapply(mat_read, function(co_lumn) {
+# coerce to numeric
+  co_lumn <- as.numeric(co_lumn)
+# replace NAs with zero
+  co_lumn[is.na(co_lumn)] <- 0
+  co_lumn
+}  # end anon function
+)  # end sapply
+# restore dimnames
+dimnames(mat_scrub) <- dimnames(mat_read)
+# coerce to matrix
+mat_scrub <- as.matrix(mat_scrub)
+# matrix without NAs
+mat_scrub
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Passing Arguments to the \texttt{save()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{save()} writes objects to a binary file,
+      \vskip1ex
+      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument,
+      \vskip1ex
+      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be character strings,
+      \vskip1ex
+      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())  # remove all objects
+var1 <- 1; var2 <- 2
+ls()  # list all objects
+ls()[1]  # list first object
+args(save)  # list arguments of save function
+# save "var1" to a binary file
+save("var1", file="my_data.RData")
+# save first list object "var1" by passing it to the "..." argument
+save(ls()[1], file="my_data.RData")  # 'ls()[1]' not evaluated
+# save first list object "var1" by passing it to the "list" argument
+save(list=ls()[1], file="my_data.RData")
+# save whole list by passing it to the "list" argument
+save(list=ls(), file="my_data.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Lists of Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
+      \vskip1ex
+      The vector of names can be used to manipulate the objects in loops, or to pass them to functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects
+# assign new values to objects
+sapply(loaded, function(sym_bol) {
+  assign(sym_bol, runif(1))
+})
+# save vector of objects
+save(list=loaded, file="my_data.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Saving Output of \texttt{R} to a File}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding \emph{graphics}) to a file, or ends the diversion,
+      \vskip1ex
+      Remember to call \texttt{sink()} to end the diversion!
+      \vskip1ex
+      The function \texttt{pdf()} diverts \emph{graphics} output to a pdf file (text output isn't diverted), in vector graphics format,
+      \vskip1ex
+      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert \emph{graphics} output to graphics files (text output isn't diverted), in pixel graphics format,
+      \vskip1ex
+      The function \texttt{dev.off()} ends the diversion,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
-rm(list=ls())
-glob_var <- 1  # define a global variable
-probe_scope <- function() {  # explore function scope
-  cat('this is the global glob_var:\t', glob_var, '\n')
-  glob_var <- 10  # define local 'glob_var' variable
-  glob_var <<- 2  # re-define the global variable
-  cat('this is a local glob_var:\t', glob_var, '\n')
-}  # end probe_scope
-probe_scope()
-glob_var  # the global variable
+setwd("C:/Develop/data")
+{
+sink("sinkdata.txt")# redirect text output to file
+
+cat("Redirect text output from R\n")
+print(runif(10))
+cat("\nEnd data\nbye\n")
+
+sink()  # turn redirect off
+
+pdf("Rgraph.pdf", width=7, height=4)  # redirect graphics to pdf file
+
+cat("Redirect data from R into pdf file\n")
+my_var <- seq(-2*pi, 2*pi, len=100)
+plot(x=my_var, y=sin(my_var), main="Sine wave", 
+   xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn pdf output off
+
+png("Rgraph.png")  # redirect output to png file
+
+cat("Redirect graphics from R into png file\n")
+plot(x=my_var, y=sin(my_var), main="Sine wave", 
+ xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn png output off
+}
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{"for"} and \texttt{"while"} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{"for"} and \texttt{"while"} loops are relatively inefficient and too slow for large computations,
+      \vskip1ex
+      \texttt{apply()} loops are similar in speed to \texttt{"for"} and \texttt{"while"} loops,
+      \vskip1ex
+      \texttt{lapply()} is slightly faster than \texttt{sapply()}, which is slightly faster than \texttt{apply()} loops,
+      \vskip1ex
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  and is therefore preferred,
+      \vskip1ex
+      The function \texttt{system.time()} returns the CPU time used to evaluate a given expression,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# matrix with 500,000 rows
+big_matrix <- matrix(rnorm(1000000), ncol=2)
+# allocate memory for row sums
+row_sums <- numeric(nrow(big_matrix))
+# sum up row using "for" loop
+system.time(
+  for(i in 1:nrow(big_matrix)) {
+    row_sums[i] <- sum(big_matrix[i,])
+  }  # end for
+)  # end system.time
+# row sums using "apply" loop
+system.time(row_sums <- apply(big_matrix, 1, sum))
+system.time(  # row sums using "sapply" loop
+  row_sums <- sapply(1:nrow(big_matrix), 
+                     function(in_dex) 
+                         sum(big_matrix[in_dex, ])))
+system.time(  # row sums using "lapply" loop
+  row_sums <- lapply(1:nrow(big_matrix), 
+                     function(in_dex) 
+                         sum(big_matrix[in_dex, ])))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Allocating Memory to Increase Speed}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} syntax doesn't require allocating memory for new objects, but allocating memory for large vectors and matrices increases the speed of \texttt{R} code,
+      \vskip1ex
+      \texttt{R} allocates memory for a full vector each time it calculates a new vector element that wasn't previously allocated,
+      \vskip1ex
+      A loop which calculates vector elements allocates memory for a full vector in each iteration, which is inefficient and slow,
+      \vskip1ex
+      So it's better to allocate memory for a large vector or matrix, before performing a loop that calculates its elements, 
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+big_vector <- rnorm(50000)
+### allocate zero memory for cumulative sum
+cum_sum <- numeric(0)
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+### allocate full memory for cumulative sum
+cum_sum <- numeric(length(big_matrix))
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Vector Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{apply()} and \texttt{"for"} loops are very inefficient for calculations on large vectors, because the loops are performed by \texttt{R} code,
+      \vskip1ex
+      \emph{Vectorized} functions accept \texttt{vectors} as arguments, pass them to compiled \texttt{C} code, and return a vector,
+      \vskip1ex
+      \emph{Vectorized} functions are very fast because the compiled \texttt{C} code performs the actual loops and other calculations, which is very fast,
+      \vskip1ex
+      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
+      \vskip1ex
+      The functions \texttt{ifelse()} and \texttt{which()} perform \emph{vectorized} logical operations,
+      \vskip1ex
+      \texttt{R} has very efficient functions for calculating cumulative values over large vectors:
+      \begin{itemize}
+        \item \texttt{cummax()}
+        \item \texttt{cummin()}
+        \item \texttt{cumsum()}
+        \item \texttt{cumprod()}
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<>>=
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+system.time(  # sum vectors using "for" loop
+  for(i in 1:length(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }  # end for
+)  # end system.time
+# sum vectors using vectorized "+"
+system.time(big_vector <- vec_tor1 + vec_tor2)
+# allocate memory for cumulative sum
+cum_sum <- numeric(length(big_vector))
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+# cumulative sum using "cumsum"
+system.time(cum_sum <- cumsum(big_vector))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
+      \vskip1ex
+      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
+        <<func_ifelse,eval=FALSE,echo=(-1),fig.show='hide'>>=
+rm(list=ls())
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2, 
+                  vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid", 
+        col=c("green", "blue", "red"), 
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4), 
+       title="", inset=0.05, cex=0.8, lwd=2, 
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
+      \vskip1ex
+      \texttt{R} has very efficient functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      \emph{vectorized} functions accept \texttt{vectors} as arguments, and call compiled \texttt{C} code for very fast calculations,
+      \vskip1ex
+      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+system.time(row_sums <- apply(big_matrix, 1, sum))
+
+str(rowSums)  # get list of arguments
+
+# calculate row sums
+system.time(row_sums <- rowSums(big_matrix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{caTools} for Moving Window Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{caTools} contains functions for calculating moving (rolling) window aggregations over a \texttt{vector} of data:
+      \begin{itemize}
+        \item \texttt{runmax} and \texttt{runmin} for rolling maximum and minimum, 
+        \item \texttt{runsd()} for rolling standard deviation,
+        \item \texttt{runmad()} for rolling Median Absolute Deviation (MAD),
+        \item \texttt{runquantile()} for rolling quantile,
+      \end{itemize}
+      Time series need to be coerced to \texttt{vectors} before they are passed to \texttt{caTools} functions,
+      \vskip1ex
+      The \texttt{caTools} functions are very fast because they are compiled from \texttt{C} code,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(caTools)  # load package "caTools"
+# get documentation for package "caTools"
+packageDescription("caTools")  # get short description
+help(package="caTools")  # load help page
+data(package="caTools")  # list all datasets in "caTools"
+ls("package:caTools")  # list all objects in "caTools"
+detach("package:caTools")  # remove caTools from search path
+
+# median filter
+med_ian <- runmed(x=coredata(xts_series), k=vol_window)
+# vector of rolling volatility
+vo_lat <- runsd(x=abs(coredata(xts_series)), 
+                k=vol_window, probs=0.9, 
+                endrule="constant", align="center")
+# vector of rolling quantiles
+quan_tiles <- runquantile(x=abs(coredata(xts_series)), 
+                          k=vol_window, probs=0.9, 
+                          endrule="constant", align="center")
+      @
+      \vspace{-1em}
+      The argument \texttt{"endrule"} determines how the end values of the data are treated,
+      \vskip1ex
+      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="centered"} the fastest option,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Barrier Options Using \texttt{"while"} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{"while"} loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of random prices hitting a barrier level,
+        <<simu_while,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+simu_max <- 1000  # max simulation trials
+simu_prices <- 0*1:simu_max  # initialize prices
+barrier_level <- 20  # barrier level
+simu_prices[1] <- 0  # first simulated price
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= simu_max) && 
+         (simu_prices[in_dex - 1] < barrier_level)) {
+  simu_prices[in_dex] <- # simulate next price
+    simu_prices[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+if (in_dex <= simu_max) {  # fill zero prices
+  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
+}
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_while-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Barrier Options Using Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations in \texttt{R} can be accelerated by pre- computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{"while"} loops,
+        <<simu_vector,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+simu_max <- 1000  # max simulation trials
+barrier_level <- 20  # barrier level
+# simulated prices
+simu_prices <- cumsum(rnorm(simu_max))
+# in_dex is "1" after prices cross barrier_level
+in_dex <- cummax(simu_prices > barrier_level)
+# find index when prices cross barrier_level
+which_index <- which(diff(in_dex)==1)
+# fill prices after crossing barrier_level
+if (length(which_index)>0) {
+  simu_prices[as.logical(in_dex)] <- 
+    simu_prices[which_index + 1]
+}  # end if
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_vector-1}
+      \vspace{-4em}
+      The trade-off is between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
   \end{columns}
 \end{block}
 

@@ -1,115 +1,94 @@
 #################################
-### FRE7241 HW #2 Solution
+### FRE7241 HW #2 Solution due June 23, 2015
 #################################
-# Max score 45 pts
+# Max score 40pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-
 ##################################
-# 1. (30pts) Calculate the maximum drawdown of a time series.
+# 1. (20pts) Download data for multiple symbols using get.hist.quote()
+# create a data directory on your computer, and save all files to that directory,
+# remember the location of the data directory for future use,
+# load package tseries,
+library(tseries)
 
-# load packages "lubridate", "xts", and "tseries",
-library(xts)
+# create a vector of symbols called "sym_bols",
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ", "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", "IWS", "IWV", "IUSV", "IUSG")
 
+# download 10yrs of price and volume data for the list of sym_bols, 
+# and call it "zoo_series",
+# for each symbol download the fields "AdjClose" and "Volume",
+field_names <- c("AdjClose", "Volume")
 
-# Create a "Date" vector of 100 daily dates, starting from "2015-01-04", and call it "in_dex", 
-# use functions as.Date() and seq(),
-in_dex <- seq(from=as.Date("2015-01-04"), by="day", length.out=100)
+# use get.hist.quote() and an lapply() loop,
+# name the list returned by lapply as "zoo_series" (each list element is a zoo object),
+zoo_series <- suppressWarnings(
+  lapply(sym_bols, # loop for loading data
+         get.hist.quote,
+         quote=field_names,
+         start=Sys.Date()-3650, 
+         end=Sys.Date(), 
+         origin="1970-01-01")
+)  # end suppressWarnings
 
+# flatten zoo_series into a single zoo object, 
+# use functions do.call() and merge(),
+zoo_series <- do.call(merge, zoo_series)
 
-# Extract the class from "in_dex" to verify that it is "Date" class, 
-class(in_dex)
+# assign new column names to zoo_series, 
+# in the format "symbol.Close", "symbol.Volume", etc.
+# use colnames(), sapply() and paste(),
+colnames(zoo_series) <- as.vector(sapply(sym_bols, paste, c("Close", "Volume"), sep="."))
 
+# save zoo_series to a comma-separated CSV file called "zoo_series.csv", 
+# use function write.zoo(),
+write.zoo(zoo_series, file='zoo_series.csv', sep=",")
 
-# Create a vector of data of length "in_dex" as follows:
-da_ta <- sin(0.1*(1:length(in_dex))) + (1:length(in_dex))/50
-
-# Create an "xts" time series with the "da_ta" and the "in_dex", and call it "xts_series",
-# use function xts() from package "xts",
-xts_series <- xts(da_ta, order.by=in_dex)
-
-
-# plot "xts_series", using generic function plot(),
-plot(xts_series)
-
-
-# The Cumulative maximum of a price series is the maximum price up to that point in time. 
-# Plot the Cumulative maximum of "xts_series" using function cummax(),
-plot(cummax(xts_series))
-
-
-# A drawdown is a drop in price from its previous maximum.
-# Calculate the time series of drawdowns of "xts_series", as the difference 
-# between the cumulative maximum of "xts_series" minus "xts_series", and call it "draw_down", 
-draw_down <- cummax(xts_series) - xts_series
-
-
-# plot "draw_down",
-plot(draw_down)
-
-
-# Find the date when "draw_down" reaches its maximum, and call it "date_trough", 
-# and find the maximum value of "draw_down" on that date, and call it "max_draw_down", 
-# use function which.max(),
-date_trough <- in_dex[which.max(draw_down)]
-max_draw_down <- draw_down[date_trough]
-
-
-# Subset "draw_down" to dates before "date_trough", and call it "draw_down_pre", 
-draw_down_pre <- draw_down[in_dex<date_trough]
-# Subset "draw_down" to dates after "date_trough", and call it "draw_down_post", 
-draw_down_post <- draw_down[in_dex>date_trough]
-
-
-# When the current price exceeds the previous maximum, then "draw_down" is zero, 
-# a drawdown starts when "draw_down" is first zero and then increases above zero.
-# Find the latest date when "draw_down_pre" was still zero before "date_trough", and call it "date_from",
-date_from <- max((index(draw_down_pre))[draw_down_pre==0])
-
-
-# A drawdown ends when "draw_down" drops back to zero after "date_trough".
-# Find the first date when "draw_down_post" drops to zero after "date_trough", and call it "date_to",
-date_to <- min((index(draw_down_post))[draw_down_post==0])
-
-
-# Combine the three dates into a named vector: from=date_from, trough=date_trough, to=date_to,
-# and call it "dates_draw_down",
-dates_draw_down <- c(from=date_from, trough=date_trough, to=date_to)
+# save zoo_series to a binary file called "zoo_series.Rdata", using save(),
+save(zoo_series, file='zoo_series.Rdata')
 
 
 
 ##################################
-# 2. (5pts) plot "xts_series", using generic function plot(),
-plot(xts_series, main="Drawdown dates")
+# 1. (20pts) simulate an ARIMA AR(1) process, and call it "ts_arima",
+# use function arima.sim(),
+# the length of the series should be 100,
+# the "model" argument should specify an ARIMA AR(1) process,
+# with a single coefficient equal to 0.5,
+# set the burn-in period to zero, by specifying the "start.innov"
+# argument equal to a vector of zeroes of length 100,
+# first reset the random number generator by calling set.seed(1121), 
 
-# add verical dashed red lines for the three dates: "date_from", "date_trough", "date_to",
-# use function addEventLines() from package "xts",
-addEventLines(
-  event.dates=dates_draw_down, 
-  event.labels=names(dates_draw_down),
-  on=1, col="red", lty="dashed", lwd=2)
+set.seed(1121)
+per_iods <- 100
+phi <- 0.5
+ts_arima <- arima.sim(n=per_iods, 
+                      model=list(ar=phi), 
+                      start.innov=rep(0, per_iods))
+
+# simulate the same AR(1) process as above, but now recursively, 
+# by calculating current returns from previous returns in a for() loop, 
+# and call it "ts_arima_loop",
+# use functions rnorm() and for(),
+# you should obtain the same "ts_arima" series as above, 
+# remember to reset the random number generator by calling set.seed(1121),
+# use function numeric() to pre-allocate the vector "ts_arima" before 
+# the loop starts,
+set.seed(1121)
+ts_arima_loop <- numeric(per_iods)
+ts_arima_loop[1] <- rnorm(1)
+for(in_dex in 2:per_iods) {
+  ts_arima_loop[in_dex] <- phi*ts_arima_loop[in_dex-1] + rnorm(1)
+}
+
+# use function as.ts() to coerce "ts_arima_loop" to a "ts" time series,
+ts_arima_loop <- as.ts(ts_arima_loop)
 
 
-
-##################################
-# 3. (10pts) Create function "max_drawdown()" that calculates the maximum drawdown of a time series of prices.
-# The function "max_drawdown()" should take one argument, a time series of prices (not returns),
-# "max_drawdown()" should return a named vector of three dates: from=date_from, trough=date_trough, to=date_to,
-# you can reuse the scripts from p.1,
-max_drawdown <- function (time_series) {
-  draw_down <- cummax(xts_series) - xts_series
-  in_dex <- index(xts_series)
-  date_trough <- in_dex[which.max(draw_down)]
-  draw_down_pre <- draw_down[in_dex<date_trough]
-  draw_down_post <- draw_down[in_dex>date_trough]
-  date_from <- max((index(draw_down_pre))[draw_down_pre==0])
-  date_to <- min((index(draw_down_post))[draw_down_post==0])
-  c(from=date_from, trough=date_trough, to=date_to)
-}  # end max_drawdown
-
-# call max_drawdown() with the argument "xts_series", to verify it works correctly,
-max_drawdown(xts_series)
+# use the function identical() to confirm that the two methods give 
+# the exact same result, and that "ts_arima" and "ts_arima_loop"
+# are identical,
+identical(ts_arima, ts_arima_loop)
 

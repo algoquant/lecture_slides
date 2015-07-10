@@ -3,6 +3,47 @@ opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+set.seed(1121)  # reset random number generator
+runif(3)  # three random numbers from the uniform distribution
+runif(3)  # produce another three numbers
+set.seed(1121)  # reset random number generator
+runif(3)  # produce another three numbers
+
+# produce random number from standard normal distribution
+rnorm(1)
+# produce five random numbers from standard normal distribution
+rnorm(5)
+# produce five random numbers from the normal distribution
+rnorm(n=5, mean=1, sd=2)  # match arguments by name
+# calculate cumulative standard normal distribution
+c(pnorm(-2), pnorm(2))
+# calculate inverse cumulative standard normal distribution
+c(qnorm(0.75), qnorm(0.25))
+set.seed(1121)  # reset random number generator
+# flip unbiased coin once, 11 times
+rbinom(n=11, size=1, 0.5)
+# number of heads after flipping twice, 11 times
+rbinom(n=11, size=2, 0.5)
+# number of heads after flipping thrice, 11 times
+rbinom(n=11, size=3, 0.5)
+# number of heads after flipping biased coin thrice, 11 times
+rbinom(n=11, size=3, 0.8)
+# number of heads after flipping biased coin thrice, 11 times
+rbinom(n=11, size=3, 0.2)
+# flip unbiased coin once, 11 times
+sample(x=0:1, size=11, replace=TRUE)  # fast
+as.numeric(runif(11) < 0.5)  # not fast
+sample(x=5)  # permutation of five numbers
+sample(x=5, size=3)  # sample of size three
+sample(x=5, replace=TRUE)  # sample with replacement
+sample(  # sample of strings
+  x=c("apple", "grape", "orange", "peach"),
+  size=8,
+  replace=TRUE)
+# binomial sample: flip unbiased coin once, 11 times
+sample(x=0:1, size=11, replace=TRUE)
+# flip unbiased coin once, 11 times
+as.numeric(runif(11) < 0.5)  # not fast
 Sys.Date()  # get today's date
 date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
 date_time
@@ -22,7 +63,7 @@ attributes(date_time) <- list(class="Date")
 date_time  # "Date" object
 structure(0, class="Date")  # "Date" object
 structure(10000.25, class="Date")
-  date_time <- Sys.time()  # get today's date and time
+date_time <- Sys.time()  # get today's date and time
 date_time
 class(date_time)  # POSIXct object
 # POSIXct stored as integer moment of time
@@ -34,12 +75,12 @@ as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
 as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # format argument allows parsing different date-time string formats
 as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
-           tz="America/New_York")
-  # same moment of time corresponds to different clock times
-  time_ny <- as.POSIXct("2014-07-14 13:30:10", 
-                        tz="America/New_York")
+     tz="America/New_York")
+# same moment of time corresponds to different clock times
+time_ny <- as.POSIXct("2014-07-14 13:30:10", 
+     tz="America/New_York")
 time_ldn <- as.POSIXct("2014-07-14 13:30:10", 
-                       tz="UTC")
+     tz="UTC")
 # add five hours to POSIXct
 time_ny + 5*60*60
 # subtract POSIXct
@@ -54,35 +95,38 @@ trading_times <- seq(
   by="10 min")
 head(trading_times, 3)
 tail(trading_times, 3)
-  # POSIXct is stored as integer moment of time
-  int_time <- as.numeric(date_time)
+# POSIXct is stored as integer moment of time
+int_time <- as.numeric(date_time)
 # same moment of time corresponds to different clock times
 as.POSIXct(int_time, origin="1970-01-01", 
-           tz="America/New_York")
+     tz="America/New_York")
 as.POSIXct(int_time, origin="1970-01-01", 
-           tz="UTC")
+     tz="UTC")
 # same clock time corresponds to different moments of time
 as.POSIXct("2014-07-14 13:30:10", 
-           tz="America/New_York") - 
+     tz="America/New_York") - 
   as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # add 20 seconds to POSIXct
 date_time + 20
-  date_time  # POSIXct date and time
+date_time  # POSIXct date and time
 # parse POSIXct to string representing the clock time
 format(date_time)
 class(format(date_time))  # character string
 # get clock times in different time zones
 format(date_time, tz="America/New_York")
 format(date_time, tz="UTC")
-Sys.Date()  # Date object
-class(Sys.Date())  # Date object
+# format with custom format strings
+format(date_time, "%m/%Y")
+format(date_time, "%m-%d-%Y %H hours")
+# trunc to hour
+format(date_time, "%m-%d-%Y %H:00:00")
 # Date converted to midnight UTC moment of time
 as.POSIXct(Sys.Date())
 as.POSIXct(as.numeric(as.POSIXct(Sys.Date())), 
-           origin="1970-01-01",
-           tz="UTC")
-  # parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-  date_time <- as.POSIXlt("2014-07-14 18:30:10")
+     origin="1970-01-01",
+     tz="UTC")
+# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
 date_time
 class(date_time)  # POSIXlt object
 as.POSIXct(date_time)  # coerce to POSIXct object
@@ -98,9 +142,9 @@ Sys.timezone()  # get time-zone
 Sys.setenv(tz="UTC")  # set time-zone to UTC
 Sys.timezone()  # get time-zone
 # Standard Time in effect
-as.POSIXct("2014-03-09 11:00:00", tz="America/New_York")
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
 # Daylight Savings Time in effect
-as.POSIXct("2014-03-10 11:00:00", tz="America/New_York")
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
 date_time <- Sys.time()  # today's date and time
 # convert to character in different TZ
 format(date_time, tz="America/New_York")
@@ -110,7 +154,7 @@ as.POSIXct(format(date_time, tz="America/New_York"))
 # difference between local time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) - 
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
-  library(lubridate)  # load lubridate
+library(lubridate)  # load lubridate
 # parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
 date_time <- mdy("07-14-2014", tz="America/New_York")
@@ -120,16 +164,16 @@ dmy("14.07.2014", tz="America/New_York")
 
 # parse numeric into date-times
 as.POSIXct(as.character(14072014), format="%d%m%Y", 
-           tz="America/New_York")
+                  tz="America/New_York")
 dmy(14072014, tz="America/New_York")
 
 # parse decimal to date-times
 decimal_date(date_time)
 date_decimal(2014.25, tz="America/New_York")
 date_decimal(decimal_date(date_time), tz="America/New_York")
-  library(lubridate)  # load lubridate
+library(lubridate)  # load lubridate
 date_time <- ymd_hms(20140714142010, 
-                     tz="America/New_York")
+               tz="America/New_York")
 date_time
 
 # get same moment of time in "UTC" time zone
@@ -138,7 +182,8 @@ as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
 
 # get same clock time in "UTC" time zone
 force_tz(date_time, "UTC")
-as.POSIXct(format(date_time), tz="UTC")
+as.POSIXct(format(date_time, tz="America/New_York"), 
+     tz="UTC")
 
 # same moment of time
 date_time - with_tz(date_time, "UTC")
@@ -148,7 +193,7 @@ date_time - force_tz(date_time, "UTC")
 library(lubridate)  # load lubridate
 # Daylight Savings Time handling periods vs durations
 date_time <- as.POSIXct("2013-03-09 11:00:00", 
-tz="America/New_York")
+                  tz="America/New_York")
 date_time
 date_time + ddays(1)  # add duration
 date_time + days(1)  # add period
@@ -190,7 +235,7 @@ in_dex
 
 # create logical vector of business days
 bus.days <- isBusinessDay(  # RQuantLib calendar
-calendar="UnitedStates/GovernmentBond", in_dex)
+  calendar="UnitedStates/GovernmentBond", in_dex)
 
 # create daily series of business days
 bus_index <- in_dex[bus.days]
@@ -213,147 +258,136 @@ head(qrtly_index, 4)  # print first few dates
 # parse quarterly 'zoo' dates to POSIXct
 Sys.setenv(tz="UTC")
 as.POSIXct(head(qrtly_index, 4))
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-glob_var <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  if (is.null(in_var)) {
+    return("double_it: in_var is missing")
+  } else if (is.numeric(in_var)) {
+    2*in_var
+  } else {
+    cat("double_it: in_var is not numeric")
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
 
-new_env <- new.env()  # create new environment
-parent.env(new_env)  # get calling environment of new environment
-assign("new_var1", 3, envir=new_env)  # assign Value to Name
-new_env$new_var2 <- 11  # create object in new environment
-ls(new_env)  # get objects in new environment
-ls(environment())  # get objects in current environment
-new_env$new_var1  # environments are subset like lists
-new_env[["new_var1"]]  # environments are subset like lists
-search()  # get search path for R objects
-my_list <- list(flowers=c("rose", "daisy", "tulip"),  # create a list
-                trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is part of the datasets base package
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, c(mean(Girth), mean(Height), mean(Volume)))
-rm(list=ls())
-glob_var <- 1  # define a global variable
-ls(environment())  # get all variables in environment
-func_env <- function() {  # explore function environments
-  loc_var <- 1  # define a local variable
-  cat('objects in evaluation environment:\t', 
-      ls(environment()), '\n')
-  cat('objects in enclosing environment:\t', 
-      ls(parent.env(environment())), '\n')
-  cat('this is the enclosing environment:')
-  parent.env(environment())  # return enclosing environment
-}  # end func_env
-func_env()
-
-environment(func_env)
-environment(print)  # package namespace is the enclosure
-rm(list=ls())
-glob_var <- 1  # define a global variable
-probe_scope <- function() {  # explore function scope
-  loc_var <- 2*glob_var  # define a local variable
-  new_globvar <<- 11  # define a global variable
-  cat('objects in evaluation environment:\t', 
-      ls(environment()), '\n')
-  cat('this is a local loc_var:\t', loc_var, '\n')
-  cat('objects in enclosing environment:\n', 
-      ls(parent.env(environment())), '\n')
-  cat('this is glob_var:\t', glob_var, '\n')
-  glob_var <- 10  # define local glob_var
-  cat('this is the local glob_var:\t', glob_var, '\n')
-}  # end probe_scope
-probe_scope()
-glob_var  # global variable is unaffected
-new_globvar  # new_globvar is preserved
-loc_var  # local variable is gone!
-a <- 1  # define a variable
-# new variable "b" points to value of "a"
-b <- a  # define a new variable
-# when "b" is modified, R makes a copy of it
-b <- b+1
-# function doubles its argument and returns it
 double_it <- function(in_var) {
-  in_var <- 2*in_var
-  cat("input argument was doubled to:", in_var, "\n")
-  in_var
-}
-double_it(a)
-a  # variable "a" is unchanged
-rm(list=ls())
-glob_var <- 1  # define a global variable
-probe_scope <- function() {  # explore function scope
-  cat('this is the global glob_var:\t', glob_var, '\n')
-  glob_var <- 10  # define local 'glob_var' variable
-  glob_var <<- 2  # re-define the global variable
-  cat('this is a local glob_var:\t', glob_var, '\n')
-}  # end probe_scope
-probe_scope()
-glob_var  # the global variable
-getOption("repos")  # get default package source
-.libPaths()  # get package save directory
-## install.packages("AER")  # install "AER" from CRAN
-## # install "PerformanceAnalytics" from R-Forge
-## install.packages(pkgs="PerformanceAnalytics",  # name
-##            lib="C:/Users/Jerzy/Downloads",  # directory
-##            repos="http://R-Forge.R-project.org")  # source
-## # install devtools from CRAN
-## install.packages("devtools")
-## # load devtools
-## library(devtools)
-## # install package "babynames" from GitHub
-## install_github(repo="hadley/babynames")
-## library("MASS")
-## # or
-## require("MASS")
-getOption("defaultPackages")
-pack_info <- installed.packages()  # matrix of packages
-# get a few package names and their versions
-pack_info[sample(x=1:100, 5), c("Package", "Version")]
-t(pack_info["xts", ])  # get info for package "xts"
-## library()  # list all packages installed on the system
-## search()  # list all loaded packages on search path
-## 
-## # get documentation for package "Ecdat"
-## packageDescription("Ecdat")  # get short description
-## help(package="Ecdat")  # load help page
-## library(Ecdat)  # load package "Ecdat"
-## data(package="Ecdat")  # list all datasets in "Ecdat"
-## ls("package:Ecdat")  # list all objects in "Ecdat"
-## detach("package:Ecdat")  # remove Ecdat from search path
-library("Ecdat")  # load econometric data sets
-class(Garch)  # Garch is a data frame from "Ecdat"
-dim(Garch)  # daily currency prices
-head(Garch[, -2])  # col 'dm' is Deutsch Mark
-detach("package:Ecdat")  # remove Ecdat from search path
-rm(list=ls())
-search()  # get search path for R objects
-library("MASS")  # load package "MASS"
-head(ls("package:MASS"))  # list some objects in "MASS"
-detach("package:MASS")  # remove "MASS" from search path
-loadedNamespaces()  # get names of loaded namespaces
+# check if argument is valid and return double
+  if (missing(in_var)) {
+    return("double_it: in_var is missing")
+  } else if (is.numeric(in_var)) {
+    2*in_var
+  } else {
+    cat("double_it: in_var is not numeric")
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  if (missing(in_var)) {
+    stop("double_it: in_var is missing")
+  } else if (!is.numeric(in_var)) {
+    stop("double_it: in_var is not numeric")
+  } else {
+    2*in_var
+  }
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "double_it" returns the double of its argument
+double_it <- function(in_var=NULL) {
+# check if argument is valid and return double
+  stopifnot(!is.null(in_var) && is.numeric(in_var))
+  2*in_var
+}  # end double_it
+double_it(3)
+double_it("a")
+double_it()
+# function "sum_two" returns the sum of its two arguments
+sum_two <- function(in_var1, in_var2) {  # even more robust
+# check if at least one argument is not missing
+  stopifnot(!missing(in_var1) || !missing(in_var2))
+# check if arguments are valid and return sum
+  if (is.numeric(in_var1) && is.numeric(in_var2)) {
+    in_var1 + in_var2  # both valid
+  } else if (is.numeric(in_var1)) {
+    cat("in_var2 is not numeric")
+    in_var1  # in_var1 is valid
+  } else if (is.numeric(in_var2)) {
+    cat("in_var1 is not numeric")
+    in_var2  # in_var2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+# ?options
+getOption("warn")
+getOption("error")
+catch_missing <- function(in_var) {
+# returns its argument
+  if (missing(in_var)) {
+    warning("catch_missing: in_var was missing")
+  } else {
+    in_var
+  }
+}  # end catch_missing
+catch_missing(5)
+options(warn=-1)
+catch_missing()
+options(warn=0)
+catch_missing()
+options(warn=1)
+catch_missing()
+options(warn=3)
+catch_missing()
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  }, 
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
 
-search()  # get search path for R objects
-# get session info,
-# including packages not attached to the search path
-sessionInfo()
-plot.xts  # package xts isn't loaded and attached
-head(xts::plot.xts, 3)
-methods("cbind")  # get all methods for function "cbind"
-stats::cbind.ts  # cbind isn't exported from package stats
-stats:::cbind.ts  # view the non-visible function
-getAnywhere("cbind.ts")
-library("MASS")  # load package 'MASS'
-select  # code of primitive function from package 'MASS'
-getAnywhere("cbind.ts")
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  }, 
+  error=function(error_cond)  # handler captures error condition
+    print(paste("error handler: ", error_cond)),
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    stopifnot(num_var != 3)  # check for error
+    cat("(cat) num_var =", num_var, "\n")  # broadcast
+    paste("(return) num_var =", num_var)  # return value
+  }  # end anonymous function
+)  # end apply
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    tryCatch(  # with error handler
+{  # body
+  stopifnot(num_var != 3)  # check for error
+  cat("(cat) num_var =", num_var, "\t")  # broadcast
+  paste("(return) num_var =", num_var)  # return value
+},
+error=function(error_cond)  # handler captures error condition
+  paste("handler: ", error_cond),
+finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply

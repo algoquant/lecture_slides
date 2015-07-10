@@ -1,10 +1,11 @@
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -69,7 +70,413 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
+\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{"for"} and \texttt{"while"} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{"for"} and \texttt{"while"} loops are relatively inefficient and too slow for large computations,
+      \vskip1ex
+      \texttt{apply()} loops are similar in speed to \texttt{"for"} and \texttt{"while"} loops,
+      \vskip1ex
+      \texttt{lapply()} is slightly faster than \texttt{sapply()}, which is slightly faster than \texttt{apply()} loops,
+      \vskip1ex
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  and is therefore preferred,
+      \vskip1ex
+      The function \texttt{system.time()} returns the CPU time used to evaluate a given expression,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# matrix with 500,000 rows
+big_matrix <- matrix(rnorm(1000000), ncol=2)
+# allocate memory for row sums
+row_sums <- numeric(nrow(big_matrix))
+# sum up row using "for" loop
+system.time(
+  for(i in 1:nrow(big_matrix)) {
+    row_sums[i] <- sum(big_matrix[i,])
+  }  # end for
+)  # end system.time
+# row sums using "apply" loop
+system.time(row_sums <- apply(big_matrix, 1, sum))
+system.time(  # row sums using "sapply" loop
+  row_sums <- sapply(1:nrow(big_matrix), 
+                     function(in_dex) 
+                         sum(big_matrix[in_dex, ])))
+system.time(  # row sums using "lapply" loop
+  row_sums <- lapply(1:nrow(big_matrix), 
+                     function(in_dex) 
+                         sum(big_matrix[in_dex, ])))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Allocating Memory to Increase Speed}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} syntax doesn't require allocating memory for new objects, but allocating memory for large vectors and matrices increases the speed of \texttt{R} code,
+      \vskip1ex
+      \texttt{R} allocates memory for a full vector each time it calculates a new vector element that wasn't previously allocated,
+      \vskip1ex
+      A loop which calculates vector elements allocates memory for a full vector in each iteration, which is inefficient and slow,
+      \vskip1ex
+      So it's better to allocate memory for a large vector or matrix, before performing a loop that calculates its elements, 
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+big_vector <- rnorm(50000)
+### allocate zero memory for cumulative sum
+cum_sum <- numeric(0)
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+### allocate full memory for cumulative sum
+cum_sum <- numeric(length(big_matrix))
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Vector Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{apply()} and \texttt{"for"} loops are very inefficient for calculations on large vectors, because the loops are performed by \texttt{R} code,
+      \vskip1ex
+      \emph{Vectorized} functions accept \texttt{vectors} as arguments, pass them to compiled \texttt{C} code, and return a vector,
+      \vskip1ex
+      \emph{Vectorized} functions are very fast because the compiled \texttt{C} code performs the actual loops and other calculations, which is very fast,
+      \vskip1ex
+      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
+      \vskip1ex
+      The functions \texttt{ifelse()} and \texttt{which()} perform \emph{vectorized} logical operations,
+      \vskip1ex
+      \texttt{R} has very efficient functions for calculating cumulative values over large vectors:
+      \begin{itemize}
+        \item \texttt{cummax()}
+        \item \texttt{cummin()}
+        \item \texttt{cumsum()}
+        \item \texttt{cumprod()}
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<>>=
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+system.time(  # sum vectors using "for" loop
+  for(i in 1:length(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }  # end for
+)  # end system.time
+# sum vectors using vectorized "+"
+system.time(big_vector <- vec_tor1 + vec_tor2)
+# allocate memory for cumulative sum
+cum_sum <- numeric(length(big_vector))
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for(i in 2:length(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+# cumulative sum using "cumsum"
+system.time(cum_sum <- cumsum(big_vector))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
+      \vskip1ex
+      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
+        <<func_ifelse,eval=FALSE,echo=TRUE,fig.show='hide'>>=
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2, 
+                  vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid", 
+        col=c("green", "blue", "red"), 
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4), 
+       title="", inset=0.05, cex=0.8, lwd=2, 
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
+      \vskip1ex
+      \texttt{R} has very efficient functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      \emph{vectorized} functions accept \texttt{vectors} as arguments, and call compiled \texttt{C} code for very fast calculations,
+      \vskip1ex
+      \emph{vectorized} functions are therefore much faster than \texttt{"for"} loops and \texttt{apply()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+system.time(row_sums <- apply(big_matrix, 1, sum))
+
+str(rowSums)  # get list of arguments
+
+# calculate row sums
+system.time(row_sums <- rowSums(big_matrix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{caTools} for Moving Window Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{caTools} contains functions for calculating moving (rolling) window aggregations over a \texttt{vector} of data:
+      \begin{itemize}
+        \item \texttt{runmax} and \texttt{runmin} for rolling maximum and minimum, 
+        \item \texttt{runsd()} for rolling standard deviation,
+        \item \texttt{runmad()} for rolling Median Absolute Deviation (MAD),
+        \item \texttt{runquantile()} for rolling quantile,
+      \end{itemize}
+      Time series need to be coerced to \texttt{vectors} before they are passed to \texttt{caTools} functions,
+      \vskip1ex
+      The \texttt{caTools} functions are very fast because they are compiled from \texttt{C} code,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(caTools)  # load package "caTools"
+# get documentation for package "caTools"
+packageDescription("caTools")  # get short description
+help(package="caTools")  # load help page
+data(package="caTools")  # list all datasets in "caTools"
+ls("package:caTools")  # list all objects in "caTools"
+detach("package:caTools")  # remove caTools from search path
+
+# median filter
+med_ian <- runmed(x=coredata(xts_series), k=vol_window)
+# vector of rolling volatility
+vo_lat <- runsd(x=abs(coredata(xts_series)), 
+                k=vol_window, probs=0.9, 
+                endrule="constant", align="center")
+# vector of rolling quantiles
+quan_tiles <- runquantile(x=abs(coredata(xts_series)), 
+                          k=vol_window, probs=0.9, 
+                          endrule="constant", align="center")
+      @
+      \vspace{-1em}
+      The argument \texttt{"endrule"} determines how the end values of the data are treated,
+      \vskip1ex
+      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="centered"} the fastest option,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Barrier Options Using \texttt{"while"} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{"while"} loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of random prices hitting a barrier level,
+        <<simu_while,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+simu_max <- 1000  # max simulation trials
+simu_prices <- numeric(simu_max)  # initialize prices
+barrier_level <- 20  # barrier level
+simu_prices[1] <- 0  # first simulated price
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= simu_max) && 
+         (simu_prices[in_dex - 1] < barrier_level)) {
+  simu_prices[in_dex] <- # simulate next price
+    simu_prices[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+if (in_dex <= simu_max) {  # fill zero prices
+  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
+}
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_while-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Barrier Options Using Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations in \texttt{R} can be accelerated by pre- computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{"while"} loops,
+        <<simu_vector,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+simu_max <- 1000  # max simulation trials
+barrier_level <- 20  # barrier level
+# simulated prices
+simu_prices <- cumsum(rnorm(simu_max))
+# find index when prices cross barrier_level
+which_index <- which(simu_prices > barrier_level)
+# fill prices after crossing barrier_level
+if (length(which_index)>0) {
+  simu_prices[(which_index[1]+1):simu_max] <- 
+    simu_prices[which_index[1]]
+}  # end if
+# create daily time series starting 2011
+ts_var <- ts(data=simu_prices, frequency=365, 
+             start=c(2011, 1))
+plot(ts_var, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+title(main="Random Prices", line=0)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_vector-1}
+      \vspace{-4em}
+      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{One-dimensional Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      \vskip1ex
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
+      \vskip1ex
+      \vspace{-1em}
+        <<eval=TRUE,echo=(-(1:1))>>=
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+      @
+      \vspace{-2em}
+        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_one_dim-1}
+      \vspace{-3em}
+      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -114,11 +521,11 @@ objective_grid[(objective_min[, 1] + -1:1),
       <<optim_objective,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
 # perspective plot of objective function
 persp(par_mean, par_sd, -objective_grid,
-      theta = 45, phi = 30,
-      shade = 0.5,
-      col = rainbow(50),
-      border = "green",
-      main = "objective function")
+      theta=45, phi=30,
+      shade=0.5,
+      col=rainbow(50),
+      border="green",
+      main="objective function")
       @
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
@@ -217,11 +624,11 @@ objective_grid[(objective_min[, 1] + -1:1),
       <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
 # perspective plot of objective function
 persp(par_mean, par_sd, -objective_grid,
-      theta = 45, phi = 30,
-      shade = 0.5,
-      col = rainbow(50),
-      border = "green",
-      main = "objective function")
+      theta=45, phi=30,
+      shade=0.5,
+      col=rainbow(50),
+      border="green",
+      main="objective function")
       @
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}

@@ -1,12 +1,13 @@
 % FRE7241_Lecture_5
 
 % Define knitr options
-% !Rnw weave = knitr
+% !Rnw weave=knitr
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -51,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#5]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#5, Spring 2015}
+\subtitle{Lecture\#5, Summer 2015}
 % \subject{Getting Started With R}
 \institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
 \titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{May 5, 2015}
+\date{June 26, 2015}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -69,633 +70,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Risk and Return Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:4))>>=
-rm(list=ls())
-options(digits=3)
-setwd("C:/Develop/data")
-library(xtable)
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
-  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", 
-  "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", 
-  "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", 
-  "IWS", "IWV", "IUSV", "IUSG")
-# read etf database into data frame
-etf_list <- read.csv(file='etf_list.csv', 
-                     stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# shorten names
-etf_names <- sapply(etf_list$Name, 
-                    function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <- 
-    name_split[c(-1, -length(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<eval=FALSE,echo=FALSE,size="tiny">>=
-etf_list[c(1, 2)]
-      @
-      <<results='asis',echo=FALSE>>=
-print(xtable(etf_list), comment=FALSE, size="tiny")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{quantmod} contains \texttt{functions}:
-      \begin{itemize}
-        \item \texttt{getSymbols()} for downloading time series data,
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item for extracting and manipulating time series data, 
-        \item for calculating periodic returns,
-        \item \texttt{chartSeries} for plotting time series data, 
-      \end{itemize}
-      \texttt{quantmod} uses time series objects of class\texttt{"xts"},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(quantmod)  # load package "quantmod"
-# get documentation for package "quantmod"
-packageDescription("quantmod")  # get short description
-help(package="quantmod")  # load help page
-data(package="quantmod")  # list all datasets in "quantmod"
-ls("package:quantmod")  # list all objects in "quantmod"
-detach("package:quantmod")  # remove quantmod from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data Using Package \texttt{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
-      \vskip1ex
-      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
-      \vskip1ex
-      It then assigns the data to those objects, without returning them as a function value,
-      \vskip1ex
-      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
-      \vskip1ex
-      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
-# create new environment for data
-data_env <- new.env()
-# download data for sym_bols into data_env
-getSymbols(sym_bols, env=data_env)
-      @
-      \vspace{-2em}
-      <<echo=(-(1:2)),eval=TRUE>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
-ls(data_env)  # list files in data_env
-# get class of object in data_env
-class(get(x=sym_bols[1], envir=data_env))
-# another way
-class(data_env$VTI)
-colnames(data_env$VTI)
-head(data_env$VTI, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adjusting Prices Using Package \texttt{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
-      \vskip1ex
-      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices, 
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-      \vskip1ex
-      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
-# adjust single OHLC object using its name
-data_env$VTI <- adjustOHLC(data_env$VTI, 
-                           use.Adjusted=TRUE)
-
-# adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=data_env), 
-    use.Adjusted=TRUE), 
-  envir=data_env)
-
-# adjust objects in environment using vector of strings
-for (sym_bol in sym_bols) {
-  assign(sym_bol, 
-         adjustOHLC(get(sym_bol, envir=data_env), 
-                    use.Adjusted=TRUE), 
-         envir=data_env)
-}
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting Prices Using Package \texttt{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \texttt{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      A list of \texttt{xts} can be flattened into a single \texttt{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
-      \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
-      The function \texttt{eapply()} is similar \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
-# extract and merge data for vector of strings
-etf_series <- do.call(merge, 
-                  as.list(data_env)[sym_bols])
-
-# extract adjusted prices and merge into xts
-etf_series_ad <- do.call(merge, 
-                  eapply(data_env, Ad)[sym_bols])
-
-# drop ".Adjusted" from colnames
-colnames(etf_series_ad) <- 
-  sapply(colnames(etf_series_ad), 
-    function(col_name) 
-      strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(etf_series_ad[, 1:2], 3)
-
-# save xts to csv file
-write.zoo(etf_series, 
-     file='etf_series.csv', sep=",")
-
-# save data to .Rdata file
-save(data_env, etf_series, etf_series_ad, 
-     file='etf_data.Rdata')
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating Returns from Adjusted Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2))>>=
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
-# scrub NA values
-etf_series_ad <- 
-  etf_series_ad[complete.cases(etf_series_ad)]
-colnames(etf_series_ad)
-
-# calculate returns from adjusted prices
-library(quantmod)
-etf_rets <- lapply(etf_series_ad, 
-                   function(x_ts) {
-  daily_return <- dailyReturn(x_ts)
-  colnames(daily_return) <- names(x_ts)
-  daily_return
-})  # end lapply
-
-# "etf_rets" is a list of xts
-class(etf_rets[[1]])
-
-# flatten list of xts into a single xts
-etf_rets <- do.call(merge, etf_rets)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-class(etf_rets)
-dim(etf_rets)
-head(etf_rets[, 1:3])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Using \texttt{chartSeries()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chartSeries()} from package \texttt{quantmod} plots candlecharts of \emph{OHLC} time series, including volume,
-      \vskip1ex
-      <<chartSeries_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
-# plot OHLC candlechart with volume
-chartSeries(data_env$VTI["2014-11"], 
-            name="VTI", 
-            theme=chartTheme("white"))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_basic-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{PerformanceAnalytics}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{PerformanceAnalytics} contains \texttt{functions} and \texttt{data sets} for performance and risk analysis,
-      \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package,
-      \vskip1ex
-      \texttt{managers} is an \texttt{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# get documentation for package "PerformanceAnalytics"
-packageDescription("PerformanceAnalytics")  # get short description
-help(package="PerformanceAnalytics")  # load help page
-data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
-ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
-detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
-      @
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-perf_data <- 
-  unclass(data(
-    package="PerformanceAnalytics"))$results[, -(1:2)]
-apply(perf_data, 1, paste, collapse=" - ")
-data(managers)  # load "managers" data set
-class(managers)
-dim(managers)
-head(managers, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-data(managers)  # load "managers" data set
-ham_1 <- managers[, c("HAM1", "EDHEC LS EQ", 
-                      "SP500 TR")]
-
-chart.CumReturns(ham_1, lwd=2, ylab="", 
-        legend.loc="topleft", main="")
-# add title
-title(main="Managers cumulative returns", 
-      line=-1)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{PerformanceSummary} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{charts.PerformanceSummary()} plots three charts: cumulative returns, return bars, and drawdowns,
-      <<performance_summary,echo=(-(1:2)),eval=FALSE,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-data(managers)  # load "managers" data set
-charts.PerformanceSummary(ham_1, 
-  main="", lwd=2, ylog=TRUE)
-      @
-    \column{0.5\textwidth}
-    \vspace{-3em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/performance_summary-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-chart.CumReturns(
-  etf_rets[, c("XLF", "XLP", "IEF")], lwd=2, 
-  ylab="", legend.loc="topleft", main="")
-# add title
-title(main="ETF cumulative returns", line=-1)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/etf_cum_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Drawdown Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<drawdown_plot,eval=FALSE,echo=(-(1:2)),fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-options(width=200)
-library(PerformanceAnalytics)
-chart.Drawdown(etf_rets[, "VTI"], ylab="", 
-               main="VTI drawdowns")
-      @
-      \vskip27ex
-      <<eval=TRUE,echo=(-(1:3))>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-options(width=200)
-library(PerformanceAnalytics)
-table.Drawdowns(etf_rets[, "VTI"])
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/drawdown_plot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Return Distribution Histogram}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<returns_hist,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-library(PerformanceAnalytics)
-chart.Histogram(etf_rets[, 1], main="", 
-  xlim=c(-0.06, 0.06), 
-  methods = c("add.density", "add.normal"))
-# add title
-title(main=paste(colnames(etf_rets[, 1]), 
-                 "density"), line=-1)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_hist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Return Boxplots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<returns_box,echo=(-1),eval=FALSE,fig.width=6,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-chart.Boxplot(etf_rets[, 
-  c(rownames(head(ret_stats, 3)), 
-    rownames(tail(ret_stats, 3)))])
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \hspace*{-8em}\includegraphics[width=0.65\paperwidth,valign=t]{figure/returns_box-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Return Distribution Statistics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)
-tail(table.Stats(etf_rets[, 
-  c("VTI", "IEF", "DBC", "IUSG")]), 3)
-ret_stats <- table.Stats(etf_rets)
-class(ret_stats)
-# Transpose the data frame
-ret_stats <- as.data.frame(t(ret_stats))
-      @
-      \vspace{-1em}
-      <<returns_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-# plot scatterplot
-plot(Kurtosis ~ Skewness, data=ret_stats,
-     main="Kurtosis vs Skewness")
-# add labels
-text(x=ret_stats$Skewness, y=ret_stats$Kurtosis, 
-          labels=colnames(etf_rets), 
-          pos=1, cex=0.8)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_scatter-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Return Statistics Ranking}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-# add skew_kurt column
-ret_stats$skew_kurt <- 
-  ret_stats$Skewness/ret_stats$Kurtosis
-# sort on skew_kurt
-ret_stats <- ret_stats[
-  order(ret_stats$skew_kurt, 
-        decreasing=TRUE), ]
-# add names column
-ret_stats$Name <- 
-  etf_list[rownames(ret_stats), ]$Name
-      @
-    \column{0.55\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-ret_stats[, c("Name", "Skewness", "Kurtosis")]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Risk vs. Return Scatterplot}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<risk_return_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-library(PerformanceAnalytics)
-chart.RiskReturnScatter(etf_rets, Rf=0.01/12)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/risk_return_scatter-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Risk-adjusted Returns Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{Sharpe} ratio measures the excess return per unit of risk, and is equal to the excess returns (over a risk-free return) divided by the standard deviation of the returns:
-      \begin{displaymath}
-        S_{r}=\frac{E[R-R_{f}]}{\sigma}
-      \end{displaymath}
-      The \emph{Sortino} ratio is equal to the excess returns divided by the \emph{downside deviation} (standard deviation of returns below a target rate of return),
-      \begin{displaymath}
-        S_{r}=\frac{E[R-R_{t}]}{\sqrt{\sum_{i=1}^{k} ([R_{i}-R_{t}]_{-})^2}}
-      \end{displaymath}
-      The \emph{Calmar} ratio is equal to the excess returns divided by the maximum drawdown of the returns:
-      \begin{displaymath}
-        C_{r}=\frac{E[R-R_{f}]}{DD}
-      \end{displaymath}
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(PerformanceAnalytics)
-vti_ief <- etf_rets[, c("VTI", "IEF")]
-SharpeRatio(vti_ief)
-
-SortinoRatio(vti_ief)
-
-CalmarRatio(vti_ief)
-tail(table.Stats(vti_ief), 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -829,7 +203,7 @@ InformationRatio(Ra=etf_rets[, "XLP"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect \emph{CAPM} Scatterplot}
+\subsection{\protect\emph{CAPM} Scatterplot}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -870,7 +244,7 @@ text(x=etf_betas[label_names],
 
 
 %%%%%%%%%%%%%%%
-\subsection{CAPM Summary Statistics}
+\subsection{\protect\emph{CAPM} Summary Statistics}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -916,7 +290,9 @@ etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<corr_plot,echo=(-1),eval=FALSE,fig.show='hide'>>=
+      <<corr_plot,echo=(-(1:3)),eval=FALSE,fig.show='hide'>>=
+# load ETF returns
+load(file="C:/Develop/data/etf_data.Rdata")
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
@@ -983,9 +359,11 @@ plot(data_cluster,
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<pca_plot,echo=(-(1:2)),fig.height=5,fig.show='hide'>>=
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+      <<pca_plot,echo=(-(1:4)),fig.height=5,fig.show='hide'>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
+# load ETF returns
+load(file="C:/Develop/data/etf_data.Rdata")
 ### Perform principal component analysis PCA
 etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
 barplot(etf_pca$sdev[1:10], 
@@ -1024,7 +402,7 @@ barplot(as.vector(pca_vec2),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<pca_vec,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(3,1))  # set plot panels
 # get list of principal component vectors
 pca_vecs <- lapply(1:3, function(in_dex) {
@@ -1112,6 +490,462 @@ table.CAPM(Ra=pca_rets[, 1:3],
     Rb=etf_rets[, "VTI"], scale=252)
       @
     \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Factor Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{factorAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{factorAnalytics} performs estimation and risk analysis of linear factor models for portfolio asset returns,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(factorAnalytics)  # load package "factorAnalytics"
+# get documentation for package "factorAnalytics"
+packageDescription("factorAnalytics")  # get short description
+help(package="factorAnalytics")  # load help page
+      @
+      \vspace{-1em}
+      <<eval=TRUE,echo=(-(1:2)),tidy=TRUE>>=
+options(width=50)
+library(factorAnalytics)  # load package "factorAnalytics"
+# list all objects in "factorAnalytics"
+ls("package:factorAnalytics")
+
+# list all datasets in "factorAnalytics"
+# data(package="factorAnalytics")
+
+# remove factorAnalytics from search path
+detach("package:factorAnalytics")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Factor Models Using PCA}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-1),eval=TRUE>>=
+library(factorAnalytics)
+# load ETF returns
+load(file="C:/Develop/data/etf_data.Rdata")
+# fit a three-factor model using PCA
+factor_pca <- fitSfm(etf_rets, k=3)
+head(factor_pca$loadings, 3)  # factor loadings
+# factor realizations (time series)
+head(factor_pca$factors)
+# residuals from regression
+factor_pca$residuals[1:3, 1:3]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-1),eval=TRUE>>=
+library(factorAnalytics)
+factor_pca$alpha  # estimated alphas
+factor_pca$r2  # R-squared regression
+# covariance matrix estimated by factor model
+factor_pca$Omega[1:3, 4:6]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Factor Loadings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
+library(factorAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+plot(factor_pca, which.plot.group=3, 
+     n.max=30, loop=FALSE)
+# ?plot.sfm
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_load-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series of Factors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_tsplot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot factor cumulative returns
+chart.CumReturns(factor_pca$factors, 
+    lwd=2, ylab="", legend.loc="topleft", 
+    main="")
+
+# plot time series of factor returns
+# plot(factor_pca, which.plot.group=2, 
+#   loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_tsplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_corr_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=7,fig.show='hide'>>=
+# asset correlations "hclust" hierarchical clustering order
+plot(factor_pca, which.plot.group=7, 
+     loop=FALSE, order="hclust", 
+     method="ellipse")
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_corr_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series of Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot residual cumulative returns
+chart.CumReturns(
+  factor_pca$residuals[, c("IEF", 
+                  "DBC", "XLF")], 
+  lwd=2, ylab="", legend.loc="topleft", 
+  main="")
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Residual Returns Histogram}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_hist,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot residual histogram with normal curve
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=8, 
+     plot.single=TRUE, loop=FALSE, 
+     xlim=c(-0.007, 0.007))
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Residual Returns \texttt{Q-Q} Plot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_qq,eval=TRUE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# residual Q-Q plot
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=9, 
+     plot.single=TRUE, loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_qq-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      <<fact_resid_autocorr,eval=FALSE,echo=TRUE,fig.width=7,fig.height=9,fig.show='hide'>>=
+# SACF and PACF of residuals
+plot(factor_pca, asset.name="VTI", 
+     which.plot.single=5, 
+     plot.single=TRUE, loop=FALSE)
+      @
+    \column{0.6\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_autocorr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Likelihood Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector of normal variables
+target_vector <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  sum(2*log(parm[2]) + 
+    ((target - parm[1])/parm[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, target)
+    object_ive(c(mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(
+  objective_grid==min(objective_grid), 
+  arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_objective,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Objective Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization quasi-Newton method
+optim_run <- optim(par=par_init, 
+             fn=object_ive, 
+             target=target_vector,
+             method="L-BFGS-B",
+             upper=c(10, 10),
+             lower=c(-10, 0.1))
+# optimal parameters
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+curve(expr=dnorm(x, mean=optim_run$par["mean"],
+                 sd=optim_run$par["sd"]), 
+      add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Model Likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# target vector is mixture of normal distributions
+target_vector <- c(rnorm(100, sd=1.0), 
+                   rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(parm, target) {
+  likelihood <- parm[1]/parm[3] * 
+  dnorm((target-parm[2])/parm[3]) +
+  (1-parm[1])/parm[5]*dnorm((target-parm[4])/parm[5])
+  if(any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, target)
+    object_ive(c(w, m1, s1, mean, sd), target),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd, 
+          vec_objective, target=target_vector,
+          w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1), 
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta = 45, phi = 30,
+      shade = 0.5,
+      col = rainbow(50),
+      border = "green",
+      main = "objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Mixture Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<>>=
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_run <- optim(par=par_init, 
+            fn=object_ive, 
+            target=target_vector,
+            method="L-BFGS-B",
+            upper=c(1,10,10,10,10),
+            lower=c(0,-10,0.2,-10,0.2))
+optim_run$par
+      @
+\vspace{-1em}
+      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(target_vector, plot=FALSE)
+plot(histo_gram, freq=FALSE, 
+     main="histogram of target vector")
+fit_func <- function(x, parm) {
+  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) + 
+    (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
+      type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL, 
+       leg="optimal parameters", 
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
   \end{columns}
 \end{block}
 

@@ -3,10 +3,10 @@ opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-## # display documentation on function "getwd"
-## help(getwd)
-## ?getwd  # equivalent to "help(getwd)"
-## help.start()  # open the hypertext documentation
+# display documentation on function "getwd"
+help(getwd)
+?getwd  # equivalent to "help(getwd)"
+help.start()  # open the hypertext documentation
 my_var <- 3  # "<-" and "=" are valid assignment operators
 
 my_var  # typing a symbol or expression evaluates it
@@ -39,10 +39,46 @@ ls()  # list objects
 loaded <- load(file="C:/Develop/data/my_data.RData")
 loaded
 ls()  # list objects
-##   q()  # quit R session
-## history(5)  # display last 5 commands
-## savehistory(file="myfile")  # default is ".Rhistory"
-## loadhistory(file="myfile")  # default is ".Rhistory"
+q()  # quit R session
+history(5)  # display last 5 commands
+savehistory(file="myfile")  # default is ".Rhistory"
+loadhistory(file="myfile")  # default is ".Rhistory"
+sessionInfo()  # get R version and other session info
+Sys.getenv()[5:7]  # list some environment variables
+
+Sys.getenv("Home")  # get R user HOME directory
+
+Sys.setenv(Home="C:/Develop/data")  # set HOME directory
+
+Sys.getenv("Home")  # get user HOME directory
+
+Sys.getenv("R_home")  # get R_HOME directory
+
+R.home()  # get R_HOME directory
+
+R.home("etc")  # get "etc" sub-directory of R_HOME
+# ?options  # long list of global options
+
+# interpret strings as characters, not factors
+getOption("stringsAsFactors")  # display option
+options("stringsAsFactors")  # display option
+options(stringsAsFactors=FALSE)  # set option
+
+# number of digits printed for numeric values
+options(digits=3)
+
+# number of items printed to console
+options(max.print=30)
+
+# warning levels options
+# negative - warnings are ignored
+options(warn=-1)
+# zero - warnings are stored and printed after top-level function has completed
+options(warn=0)
+# one - warnings are printed as they occur
+options(warn=1)
+# two or larger - warnings are turned into errors
+options(warn=2)
 # single numbers are vectors of length 1
 1
 # character strings are vectors of length 1
@@ -79,18 +115,15 @@ cat("Enter\nnewline")
 cat("Enter\\backslash")
 str_var1 <- "Hello"  # define a character string
 str_var2 <- "World!"  # define a character string
-
 paste(str_var1, str_var2, sep=' ')  # concatenate and return value
 cat(str_var1, str_var2)  # concatenate and echo to console
 paste('a', 1:4, sep='-')  # convert, recycle and concatenate
-
 paste(c("a1", "a2", "a3"), collapse="+")  # collapse vector to string
 paste(list("a1", "a2", "a3"), collapse="+")
-
 paste("Today is", Sys.time())  # coerce and concatenate strings
 paste("Today is", format(Sys.time(), "%B-%d-%Y"))
-
 strsplit("Hello World", split='r')  # split string
+strsplit("Hello.World", split='[.]')  # split string
 substring("Hello World", 3, 6)  # extract characters from 3 to 6
 gsub("is", "XX", "is this gratis?")  # replace "is" with "XX"
 

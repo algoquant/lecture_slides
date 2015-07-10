@@ -38,10 +38,10 @@ read_matrix <- function (file, na_replace=0) {
 # save dimnames
   dim_names <- dimnames(mat_rix)
 # coerce columns to numeric and replace NAs
-  mat_rix <- sapply(mat_rix, function(col_umn) {
-    col_umn <- as.numeric(col_umn)
-    col_umn[is.na(col_umn)] <- na_replace
-    col_umn
+  mat_rix <- sapply(mat_rix, function(co_lumn) {
+    co_lumn <- as.numeric(co_lumn)
+    co_lumn[is.na(co_lumn)] <- na_replace
+    co_lumn
   }  # end anon function
   )  # end sapply
 # restore dimnames
