@@ -1,136 +1,131 @@
 #################################
-### FRE7241 Test #3 Solutions July 7, 2015
+### FRE7241 Test #3 Solutions Oct 5, 2015
 #################################
-# Max score 90pts
+# Max score 60pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
+# Part I
+##############
+# Summary: Perform an sapply() loop over the columns of "etf_rets", 
+# calculate the max drawdowns, and Sortino and Calmar ratios, 
+# extract the data into a named matrix. 
 
-# summary: calculate optimized portfolio weights in each year, 
-# and apply them to out-of-sample data in the following year, 
-# 
-# 1. (5pts) Load time series data from file 
-# "etf_data.Rdata" (download it from NYU Classes),
-# the xts series "etf_rets" contains stock returns data,
-# use function load(),
+# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
+# "etf_data.Rdata" contains an environment called "env_data", 
+# with OHLC time series data for ETFs. 
+
+library(quantmod)
 load(file="C:/Develop/data/etf_data.Rdata")
 
-# create a vector of annual end points from the index of "etf_rets",
-# and call it "end_points", set the first "end_points" equal to 1,
-# use xts function endpoints(),
-library(xts)
-end_points <- endpoints(etf_rets, on='years')
-end_points[1] <- 1
+# create a vector of symbols called "sym_bols",
 
-# create a vector of symbols for the optimized portfolio,
-sym_bols <- c("VTI", "VNQ", "DBC")
+sym_bols <- c("VTI", "VEU", "IEF", "DBC")
 
-# create an initial vector of portfolio weights for the "sym_bols", 
-# all equal to 1,
-portf_weights <- rep(1, length(sym_bols))
-names(portf_weights) <- sym_bols
+# 1. (20pts) Perform an sapply() loop over the columns of "etf_rets" 
+# subset by "sym_bols", 
+# inside the loop calculate the max drawdowns, and Sortino and Calmar ratios, 
+# extract the data into a named matrix. 
+# you can use functions sapply(), table.Drawdowns() (column "Depth"), 
+# SortinoRatio(), CalmarRatio(), and an anonymous function,
 
-
-# 2. (10pts) create an objective function equal to 
-# minus the Sharpe ratio, and call it object_ive(), 
-# the objective function should accept two arguments: 
-# "weights" and "portf_rets",
-object_ive <- function(weights, portf_rets) {
-  portf_ts <- portf_rets %*% weights
-  -mean(portf_ts)/sd(portf_ts)
-}  # end object_ive
-
-# apply object_ive() to an equal weight portfolio,
-object_ive(weights=portf_weights, portf_rets=etf_rets[, sym_bols])
+library(PerformanceAnalytics)
+etf_stats <- sapply(etf_rets[, sym_bols], 
+                    function(x_ts) {
+                      c(
+                        draw_down=table.Drawdowns(x_ts)[1, "Depth"], 
+                        sor_tino=SortinoRatio(x_ts), 
+                        cal_mar=CalmarRatio(x_ts))
+                    })  # end sapply
 
 
-# 3. (25pts) create a function called optim_portf(), 
-# that accepts three arguments:
-#   "portf_rets": an "xts" containing returns data, 
-#   "start_point": the start index of "portf_rets", 
-#   "end_point": the end index of "portf_rets", 
-# optim_portf() should:
-# - extract (subset) returns from "portf_rets" between "start_point" 
-#    and "end_point",
-# - extract the symbol names from the column names of "portf_rets",
-# - create a named vector of initial portfolio weights equal to 1,
-#    the portfolio weight names should be the appropriate symbol names,
-# - optimize the weights to minimize the object_ive(), using the 
-#    subset returns,
-# - return the vector of optimal portfolio weights,
-# 
-# use function optim() with the dots "..." argument, 
-# use functions colnames(), rep(), and object_ive(), 
+# Part II
+##############
+# Summary: calculate the rolling standard deviation of returns, 
+# and the aggregated trading volumes, over monthly end points. 
+# Create plots and perform a regression of the two. 
 
-optim_portf <- function(portf_rets, start_point, end_point) {
-  portf_rets <- portf_rets[(start_point:end_point), ]
-  sym_bols <- colnames(portf_rets)
-# create initial vector of portfolio weights equal to 1,
-  portf_weights <- rep(1, ncol(portf_rets))
-  names(portf_weights) <- sym_bols
-# optimization to find weights with maximum Sharpe ratio
-  optim_run <- optim(par=portf_weights, 
-                     fn=object_ive, 
-                     method="L-BFGS-B",
-                     upper=c(1.1, 10, 10),
-                     lower=c(0.9, -10, -10),
-                     portf_rets=portf_rets)
-# return optimal weights
-  optim_run$par
-}  # end optim_portf
+# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
+# "etf_data.Rdata" contains an environment called "env_data", 
+# with OHLC time series data for ETFs, including "VTI". 
 
-# apply optim_portf() to the "sym_bols" portfolio, 
-# with start_point=1 and end_point=207,
-optim_portf(portf_rets=etf_rets[, sym_bols], start_point=1, end_point=207)
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
 
+# 1. (20pts)
+# Calculate the "VTI" daily returns from the adjusted close prices.
+# you can use functions Ad() and dailyReturn(), 
 
+re_turns <- dailyReturn(Ad(env_data$VTI))
 
-# 4. (20pts) find the optimal portfolio weights in each year  
-# by performing an sapply() loop over "end_points",
-# call the matrix returned by sapply() "ann_weights",
-# you can use functions sapply(), optim_portf(), 
-# and an anonymous function,
-ann_weights <- sapply(2:length(end_points), 
-                   function(in_dex) {
-                     optim_portf(
-                       portf_rets=etf_rets[, sym_bols], 
-                       start_point=end_points[in_dex-1], 
-                       end_point=end_points[in_dex])
-                   }  # end anon function
-)  # end sapply
+# Merge the daily returns with the "VTI" volume column, 
+# and call it "return_volume",
+# you can use functions Vo() and merge(), 
+
+return_volume <- merge(re_turns, Vo(env_data$VTI))
+
+# remove rows of "return_volume" with NA values, 
+# you can use function complete.cases(), 
+
+return_volume <- return_volume[complete.cases(return_volume)]
+
+# Calculate the monthly end points for "return_volume". 
+# Calculate the standard deviation of returns over the monthly 
+# end points. 
+# Calculate the aggregated trading volumes over the monthly 
+# end points. 
+# Merge the standard deviations with the aggregated volumes 
+# and call it "volat_volume", 
+# Assign to "volat_volume" the column names "volat" and "volu", 
+# you can use functions endpoints(), sd(), colnames(), period.sum(), 
+# and period.apply(), 
+
+end_points <- endpoints(return_volume, on="months")
+vol_at <- period.apply(return_volume[, 1], 
+                       INDEX=end_points, 
+                       FUN=sd)
+vol_ume <- period.sum(return_volume[, 2], INDEX=end_points)
+volat_volume <- merge(vol_at, vol_ume)
+colnames(volat_volume) <- c("volat", "volu")
 
 
-# 5. (10pts) assign column names to "ann_weights", corresponding 
-# to the year of the data,
-# you can't assign the names by typing them one at a time,
-# you must extract the names from the index of "etf_rets" using "end_points",
-# you can use functions format(), index(), and lubridate function year(), 
-colnames(ann_weights) <- format(index(etf_rets[end_points[-1]]), "%Y")
-# or
-library(lubridate)
-colnames(ann_weights) <- year(index(etf_rets[end_points[-1]]))
+# 2. (10pts)
+# plot the columns of "volat_volume" in a single plot in two panels,
+# you can use method plot.zoo(), 
 
-# transpose "ann_weights",
-ann_weights <- t(ann_weights)
+plot.zoo(volat_volume)
+
+# plot a scatterplot of the two columns of "volat_volume", 
+# you can use function plot() with a formula argument, 
+# you can create a formula from the column names of "volat_volume", 
+# you can use functions colnames(), as.formula() and paste(), 
+
+plot(
+  as.formula(paste(colnames(volat_volume), collapse=" ~ ")), 
+  data=volat_volume)
 
 
-# 6. (20pts) perform an sapply() loop over "end_points",
-# in each year calculate the optimized portfolio returns,
-# using portfolio weights from the previous year,
-# you can use function sapply(), and an anonymous function,
-optim_rets <- sapply(2:(length(end_points)-1),
-                   function(in_dex) {
-                     portf_rets <- 
-                       etf_rets[(end_points[in_dex]:end_points[in_dex+1]), sym_bols]
-                     portf_rets %*% ann_weights[in_dex-1, ]
-                   }  # end anon function
-)  # end sapply
+# 3. (10pts) perform a regression of the two columns of "volat_volume", 
+# you can create a formula from the column names of "volat_volume". 
+# Extract from summary() the regression statistics: 
+#  t-value, p-value, adj.r.squared, 
+# and create a named vector with these regression statistics. 
+# you can use functions colnames(), as.formula(), lm() and summary(), 
 
-# sapply() produces a list of vectors,
-# flatten the list into a single vector, 
-optim_rets <- do.call(rbind, optim_rets)
+reg_model <- lm(
+  as.formula(paste(colnames(volat_volume), collapse=" ~ ")), 
+  data=volat_volume)
+reg_model_sum <- summary(reg_model)
+c(tval=reg_model_sum$coefficients[2, 3],
+  pval=reg_model_sum$coefficients[2, 4],
+  adj_rsquared=reg_model_sum$adj.r.squared)
 
-# plot the vector, 
-plot(cumsum(optim_rets), t="l")
+# perform the Durbin-Watson test for the autocorrelations of residuals,
+# write what is the null hypothesis?
+# can the null hypothesis be rejected in this case?
+# use function dwtest(), from package lmtest,
+
+library(lmtest)  # load lmtest
+dwtest(reg_model)
 

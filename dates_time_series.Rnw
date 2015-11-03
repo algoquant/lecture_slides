@@ -18,8 +18,8 @@ knit_theme$set(thm)
 % \usecolortheme{whale}
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
-% amsmath package for math symbols
-% \usepackage{amsmath}
+% mathtools package for math symbols
+% \usepackage{mathtools}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -52,8 +52,8 @@ knit_theme$set(thm)
 % Title page setup
 \title[Date and Time Series Objects]{Date and Time Series Objects}
 \subtitle{FRE6871 \texttt{R} in Finance, Spring 2015}
-\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
-\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\institute[NYU Polytechnic]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -365,6 +365,8 @@ as.POSIXct(format(date_time, tz="America/New_York"))
 # difference between local time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) - 
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
+# set time-zone to New York
+Sys.setenv(tz="America/New_York")
       @
   \end{columns}
 \end{block}
@@ -582,12 +584,12 @@ library(RQuantLib)  # load RQuantLib
 in_dex <- Sys.Date() + -5:2
 in_dex
 
-# create logical vector of business days
-bus.days <- isBusinessDay(  # RQuantLib calendar
+# create boolean vector of business days
+is_busday <- isBusinessDay(  # RQuantLib calendar
   calendar="UnitedStates/GovernmentBond", in_dex)
 
 # create daily series of business days
-bus_index <- in_dex[bus.days]
+bus_index <- in_dex[is_busday]
 bus_index
       @
   \end{columns}
@@ -974,7 +976,7 @@ tail(zoo_series, 3)  # get last few elements
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{coredata()} extracts the data contained in \texttt{zoo} object, and returns a vector or matrix,
       \vskip1ex
       The function \texttt{index()} extracts the time index of a \texttt{zoo} object,
@@ -982,12 +984,14 @@ tail(zoo_series, 3)  # get last few elements
       The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \texttt{zoo} object,
       \vskip1ex
       The functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return cumulative sums, minima and maxima of a \texttt{zoo} object,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # load package zoo
 coredata(zoo_series)  # extract coredata
 index(zoo_series)  # extract time index
+start(zoo_series)  # first date
+end(zoo_series)  # last date
 zoo_series[start(zoo_series)]  # first element
 zoo_series[end(zoo_series)]  # last element
 coredata(zoo_series) <- rep(1, 4)  # replace coredata
@@ -1007,7 +1011,7 @@ cummin(cumsum(zoo_series))
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The method \texttt{lag.zoo()} returns a lagged version of a \texttt{zoo} time series, shifting the time index by \texttt{"k"} observations,
       \vskip1ex
       If \texttt{"k"} is positive, then \texttt{lag.zoo()} shifts values from the future to the present, and if \texttt{"k"} is negative then it shifts them from the past, 
@@ -1016,18 +1020,23 @@ cummin(cumsum(zoo_series))
       \vskip1ex
       A positive \emph{"lag"} should replace the present value with values from the past (negative lags should replace with values from the future), 
       \vskip1ex
-      The method \texttt{diff.zoo()} returns the difference between a time series and its lagged version, and suffers from the same problem as \texttt{lag.zoo()} does,
+      The method \texttt{diff.zoo()} returns the difference between a \texttt{zoo} time series and its proper lagged version from the past, given a positive \emph{"lag"} value, 
       \vskip1ex
-      For \texttt{zoo} objects, both these functions omit any \texttt{NA} values they may have produced, returning a shorter time series than the original,
-    \column{0.6\textwidth}
+      By default, the methods \texttt{lag.zoo()} and \texttt{diff.zoo()} omit any \texttt{NA} values they may have produced, and return shorter time series,  
+      \vskip1ex
+      If the \texttt{"na.pad"} argument is set to \texttt{TRUE}, then they return time series of the same length, with \texttt{NA} values added where needed, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # load package zoo
-coredata(zoo_series) <- 1:4  # replace coredata
+coredata(zoo_series) <- (1:4)^2  # replace coredata
 zoo_series
 lag(zoo_series)  # one day lag
 lag(zoo_series, 2)  # two day lag
 lag(zoo_series, k=-1)  # proper one day lag
 diff(zoo_series)  # diff with one day lag
+# proper lag and original length
+lag(zoo_series, -2, na.pad=TRUE)
       @
   \end{columns}
 \end{block}
@@ -1076,13 +1085,13 @@ title(main="Random Prices", line=-1)  # add title
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \texttt{zoo} time series can be subset in similar ways to \texttt{matrices} and \texttt{ts} time series, 
       \vskip1ex
       The function \texttt{window()} can also subset \texttt{zoo} time series objects, 
       \vskip1ex
       In addition, \texttt{zoo} time series can be subset using \texttt{Date} objects,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1))>>=
 library(zoo)  # load package zoo
@@ -1147,7 +1156,7 @@ title(main="Random Prices", line=-1)  # add title
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \texttt{zoo} time series can be combined concurrently by joining their columns using \texttt{merge()},
       \vskip1ex
       \texttt{merge()} is similar to \texttt{cbind()},
@@ -1155,7 +1164,7 @@ title(main="Random Prices", line=-1)  # add title
       If the \texttt{all=TRUE} option is set, then \texttt{merge()} returns the union of their dates, otherwise it returns their intersection,
       \vskip1ex
       The \texttt{merge()} operation can produce \texttt{NA} values,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
 # create daily date series of class 'Date'
@@ -1183,7 +1192,7 @@ merge(zoo_series1, zoo_series2, all=FALSE)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Operations on time series can produce \texttt{NA} values,
       \vskip1ex
       There are two dedicated functions for managing \texttt{NA} values in time series: 
@@ -1191,7 +1200,7 @@ merge(zoo_series1, zoo_series2, all=FALSE)
         \item \texttt{na.omit()} removes observations containing \texttt{NA} values,
         \item \texttt{na.locf()} carries the last non-\texttt{NA} observation forward,
       \end{itemize}
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
 library(zoo)  # load package zoo
@@ -1451,7 +1460,7 @@ head(as.Date(date_decimal(coredata(time(ts_series)))))
       <<echo=(-(1:2))>>=
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
-# create weekday logical vector
+# create weekday boolean vector
 week_days <- weekdays(index(zoo_series))
 is_weekday <- !((week_days == "Saturday") | 
   (week_days == "Sunday"))
@@ -1639,6 +1648,8 @@ identical(xts_stx["2014-11", ], xts_stx["2014-11"])
       \texttt{xts} can be subset on recurring time intervals using the \texttt{"T"} notation,
       \vskip1ex
       For example, to subset the time interval from 9:30AM to 4:00PM every day: \texttt{["T09:30:00/T16:00:00"]}
+      \vskip1ex
+      Warning messages that "timezone of object is different than current timezone" can be suppressed by calling the function options() with argument \texttt{"xts\_check\_TZ=FALSE"}
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1))>>=
@@ -1655,6 +1666,8 @@ xts_series <- xts(rnorm(length(min_ticks)),
 xts_series <- xts_series["T09:30:00/T16:00:00"]
 first(xts_series["2015-04-15"])  # first element of day
 last(xts_series["2015-04-15"])  # last element of day
+# suppress timezone warning messages
+options(xts_check_TZ=FALSE)
       @
   \end{columns}
 \end{block}

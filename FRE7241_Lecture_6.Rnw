@@ -20,8 +20,8 @@ knit_theme$set(thm)
 % \usecolortheme{whale}
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
-% amsmath package for math symbols
-% \usepackage{amsmath}
+% mathtools package for math symbols
+% \usepackage{mathtools}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#6]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#6, Summer 2015}
+\subtitle{Lecture\#6, Fall 2015}
 % \subject{Getting Started With R}
-\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
-\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\institute[NYU Polytechnic]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{June 30, 2015}
+\date{Oct 20, 2015}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -70,386 +70,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Optimization}
-
-
-%%%%%%%%%%%%%%%
-\subsection{One-dimensional Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
-      \vskip1ex
-      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-      \vskip1ex
-      \vspace{-1em}
-        <<eval=TRUE,echo=(-(1:1))>>=
-options(width=50, dev='pdf')
-str(optimize)
-# objective function with multiple minima
-object_ive <- function(in_put, param1=0.01) {
-  sin(0.25*pi*in_put) + param1*(in_put-1)^2
-}  # end object_ive
-unlist(optimize(f=object_ive, interval=c(-4, 2)))
-unlist(optimize(f=object_ive, interval=c(0, 8)))
-options(width=60, dev='pdf')
-      @
-      \vspace{-2em}
-        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot objective function
-curve(expr=object_ive, type="l", xlim=c(-8, 9),
-xlab="", ylab="", lwd=2)
-title(main="Objective Function", line=-1)  # add title
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_one_dim-1}
-      \vspace{-3em}
-      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Likelihood Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<>>=
-# target vector of normal variables
-target_vector <- rnorm(1000, mean=4, sd=2)
-# objective function is log-likelihood
-object_ive <- function(parm, target) {
-  sum(2*log(parm[2]) + 
-    ((target - parm[1])/parm[2])^2)
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, target)
-    object_ive(c(mean, sd), target),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(1, 6, length=50)
-par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd, 
-          vec_objective, target=target_vector)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(
-  objective_grid==min(objective_grid), 
-  arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
-               (objective_min[, 2] + -1:1)]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<optim_objective,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
-      main="objective function")
-      @
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<>>=
-# initial parameters
-par_init <- c(mean=0, sd=1)
-# perform optimization quasi-Newton method
-optim_run <- optim(par=par_init, 
-             fn=object_ive, 
-             target=target_vector,
-             method="L-BFGS-B",
-             upper=c(10, 10),
-             lower=c(-10, 0.1))
-# optimal parameters
-optim_run$par
-      @
-\vspace{-1em}
-      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-# plot histogram
-histo_gram <- hist(target_vector, plot=FALSE)
-plot(histo_gram, freq=FALSE, 
-     main="histogram of target vector")
-curve(expr=dnorm(x, mean=optim_run$par["mean"],
-                 sd=optim_run$par["sd"]), 
-      add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL, 
-       leg="optimal parameters", 
-       lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mixture Model Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<>>=
-# target vector is mixture of normal distributions
-target_vector <- c(rnorm(100, sd=1.0), 
-                   rnorm(100, mean=4, sd=1.0))
-# objective function is log-likelihood
-object_ive <- function(parm, target) {
-  likelihood <- parm[1]/parm[3] * 
-  dnorm((target-parm[2])/parm[3]) +
-  (1-parm[1])/parm[5]*dnorm((target-parm[4])/parm[5])
-  if(any(likelihood <= 0)) Inf else
-    -sum(log(likelihood))
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, target)
-    object_ive(c(w, m1, s1, mean, sd), target),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(3, 5, length=50)
-par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd, 
-          vec_objective, target=target_vector,
-          w=0.5, m1=2.0, s1=2.0)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(objective_grid==
-  min(objective_grid), arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
-               (objective_min[, 2] + -1:1)]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
-      main="objective function")
-      @
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Mixture Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<>>=
-# initial parameters
-par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
-# perform optimization
-optim_run <- optim(par=par_init, 
-            fn=object_ive, 
-            target=target_vector,
-            method="L-BFGS-B",
-            upper=c(1,10,10,10,10),
-            lower=c(0,-10,0.2,-10,0.2))
-optim_run$par
-      @
-\vspace{-1em}
-      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-# plot histogram
-histo_gram <- hist(target_vector, plot=FALSE)
-plot(histo_gram, freq=FALSE, 
-     main="histogram of target vector")
-fit_func <- function(x, parm) {
-  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) + 
-    (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
-}  # end fit_func
-curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
-      type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL, 
-       leg="optimal parameters", 
-       lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Portfolio Optimization}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
-      \vskip1ex
-      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-      \vskip1ex
-      \vspace{-1em}
-        <<eval=TRUE,echo=(-(1:1))>>=
-load(file="C:/Develop/data/etf_data.Rdata")
-# create list of symbols for optimized portfolio
-sym_bols <- c("VTI", "VNQ", "DBC")
-# create initial vector of portfolio weights
-portf_weights <- rep(1, length(sym_bols))
-names(portf_weights) <- sym_bols
-# objective equal to minus Sharpe ratio
-object_ive <- function(weights) {
-  portf_ts <- etf_rets[, sym_bols] %*% weights
-  -mean(portf_ts)/sd(portf_ts)
-}  # end object_ive
-# objective for equal weight portfolio
-object_ive(portf_weights)
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_optim_one_dim-1}
-      \vspace{-5em}
-        <<portf_optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# vectorize objective function with respect to third weight
-vec_objective <- Vectorize(
-  FUN=function(weight) object_ive(c(1, 1, weight)),
-  vectorize.args="weight"
-)  # end Vectorize
-# plot objective function with respect to third weight
-curve(expr=vec_objective, 
-      type="l", xlim=c(-4.0, 1.0),
-      xlab=paste("weight of", names(portf_weights[3])), 
-      ylab="", lwd=2)
-title(main="Objective Function", line=-1)  # add title
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Perspective Plot of Portfolio Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(w1, w2, w3)
-    object_ive(c(w1, w2, w3)),
-  vectorize.args=c("w2", "w3")
-)  # end Vectorize
-# create vectors of weights
-w2 <- seq(-5, 5, length=50)
-w3 <- seq(-5, 5, length=50)
-# calculate objective on 2-d (w2 x w3) parameter grid
-objective_grid <- outer(w2, w3, vec_objective, w1=1)
-rownames(objective_grid) <- round(w2, 2)
-colnames(objective_grid) <- round(w3, 2)
-# perspective plot of objective function
-persp(w2, w3, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
-      main="objective function")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_persp-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Portfolio Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optim()} performs \emph{multi-dimensional} optimization,
-      \vskip1ex
-      The argument \texttt{"par"} are the initial parameter values,
-      \vskip1ex
-      The argument \texttt{"fn"} is the objective function to be minimized,
-      \vskip1ex
-      The argument \texttt{method="L-BFGS-B"} specifies the a quasi-Newton optimization method,
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<>>=
-# optimization to find weights with maximum Sharpe ratio
-optim_run <- optim(par=portf_weights, 
-                   fn=object_ive, 
-                   method="L-BFGS-B",
-                   upper=c(1.1, 10, 10),
-                   lower=c(0.9, -10, -10))
-# optimal parameters
-optim_run$par
-# optimal Sharpe ratio
--object_ive(optim_run$par)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -571,8 +191,9 @@ chart.RiskReward(maxSR_DEOpt,
   risk.col="StdDev", 
   return.col="mean")
       @
-
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 maxSR_DEOpt$weights
@@ -694,7 +315,7 @@ maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add leverage constraint abs(weight_sum)
 portf_maxSRN <- add.constraint(
@@ -760,6 +381,7 @@ risk_ret_points()
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
+    \vspace{-2em}
       <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -811,8 +433,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
@@ -841,7 +464,7 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]])
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_maxSTARR <- add.constraint(
@@ -895,7 +518,9 @@ chart.RiskReward(maxSTARR_DEOpt,
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 maxSTARR_DEOpt$weights
@@ -949,8 +574,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
@@ -1010,7 +636,7 @@ text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
+      <<echo=(-1),eval=TRUE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_minES <- add.constraint(
@@ -1065,7 +691,9 @@ chart.RiskReward(maxSTARR_DEOpt,
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 minES_ROI$weights
@@ -1118,8 +746,9 @@ chart.CumReturns(
   lwd=2, ylab="", 
   legend.loc="topleft", main="")
       @
-      \vskip13ex
-      <<echo=(-(1:2)),eval=TRUE>>=
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=TRUE>>=
+options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, minES_ROI$weights)
@@ -1145,12 +774,13 @@ minES_ROI$objective_measures$ES[[1]])
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_1h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_SR_1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
+options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["/2011", portf_names],  # specify returns
+  R=etf_rets["/2011", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -1178,12 +808,13 @@ maxSR_DEOpt_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_2h,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_SR_2h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
+options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["2011/", portf_names],  # specify returns
+  R=etf_rets["2011/", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -1211,13 +842,16 @@ maxSR_DEOpt_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_weights,echo=(-(1:3)),fig.height=5,fig.show='hide'>>=
+      <<echo=(-(1:1)),eval=TRUE>>=
 options(width=50)
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
 weights_1h
 weights_2h
 weights_1h - weights_2h
+      @
+    \vspace{-2em}
+      <<optim_weights,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
 barplot(weights_1h, 
         names.arg=names(weights_1h), 
         las=3, ylab="", xlab="", 

@@ -1,6 +1,7 @@
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(PerformanceAnalytics)
@@ -23,11 +24,12 @@ list(
   fwd=end_points[point]:end_points[point+1])  # end list
     )  # end lapply
 # calculate risk&ret stats for some symbols, over a range of dates
-risk_ret_stats <- function(x_ts=etf_rets,  # daily returns
-                 sym_bols=colnames(x_ts),  # names
-                 range=index(x_ts),  # date range
-                 ret="mean",  # return stat
-                 risk="mad") {  # risk stat
+risk_ret_stats <- 
+  function(x_ts=etf_rets,  # daily returns
+     sym_bols=colnames(x_ts),  # names
+     range=index(x_ts),  # date range
+     ret="mean",  # return stat
+     risk="mad") {  # risk stat
   ret <- match.fun(ret)  # match to function
   risk <- match.fun(risk)  # match to function
   stats <- sapply(x_ts[range, sym_bols], 
@@ -40,7 +42,7 @@ risk_ret_stats <- function(x_ts=etf_rets,  # daily returns
 # example
 head(risk_ret_stats(range=
         periods[[1]]$back))
-# calculate stats over overlaping period date windows
+# calculate stats over overlapping period date windows
 period_stats <- lapply(periods,
    function(point)
      cbind(risk_ret_stats(range=point$back),
@@ -48,7 +50,8 @@ period_stats <- lapply(periods,
 )  # end lapply
 head(period_stats[[1]])
 # calculate pnl for a given period
-pnl_period <- function(period_stat, de_mean=FALSE) {
+pnl_period <-
+  function(period_stat, de_mean=FALSE) {
   weights <- period_stat[, "ret"]/
     period_stat[, "risk"]
   weights <- weights - de_mean*mean(weights)

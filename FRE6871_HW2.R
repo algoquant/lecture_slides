@@ -1,65 +1,57 @@
 #################################
-### FRE6871 HW #2 due June 22, 2015
+### FRE6871 Homework #2 due Oct 13, 2015
 #################################
-# Max score 50pts
+# Max score 45pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw2.R
-# and send this file to Jaimin Doshi (jbd316@nyu.edu)
+# and upload the file to NYU Classes
 
 
-##################################
+############## Part I
 # 1. (15pts) Create a function called match_matrix(), similar to match(), 
-# but which accepts matrix arguments, as well as vectors,
+# but which accepts matrix arguments, as well as vectors. 
 # match_matrix() should return the row and column indices of the first 
 # element of its second argument, that matches its first argument,
-# hint: you can use function which(), with the argument "arr.ind=TRUE",
+# hint: you can use function which(), with the argument "arr.ind=TRUE", 
 
 ### write your code here
 
 # call the function match_matrix() as follows, to make sure it works properly:
+
 mat_rix <- matrix(1:6, ncol=3)
 match_matrix(5, mat_rix)
 
 
 
-##################################
-# 2. (20pts) Create a function called re_move(), which takes two arguments:
-# re_move() removes the first argument from the second argument, and returns the result,
-# the first argument can be a single numeric or string vlaue, 
-# the second argument can be a vector, or other object with mupltiple elements,
-# if the first argument isn't among the elements of the second argument, 
-# then re_move() just returns the second argument unchanged,
-# you can use the functions match(), which(), 
-# or the operator "%in%", but you don't have to use all of them,
+############## Part II
+# Summary: create a function called find_interval(),
+# that replicates the function findInterval(),
+
+# 1. (30pts) 
+# find_interval() should accept a vector argument called "vec_tor", 
+# containing numeric values, which should be classified into intervals,
+# according to break_points, 
+# should also accept a vector of breakpoints called "break_points", 
+# which determines the intervals,
+# find_interval() should return an integer vector of length equal 
+# to "vec_tor", specifying the intervals to which the numeric values 
+# contained in "vec_tor" belong, 
+# hint: you can perform a for() loop over break_points, 
+# you can use functions integer(), length(), seq_along(), 
+# logical operators, and a for() loop
 
 ### write your code here
 
+# call find_interval() on a vector and compare it to findInterval(), 
+# to verify that it works correctly,
 
-# call the function re_move() as follows, to make sure it works properly:
-re_move(3, 1:5)
-re_move(6, 1:5)
-re_move("bye", c("hello", "bye", "there"))
-re_move("bye", c("hello", "there"))
+find_interval(vec_tor=1:8, break_points=c(3, 5, 7, 9))
+findInterval(x=1:8, vec=c(3, 5, 7, 9))
 
-
-
-##################################
-# 3. (15pts) create a function called mult_dots(), which takes two arguments:
-# the first argument is the '...' argument, 
-# and the second argument is called "fac_tor", 
-# the function mult_dots() arguments are as follows: mult_dots(..., fac_tor),
-# mult_dots() should sum up the values in the '...' argument, 
-# then multiply the sum by "fac_tor", and return the result,
+# call find_interval() on a vector of numbers and a vector of breakpoints, 
+# to verify that it produces exactly the same output as findInterval(), 
+# use function identical(),
 
 ### write your code here
-
-
-# apply the function mult_dots() so that it adds the numbers "1, 2, 3", 
-# and then multiplies the sum by "2",
-
-### write your code here
-
-
-
 

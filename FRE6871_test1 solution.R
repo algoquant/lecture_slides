@@ -1,66 +1,93 @@
 #################################
-### FRE6871 Test #1 Solutions 06/15/15
+### FRE6871 Test #1 Solutions Sep 28, 2015
 #################################
-# Max score 45pts
+# Max score 70pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-##################################
-# 1. (15pts) create a function called get_index(), that is equivalent 
-# to function which(), when applied to vectors,
-# hint: you can use function length() and then apply vector subsetting,
-get_index <- function(vec_tor) (1:length(vec_tor))[vec_tor]
+##############
+# Summary: perform an apply() loop to calculate the max and min 
+# values of every column of a matrix. 
+
+# create a matrix as follows:
+set.seed(1121)
+mat_rix <- matrix(sample(16), nrow=4, ncol=4)
+# introduce NA value
+mat_rix[3, 2] <- NA
+
+# 1. (5pts) assign to "mat_rix" the column names "col1", "col2", etc.,
+# you can use functions colnames(), ncol(), and paste0(), 
+
+colnames(mat_rix) <- paste0("col", 1:ncol(mat_rix))
 
 
-# apply the function get_index() to a boolean vector, and 
-# compare the result with using function which(),
-vec_tor <- sample(1:9)
-get_index(vec_tor==5)
-which(vec_tor == 5)
+# 2. (20pts) perform a single apply() loop over the columns 
+# of "mat_rix", 
+# the output should be a matrix with two rows named "max" and "min", 
+# and with the same number of columns as "mat_rix", 
+# the output matrix from apply() should not contain any NAs, 
+# to get full credit you must pass the argument "na.rm=TRUE"
+# into max() and min() through the dots argument of the 
+# apply() function, 
+# you must use functions apply(), max(), min(), c(), 
+# you can only perform a single apply() loop, 
+# you can use an anonymous function, 
 
-
-
-##################################
-# 2. (15pts) Create a vector of 90 integers, from 1 to 90, and call it "vec_tor", 
-# extract every third element of "vec_tor", starting with the first one, 
-# into a single column matrix called "mat_rix",
-# hint: you can use function matrix(), with the proper "byrow" argument,
-vec_tor <- 1:90
-mat_rix <- matrix(vec_tor[seq(1, length(vec_tor), by=3)], ncol=1)
-# or:
-mat_rix <- matrix(vec_tor, ncol=3, byrow=TRUE)
-mat_rix <- mat_rix[, 1, drop=FALSE]
-
-# extract a vector of odd elements of "vec_tor", and a vector of even elements,
-# calculate the scalar ("inner") product of the two vectors,
-# the value should be a vector with a single element, not a matrix,
-# hint: you can use function matrix(), with the proper "byrow" argument,
-# use function drop(),
-odd_elements <- vec_tor[seq(1, length(vec_tor), by=2)]
-even_elements <- vec_tor[seq(2, length(vec_tor), by=2)]
-drop(odd_elements %*% even_elements)
-# or:
-mat_rix <- matrix(vec_tor, ncol=2, byrow=TRUE)
-drop(mat_rix[, 1] %*% mat_rix[, 2])
+apply(mat_rix, 2, 
+      function(co_lumn, na.rm) 
+        c(max=max(co_lumn, na.rm=na.rm), 
+          min=min(co_lumn, na.rm=na.rm)), 
+      na.rm=TRUE)
 
 
 
-##################################
-# 3. (15pts) Create a matrix called "mat_rix", as follows:
-mat_rix <- matrix(1:6, ncol=3)
+##############
+# Summary: extract and filter the elements of a matrix. 
 
-# assign to "mat_rix" row names "row1", "row2", and 
-# column names "col1", "col2", "col3",
-# use the functions rownames(), colnames(), and/or dimnames(), 
-dimnames(mat_rix) <- list(rows=c("row1", "row2"),
-                          columns=c("col1", "col2", "col3"))
+# 1. (5pts) create a numeric vector of length 15 containing 
+# random normal variates (rnorm), 
+# coerce the vector into a matrix of 5 rows and 3 columns,
+# call the matrix "mat_rix", 
+# you can use functions matrix() and dim(), 
 
-# change the names of the rows to "first_row" and "second_row",
-# use the function dimnames(), but not the function rownames(),
-dimnames(mat_rix)[[1]] <- c("first_row", "second_row")
-# or:
-dimnames(mat_rix)$rows <- c("first_row", "second_row")
+mat_rix <- matrix(rnorm(15), ncol=3)
+# or
+mat_rix <- rnorm(15)
+dim(mat_rix) <- c(5, 3)
 
+# 2. (5pts) extract all the elements of "mat_rix" that are greater than 1.0,
+
+mat_rix[mat_rix>1.0]
+
+# 3. (5pts) calculate the row and column indices of all the elements 
+# of "mat_rix" that are greater than 1.0,
+# you can use function which() with argument "arr.ind", 
+
+which(mat_rix>1.0, arr.ind=TRUE)
+
+# 4. (5pts) calculate the sums of all the rows and columns, 
+# the result should be two vectors, 
+# you can use functions apply() and sum(), 
+
+row_sums <- apply(mat_rix, 1, sum)
+col_sums <- apply(mat_rix, 2, sum)
+
+# 5. (5pts) bind the vectors of sums to "mat_rix", as extra 
+# rows and columns, respectively, 
+# you can use functions cbind() and rbind(), 
+
+mat_rix <- cbind(c(sum(row_sums), row_sums), 
+                 rbind(col_sums, mat_rix))
+
+# 6. (15pts) assign names to the rows and columns follows: 
+# "col_sums", "row1", "row2", etc., 
+# and 
+# "row_sums", "col1", "col2", etc., 
+# you can use functions c(), dimnames(), list(), nrow(), ncol(), 
+# and paste0(), 
+
+dimnames(mat_rix) <- list(c("col_sums", paste0("row", 1:(nrow(mat_rix)-1))), 
+                          c("row_sums", paste0("col", 1:(ncol(mat_rix)-1))))
 

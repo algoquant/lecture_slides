@@ -1,150 +1,10 @@
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-set.seed(1121)  # initialize the random number generator
-library(xts)  # load package xts
-# create xts time series
-in_dex <- Sys.Date() + 0:3
-xts_series <- xts(rnorm(length(in_dex)), 
-         order.by=in_dex)
-names(xts_series) <- "random"
-xts_series
-tail(xts_series, 3)  # get last few elements
-first(xts_series)  # get first element
-last(xts_series)  # get last element
-class(xts_series)  # class 'xts'
-attributes(xts_series)
-load(file="C:/Develop/data/zoo_data.RData")
-library(xts)  # load package xts
-# as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
-dim(xts_stx)
-head(xts_stx[, 1:4], 4)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot using plot.xts method
-plot(xts_stx[, "AdjClose"], xlab="", ylab="", main="")
-title(main="MSFT Prices")  # add title
-library(ggplot2)
-load(file="C:/Develop/data/etf_data.Rdata")
-# create ggplot object
-etf_gg <- autoplot(etf_series_ad[, 1],
-             main=names(etf_series_ad[, 1])) +
-  xlab("") + ylab("") +
-  theme(
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.background=element_blank()
-  )  # end theme
-# render ggplot object
-etf_gg
-library(xts)  # load package xts
-# subset xts using a date range string
-xts_sub <- xts_stx["2014-10-15/2015-01-10", 1:4]
-first(xts_sub)
-last(xts_sub)
-# subset Nov 2014 using a date string
-xts_sub <- xts_stx["2014-11", 1:4]
-first(xts_sub)
-last(xts_sub)
-# subset all data after Nov 2014
-xts_sub <- xts_stx["2014-11/", 1:4]
-first(xts_sub)
-last(xts_sub)
-# comma after date range not necessary
-identical(xts_stx["2014-11", ], xts_stx["2014-11"])
-library(xts)  # load package xts
-# vector of 1-minute times (ticks)
-min_ticks <- seq.POSIXt(
-  from=as.POSIXct("2015-04-14", tz="America/New_York"), 
-  to=as.POSIXct("2015-04-16"), 
-  by="min")
-# xts of 1-minute times (ticks)
-xts_series <- xts(rnorm(length(min_ticks)), 
-               order.by=min_ticks)
-# subset recurring time interval using "T notation",
-xts_series <- xts_series["T09:30:00/T16:00:00"]
-first(xts_series["2015-04-15"])  # first element of day
-last(xts_series["2015-04-15"])  # last element of day
-library(xts)  # load package xts
-str(xts_stx)  # display structure of xts
-# subsetting zoo to single column drops dim attribute
-dim(zoo_stx_adj)
-dim(zoo_stx_adj[, 1])
-# zoo with single column are vectors not matrices
-c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
-# xts always have a dim attribute
-rbind(base=dim(xts_stx), subs=dim(xts_stx[, 1]))
-c(is.matrix(xts_stx), is.matrix(xts_stx[, 1]))
-library(xts)  # load package xts
-# lag of zoo shortens it by one row
-rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
-# lag of xts doesn't shorten it
-rbind(base=dim(xts_stx), lag=dim(lag(xts_stx)))
-# lag of zoo is in opposite direction from xts
-head(lag(zoo_stx_adj), 4)
-head(lag(xts_stx), 4)
-library(xts)  # load package xts
-# extract indices of the last observations in each month
-end_points <- endpoints(xts_stx, on='months')
-head(end_points)
-# extract the last observations in each month
-head(xts_stx[end_points, ])
-library(xts)  # load package xts
-# apply "mean" over end_points
-period_mean <- period.apply(xts_stx[, "AdjClose"], 
-               INDEX=end_points, 
-               FUN=mean)
-head(period_mean)
-period_sum <- period.sum(xts_stx[, "AdjClose"], 
-               INDEX=end_points)
-head(period_sum)
-library(xts)  # load package xts
-# apply "mean" over monthly periods
-period_mean <- apply.monthly(xts_stx[, "AdjClose"], 
-               FUN=mean)
-head(period_mean)
-library(xts)  # load package xts
-# lower the periodicity to months
-xts_monthly <- to.period(x=xts_stx[, "AdjClose"], 
-                   period="months", name="MSFT")
-# convert colnames to standard OHLC format
-colnames(xts_monthly)
-colnames(xts_monthly) <- sapply(
-  strsplit(colnames(xts_monthly), split=".", fixed=TRUE), 
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(xts_monthly, 3)
-# lower the periodicity to years
-xts_yearly <- to.period(x=xts_monthly, 
-                   period="years", name="MSFT")
-colnames(xts_yearly) <- sapply(
-  strsplit(colnames(xts_yearly), split=".", fixed=TRUE), 
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(xts_yearly)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
-library(xts)  # load package xts
-# as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
-# subset xts using a date
-xts_sub <- xts_stx["2014-11", 1:4]
-
-# plot OHLC using plot.xts method
-plot(xts_sub, type="candles", main="")
-title(main="MSFT Prices")  # add title
-load(file="C:/Develop/data/zoo_data.RData")
-ts_stx <- as.ts(zoo_stx)
-class(ts_stx)
-tail(ts_stx[, 1:4])
-library(xts)
-xts_stx <- as.xts(zoo_stx)
-class(xts_stx)
-tail(xts_stx[, 1:4])
 rm(list=ls())
-options(digits=3)
 setwd("C:/Develop/data")
 library(xtable)
 # ETF symbols for asset allocation
@@ -218,11 +78,15 @@ for (sym_bol in sym_bols) {
 }
 load(file="C:/Develop/data/etf_data.Rdata")
 library(quantmod)  # load package "quantmod"
-# extract and merge data for vector of strings
+# extract and merge all data, subset by symbols
 etf_series <- do.call(merge,
             as.list(env_data)[sym_bols])
 
-# extract adjusted prices and merge into xts
+# extract and merge adjusted prices, subset by symbols
+etf_series_ad <- do.call(merge,
+            lapply(as.list(env_data)[sym_bols], Ad))
+
+# extract and merge adjusted prices, subset by symbols
 etf_series_ad <- do.call(merge,
             eapply(env_data, Ad)[sym_bols])
 
@@ -233,24 +97,26 @@ colnames(etf_series_ad) <-
 strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(etf_series_ad[, 1:2], 3)
 
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
 # save xts to csv file
 write.zoo(etf_series,
      file='etf_series.csv', sep=",")
-
 # save data to .Rdata file
 save(env_data, etf_series, etf_series_ad,
      file='etf_data.Rdata')
 library(quantmod)
 load(file="C:/Develop/data/etf_data.Rdata")
-# scrub NA values
+# remove rows with NA values
 etf_series_ad <- 
   etf_series_ad[complete.cases(etf_series_ad)]
 colnames(etf_series_ad)
 
 # calculate returns from adjusted prices
-library(quantmod)
 etf_rets <- lapply(etf_series_ad, 
              function(x_ts) {
+# dailyReturn returns single xts with bad colname
   daily_return <- dailyReturn(x_ts)
   colnames(daily_return) <- names(x_ts)
   daily_return
@@ -310,6 +176,99 @@ chartSeries(unemp_rate["1990/"],
 trs_10yr <- getSymbols("DGS10",
             auto.assign=FALSE,
             src="FRED")
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# get documentation for package "PerformanceAnalytics"
+packageDescription("PerformanceAnalytics")  # get short description
+help(package="PerformanceAnalytics")  # load help page
+data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
+ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
+detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+perf_data <- 
+  unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+data(managers)  # load "managers" data set
+class(managers)
+dim(managers)
+head(managers, 3)
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
+                "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="",
+  legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns",
+line=-1)
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+data(managers)  # load "managers" data set
+charts.PerformanceSummary(ham_1,
+  main="", lwd=2, ylog=TRUE)
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  etf_rets[, c("XLF", "XLP", "IEF")], lwd=2,
+  ylab="", legend.loc="topleft", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+load(file="C:/Develop/data/etf_data.Rdata")
+options(width=200)
+library(PerformanceAnalytics)
+chart.Drawdown(etf_rets[, "VTI"], ylab="",
+         main="VTI drawdowns")
+load(file="C:/Develop/data/etf_data.Rdata")
+options(width=200)
+library(PerformanceAnalytics)
+table.Drawdowns(etf_rets[, "VTI"])
+library(PerformanceAnalytics)
+chart.Histogram(etf_rets[, 1], main="",
+  xlim=c(-0.06, 0.06),
+  methods = c("add.density", "add.normal"))
+# add title
+title(main=paste(colnames(etf_rets[, 1]),
+           "density"), line=-1)
+library(PerformanceAnalytics)
+chart.Boxplot(etf_rets[,
+  c(rownames(head(ret_stats, 3)),
+    rownames(tail(ret_stats, 3)))])
+library(PerformanceAnalytics)
+tail(table.Stats(etf_rets[, 
+  c("VTI", "IEF", "DBC", "IUSG")]), 3)
+ret_stats <- table.Stats(etf_rets)
+class(ret_stats)
+# Transpose the data frame
+ret_stats <- as.data.frame(t(ret_stats))
+# plot scatterplot
+plot(Kurtosis ~ Skewness, data=ret_stats,
+     main="Kurtosis vs Skewness")
+# add labels
+text(x=ret_stats$Skewness, y=ret_stats$Kurtosis,
+    labels=colnames(etf_rets),
+    pos=1, cex=0.8)
+load(file="C:/Develop/data/etf_data.Rdata")
+# add skew_kurt column
+ret_stats$skew_kurt <- 
+  ret_stats$Skewness/ret_stats$Kurtosis
+# sort on skew_kurt
+ret_stats <- ret_stats[
+  order(ret_stats$skew_kurt, 
+  decreasing=TRUE), ]
+# add names column
+ret_stats$Name <- 
+  etf_list[rownames(ret_stats), ]$Name
+ret_stats[, c("Name", "Skewness", "Kurtosis")]
+library(PerformanceAnalytics)
+chart.RiskReturnScatter(etf_rets, Rf=0.01/12)
+library(PerformanceAnalytics)
+vti_ief <- etf_rets[, c("VTI", "IEF")]
+SharpeRatio(vti_ief)
+
+SortinoRatio(vti_ief)
+
+CalmarRatio(vti_ief)
+tail(table.Stats(vti_ief), 4)
 # formula of linear model with zero intercept
 lin_formula <- z ~ x + y - 1
 lin_formula
@@ -362,8 +321,72 @@ res_ponse <- 3 + 0.2*explana_tory + rnorm(30)
 reg_model <- lm(reg_formula)  # perform regression
 # the estimate of the coefficient is not statistically significant
 summary(reg_model)
+par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
+reg_stats <- function(std_dev) {  # noisy regression
+  set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+  res_ponse <- 3 + 0.2*explana_tory +
+    rnorm(30, sd=std_dev)
+# specify regression formula
+  reg_formula <- res_ponse ~ explana_tory
+# perform regression and get summary
+  reg_model_sum <- summary(lm(reg_formula))
+# extract regression statistics
+  c(pval=reg_model_sum$coefficients[2, 4],
+    adj.r.squared=reg_model_sum$adj.r.squared,
+    fstat=reg_model_sum$fstatistic[1])
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_reg_stats <- t(sapply(vec_sd, reg_stats))
+# plot in loop
+par(mfrow=c(ncol(mat_reg_stats), 1))
+for (in_dex in 1:ncol(mat_reg_stats)) {
+  plot(mat_reg_stats[, in_dex], type="l",
+ xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_reg_stats)[in_dex],
+  line=-1.0)
+  axis(1, at=1:(nrow(mat_reg_stats)),
+ labels=rownames(mat_reg_stats))
+}  # end for
+reg_stats <- function(da_ta) {  # get regression
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <-
+    paste(col_names[2], col_names[1], sep="~")
+  reg_model_sum <- summary(lm(reg_formula,
+                        data=da_ta))
+# extract regression statistics
+  c(pval=reg_model_sum$coefficients[2, 4],
+    adj.r.squared=reg_model_sum$adj.r.squared,
+    fstat=reg_model_sum$fstatistic[1])
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_reg_stats <-
+  t(sapply(vec_sd, function (std_dev) {
+    set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+    res_ponse <- 3 + 0.2*explana_tory +
+rnorm(30, sd=std_dev)
+    reg_stats(data.frame(explana_tory, res_ponse))
+    }))
+# plot in loop
+par(mfrow=c(ncol(mat_reg_stats), 1))
+for (in_dex in 1:ncol(mat_reg_stats)) {
+  plot(mat_reg_stats[, in_dex], type="l",
+ xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_reg_stats)[in_dex],
+  line=-1.0)
+  axis(1, at=1:(nrow(mat_reg_stats)),
+ labels=rownames(mat_reg_stats))
+}  # end for
 # set plot paramaters - margins and font scale
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2, 2))  # plot 2x2 panels
 plot(reg_model)  # plot diagnostic scatterplots
 plot(reg_model, which=2)  # plot just Q-Q

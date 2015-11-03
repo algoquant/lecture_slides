@@ -1,344 +1,104 @@
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
-# specify regression formula
-reg_formula <- XLP ~ VTI
-# perform regression
-reg_model <- lm(reg_formula, data=etf_rets)
-# plot scatterplot of returns
-plot(reg_formula, data=etf_rets)
-title(main="Regression XLP ~ VTI", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-
-
-reg_model_sum <- summary(reg_model)
-coef(reg_model_sum)
-# Durbin-Watson test autocorrelation residuals
-library(lmtest)
-dwtest(reg_model)
-library(lmtest)  # load lmtest
-# perform regressions and collect statistics
-etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
-                  function(etf_name) {
-# specify regression formula
-  reg_formula <- as.formula(
-    paste(etf_name, "~ VTI"))
-# perform regression
-  reg_model <- lm(reg_formula, data=etf_rets)
-# get regression summary
-  reg_model_sum <- summary(reg_model)
-# collect regression statistics
-  etf_reg_stats <- with(reg_model_sum, 
-    c(coefficients[1, 1], coefficients[1, 4], 
-coefficients[2, 1], coefficients[2, 4]))
-  etf_reg_stats <- c(etf_reg_stats, 
-         dwtest(reg_model)$p.value)
-  etf_reg_stats
-})  # end sapply
-rownames(etf_reg_stats) <- c("alpha", "p-alpha", 
-                "beta", "p-beta", "p-dw")
-etf_reg_stats <- t(etf_reg_stats)
-# sort by p-alpha
-etf_reg_stats <- etf_reg_stats[
-  order(etf_reg_stats[, "p-alpha"]), ]
-etf_reg_stats[, 1:3]
-library(PerformanceAnalytics)
-CAPM.beta(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
-CAPM.beta.bull(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-CAPM.beta.bear(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-
-CAPM.alpha(Ra=etf_rets[, "XLP"], Rb=etf_rets[, "VTI"])
-
-InformationRatio(Ra=etf_rets[, "XLP"], 
-     Rb=etf_rets[, "VTI"])
-library(PerformanceAnalytics)
-etf_betas <- sapply(etf_rets, CAPM.beta,
-      Rb=etf_rets[, "VTI"])
-etf_annrets <- sapply(etf_rets,
-      Return.annualized)
-# plot scatterplot
-plot(etf_annrets ~ etf_betas, xlab="betas",
-      ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=etf_annrets["VTI"], col="red",
- lwd=3, pch=21)
-abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_reg_stats)[1:13]
-# add labels
-text(x=1, y=etf_annrets["VTI"], labels="VTI",
-     pos=2)
-text(x=etf_betas[label_names],
-     y=etf_annrets[label_names],
-     labels=label_names, pos=2, cex=0.8)
-library(PerformanceAnalytics)
-table.CAPM(Ra=etf_rets[, c("XLP", "XLF")], 
-     Rb=etf_rets[, "VTI"], scale=252)
-library(PerformanceAnalytics)
-etf_perf_stats <- table.CAPM(Ra=etf_rets[, -1],
-        Rb=etf_rets[, "VTI"], scale=252)
-colnames(etf_perf_stats) <-
-  sapply(colnames(etf_perf_stats),
-  function (str) {strsplit(str, split=" ")[[1]][1]})
-etf_perf_stats <- as.matrix(etf_perf_stats)
-etf_perf_stats <- t(etf_perf_stats)
-etf_perf_stats <- etf_perf_stats[
-  order(etf_perf_stats[, "Annualized Alpha"],
-  decreasing=TRUE), ]
-load(file="C:/Develop/data/etf_data.Rdata")
-etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
-# load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)
-#Perform pair-wise correlation analysis
-# Calculate correlation matrix
-corr_matrix <- cor(etf_rets)
-colnames(corr_matrix) <- colnames(etf_rets)
-rownames(corr_matrix) <- colnames(etf_rets)
-# Reorder the correlation matrix based on clusters
-# Calculate permutation vector
-library(corrplot)
-corr_order <- corrMatOrder(corr_matrix,
-        order="hclust",
-        hclust.method="complete")
-# Apply permutation vector
-corr_matrix_ordered <-
-  corr_matrix[corr_order, corr_order]
-# Plot the correlation matrix
-col3 <- colorRampPalette(c("red", "white", "blue"))
-corrplot(corr_matrix_ordered,
-    tl.col="black", tl.cex=0.8,
-    method="square", col=col3(8),
-    cl.offset=0.75, cl.cex=0.7,
-    cl.align.text="l", cl.ratio=0.25)
-# Draw rectangles on the correlation matrix plot
-corrRect.hclust(corr_matrix_ordered,
-k=13, method="complete", col="red")
-# Perform hierarchical clustering analysis
-data_dist <- as.dist(1-corr_matrix_ordered)
-data_cluster <- hclust(data_dist)
-plot(data_cluster,
-     main="Dissimilarity = 1-Correlation",
-     xlab="", ylab="")
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
-#Perform principal component analysis PCA
-etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
-barplot(etf_pca$sdev[1:10], 
-  names.arg=colnames(etf_pca$rotation)[1:10], 
-  las=3, ylab="STDEV", xlab="PCVec", 
-  main="PCA Explain VAR")
-# Show first three principal component loadings
-head(etf_pca$rotation[,1:3], 3)
-# Permute second principal component loadings by size
-pca_vec2 <- as.matrix(
-  etf_pca$rotation[order(etf_pca$rotation[, 2], 
-  decreasing=TRUE), 2])
-colnames(pca_vec2) <- "pca2"
-head(pca_vec2, 3)
-# The option las=3 rotates the names.arg labels
-barplot(as.vector(pca_vec2), 
-  names.arg=rownames(pca_vec2), 
-  las=3, ylab="Loadings", 
-  xlab="Symbol", main="Loadings pca2")
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(3,1))  # set plot panels
-# get list of principal component vectors
-pca_vecs <- lapply(1:3, function(in_dex) {
-  pca_vec <- as.matrix(
-    etf_pca$rotation[
-    order(etf_pca$rotation[, in_dex],
-    decreasing=TRUE), in_dex])
-  colnames(pca_vec) <- paste0("pca", in_dex)
-  pca_vec
-})  # end sapply
-names(pca_vecs) <- c("pca1", "pca2", "pca3")
-# The option las=3 rotates the names.arg labels
-for (in_dex in 1:3) {
-  barplot(as.vector(pca_vecs[[in_dex]]),
-  names.arg=rownames(pca_vecs[[in_dex]]),
-  las=3, ylab="", xlab="",
-  main=paste("Loadings",
-    colnames(pca_vecs[[in_dex]])))
-}  # end for
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# PC returns from rotation and scaled etf_rets
-etf_rets_scaled <- apply(etf_rets, 2, scale)
-pca_rets <- etf_rets_scaled %*% etf_pca$rotation
-# "x" matrix contains time series of PC returns
-dim(etf_pca$x)
-class(etf_pca$x)
-head(etf_pca$x[, 1:3], 3)
-# convert PC matrix to xts and rescale to decimals
-pca_rets <- xts(etf_pca$x/100, 
-    order.by=index(etf_rets))
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-chart.CumReturns(
-  pca_rets[, 1:3], lwd=2, ylab="",
-  legend.loc="topright", main="")
-# add title
-title(main="ETF cumulative returns", line=-1)
-library(PerformanceAnalytics)
-# Calculate PC correlation matrix
-corr_matrix <- cor(pca_rets)
-colnames(corr_matrix) <- colnames(pca_rets)
-rownames(corr_matrix) <- colnames(pca_rets)
-corr_matrix[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3], 
-    Rb=etf_rets[, "VTI"], scale=252)
-library(factorAnalytics)  # load package "factorAnalytics"
-# get documentation for package "factorAnalytics"
-packageDescription("factorAnalytics")  # get short description
-help(package="factorAnalytics")  # load help page
-options(width=50)
-library(factorAnalytics)  # load package "factorAnalytics"
-# list all objects in "factorAnalytics"
-ls("package:factorAnalytics")
-
-# list all datasets in "factorAnalytics"
-# data(package="factorAnalytics")
-
-# remove factorAnalytics from search path
-detach("package:factorAnalytics")
-library(factorAnalytics)
-# load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
-# fit a three-factor model using PCA
-factor_pca <- fitSfm(etf_rets, k=3)
-head(factor_pca$loadings, 3)  # factor loadings
-# factor realizations (time series)
-head(factor_pca$factors)
-# residuals from regression
-factor_pca$residuals[1:3, 1:3]
-library(factorAnalytics)
-factor_pca$alpha  # estimated alphas
-factor_pca$r2  # R-squared regression
-# covariance matrix estimated by factor model
-factor_pca$Omega[1:3, 4:6]
-library(factorAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-plot(factor_pca, which.plot.group=3,
-     n.max=30, loop=FALSE)
-# ?plot.sfm
-library(PortfolioAnalytics)
-# plot factor cumulative returns
-chart.CumReturns(factor_pca$factors,
-    lwd=2, ylab="", legend.loc="topleft",
-    main="")
-
-# plot time series of factor returns
-# plot(factor_pca, which.plot.group=2,
-#   loop=FALSE)
-# asset correlations "hclust" hierarchical clustering order
-plot(factor_pca, which.plot.group=7,
-     loop=FALSE, order="hclust",
-     method="ellipse")
-library(PortfolioAnalytics)
-# plot residual cumulative returns
-chart.CumReturns(
-  factor_pca$residuals[, c("IEF",
-            "DBC", "XLF")],
-  lwd=2, ylab="", legend.loc="topleft",
-  main="")
-library(PortfolioAnalytics)
-# plot residual histogram with normal curve
-plot(factor_pca, asset.name="VTI",
-     which.plot.single=8,
-     plot.single=TRUE, loop=FALSE,
-     xlim=c(-0.007, 0.007))
-library(PortfolioAnalytics)
-# residual Q-Q plot
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=9, 
-     plot.single=TRUE, loop=FALSE)
-# SACF and PACF of residuals
-plot(factor_pca, asset.name="VTI",
-     which.plot.single=5,
-     plot.single=TRUE, loop=FALSE)
-# target vector of normal variables
-target_vector <- rnorm(1000, mean=4, sd=2)
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+# sample of normal variables
+sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
-object_ive <- function(parm, target) {
+object_ive <- function(parm, sam_ple) {
   sum(2*log(parm[2]) + 
-    ((target - parm[1])/parm[2])^2)
+    ((sam_ple - parm[1])/parm[2])^2)
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, target)
-    object_ive(c(mean, sd), target),
+  FUN=function(mean, sd, sam_ple)
+    object_ive(c(mean, sd), sam_ple),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
 objective_grid <- outer(par_mean, par_sd, 
-    vec_objective, target=target_vector)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(
+vec_objective, sam_ple=sam_ple)
+objective_min <- which(  # grid search
   objective_grid==min(objective_grid), 
   arr.ind=TRUE)
 objective_min
+par_mean[objective_min[1]]  # mean
+par_sd[objective_min[2]]  # sd
 objective_grid[objective_min]
 objective_grid[(objective_min[, 1] + -1:1), 
-         (objective_min[, 2] + -1:1)]
-# perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-theta = 45, phi = 30,
-shade = 0.5,
-col = rainbow(50),
-border = "green",
-main = "objective function")
+       (objective_min[, 2] + -1:1)]
+par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
+# perspective plot of log-likelihood function
+persp(z=-objective_grid,
+theta=45, phi=30, shade=0.5,
+border="green", zlab="objective",
+main="objective function")
+# interactive perspective plot of log-likelihood function
+library(rgl)
+par3d(cex=2.0)  # scale text by factor of 2
+persp3d(z=-objective_grid, zlab="objective",
+  col="green", main="objective function")
 # initial parameters
 par_init <- c(mean=0, sd=1)
 # perform optimization quasi-Newton method
 optim_run <- optim(par=par_init, 
        fn=object_ive, 
-       target=target_vector,
+       sam_ple=sam_ple,
        method="L-BFGS-B",
        upper=c(10, 10),
        lower=c(-10, 0.1))
 # optimal parameters
 optim_run$par
 # plot histogram
-histo_gram <- hist(target_vector, plot=FALSE)
+histo_gram <- hist(sam_ple, plot=FALSE)
 plot(histo_gram, freq=FALSE,
-     main="histogram of target vector")
+     main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_run$par["mean"],
            sd=optim_run$par["sd"]),
 add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
-# target vector is mixture of normal distributions
-target_vector <- c(rnorm(100, sd=1.0), 
+# sample from mixture of normal distributions
+sam_ple <- c(rnorm(100, sd=1.0), 
              rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
-object_ive <- function(parm, target) {
+object_ive <- function(parm, sam_ple) {
   likelihood <- parm[1]/parm[3] * 
-  dnorm((target-parm[2])/parm[3]) +
-  (1-parm[1])/parm[5]*dnorm((target-parm[4])/parm[5])
+  dnorm((sam_ple-parm[2])/parm[3]) +
+  (1-parm[1])/parm[5]*dnorm((sam_ple-parm[4])/parm[5])
   if(any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, target)
-    object_ive(c(w, m1, s1, mean, sd), target),
+  FUN=function(mean, sd, w, m1, s1, sam_ple)
+    object_ive(c(w, m1, s1, mean, sd), sam_ple),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
 objective_grid <- outer(par_mean, par_sd, 
-    vec_objective, target=target_vector,
+    vec_objective, sam_ple=sam_ple,
     w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
 colnames(objective_grid) <- round(par_sd, 2)
@@ -350,25 +110,25 @@ objective_grid[(objective_min[, 1] + -1:1),
          (objective_min[, 2] + -1:1)]
 # perspective plot of objective function
 persp(par_mean, par_sd, -objective_grid,
-theta = 45, phi = 30,
-shade = 0.5,
-col = rainbow(50),
-border = "green",
-main = "objective function")
+theta=45, phi=30,
+shade=0.5,
+col=rainbow(50),
+border="green",
+main="objective function")
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
 optim_run <- optim(par=par_init, 
       fn=object_ive, 
-      target=target_vector,
+      sam_ple=sam_ple,
       method="L-BFGS-B",
       upper=c(1,10,10,10,10),
       lower=c(0,-10,0.2,-10,0.2))
 optim_run$par
 # plot histogram
-histo_gram <- hist(target_vector, plot=FALSE)
+histo_gram <- hist(sam_ple, plot=FALSE)
 plot(histo_gram, freq=FALSE,
-     main="histogram of target vector")
+     main="histogram of sample")
 fit_func <- function(x, parm) {
   parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) +
     (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
@@ -378,3 +138,81 @@ type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
+load(file="C:/Develop/data/etf_data.Rdata")
+# create list of symbols for optimized portfolio
+sym_bols <- c("VTI", "VNQ", "DBC")
+# create initial vector of portfolio weights
+portf_weights <- rep(1, length(sym_bols))
+names(portf_weights) <- sym_bols
+# objective equal to minus Sharpe ratio
+object_ive <- function(weights) {
+  portf_ts <- etf_rets[, sym_bols] %*% weights
+  -mean(portf_ts)/sd(portf_ts)
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(portf_weights)
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# vectorize objective function with respect to third weight
+vec_object <- Vectorize(
+  FUN=function(weight) object_ive(c(1, 1, weight)),
+  vectorize.args="weight"
+)  # end Vectorize
+# plot objective function with respect to third weight
+curve(expr=vec_object,
+      type="l", xlim=c(-4.0, 1.0),
+      xlab=paste("weight of", names(portf_weights[3])),
+      ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+# vectorize function with respect to all weights
+vec_object <- Vectorize(
+  FUN=function(w1, w2, w3)
+    object_ive(c(w1, w2, w3)),
+  vectorize.args=c("w2", "w3"))  # end Vectorize
+# calculate objective on 2-d (w2 x w3) parameter grid
+w2 <- seq(-5, 5, length=50)
+w3 <- seq(-5, 5, length=50)
+grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
+rownames(grid_object) <- round(w2, 2)
+colnames(grid_object) <- round(w3, 2)
+# perspective plot of objective function
+persp(w2, w3, -grid_object,
+theta=45, phi=30, shade=0.5,
+col=rainbow(50), border="green",
+main="objective function")
+# interactive perspective plot of objective function
+library(rgl)
+persp3d(z=-grid_object, zlab="objective",
+  col="green", main="objective function")
+persp3d(
+  x=function(w2, w3)
+    -vec_object(w1=1, w2, w3),
+  xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# optimization to find weights with maximum Sharpe ratio
+optim_run <- optim(par=portf_weights, 
+             fn=object_ive, 
+             method="L-BFGS-B",
+             upper=c(1.1, 10, 10),
+             lower=c(0.9, -10, -10))
+# optimal parameters
+optim_run$par
+# optimal Sharpe ratio
+-object_ive(optim_run$par)
+par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PortfolioAnalytics)
+# returns of optimal portfolio
+optim_rets <- xts(etf_rets[, sym_bols] %*%
+optim_run$par, order.by=index(etf_rets))
+# assign colnames to this xts
+colnames(optim_rets) <- "optim_rets"
+# plot in two vertical panels
+layout(matrix(c(1,2), 2),
+ widths=c(1,1), heights=c(1,3))
+# barplot of optimal portfolio weights
+barplot(optim_run$par,
+  names.arg=names(optim_run$par),
+  las=3, ylab="", xlab="Symbol", main="")
+# plot optimal returns with "VTI", "VNQ" and "DBC"
+chart.CumReturns(
+  cbind(optim_rets, etf_rets[, names(portf_weights)]),
+  lwd=2, ylab="", legend.loc="topleft", main="")

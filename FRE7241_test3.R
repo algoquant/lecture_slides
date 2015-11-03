@@ -1,113 +1,115 @@
 #################################
-### FRE7241 Test #3 July 7, 2015
+### FRE7241 Test #3 Oct 5, 2015
 #################################
-# Max score 90pts
+# Max score 60pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename the file to your_name_test3.R
-# and upload it to NYU Classes,
+# and upload the file to NYU Classes
 
-# summary: calculate optimized portfolio weights in each year, 
-# and apply them to out-of-sample data in the following year, 
-# 
-# 1. (5pts) Load time series data from file 
-# "etf_data.Rdata" (download it from NYU Classes),
-# the xts series "etf_rets" contains stock returns data,
-# use function load(),
+
+# Part I
+##############
+# Summary: Perform an sapply() loop over the columns of "etf_rets", 
+# calculate the max drawdowns, and Sortino and Calmar ratios, 
+# extract the data into a named matrix. 
+
+# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
+# "etf_data.Rdata" contains an environment called "env_data", 
+# with OHLC time series data for ETFs. 
+
+library(quantmod)
 load(file="C:/Develop/data/etf_data.Rdata")
 
-# create a vector of annual end points from the index of "etf_rets",
-# and call it "end_points", set the first "end_points" equal to 1,
-# use xts function endpoints(),
-library(xts)
+# create a vector of symbols called "sym_bols",
 
-### write your code here
+sym_bols <- c("VTI", "VEU", "IEF", "DBC")
 
-# create a vector of symbols for the optimized portfolio,
-sym_bols <- c("VTI", "VNQ", "DBC")
+# 1. (20pts) Perform an sapply() loop over the columns of "etf_rets" 
+# subset by "sym_bols", 
+# inside the loop calculate the max drawdowns, and Sortino and Calmar ratios, 
+# extract the data into a named matrix. 
+# you can use functions sapply(), table.Drawdowns() (column "Depth"), 
+# SortinoRatio(), CalmarRatio(), and an anonymous function,
 
-# create an initial vector of portfolio weights for the "sym_bols", 
-# all equal to 1,
-
-### write your code here
-
-
-# 2. (10pts) create an objective function equal to 
-# minus the Sharpe ratio, and call it object_ive(), 
-# the objective function should accept two arguments: 
-# "weights" and "portf_rets",
-
-### write your code here
-
-# apply object_ive() to an equal weight portfolio,
+library(PerformanceAnalytics)
 
 ### write your code here
 
 
-# 3. (25pts) create a function called optim_portf(), 
-# that accepts three arguments:
-#   "portf_rets": an "xts" containing returns data, 
-#   "start_point": the start index of "portf_rets", 
-#   "end_point": the end index of "portf_rets", 
-# optim_portf() should:
-# - extract (subset) returns from "portf_rets" between "start_point" 
-#    and "end_point",
-# - extract the symbol names from the column names of "portf_rets",
-# - create a named vector of initial portfolio weights equal to 1,
-#    the portfolio weight names should be the appropriate symbol names,
-# - optimize the weights to minimize the object_ive(), using the 
-#    subset returns,
-# - return the vector of optimal portfolio weights,
-# 
-# use function optim() with the dots "..." argument, 
-# use functions colnames(), rep(), and object_ive(), 
+# Part II
+##############
+# Summary: calculate the rolling standard deviation of returns, 
+# and the aggregated trading volumes, over monthly end points. 
+# Create plots and perform a regression of the two. 
 
+# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
+# "etf_data.Rdata" contains an environment called "env_data", 
+# with OHLC time series data for ETFs, including "VTI". 
+
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+
+# 1. (20pts)
+# Calculate the "VTI" daily returns from the adjusted close prices.
+# you can use functions Ad() and dailyReturn(), 
 
 ### write your code here
 
-# apply optim_portf() to the "sym_bols" portfolio, 
-# with start_point=1 and end_point=207,
+# Merge the daily returns with the "VTI" volume column, 
+# and call it "return_volume",
+# you can use functions Vo() and merge(), 
 
 ### write your code here
 
-
-
-# 4. (20pts) find the optimal portfolio weights in each year  
-# by performing an sapply() loop over "end_points",
-# call the matrix returned by sapply() "ann_weights",
-# you can use functions sapply(), optim_portf(), 
-# and an anonymous function,
+# remove rows of "return_volume" with NA values, 
+# you can use function complete.cases(), 
 
 ### write your code here
 
-
-# 5. (10pts) assign column names to "ann_weights", corresponding 
-# to the year of the data,
-# you can't assign the names by typing them one at a time,
-# you must extract the names from the index of "etf_rets" using "end_points",
-# you can use functions format(), index(), and lubridate function year(), 
-library(lubridate)
-
-### write your code here
-
-# transpose "ann_weights",
+# Calculate the monthly end points for "return_volume". 
+# Calculate the standard deviation of returns over the monthly 
+# end points. 
+# Calculate the aggregated trading volumes over the monthly 
+# end points. 
+# Merge the standard deviations with the aggregated volumes 
+# and call it "volat_volume", 
+# Assign to "volat_volume" the column names "volat" and "volu", 
+# you can use functions endpoints(), sd(), colnames(), period.sum(), 
+# and period.apply(), 
 
 ### write your code here
 
 
-# 6. (20pts) perform an sapply() loop over "end_points",
-# in each year calculate the optimized portfolio returns,
-# using portfolio weights from the previous year,
-# you can use function sapply(), and an anonymous function,
+# 2. (10pts)
+# plot the columns of "volat_volume" in a single plot in two panels,
+# you can use method plot.zoo(), 
 
 ### write your code here
 
-# sapply() produces a list of vectors,
-# flatten the list into a single vector, 
+# plot a scatterplot of the two columns of "volat_volume", 
+# you can use function plot() with a formula argument, 
+# you can create a formula from the column names of "volat_volume", 
+# you can use functions colnames(), as.formula() and paste(), 
 
 ### write your code here
 
-# plot the vector, 
+
+# 3. (10pts) perform a regression of the two columns of "volat_volume", 
+# you can create a formula from the column names of "volat_volume". 
+# Extract from summary() the regression statistics: 
+#  t-value, p-value, adj.r.squared, 
+# and create a named vector with these regression statistics. 
+# you can use functions colnames(), as.formula(), lm() and summary(), 
+
+### write your code here
+
+# perform the Durbin-Watson test for the autocorrelations of residuals,
+# write what is the null hypothesis?
+# can the null hypothesis be rejected in this case?
+# use function dwtest(), from package lmtest,
+
+library(lmtest)  # load lmtest
 
 ### write your code here
 

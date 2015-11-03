@@ -1,164 +1,54 @@
 #################################
-### FRE6871 Test #3 July 6, 2015
+### FRE6871 Test #3 Oct 13, 2015
 #################################
-# Max score 90pts
+# Max score 65pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename the file to your_name_test3.R
 # and upload it to NYU Classes,
 
 
-##################################
-# 1. (15pts) Calculate a vector of means of the numeric columns 
-# of the "iris" data frame,
-# calculate the means of only those columns that are numeric,
-# the output must be a vector, not a list,
-# you can use functions lapply(), sapply(), apply(), is.numeric(), 
-# unlist(), and mean(), and an anonymous function.
-
-### write your code here
-
-
-
-
-##################################
-# summary: loading and scrubbing a matrix containing bad data,
-# 2. (5pts) 
-# download the file "matrix_bad.csv" from NYU Classes),
-# the file contains a numeric matrix with row and column names, 
-# one column contains a bad data element that isn't numeric,
-# read the file into a variable called "mat_rix" using read.csv(),
-# make sure to read strings as strings, not as  factors,
-# read in properly the row names of "mat_rix",
-# you can either use the first column of data for row names, 
-# or use function read.csv() with arguments 
-# "row.names=1" and "stringsAsFactors=FALSE",
-
-### write your code here
-
-
-
-# 3. (15pts) determine the class of "mat_rix", and 
-# the class of each column of "mat_rix",
-# vector of column classes
-
-### write your code here
-
-
-# calculate the index of the column that is of class "character", 
-# you can use which(),
-
-### write your code here
-
-
-# extract (copy) the column that is of class "character" 
-# to a variable named "col_bad",
-
-### write your code here
-
-
-# coerce "col_bad" to a numeric vector,
-# you can use as.numeric(),
-
-### write your code here
-
-
-# calculate the index of the element of "col_bad" that is NA,
-# replace the NA element with zero,
-# you can use which() and is.na(),
-
-### write your code here
-
-
-
-# 4. (15pts) summary: perform an apply() loop over the columns 
-# of "mat_rix", to coerce "mat_rix" to a numeric matrix,
-# 
-# copy the row names of "mat_rix" to a vector called "row_names",
-# you can use row.names(),
-
-### write your code here
-
-
-# perform an apply() loop over the columns of "mat_rix", 
-# and coerce the columns to numeric vectors,
-# copy the result back on to "mat_rix", 
-# you can use as.numeric(),
-
-### write your code here
-
-
-# restore the row names of "mat_rix" using "row_names",
-# you can use row.names(),
-
-### write your code here
-
-
-# replace the NA element of "mat_rix" with zero,
-# you can use is.na(),
-
-### write your code here
-
-
-# coerce "mat_rix" to a matrix, 
-# you can use as.matrix(),
-
-### write your code here
-
-
-
-
-##################################
-# error handling within an sapply loop,
-# 
-# download the file "matrix_bad.csv" from NYU Classes),
-# the file contains a numeric matrix with row and column names, 
-# one column contains a bad data element that isn't numeric,
-# read the file into a variable called "mat_rix" using read.csv(),
-# make sure to read strings as strings, not as  factors,
-# read in properly the row names of "mat_rix",
-# you can either use the first column of data for row names, 
-# or use function read.csv() with arguments 
-# "row.names=1" and "stringsAsFactors=FALSE",
-
-### write your code here
-
-
-# 5. (15pts) calculate the sums of the columns of "mat_rix",
-# by performing an sapply loop over the columns of "mat_rix" 
-# you can use sapply(), sum() with argument "na.rm",
+############## Part I
+# 1. (20pts) calculate a vector with the number of NAs 
+# in each column of "airquality", 
+# you can use functions sapply(), is.na(), sum(), 
 # and an anonymous function,
-# the anonymous function should coerce each column to numeric, 
-# and then calculate its sum,
+
+### write your code here
+
+# replace the NAs in column "Solar.R" with zeros, 
+# you can use function is.na(),
 
 ### write your code here
 
 
+############## Part II
+# 1. (5pts) Calculate the vector of "class" attributes of the 
+# columns of the data frame "Cars93", and call it "class_cars",
+# you can use functions class() and sapply(), 
 
-# set warning option to "2",
-# perform the above sapply() loop again,
-# it now produces an error, and doesn't return anything,
-# you can use options() with argument "warn",
-
-### write your code here
-
-
-
-# 6. (25pts) rewrite the above sapply loop and wrap the body 
-# of the anonymous function in tryCatch(),
-# create another anonymous function to use as an error handler 
-# in tryCatch(), 
-# the error handler should write the text of the error condition 
-# to the console, 
-# you can omit the "finally" argument,
+library(MASS)
 
 ### write your code here
 
-
-# the apply loop returns a list,
-# flatten the list into a vector using do.call() and cbind(),
+# calculate the vector of unique "class" attributes (elements) 
+# in "class_cars",
+# you can use function unique(), 
 
 ### write your code here
 
+# 2. (20pts) calculate a list containing the column names in each 
+# unique "class", that is, calculate the names of the columns 
+# of class "factor", the names of the columns of class "numeric", etc.
+# use functions lapply(), colnames(), and an anonymous function,
 
+### write your code here
+
+# 3. (20pts) calculate the "means" of columns that are 
+# either of class "integer" or "numeric",
+# you can use functions sapply(), mean(), and the "%in%" operator,
+# some elements of Cars93 are NA, so you will need to pass the 
+# parameter "na.rm=TRUE" to mean(),
+
+### write your code here
 

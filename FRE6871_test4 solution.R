@@ -1,86 +1,80 @@
 #################################
-### FRE6871 Test #4 Solutions 05/18/15
+### FRE6871 Test #4 Solutions Oct 19, 2015
 #################################
-# Max score 60pts
+# Max score 65pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
+##############
+# Summary: load and scrub a matrix containing bad data. 
 
-##################################
-# 1. (20pts) Rewrite the code below using function ifelse(),
-# the code below creates a vector of random numbers,
-# it then subtracts "1" from those vector elements which are positive,
+# 1. (5pts) 
+# Download the file "matrix_bad.csv" from NYU Classes),
+# the file contains a numeric matrix with row and column names, 
+# with some columns containing bad data elements that aren't numeric.
+# Read the file into a variable called "mat_rix" using read.csv(),
+# make sure to read strings as strings, not as factors,
+# and read in properly the row names of "mat_rix". 
+# You can either use the first column of data for row names, 
+# or use function read.csv() with arguments 
+# "row.names=1" and "stringsAsFactors=FALSE", 
 
-set.seed(1121)
-vec_tor <- rnorm(10)
-vec_tor[vec_tor>0] <- vec_tor[vec_tor>0] - 1
+mat_rix <- read.csv(file="badmatrix.csv", stringsAsFactors=FALSE)
+rownames(mat_rix) <- mat_rix[, 1]
+mat_rix <- mat_rix[, -1]
+# or
+mat_rix <- read.csv(file="badmatrix.csv", row.names=1,
+                    stringsAsFactors=FALSE)
 
-# solution:
+# 2. (15pts) determine the class of "mat_rix", and 
+# calculate a vector of the classes of the columns 
+# of "mat_rix". 
+# You can use the functions sapply() and class(), 
 
-vec_tor <- ifelse(vec_tor>0, vec_tor-1, vec_tor)
+class(mat_rix)
+col_class <- sapply(mat_rix, class)
 
+# calculate the vector of indices of the columns that are 
+# of class "character", and call it "col_index", 
+# you can use function which(),
 
+col_index <- which(col_class=="character")
 
-##################################
-# 2. (20pts) Calculate the Fibonacci Sequence using a while loop,
-# Calculate the Fibonacci Sequence up to the first element whose 
-# value exceeds 100,
-# the while loop should stop when the first element of the 
-# Fibonacci Sequence exceeds 100,
+# 3. (15pts) perform an sapply() loop over the "character" 
+# columns of "mat_rix", coerce them to "numeric" vectors, 
+# and call the result "col_fixed", 
+# you can use functions sapply() and as.numeric(), 
 
-# fib_seq <- numeric()  # zero length numeric vector
-# pre-allocate vector instead of "growing" it
-fib_seq <- numeric(10)
-fib_seq[1] <- 0  # initialize
-fib_seq[2] <- 1  # initialize
+col_fixed <- sapply(mat_rix[, col_index], as.numeric)
 
-in_dex <- 3
-while(fib_seq[in_dex-1] < 100) {
-  fib_seq[in_dex] <- fib_seq[in_dex-1] + fib_seq[in_dex-2]
-  in_dex <- in_dex + 1
-}  # end while
+# replace the "character" columns of "mat_rix" with 
+# "col_fixed", using the vector "col_index", 
 
-fib_seq
+mat_rix[, col_index] <- col_fixed
 
+# 4. (10pts) Perform an apply() loop over the rows of 
+# "mat_rix", calculate the row means, and call the result 
+# "row_means", 
+# You can use functions apply() and mean(), 
+# ignore NA values using the argument "na.rm=TRUE". 
+# You cannot use an anonymous function. 
 
+row_means <- apply(mat_rix, 1, mean, na.rm=TRUE)
 
-##################################
-# 3. (20pts) Modify the code below, to simulate prices hitting 
-# a *negative* barrier level,
-# after the prices hit the negative barrier level, the simulation 
-# should stop, and "simu_prices" should be constant,
+# 5. (20pts) Replace NA values in "mat_rix" with the 
+# corresponding row means. 
+# You can use function is.na(), and function which() with 
+# the argument "arr.ind=TRUE". 
+# You cannot perform any loops, only subsetting of matrices. 
 
-### first run this code:
+is_na <- which(is.na(mat_rix), arr.ind=TRUE)
+mat_rix[is_na] <- row_means[is_na[, 1]]
 
-set.seed(1121)  # for reproducibility
-simu_max <- 1000  # max simulation trials
-barrier_level <- -10  # barrier level
-# simulated prices
-simu_prices <- cumsum(rnorm(simu_max))
+# coerce "mat_rix" to a matrix, 
+# you can use as.matrix(),
 
+mat_rix <- as.matrix(mat_rix)
 
-### modify some of the code below this line, as needed,
-
-# in_dex should be "1" after prices cross barrier_level
-in_dex <- cummax(simu_prices < barrier_level)
-
-# find index when prices cross barrier_level
-which_index <- which(diff(in_dex)==1)
-
-# fill prices after crossing barrier_level
-if (length(which_index)>0) {
-  simu_prices[as.logical(in_dex)] <- 
-    simu_prices[which_index + 1]
-}  # end if
-
-### end code to be modified,
-
-# after you modify and run the code, the variable "which_index" should be 
-# equal to the index for which the value of "simu_prices" is just about 
-# to cross the barrier level,
-# verify that this is true by looking at:
-
-simu_prices[(which_index-1):(which_index+2)]
 
 

@@ -18,8 +18,8 @@ knit_theme$set(thm)
 % \usecolortheme{whale}
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
-% amsmath package for math symbols
-% \usepackage{amsmath}
+% mathtools package for math symbols
+% \usepackage{mathtools}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -52,8 +52,8 @@ knit_theme$set(thm)
 % Title page setup
 \title[Portfolio Construction]{Portfolio Construction}
 \subtitle{FRE7241 Algorithmic Portfolio Management}
-\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
-\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\institute[NYU Polytechnic]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -83,8 +83,6 @@ knit_theme$set(thm)
       The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-      \vskip1ex
-      \vspace{-1em}
         <<eval=TRUE,echo=(-(1:1))>>=
 load(file="C:/Develop/data/etf_data.Rdata")
 # create list of symbols for optimized portfolio
@@ -95,7 +93,7 @@ names(portf_weights) <- sym_bols
 # objective equal to minus Sharpe ratio
 object_ive <- function(weights) {
   portf_ts <- etf_rets[, sym_bols] %*% weights
-  -mean(portf_ts)/sd(portf_ts)
+  -sum(portf_ts)/sd(portf_ts)
 }  # end object_ive
 # objective for equal weight portfolio
 object_ive(portf_weights)
@@ -107,12 +105,12 @@ object_ive(portf_weights)
         <<portf_optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # vectorize objective function with respect to third weight
-vec_objective <- Vectorize(
+vec_object <- Vectorize(
   FUN=function(weight) object_ive(c(1, 1, weight)),
   vectorize.args="weight"
 )  # end Vectorize
 # plot objective function with respect to third weight
-curve(expr=vec_objective, 
+curve(expr=vec_object, 
       type="l", xlim=c(-4.0, 1.0),
       xlab=paste("weight of", names(portf_weights[3])), 
       ylab="", lwd=2)
@@ -131,32 +129,42 @@ title(main="Objective Function", line=-1)  # add title
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-\vspace{-1em}
+      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
+      \vskip1ex
+      The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values, 
       <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# vectorize objective function
-vec_objective <- Vectorize(
+# vectorize function with respect to all weights
+vec_object <- Vectorize(
   FUN=function(w1, w2, w3)
     object_ive(c(w1, w2, w3)),
-  vectorize.args=c("w2", "w3")
-)  # end Vectorize
-# create vectors of weights
+  vectorize.args=c("w2", "w3"))  # end Vectorize
+# calculate objective on 2-d (w2 x w3) parameter grid
 w2 <- seq(-5, 5, length=50)
 w3 <- seq(-5, 5, length=50)
-# calculate objective on 2-d (w2 x w3) parameter grid
-objective_grid <- outer(w2, w3, vec_objective, w1=1)
-rownames(objective_grid) <- round(w2, 2)
-colnames(objective_grid) <- round(w3, 2)
+grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
+rownames(grid_object) <- round(w2, 2)
+colnames(grid_object) <- round(w3, 2)
 # perspective plot of objective function
-persp(w2, w3, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
+persp(w2, w3, -grid_object,
+      theta=45, phi=30, shade=0.5,
+      col=rainbow(50), border="green",
       main="objective function")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_persp-1}
+    \vspace{-5em}
+      <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
+# interactive perspective plot of objective function
+library(rgl)
+persp3d(z=-grid_object, zlab="objective", 
+        col="green", main="objective function")
+persp3d(
+  x=function(w2, w3) 
+    -vec_object(w1=1, w2, w3), 
+  xlim=c(-5, 5), ylim=c(-5, 5), 
+  col="green", axes=FALSE)
+      @
   \end{columns}
 \end{block}
 
@@ -234,7 +242,6 @@ chart.CumReturns(
 \end{block}
 
 \end{frame}
-
 
 
 
@@ -648,7 +655,7 @@ portf_maxSTARR <- add.objective(
 # add objectives
 portf_maxSTARR <- add.objective(
   portfolio=portf_maxSTARR, 
-  type="risk",  # minimize StdDev
+  type="risk",  # minimize Expected Sshortfall
   name="ES")
       @
   \end{columns}

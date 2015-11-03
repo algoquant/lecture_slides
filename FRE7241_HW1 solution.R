@@ -1,14 +1,49 @@
 #################################
-### FRE7241 HW #1 Solution due June 15, 2015
+### FRE7241 HW #1 Solution due Sep 22, 2015
 #################################
-# Max score 40pts
+# Max score 55pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
+##################################
+# 1. (15pts) create a vector of weekly "POSIXct" dates corresponding  
+# to Mondays at 09:30AM, and call it "mon_days", 
+# start with the date "2015-02-09", and end at the most recent Monday
+# before today (today is defined by Sys.time()),
+# set the timezone to "America/New_York", 
+# hint: first calculate the number of weeks between today and the start 
+# date, and use that number to create a vector of weekly "POSIXct" dates,
+# you can use functions Sys.setenv(), as.POSIXct(), difftime() and ceiling(), 
+# and lubridate function weeks(),
+
+Sys.setenv(tz="America/New_York")
+start_date <- as.POSIXct("2015-02-09 09:30:00")
+end_date <- Sys.time()
+
+num_weeks <- ceiling(difftime(end_date, start_date, units="weeks"))
+
+mon_days <- start_date + weeks(0:num_weeks)
+mon_days <- mon_days[(mon_days <= end_date)]
+head(mon_days)
+tail(mon_days)
+
+# convert "mon_days" to the days of the week, using three different methods,
+# to verify that all the dates in "mon_days" are indeed Mondays,
+# use function weekdays(),
+weekdays(mon_days)
+
+# use function as.POSIXlt(),
+as.POSIXlt(mon_days)$wday
+
+# use lubridate function wday(),
+wday(mon_days, TRUE)
+
+
+
 ###############
-# 1. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
+# 2. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
 # MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
 # use tseries function get.hist.quote(),
 

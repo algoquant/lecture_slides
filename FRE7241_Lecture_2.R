@@ -1,77 +1,9 @@
 library(knitr)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
+options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
-#plot with two "y" axes
-par(las=1)  # set text printing to "horizontal"
-# plot first ts
-plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# set range of "y" coordinates for second axis
-par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
-lines(zoo_stxeur[, 2], col="red")  # second plot
-axis(side=4, col="red")  # second "y" axis on right
-# print axis labels
-mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-title(main="EUR and MSFT")  # add title
-# add legend without box
-legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
- lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# slightly different method using par(new=TRUE)
-# par(las=1)  # set text printing to "horizontal"
-# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# par(new=TRUE)  # allow new plot on same chart
-# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
-# axis(side=4, col="red")  # second "y" axis on right
-# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-# title(main="EUR and MSFT", line=-1)  # add title
-# legend("bottomright", legend=colnames(zoo_stxeur),
-#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# "x" axis with monthly ticks - doesn't work
-# plot first ts wthout "x" axis
-# plot(zoo_stxeur[, 1], xaxt="n", xlab=NA, ylab=NA)
-# # add "x" axis with monthly ticks
-# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
-# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
-
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
-load(file="C:/Develop/data/zoo_data.RData")
-# calculate maximum drawdown
-maxdrawdown(zoo_stx_adj[, "AdjClose"])
-max_drawd <- maxdrawdown(zoo_stx_adj[, "AdjClose"])
-index(zoo_stx_adj)[max_drawd$from]
-index(zoo_stx_adj)[max_drawd$to]
-# calculate Sharpe ratio
-sharpe(zoo_stx_adj[, "AdjClose"])
-# calculate Sterling ratio
-sterling(as.numeric(zoo_stx_adj[, "AdjClose"]))
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
 #Perform two-tailed test that sample is 
 #from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
@@ -171,20 +103,20 @@ summary(dax_acf)  # get the structure of the "acf" object
 dim(dax_acf$acf)
 dim(dax_acf$lag)
 head(dax_acf$acf)
-acf_plus <- function (ts_data, plot=TRUE, 
-                xlab="Lag", ylab="", 
+acf_plus <- function (ts_data, plot=TRUE,
+                xlab="Lag", ylab="",
                 main="", ...) {
   acf_data <- acf(x=ts_data, plot=FALSE, ...)
 # remove first element of acf data
-  acf_data$acf <-  array(data=acf_data$acf[-1], 
+  acf_data$acf <-  array(data=acf_data$acf[-1],
     dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <-  array(data=acf_data$lag[-1], 
+  acf_data$lag <-  array(data=acf_data$lag[-1],
     dim=c((dim(acf_data$lag)[1]-1), 1, 1))
   if(plot) {
     ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
-    ylim <- c(min(-ci, range(acf_data$acf[-1, , 1])),
-        max(ci, range(acf_data$acf[-1, , 1])))
-    plot(acf_data, xlab=xlab, ylab=ylab, 
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+        max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
    ylim=ylim, main=main, ci=0)
     abline(h=c(-ci, ci), col="blue", lty=2)
   }
@@ -407,143 +339,384 @@ ar3_zoo <- arima.sim(n=1000,
 arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
 library(forecast)  # load forecast
 auto.arima(ar3_zoo)  # fit ARIMA model
-set.seed(1121)  # initialize the random number generator
-library(xts)  # load package xts
-# create xts time series
-in_dex <- Sys.Date() + 0:3
-xts_series <- xts(rnorm(length(in_dex)), 
-         order.by=in_dex)
-names(xts_series) <- "random"
-xts_series
-tail(xts_series, 3)  # get last few elements
-first(xts_series)  # get first element
-last(xts_series)  # get last element
-class(xts_series)  # class 'xts'
-attributes(xts_series)
-load(file="C:/Develop/data/zoo_data.RData")
-library(xts)  # load package xts
-# as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
-dim(xts_stx)
-head(xts_stx[, 1:4], 4)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot using plot.xts method
-plot(xts_stx[, "AdjClose"], xlab="", ylab="", main="")
-title(main="MSFT Prices")  # add title
-library(ggplot2)
-load(file="C:/Develop/data/etf_data.Rdata")
-# create ggplot object
-etf_gg <- autoplot(etf_series_ad[, 1],
-             main=names(etf_series_ad[, 1])) +
-  xlab("") + ylab("") +
-  theme(
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.background=element_blank()
-  )  # end theme
-# render ggplot object
-etf_gg
-library(xts)  # load package xts
-# subset xts using a date range string
-xts_sub <- xts_stx["2014-10-15/2015-01-10", 1:4]
-first(xts_sub)
-last(xts_sub)
-# subset Nov 2014 using a date string
-xts_sub <- xts_stx["2014-11", 1:4]
-first(xts_sub)
-last(xts_sub)
-# subset all data after Nov 2014
-xts_sub <- xts_stx["2014-11/", 1:4]
-first(xts_sub)
-last(xts_sub)
-# comma after date range not necessary
-identical(xts_stx["2014-11", ], xts_stx["2014-11"])
-library(xts)  # load package xts
-# vector of 1-minute times (ticks)
-min_ticks <- seq.POSIXt(
-  from=as.POSIXct("2015-04-14", tz="America/New_York"), 
-  to=as.POSIXct("2015-04-16"), 
-  by="min")
-# xts of 1-minute times (ticks)
-xts_series <- xts(rnorm(length(min_ticks)), 
-               order.by=min_ticks)
-# subset recurring time interval using "T notation",
-xts_series <- xts_series["T09:30:00/T16:00:00"]
-first(xts_series["2015-04-15"])  # first element of day
-last(xts_series["2015-04-15"])  # last element of day
-library(xts)  # load package xts
-str(xts_stx)  # display structure of xts
-# subsetting zoo to single column drops dim attribute
-dim(zoo_stx_adj)
-dim(zoo_stx_adj[, 1])
-# zoo with single column are vectors not matrices
-c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
-# xts always have a dim attribute
-rbind(base=dim(xts_stx), subs=dim(xts_stx[, 1]))
-c(is.matrix(xts_stx), is.matrix(xts_stx[, 1]))
-library(xts)  # load package xts
-# lag of zoo shortens it by one row
-rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
-# lag of xts doesn't shorten it
-rbind(base=dim(xts_stx), lag=dim(lag(xts_stx)))
-# lag of zoo is in opposite direction from xts
-head(lag(zoo_stx_adj), 4)
-head(lag(xts_stx), 4)
-library(xts)  # load package xts
-# extract indices of the last observations in each month
-end_points <- endpoints(xts_stx, on='months')
-head(end_points)
-# extract the last observations in each month
-head(xts_stx[end_points, ])
-library(xts)  # load package xts
-# apply "mean" over end_points
-period_mean <- period.apply(xts_stx[, "AdjClose"], 
-               INDEX=end_points, 
-               FUN=mean)
-head(period_mean)
-period_sum <- period.sum(xts_stx[, "AdjClose"], 
-               INDEX=end_points)
-head(period_sum)
-library(xts)  # load package xts
-# apply "mean" over monthly periods
-period_mean <- apply.monthly(xts_stx[, "AdjClose"], 
-               FUN=mean)
-head(period_mean)
-library(xts)  # load package xts
-# lower the periodicity to months
-xts_monthly <- to.period(x=xts_stx[, "AdjClose"], 
-                   period="months", name="MSFT")
-# convert colnames to standard OHLC format
-colnames(xts_monthly)
-colnames(xts_monthly) <- sapply(
-  strsplit(colnames(xts_monthly), split=".", fixed=TRUE), 
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(xts_monthly, 3)
-# lower the periodicity to years
-xts_yearly <- to.period(x=xts_monthly, 
-                   period="years", name="MSFT")
-colnames(xts_yearly) <- sapply(
-  strsplit(colnames(xts_yearly), split=".", fixed=TRUE), 
-  function(na_me) na_me[-1]
-  )  # end sapply
-head(xts_yearly)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
-library(xts)  # load package xts
-# as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
-# subset xts using a date
-xts_sub <- xts_stx["2014-11", 1:4]
+# get documentation for package "tseries"
+packageDescription("tseries")  # get short description
 
-# plot OHLC using plot.xts method
-plot(xts_sub, type="candles", main="")
-title(main="MSFT Prices")  # add title
+help(package="tseries")  # load help page
+
+library(tseries)  # load package "tseries"
+
+data(package="tseries")  # list all datasets in "tseries"
+
+ls("package:tseries")  # list all objects in "tseries"
+
+detach("package:tseries")  # remove tseries from search path
+library(tseries)  # load package tseries
+# download MSFT data in ts format
+ts_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    retclass="ts",
+    quote=c("Open","High","Low","Close",
+      "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
 load(file="C:/Develop/data/zoo_data.RData")
-ts_stx <- as.ts(zoo_stx)
-class(ts_stx)
-tail(ts_stx[, 1:4])
-library(xts)
-xts_stx <- as.xts(zoo_stx)
-class(xts_stx)
-tail(xts_stx[, 1:4])
+# create price adjustment vector
+adj_close <- ts_stx[, "AdjClose"] - 
+  ts_stx[, "Close"]
+# adjust OHLC prices
+ts_stx_adj <- ts_stx
+ts_stx_adj[, c("Open","High","Low","Close")] <- 
+  ts_stx[, c("Open","High","Low","Close")] + adj_close
+# inspect the data
+tsp(ts_stx_adj)  # frequency=1
+head(time(ts_stx_adj))
+head(ts_stx_adj)
+tail(ts_stx_adj)
+library(tseries)  # load package tseries
+# download MSFT data
+zoo_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    quote=c("Open","High","Low","Close",
+      "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
+load(file="C:/Develop/data/zoo_data.RData")
+class(zoo_stx)
+dim(zoo_stx)
+head(zoo_stx, 4)
+library(tseries)  # load package tseries
+load(file="C:/Develop/data/zoo_data.RData")
+# create price adjustment vector
+adj_close <- zoo_stx[, "AdjClose"] - zoo_stx[, "Close"]
+head(adj_close, 5)
+tail(adj_close, 5)
+# adjust OHLC prices
+zoo_stx_adj <- zoo_stx
+zoo_stx_adj[, c("Open","High","Low","Close")] <- 
+  zoo_stx[, c("Open","High","Low","Close")] + adj_close
+head(zoo_stx_adj)
+tail(zoo_stx_adj)
+library(tseries)  # load package tseries
+# download EUR/USD data
+zoo_eurusd <- suppressWarnings(
+  get.hist.quote(
+    instrument="EUR/USD",
+    provider="oanda",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    origin="1970-01-01")
+)  # end suppressWarnings
+# bind and scrub data
+zoo_stxeur <- merge(zoo_eurusd,
+               zoo_stx[, "AdjClose"])
+colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
+zoo_stxeur <-
+  zoo_stxeur[complete.cases(zoo_stxeur),]
+save(zoo_stx, zoo_stx_adj,
+     ts_stx, ts_stx_adj,
+     zoo_eurusd, zoo_stxeur,
+     file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/data/zoo_data.RData")
+# inspect the data
+class(zoo_eurusd)
+tail(zoo_eurusd, 4)
+library(tseries)  # load package tseries
+# create vector of symbol names
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ", "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", "IWS", "IWV", "IUSV", "IUSG")
+# download price and volume data for sym_bols into list of zoo objects
+zoo_series <- suppressWarnings(
+  lapply(sym_bols, # loop for loading data
+   get.hist.quote,
+   quote=c("AdjClose", "Volume"),
+   start=Sys.Date()-3650,
+   end=Sys.Date(),
+   origin="1970-01-01")
+)  # end suppressWarnings
+# flatten list of zoo objects into a single zoo object
+zoo_series <- do.call(merge, zoo_series)
+# assign names in format "symbol.Close", "symbol.Volume"
+names(zoo_series) <-
+  as.vector(sapply(sym_bols,
+             paste, c("Close", "Volume"), sep="."))
+# save zoo_series to a comma-separated CSV file
+write.zoo(zoo_series, file='zoo_series.csv', sep=",")
+# save zoo_series to a binary .Rdata file
+save(zoo_series, file='zoo_series.Rdata')
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+# get start and end dates
+in_dex <- time(ts_stx_adj)
+e_nd <- in_dex[length(in_dex)]
+st_art <- round((4*e_nd + in_dex[1])/5)
+# plot using plotOHLC
+plotOHLC(window(ts_stx_adj,
+          start=st_art,
+          end=e_nd)[, 1:4],
+   xlab="", ylab="")
+title(main="MSFT OHLC Prices")
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+library(zoo)  # load package zoo
+library(lubridate)  # load lubridate
+# get start and end dates of zoo_series
+start_date <- decimal_date(start(zoo_stx))
+end_date <- decimal_date(end(zoo_stx))
+# calculate frequency of zoo_stx
+fre_quency <- length(zoo_stx)/(end_date-start_date)
+# extract data from zoo_stx
+da_ta <- coredata(
+  window(zoo_stx, start=as.Date("2015-01-01"),
+   end=end(zoo_stx)))
+# create ts object using ts()
+ts_stx <- ts(data=da_ta, start=decimal_date(as.Date("2015-01-01")),
+          frequency=fre_quency)
+seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
+title(main="MSFT Open and Close Prices", line=-1)
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+#plot with two "y" axes
+par(las=1)  # set text printing to "horizontal"
+# plot first ts
+plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# set range of "y" coordinates for second axis
+par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
+lines(zoo_stxeur[, 2], col="red")  # second plot
+axis(side=4, col="red")  # second "y" axis on right
+# print axis labels
+mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+title(main="EUR and MSFT")  # add title
+# add legend without box
+legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
+ lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# slightly different method using par(new=TRUE)
+# par(las=1)  # set text printing to "horizontal"
+# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# par(new=TRUE)  # allow new plot on same chart
+# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# axis(side=4, col="red")  # second "y" axis on right
+# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+# title(main="EUR and MSFT", line=-1)  # add title
+# legend("bottomright", legend=colnames(zoo_stxeur),
+#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# "x" axis with monthly ticks - doesn't work
+# plot first ts wthout "x" axis
+# plot(zoo_stxeur[, 1], xaxt="n", xlab=NA, ylab=NA)
+# # add "x" axis with monthly ticks
+# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
+# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
+
+library(tseries)  # load package tseries
+library(zoo)  # load package zoo
+load(file="C:/Develop/data/zoo_data.RData")
+# calculate maximum drawdown
+maxdrawdown(zoo_stx_adj[, "AdjClose"])
+max_drawd <- maxdrawdown(zoo_stx_adj[, "AdjClose"])
+index(zoo_stx_adj)[max_drawd$from]
+index(zoo_stx_adj)[max_drawd$to]
+# calculate Sharpe ratio
+sharpe(zoo_stx_adj[, "AdjClose"])
+# calculate Sterling ratio
+sterling(as.numeric(zoo_stx_adj[, "AdjClose"]))
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT",
+           start=Sys.Date()-365,
+           end=Sys.Date(),
+           origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+rm(list=ls())
+setwd("C:/Develop/data")
+library(xtable)
+# ETF symbols for asset allocation
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
+  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", 
+  "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", 
+  "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", 
+  "IWS", "IWV", "IUSV", "IUSG")
+# read etf database into data frame
+etf_list <- read.csv(file='etf_list.csv', 
+               stringsAsFactors=FALSE)
+rownames(etf_list) <- etf_list$Symbol
+# subset etf_list only those ETF's in sym_bols
+etf_list <- etf_list[sym_bols, ]
+# shorten names
+etf_names <- sapply(etf_list$Name, 
+              function(name) {
+  name_split <- strsplit(name, split=" ")[[1]]
+  name_split <- 
+    name_split[c(-1, -length(name_split))]
+  name_match <- match("Select", name_split)
+  if (!is.na(name_match))
+    name_split <- name_split[-name_match]
+  paste(name_split, collapse=" ")
+})  # end sapply
+etf_list$Name <- etf_names
+etf_list["IEF", "Name"] <- "Treasury Bond Fund"
+etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etf_list[c(1, 2)]
+print(xtable(etf_list), comment=FALSE, size="tiny")
+library(quantmod)  # load package "quantmod"
+# get documentation for package "quantmod"
+packageDescription("quantmod")  # get short description
+help(package="quantmod")  # load help page
+data(package="quantmod")  # list all datasets in "quantmod"
+ls("package:quantmod")  # list all objects in "quantmod"
+detach("package:quantmod")  # remove quantmod from search path
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+env_data <- new.env()  # new environment for data
+# download data for sym_bols into env_data
+getSymbols(sym_bols, env=env_data, adjust=TRUE,
+    from="2007-01-03", to="2015-05-01")
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+ls(env_data)  # list files in env_data
+# get class of object in env_data
+class(get(x=sym_bols[1], envir=env_data))
+# another way
+class(env_data$VTI)
+colnames(env_data$VTI)
+head(env_data$VTI, 3)
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+# adjust single OHLC object using its name
+env_data$VTI <- adjustOHLC(env_data$VTI,
+                     use.Adjusted=TRUE)
+
+# adjust OHLC object using string as name
+assign(sym_bols[1], adjustOHLC(
+    get(x=sym_bols[1], envir=env_data),
+    use.Adjusted=TRUE),
+  envir=env_data)
+
+# adjust objects in environment using vector of strings
+for (sym_bol in sym_bols) {
+  assign(sym_bol,
+   adjustOHLC(get(sym_bol, envir=env_data),
+              use.Adjusted=TRUE),
+   envir=env_data)
+}
+load(file="C:/Develop/data/etf_data.Rdata")
+library(quantmod)  # load package "quantmod"
+# extract and merge all data, subset by symbols
+etf_series <- do.call(merge,
+            as.list(env_data)[sym_bols])
+
+# extract and merge adjusted prices, subset by symbols
+etf_series_ad <- do.call(merge,
+            lapply(as.list(env_data)[sym_bols], Ad))
+
+# extract and merge adjusted prices, subset by symbols
+etf_series_ad <- do.call(merge,
+            eapply(env_data, Ad)[sym_bols])
+
+# drop ".Adjusted" from colnames
+colnames(etf_series_ad) <-
+  sapply(colnames(etf_series_ad),
+    function(col_name)
+strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(etf_series_ad[, 1:2], 3)
+
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(etf_series,
+     file='etf_series.csv', sep=",")
+# save data to .Rdata file
+save(env_data, etf_series, etf_series_ad,
+     file='etf_data.Rdata')
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# remove rows with NA values
+etf_series_ad <- 
+  etf_series_ad[complete.cases(etf_series_ad)]
+colnames(etf_series_ad)
+
+# calculate returns from adjusted prices
+etf_rets <- lapply(etf_series_ad, 
+             function(x_ts) {
+# dailyReturn returns single xts with bad colname
+  daily_return <- dailyReturn(x_ts)
+  colnames(daily_return) <- names(x_ts)
+  daily_return
+})  # end lapply
+
+# "etf_rets" is a list of xts
+class(etf_rets[[1]])
+
+# flatten list of xts into a single xts
+etf_rets <- do.call(merge, etf_rets)
+class(etf_rets)
+dim(etf_rets)
+head(etf_rets[, 1:3])
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# is it an OHLC time series?
+is.OHLC(env_data$VTI)
+# plot OHLC candlechart with volume
+chartSeries(env_data$VTI,
+      name="VTI",
+      theme=chartTheme("white"))
+# redraw plot only for Nov-2014
+reChart(type="candlesticks", subset="2014-11")
+# plot OHLC bar chart with volume
+chartSeries(env_data$VTI["2014-11"],
+      type="bars",
+      name="VTI",
+      theme=chartTheme("white"))
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# candlechart with Bollinger Bands
+chartSeries(env_data$VTI["2014"],
+      TA="addBBands();addBBands(draw='percent');addVo()",
+      name="VTI with Bollinger Bands",
+      theme=chartTheme("white"))
+# candlechart with two Moving Averages
+chartSeries(env_data$VTI["2014"],
+      TA="addVo();addEMA(10);addEMA(30)",
+      name="VTI with Moving Averages",
+      theme=chartTheme("white"))
+# candlechart with Commodity Channel Index
+chartSeries(env_data$VTI["2014"],
+      TA="addVo();addBBands();addCCI()",
+      name="VTI with Technical Indicators",
+      theme=chartTheme("white"))
+library(quantmod)
+load(file="C:/Develop/data/etf_data.Rdata")
+# download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE",
+            auto.assign=FALSE,
+            src="FRED")
+# plot U.S. unemployment rate data
+chartSeries(unemp_rate["1990/"],
+      name="U.S. unemployment rate",
+      theme=chartTheme("white"))
+# download 10-Year Treasury constant maturity rate
+trs_10yr <- getSymbols("DGS10",
+            auto.assign=FALSE,
+            src="FRED")

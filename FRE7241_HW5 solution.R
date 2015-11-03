@@ -1,127 +1,189 @@
 #################################
-### FRE7241 HW #5 Solution due May 25, 2015
+### FRE7241 Homework #5 Solution due Nov 3, 2015
 #################################
-# Max score 40pts
+# Max score 90pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
+##############
+# Summary: perform a rolling portfolio optimization over 
+# annual periods, calculate optimized portfolio weights 
+# in each year, and apply them to out-of-sample data in 
+# the following year. 
 
-##################################
-# 1. (10pts) Load time series data and calculate period statistics 
-# over end points, 
-# download the file "etf_rets.Rdata" from NYU Classes,
-# "etf_rets.Rdata" contains an xts of daily ETF returns called "etf_rets",
-# use function load(),
-# load package xts,
+# Download the file "etf_data.Rdata" from NYU Classes, 
+# and load() it.  "etf_data.Rdata" contains an xts series 
+# called "etf_rets", containing ETF returns. 
 
-load(file="C:/Develop/data/etf_rets.Rdata")
+load(file="C:/Develop/data/etf_data.Rdata")
+
+# 1. (10pts) create a vector of annual end points from the index 
+# of "etf_rets", and call it "end_points". 
+# Use "xts" function endpoints(),
+
 library(xts)
+end_points <- endpoints(etf_rets, on="years")
+
+# the above code should produce the following data:
+# > end_points
+# [1] 0  207  460  712  964 1216 1466 1718 1970 2053
+
+# The "end_points" values are the integer indices 
+# corresponding to dates that form non-overlapping annual 
+# intervals. 
+# Create a list of elements containing the indices belonging 
+# to the non-overlapping annual intervals, and call the list 
+# "period_s". 
+# Each element of "period_s" represents an interval 
+# corresponding to a year, and contains the indices of dates 
+# belonging to that interval. 
+# For example, the first element should contain the 
+# integers: 1:207 belonging to the year 2007, the second 
+# element: 208:460 belonging to the year 2008, etc. 
+# Assign names to the elements of "period_s" corresponding 
+# the year. 
+# hint: perform an lapply() loop over "end_points". 
+# You can use functions lapply(), names(), format(), index(), 
+# and an anonymous function,
+
+period_s <- lapply(2:length(end_points),
+                   function(in_dex)
+                     (end_points[in_dex-1]+1):end_points[in_dex]
+)  # end lapply
+names(period_s) <- format(index(etf_rets[end_points[-1]]), "%Y")
+
+# the above code should produce the following data:
+# > tail(period_s$"2008")
+# [1] 455 456 457 458 459 460
+# > head(period_s$"2009")
+# [1] 461 462 463 464 465 466
+# notice that there's no overlap between second and third periods, 
+
+# create a vector of symbols for the optimized portfolio,
+
+sym_bols <- c("VTI", "VNQ", "DBC")
+
+# create a named vector of initial portfolio weights for the 
+# "sym_bols", all equal to 1, and call it "portf_weights", 
+# You can use functions rep() and names(), 
+
+portf_weights <- rep(1, length(sym_bols))
+names(portf_weights) <- sym_bols
 
 
-# create an index of monthly end points for "etf_rets", called "end_points",
-# and set the first "end_points" equal to 1,
-# use function endpoints() from package xts,
+# 2. (10pts) create an objective function equal to minus 
+# the Sharpe ratio, and call it object_ive(). 
+# The objective function should accept two arguments: 
+#  "weights": the portfolio weights, 
+#  "re_turns": an xts series containing returns data, 
+# hint: you can adapt code from the slide "Portfolio 
+# Objective Function". 
+# You can use functions sum() and sd(), 
 
-end_points <- endpoints(etf_rets, on='months')
-end_points[1] <- 1
+object_ive <- function(weights, re_turns) {
+  portf_ts <- re_turns %*% weights
+  -sum(portf_ts)/sd(portf_ts)
+}  # end object_ive
 
+# apply object_ive() to an equal weight portfolio, and 
+# "etf_rets" subset to "sym_bols", 
 
-# calculate a numeric vector of returns of etf_rets[, "VTI"], 
-#   over monthly non-overlapping periods based on "end_points", 
-#   and call it "period_rets",
-# calculate a vector of Median Absolute Deviations (MAD) of etf_rets[, "VTI"], 
-#   over monthly non-overlapping periods, and call it "period_vol",
-# "period_vol" is a vector of volatility estimates over time,
-# use function period.apply() from package xts,
-# and functions mad(), sum(), and as.numeric(),
-
-period_rets <- as.numeric(period.apply(etf_rets[, "VTI"], INDEX=end_points, sum))
-
-period_vol <- as.numeric(period.apply(etf_rets[, "VTI"], INDEX=end_points, mad))
+object_ive(weights=portf_weights, re_turns=etf_rets[, sym_bols])
 
 
-# create a vector of rnorm() of length equal to etf_rets[, "VTI"], 
-# and calculate a vector of MAD from this vector, over monthly 
-# non-overlapping periods, and call it "rand_vol",
-# use functions period.apply(), mad(), rnorm(), and length(),
+# 3. (20pts) create a function called optim_portf(), 
+# that accepts a single argument:
+#  "re_turns": an xts series containing returns data, 
+# optim_portf() should:
+# - create a named vector of initial portfolio weights 
+#  all equal to 1, with the names extracted from the 
+#  column names of "re_turns",
+# - optimize the weights to minimize the object_ive(), 
+# - rescale the weights, so their sum of squares is "1", 
+# - return the vector of optimal portfolio weights, 
+# hint: you can adapt code from the slide 
+# "Multi-dimensional Portfolio Optimization". 
+# You can use the function optim() with the dots "..." 
+# argument, and with the "upper" and "lower" parameters 
+# equal to 10 and -10, respectively. 
+# You can also use the functions rep(), colnames(), 
+# structure(), and object_ive(), 
 
-rand_vol <- period.apply(rnorm(length(etf_rets[, "VTI"])), INDEX=end_points, mad)
+optim_portf <- function(re_turns) {
+  n_col <- ncol(re_turns)
+  # create initial vector of portfolio weights equal to 1,
+  portf_weights <- structure(rep(1, n_col), names=colnames(re_turns))
+  # optimization to find weights with maximum Sharpe ratio
+  optim_run <- optim(par=portf_weights, 
+                     fn=object_ive, 
+                     method="L-BFGS-B",
+                     upper=rep(10, n_col),
+                     lower=rep(-10, n_col),
+                     re_turns=re_turns)
+  # rescale and return the optimal weights
+  optim_run$par/sqrt(sum(optim_run$par^2))
+}  # end optim_portf
 
+# apply optim_portf() to "etf_rets" subset to "sym_bols" 
+# and the period "2009" from "period_s", 
 
-
-##################################
-# 2. (20pts) Perform autocorrelation tests,
-# 
-# perform the Durbin-Watson autocorrelation test on "period_rets", 
-# "period_vol", and "rand_vol",
-# the Durbin-Watson test can be performed on a vector "y" using the syntax: 
-#   dwtest(y ~ 1) 
-# extract the p-value and compare it to the 2.27% confidence level,
-# for which vector can the null hypothesis of zero autocorrelations 
-# be rejected at 2.27% confidence level?
-# use function dwtest(), from package lmtest,
-
-# load lmtest
-library(lmtest)
-
-dw_test <- dwtest(period_rets ~ 1)
-dw_test$p.value < 0.0227
-dw_test <- dwtest(period_vol ~ 1)
-dw_test$p.value < 0.0227
-dw_test <- dwtest(rand_vol ~ 1)
-dw_test$p.value < 0.0227
-
-
-# perform the Ljung-Box autocorrelation test on "period_rets", 
-# "period_vol", and "rand_vol",
-# extract the p-value and compare it to the 2.27% confidence level,
-# for which vector can the null hypothesis of zero autocorrelations 
-# be rejected at 2.27% confidence level?
-# use function Box.test(), with lag=10 and type="Ljung",
-
-box_test <- Box.test(period_rets, lag=10, type="Ljung")
-box_test$p.value < 0.0227
-box_test <- Box.test(period_vol, lag=10, type="Ljung")
-box_test$p.value < 0.0227
-box_test <- Box.test(rand_vol, lag=10, type="Ljung")
-box_test$p.value < 0.0227
+optim_portf(re_turns=etf_rets[period_s$"2009", sym_bols])
 
 
-# apply the functions acf_plus() (from FRE7241 lecture #2) and pacf() 
-# to "period_rets", "period_vol", and "rand_vol",
-# based on visual inspection, which of them appear to be autocorrelated?
+# 4. (20pts) Perform an sapply() loop over "period_s",
+# and calculate the optimal portfolio weights in each 
+# period. Call the matrix returned by sapply() "weight_s". 
+# You can use functions sapply(), optim_portf(), 
+# and an anonymous function,
 
-acf_plus(period_rets)
-acf_plus(period_vol)
-acf_plus(rand_vol)
-pacf(period_rets)
-pacf(period_vol)
-pacf(rand_vol)
+weight_s <- sapply(period_s, 
+                   function(pe_riod) {
+                     optim_portf(re_turns=etf_rets[pe_riod, sym_bols])
+                   }  # end anon function
+)  # end sapply
 
 
+# 5. (30pts) Perform an lapply() loop over the length of 
+# "period_s", starting in the second period (year). 
+# In each period calculate the portfolio returns, 
+# using out-of-sample portfolio weights from the previous 
+# period.  In each period coerce the portfolio returns to 
+# an xts series and return it. 
+# hint: you can use the names of periods "names(period_s)" 
+# to extract the "weight_s" from the previous period. 
+# You can use functions lapply(), xts(), index(), 
+# and an anonymous function,
 
-##################################
-# 3. (10pts) fit ARIMA models,
-# 
-# fit ARIMA models to "period_rets", "period_vol", and "rand_vol",
-# extract the ARIMA coefficients, and their standard errors,
-# the standard errors can be calculated as the square roots 
-# of the diagonal of the field "var.coef" of the ARIMA object,
-# see:
-http://r.789695.n4.nabble.com/ARIMA-standard-error-td820763.html
-# use functions arima(), sqrt(), and diag(),
+optim_rets <- lapply(2:length(period_s),
+                     function(in_dex)
+                       xts(x=etf_rets[period_s[[in_dex]], sym_bols] %*% 
+                             weight_s[, names(period_s)[in_dex-1]], 
+                           order.by=index(etf_rets[period_s[[in_dex]], ]))
+)  # end lapply
 
-a_rima <- arima(period_rets, order=c(5,0,0))
-a_rima$coef
-sqrt(diag(a_rima$var.coef))
+# The lapply() loop produces a list of xts series. 
+# Flatten "optim_rets" into a single xts series. 
+# You can use functions do.call() and rbind(), 
 
-a_rima <- arima(period_vol, order=c(5,0,0))
-a_rima$coef
-sqrt(diag(a_rima$var.coef))
+optim_rets <- do.call(rbind, optim_rets)
 
-a_rima <- arima(rand_vol, order=c(5,0,0))
-a_rima$coef
-sqrt(diag(a_rima$var.coef))
+# "optim_rets" should look like this: 
+# > dim(optim_rets)
+# [1] 1846    1
+# > head(optim_rets)
+#                    [,1]
+# 2008-01-02  0.007910575
+# 2008-01-03  0.017271646
+# 2008-01-04 -0.004024706
+# 2008-01-07 -0.013655207
+# 2008-01-08  0.007658724
+# 2008-01-09 -0.005758695
 
+# plot the cumulative sum of "optim_rets" using 
+# chart_Series(). 
+# You must use functions cumsum() and chart_Series(), 
+
+library(quantmod)
+chart_Series(x=cumsum(optim_rets), name="Rolling optimized portfolio returns")
 

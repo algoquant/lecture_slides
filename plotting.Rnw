@@ -3,6 +3,9 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
+library(rgl)
+knit_hooks$set(rgl=hook_rgl)
+knit_hooks$set(webgl=hook_webgl)
 opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
@@ -18,13 +21,14 @@ knit_theme$set(thm)
 % \usecolortheme{whale}
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
-% amsmath package for math symbols
-% \usepackage{amsmath}
+% mathtools package for math symbols
+% \usepackage{mathtools}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{animate}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -52,8 +56,8 @@ knit_theme$set(thm)
 % Title page setup
 \title[Graphics and Plotting]{Graphics and Plotting}
 \subtitle{FRE6871 \texttt{R} in Finance, Spring 2015}
-\institute[NYU Polytechnic]{NYU Polytechnic School of Engineering}
-\titlegraphic{\includegraphics[scale=0.8]{engineering_long_color}}
+\institute[NYU Polytechnic]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -146,7 +150,7 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Using Package \texttt{graphics}}
+\subsection{Plotting Lines Using Package \texttt{graphics}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -199,7 +203,7 @@ graphics.off()  # close all graphics devices
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \texttt{graphics} package is one of the base packages in \texttt{R}, and offers a number of plotting capabilities,
-        <<scatter_plot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<scatter_plot,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(5, 3, 1, 1), oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 attach(mtcars)  # add mtcars to search path
 # plot scatterplot horsepower vs miles per gallon
@@ -222,7 +226,7 @@ detach(mtcars)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Mathematical Functions in \texttt{R}}
+\subsection{Plotting Mathematical Functions Using \texttt{curve()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -231,7 +235,7 @@ detach(mtcars)
       \texttt{R} has dedicated functions for plotting mathematical functions,
       \vskip1ex
       The function \texttt{curve()} plots a function given by its name,
-        <<funplot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<funplot,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-3, 3), 
@@ -257,6 +261,128 @@ legend(x="topright", legend=c("Normal", "shifted"),
 
 
 %%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series With Custom x-axis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+        <<plot_zoo_axis,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load zoo
+load(file="C:/Develop/data/zoo_data.RData")
+zoo_series <- window(zoo_stx[, "AdjClose"], 
+       start=as.Date("2013-01-01"), 
+       end=as.Date("2013-12-31"))
+# extract time index and monthly dates
+in_dex <- index(zoo_series)
+# coerce index to monthly dates
+month_ly <- as.yearmon(in_dex)
+# tick locations at beginning of month
+tick_s <- 
+  in_dex[match(unique(month_ly), month_ly)]
+# or
+tick_s <- 
+  as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
+# first plot zoo without "x" axis
+plot(zoo_series, xaxt="n", xlab=NA, ylab=NA)
+# add "x" axis with monthly ticks
+axis(side=1, at=tick_s, 
+     labels=format(tick_s, "%b-%y"), tcl=-0.7)
+# add vertical lines
+abline(v=tick_s, col='grey', lwd=0.5)
+# plot zoo using base plotting functions
+plot(as.vector(zoo_series), xaxt="n", 
+     xlab=NA, ylab=NA, t="l")
+a_t <- seq_along(in_dex)[in_dex %in% tick_s]
+# add "x" axis with monthly ticks
+axis(side=1, at=a_t, 
+     labels=format(tick_s, "%b-%y"), tcl=-0.7)
+abline(v=a_t, col='grey', lwd=0.5)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_zoo_axis-1}
+    \vspace{-7em}
+        <<eval=TRUE,echo=(-(1:7))>>=
+library(zoo)  # load zoo
+load(file="C:/Develop/data/zoo_data.RData")
+# extract time index and monthly dates
+in_dex <- index(zoo_stx)
+# coerce index to monthly dates
+month_ly <- as.yearmon(in_dex)
+# benchmark two methods of calculating tick locations
+library(microbenchmark)
+summary(microbenchmark(
+    m_atch=
+      in_dex[match(unique(month_ly), month_ly)], 
+    t_apply=
+      as.Date(tapply(X=in_dex, 
+                     INDEX=month_ly, FUN=min)), 
+    times=10)
+  )[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Two Time Series With Two \texttt{"y"} axes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{par()} sets graphical parameters used for plotting, and invisibly returns existing parameters as a named list,
+      \vskip1ex
+      The function \texttt{axis()} plots an axis to the current plot,
+      \vskip1ex
+      The function \texttt{lines()} plots a line to the current plot,
+      <<zoo_plot_2y,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+### plot with two "y" axes
+par(las=1)  # set text printing to "horizontal"
+# plot first ts
+plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# set range of "y" coordinates for second axis
+par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
+lines(zoo_stxeur[, 2], col="red")  # second plot
+axis(side=4, col="red")  # second "y" axis on right
+# print axis labels
+mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+title(main="EUR and MSFT")  # add title
+# add legend without box
+legend("bottomright", legend=colnames(zoo_stxeur), bg="white", 
+       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+
+##########
+
+# slightly different method using par(new=TRUE)
+# par(las=1)  # set text printing to "horizontal"
+# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+# par(new=TRUE)  # allow new plot on same chart
+# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
+# axis(side=4, col="red")  # second "y" axis on right
+# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
+# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
+# title(main="EUR and MSFT", line=-1)  # add title
+# legend("bottomright", legend=colnames(zoo_stxeur), 
+#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_plot_2y-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Barplots in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -269,7 +395,7 @@ legend(x="topright", legend=c("Normal", "shifted"),
       \vskip1ex
       The function \texttt{truehist()} (from package \texttt{MASS}) plots histograms,
       \vspace{-1em}
-        <<poisbarplot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<poisbarplot,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(7, 4, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 pois_vector <- rpois(100, 4)  # Poisson numbers
 # calculate contingency table
@@ -340,39 +466,6 @@ par(graph_params)  # restore original parameters
 \end{frame}
 
 
-%%%%%%%%%%%%%%%
-\subsection{Basic Line Plot}
-\begin{frame}[fragile,t]{\subsecname}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{graphics} package is one of the base packages in \texttt{R}, and offers a number of plotting capabilities,
-      \vskip1ex
-      The function \texttt{as.Date()} converts a character string into a date object,
-      \vskip1ex
-      \texttt{R} stores \texttt{Date} objects as the number of days since January 1, 1970,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-Sys.Date()  # get today's date
-date_time <- as.Date("2013-06-15")  # "%Y-%m-%d" or "%Y/%m/%d"
-date_time
-class(date_time)
-as.Date("06-15-2013", "%m-%d-%Y")  # specify format
-date_time + 20  # add 20 days
-unclass(date_time)  # get internal integer representation
-some.date <- as.Date("11/22/2013", "%m/%d/%Y")
-some.date
-# difference between dates
-difftime(some.date, date_time, units="weeks")
-weekdays(date_time)  # get day of the week
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 %%%%%%%%%%%%%%%
 \section{Plotting Probability Distributions}
@@ -423,7 +516,7 @@ polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
   \begin{columns}[T]
     \column{0.5\textwidth}
       Plots of several Normal distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name,
-        <<norm_dist_mult_curves,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
 # create plot colors
@@ -501,7 +594,7 @@ legend("topright", inset=0.05, title="Sigmas",
       Let $Z_{1},\ldots ,Z_{k}$ be independent standard normal random variables,
       \vskip1ex
       Let $X=\sum_{i=1}^{k}Z_{i}^{2}$, \hskip1em then $X\sim \chi _{k}^{2}$,
-        <<chisq_dist_mult,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<chisq_dist_mult,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 d_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
@@ -597,7 +690,7 @@ legend("topright", inset=0.05,
       Let $Z_{1},\ldots ,Z_{k}$ be independent standard normal random variables,
       \vskip1ex
       Let $s^2=\sum_{i=1}^{\nu}Z_{i}^{2}$, \hskip1em $t=\frac{\sum_{i=1}^{\nu}Z_{i}}{s}$,
-        <<t_dist_mult,eval=FALSE,echo=(-1),fig.show='hide'>>=
+        <<t_dist_mult,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 d_free <- c(3, 6, 9)  # df values
 # create plot colors
@@ -946,4 +1039,104 @@ grid.arrange(ggp.zoo1, ggp.zoo2, ncol=1)
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%
+\section{Plotting 3d, Perspective, and Surface Plots}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting 3d Perspective Surface Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
+      \vskip1ex
+      The argument \texttt{"z"} accepts a matrix containing the function values,
+      \vskip1ex
+      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots, 
+        <<surf_plot,eval=FALSE,echo=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
+# define function of two variables
+foo <- function(x, y) sin(sqrt(x^2+y^2))
+# calculate function over matrix grid
+x_lim <- seq(from=-10, to=10, by=0.2)
+y_lim <- seq(from=-10, to=10, by=0.2)
+# draw 3d surface plot of function
+persp(z=outer(x_lim, y_lim, FUN=foo), 
+      theta=45, phi=30, zlab="sine",
+      shade=0.1, col="green",
+      main="radial sine function")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/surf_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive 3d Scatterplots Using Package \texttt{rgl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{rgl} is an \texttt{R} package for creating \emph{interactive 3d graphics}, based on the \emph{OpenGL} framework,
+      \vskip1ex
+      \texttt{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots
+      including perspective plots, , based on the \emph{OpenGL} framework,
+      \vskip1ex
+      The function \texttt{plot3d()} plots an \emph{interactive} 3d scatterplot from three vectors of data,
+      <<rgl_scatter3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
+library(rgl)  # load rgl
+with(iris, 
+     plot3d(Sepal.Length, Sepal.Width, Petal.Length,
+            type="s", col=as.numeric(Species)))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_scatter3d-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive 3d Surface Plots Using Package \texttt{rgl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
+      \vskip1ex
+      \texttt{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
+      <<rgl_surf3d,eval=FALSE,echo=(-(1:1)),rgl=TRUE,fig.width=6,fig.height=6,fig.show='hide'>>=
+library(rgl)  # load rgl
+# define function of two variables
+foo <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=foo, xlim=c(-5, 5), ylim=c(-5, 5), 
+        col="green", axes=FALSE)
+# save current view to png file
+rgl.snapshot("snap.png")
+
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=foo), 
+        xlab="x", ylab="y", zlab="foo", 
+        col="green")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 \end{document}
+

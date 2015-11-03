@@ -1,15 +1,45 @@
 #################################
-### FRE7241 HW #1 due June 15, 2015
+### FRE7241 HW #1 due Sep 22, 2015
 #################################
-# Max score 40 pts
+# Max score 55 pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw1.R
-# and send this file to Jaimin Doshi (jbd316@nyu.edu)
+# and upload the file to NYU Classes
+
+
+##################################
+# 1. (15pts) create a vector of weekly "POSIXct" dates corresponding  
+# to Mondays at 09:30AM, and call it "mon_days", 
+# start with the date "2015-02-09", and end at the most recent Monday
+# before today (today is defined by Sys.time()),
+# set the timezone to "America/New_York", 
+# hint: first calculate the number of weeks between today and the start 
+# date, and use that number to create a vector of weekly "POSIXct" dates,
+# you can use functions Sys.setenv(), as.POSIXct(), difftime() and ceiling(), 
+# and lubridate function weeks(),
+
+### write your code here
+
+
+# convert "mon_days" to the days of the week, using three different methods,
+# to verify that all the dates in "mon_days" are indeed Mondays,
+# use function weekdays(),
+
+### write your code here
+
+# use function as.POSIXlt(),
+
+### write your code here
+
+# use lubridate function wday(),
+
+### write your code here
+
 
 
 ###############
-# 1. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
+# 2. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
 # MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
 # use tseries function get.hist.quote(),
 
