@@ -49,6 +49,50 @@ cor.test(x=range_volume[, "range"], y=range_volume[, "volume"], method="spearman
 
 
 ########################
+### data input/output
+
+# write code for creating csv files in a specified dir
+
+# write code for reading csv files in a specified dir
+
+# get names of all csv files in cwd
+file_names <- list.files(path=getwd(), pattern=glob2rx("*.csv"))
+head(file_names)
+tail(file_names)
+
+# read the first six csv files into a list of data frames
+da_ta <- lapply(head(file_names), function(file_name) {
+  read.csv(file=file_name)
+})  # end lapply
+
+head(da_ta[[6]])
+
+
+
+pollutantmean <- function(directory, pollutant, id) {
+  file_names <- file.path(directory, paste0(sprintf(fmt="%03d", id), ".csv"))
+  da_ta <- lapply(file_names, 
+                  function(file_name)
+                    read.csv(file=file_name)[, pollutant]
+  )  # end lapply
+  da_ta <- do.call(c, da_ta)
+  mean(da_ta, na.rm=TRUE)
+}  # end pollutantmean
+
+file.path("C:/Develop/data/specdata", paste0(sprintf(fmt="%03d", 1:3), ".csv"))
+
+pollutant <- "nitrate"
+foo <- read.csv(file="C:/Develop/data/specdata/001.csv")[, "nitrate"]
+class(foo)
+head(foo)
+tail(foo)
+
+debug(pollutantmean)
+pollutantmean("C:/Develop/data/specdata", "sulfate", 1:10)
+
+
+
+########################
 ### functions
 
 

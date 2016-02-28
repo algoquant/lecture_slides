@@ -25,6 +25,11 @@ suppressPackageStartupMessages(library(zoo))
 stopifnot("package:xts" %in% search() || require(xts, quietly=TRUE))
 
 
+# add the following:
+# hw: create a function get_reg_stats()
+# hw: perform rolling calculations of sd, skew, MAD, VaR, SR, using vectorized functions: package caTools, 
+
+
 
 #################################
 # data munging input output error handling
@@ -125,7 +130,7 @@ weekdays(tail(week_days))
 
 
 ############## test
-# Summary: subset "zoo_series" to Mondays, and calculate weekly percentage returns
+# Synopsis: subset "zoo_series" to Mondays, and calculate weekly percentage returns
 
 # 1. (15pts) subset "zoo_series" to Mondays, 
 # download the file "zoo_series.Rdata" from NYU Classes, and load() it, 
@@ -156,7 +161,7 @@ zoo_mondays[which.min(zoo_mondays)]
 
 
 ############## test
-# Summary: subset daily stock prices to dates at the end of the week, 
+# Synopsis: subset daily stock prices to dates at the end of the week, 
 # and calculate percentage returns over past four week periods.
 
 # 1. (15pts) 
@@ -168,29 +173,29 @@ load(file="C:/Develop/data/etf_data.Rdata")
 # "etf_data.Rdata" contains an environment called "env_data", 
 # with OHLC time series data for ETFs, including "VTI". 
 # Extract the adjusted close prices from "VTI" into a variable 
-# called "stock_prices".
-# you can use function Ad(), 
+# called "price_s".
+# you can use function Ad() from package quantmod, 
 
-stock_prices <- Ad(env_data$VTI)
+price_s <- Ad(env_data$VTI)
 
-# subset "stock_prices" to the end of the week dates. 
+# subset "price_s" to the end of the week dates. 
 # you can use function endpoints() with the "on" argument, 
 
-stock_prices <- stock_prices[endpoints(stock_prices, on="weeks"), ]
+price_s <- price_s[endpoints(price_s, on="weeks"), ]
 
-# verify that the dates of "stock_prices" are indeed "Friday" 
+# verify that the dates of "price_s" are indeed "Friday" 
 # (except for some holidays), 
-# by printing the tail of the index of "stock_prices", and converting 
+# by printing the tail of the index of "price_s", and converting 
 # it to days of the week, 
 # you can use functions weekdays(), index(), and tail(), 
 
-weekdays(index(tail(stock_prices)))
+weekdays(index(tail(price_s)))
 
-# calculate percentage returns from "stock_prices", over trailing  
+# calculate percentage returns from "price_s", over trailing  
 # four week periods, and call it "stock_rets", 
 # you can use functions log() and diff() with the "lag" argument, 
 
-stock_rets <- diff(log(stock_prices), lag=4)
+stock_rets <- diff(log(price_s), lag=4)
 
 # 2. (15pts) 
 # extract the highest and lowest returns, and their associated dates, 
@@ -238,6 +243,197 @@ wday(mon_days, TRUE)
 
 
 
+############## hw
+# 1. (15pts) 
+# Synopsis: reproduce the results of function endpoints() from 
+# package xts, when applied to an xts series with minutely time index. 
+# 
+# Extract a single day of close prices from "SPY" into a variable 
+# called "price_s". 
+# "price_s" is an xts series with minutely time index. 
+# you can use function Cl() from package quantmod, 
+
+# load data, and if needed, change the argument to load() to your path
+sym_bol <- load("C:/Develop/data/SPY.RData")
+price_s <- Cl(SPY["2012-02-13"])
+
+# define an aggregation window called "win_dow", equal to 10, 
+# "win_dow" is equal to the number of periods (minutes) in each window, 
+# so that each aggregation window is 10 minutes long, 
+
+win_dow <- 10
+
+# calculate the end points of the aggregation windows, 
+# i.e. the indices of the last observations in each aggregation 
+# window, using the function endpoints() from package xts as follows, 
+# and call it "end_points", 
+
+end_points <- endpoints(price_s, on="minutes", k=win_dow)
+
+# note that the class(end_points) returns an "integer" vector. 
+
+# calculate the maximum number of aggregation windows that fit over 
+# the rows of "price_s", 
+# you can use functions nrow(), trunc(), and the "%/%" operator, 
+
+n_row <- nrow(price_s)
+num_agg <- n_row %/% win_dow
+# or 
+num_agg <- trunc(n_row/win_dow)
+
+# now calculate the same vector of "end_points" without using 
+# the function endpoints(), 
+# you can use function c(), and the ":" operator, 
+
+end_points <- c(0, win_dow*(1:num_agg)-1, n_row)
+
+# use the functions as.integer() and identical() to confirm that 
+# the two methods give the exact same result. 
+# Note that endpoints() returns an "integer" vector, while 
+# multiplication produces "numeric" numbers, so you must perform 
+# coercion before applying identical(). 
+
+identical(
+  endpoints(price_s, on="minutes", k=win_dow), 
+  as.integer(c(0, win_dow*(1:num_agg)-1, n_row)))
+
+# a sequence of time periods ("hours", "days", "weeks", "months", etc.), 
+# now reproduce this:
+# extract time index of the last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+
+
+
+############## hw
+# 1. (15pts) 
+# Synopsis: create a function called end_marks() which calculates 
+# of an xts series the end points of a time index over aggregation windows, 
+# similar to the function endpoints() from package xts. 
+# 
+# The function end_marks() should return a numeric vector of indices 
+# that divide "x_ts" into time intervals of length equal to "win_dow". 
+# The indices should start with zero, and end with the number 
+# of rows of "x_ts". 
+# If the number of rows of "x_ts" isn't an integer multiple of 
+# "win_dow", then there should be a stub interval, either at the 
+# beginning or the end of the vector of indices. 
+# 
+# The function end_marks() should accept three arguments: 
+# "x_ts" - an xts series containing one or more columns of data, 
+# "win_dow" - an integer specifying the length of the aggregation window, 
+# i.e. the number of data points in each window. 
+# "stub_begin" - boolean specifying whether the stub interval should be 
+# at the beginning (TRUE) or at the end (FALSE) of the vector of indices, 
+# with default value TRUE. 
+# Note that end_marks() is similar to the function endpoints() but 
+# produces a slightly different vector of indices. 
+# You can use functions nrow(), trunc(), c(), the "%/%" operator, 
+# and the ":" operator, 
+
+end_marks <- function(x_ts, win_dow, stub_begin=TRUE) {
+  n_row <- nrow(x_ts)
+  num_agg <- n_row %/% win_dow
+  if(n_row > win_dow*num_agg) {
+    if(stub_begin)
+# stub interval at beginning
+      c(0, n_row - win_dow*num_agg + win_dow*(0:num_agg))
+    else
+# stub interval at end
+      c(win_dow*(0:num_agg), n_row)
+  }  # end if
+  else
+    win_dow*(0:num_agg)
+}  # end end_marks
+
+# load data, and if needed, change the argument to load() to your path
+sym_bol <- load("C:/Develop/data/SPY.RData")
+price_s <- Cl(SPY["2012-02-13"])
+
+# call end_marks() as follows, to verify it works correctly: 
+
+end_marks(price_s, win_dow=10)
+# should produce:
+#  [1]   0   1  11  21  31  41  51  61  71  81  91 101 111 121 131 141 151 161 171 181 191 201 211
+# [24] 221 231 241 251 261 271 281 291 301 311 321 331 341 351 361 371 381 391
+
+end_marks(price_s, win_dow=10, stub_begin=FALSE)
+# should produce:
+#  [1]   0  10  20  30  40  50  60  70  80  90 100 110 120 130 140 150 160 170 180 190 200 210 220
+# [24] 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 391
+
+
+
+############## hw
+# 1. (15pts) 
+# Synopsis: modify an lapply() loop which performs aggregations 
+# over an xts series, and returns an xts series as a side effect.
+# Modify the below script which consists of the function agg_regate() 
+# and an lapply() loop. 
+
+# The function agg_regate() calculates an aggregation over 
+# an xts series, and produces a side effect by appending the 
+# aggregation to an xts series called "agg_regations" 
+# using the super-assignment operator "<<-". 
+# agg_regate() returns the end date of the input xts series.
+agg_regate <- function(x_ts) {
+  agg_regation <- c(max=max(x_ts), min=min(x_ts))
+  agg_regation <- xts(t(agg_regation), order.by=end(x_ts))
+  agg_regations <<- rbind(agg_regations, agg_regation)
+  end(x_ts)
+}  # end agg_regate
+
+# load data, and if needed, change the argument to load() to your path
+sym_bol <- load("C:/Develop/data/SPY.RData")
+price_s <- Cl(SPY["2012-02-13"])
+
+# extract time index of the last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+
+# initialize agg_regations
+agg_regations <- NULL
+
+# perform lapply() loop over length of end_points
+out_put <- lapply(2:length(end_points), function(in_dex) {
+  agg_regate(price_s[(end_points[in_dex-1] + 1):end_points[in_dex]])
+})  # end lapply
+
+head(agg_regations)
+
+
+# Modify the above lapply() loop, and the function agg_regate(), 
+# so that agg_regate() doesn't produce a side effect and 
+# doesn't use the operator "<<-". 
+# Instead, agg_regate() should return the aggregation values 
+# as an xts series, and the lapply() loop should return a list
+# of xts series.
+# Add a script that collapses the list of xts series into a single 
+# xts using the function do_call_rbind() from package HighFreq, 
+# Demonstrate that the xts series returned by do_call_rbind() is
+# exactly the same as "agg_regations". 
+# Use function identical(). 
+
+# write your code here:
+
+# modify function agg_regate(): 
+agg_regate <- function(x_ts) {
+  xts(t(c(max=max(x_ts), min=min(x_ts))), 
+      order.by=end(x_ts))
+}  # end agg_regate
+
+# perform lapply() loop over length of end_points: 
+agg_regations <- lapply(2:length(end_points), function(in_dex) {
+  agg_regate(price_s[(end_points[in_dex-1] + 1):end_points[in_dex]])
+})  # end lapply
+
+# collapse the list of xts series into a single xts 
+# using the function do_call_rbind() from package HighFreq: 
+agg_regations <- do_call_rbind(agg_regations)
+
+# compare the xts series returned by do_call_rbind() with 
+# "agg_regations", using function identical(): 
+identical(foo_bar, agg_regations)
+
+
 
 #################################
 # time series management
@@ -245,9 +441,9 @@ wday(mon_days, TRUE)
 
 
 ############## test
-# 1. (20pts) create a function called run_sum() that calculates the 
+# 1. (20pts) create a function called run_sum() which calculates the 
 # running sum of an xts series over a sliding window (lookback period). 
-# run_sum() should accept two arguments: 
+# The function run_sum() should accept two arguments: 
 # "x_ts" - an xts series containing one or more columns of data, 
 # "win_dow" - an integer specifying the number of lookback periods. 
 # run_sum() should return an xts series with the same dimensions 
@@ -259,7 +455,7 @@ wday(mon_days, TRUE)
 # so that run_sum() doesn't return any NA values.
 # You must use use vectorized functions, such as cumsum() and lag(), 
 # not loops, 
-# you cannot use for() or apply() loops, 
+# You cannot use for() or apply() loops, 
 
 run_sum <- function(x_ts, win_dow) {
   cum_sum <- cumsum(x_ts)
@@ -283,7 +479,7 @@ head(foo)
 ############## hw
 # 1. (35pts) Create a function called lag_it() that applies a lag to vectors 
 # and "zoo" time series objects,
-# lag_it() should accept two arguments:
+# The function lag_it() should accept two arguments:
 #  "se_ries" a vector or "zoo" time series object,
 #  "lag" an integer, specifying the number of periods to lag. 
 #  "lag" should have a default value of 1. 
@@ -324,7 +520,7 @@ head(foo)
 # is used. 
 # This isn't what is required for this assignment. 
 # 
-# you can use functions is.vector(), is.zoo(), is.numeric(), lag.zoo(), 
+# You can use functions is.vector(), is.zoo(), is.numeric(), lag.zoo(), 
 # cbind(), merge(), length(), c(), rep(), warning(), and return(), 
 
 lag_it <- function(se_ries, lag=1) {
@@ -411,7 +607,7 @@ library(lubridate)
 in_dex <- ymd(Yen$date, tz="UTC")
 
 # 3. (5pts)
-# Create an xts object from the column Yen$s and "in_dex", 
+# Create an xts series from the column Yen$s and "in_dex", 
 # and call it "xts_yen",
 
 library(xts)
@@ -515,7 +711,7 @@ legend("bottomleft", legend=colnames(zoo_series), bg="white", lty=c(1, 1), lwd=c
 
 # most is already incorporated into lecture notes
 ############## test
-# summary: subset 1-minute tick data to weekdays and trading hours.
+# Synopsis: subset 1-minute tick data to weekdays and trading hours.
 
 # load packages lubridate and xts,
 library(lubridate)
@@ -706,7 +902,7 @@ sapply(colnames(EuStockMarkets), function (col_name) {
 
 
 ############## test
-# Summary: Calculate the second moment of all the columns of EuStockMarkets, 
+# Synopsis: Calculate the second moment of all the columns of EuStockMarkets, 
 # using the functions sapply() and moment(),
 
 # Calculate percentage returns of EuStockMarkets, 
@@ -724,7 +920,7 @@ sapply(X=as.data.frame(rets_series), FUN=moment, order=2, na.rm=TRUE)
 
 
 ############## test
-# Summary: calculate the first four moments of all four time series 
+# Synopsis: calculate the first four moments of all four time series 
 # in the EuStockMarkets data (DAX, SMI, CAC, FTSE),
 
 # comment:
@@ -737,7 +933,7 @@ sapply(X=as.data.frame(rets_series), FUN=moment, order=2, na.rm=TRUE)
 # with proper row and column names. 
 # Your script should use iteration, instead of manually repeating 
 # the same calculation for each index,
-# you can use functions for(), apply(), and sapply(), 
+# You can use functions for(), apply(), and sapply(), 
 # you must use function moment() from package "moments",
 
 # function moment() accepts an argument "x", representing the numeric 
@@ -791,7 +987,7 @@ for (col_num in seq(ncol(ts_rets))) {
 
 # add column names equal to the column names of EuStockMarkets data, 
 # add row names equal to "moment1", "moment2", etc.
-# you can use functions colnames(), rownames(), and paste(), 
+# You can use functions colnames(), rownames(), and paste(), 
 
 colnames(eu_moments) <- colnames(EuStockMarkets)
 rownames(eu_moments) <- paste0("moment", or_ders)
@@ -805,7 +1001,7 @@ rownames(eu_moments) <- paste0("moment", or_ders)
 
 
 ############## hw
-# Summary: calculate intraday seasonality of trading volumes in high 
+# Synopsis: calculate intraday seasonality of trading volumes in high 
 # frequency data. 
 # Intraday seasonality means how the average trading volumes change at 
 # different times of the day,
@@ -835,13 +1031,13 @@ spy_sample <- SPY["2013-05"]
 
 # if you get a warning message:
 # "timezone of object (America/New_York) is different than current timezone"
-# you can suppress it by calling:
+# You can suppress it by calling:
 
 options(xts_check_TZ=FALSE)
 
 # Extract the time index of "spy_sample", and format it as a vector 
 # of strings representing hours and minutes, and call it "in_dex", 
-# you can use functions index() and format(). 
+# You can use functions index() and format(). 
 
 in_dex <- format(index(spy_sample), "%H:%M")
 
@@ -855,7 +1051,7 @@ vol_ume <- tapply(X=spy_sample[, "SPY.Volume"], INDEX=in_dex, FUN=mean)
 # minutes in a single day of "spy_sample" data, 
 # the names should be equal to the hours and minutes, in the 
 # format "hours:minutes" (like "10:28"), 
-# you can use functions as.vector(), names(), and structure(), 
+# You can use functions as.vector(), names(), and structure(), 
 
 vol_ume <- structure(as.vector(vol_ume), names=names(vol_ume))
 is.vector(vol_ume)
@@ -867,7 +1063,7 @@ head(vol_ume)
 # and call the output vector "time_of_day", 
 # "time_of_day" should be a vector of strings representing hours and 
 # minutes, like "10:28", 
-# you can use "in_dex" and the function unique(), 
+# You can use "in_dex" and the function unique(), 
 
 time_of_day <- unique(in_dex)
 
@@ -882,7 +1078,7 @@ vol_ume <- lapply(time_of_day, function(mi_nute) {
 
 # coerce "vol_ume" to a named vector of length equal to the number of 
 # minutes in a single day of "spy_sample" data, 
-# you can use "time_of_day", and the functions unlist() and structure(), 
+# You can use "time_of_day", and the functions unlist() and structure(), 
 
 vol_ume <- structure(unlist(vol_ume), names=time_of_day)
 
@@ -912,20 +1108,20 @@ summary(microbenchmark(
 # convert the "time_of_day" to strings corresponding to hours, 
 # like "10:00", "11:00", and call the output "hour_s", 
 # "hour_s" should have the same length as "time_of_day", 
-# you can use function substring(), 
+# You can use function substring(), 
 
 hour_s <- substring(time_of_day, 1, 2)
 
 # extract from "time_of_day" the strings corresponding to hours, 
 # call the output "tick_s", 
 # "tick_s" should be a vector of strings like "10:00", "11:00", 
-# you can use "hour_s" and functions unique() and match(), 
+# You can use "hour_s" and functions unique() and match(), 
 
 tick_s <- time_of_day[match(unique(hour_s), hour_s)]
 
 # plot "vol_ume" with a custom x-axis, with tick marks at hourly points, 
 # add vertical grey lines at tick marks,
-# you can use "tick_s" and functions plot(), axis(), and abline(), 
+# You can use "tick_s" and functions plot(), axis(), and abline(), 
 
 a_t <- match(x=tick_s, table=time_of_day)
 plot(vol_ume, xaxt="n", xlab=NA, ylab=NA, t="l")
@@ -939,11 +1135,11 @@ abline(v=a_t, col="grey", lwd=0.5)
 # coerce "vol_ume" to an xts series, with time index equal to "time_of_day". 
 # of length equal to the number of 
 # minutes in a single day of "spy_sample" data, 
-# you can use "time_of_day", and the functions unlist() and structure(), 
+# You can use "time_of_day", and the functions unlist() and structure(), 
 
 # create a time index from today's date combined with "time_of_day", 
 # and call it "in_dex".
-# you can use functions paste(), Sys.Date(), and as.POSIXct(), 
+# You can use functions paste(), Sys.Date(), and as.POSIXct(), 
 
 in_dex <- as.POSIXct(paste(Sys.Date(), time_of_day))
 
@@ -982,7 +1178,7 @@ y_lim <- ch_ob$get_ylim()
 # the range of the y-axis combined with the attribute "fixed". 
 # Create an object similar to y_lim[[2]], but with its second element 
 # equal to the second element of y_lim[[2]] divided by half, 
-# you can use function structure(), with attribute "fixed=TRUE". 
+# You can use function structure(), with attribute "fixed=TRUE". 
 # Assign this object back to y_lim[[2]] (overwrite it), 
 
 y_lim[[2]] <- structure(c(y_lim[[2]][1], y_lim[[2]][2]/2), fixed=TRUE)
@@ -1006,7 +1202,7 @@ plot(ch_ob)
 
 
 ############## hw
-# Summary: download data for multiple symbols using get.hist.quote()
+# Synopsis: download data for multiple symbols using get.hist.quote()
 # create a data directory on your computer, and save all files to that directory,
 # remember the location of the data directory for future use,
 # load package tseries,
@@ -1071,7 +1267,7 @@ etf_gg
 
 ############## hw
 # 1. (10pts) Load time series data, calculate returns, and create 
-# a function called get_hyp_stats() that calculates hypothesis test 
+# a function called get_hyp_stats() which calculates hypothesis test 
 # statistics,
 # 
 # Load time series data and calculate returns,
@@ -1117,7 +1313,7 @@ etf_rets <- do.call(merge, etf_rets)
 
 
 # 2. (20pts) Create a function called get_hyp_stats() that returns hypothesis test stats,
-# function get_hyp_stats() should accept a single xts series argument called "re_turns", 
+# The function get_hyp_stats() should accept a single xts series argument called "re_turns", 
 # The function get_hyp_stats() should perform the following steps:
 # perform Jarque-Bera test of normality on "re_turns",
 # perform Shapiro-Wilk test of normality on "re_turns",
@@ -1172,7 +1368,7 @@ write.csv(hyp_stats, file="hyp_stats.csv")
 
 
 ############## test
-# Summary: perform a single lapply() loop to extract price and 
+# Synopsis: perform a single lapply() loop to extract price and 
 # volume columns from OHLC data series contained in "env_data". 
 
 # download the file "etf_data.Rdata" from NYU Classes, and load() it. 
@@ -1185,7 +1381,7 @@ load(file="C:/Develop/data/etf_data.Rdata")
 # 1. (10pts) Create a function called ex_tract(), that extracts 
 # the adjusted price and volume columns from an OHLC data series, 
 # and returns an xts series with two columns, 
-# you can use functions merge(), Ad(), and Vo(), 
+# You can use functions merge(), Ad(), and Vo(), 
 
 ex_tract <- function(x_ts) merge(Ad(x_ts), Vo(x_ts))
 
@@ -1205,19 +1401,19 @@ sym_bols <- c("DBC", "VTI", "IEF")
 # on each element in the subset, and call the output "da_ta". 
 # "da_ta" should be a list of xts series, with each xts series 
 # containing price and volume data for a single symbol. 
-# you can use functions as.list(), ex_tract(), and lapply(), 
+# You can use functions as.list(), ex_tract(), and lapply(), 
 
 da_ta <- lapply(as.list(env_data)[sym_bols], ex_tract)
 
 # Flatten "da_ta" into a single xts series, and call it "da_ta". 
-# you can use functions do.call() and merge(), 
+# You can use functions do.call() and merge(), 
 
 da_ta <- do.call(merge, da_ta)
 
 
 
 ############## hw
-# Summary: create a function that extracts columns from an OHLC data 
+# Synopsis: create a function that extracts columns from an OHLC data 
 # series contained in an environment, performs calculations on the columns, 
 # and saves the result in an xts series in a different environment. 
 
@@ -1247,7 +1443,7 @@ load(file="C:/Develop/data/etf_data.Rdata")
 # so you must use functions get() and assign() to get the data 
 # and to assign it. 
 # 
-# you can also use functions merge(), invisible(), Ad(), and Vo(), 
+# You can also use functions merge(), invisible(), Ad(), and Vo(), 
 
 ex_tract <- function(sym_bol, in_env, out_env) {
   x_ts <- get(sym_bol, envir=in_env)
@@ -1273,7 +1469,7 @@ head(env_out$VTI)
 
 
 # 2. (20pts) remove all files from "env_out",
-# you can use functions rm() and ls(), 
+# You can use functions rm() and ls(), 
 
 rm(list=ls(env_out), envir=env_out)
 
@@ -1292,7 +1488,7 @@ sapply(sym_bols, ex_tract, in_env=env_data, out_env=env_out)
 
 
 ############## hw
-# Summary: create a function that extracts columns from OHLC data 
+# Synopsis: create a function that extracts columns from OHLC data 
 # series contained in an environment, performs calculations on those, 
 # and saves the result in a xts series in another environment. 
 
@@ -1322,7 +1518,7 @@ load(file="C:/Develop/data/etf_series.Rdata", envir=env_data)
 # an xts series in the "envir" environment containing returns and 
 # volume data "from the input "x_ts",
 # get_returns_volume() should return invisible the "symbol_name",
-# you can use functions Ad(), Vo(), strsplit(), colnames(), 
+# You can use functions Ad(), Vo(), strsplit(), colnames(), 
 # paste() (or paste0), assign(), invisible(), and dailyReturn(),
 get_returns_volume <- function(x_ts, envir=env_data) {
   re_turn <- dailyReturn(Ad(x_ts))
@@ -1378,7 +1574,7 @@ save(list=ls(env_returns), envir=env_returns, file="etf_rets_volume.Rdata")
 
 
 ############## test
-# Summary: Perform an sapply() loop over the columns of "etf_rets", 
+# Synopsis: Perform an sapply() loop over the columns of "etf_rets", 
 # calculate the max drawdowns, and Sortino and Calmar ratios, 
 # extract the data into a named matrix. 
 
@@ -1397,7 +1593,7 @@ sym_bols <- c("VTI", "VEU", "IEF", "DBC")
 # subset by "sym_bols", 
 # inside the loop calculate the max drawdowns, and Sortino and Calmar ratios, 
 # extract the data into a named matrix. 
-# you can use functions sapply(), table.Drawdowns() (column "Depth"), 
+# You can use functions sapply(), table.Drawdowns() (column "Depth"), 
 # SortinoRatio(), CalmarRatio(), and an anonymous function,
 
 library(PerformanceAnalytics)
@@ -1411,7 +1607,7 @@ etf_stats <- sapply(etf_rets[, sym_bols],
 
 
 ############## hw
-# Summary: Calculate the maximum drawdown of a time series.
+# Synopsis: Calculate the maximum drawdown of a time series.
 
 # first method: create synthetic xts for calculating maximum drawdown
 # load packages lubridate, xts, and tseries,
@@ -1466,7 +1662,7 @@ plot(draw_down)
 
 # Find the date when "draw_down" reaches its minimum, and call it "date_trough", 
 # and find the minimum value of "draw_down" on that date, and call it "max_drawdown", 
-# you can use functions index() and which.min(),
+# You can use functions index() and which.min(),
 
 in_dex <- index(msft_prices)
 date_trough <- in_dex[which.min(draw_down)]
@@ -1484,14 +1680,14 @@ post_drawdown <- draw_down[in_dex>date_trough]
 # a drawdown starts when "draw_down" is first zero and then decreases below zero.
 # Find the latest date when "pre_drawdown" was still zero before "date_trough", 
 # and call it "date_from",
-# you can use functions index() and max(), 
+# You can use functions index() and max(), 
 
 date_from <- max((index(pre_drawdown))[pre_drawdown==0])
 
 # A drawdown ends when "draw_down" returns back to zero after "date_trough".
 # Find the first date when "post_drawdown" returns to zero after "date_trough", 
 # and call it "date_to",
-# you can use functions index() and min(),
+# You can use functions index() and min(),
 
 date_to <- min((index(post_drawdown))[post_drawdown==0])
 
@@ -1518,13 +1714,13 @@ addEventLines(
   on=1, col="red", lty="dashed", lwd=2)
 
 
-# 3. (10pts) Create a function called max_drawdown() that calculates 
+# 3. (10pts) Create a function called max_drawdown() which calculates 
 # the maximum drawdown of a time series of prices.
 # max_drawdown() should take one argument called "time_series", 
 # which should be a time series of prices (not returns). 
 # max_drawdown() should return a named vector of three dates: 
 # from=date_from, trough=date_trough, to=date_to, depth
-# you can reuse the scripts from p.1,
+# You can reuse the scripts from p.1,
 
 max_drawdown <- function (time_series) {
   draw_down <- time_series - cummax(time_series)
@@ -1770,15 +1966,15 @@ table.CAPM(Ra=pca_rets[, 1:3], Rb=etf_rets[, "VTI"], scale=252)
 
 
 ############## hw
-# Summary: create a function that calculates the volume-weighted average price, 
+# Synopsis: create a function which calculates the volume-weighted average price, 
 # benchmark it to function VWAP() from package TTR, and create plots. 
 
-# 1. (20pts) create a function called v_wap() that calculates the 
+# 1. (20pts) create a function called v_wap() which calculates the 
 # volume-weighted average price over a sliding window (lookback period). 
 # The volume-weighted average price (VWAP) over a period is defined as 
 # the sum of the prices multiplied by trading volumes, divided by the 
 # total trading volume in that period.
-# v_wap() should accept two arguments:
+# The function v_wap() should accept two arguments:
 # "x_ts" - an xts series containing OHLC prices and trading volumes, 
 # "win_dow" - an integer specifying the number of lookback periods. 
 # v_wap() should return an xts series with a single column 
@@ -1859,7 +2055,7 @@ add_TA(foo["2008"], col="blue", lwd=2, on=1)
 
 
 ############## hw
-# Summary: Calculate moving averages and crossing points with prices.
+# Synopsis: Calculate moving averages and crossing points with prices.
 
 # 1. (10pts) 
 # Download from Yahoo the "AdjClose" prices and "Volume" for 
@@ -1915,7 +2111,7 @@ legend("bottomright", inset=0.05, cex=0.5,
 # after a cross has just occurred, and FALSE otherwise. 
 # Next apply this boolean vector to extract dates when 
 # the "AdjClose" crosses the "50DMA". 
-# you can use the logical operator "!=", 
+# You can use the logical operator "!=", 
 # and functions sign(), diff(), and index(), 
 
 cross_es <- (diff(sign(zoo_msft[, "AdjClose"] - zoo_msft[, "50DMA"]))!=0)
@@ -1974,7 +2170,7 @@ legend("top", inset=0.05, cex=0.5,
 # after a cross has just occurred, and FALSE otherwise. 
 # Next apply this boolean vector to extract dates when 
 # the "AdjClose" crosses either "Up_band" or "Low_band". 
-# you can use the logical operator "!=", 
+# You can use the logical operator "!=", 
 
 up_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Up_band"]
 low_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Low_band"]
@@ -2084,7 +2280,7 @@ c(pval=reg_model_sum$coefficients[2, 4],
 
 
 ############## test
-# Summary: calculate the rolling standard deviation of returns, 
+# Synopsis: calculate the rolling standard deviation of returns, 
 # and the aggregated trading volumes, over monthly end points. 
 # Create plots and perform a regression of the two. 
 
@@ -2097,18 +2293,18 @@ load(file="C:/Develop/data/etf_data.Rdata")
 
 # 1. (20pts)
 # Calculate the "VTI" daily returns from the adjusted close prices.
-# you can use functions Ad() and dailyReturn(), 
+# You can use functions Ad() and dailyReturn(), 
 
 re_turns <- dailyReturn(Ad(env_data$VTI))
 
 # Merge the daily returns with the "VTI" volume column, 
 # and call it "return_volume",
-# you can use functions Vo() and merge(), 
+# You can use functions Vo() and merge(), 
 
 return_volume <- merge(re_turns, Vo(env_data$VTI))
 
 # remove rows of "return_volume" with NA values, 
-# you can use function complete.cases(), 
+# You can use function complete.cases(), 
 
 return_volume <- return_volume[complete.cases(return_volume)]
 
@@ -2118,8 +2314,10 @@ return_volume <- return_volume[complete.cases(return_volume)]
 # Merge the standard deviations with the aggregated volumes 
 # and call it "volat_volume", 
 # Assign to "volat_volume" the column names "volat" and "volu", 
-# you can use functions endpoints(), sd(), colnames(), period.sum(), 
+# You can use functions endpoints(), sd(), colnames(), period.sum(), 
 # and period.apply(), 
+
+# add this: use end_points plus sapply loop with anon func
 
 end_points <- endpoints(return_volume, on="months")
 vol_at <- period.apply(return_volume[, 1], 
@@ -2132,14 +2330,14 @@ colnames(volat_volume) <- c("volat", "volu")
 
 # 2. (10pts)
 # plot the columns of "volat_volume" in a single plot in two panels,
-# you can use method plot.zoo(), 
+# You can use method plot.zoo(), 
 
 plot.zoo(volat_volume)
 
 # plot a scatterplot of the two columns of "volat_volume", 
-# you can use function plot() with a formula argument, 
-# you can create a formula from the column names of "volat_volume", 
-# you can use functions colnames(), as.formula() and paste(), 
+# You can use function plot() with a formula argument, 
+# You can create a formula from the column names of "volat_volume", 
+# You can use functions colnames(), as.formula() and paste(), 
 
 plot(
   as.formula(paste(colnames(volat_volume), collapse=" ~ ")), 
@@ -2147,11 +2345,11 @@ plot(
 
 
 # 3. (10pts) perform a regression of the two columns of "volat_volume", 
-# you can create a formula from the column names of "volat_volume". 
+# You can create a formula from the column names of "volat_volume". 
 # Extract from summary() the regression statistics for the slope coefficient: 
 #  t-value, p-value, adj.r.squared, 
 # and create a named vector with these regression statistics. 
-# you can use functions colnames(), as.formula(), lm() and summary(), 
+# You can use functions colnames(), as.formula(), lm() and summary(), 
 
 reg_model <- lm(
   as.formula(paste(colnames(volat_volume), collapse=" ~ ")), 
@@ -2175,7 +2373,7 @@ dwtest(reg_model)
 
 
 ############## hw
-# Summary: calculate the rolling standard deviation of returns, 
+# Synopsis: calculate the rolling standard deviation of returns, 
 # and aggregate the volume, over monthly end points, 
 # 
 # 1. (5pts) Load time series data from file 
@@ -2192,10 +2390,9 @@ load(file="C:/Develop/data/etf_rets_volume.Rdata", envir=env_returns)
 
 # the environment "env_returns" should contain a number of xts series, 
 # each containing stock daily return and volume data for a single symbol, 
-# you can assume that all the xts series have the same date index,
+# You can assume that all the xts series have the same date index,
 # create a vector of monthly end points for any of the xts series 
-# in "env_returns",
-# called "end_points", and set the first "end_points" equal to 1,
+# in "env_returns", called "end_points", 
 # use function endpoints() from package xts, 
 
 end_points <- endpoints(env_returns$VTI_rets, on="months")
@@ -2223,7 +2420,7 @@ end_points <- endpoints(env_returns$VTI_rets, on="months")
 # an xts series in the "envir" environment, that contains volatility 
 # and volume data calculated from the input "x_ts",
 # agg_volat_volume() should return invisible the "symbol_name",
-# you can use functions strsplit(), colnames(), period.apply(), 
+# You can use functions strsplit(), colnames(), period.apply(), 
 # period.sum(), cbind(), paste() (or paste0), xts(), 
 # assign(), invisible(),
 
@@ -2235,7 +2432,7 @@ agg_volat_volume <- function(x_ts, end_points, envir=env_returns) {
                           FUN=sd)
   vol_ume <- period.sum(x_ts[, 2], INDEX=end_points)
   volat_volume <- xts(cbind(std_dev, vol_ume[-1, ]), 
-                      order.by=index(x_ts[end_points[-1], ]))
+                      order.by=index(x_ts[end_points, ]))
   colnames(volat_volume) <- 
     c(paste0(symbol_name, ".Volat"), paste0(symbol_name, ".Volume"))
   assign(symbol_name, volat_volume, envir=envir)
@@ -2258,7 +2455,7 @@ agg_volat_volume(env_returns$VTI_rets,
 
 
 # plot both columns of "env_volat$VTI", in a plot with two panels, 
-# you can use method plot.zoo(), or plot.xts() and par(),
+# You can use method plot.zoo(), or plot.xts() and par(),
 
 plot.zoo(env_volat$VTI)
 # or
@@ -2268,7 +2465,7 @@ plot(env_volat$VTI[, 1])
 
 
 # plot a scatterplot of both columns of "env_volat$VTI", 
-# you can use function plot() with "data" argument,
+# You can use function plot() with "data" argument,
 
 plot(VTI.Volume ~ VTI.Volat, data=env_volat$VTI)
 
@@ -2324,13 +2521,13 @@ dwtest(reg_model)
 load(file="C:/Develop/data/zoo_series.Rdata")
 
 # create a vector of monthly end points for "zoo_series",
-# called "end_points", and set the first "end_points" equal to 1,
+# called "end_points", 
 # use function endpoints() from package xts,
 end_points <- endpoints(zoo_series, on="months")
 
 # extract (subset) the monthly prices from the "VTI.Close" column 
 # of "zoo_series", corresponding to "end_points",
-# convert them to an xts object, and call it "xts_series", 
+# convert them to an xts series, and call it "xts_series", 
 # calculate the log of "xts_series", and copy it back onto "xts_series", 
 # use function as.xts() from package xts, and log(),
 xts_series <- as.xts(log(zoo_series[end_points, "VTI.Close"]))
@@ -2417,7 +2614,7 @@ dw_test$p.value < 0.0227
 
 
 ############## hw
-# Summary: perform autocorrelation tests of period statistics, MAD. 
+# Synopsis: perform autocorrelation tests of period statistics, MAD. 
 # Demonstrate that measures of dispersion are autocorrelated. 
 # Load time series data and calculate period statistics over end points. 
 
@@ -2431,7 +2628,6 @@ library(xts)
 load(file="C:/Develop/data/etf_rets.Rdata")
 
 # create a vector of monthly end points for "etf_rets", called "end_points",
-# and set the first "end_points" equal to 1,
 # use function endpoints() from package xts, 
 
 end_points <- endpoints(etf_rets, on="months")
@@ -2613,7 +2809,7 @@ table.CAPM(Ra=etf_rets[, -1], Rb=etf_rets[, "VTI"], scale=252)
 
 
 ############## test
-# Summary: create a scatterplot of random portfolios, 
+# Synopsis: create a scatterplot of random portfolios, 
 # together with a minimum variance portfolio. 
 
 # Download the file "etf_data.Rdata" from NYU Classes, 
@@ -2786,7 +2982,7 @@ abline(a=0, b=optim_ret/optim_sd)
 
 
 ############## hw
-# Summary: perform a rolling portfolio optimization over 
+# Synopsis: perform a rolling portfolio optimization over 
 # annual periods, calculate optimized portfolio weights 
 # in each year, and apply them to out-of-sample data in 
 # the following year. 
@@ -2799,7 +2995,7 @@ load(file="C:/Develop/data/etf_data.Rdata")
 
 # 1. (10pts) create a vector of annual end points from the index 
 # of "etf_rets", and call it "end_points". 
-# Use "xts" function endpoints(),
+# Use function endpoints() from package xts, 
 
 library(xts)
 end_points <- endpoints(etf_rets, on="years")
@@ -2830,7 +3026,7 @@ period_s <- lapply(2:length(end_points),
                      function(in_dex)
                        (end_points[in_dex-1]+1):end_points[in_dex]
 )  # end lapply
-names(period_s) <- format(index(etf_rets[end_points[-1]]), "%Y")
+names(period_s) <- format(index(etf_rets[end_points]), "%Y")
 
 # the above code should produce the following data:
 # > tail(period_s$"2008")
@@ -3032,7 +3228,7 @@ write.csv(wei_ghts,
 
 # new version
 ############## hw
-# Summary: calculate a matrix of the best performing ETFs 
+# Synopsis: calculate a matrix of the best performing ETFs 
 # in each year.  Create a scatterplot of alphas for the 
 # years 2008 and 2009. 
 
@@ -3290,7 +3486,7 @@ top_etf <- apply(ann_alphas, 2, function(ann_alpha) {
 ##############################
 
 ############## hw
-# Summary: Simulate a trading strategy based on two VWAPs. 
+# Synopsis: Simulate a trading strategy based on two VWAPs. 
 
 # download the file "etf_data.Rdata" from NYU Classes, and load() it. 
 # "etf_data.Rdata" contains an environment called "env_data", 
@@ -3511,7 +3707,7 @@ add_TA(xts_position < 0, on=-1,
 # 6. (10pts) Create a function called run_vwap() which performs 
 # a simulation of a trading strategy based on two VWAPs (as above), 
 # and returns the Sharpe ratio of the strategy returns, 
-# run_vwap() should accept three arguments: 
+# The function run_vwap() should accept three arguments: 
 #  "win_short" and "win_long" - two integer lookback windows, 
 #  "da_ta" - OHLC time series data, 
 # hint: combine all the code from the previous parts. 
@@ -3662,6 +3858,53 @@ pnl_period <- function(period_stat, de_mean=FALSE) {
 }  # end pnl_period
 
 
+
+############## hw
+# perform data mining for seasonal strategies and illustrate false discovery rates
+# 
+# 1. generate all possible seasonal strategies for buying or shorting SPX in different months of the year 
+# these strategies are similar to the Sell in May Halloween seasonal strategy, 
+# calculate a histogram of cumulative returns and Sharpe ratios for all the different strategies, 
+# find the best performing strategy, 
+# compare the performance of the best performing strategy with the Sell in May Halloween strategy, 
+# create a time series of random returns and apply the above steps,
+# compare the best performing strategy for random returns with the best performing strategy for SPX, 
+# create a matrix of random numbers and reuse it, 
+# Perform the simulations without using any apply() loops, only using vectorized functions, 
+
+# 1a. increase model parameter space by using weeks instead of months, 
+# demonstrate that now the best performing strategy performs even better, 
+
+# 2. simulate multiple time series of random returns with the same properties as SPX (reshuffle?) 
+# apply the Halloween strategy on the simulated data, 
+# calculate a histogram of cumulative returns and Sharpe ratios for all the different data sets, 
+# find the best performing data set, 
+# compare the performance of the best performing data set with the SPX strategy, 
+
+# 3. now select one of the simulated data sets from 2. at random,
+# and then find the optimal seasonal strategy from 1. for which it performs the best, 
+# this would lead us to believe that we have found an anomaly, whereas in fact we are just data mining, 
+# for any random data set, there is always a corresponding strategy for which it performs the best, 
+# Harvey Factor Model Data Mining Bonferroni Adjustment.pdf
+# http://www.alexchinco.com/screening-using-false-discovery-rates/
+# http://eranraviv.com/modern-statistical-discoveries/
+
+# 4. demonstrate that larger model parameter space increases chance of identifying spurious patterns (false discovery rates)
+# repeat 3. using weekly strategies from 1a. 
+# demonstrate that now the best performing strategy performs even better, 
+
+# 5. demonstrate that cross validation helps reduce the false discovery rate, but only to some extent, 
+# repeat 3. but divide the time series in half, and find the optimal in-sample strategy, 
+# then demonstrate that this optimal strategy underperforms out-of-sample, 
+# this demonstrates that cross validation helps reduce the false discovery rates, 
+# but it's also possible to select a strategy that also performs well out-of-sample, 
+# this strategy isn't optimal in-sample, 
+# is it possible then that the Sell in May strategy is just such a strategy? 
+# so cross validation helps reduce the false discovery rate, 
+# buy avoiding selecting the optimal in-sample strategy, 
+
+# we would need an infinite length of time series data to fully eliminate the false discovery rate, even using cross validation, 
+# perform a simulation study to find how the false discovery rate drops as we increase the length of the data, 
 
 
 

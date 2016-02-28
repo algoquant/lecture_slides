@@ -250,10 +250,31 @@ summary(microbenchmark(
 
 
 ############## test
-# 1. (15pts) create a function called get_index(), that 
-# calculates the indices of the TRUE elements of a boolean vector,
-# get_index() should be equivalent to the function which(), 
-# when applied to boolean vectors,
+# Summary: create a function called get_index(), that calculates 
+# the indices of the TRUE elements of a boolean vector. 
+# get_index() should produce the same result as function which(), 
+# when applied to boolean vectors. 
+# Implement get_index() using two different methods. 
+
+# 1. (20pts) First method: you must perform a loop, 
+# you can also use functions length(), seq_along(), 
+# and then apply vector subsetting,
+
+get_index <- function(vec_tor){
+  in_dex <- integer()
+  j <- 1
+  for (i in seq_along(vec_tor)) {
+    if (vec_tor[i]==TRUE) {
+      in_dex[j] <- i
+      j <- j + 1
+    }  # end if
+  }  # end for
+  in_dex
+}  # end get_index
+
+
+# 2. (20pts) Second method: you cannot perform any type 
+# of loop, only vectorized functions, 
 # hint: you can use functions length(), seq_along(), 
 # and then apply vector subsetting,
 
@@ -262,11 +283,13 @@ get_index <- function(vec_tor) (seq_along(vec_tor))[vec_tor]
 get_index <- function(vec_tor) (1:length(vec_tor))[vec_tor]
 
 # apply the function get_index() to a boolean vector, and 
-# compare the result with using function which(),
+# compare the result with using function which(), to verify 
+# that it works correctly,
 
-vec_tor <- sample(1:9)
-get_index(vec_tor==5)
-which(vec_tor == 5)
+set.seed(1121)
+vec_tor <- sample(1:20, replace=TRUE)
+get_index(vec_tor==18)
+which(vec_tor==18)
 
 
 
@@ -356,8 +379,10 @@ vec_tor <- rnorm(10)
 
 names(vec_tor) <- paste("el", 1:10, sep="")
 
-# change the vector names to: "num1, ..., num10", using the function gsub(), 
-# (you can't use functions c() or paste())
+# change the vector names to: "num1, ..., num10", 
+# you must create new names from the existing vector names, 
+# you must use function gsub(), 
+# (you can't use functions c() or paste()). 
 
 names(vec_tor) <- gsub("el", "num", names(vec_tor))
 
@@ -366,7 +391,8 @@ names(vec_tor) <- gsub("el", "num", names(vec_tor))
 vec_tor["num4"]
 
 # change the vector names to: "my.num1, ..., my.num10", 
-# using the function paste(), with the proper "sep" argument,
+# you must create new names from the existing vector names, 
+# you can use the function paste(), with the proper "sep" argument, 
 
 names(vec_tor) <- paste("my", names(vec_tor), sep=".")
 
@@ -717,7 +743,7 @@ write.csv(student_scores, row.names=FALSE, file="student_scores.csv")
 
 ############## hw
 # Summary: create a function called find_interval(),
-# that replicates the function findInterval(),
+# that reproduces the function findInterval(),
 
 # 1. (30pts) 
 # find_interval() should accept a vector argument called "vec_tor", 
@@ -1547,7 +1573,7 @@ re_move("bye", c("hello", "there"))
 # Summary: create a functional called cumu_late(), 
 # which calculates cumulative values (sums, products, etc.) 
 # over a vector argument, 
-# and replicates the functions cumsum() and cumprod().
+# and reproduces the functions cumsum() and cumprod().
 
 # 1. (20pts) create a functional called cumu_late(), that accepts 
 # a vector argument "vec_tor", and a function argument "func_tion",

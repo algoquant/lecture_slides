@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -51,8 +51,8 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Date and Time Series Objects]{Date and Time Series Objects}
-\subtitle{FRE6871 \texttt{R} in Finance, Spring 2015}
-\institute[NYU Polytechnic]{NYU Tandon School of Engineering}
+\subtitle{FRE6871 \& FRE7241, Spring 2016}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
@@ -1578,8 +1578,10 @@ title(main="MSFT Prices")  # add title
 library(ggplot2)
 load(file="C:/Develop/data/etf_data.Rdata")
 # create ggplot object
-etf_gg <- autoplot(etf_series_ad[, 1], 
-                   main=names(etf_series_ad[, 1])) + 
+etf_gg <- qplot(x=index(etf_series_ad[, 1]), 
+                y=as.numeric(etf_series_ad[, 1]), 
+                geom="line", 
+                main=names(etf_series_ad[, 1])) + 
   xlab("") + ylab("") + 
   theme(
     legend.position=c(0.1, 0.5), 
@@ -1588,6 +1590,41 @@ etf_gg <- autoplot(etf_series_ad[, 1],
   )  # end theme
 # render ggplot object
 etf_gg
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_ggplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{xts} Using Package \texttt{plotly}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{xts} time series can be plotted using the package \texttt{plotly},
+      <<echo=TRUE,eval=FALSE>>=
+suppressMessages(library(xts, quietly=TRUE))
+suppressMessages(library(ggplot2, quietly=TRUE))
+suppressMessages(library(plotly, quietly=TRUE))
+suppressMessages(load(file="C:/Develop/data/etf_data.Rdata"))
+# create ggplot object
+etf_gg <- qplot(x=index(etf_series_ad[, 1]), 
+                y=as.numeric(etf_series_ad[, 1]), 
+                geom="line", 
+                main=names(etf_series_ad[, 1])) + 
+  xlab("") + ylab("") + 
+  theme(
+    legend.position=c(0.1, 0.5), 
+    plot.title=element_text(vjust=-2.0), 
+    plot.background=element_blank()
+  )  # end theme
+# render ggplot object
+suppressWarnings(ggplotly(etf_gg))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_ggplot-1}
@@ -1734,100 +1771,6 @@ rbind(base=dim(xts_stx), lag=dim(lag(xts_stx)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_stx_adj), 4)
 head(lag(xts_stx), 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting \protect\emph{Endpoints} of \texttt{xts} Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{endpoints()} extracts the indices of the last observations in each period of time of an \texttt{xts} series,
-      \vskip1ex
-      For example:\\ \-\ \texttt{endpoints(x, on="months")}\\
-      extracts the indices of the last observations in each month,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
-# extract indices of the last observations in each month
-end_points <- endpoints(xts_stx, on='months')
-head(end_points)
-# extract the last observations in each month
-head(xts_stx[end_points, ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Applying Functions Over \protect\emph{Endpoints} of \texttt{xts}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{endpoints} of an \texttt{xts} form a vector of non-overlapping date-time intervals,
-      \vskip1ex
-      The function \texttt{period.apply()} performs an \emph{aggregation} by applying a function over a vector of \emph{endpoints},
-      \vskip1ex
-      The package \texttt{xts} also has several specialized and optimized (fast) functions for aggregating data over \emph{endpoints}:
-      \begin{itemize}
-        \item \texttt{period.sum()} calculate the sum for each period,
-        \item \texttt{period.max()} calculate the maximum for each period,
-        \item \texttt{period.min()} calculate the minimum for each period,
-        \item \texttt{period.prod()} calculate the product for each period,
-      \end{itemize}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
-# apply "mean" over end_points
-period_mean <- period.apply(xts_stx[, "AdjClose"], 
-                     INDEX=end_points, 
-                     FUN=mean)
-head(period_mean)
-period_sum <- period.sum(xts_stx[, "AdjClose"], 
-                     INDEX=end_points)
-head(period_sum)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Applying Functions to \texttt{xts} Over Calendar Periods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{xts} has convenience wrapper functions for \texttt{period.apply()}, that apply functions over calendar periods:
-      \begin{itemize}
-        \item \texttt{apply.daily()} applies functions over daily periods,
-        \item \texttt{apply.weekly()} applies functions over weekly periods,
-        \item \texttt{apply.monthly()} applies functions over monthly periods,
-        \item \texttt{apply.quarterly()} applies functions over quarterly periods,
-        \item \texttt{apply.yearly()} applies functions over yearly periods,
-      \end{itemize}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
-# apply "mean" over monthly periods
-period_mean <- apply.monthly(xts_stx[, "AdjClose"], 
-                     FUN=mean)
-head(period_mean)
       @
   \end{columns}
 \end{block}

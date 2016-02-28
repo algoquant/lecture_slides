@@ -433,6 +433,34 @@ curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
 ########################
 ### portfolio optimization
 
+# Zivot datacamp
+# https://campus.datacamp.com/courses/computational-finance-and-financial-econometrics-with-r/lab-7-introduction-to-portfolio-theory?ex=3
+# A portfolio of Boeing and Microsoft stock
+# In this exercise, you will create a set of portfolios that consist of Microsoft and Boeing stock. The goal is to visualize all these portfolios in a plot with on the x-axis the portfolio standard deviation and on the y-axis the expected return on the portfolio.
+# The code on the right specifies the vector boeing_weights. Every element of the vector boeing_weights represents the proportion of Boeing stocks for that portfolio. The set of weights for Boeing that you will consider ranges from -1, -0.9, ., up to 2.
+
+# All data and CER parameters are preloaded in your workspace.
+# Type "ls()" in the console to see them.
+
+# The ratio Boeing stock vs Microsoft stock (adds up to 1)
+boeing_weights <- seq(from=-1, to=2, by=0.1)
+msft_weights <- 
+  
+  # Portfolio parameters
+  mu_portfolio <-  
+  
+  sigma2_portfolio <-  
+  
+  sigma_portfolio <- sqrt(sigma2_portfolio)
+
+# Plotting the different portfolios
+plot(sigma_portfolio, mu_portfolio, type="b", pch=16, ylim=c(0, max(mu_portfolio)), xlim=c(0, max(sigma_portfolio)), xlab=expression(sigma[p]), ylab=expression(mu[p]),col=c(rep("green", 18), rep("red", 13)))
+text(x=sigma_boeing, y=mu_boeing, labels="Stock Name", pos=4)
+text(x=sigma_msft, y=mu_msft, labels="Stock Name", pos=4)
+
+
+
+
 ### PortfolioAnalytics
 
 library(PerformanceAnalytics)
