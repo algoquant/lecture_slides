@@ -11,14 +11,14 @@
 # Summary: create a scatterplot of random portfolios, 
 # together with a minimum variance portfolio. 
 
-# Download the file "etf_data.Rdata" from NYU Classes, 
+# Download the file "etf_data.RData" from NYU Classes, 
 # and load() it. 
-# "etf_data.Rdata" contains an xts series called "etf_rets", 
+# "etf_data.RData" contains an xts series called "etf_rets", 
 # with ETF returns,
 
 library(xts)
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 
 
 # 1. (20pts) Create a vector of symbol names called "sym_bols", 

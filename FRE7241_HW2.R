@@ -1,201 +1,151 @@
 #################################
-### FRE7241 HW #2 due due Sep 29, 2015
+### FRE7241 Homework #2 due April 26, 2016
 #################################
-# Max score 75pts
+# Max score 90pts
 
 # Please write in this file the R code needed to perform the tasks below, 
-# rename it to your_name_hw1.R
+# rename it to your_name_hw2.R
 # and upload the file to NYU Classes
 
 
-###############
-# Summary: Calculate moving averages and crossing points with prices.
+############## Part I
+# Summary: Create a function that extracts the price and 
+# volume columns from OHLC data, and perform a single 
+# lapply() loop to extract the price and volume columns 
+# from all time series contained in env_data. 
 
-# 1. (10pts) 
-# Download from Yahoo the "AdjClose" prices and "Volume" for 
-# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
-# use tseries function get.hist.quote(),
+# Download the file etf_data.RData from NYU Classes, 
+# and load() it. 
+# etf_data.RData contains an environment called env_data, 
+# with OHLC time series data for ETFs, including "VTI". 
 
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
 
-# load MSFT data
-
-### write your code here
-
-
-# calculate the 50-day moving average of the "AdjClose" prices,
-# merge the moving average with "zoo_msft" by adding it as the last column,
-# rename the last column to "50DMA",
-# you must use function rollmean(), with the proper "align" argument, 
-# so that the averages are calculated using values from the past,
-# remove rows with NAs using function na.omit(), 
+# 1. (10pts) Create a function called ex_tract(), that 
+# extracts the adjusted price and volume columns from an 
+# OHLC data series, and returns an xts series with two 
+# columns. 
+# You can use functions merge(), Ad(), and Vo(), 
 
 ### write your code here
 
+# Apply function ex_tract() to a single xts series, to verify 
+# it works correctly:
+
+foo <- ex_tract(env_data$VTI)
+head(foo)
 
 
-# 2. (15pts) 
-# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
-# starting from "2015-01-01", in the colors "black" and "red", 
-# you must use method plot.zoo() with the proper argument "plot.type",
-# add a legend and position it so that it doesn't obscure the plot too much,
+# 2. (20pts) Create a vector of symbols, called some_symbols, 
+
+some_symbols <- c("DBC", "VTI", "IEF")
+
+# Perform an lapply() loop over a subset of env_data 
+# containing some_symbols, and call the function ex_tract() 
+# on each element in the subset, and call the output da_ta. 
+# da_ta should be a list of xts series, with each xts series 
+# containing price and volume data for a single symbol. 
+# You can use functions as.list(), get(), ex_tract(), and lapply(). 
+# There are at least two different ways of performing this, 
+# and either way is good.
 
 ### write your code here
 
-
-# calculate the vector of dates right after the "AdjClose" crosses the "50DMA", 
-# and call it "cross_es". 
-# First calculate a boolean vector that is TRUE for dates right 
-# after a cross has just occurred, and FALSE otherwise. 
-# Next apply this boolean vector to extract dates when 
-# the "AdjClose" crosses the "50DMA". 
-# you can use the logical operator "!=", 
-# and functions sign(), diff(), and index(), 
-
-### write your code here
-
-
-# add grey vertical ablines to the plot above, at the dates of "cross_es",
-# you must use function abline(), 
+# Flatten da_ta into a single xts series, and call it da_ta. 
+# You can use functions do.call() and merge(), 
 
 ### write your code here
 
 
 
-# 3. (20pts)
-# Calculate the 50-day rolling maximum and minimum of the "AdjClose" prices,
-# you must use function rollmax() with the proper "align" argument, so that 
-# the aggregations are calculated using values from the past,
-# calculate the difference between the rolling maximum and minimum, 
-# and call it "ba_nd",
+############## Part II
+# Summary: Create a function which calculates a vector 
+# of hypothesis test statistics. 
+# Perform an sapply() loop to calculate a matrix of 
+# statistics for a vector of symbols. 
+
+# Download the file etf_data.RData from NYU Classes, 
+# and load() it. 
+# etf_data.RData contains an environment called env_data, 
+# with OHLC time series data for ETFs. 
+
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
+
+
+# 1. (20pts) Create a function called get_hyp_stats(), 
+# that returns a vector with hypothesis test statistics.
+# The function get_hyp_stats() should accept a single 
+# argument called re_turns, an xts series containing 
+# returns data. 
+# 
+# The function get_hyp_stats() should perform the 
+# Jarque-Bera and the Shapiro-Wilk tests of normality 
+# on re_turns, and return a named vector containing 
+# the statistics (not the p-values!), 
+# You must use the functions jarque.bera.test() and 
+# shapiro.test(). 
+# Be careful because shapiro.test() doesn't accept 
+# arguments of class xts, so you must first coerce 
+# it into a matrix using function coredata(). 
+# You can use the function unname() to strip the 
+# names from the values returned by the functions 
+# jarque.bera.test() and shapiro.test(). 
+
+# load package tseries
+library(tseries)
+
+### write your code here
+
+# apply get_hyp_stats() as follows, to verify it works correctly:
+get_hyp_stats(etf_rets[, 1])
+
+# get_hyp_stats(etf_rets[, 1]) should produce this:
+# jarque_bera      shapiro 
+# 9008.6452123    0.8979459 
+
+
+# 2. (20pts) Perform an sapply() loop over the columns 
+# of etf_rets, and apply get_hyp_stats() to the columns 
+# of etf_rets, and call the output matrix hyp_stats. 
+# The first column of hyp_stats should contain the 
+# Jarque-Bera statistics, while the second should 
+# contain the Shapiro-Wilk statistics. 
+# The rownames of hyp_stats should contain the names 
+# in some_symbolsetf_rets. 
+# You can use functions sapply(), na.omit(), and t(). 
+# Be careful because some columns of etf_rets contain 
+# NA values, so you must pass them through na.omit(). 
+
+### write your code here
+
+# You should get the following result:
+#     jarque_bera   shapiro
+# VTI   9008.6452 0.8979459
+# VEU   7442.9831 0.8977588
+# IEF    415.6686 0.9861641
+# VNQ  12500.0078 0.8367968
+# DBC    610.5074 0.9704973
+# VXX    684.3048 0.9589765
+# etc.
+
+
+# 3. (10pts) Create a scatterplot of hyp_stats, and 
+# add labels containing the rownames of hyp_stats. 
+# Use functions plot() and text(),
 
 ### write your code here
 
 
-# calculate the rolling upper (lower) band as the 50-day moving average
-# plus (minus) one half of "ba_nd",
-# merge the rolling upper and lower bands with "zoo_msft" by adding 
-# them as the last columns,
-# rename the last columns to "Up_band" and "Low_band",
-# remove rows with NAs using function na.omit(), 
+# 4. (10pts) Sort hyp_stats on column "jarque_bera" 
+# in ascending (increasing) order. 
+# Use function order(),
 
 ### write your code here
 
-
-# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
-# same panel, starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
-
-### write your code here
-
-
-# calculate the vector of dates right after the "AdjClose"
-# crosses any of the two bands, and call it "cross_es". 
-# First calculate a boolean vector that is TRUE for dates right 
-# after a cross has just occurred, and FALSE otherwise. 
-# Next apply this boolean vector to extract dates when 
-# the "AdjClose" crosses either "Up_band" or "Low_band". 
-# you can use the logical operator "!=", 
-
-### write your code here
-
-
-# add grey vertical ablines to the plot above, at the dates of "cross_es",
-# you must use function abline(), 
-
-### write your code here
-
-
-
-
-###############
-# Summary: Calculate the maximum drawdown of a time series.
-
-# 1. (30pts) 
-# download the file "zoo_data.Rdata" from NYU Classes, and load() it, 
-# the file "zoo_data.Rdata" includes a zoo series called "zoo_stx", 
-# containing MSFT stock OHLC data. 
-# extract the "AdjClose" prices from "zoo_stx" into a variable 
-# called "msft_prices".
-
-### write your code here
-
-
-# plot "msft_prices", using generic function plot(),
-
-### write your code here
-
-
-# The cumulative maximum of a price series is the maximum price up to 
-# that point in time. 
-# Plot the Cumulative maximum of "msft_prices" using function cummax(),
-
-### write your code here
-
-
-# A drawdown is a drop in price from its previous maximum.
-# Calculate the zoo time series of drawdowns of "msft_prices", 
-# as the difference between the cumulative maximum of "msft_prices" 
-# minus "msft_prices", and call it "draw_down", 
-
-### write your code here
-
-
-# plot "draw_down",
-
-### write your code here
-
-
-# Find the date when "draw_down" reaches its maximum, and call it "date_trough", 
-# and find the maximum value of "draw_down" on that date, and call it "max_drawdown", 
-# you can use functions index() and which.max(),
-
-### write your code here
-
-
-# Subset "draw_down" to dates before "date_trough", and call it "pre_drawdown", 
-
-### write your code here
-
-
-# Subset "draw_down" to dates after "date_trough", and call it "post_drawdown", 
-
-### write your code here
-
-
-# When the current price exceeds the previous maximum, then "draw_down" is zero, 
-# a drawdown starts when "draw_down" is first zero and then increases above zero.
-# Find the latest date when "pre_drawdown" was still zero before "date_trough", 
-# and call it "date_from",
-# you can use functions index() and max(),
-
-### write your code here
-
-
-# A drawdown ends when "draw_down" drops back to zero after "date_trough".
-# Find the first date when "post_drawdown" drops to zero after "date_trough", 
-# and call it "date_to",
-# you can use functions index() and min(),
-
-### write your code here
-
-
-# Combine the three dates into a named vector: 
-# from=date_from, trough=date_trough, to=date_to,
-# and call it "drawdown_dates",
-
-### write your code here
-
-
-# 2. (5pts) plot "msft_prices", using generic function plot(),
-
-### write your code here
-
-
-# add vertical green, red, and blue lines for the three dates: 
-# "date_from", "date_trough", "date_to",
+# save hyp_stats to a comma-delimited CSV file. 
+# Use function write.csv(),
 
 ### write your code here
 

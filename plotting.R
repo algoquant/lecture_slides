@@ -7,6 +7,33 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+par(mar=c(5, 3, 1, 1), oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+attach(mtcars)  # add mtcars to search path
+# plot scatterplot horsepower vs miles per gallon
+plot(hp, mpg,
+     main="miles per gallon vs horsepower")
+
+# add labels using wordcloud, to prevent overlaps
+library(wordcloud)
+textplot(x=hp, y=mpg, words=rownames(mtcars))
+
+# don't forget to detach!!!
+detach(mtcars)
+# plot the tree Height
+plot(trees[, "Height"],
+     type="l",
+     lwd=2,
+     col="blue",
+     main="Tree heights and volumes",
+     xlab="tree number", ylab="",
+     ylim=c(min(trees[, c("Height", "Volume")]),
+    max(trees[, c("Height", "Volume")])))
+# plot the tree Volume
+lines(trees[, "Volume"], lwd=2, col="green")
+# add legend
+legend(x="left", legend=c("Height", "Volume"),
+       inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "green"))
 x_var <- seq(-2*pi, 2*pi, len=100)  # x values
 
 # open Windows graphics device
@@ -24,18 +51,6 @@ legend(x="topright", legend=c("sine", "cosine"),
        title="legend", inset=0.1, cex=1.0, bg="white",
        lwd=2, lty=c(1, 1), col=c("red", "blue"))
 graphics.off()  # close all graphics devices
-par(mar=c(5, 3, 1, 1), oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-attach(mtcars)  # add mtcars to search path
-# plot scatterplot horsepower vs miles per gallon
-plot(hp, mpg,
-     main="miles per gallon vs horsepower")
-
-# add labels using wordcloud, to prevent overlaps
-library(wordcloud)
-textplot(x=hp, y=mpg, words=rownames(mtcars))
-
-# don't forget to detach!!!
-detach(mtcars)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-3, 3),

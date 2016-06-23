@@ -1,100 +1,148 @@
 #################################
-### FRE6871 HW #1 due Sep 28, 2015
+### FRE6871 Homework #1 due April 18, 2016
 #################################
-# Max score 60pts
+# Max score 70pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw1.R
-# and send this file to Jaimin Doshi (jbd316@nyu.edu)
+# and upload the file to NYU Classes
 
 
-##################################
-# 1. (15pts) Create a vector of permutations of integers from 1 to 90, 
-# and call it "vec_tor", 
-# extract every third element of "vec_tor", starting with the first one, 
-# into a single column matrix called "mat_rix",
-# hint: you can use functions sample(), seq() and function matrix(), 
-# with the proper "byrow" argument,
+############## Part I
+# 1. (10pts) 
+# Summary: Write code for performing operations in the R workspace, 
+# change options settings and display them.
+
+# remove all objects in the workspace:
+
+### write your code here
+
+# set the max number of rows printed to console equal to 80:
+# you can use function options(),
+
+### write your code here
+
+# show the max number of rows printed to console:
+# you can use function options(),
+
+### write your code here
+
+# set the number of digits printed for numeric values equal to 3:
+# you can use function options(),
+
+### write your code here
+
+# show the number of digits printed to console for numeric values:
+# you can use function options(),
+
+### write your code here
+
+# display today's date and time in the format: 
+# "Today is April 05, 2016 at 12:38:36"
+
+### write your code here
+
+# Create objects called var1, var2, var3, 
+# and assign the values rnorm(1) to them: 
+var1 <- rnorm(1)
+var2 <- rnorm(1)
+var3 <- rnorm(1)
+
+# list all objects with names starting with "v". 
+# hint: you can use function glob2rx() and function 
+# ls() with the "pattern" argument,
+
+### write your code here
+
+# save all objects with names ending with "1" to a file 
+# called "vobjects.RData" in your cwd. 
+# hint: you can use function save() with the "list" argument,
+
+### write your code here
+
+# remove all objects with names starting with "v": 
 
 ### write your code here
 
 
-# 2. (15pts) extract a vector of odd index elements of "vec_tor" (first, third, etc), 
-# and a vector of even index elements (second, fourth, etc.), 
-# calculate the scalar ("inner") product of the two vectors, 
-# the value should be a vector with a single element, not a matrix,
-# hint: you can use the "%*%" operator, and the functions seq(), drop(), 
-# or function matrix(), with the proper "byrow" argument,
+
+############## Part II
+# Summary: create a function called which_true(), which calculates 
+# the indices of the TRUE elements of a boolean vector. 
+# which_true() should produce the same result as function which(), 
+# when applied to boolean vectors. 
+# Implement which_true() using two different methods. 
+
+# 1. (20pts) First method: you must perform a for() loop. 
+# hint: you can first create an empty integer vector, 
+# and then perform a for() loop to populate it with the 
+# index values. 
+# you can use functions integer(), seq_along(), c(). 
 
 ### write your code here
 
 
-
-##################################
-# 3. (15pts) create a function called get_index(), that 
-# returns the indices of the TRUE elements of a boolean vector,
-# get_index() should be equivalent to the function which(), 
-# when applied to boolean vectors,
-# hint: you can use functions length(), seq_along(), 
+# 2. (20pts) Second method: you cannot perform any type 
+# of loop, only vectorized functions, 
+# hint: you can use functions length() or seq_along(), 
 # and then apply vector subsetting,
 
 ### write your code here
 
-# apply the function get_index() to a boolean vector, and 
-# compare the result with using function which(),
+# apply the function which_true() to a boolean vector, and 
+# compare the result with using function which(), to verify 
+# that it works correctly:
 
-vec_tor <- sample(1:9)
-get_index(vec_tor==5)
-which(vec_tor == 5)
+set.seed(1121)
+vec_tor <- sample(1:20, replace=TRUE)
+which_true(vec_tor==18)
+which(vec_tor==18)
 
 
 
-##################################
-# 4. (15pts) create a numeric vector of length 10 containing random normal 
-# variates, using rnorm(),
+############## Part III
+# Summary: Create a function called kur_tosis(), for calculating 
+# the kurtosis of a time series of returns (a vector of data). 
 
-### write your code here
-
-# assign the names: "el1, ..., el10", to the vector elements, 
-# you can use function paste(), with the proper "sep" argument, 
-# you can't use function c()
-
-### write your code here
-
-# change the vector names to: "num1, ..., num10", using the function gsub(), 
-# (you can't use functions c() or paste())
-
-### write your code here
-
-# extract the element named "num4",
-
-### write your code here
-
-# change the vector names to: "my.num1, ..., my.num10", 
-# using the function paste(), with the proper "sep" argument,
+# 1. (10pts) The function kur_tosis() should accept a single numeric 
+# argument called da_ta. 
+# The function kur_tosis() should verify that da_ta is numeric, and 
+# if it's not, then it should produce a warning and return NULL. 
+# If da_ta is numeric, then kur_tosis() should calculate the kurtosis 
+# of da_ta and return it. 
+# The argument da_ta should be assigned a default value equal to a 
+# vector of 1000 random numbers taken from the standard normal 
+# distribution. 
+# You can use functions is.numeric(), warning(), paste(), return(), 
+# length(), mean(), sd(), and sum(). 
 
 ### write your code here
 
-# change the first vector element name back to: "num1", 
-# using the function strsplit(), with the proper "split" argument,
-# hint: strsplit() returns a list, subset it using [[1]],
+
+# 2. (10pts) Use the function kur_tosis() to calculate the kurtosis  
+# of DAX returns from the dataset EuStockMarkets. 
+# Next, calculate the kurtosis of a vector of normal random numbers, 
+# of the same length as the DAX returns. 
+# Next, calculate the kurtosis of a vector of random numbers taken 
+# from the t-distribution with four degrees of freedom, of the same 
+# length as the DAX returns. 
+# You can use the functions rt(), rnorm(), and length():
+
+ts_rets <- 100*diff(log(EuStockMarkets[, 1]))
+
+# call kur_tosis() as follows, to verify that it works correctly: 
+kur_tosis(da_ta="hello")
+kur_tosis()
+
+# calculate kurtosis of DAX returns:
+kur_tosis(da_ta=ts_rets)
+
+# calculate kurtosis of normal returns:
 
 ### write your code here
 
-# calculate the indices of the elements that are greater than 
-# or equal to -0.5 and less than 1.0,
+# calculate kurtosis of t-distribution returns:
 
 ### write your code here
 
-# extract the elements that are greater than or equal to -0.5 and less than 1.0,
-
-### write your code here
-
-# calculate the mean and standard deviation of the vector elements,
-
-### write your code here
-
-# combine this vector with the vector "31:33",
-
-### write your code here
 

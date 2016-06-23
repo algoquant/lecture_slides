@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(digits=3)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -134,7 +134,7 @@ c(qnorm(0.75), qnorm(0.25))
       \vskip1ex
       Let $p$ be the probability of obtaining a success in a \emph{binomial} trial, and let $(1-p)$ be the probability of failure,
       \vskip1ex
-      $p = 0.5$ corresponds to flipping an unbiased coin, 
+      $p = 0.5$ corresponds to flipping an unbiased coin,
       \vskip1ex
       The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
       \begin{displaymath}
@@ -171,28 +171,35 @@ as.numeric(runif(20) < 0.5)  # slower
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{sample} is a subset of a population,
+    \column{0.5\textwidth}
+      A \emph{sample} is a subset of elements taken from a set of data elements,
       \vskip1ex
-      The function \texttt{sample()} produces a random sample form a vector of objects (population),
+      The function \texttt{sample()} produces a random sample form a vector of data elements,
       \vskip1ex
-      By default the \texttt{size} of the sample (the \texttt{size} argument) is equal to the number of items in the population, so \texttt{sample()} produces a random permutation of the population,
+      By default the \emph{size} of the sample (the \texttt{size} argument) is equal to the number of elements in the data vector,
+      \vskip1ex
+      So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta},
       \vskip1ex
       If \texttt{replace=TRUE}, then \texttt{sample()} produces samples with replacement,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
-sample(x=5)  # permutation of five numbers
-sample(x=5, size=3)  # sample of size three
-sample(x=5, replace=TRUE)  # sample with replacement
+# permutation of five numbers
+sample(x=5)
+# permutation of four strings
+sample(x=c("apple", "grape", "orange", "peach"))
+# sample of size three
+sample(x=5, size=3)
+# sample with replacement
+sample(x=5, replace=TRUE)
 sample(  # sample of strings
   x=c("apple", "grape", "orange", "peach"),
   size=12,
   replace=TRUE)
-# binomial sample: flip unbiased coin once, 20 times
+# binomial sample: flip coin once, 20 times
 sample(x=0:1, size=20, replace=TRUE)
 # flip unbiased coin once, 20 times
-as.numeric(runif(20) < 0.5)  # slower
+as.numeric(runif(20) > 0.5)  # slower
       @
   \end{columns}
 \end{block}
@@ -206,10 +213,12 @@ as.numeric(runif(20) < 0.5)  # slower
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      A data \emph{sample} is a set of data selected from a statistical population (distribution),
+    \column{0.5\textwidth}
+      A data \emph{sample} is a set of observations of a \emph{random variable},
       \vskip1ex
-      Let $\{x_1,\ldots ,x_n\}$ be a data \emph{sample} from a given distribution,
+      Let $\{x_1,\ldots ,x_n\}$ be a data \emph{sample} of a \emph{random variable} \texttt{x},
+      \vskip1ex
+      Let \texttt{x} follow a probability distribution with population mean equal to $\mu$ and population standard deviation equal to $\sigma$,
       \vskip1ex
       A \emph{statistic} is a function of a data \emph{sample}:  $f( x_1,\ldots ,x_n )$,
       \vskip1ex
@@ -222,19 +231,19 @@ as.numeric(runif(20) < 0.5)  # slower
         \bar{x}=\frac{1}{n}{\sum_{i=1}^{n}x_i}
       \end{displaymath}
       Is an \emph{estimator} of the \emph{mean} of the \emph{distribution},
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2))>>=
 rm(list=ls())
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-rand_sample <- rnorm(1000)
+sam_ple <- rnorm(1000)
 
-mean(rand_sample)  # sample mean
+mean(sam_ple)  # sample mean
 
-median(rand_sample)  # sample median
+median(sam_ple)  # sample median
 
-sd(rand_sample)  # sample standard deviation
+sd(sam_ple)  # sample standard deviation
       @
   \end{columns}
 \end{block}
@@ -243,54 +252,103 @@ sd(rand_sample)  # sample standard deviation
 
 
 %%%%%%%%%%%%%%%
-\subsection{Estimators of Moments}
+\subsection{Estimators of Higher Moments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      The estimators of moments of a probability distribution are given by:
+    \column{0.5\textwidth}
+      The estimators of moments of a probability distribution, based on a \emph{sample} of data, are given by:
       \vskip1ex
-      Mean: $\bar{x}=\frac{1}{k} \sum_{i=1}^{k} x_i$
+      Sample mean: $\hat\mu=\frac{1}{n} \sum_{i=1}^{n} x_i$
       \vskip1ex
-      Variance: $\hat{\sigma}^2=\frac{1}{k-1} \sum_{i=1}^{k} (x_i-\bar{x})^2$
+      Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^{n} (x_i-\hat\mu)^2$
       \vskip1ex
-      Skewness:
+      With their expected values equal to the population mean and standard deviation:\\
+      $\mathbb{E[\hat\mu]=\mu}$ \hskip0.5em and \hskip0.5em $\mathbb{E[\hat\sigma]=\sigma}$
+      \vskip1ex
+      The sample skewness (third moment) is equal to:
       \begin{displaymath}
-        \hat{s}=\frac{k}{(k-1)(k-2)} \sum_{i=1}^{k} (\frac{x_i-\bar{x}}{\hat{\sigma}})^3
+        \hat{s}=\frac{n}{(n-1)(n-2)} \sum_{i=1}^{n} (\frac{x_i-\hat\mu}{\hat\sigma})^3
       \end{displaymath}
-      Kurtosis:
+      The sample kurtosis (fourth moment) is equal to
       \begin{displaymath}
-        \hat{k}=\frac{k(k+1)}{(k-1)^3} \sum_{i=1}^{k} (\frac{x_i-\bar{x}}{\hat{\sigma}})^4
+        \hat{k}=\frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^{n} (\frac{x_i-\hat\mu}{\hat\sigma})^4
       \end{displaymath}
       The normal distribution has zero skewness and kurtosis equal to 3,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=(-(1:1))>>=
 rm(list=ls())
-ts_rets <- diff(log(EuStockMarkets[, 1]))  # DAX returns
-len_rets <- length(ts_rets)  # number of observations
-mean_rets <- mean(ts_rets)  # calculate mean
-sd_rets <- sd(ts_rets)  # calculate standard deviation
-# calculate skew
-len_rets*(sum(((ts_rets - mean_rets)/sd_rets)^3))/
-  ((len_rets-1)*(len_rets-2))
-# calculate kurtosis
-len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
-  ((len_rets-1)^3)
-ts_rets <- rnorm(len_rets, sd=2)  # random normal returns
-mean_rets <- mean(ts_rets); sd_rets <- sd(ts_rets)
-# calculate skew
-len_rets*(sum(((ts_rets - mean_rets)/sd_rets)^3))/
-  ((len_rets-1)*(len_rets-2))
-# calculate kurtosis
-len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
-  ((len_rets-1)^3)
+# DAX returns
+ts_rets <- diff(log(EuStockMarkets[, 1]))
+# number of observations
+len_rets <- length(ts_rets)
+# mean of DAX returns
+mean_rets <- mean(ts_rets)
+# standard deviation of DAX returns
+sd_rets <- sd(ts_rets)
+# skew of DAX returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((ts_rets - mean_rets)/sd_rets)^3)
+# kurtosis of DAX returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((ts_rets - mean_rets)/sd_rets)^4)
+# random normal returns
+ts_rets <- rnorm(len_rets, sd=2)
+# mean and standard deviation of random normal returns
+mean_rets <- mean(ts_rets)
+sd_rets <- sd(ts_rets)
+# skew of random normal returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((ts_rets - mean_rets)/sd_rets)^3)
+# kurtosis of random normal returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((ts_rets - mean_rets)/sd_rets)^4)
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Statistical estimators are themselves \emph{random variables},
+      \vskip1ex
+      The standard deviation of the estimator of the mean is equal to:
+      \begin{displaymath}
+        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+      \end{displaymath}
+      Where $\sigma$ is the population standard deviation,
+      \vskip1ex
+      The standard error is the estimator of the standard deviation, and for the mean estimator it is equal to:
+      \begin{displaymath}
+        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
+      \end{displaymath}
+      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^{n} (x_i-\hat\mu)^2$ is the sample standard deviation (the estimator of the population standard deviation),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -303,7 +361,7 @@ len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \emph{Hypothesis Testing} is designed to test the validity of a \emph{null hypothesis},
       \vskip1ex
       A \emph{Hypothesis Test} consists of:
@@ -318,10 +376,10 @@ len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
       The objective of \emph{Hypothesis Testing} is to invalidate the \emph{null hypothesis},
       \vskip1ex
       In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE}; we can only conclude that it's very unlikely to be \texttt{FALSE} (given the data),
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
-### Perform two-tailed test that sample is 
+### Perform two-tailed test that sample is
 ### from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
 test_frame <- data.frame(samples=rnorm(1000))
@@ -330,11 +388,15 @@ test_frame <- data.frame(samples=rnorm(1000))
 signif_level <- 2*(1-pnorm(2))
 signif_level
 # get p-values for all the samples
-test_frame$p_values <- sapply(test_frame$samples, pnorm)
-test_frame$p_values <- 2*(0.5-abs(test_frame$p_values-0.5))
+test_frame$p_values <-
+  sapply(test_frame$samples, pnorm)
+test_frame$p_values <-
+  2*(0.5-abs(test_frame$p_values-0.5))
 # compare p_values to significance level
-test_frame$result <- test_frame$p_values > signif_level
-sum(!test_frame$result)  # number of null rejections
+test_frame$result <-
+  test_frame$p_values > signif_level
+# number of null rejections
+sum(!test_frame$result)
 # show null rejections
 head(test_frame[!test_frame$result, ])
       @
@@ -351,28 +413,28 @@ head(test_frame[!test_frame$result, ])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      <<hyp_test_ggp2,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+      <<hyp_test_ggp2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(ggplot2)  # load ggplot2
 
 qplot(  # simple ggplot2
-    main="Standard Normal Distribution", 
-    c(-4, 4), 
-    stat="function", 
-    fun=dnorm, 
-    geom="line", 
+    main="Standard Normal Distribution",
+    c(-4, 4),
+    stat="function",
+    fun=dnorm,
+    geom="line",
     xlab=NULL, ylab=NULL
     ) +  # end qplot
 
 theme(  # modify plot theme
-    plot.title=element_text(vjust=-1.0), 
+    plot.title=element_text(vjust=-1.0),
     plot.background=element_blank()
     ) +  # end theme
 
 geom_vline(  # add vertical line
-  aes(xintercept=c(-2.0, 2.0)), 
-  colour="red", 
+  aes(xintercept=c(-2.0, 2.0)),
+  colour="red",
   linetype="dashed"
   )  # end geom_vline
       @
@@ -392,31 +454,31 @@ geom_vline(  # add vertical line
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      <<hyp_test_ggp2_2,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+      <<hyp_test_ggp2_2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 ### create ggplot2 with shaded area
 x_var <- -400:400/100
-norm_frame <- data.frame(x_var=x_var, 
+norm_frame <- data.frame(x_var=x_var,
                        d.norm=dnorm(x_var))
 norm_frame$shade <- ifelse(
-                  abs(norm_frame$x_var) >= 2, 
+                  abs(norm_frame$x_var) >= 2,
                   norm_frame$d.norm, NA)
 ggplot(  # main function
-  data=norm_frame, 
+  data=norm_frame,
   mapping=aes(x=x_var, y=d.norm)
   ) +  # end ggplot
 # plot line
-  geom_line() + 
+  geom_line() +
 # plot shaded area
-  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") + 
+  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
 # no axis labels
-  xlab("") + ylab("") + 
+  xlab("") + ylab("") +
 # add title
   ggtitle("Standard Normal Distribution") +
 # modify plot theme
   theme(
-        plot.title=element_text(vjust=-1.0), 
+        plot.title=element_text(vjust=-1.0),
         plot.background=element_blank()
   )  # end theme
       @
@@ -491,9 +553,9 @@ shapiro.test(runif(length(dax_rets)))
       \end{displaymath}
       Where the skewness and kurtosis are defined as:
       \begin{align*}
-        \hat{s} = \frac{1}{n} \sum_{i=1}^{n} (\frac{x_i-\bar{x}}{\hat{\sigma}})^3
+        \hat{s} = \frac{1}{n} \sum_{i=1}^{n} (\frac{x_i-\bar{x}}{\hat\sigma})^3
       &&
-        \hat{k} = \frac{1}{n} \sum_{i=1}^{n} (\frac{x_i-\bar{x}}{\hat{\sigma}})^4
+        \hat{k} = \frac{1}{n} \sum_{i=1}^{n} (\frac{x_i-\bar{x}}{\hat\sigma})^4
       \end{align*}
       The \emph{Jarque-Bera} statistic asymptotically follows the \emph{chi-squared} distribution with two degrees of freedom,
       \vskip1ex
@@ -583,20 +645,20 @@ head(dax_acf$acf)
     \column{0.5\textwidth}
       The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
       <<eval=FALSE>>=
-acf_plus <- function (ts_data, plot=TRUE, 
-                      xlab="Lag", ylab="", 
+acf_plus <- function (ts_data, plot=TRUE,
+                      xlab="Lag", ylab="",
                       main="", ...) {
   acf_data <- acf(x=ts_data, plot=FALSE, ...)
 # remove first element of acf data
-  acf_data$acf <-  array(data=acf_data$acf[-1], 
+  acf_data$acf <-  array(data=acf_data$acf[-1],
           dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <-  array(data=acf_data$lag[-1], 
+  acf_data$lag <-  array(data=acf_data$lag[-1],
           dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  if(plot) {
+  if (plot) {
     ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
     ylim <- c(min(-ci, range(acf_data$acf[-1])),
               max(ci, range(acf_data$acf[-1])))
-    plot(acf_data, xlab=xlab, ylab=ylab, 
+    plot(acf_data, xlab=xlab, ylab=ylab,
          ylim=ylim, main=main, ci=0)
     abline(h=c(-ci, ci), col="blue", lty=2)
   }
@@ -619,7 +681,7 @@ acf_plus <- function (ts_data, plot=TRUE,
       The DAX time series of returns does not appear to have statistically significant autocorrelations,
       \vskip1ex
       But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
-        <<dax_acf,eval=FALSE,echo=(-(1:2)),fig.width=4,fig.height=3.5,fig.show='hide'>>=
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
 par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # improved autocorrelation function
@@ -649,14 +711,14 @@ title(main="acf of DAX returns", line=-1)
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # autocorrelation of squared DAX returns
-acf_plus(coredata(dax_rets)^2, 
+acf_plus(coredata(dax_rets)^2,
          lag=10, main="")
-title(main="acf of squared DAX returns", 
+title(main="acf of squared DAX returns",
       line=-1)
 # autocorrelation of squared random returns
-acf_plus(rnorm(length(dax_rets))^2, 
+acf_plus(rnorm(length(dax_rets))^2,
          lag=10, main="")
-title(main="acf of squared random returns", 
+title(main="acf of squared random returns",
       line=-1)
       @
     \column{0.5\textwidth}
@@ -680,7 +742,8 @@ title(main="acf of squared random returns",
       \texttt{"lhur"} is the unemployment rate (average of months in quarter),
       \vskip1ex
       \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
-      <<macro_data,echo=TRUE,eval=FALSE,fig.show='hide'>>=
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
 library(Ecdat)  # load Ecdat
 colnames(Macrodat)  # United States Macroeconomic Time Series
 macro_zoo <- as.zoo(  # coerce to "zoo"
@@ -690,7 +753,7 @@ colnames(macro_zoo) <- c("unemprate", "3mTbill")
 autoplot(  # generic ggplot2 for "zoo"
   object=macro_zoo, main="US Macro",
   facets=Series ~ .) + # end autoplot
-  xlab("") + 
+  xlab("") +
 theme(  # modify plot theme
   legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
@@ -723,12 +786,12 @@ par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.ax
 par(mfrow=c(2,1))  # set plot panels
 macro_diff <- na.omit(diff(macro_zoo))
 
-acf_plus(coredata(macro_diff[, "unemprate"]), 
+acf_plus(coredata(macro_diff[, "unemprate"]),
          lag=10)
-title(main="quarterly unemployment rate", 
+title(main="quarterly unemployment rate",
       line=-1)
 
-acf_plus(coredata(macro_diff[, "3mTbill"]), 
+acf_plus(coredata(macro_diff[, "3mTbill"]),
          lag=10)
 title(main="3 month T-bill EOQ", line=-1)
       @
@@ -775,11 +838,11 @@ macro_diff <- na.omit(diff(macro_zoo))
 Box.test(dax_rets, lag=10, type="Ljung")
 
 # changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"], 
+Box.test(macro_diff[, "3mTbill"],
          lag=10, type="Ljung")
 
 # changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"], 
+Box.test(macro_diff[, "unemprate"],
          lag=10, type="Ljung")
       @
   \end{columns}
@@ -803,22 +866,22 @@ library(gridExtra)  # load gridExtra
 # extract DAX time series
 dax_ts <- EuStockMarkets[, 1]
 # filter past values only (sides=1)
-dax_filt <- filter(dax_ts, 
+dax_filt <- filter(dax_ts,
                    filter=rep(1/5,5), sides=1)
 # coerce to zoo and merge the time series
-dax_filt <- merge(as.zoo(dax_ts), 
+dax_filt <- merge(as.zoo(dax_ts),
                   as.zoo(dax_filt))
 colnames(dax_filt) <- c("DAX", "DAX filtered")
-dax_data <- window(dax_filt, 
+dax_data <- window(dax_filt,
                    start=1997, end=1998)
 autoplot(  # plot ggplot2
-    dax_data, main="Filtered DAX", 
+    dax_data, main="Filtered DAX",
     facets=NULL) +  # end autoplot
 xlab("") + ylab("") +
 theme(  # modify plot theme
-    legend.position=c(0.1, 0.5), 
-    plot.title=element_text(vjust=-2.0), 
-    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
     plot.background=element_blank(),
     axis.text.y=element_blank()
     )  # end theme
@@ -846,11 +909,11 @@ par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.ax
 dax_rets <- na.omit(diff(log(dax_filt)))
 par(mfrow=c(2,1))  # set plot panels
 
-acf_plus(coredata(dax_rets[, 1]), lag=10, 
+acf_plus(coredata(dax_rets[, 1]), lag=10,
          xlab="")
 title(main="DAX", line=-1)
 
-acf_plus(coredata(dax_rets[, 2]), lag=10, 
+acf_plus(coredata(dax_rets[, 2]), lag=10,
          xlab="")
 title(main="DAX filtered", line=-1)
       @
@@ -879,7 +942,7 @@ acf_plus(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
 title(main="DAX filtered autocorrelations", line=-1)
 # partial autocorrelation
 pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered partial autocorrelations", 
+title(main="DAX filtered partial autocorrelations",
       line=-1)
       @
     \column{0.5\textwidth}
@@ -904,7 +967,7 @@ title(main="DAX filtered partial autocorrelations",
       \end{displaymath}
       Where the $\varepsilon_i$ are independent random variables with zero mean and constant variance,
       \vskip1ex
-      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process, 
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process,
       \vskip1ex
       The function \texttt{arima.sim()} simulates \emph{ARIMA} processes,
       \vspace{-1em}
@@ -920,12 +983,12 @@ zoo_arima <- zoo(  # AR time series of returns
 zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
 colnames(zoo_arima) <- c("AR returns", "AR prices")
 autoplot(object=zoo_arima, # ggplot AR process
-     facets="Series ~ .", 
-     main="Autoregressive process (phi=0.2)") + 
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
   facet_grid("Series ~ .", scales="free_y") +
-  xlab("") + ylab("") + 
+  xlab("") + ylab("") +
 theme(
-  legend.position=c(0.1, 0.5), 
+  legend.position=c(0.1, 0.5),
   plot.background=element_blank(),
   axis.text.y=element_blank())
       @
@@ -959,16 +1022,16 @@ zoo_arima <- sapply(  # create three AR time series
 zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
 # convert returns to prices
 zoo_arima <- cumsum(zoo_arima)
-colnames(zoo_arima) <- 
+colnames(zoo_arima) <-
   paste("autocorr", ar_coeff)
-autoplot(zoo_arima, main="AR prices", 
-         facets=Series ~ .) + 
+autoplot(zoo_arima, main="AR prices",
+         facets=Series ~ .) +
     facet_grid(Series ~ ., scales="free_y") +
-xlab("") + 
+xlab("") +
 theme(
-  legend.position=c(0.1, 0.5), 
-  plot.title=element_text(vjust=-2.0), 
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
   plot.background=element_blank(),
   axis.text.y=element_blank())
       @
@@ -1009,10 +1072,10 @@ par(mfrow=c(2,1))  # set plot panels
 # simulate AR(1) process
 ari_ma <- arima.sim(n=729, model=list(ar=0.8))
 # ACF of AR(1) process
-acf_plus(ari_ma, lag=10, xlab="", ylab="", 
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
          main="ACF of AR(1) process")
 # PACF of AR(1) process
-pacf(ari_ma, lag=10, xlab="", ylab="", 
+pacf(ari_ma, lag=10, xlab="", ylab="",
      main="PACF of AR(1) process")
       @
     \column{0.5\textwidth}
@@ -1050,7 +1113,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       with a root equal to:
       $z = 1 / \varphi_1$,
       \vskip1ex
-      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}: 
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}:
       $z = 1 / \varphi_1$, and therefore isn't stationary,
       \vskip1ex
       The process follows:
@@ -1058,7 +1121,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       \vskip1ex
       The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
       \vskip1ex
-      The variance of a \emph{Wiener} process is proportional to time, 
+      The variance of a \emph{Wiener} process is proportional to time,
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
@@ -1068,16 +1131,16 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3), 
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
                   order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <- 
+colnames(rand_walk) <-
   paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks", 
-     xlab="", ylab="", plot.type="single", 
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
      col=c("black", "red", "blue"))
 # add legend
 legend(x="topleft",
-       legend=colnames(rand_walk), 
+       legend=colnames(rand_walk),
        col=c("black", "red", "blue"), lty=1)
       @
   \end{columns}
@@ -1121,16 +1184,16 @@ legend(x="topleft",
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3), 
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
                   order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <- 
+colnames(rand_walk) <-
   paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks", 
-     xlab="", ylab="", plot.type="single", 
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
      col=c("black", "red", "blue"))
 # add legend
 legend(x="topleft",
-       legend=colnames(rand_walk), 
+       legend=colnames(rand_walk),
        col=c("black", "red", "blue"), lty=1)
       @
   \end{columns}
@@ -1159,7 +1222,7 @@ legend(x="topleft",
       The \emph{ADF} test is weak in the sense that it needs a lot of data to identify a \emph{unit root} process,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<eval=TRUE,echo=(-(1:1))>>=
+      <<eval=FALSE,echo=(-(1:1))>>=
 library(tseries)  # load tseries
 # simulate AR(1) process
 set.seed(1121)  # initialize random number generator
@@ -1197,11 +1260,11 @@ adf.test(rand_walk)
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 ar3_zoo <- zoo(  # AR(3) time series of returns
-  x=arima.sim(n=365, 
+  x=arima.sim(n=365,
           model=list(ar=c(0.1, 0.5, 0.1))),
   order.by=in_dex)  # zoo_arima
 # ACF of AR(3) process
-acf_plus(ar3_zoo, lag=10, 
+acf_plus(ar3_zoo, lag=10,
        xlab="", ylab="", main="ACF of AR(3) process")
 
 # PACF of AR(3) process
@@ -1230,7 +1293,7 @@ pacf(ar3_zoo, lag=10,
     \column{0.7\textwidth}
       \vspace{-1em}
       <<echo=TRUE>>=
-ar3_zoo <- arima.sim(n=1000, 
+ar3_zoo <- arima.sim(n=1000,
             model=list(ar=c(0.1, 0.3, 0.1)))
 arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
 library(forecast)  # load forecast
@@ -1280,7 +1343,7 @@ paste(paste0("x", 1:5), collapse="+")
 
 # creating formula from text string
 lin_formula <- as.formula(  # coerce text strings to formula
-              paste("z ~ ", 
+              paste("z ~ ",
                 paste(paste0("x", 1:5), collapse="+")
                 )  # end paste
             )  # end as.formula
@@ -1306,13 +1369,13 @@ update(lin_formula, log(.) ~ . + beta)
       \begin{displaymath}
         z_i = \alpha + \beta x_i + \varepsilon_i
       \end{displaymath}
-      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$, 
+      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, 
+      $\alpha$ and $\beta$ are the unknown regression coefficients,
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, 
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
       \vskip1ex
-      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS): 
+      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
       \begin{align*}
         RSS = \sum_{i=1}^{n} {\varepsilon_i^2} = \sum_{i=1}^{n} {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
       \end{align*}
@@ -1334,9 +1397,9 @@ update(lin_formula, log(.) ~ . + beta)
         & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
         & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
       \end{flalign*}
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$, 
+      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
       \vskip1ex
-      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables, 
+      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
   \end{columns}
 \end{block}
 
@@ -1358,13 +1421,13 @@ update(lin_formula, log(.) ~ . + beta)
       \begin{displaymath}
         z = \alpha + \beta x + \varepsilon
       \end{displaymath}
-      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations, 
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
       \vskip1ex
-      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix, 
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$, 
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$, 
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
     \column{0.5\textwidth}
       The OLS estimate for $\alpha$ is given by:
       \begin{align*}
@@ -1376,11 +1439,11 @@ update(lin_formula, log(.) ~ . + beta)
         & x^T z - \beta x^T x = 0\\
         & \beta = (x^T x)^{-1} x^T z
       \end{flalign*}
-      The matrix $x^T x$ is the covariance matrix of the matrix $x$, 
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
       \vskip1ex
-      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent, 
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
       \vskip1ex
-      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$, 
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
       \vskip1ex
       In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
   \end{columns}
@@ -1398,9 +1461,9 @@ update(lin_formula, log(.) ~ . + beta)
     \column{0.5\textwidth}
       Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
       \vskip1ex
-      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms), 
+      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
       \vskip1ex
-      The error terms are the difference between the measured values of the response minus the (unknown) actual response values, 
+      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
       \vskip1ex
       The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
       \begin{itemize}
@@ -1408,15 +1471,16 @@ update(lin_formula, log(.) ~ . + beta)
         \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
         \item residuals - the model residuals (response minus fitted values),
       \end{itemize}
-      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process, 
+      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
+        <<echo=(-(1:1)),eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
 # response equals linear form plus error terms
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
+res_ponse <- -3 + explana_tory + noise
 # specify regression formula
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
@@ -1444,19 +1508,20 @@ coef(reg_model)
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
       \vskip1ex
       The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
-        <<reg_scatter_plot,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+        <<reg_scatter_plot,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
 plot(reg_formula)  # plot scatterplot using formula
 title(main="Simple Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 # plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values, 
+points(x=explana_tory, y=reg_model$fitted.values,
        pch=16, col="blue")
       @
     \column{0.5\textwidth}
       \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot-1}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot.png}
   \end{columns}
 \end{block}
 
@@ -1481,7 +1546,7 @@ points(x=explana_tory, y=reg_model$fitted.values,
       \vskip1ex
       The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
       \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis, 
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
       \vskip1ex
       A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
     \column{0.5\textwidth}
@@ -1506,15 +1571,15 @@ attributes(reg_model_sum)$names  # get summary elements
     \column{0.5\textwidth}
       The regression \texttt{summary} is a list, and its elements can be accessed individually,
       \vskip1ex
-      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error, 
+      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
       \vskip1ex
       The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
       \vskip1ex
-      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary, 
+      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
       \vskip1ex
-      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant, 
+      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
       \vskip1ex
-      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant, 
+      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
@@ -1575,7 +1640,7 @@ reg_stats <- function(std_dev) {  # noisy regression
   set.seed(1121)  # initialize number generator
 # create explanatory and response variables
   explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-  res_ponse <- 3 + 0.2*explana_tory + 
+  res_ponse <- 3 + 0.2*explana_tory +
     rnorm(30, sd=std_dev)
 # specify regression formula
   reg_formula <- res_ponse ~ explana_tory
@@ -1586,18 +1651,18 @@ reg_stats <- function(std_dev) {  # noisy regression
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
-# apply reg_stats() to vector of std dev values 
+# apply reg_stats() to vector of std dev values
 vec_sd <- seq(from=0.1, to=0.5, by=0.1)
 names(vec_sd) <- paste0("sd=", vec_sd)
 mat_stats <- t(sapply(vec_sd, reg_stats))
 # plot in loop
-par(mfrow=c(ncol(mat_stats), 1))
-for (in_dex in 1:ncol(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l", 
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
        xaxt="n", xlab="", ylab="", main="")
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(nrow(mat_stats)), 
-       labels=rownames(mat_stats))  
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -1621,35 +1686,35 @@ for (in_dex in 1:ncol(mat_stats)) {
 reg_stats <- function(da_ta) {  # get regression
 # perform regression and get summary
   col_names <- colnames(da_ta)
-  reg_formula <- 
+  reg_formula <-
     paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula, 
+  reg_model_sum <- summary(lm(reg_formula,
                               data=da_ta))
 # extract regression statistics
   with(reg_model_sum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
          fstat=fstatistic[1]))
 }  # end reg_stats
-# apply reg_stats() to vector of std dev values 
+# apply reg_stats() to vector of std dev values
 vec_sd <- seq(from=0.1, to=0.5, by=0.1)
 names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- 
+mat_stats <-
   t(sapply(vec_sd, function (std_dev) {
     set.seed(1121)  # initialize number generator
 # create explanatory and response variables
     explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-    res_ponse <- 3 + 0.2*explana_tory + 
+    res_ponse <- 3 + 0.2*explana_tory +
       rnorm(30, sd=std_dev)
     reg_stats(data.frame(explana_tory, res_ponse))
     }))
 # plot in loop
-par(mfrow=c(ncol(mat_stats), 1))
-for (in_dex in 1:ncol(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l", 
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
        xaxt="n", xlab="", ylab="", main="")
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(nrow(mat_stats)), 
-       labels=rownames(mat_stats))  
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -1731,7 +1796,7 @@ plot(reg_model, which=2)  # plot just Q-Q
       The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(lmtest)  # load lmtest
 # perform Durbin-Watson test
 dwtest(reg_model)
@@ -1743,21 +1808,21 @@ dwtest(reg_model)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelated Time Series Regression}
+\subsection{devel: Autocorrelated Time Series Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Filtering or smoothing a time series containing an error terms over overlapping periods introduces autocorrelations in the error terms of the time series, 
+      Filtering or smoothing a time series containing an error terms over overlapping periods introduces autocorrelations in the error terms of the time series,
       \vskip1ex
-      Autocorrelations in the error terms introduces autocorrelations of the regression residuals, causing the Durbin-Watson test to fail, 
+      Autocorrelations in the error terms introduces autocorrelations of the regression residuals, causing the Durbin-Watson test to fail,
       \vskip1ex
-      Autocorrelations in the error terms introduce autocorrelations of the regression residuals, causing the Durbin-Watson test to fail, 
+      Autocorrelations in the error terms introduce autocorrelations of the regression residuals, causing the Durbin-Watson test to fail,
       \vskip1ex
-      The failure of the Durbin-Watson test means that the \emph{standard errors} and \emph{p}-values calculated by the regression model are too small, and therefore the regression may not be statistically significant, 
+      The failure of the Durbin-Watson test means that the \emph{standard errors} and \emph{p}-values calculated by the regression model are too small, and therefore the regression may not be statistically significant,
       \vskip1ex
-      But the failure of the Durbin-Watson test doesn't reject the existence of a linear relationship between the response and explanatory variables, it just puts it in doubt, 
+      But the failure of the Durbin-Watson test doesn't reject the existence of a linear relationship between the response and explanatory variables, it just puts it in doubt,
       \vskip1ex
       Links:
       https://onlinecourses.science.psu.edu/stat510/node/72
@@ -1772,7 +1837,7 @@ dwtest(reg_model)
       The Q-Q plot also shows that residuals are \emph{not} normally distributed,
       \vspace{-1em}
         <<echo=(-(1:3)),eval=FALSE>>=
-foo <- etf_rets[, c("VTI", "VEU")]
+foo <- env_etf$re_turns[, c("VTI", "VEU")]
 end_points <- endpoints(foo, on="months")
 head(foo)
 tail(foo)
@@ -1841,15 +1906,15 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
       \vskip1ex
       But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
       \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
+        <<echo=(-(1:1)),eval=FALSE>>=
 library(lmtest)  # load lmtest
 design_matrix <- data.frame(  # design matrix
   explana_tory=1:30, omit_var=sin(0.2*1:30))
 # response depends on both explanatory variables
-res_ponse <- with(design_matrix, 
+res_ponse <- with(design_matrix,
           0.2*explana_tory + omit_var + 0.2*rnorm(30))
 # mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory, 
+reg_model <- lm(res_ponse ~ explana_tory,
                 data=design_matrix)
 reg_model_sum <- summary(reg_model)
 reg_model_sum$coefficients
@@ -1891,7 +1956,7 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
       \vskip1ex
       The Q-Q plot also shows that residuals are \emph{not} normally distributed,
       \vspace{-1em}
-        <<echo=(-(1:3)),eval=TRUE>>=
+        <<echo=(-(1:3)),eval=FALSE>>=
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
@@ -1944,12 +2009,12 @@ res_ponse <- 3 + 2*explana_tory + rnorm(30)
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
 new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model, 
-                      newdata=new_data, level=0.95, 
+predict_lm <- predict(object=reg_model,
+                      newdata=new_data, level=0.95,
                       interval="confidence")
 predict_lm <- as.data.frame(predict_lm)
 head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0), 
+plot(reg_formula, xlim=c(1.0, 4.0),
      ylim=range(res_ponse, predict_lm),
      main="Regression predictions")
 abline(reg_model, col="red")

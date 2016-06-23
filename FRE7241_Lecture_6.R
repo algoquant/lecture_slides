@@ -1,9 +1,143 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+library(PortfolioAnalytics)
+re_turns <- c(0.01, 0.02)
+std_devs <- c(0.1, 0.2)
+cor_rel <- 0.6
+co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
+co_var <- t(t(std_devs*co_var)*std_devs)
+weight_s <- seq(from=-1, to=2, length.out=31)
+portf_rets <- weight_s*re_turns[1] +
+  (1 - weight_s)*re_turns[2]
+portf_sd <- sqrt(co_var[1, 1]*weight_s^2 +
+         co_var[2, 2]*(1 - weight_s)^2 +
+         2*weight_s*(1 - weight_s)*co_var[1, 2])
+in_dex <- which.max(portf_rets/portf_sd)
+plot(portf_sd, portf_rets, t="l",
+ main=paste0("Two assets correlation = ", 100*cor_rel, "%"),
+ xlim=c(0, max(portf_sd)),
+ ylim=c(0, max(portf_rets)))
+points(portf_sd[in_dex], portf_rets[in_dex],
+ col="red", lwd=3)
+points(std_devs, re_turns, col="green", lwd=3)
+abline(a=0, b=portf_rets[in_dex]/portf_sd[in_dex],
+ col="blue")
+library(PortfolioAnalytics)
+# vector of symbol names
+some_symbols <- c("VTI", "IEF")
+# vector of portfolio weights
+weight_s <- seq(from=-1, to=2, length.out=31)
+# calculate portfolio returns and volatilities
+ret_sd <- sapply(weight_s, function(wei_ght) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% c(wei_ght, 1-wei_ght)
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+ret_sd <- rbind(ret_sd, ret_sd[1, ]/ret_sd[2, ])
+rownames(ret_sd)[3] <- "sr"
+in_dex <- which.max(ret_sd[3, ])
+# plot scatterplot of portfolios
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])),
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+title(main="Two-asset portfolios", line=-1)
+# Add red point for maximum Sharpe ratio portfolio
+points(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
+ col="red", lwd=3, pch=21)
+text(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
+     labels=paste(c("maxSR\n",
+ structure(c(weight_s[in_dex], 1-weight_s[in_dex]),
+         names=some_symbols)), collapse=" "),
+     pos=2, cex=0.8)
+# Add point at origin and draw line to maximum Sharpe ratio point
+points(x=0, y=0, labels="origin")
+text(x=0, y=0, labels="origin", pos=1, cex=0.8)
+abline(a=0, b=ret_sd[3, in_dex], col="blue")
+# plot max Sharpe ratio portfolio returns
+library(quantmod)
+optim_rets <-
+  xts(x=env_etf$re_turns[, some_symbols] %*%
+  c(weight_s[in_dex], 1-weight_s[in_dex]),
+order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets),
+       name="Max Sharpe two-asset portfolio")
+library(PortfolioAnalytics)
+# vector of symbol names
+some_symbols <- c("VTI", "IEF", "XLP")
+# calculate random portfolios
+n_portf <- 1000
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights, min=-10, max=10)
+  weight_s <- weight_s/sqrt(sum(weight_s^2))
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weight_s
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+# plot scatterplot of random portfolios
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
+     main="Random and minvar portfolios",
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])),
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+# vector of initial portfolio weights equal to 1
+n_weights <- length(some_symbols)
+weight_s <- rep(1, n_weights)
+names(weight_s) <- some_symbols
+# objective function equal to standard deviation of returns
+object_ive <- function(weights) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weights
+  sd(portf_rets)/sqrt(sum(weights^2))
+}  # end object_ive
+# object_ive() for equal weight portfolio
+object_ive(weight_s)
+object_ive(2*weight_s)
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+             fn=object_ive,
+             method="L-BFGS-B",
+             upper=rep(10, n_weights),
+             lower=rep(-10, n_weights))
+# Rescale the optimal weights
+weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
+# minimum variance portfolio returns
+library(quantmod)
+optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+            order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
+# Add red point for minimum variance portfolio
+optim_sd <- sd(optim_rets)
+optim_ret <- mean(optim_rets)
+points(x=optim_sd, y=optim_ret,
+ col="red", lwd=3, pch=21)
+text(x=optim_sd, y=optim_ret,
+     labels="minvar", pos=2, cex=0.8)
+objective function equal to minus Sharpe ratio
+object_ive <- function(weights) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weights
+  -mean(portf_rets)/sd(portf_rets)
+}  # end object_ive
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+             fn=object_ive,
+             method="L-BFGS-B",
+             upper=rep(10, n_weights),
+             lower=rep(-10, n_weights))
+# maximum Sharpe ratio portfolio returns
+weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
+optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+            order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
+optim_sd <- sd(optim_rets)
+optim_ret <- mean(optim_rets)
+points(x=optim_sd, y=optim_ret,
+ col="blue", lwd=3, pch=21)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=3, cex=0.8)
+# Add point at origin and draw line to maximum Sharpe ratio point
+points(x=0, y=0, labels="origin")
+text(x=0, y=0, labels="origin", pos=1, cex=0.8)
+abline(a=0, b=optim_ret/optim_sd)
 library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
 # get documentation for package "PortfolioAnalytics"
 packageDescription("PortfolioAnalytics")  # get short description
@@ -17,11 +151,11 @@ ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
 library(PortfolioAnalytics)
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
-portf_names <- c("VTI", "IEF", "DBC", "XLF", 
+load(file="C:/Develop/data/etf_data.RData")
+portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names), 
+portf_init <- rep(1/length(portf_names),
             length(portf_names))
 # named vector
 names(portf_init) <- portf_names
@@ -36,23 +170,23 @@ portf_maxSR <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_maxSR <- add.constraint(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_maxSR <- add.objective(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSR <- add.objective(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="risk",  # minimize StdDev
   name="StdDev")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -74,7 +208,7 @@ chart.RiskReward(maxSR_DEOpt,
   return.col="mean")
 
 # plot risk/ret points in portfolio scatterplot
-risk_ret_points <- function(rets=etf_rets,
+risk_ret_points <- function(rets=env_etf$re_turns,
   risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
   risk <- match.arg(risk)  # match to arg list
   if (risk=="ETL") {
@@ -96,7 +230,7 @@ require("PerformanceAnalytics", quietly=TRUE))
 risk_ret_points()
 library(PortfolioAnalytics)
 plot_portf <- function(portfolio,
-      rets_data=etf_rets) {
+      rets_data=env_etf$re_turns) {
   portf_weights <- portfolio$weights
   portf_names <- names(portf_weights)
   # calculate xts of portfolio
@@ -131,24 +265,24 @@ portf_maxSRN <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add box constraint long/short
 portf_maxSRN <- add.constraint(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="box", min=-0.2, max=0.2)
 
 # add objectives
 portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="risk",  # minimize StdDev
   name="StdDev")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSRN,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -199,23 +333,23 @@ portf_maxSTARR <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_maxSTARR <- add.constraint(
-  portfolio=portf_maxSTARR, 
+  portfolio=portf_maxSTARR,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
+  portfolio=portf_maxSTARR,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
-  type="risk",  # minimize StdDev
+  portfolio=portf_maxSTARR,
+  type="risk",  # minimize Expected Sshortfall
   name="ES")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSTARR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSTARR=TRUE,  # maximize STARR
@@ -270,18 +404,18 @@ portf_minES <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_minES <- add.constraint(
-  portfolio=portf_minES, 
+  portfolio=portf_minES,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_minES <- add.objective(
-  portfolio=portf_minES, 
+  portfolio=portf_minES,
   type="risk",  # minimize ES
   name="ES")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 minES_ROI <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_minES,  # specify portfolio
   optimize_method="ROI", # use ROI
   trace=TRUE, traceDE=0)
@@ -326,7 +460,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["/2011", portf_names],
+  R=env_etf$re_turns["/2011", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -341,7 +475,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["2011/", portf_names],
+  R=env_etf$re_turns["2011/", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -365,3 +499,75 @@ barplot(weights_2h,
   names.arg=names(weights_2h),
   las=3, ylab="", xlab="",
   main="Portfolio Weights Second Half")
+library(xtable)
+binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "-a"))
+rownames(binbet_table) <- c("probability", "payout")
+# print(xtable(binbet_table), comment=FALSE, size="tiny")
+print(xtable(binbet_table), comment=FALSE)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# define utility
+utility <- function(frac, p=0.5, a=1, b=4) {
+  p*log(1+frac*b) + (1-p)*log(1-frac*a)
+}  # end utility
+# plot utility
+curve(expr=utility, xlim=c(0, 1),
+ylim=c(-0.5, 0.3), xlab="betting fraction",
+ylab="utility", main="", lwd=2)
+title(main="logarithmic utility", line=-0.8)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# define and plot Kelly fraction
+kelly <- function(b, p=0.5, a=1) {
+  p/a - (1-p)/b
+}  # end kelly
+curve(expr=kelly, xlim=c(0, 5),
+ylim=c(-2, 1), xlab="betting odds",
+ylab="kelly", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="max Kelly fraction=0.5")
+title(main="Kelly fraction", line=-0.8)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot several Kelly fractions
+curve(expr=kelly, xlim=c(0, 5),
+ylim=c(-1, 1.5), xlab="betting odds",
+ylab="kelly", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="a=1.0; max fraction=0.5")
+kelly2 <- function(b) {kelly(b=b, a=0.5)}
+curve(expr=kelly2, add=TRUE, main="", lwd=2)
+abline(h=1.0, lwd=2, col="red")
+text(x=1.5, y=1.0, pos=3, cex=0.8, labels="a=0.5; max fraction=1.0")
+title(main="Kelly fraction", line=-0.8)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+# simulated wealth path
+wealth_path <- cumprod(1+runif(1000,
+              min=-0.1, max=0.1))
+plot(wealth_path, type="l",
+     lty="solid", xlab="", ylab="")
+title(main="wealth path", line=-1)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# wealth of multiperiod binary betting
+wealth <- function(f, b=2, a=1, n=100, i=51) {
+  (1+f*b)^i * (1-f*a)^(n-i)
+}  # end wealth
+curve(expr=wealth, xlim=c(0, 1),
+xlab="betting fraction",
+ylab="wealth", main="", lwd=2)
+title(main="wealth of multiperiod betting", line=0.1)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_data.RData")
+ts_rets <- env_etf$re_turns[, "VTI"]
+c(mean(ts_rets), sd(ts_rets))
+utility <- function(frac, r=ts_rets) {
+sapply(frac, function (fract) sum(log(1+fract*r)))
+}  # end utility
+curve(expr=utility, 
+xlim=c(0.1, 2*KellyRatio(R=ts_rets, method="full")), 
+xlab="kelly", ylab="utility", main="", lwd=2)
+title(main="utility", line=-2)
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_data.RData")
+ts_rets <- env_etf$re_turns[, "VTI"]
+KellyRatio(R=ts_rets, method="full")

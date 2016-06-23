@@ -1,59 +1,133 @@
 #################################
-### FRE6871 Test #3 Solutions Oct 13, 2015
+### FRE6871 Test #3 Solutions May 9, 2016
 #################################
-# Max score 65pts
+# Max score 90pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 ############## Part I
-# 1. (20pts) calculate a vector with the number of NAs 
-# in each column of "airquality", 
-# you can use functions sapply(), is.na(), sum(), 
-# and an anonymous function,
+# Summary: Perform tapply() and sapply() loops to aggregate 
+# student scores. 
 
-sapply(airquality, function(col_umn) sum(is.na(col_umn)))
+# Download the file student_scores.RData from NYU Classes,
+# and load() it.
+# student_scores.RData contains the data frame student_scores.
 
-# replace the NAs in column "Solar.R" with zeros, 
-# you can use function is.na(),
+load(file="C:/Develop/data/student_scores.RData")
 
-airquality[is.na(airquality$Solar.R), "Solar.R"] <- 0
+
+# 1. (30pts) Calculate the average scores for students 
+# in each finance_track category (the average of the 
+# "avg_score" column), using the split-apply-combine 
+# procedure. 
+# You must perform the calculation in two different ways. 
+# In the first method you must use functions with(), 
+# tapply(), and mean(). 
+
+with(student_scores, 
+     tapply(avg_score, finance_track, mean)
+)  # end with
+
+# You should get the following output:
+# Computational     Corporate      InfoTech       Risk 
+#     25.60833      28.53333      20.20000      29.66250
+
+# In the second method you must use functions with(), 
+# sapply(), levels(), and mean().  You cannot use tapply(). 
+# hint: use argument "USE.NAMES=TRUE" in sapply(). 
+
+with(student_scores, 
+     sapply(levels(finance_track), function(x) {
+       mean(avg_score[x==finance_track])
+     }, USE.NAMES=TRUE))  # end with
+
+
+# 2. (20pts) Calculate the highest avg_scores in each 
+# finance_track category, and call it high_scores. 
+# You can use functions with(), tapply(), and max(). 
+# Or you can use functions with(), sapply(), 
+# levels(), and max().
+
+high_scores <- with(student_scores, 
+                    tapply(avg_score, finance_track, max))
+
+# or: 
+high_scores <- with(student_scores, 
+                    sapply(levels(finance_track), function(x) {
+                      max(avg_score[x==finance_track])
+                    }, USE.NAMES=TRUE))  # end with
+
+
+# 3. (20pts) Find the names of the students with the 
+# highest avg_score in each finance_track category. 
+# You must perform the calculation in two different ways. 
+# In the first method you must use high_scores and 
+# the function match(). 
+# hint: use the "name" column of student_scores. 
+
+student_scores$name[match(high_scores, student_scores$avg_score)]
+
+# You should get the following output:
+# [1] William   Jayden    Elizabeth Amelia
+
+# In the second method you must use functions with() 
+# and sapply(). 
+
+with(student_scores, 
+     sapply(high_scores, function(x) {
+       name[x==avg_score]
+     })
+)  # end with
+
 
 
 ############## Part II
-# 1. (5pts) Calculate the vector of "class" attributes of the 
-# columns of the data frame "Cars93", and call it "class_cars",
-# you can use functions class() and sapply(), 
+# Summary: Multiply the columns of a matrix by the 
+# elements of a vector. 
 
-library(MASS)
-class_cars <- sapply(Cars93, class)
+# Create a vector and a matrix as follows:
 
-# calculate the vector of unique "class" attributes (elements) 
-# in "class_cars",
-# you can use function unique(), 
+vec_tor <- c(2, 1, 3)
+set.seed(1121)
+mat_rix <- matrix(sample(1:12), ncol=3)
 
-unique(class_cars)
+# 1. (20pts) Multiply mat_rix by vec_tor, so that the 
+# first column of mat_rix is multiplied by the first 
+# element of vec_tor, the second column by the second 
+# element, etc. 
+# Call this product mult_matrix. 
+# mult_matrix should have the same dimensions as mat_rix. 
+# You can use the function t(), and the "*" operator. 
+# hint: use the function t() twice. 
 
-# 2. (20pts) calculate a list containing the column names in each 
-# unique "class", that is, calculate the names of the columns 
-# of class "factor", the names of the columns of class "numeric", etc.
-# you can use functions lapply(), sapply(), colnames(), 
-# and an anonymous function,
+mult_matrix <- t(t(mat_rix)*vec_tor)
 
-lapply(unique(class_cars), function(unique_class) {
-  colnames(Cars93)[class_cars==unique_class]
-})  # end lapply
-# or to preserve list element names:
-sapply(unique(class_cars), function(unique_class) {
-  colnames(Cars93)[class_cars==unique_class]
-}, simplify=FALSE, USE.NAMES=TRUE)  # end sapply
+# You should get the following result:
+# > mult_matrix
+#      [,1] [,2] [,3]
+# [1,]   14    5   33
+# [2,]    8   10    3
+# [3,]   24    6   24
+# [4,]    6    9    6
 
-# 3. (20pts) calculate the "means" of columns that are 
-# either of class "integer" or "numeric",
-# you can use functions sapply(), mean(), and the "%in%" operator,
-# some elements of Cars93 are NA, so you will need to pass the 
-# parameter "na.rm=TRUE" to mean(),
+# Calculate the row sums of mult_matrix. 
+# You can use the function rowSums(), 
 
-integer_or_numeric <- class_cars %in% c("numeric", "integer")
-sapply(Cars93[, integer_or_numeric], mean, na.rm=TRUE)
+rowSums(mult_matrix)
+
+# You should get the following result:
+# [1] 52 21 54 21
+
+# Calculate the inner product of mat_rix and vec_tor. 
+# You can use the "%*%" operator, 
+
+mat_rix %*% vec_tor
+
+# You should get the following result:
+#      [,1]
+# [1,]   52
+# [2,]   21
+# [3,]   54
+# [4,]   21
 

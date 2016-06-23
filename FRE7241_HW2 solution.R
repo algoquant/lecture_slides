@@ -1,220 +1,169 @@
 #################################
-### FRE7241 HW #2 Solution due Sep 29, 2015
+### FRE7241 Homework #2 Solution due April 26, 2016
 #################################
-# Max score 75pts
+# Max score 90pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-###############
-# Summary: Calculate moving averages and crossing points with prices.
+############## Part I
+# Summary: Create a function that extracts the price and 
+# volume columns from OHLC data, and perform a single 
+# lapply() loop to extract the price and volume columns 
+# from all time series contained in env_data. 
 
-# 1. (10pts) 
-# Download from Yahoo the "AdjClose" prices and "Volume" for 
-# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
-# use tseries function get.hist.quote(),
+# Download the file etf_data.RData from NYU Classes, 
+# and load() it. 
+# etf_data.RData contains an environment called env_data, 
+# with OHLC time series data for ETFs, including "VTI". 
 
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
 
-# load MSFT data
-zoo_msft <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT", 
-    start=as.Date("2007-06-01"), 
-    end=Sys.Date(), 
-    quote=c("AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
+# 1. (10pts) Create a function called ex_tract(), that 
+# extracts the adjusted price and volume columns from an 
+# OHLC data series, and returns an xts series with two 
+# columns. 
+# You can use functions merge(), Ad(), and Vo(), 
 
-# calculate the 50-day moving average of the "AdjClose" prices,
-# merge the moving average with "zoo_msft" by adding it as the last column,
-# rename the last column to "50DMA",
-# you must use function rollmean(), with the proper "align" argument, 
-# so that the averages are calculated using values from the past,
-# remove rows with NAs using function na.omit(), 
+ex_tract <- function(x_ts) merge(Ad(x_ts), Vo(x_ts))
 
-roll_mean <- rollmean(x=zoo_msft[, "AdjClose"], k=50, align="right")
-zoo_msft <- na.omit(merge(zoo_msft, roll_mean))
-colnames(zoo_msft)[3] <- "50DMA"
+# Apply function ex_tract() to a single xts series, to verify 
+# it works correctly:
+
+foo <- ex_tract(env_data$VTI)
+head(foo)
 
 
-# 2. (15pts) 
-# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
-# starting from "2015-01-01", in the colors "black" and "red", 
-# you must use method plot.zoo() with the proper argument "plot.type",
-# add a legend and position it so that it doesn't obscure the plot too much,
+# 2. (20pts) Create a vector of symbols, called some_symbols, 
 
-start_date <- as.Date("2015-01-01")
-plot(zoo_msft[(index(zoo_msft)>start_date), 
-              c("AdjClose", "50DMA")], 
-     main="MSFT Prices and 50DMA", 
-     xlab="", ylab="", plot.type="single", 
-     col=c("black", "red"))
-# add legend
-legend("bottomright", inset=0.05, cex=0.5, 
-       title="MSFT Prices and 50DMA", 
-       leg=c("MSFT", "50DMA"), lwd=2, bg="white", 
-       col=c("black", "red"))
+some_symbols <- c("DBC", "VTI", "IEF")
 
-# calculate the vector of dates right after the "AdjClose" crosses the "50DMA", 
-# and call it "cross_es". 
-# First calculate a boolean vector that is TRUE for dates right 
-# after a cross has just occurred, and FALSE otherwise. 
-# Next apply this boolean vector to extract dates when 
-# the "AdjClose" crosses the "50DMA". 
-# you can use the logical operator "!=", 
-# and functions sign(), diff(), and index(), 
+# Perform an lapply() loop over a subset of env_data 
+# containing some_symbols, and call the function ex_tract() 
+# on each element in the subset, and call the output da_ta. 
+# da_ta should be a list of xts series, with each xts series 
+# containing price and volume data for a single symbol. 
+# You can use functions as.list(), get(), ex_tract(), and lapply(). 
+# There are at least two different ways of performing this, 
+# and either way is good.
 
-cross_es <- (diff(sign(zoo_msft[, "AdjClose"] - zoo_msft[, "50DMA"]))!=0)
-cross_es <- index(zoo_msft[cross_es, ])
+da_ta <- lapply(as.list(env_data)[some_symbols], ex_tract)
+# or
+da_ta <- lapply(some_symbols, 
+                function(sym_bol) 
+                  ex_tract(get(sym_bol, envir=env_data)))
 
-# add grey vertical ablines to the plot above, at the dates of "cross_es",
-# you must use function abline(), 
+# Flatten da_ta into a single xts series, and call it da_ta. 
+# You can use functions do.call() and merge(), 
 
-abline(v=cross_es[cross_es>start_date], col="grey")
-
-
-# 3. (20pts)
-# Calculate the 50-day rolling maximum and minimum of the "AdjClose" prices,
-# you must use function rollmax() with the proper "align" argument, so that 
-# the aggregations are calculated using values from the past,
-# calculate the difference between the rolling maximum and minimum, 
-# and call it "ba_nd",
-
-roll_max <- rollmax(x=zoo_msft[, "AdjClose"], k=50, align="right")
-roll_min <- -rollmax(x=-zoo_msft[, "AdjClose"], k=50, align="right")
-ba_nd <- (roll_max-roll_min)
-
-# calculate the rolling upper (lower) band as the 50-day moving average
-# plus (minus) one half of "ba_nd",
-# merge the rolling upper and lower bands with "zoo_msft" by adding 
-# them as the last columns,
-# rename the last columns to "Up_band" and "Low_band",
-# remove rows with NAs using function na.omit(), 
-
-upper_band <- zoo_msft[, "50DMA"] + ba_nd/2
-lower_band <- zoo_msft[, "50DMA"] - ba_nd/2
-zoo_msft <- merge(zoo_msft, upper_band, lower_band)
-colnames(zoo_msft)[4:5] <- c("Up_band", "Low_band")
-zoo_msft <- na.omit(zoo_msft)
-
-# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
-# same panel, starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
-
-plot(zoo_msft[(index(zoo_msft)>start_date), 
-              c("AdjClose", "Up_band", "Low_band")], 
-     main="MSFT Prices with Bollinger Bands", 
-     xlab="", ylab="", plot.type="single", 
-     col=c("black", "red", "blue"))
-# add legend
-legend("top", inset=0.05, cex=0.5, 
-       title="MSFT Prices with Bollinger Bands", 
-       leg=c("MSFT", "Up_band", "Low_band"), 
-       lwd=2, bg="white", 
-       col=c("black", "red", "blue"))
-
-# calculate the vector of dates right after the "AdjClose"
-# crosses any of the two bands, and call it "cross_es". 
-# First calculate a boolean vector that is TRUE for dates right 
-# after a cross has just occurred, and FALSE otherwise. 
-# Next apply this boolean vector to extract dates when 
-# the "AdjClose" crosses either "Up_band" or "Low_band". 
-# you can use the logical operator "!=", 
-
-up_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Up_band"]
-low_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Low_band"]
-cross_es <- (((diff(sign(up_cross))!=0)) | ((diff(sign(low_cross))!=0)))
-cross_es <- index(zoo_msft[cross_es, ])
-
-# add grey vertical ablines to the plot above, at the dates of "cross_es",
-# you must use function abline(), 
-
-abline(v=cross_es[cross_es>start_date], col="grey")
+da_ta <- do.call(merge, da_ta)
 
 
 
-###############
-# Summary: Calculate the maximum drawdown of a time series.
+############## Part II
+# Summary: Create a function which calculates a vector 
+# of hypothesis test statistics. 
+# Perform an sapply() loop to calculate a matrix of 
+# statistics for a vector of symbols. 
 
-# 1. (30pts) 
-# download the file "zoo_data.Rdata" from NYU Classes, and load() it, 
-# the file "zoo_data.Rdata" includes a zoo series called "zoo_stx", 
-# containing MSFT stock OHLC data. 
-# extract the "AdjClose" prices from "zoo_stx" into a variable 
-# called "msft_prices".
+# Download the file etf_data.RData from NYU Classes, 
+# and load() it. 
+# etf_data.RData contains an environment called env_data, 
+# with OHLC time series data for ETFs. 
 
-load(file="C:/Develop/data/zoo_data.RData")
-msft_prices <- zoo_stx[, "AdjClose"]
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
 
-# plot "msft_prices", using generic function plot(),
 
-plot(msft_prices)
+# 1. (20pts) Create a function called get_hyp_stats(), 
+# that returns a vector with hypothesis test statistics.
+# The function get_hyp_stats() should accept a single 
+# argument called re_turns, an xts series containing 
+# returns data. 
+# 
+# The function get_hyp_stats() should perform the 
+# Jarque-Bera and the Shapiro-Wilk tests of normality 
+# on re_turns, and return a named vector containing 
+# the statistics (not the p-values!), 
+# You must use the functions jarque.bera.test() and 
+# shapiro.test(). 
+# Be careful because shapiro.test() doesn't accept 
+# arguments of class xts, so you must first coerce 
+# it into a matrix using function coredata(). 
+# You can use the function unname() to strip the 
+# names from the values returned by the functions 
+# jarque.bera.test() and shapiro.test(). 
 
-# The cumulative maximum of a price series is the maximum price up to 
-# that point in time. 
-# Plot the Cumulative maximum of "msft_prices" using function cummax(),
+# load package tseries
+library(tseries)
 
-plot(cummax(msft_prices))
+get_hyp_stats <- function(re_turns) {
+  # load package tseries, if it's not loaded already
+  stopifnot("package:tseries" %in% search() || require("tseries", quietly=TRUE))
+  c(
+    jarque_bera=unname(jarque.bera.test(re_turns)$statistic),
+    shapiro=unname(shapiro.test(coredata(re_turns))$statistic))
+}  # end get_hyp_stats
 
-# A drawdown is a drop in price from its previous maximum.
-# Calculate the zoo time series of drawdowns of "msft_prices", 
-# as the difference between the cumulative maximum of "msft_prices" 
-# minus "msft_prices", and call it "draw_down", 
+# apply get_hyp_stats() as follows, to verify it works correctly:
+get_hyp_stats(etf_rets[, 1])
 
-draw_down <- cummax(msft_prices) - msft_prices
+# get_hyp_stats(etf_rets[, 1]) should produce this:
+# jarque_bera      shapiro 
+# 9008.6452123    0.8979459 
 
-# plot "draw_down",
 
-plot(draw_down)
+# 2. (20pts) Perform an sapply() loop over the columns 
+# of etf_rets, and apply get_hyp_stats() to the columns 
+# of etf_rets, and call the output matrix hyp_stats. 
+# The first column of hyp_stats should contain the 
+# Jarque-Bera statistics, while the second should 
+# contain the Shapiro-Wilk statistics. 
+# The rownames of hyp_stats should contain the names 
+# in some_symbolsetf_rets. 
+# You can use functions sapply(), na.omit(), and t(). 
+# Be careful because some columns of etf_rets contain 
+# NA values, so you must pass them through na.omit(). 
 
-# Find the date when "draw_down" reaches its maximum, and call it "date_trough", 
-# and find the maximum value of "draw_down" on that date, and call it "max_drawdown", 
-# you can use functions index() and which.max(),
+hyp_stats <- sapply(etf_rets, 
+                    function(x_ts) 
+                      get_hyp_stats(na.omit(x_ts)))
+hyp_stats <- t(hyp_stats)
 
-in_dex <- index(msft_prices)
-date_trough <- in_dex[which.max(draw_down)]
-max_drawdown <- draw_down[date_trough]
+# You should get the following result:
+#     jarque_bera   shapiro
+# VTI   9008.6452 0.8979459
+# VEU   7442.9831 0.8977588
+# IEF    415.6686 0.9861641
+# VNQ  12500.0078 0.8367968
+# DBC    610.5074 0.9704973
+# VXX    684.3048 0.9589765
+# etc.
 
-# Subset "draw_down" to dates before "date_trough", and call it "pre_drawdown", 
 
-pre_drawdown <- draw_down[in_dex<date_trough]
+# 3. (10pts) Create a scatterplot of hyp_stats, and 
+# add labels containing the rownames of hyp_stats. 
+# Use functions plot() and text(),
 
-# Subset "draw_down" to dates after "date_trough", and call it "post_drawdown", 
+plot(hyp_stats)
+text(x=hyp_stats[, "jarque_bera"], 
+     y=hyp_stats[, "shapiro"],
+     labels=rownames(hyp_stats),
+     pos=1, cex=0.8)
 
-post_drawdown <- draw_down[in_dex>date_trough]
 
-# When the current price exceeds the previous maximum, then "draw_down" is zero, 
-# a drawdown starts when "draw_down" is first zero and then increases above zero.
-# Find the latest date when "pre_drawdown" was still zero before "date_trough", 
-# and call it "date_from",
-# you can use functions index() and max(),
+# 4. (10pts) Sort hyp_stats on column "jarque_bera" 
+# in ascending (increasing) order. 
+# Use function order(),
 
-date_from <- max((index(pre_drawdown))[pre_drawdown==0])
+hyp_stats <- hyp_stats[order(hyp_stats[, "jarque_bera"], 
+                             decreasing=FALSE), ]
 
-# A drawdown ends when "draw_down" drops back to zero after "date_trough".
-# Find the first date when "post_drawdown" drops to zero after "date_trough", 
-# and call it "date_to",
-# you can use functions index() and min(),
+# save hyp_stats to a comma-delimited CSV file. 
+# Use function write.csv(),
 
-date_to <- min((index(post_drawdown))[post_drawdown==0])
-
-# Combine the three dates into a named vector: 
-# from=date_from, trough=date_trough, to=date_to,
-# and call it "drawdown_dates",
-
-drawdown_dates <- c(from=date_from, trough=date_trough, to=date_to)
-
-# 2. (5pts) plot "msft_prices", using generic function plot(),
-
-plot(msft_prices, main="Drawdown dates")
-
-# add vertical green, red, and blue lines for the three dates: 
-# "date_from", "date_trough", "date_to",
-
-abline(v=drawdown_dates, col=c("green", "red", "blue"))
+write.csv(hyp_stats, file="hyp_stats.csv")
 
 

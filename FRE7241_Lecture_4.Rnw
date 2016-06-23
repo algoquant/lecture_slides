@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#4]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#4, Fall 2015}
+\subtitle{Lecture\#4, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{Sep 29, 2015}
+\date{April 26, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -87,7 +87,8 @@ knit_theme$set(thm)
       \vspace{-1em}
       <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
+etf_rets <- na.omit(etf_rets)
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform regression
@@ -97,8 +98,6 @@ plot(reg_formula, data=etf_rets)
 title(main="Regression XLP ~ VTI", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
-
-
 reg_model_sum <- summary(reg_model)
 coef(reg_model_sum)
 # Durbin-Watson test autocorrelation residuals
@@ -126,7 +125,8 @@ dwtest(reg_model)
   \begin{columns}[T]
     \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(quantmod)  # load quantmod
 library(lmtest)  # load lmtest
 # perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
@@ -176,9 +176,9 @@ etf_reg_stats[, 1:3]
       \end{displaymath}
       The \emph{systematic} risk and returns are proportional to $\beta$, 
       \vskip1ex
-      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and its benchmark:
+      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and the market:
       \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^{k} (R_{i}-\bar{R}) (R_{i,b}-\bar{R_{b}})} {\sum_{i=1}^{k} (R_{i,b}-\bar{R_{b}})^2}
+        \beta = \frac{\sum_{i=1}^{k} (R_{i}-\bar{R}) (R_{i,m}-\bar{R_{m}})} {\sum_{i=1}^{k} (R_{i,m}-\bar{R_{m}})^2}
       \end{displaymath}
       The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns,
     \column{0.5\textwidth}
@@ -214,16 +214,15 @@ CAPM.alpha(Ra=etf_rets[, "XLP"],
     \column{0.5\textwidth}
       According to the \emph{CAPM} model, assets earn a \emph{systematic} return proportional to their \emph{systematic} risk ($\beta$),
       \vskip1ex
-      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk ($\beta$) and return, 
-      \vskip1ex
-      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't,
-    \vspace{-1em}
+      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk ($\beta$) and return, for different stocks, 
       <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 library(PerformanceAnalytics)
-etf_betas <- sapply(etf_rets, CAPM.beta, 
-            Rb=etf_rets[, "VTI"])
-etf_annrets <- sapply(etf_rets, 
-            Return.annualized)
+etf_betas <- sapply(
+  etf_rets[, colnames(etf_rets)!="VXX"], 
+  CAPM.beta, Rb=etf_rets[, "VTI"])
+etf_annrets <- sapply(
+  etf_rets[, colnames(etf_rets)!="VXX"], 
+  Return.annualized)
 # plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas", 
             ylab="ann. rets", xlim=c(-0.25, 1.6))
@@ -239,11 +238,14 @@ text(x=etf_betas[label_names],
      labels=label_names, pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}\\
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}\
-      If an asset's returns lie on the \emph{SML}, then all its returns are \emph{systematic}, and its $\alpha$ is equal to zero,
+      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't,
       \vskip1ex
-      Assets above the \emph{SML} earn positive \emph{idiosyncratic} returns (positive $\alpha$), and vice versa,
+      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero,
+      \vskip1ex
+      Assets above the \emph{SML} have a positive $\alpha$), and those below have a negative $\alpha$),
   \end{columns}
 \end{block}
 
@@ -314,8 +316,8 @@ etf_perf_stats <- etf_perf_stats[
       @
     \column{0.45\textwidth}
       \vspace{-1em}
-      <<eval=TRUE,echo=(-1)>>=
-load(file="C:/Develop/data/etf_data.Rdata")
+      <<eval=FALSE,echo=(-1)>>=
+# load(file="C:/Develop/data/etf_data.RData")
 etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
       @
   \end{columns}
@@ -332,9 +334,7 @@ etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<corr_plot,echo=(-(1:3)),eval=FALSE,fig.show='hide'>>=
-# load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+      <<corr_plot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
@@ -420,11 +420,12 @@ title("Dissimilarity = 1-Correlation",
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<pca_plot,echo=(-(1:4)),fig.height=5,fig.show='hide'>>=
+      <<pca_plot,echo=(-(1:5)),fig.height=5,fig.show='hide'>>=
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+# load(file="C:/Develop/data/etf_data.RData")
+etf_rets <- na.omit(etf_rets)
 ### Perform principal component analysis PCA
 etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
 barplot(etf_pca$sdev[1:10], 
@@ -579,7 +580,7 @@ packageDescription("factorAnalytics")  # get short description
 help(package="factorAnalytics")  # load help page
       @
       \vspace{-1em}
-      <<eval=TRUE,echo=(-(1:2)),tidy=TRUE>>=
+      <<eval=FALSE,echo=(-(1:2)),tidy=TRUE>>=
 options(width=50)
 library(factorAnalytics)  # load package "factorAnalytics"
 # list all objects in "factorAnalytics"
@@ -605,10 +606,10 @@ detach("package:factorAnalytics")
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(factorAnalytics)
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+# load(file="C:/Develop/data/etf_data.RData")
 # fit a three-factor model using PCA
 factor_pca <- fitSfm(etf_rets, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
@@ -619,7 +620,7 @@ factor_pca$residuals[1:3, 1:3]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(factorAnalytics)
 factor_pca$alpha  # estimated alphas
 factor_pca$r2  # R-squared regression
@@ -641,7 +642,7 @@ factor_pca$Omega[1:3, 4:6]
     \column{0.4\textwidth}
       <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
 library(factorAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
+# load(file="C:/Develop/data/portf_optim.RData")
 plot(factor_pca, which.plot.group=3, 
      n.max=30, loop=FALSE)
 # ?plot.sfm
@@ -765,7 +766,7 @@ plot(factor_pca, asset.name="VTI",
   \begin{columns}[T]
     \column{0.4\textwidth}
       \vspace{-1em}
-      <<fact_resid_qq,eval=TRUE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<fact_resid_qq,eval=FALSE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PortfolioAnalytics)
 # residual Q-Q plot
 plot(factor_pca, asset.name="VTI", 

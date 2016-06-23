@@ -9,8 +9,8 @@
 # and send the file to the TA Dong Huang (dh1716@nyu.edu)
 
 
-# 1. load ETF returns from "etf_data.Rdata" file,
-load(file="C:/Develop/data/etf_data.Rdata")
+# 1. load ETF returns from "etf_data.RData" file,
+load(file="C:/Develop/data/etf_data.RData")
 
 #    create a list of symbols for creating an optimized portfolio,
 sym_bols <- c("IEF", "VTI", "VNQ", "XLP")

@@ -1,102 +1,77 @@
 #################################
-### FRE7241 Test #2 Solutions Sep 29, 2015
+### FRE7241 Test #2 Solutions May 3, 2016
 #################################
-# Max score 60pts
+# Max score 70pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
+##############
+# Summary: List the class and dimension attributes 
+# of objects in an environment. 
 
-############## Part I
-# Summary: subset daily stock prices to dates at the end of the week, 
-# and calculate percentage returns over past four week periods.
+# Load the file etf_data_new.RData, which contains the 
+# environment env_etf, containing ETF time series 
+# and other ETF data. 
 
-# 1. (15pts) 
-# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
+load(file="C:/Develop/data/etf_data_new.RData")
 
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+# 1. (10pts) List the names of all the objects in the 
+# environment env_etf, and save the names in a vector 
+# of strings called sym_bols. 
+# You can use function ls(). 
 
-# "etf_data.Rdata" contains an environment called "env_data", 
-# with OHLC time series data for ETFs, including "VTI". 
-# Extract the adjusted close prices from "VTI" into a variable 
-# called "stock_prices".
-# you can use function Ad(), 
+sym_bols <- ls(env_etf)
 
-stock_prices <- Ad(env_data$VTI)
+# Create a list with the class attributes of all the 
+# objects in the environment env_etf, and call it 
+# class_es. 
+# You can use functions eapply() and class(). 
 
-# subset "stock_prices" to the end of the week dates. 
-# you can use function endpoints() with the "on" argument, 
-
-stock_prices <- stock_prices[endpoints(stock_prices, on="weeks"), ]
-
-# verify that the dates of "stock_prices" are indeed "Friday" 
-# (except for some holidays), 
-# by printing the tail of the index of "stock_prices", and converting 
-# it to days of the week, 
-# you can use functions weekdays(), index(), and tail(), 
-
-weekdays(index(tail(stock_prices)))
-
-# calculate percentage returns from "stock_prices", over trailing  
-# four week periods, and call it "stock_rets", 
-# you can use functions log() and diff() with the "lag" argument, 
-# comment: the original instructions contained a typo, and may have 
-# been confusing, so please provide generous partial credit for this part.
-
-stock_rets <- diff(log(stock_prices), lag=4)
-
-# 2. (15pts) 
-# extract the highest and lowest returns, and their associated dates, 
-# you can use functions index, which(), or which.max() and which.min, 
-
-stock_rets[which.max(stock_rets)]
-index(stock_rets[which.max(stock_rets)])
-stock_rets[which.min(stock_rets)]
-index(stock_rets[which.min(stock_rets)])
+class_es <- eapply(env_etf, class)
 
 
+# 2. (30pts) List the names of all the objects of 
+# class xts in the environment env_etf, and save the 
+# names in a vector of strings called sym_bols. 
+# hint: first calculate a named boolean vector that 
+# is TRUE for objects of class xts, then extract the 
+# names of those objects. 
+# You can use functions eapply(), is.xts(), unlist(), 
+# and names(). 
+# Or you can use sapply() instead of eapply(), and 
+# an anonymous function, and the "%in%" operator. 
 
-############## Part II
-# Summary: perform a single lapply() loop to extract price and 
-# volume columns from OHLC data series contained in "env_data". 
-
-# download the file "etf_data.Rdata" from NYU Classes, and load() it. 
-# "etf_data.Rdata" contains an environment called "env_data", 
-# with OHLC time series data for ETFs, including "VTI". 
-
-library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
-
-# 1. (10pts) Create a function called ex_tract(), that extracts 
-# the adjusted price and volume columns from an OHLC data series, 
-# and returns an xts series with two columns, 
-# you can use functions merge(), Ad(), and Vo(), 
-
-ex_tract <- function(x_ts) merge(Ad(x_ts), Vo(x_ts))
-
-# Apply function ex_tract() to a single xts series, to verify 
-# it works correctly:
-
-foo <- ex_tract(env_data$VTI)
-head(foo)
+is_xts <- unlist(eapply(env_etf, is.xts))
+# or
+is_xts <- sapply(class_es, function(x) "xts" %in% x)
+sym_bols <- names(is_xts[is_xts])
 
 
-# 2. (20pts) Create a vector of symbols, called "sym_bols", 
+# 3. (30pts) Create a matrix called dimen_sions, 
+# containing the dimensions of all the xts objects 
+# in env_etf. 
+# You can use the functions eapply(), dim(), rbind(), 
+# and do.call(). 
+# Or you can use lapply() and an anonymous function, 
+# instead of eapply(). 
+# hint: eapply() returns a list, and you must flatten 
+# the list into a matrix using rbind() and do.call(). 
 
-sym_bols <- c("DBC", "VTI", "IEF")
+dimen_sions <- do.call(rbind, eapply(env_etf, dim)[sym_bols])
+# or
+dimen_sions <- do.call(rbind, lapply(sym_bols, 
+                                     function (x_ts) 
+                                       dim(get(x_ts, env_etf))))
 
-# Perform an lapply() loop over a subset of "env_data" 
-# containing "sym_bols", and call the function ex_tract() 
-# on each element in the subset, and call the output "da_ta". 
-# "da_ta" should be a list of xts series, with each xts series 
-# containing price and volume data for a single symbol. 
-# you can use functions as.list(), ex_tract(), and lapply(), 
+# You should get the following output:
+#   dimen_sions
+#           [,1] [,2]
+# DBC       2338    6
+# VNQ       2338    6
+# price_s   2338   20
+# XLB       2338    6
+# VTI       2338    6
+# etc.
 
-da_ta <- lapply(as.list(env_data)[sym_bols], ex_tract)
-
-# Flatten "da_ta" into a single xts series, and call it "da_ta". 
-# you can use functions do.call() and merge(), 
-
-da_ta <- do.call(merge, da_ta)
 

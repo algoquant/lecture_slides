@@ -1,166 +1,183 @@
 #################################
-### FRE7241 HW #1 Solution due Sep 22, 2015
+### FRE7241 Homework #1 Solution due April 19, 2016
 #################################
-# Max score 55pts
+# Max score 100pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-##################################
-# 1. (15pts) create a vector of weekly "POSIXct" dates corresponding  
-# to Mondays at 09:30AM, and call it "mon_days", 
-# start with the date "2015-02-09", and end at the most recent Monday
-# before today (today is defined by Sys.time()),
-# set the timezone to "America/New_York", 
-# hint: first calculate the number of weeks between today and the start 
-# date, and use that number to create a vector of weekly "POSIXct" dates,
-# you can use functions Sys.setenv(), as.POSIXct(), difftime() and ceiling(), 
-# and lubridate function weeks(),
+############## Part I
+# Summary: Create a function which returns a list of attributes of 
+# a time series object. Coerce time series objects into class xts, 
+# and list their attributes. 
 
-Sys.setenv(tz="America/New_York")
-start_date <- as.POSIXct("2015-02-09 09:30:00")
-end_date <- Sys.time()
+# 1. (20pts) Create a function called attri_butes() which returns a list 
+# of attributes of a time series object. 
+# The function attri_butes() should accept a single input called time_series, 
+# and verify that it's a time series object of either class ts, zoo, or xts, 
+# and if not, then it should produce and error and stop. 
+# hint: you can use functions stopifnot(), is.ts(), is.zoo(), and is.xts(), 
+# and the "||" operator. 
+# 
+# The function attri_butes() should return a named list of data 
+# with the following information about the input time_series: 
+# - dimensions, 
+# - number of rows, 
+# - number of rows with missing values (NA), 
+# - number of columns, 
+# - column names, 
+# - the time_series class, 
+# - the time index class of time_series, 
+# - the first and last rows of time_series, 
+# hint: you can use functions list(), dim(), if(), is.null(), 
+# nrow(), length(), sum(), complete.cases(), ncol(), 
+# colnames(), class(), index(), head(), and tail().
 
-num_weeks <- ceiling(difftime(end_date, start_date, units="weeks"))
-
-mon_days <- start_date + weeks(0:num_weeks)
-mon_days <- mon_days[(mon_days <= end_date)]
-head(mon_days)
-tail(mon_days)
-
-# convert "mon_days" to the days of the week, using three different methods,
-# to verify that all the dates in "mon_days" are indeed Mondays,
-# use function weekdays(),
-weekdays(mon_days)
-
-# use function as.POSIXlt(),
-as.POSIXlt(mon_days)$wday
-
-# use lubridate function wday(),
-wday(mon_days, TRUE)
-
-
-
-###############
-# 2. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
-# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
-# use tseries function get.hist.quote(),
-
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
-
-# load MSFT data
-zoo_msft <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT", 
-    start=as.Date("2007-06-01"), 
-    end=Sys.Date(), 
-    quote=c("AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
+attri_butes <- function(time_series) {
+  # check if argument is a time series object
+  stopifnot(is.ts(time_series) || is.zoo(time_series) || is.xts(time_series))
+  # create list and return it
+  list(
+    dim=dim(time_series), 
+    nrows=if(is.null(nrow(time_series))) length(time_series) else nrow(time_series), 
+    nrows_nas=sum(!complete.cases(time_series)), 
+    ncols=if(is.null(ncol(time_series))) 1 else ncol(time_series), 
+    col_names=if(is.null(colnames(time_series))) "none" else colnames(time_series), 
+    ts_class=class(time_series), 
+    ts_index_class=class(index(time_series)), 
+    first_row=head(time_series, 1), 
+    last_row=tail(time_series, 1)
+  )  # end list
+}  # end attri_butes
 
 
-# calculate the 50-day moving average of the "AdjClose" prices,
-# merge the moving average with "zoo_msft" by adding it as the last column,
-# rename the last column to "50DMA",
-# use function rollmean(), with the proper "align" argument, 
-# so that the averages are calculated using values from the past,
+# 2. (10pts) Coerce the EuStockMarkets time series into class xts, 
+# and call it xts_eustocks. 
+# The time index of xts_eustocks should be of class POSIXct, and 
+# the timezone should be equal to "America/New_York". 
+# hint: you can use functions coredata(), xts(), index(), 
+# and date_decimal(). 
 
-roll_mean <- rollmean(x=zoo_msft[, "AdjClose"], k=50, align="right")
-zoo_msft <- na.omit(merge(zoo_msft, roll_mean))
-colnames(zoo_msft)[3] <- "50DMA"
+library(lubridate)  # load lubridate
+xts_eustocks <- xts(coredata(EuStockMarkets), 
+                    order.by=date_decimal(index(EuStockMarkets), 
+                                          tz="America/New_York"))
 
+# plot all 4 columns of xts_eustocks in a single panel:
 
-# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
-# starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
-
-plot(zoo_msft[(index(zoo_msft)>as.Date("2015-01-01")), 
-              c("AdjClose", "50DMA")], 
-     main="MSFT Prices and 50DMA", 
-     xlab="", ylab="", plot.type="single", 
-     col=c("black", "red"))
-# add legend
-legend("top", inset=0.05, cex=0.5, 
-       title="MSFT Prices and 50DMA", 
-       leg=c("MSFT", "50DMA"), lwd=2, bg="white", 
-       col=c("black", "red"))
+plot(xts_eustocks)
 
 
-# calculate the vector of dates when zoo_msft[, "AdjClose"] 
-# crosses "50DMA", and call it "cross_es", 
-# "cross_es" should be TRUE for dates when a cross had just occurred, 
-# and FALSE otherwise,
+# call attri_butes() as follows, to verify that it works correctly: 
 
-cross_es <- !(diff(sign(zoo_msft[, "AdjClose"] - zoo_msft[, "50DMA"]))==0)
-cross_es <- index(zoo_msft[cross_es, ])
-
-
-# add vertical ablines to the plot above, at the dates of "cross_es",
-
-abline(v=cross_es[cross_es>as.Date("2015-01-01")], col="blue", lty="dashed")
+attri_butes(EuStockMarkets)
+attri_butes(EuStockMarkets[, 1])
+attri_butes(xts_eustocks)
+attri_butes(xts_eustocks[, 1])
 
 
 
-###############
-# 3. (20pts) Calculate the 50-day rolling maximum and minimum of 
-# the "AdjClose" prices,
-# use function rollmax() with the proper "align" argument, so that 
-# the aggregations are calculated using values from the past,
-# calculate the difference between the rolling maximum and minimum, 
-# and call it "ba_nd",
+############## Part II
+# Summary: The package "Ecdat" contains a data frame called "Garch". 
+# The column Garch$date contains dates as numeric values in the 
+# format "yymmdd". 
+# Coerce the numeric values into date-time objects. 
 
-roll_max <- rollmax(x=zoo_msft[, "AdjClose"], k=50, align="right")
-roll_min <- -rollmax(x=-zoo_msft[, "AdjClose"], k=50, align="right")
-ba_nd <- (roll_max-roll_min)
+# 1. (10pts) Create a vector of dates of class Date from Garch$date, 
+# and call it "in_dex". 
+# You will need to add the century value "19" to the year. 
+# You can use functions paste() and as.Date(), with the proper 
+# "format" argument. 
 
-
-# calculate the rolling upper (lower) band as the moving average
-# plus (minus) one half of "ba_nd",
-# merge the rolling upper and lower bands with "zoo_msft" by adding 
-# them as the last columns,
-# rename the last columns to "Up_band" and "Low_band",
-# remove rows with NAs using function na.omit(), 
-
-upper_band <- zoo_msft[, "50DMA"] + ba_nd/2
-lower_band <- zoo_msft[, "50DMA"] - ba_nd/2
-zoo_msft <- merge(zoo_msft, upper_band, lower_band)
-colnames(zoo_msft)[4:5] <- c("Up_band", "Low_band")
-zoo_msft <- na.omit(zoo_msft)
+library(Ecdat)  # load econometric data sets
+head(Garch)  # explore the data
+in_dex <- as.Date(paste0(19, Garch$date), format="%Y%m%d")
 
 
-# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
-# same panel, starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
+# Use three different methods to create a vector of POSIXct dates 
+# from Garch$date, and call it "in_dex". 
+# 
+# 2. (10pts) First method: create strings in the format "19yy-mm-dd", 
+# and then coerce them into POSIXct.  
+# hint: Extract substrings corresponding to the year, month, and day 
+# using substr(), and then combine them using paste(). 
+# Apply function as.POSIXct() and set the timezone to "America/New_York". 
 
-plot(zoo_msft[(index(zoo_msft)>as.Date("2015-01-01")), 
-              c("AdjClose", "Up_band", "Low_band")], 
-     main="MSFT Prices with Bollinger Bands", 
-     xlab="", ylab="", plot.type="single", 
-     col=c("black", "red", "blue"))
-# add legend
-legend("top", inset=0.05, cex=0.5, 
-       title="MSFT Prices with Bollinger Bands", 
-       leg=c("MSFT", "Up_band", "Low_band"), 
-       lwd=2, bg="white", 
-       col=c("black", "red", "blue"))
+in_dex <- as.POSIXct(
+  paste(paste0(19, substr(Garch$date, 1, 2)), 
+        substr(Garch$date, 3, 4), 
+        substr(Garch$date, 5, 6), sep="-"), 
+  tz="America/New_York")
 
 
-# calculate the vector of dates when zoo_msft[, "AdjClose"] 
-# crosses any of the bands, and call it "cross_es", 
-# "cross_es" should be TRUE for dates when a cross had just occurred, 
-# and FALSE otherwise,
+# 3. (10pts) Second method: create strings in the format "19yymmdd", 
+# and then coerce them into POSIXct. 
+# hint: Apply function as.POSIXct() with the proper "format" argument,
+# and set the timezone to "America/New_York". 
+
+in_dex <- as.POSIXct(paste0(19, Garch$date), format="%Y%m%d", 
+                     tz="America/New_York")
 
 
-up_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Up_band"]
-low_cross <- zoo_msft[, "AdjClose"] - zoo_msft[, "Low_band"]
-cross_es <- ((!(diff(sign(up_cross))==0)) | (!(diff(sign(low_cross))==0)))
-cross_es <- index(zoo_msft[cross_es, ])
+# 4. (10pts) Third method: use function ymd() from package lubridate,
+# and set the timezone to "America/New_York", 
 
-# add vertical ablines to the plot above, at the dates of "cross_es",
+in_dex <- ymd(Garch$date, tz="America/New_York")
 
-abline(v=cross_es[cross_es>as.Date("2015-01-01")], col="green", lty="dashed")
+
+# 5. (20pts) Create an xts object called xts_series from the 
+# columns Garch$dm and Garch$cd, and the vector in_dex. 
+# Use functions c() and xts(). 
+
+xts_series <- xts(Garch[, c("dm", "cd")], order.by=in_dex)
+
+# Change the column names of xts_series to "DMark" and "CAD". 
+# Use functions c() and colnames(). 
+
+colnames(xts_series) <- c("DMark", "CAD")
+
+# Calculate the rolling mean of the "DMark" column of xts_series, 
+# over a window of 11 points in the past, and call the result dm_mean,
+# Use the function runMean() from package TTR. 
+
+library(TTR)
+dm_mean <- runMean(x=xts_series[, "DMark"], n=11)
+
+# Add dm_mean as the third column of xts_series, 
+# using the generic function cbind(). 
+
+xts_series <- cbind(xts_series, dm_mean)
+
+# Change the third column name of xts_series to "dm_mean". 
+# Use function colnames(). 
+
+colnames(xts_series)[3] <- "dm_mean"
+
+# Calculate the number of NA values in xts_series. 
+# Use functions is.na() and sum(). 
+
+sum(is.na(xts_series))
+
+# Remove any NAs in xts_series using na.omit(). 
+
+xts_series <- na.omit(xts_series)
+
+# Subset xts_series to the dates from "1982-01-01" to "1986-01-01". 
+
+xts_series <- xts_series["1982-01-01/1986-01-01"]
+
+# 6. (10pts) Plot the "DMark" and "dm_mean" columns of xts_series, 
+# for the years from 1984 to 1985, using the generic function plot(). 
+# Add a legend using the function legend(). 
+
+plot(xts_series["1984/1985", c("DMark", "dm_mean")])
+legend(x="topleft", legend=c("DMark", "dm_mean"),
+       inset=0.2, cex=0.7, bg="white",
+       lwd=2, lty=c(1, 1), col=c("black", "red"))
+
+# Save xts_series to a comma-delimited csv file called "dmcad.csv". 
+# Use function write.zoo(). 
+
+write.zoo(xts_series, file="dmcad.csv")
 

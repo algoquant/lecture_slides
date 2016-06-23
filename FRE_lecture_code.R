@@ -470,7 +470,7 @@ library(PortfolioAnalytics)
 library(DEoptim)
 
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 
 
 ### portfolio setup
@@ -1028,7 +1028,7 @@ period_windows <- xts(period_windows,
 ########################
 ### factorAnalytics
 
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 load(file="C:/Develop/data/portf_optim.RData")
 library(factorAnalytics)
 
@@ -1206,7 +1206,7 @@ head(zoo_series)
 # write zoo to CSV file
 write.zoo(zoo_series, file='zoo_series.csv', sep=",")
 # save to binary file
-save(zoo_series, file='zoo_series.Rdata')
+save(zoo_series, file='zoo_series.RData')
 
 ### plot
 

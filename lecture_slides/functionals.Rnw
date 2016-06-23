@@ -1,0 +1,1206 @@
+% Define knitr options
+% !Rnw weave=knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE,comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% mathtools package for math symbols
+% \usepackage{mathtools}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[Functions]{Functions}
+\subtitle{FRE6871 \& FRE7241, Spring 2016}
+% \subject{Getting Started With R}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+% \email{jp3900@nyu.edu}
+\date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Environments in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
+      \vskip1ex
+      There are three system environments:
+      \begin{itemize}
+        \item \texttt{globalenv()} the user's workspace,
+        \item \texttt{baseenv()} the environment of the base package,
+        \item \texttt{emptyenv()} the only environment without an enclosure,
+      \end{itemize}
+      Environments form a tree structure of successive enclosures, with the empty environment at its root,
+      \vskip1ex
+      Packages have their own environments,
+      \vskip1ex
+      The enclosure of the base package is the empty environment,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+baseenv()  # get base environment
+globalenv()  # get global environment
+environment()  # get current environment
+class(environment())  # get environment class
+n.globvar <- 1  # define variable in current environment
+ls(environment())  # get objects in current environment
+
+env.new <- new.env()  # create new environment
+parent.env(env.new)  # get calling environment of new environment
+assign("new_var1", 3, envir=env.new)  # assign Value to Name
+env.new$new_var2 <- 11  # create object in new environment
+ls(env.new)  # get objects in new environment
+ls(environment())  # get objects in current environment
+env.new$new_var1  # environments are subset like lists
+env.new[['new_var1']]  # environments are subset like lists
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} evaluates variables using the search path, a series of environments:
+      \begin{itemize}
+        \item global environment,
+        \item package environments,
+        \item base environment,
+      \end{itemize}
+      The function \texttt{search()} returns the current search path for \texttt{R} objects,
+      \vskip1ex
+      The function \texttt{attach()} attaches objects to the search path,
+      \vskip1ex
+      This allows referencing variables by their names alone, rather than as components of objects,
+      \vskip1ex
+      The function \texttt{detach()} detaches objects from the search path,
+      \begin{block}{\color{red}{Rule of Thumb}}
+        Be very careful with using \texttt{attach()},
+        \vskip1ex
+        Make sure to \texttt{detach()} objects once they're not needed,
+      \end{block}
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+search()  # get search path for R objects
+loadedNamespaces()
+my_var <- list('flowers'=c('rose', 'daisy', 'tulip'),  # create a list
+                        'trees'=c('pine', 'oak', 'maple'))
+my_var$trees
+attach(my_var)
+trees
+search()  # get search path for R objects
+detach(my_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions have three components: 
+      \begin{itemize}
+        \item a list of formal arguments,
+        \item a body containing \texttt{R} code,
+        \item an environment,
+      \end{itemize}
+      An \texttt{R} function plus its environment is referred to as a function closure,
+      \vskip1ex
+      Formal arguments can be matched to actual arguments by position or by name,
+      \vskip1ex
+      Formal arguments can have default values so that when actual arguments are missing then their default values are used,
+      \vskip1ex
+      The function body doesn't require a return statement, since by default \texttt{R} functions return the last evaluated statement,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+MyFunc <- function(my_var1=2, my_var2=1) {  # define function MyFunc
+# default values can be specified in the argument list
+  my_var1 + 2*my_var2
+# the function returns the last evaluated statement
+}  # end MyFunc
+MyFunc(my_var1=3, my_var2=2)  # match arguments by name
+MyFunc(3, 2)  # match arguments by position
+MyFunc()  # use default values of arguments
+# define function that uses enclosure environment
+MyFunc <- function(my_var1=2, my_var2=1) {
+# default values can be specified in the argument list
+  my_var1 + 2*my_var2 + n.globvar
+# the function returns the last evaluated statement
+}  # end MyFunc
+MyFunc(3, 2)  # n.globvar doesn't exist yet!
+n.globvar <- 10
+MyFunc(3, 2)  # now works
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Calculating Moments}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} provides an easy way to write functions,
+      \vskip1ex
+      Function arguments can be matched by position or by name,
+      \vskip1ex
+      If the function arguments are missing then the default value is used,
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated,
+      \vskip1ex
+      If a function name is called alone then \texttt{R} displays the function code,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:3)),tidy=FALSE>>=
+rm(list=ls())
+par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+ts.rets <- diff(log(EuStockMarkets[, 1]))  # DAX returns
+# define function CalcSkew to calculate the skew
+CalcSkew <- function(ts.data=rnorm(1000)) {  # default is normal
+# Calculates the skew of a time series of returns.
+  i.num <- length(ts.data)  # number of observations
+  n.mean <- mean(ts.data)
+  n.sd <- sd(ts.data)
+# the last statement is what is returned
+  i.num*sum(((ts.data - n.mean)/n.sd)^3)/((i.num-1)*(i.num-2))
+}  # end CalcSkew
+# calculate skewness of DAX returns
+CalcSkew(ts.data=ts.rets)  # match arguments by name
+CalcSkew(ts.rets)  # match arguments by position
+CalcSkew()  # use default value of arguments
+CalcSkew  # show the function code
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Argument Handling}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} provides many ways to handle various unexpected argument values, by checking them before making any calculations,
+      \vskip1ex
+      Assigning default values to formal arguments allows for better control over their values,
+      \vskip1ex
+      The function \texttt{stopifnot()} stops function execution and produces an error if its argument is \texttt{FALSE},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+catch_missing <- function(v.in1, v.in2=NA) {
+# returns the sum of its two arguments
+  if (is.numeric(v.in2)) {  # check if v.in2 was input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5, 'a')
+catch_missing <- function(v.in1, v.in2) {  # even more robust
+  stopifnot((!missing(v.in1) && is.numeric(v.in1)) || 
+               (!missing(v.in2) && is.numeric(v.in2)))
+  if (!missing(v.in2) && is.numeric(v.in2)) {  # check if v.in2 is valid input
+    v.in1 + v.in2  # v.in2 was input
+  } else {
+    v.in1  # v.in2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(5, 'a')
+catch_missing('a')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Argument Lazy Evaluation}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Arguments in \texttt{R} functions are evaluated \emph{lazily} i.e. only as needed, 
+      \vskip1ex
+      If the function body doesn't evaluate an argument, then the function won't throw an error, even if the argument is missing, 
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+MyFunc <- function(my_var1, my_var2) {  # define function MyFunc
+  2*my_var1  # just multiply first argument
+}  # end MyFunc
+MyFunc(3, 2)  # match arguments by position
+MyFunc(3)  # second argument was never evaluated!
+MyFunc <- function(my_var1, my_var2) {  # define function MyFunc
+  cat(my_var1, '\n')  # write to output
+  cat(my_var2)  # write to output
+}  # end MyFunc
+MyFunc(3, 2)  # match arguments by position
+MyFunc(3)  # first argument written to output
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The '...' Function Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The '...' argument represents additional unknown arguments, that may be passed on to another nested function,
+      \vskip1ex
+      The '...' argument is also used when the number of arguments isn't known in advance,
+      \vskip1ex
+      Any arguments that appear after '...' in the argument list cannot be partially matched,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+MySum <- function(my_var1=2, my_var2=1, ...) {  # define function MySum
+# default values can be specified in the argument list
+  my_var1 + 2*my_var2 + sum(...)
+# the function returns the last evaluated statement
+}  # end MySum
+MySum(3, 2)  # match arguments by position
+MySum(3, 2, 5, 8)  # extra arguments
+MySum()  # use default value of arguments
+str(paste)  # function 'paste' can take many arguments
+paste('a', 'b', sep = ':')  # match arguments by name
+paste('a', 'b', se = ':')  # partial name matching fails!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      When a function is called, a new \emph{evaluation} environment is created,
+      \vskip1ex
+      The \emph{evaluation} environment contains the function arguments and locally defined variables,
+      \vskip1ex
+      The enclosure of the \emph{evaluation} environment is the environment where the function was defined (the global environment for functions defined in the workspace),
+      \vskip1ex
+      Functions defined in packages with namespaces have the package namespace as their enclosure,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+n.globvar <- 1  # define a global variable
+ls(environment())  # get all variables in environment
+MyFunc <- function() {  # function for exploring environments
+  n.locvar <- 1  # define a local variable
+  cat('objects in parent environment:\t', 
+      ls(parent.env(environment())), '\n')
+  cat('objects in function environment:\t', 
+      ls(environment()), '\n')
+  cat('this is the parent environment:')
+  parent.env(environment())  # return parent environment
+}  # end MyFunc
+MyFunc()
+environment(MyFunc)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function Scope}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{free} variable is a variable that's not included in the \emph{evaluation} environment,
+      \vskip1ex
+      Scoping rules determine how \emph{free} variables are evaluated,
+      \vskip1ex
+      By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the \emph{enclosing} environment in which the function was \emph{defined}, and so on,
+      \vskip1ex
+      \emph{Dynamic} scoping means that variables are evaluated in the calling environment from which the function was \emph{called},
+      \vskip1ex
+      The standard assignment operator \texttt{"<-"} creates a variable in the \emph{evaluation} environment,
+      \vskip1ex
+      The special assignment operator \texttt{"<<-"} modifies or creates a variable in the \emph{enclosing} environment,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+n.globvar <- 1  # define a global variable
+MyFunc <- function() {  # function for exploring scope
+  n.locvar <- 1  # define a local variable
+  new.globvar <<- 11  # define a global variable
+  cat('objects in parent environment:\t', 
+      ls(parent.env(environment())), '\n')
+  cat('objects in function environment:\t', 
+      ls(environment()), '\n')
+  cat('this is n.globvar:\t', n.globvar, '\n')
+  n.globvar <- 10  # re-define the global variable
+  cat('this is re-defined n.globvar:\t', n.globvar, '\n')
+}  # end MyFunc
+MyFunc()
+n.globvar  # global variable is restored
+new.globvar  # new.globvar is preserved
+n.locvar  # local variable is gone!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Super-assignment Operator \texttt{"<<-"}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The standard assignment operator \texttt{"<-"} operates on a \emph{local} variable in the \emph{evaluation} environment,
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} modifies or creates a variable in the \emph{enclosing} environment in which the function was \emph{defined} (\emph{lexical} scoping),
+      \vskip1ex
+      If the function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment and the \texttt{"<<-"} operator operates on variables in the \emph{global} environment,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+n.globvar <- 1  # define a global variable
+MyFunc <- function() {  # function for exploring scope
+  cat('this is the global n.globvar:\t', n.globvar, '\n')
+  n.globvar <- 10  # define local 'n.globvar' variable
+  n.globvar <<- 2  # re-define the global variable
+  cat('this is a local n.globvar:\t', n.globvar, '\n')
+}  # end MyFunc
+MyFunc()
+n.globvar  # the global variable
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body, 
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 1, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+FibRec <- function(n.num) {
+  if (n.num > 2) {
+    fib.seq <- FibRec(n.num-1)  # recursion
+    c(fib.seq, sum(tail(fib.seq, 2)))  # return this
+  } else {
+    c(1, 1)  # initialize and return
+  }
+}  # end FibRec
+FibRec(10)
+tail(FibRec(10), 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive\hskip0.5em\secname\hskip0.5em with \texttt{"..."} Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \emph{Recursive} functions can also accept the \texttt{"..."} argument, 
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+SumDots <- function(my_var, ...) {  # define recursive function
+# returns the sum of its argument list
+  if (length(list(...)) == 0) {
+    return(my_var)  # just one argument left
+  } else {
+    my_var + SumDots(...)  # sum remaining arguments
+  }
+}  # end SumDots
+SumDots(1, 2, 3, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em as First Class Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Functions in \texttt{R} are \emph{first class objects}, which means they can be treated like any other \texttt{R} object:
+      \begin{itemize}
+        \item Functions can be passed as arguments to other functions,
+        \item Functions can be nested (defined inside other functions),
+        \item Functions can return functions as their return value,
+      \end{itemize}
+      \emph{Higher-order} functions are \texttt{R} functions that either take a function as input or return a function as output,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+func_tional <- function(FuncArg) {  # function is input
+# calculates statistic on random numbers
+  set.seed(1)
+  FuncArg(runif(1e4))  # apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functionals with \texttt{"..."} Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \emph{Functionals} are functions that accept a function as its input argument,
+      \vskip1ex
+      The \texttt{"..."} argument in \emph{functionals} can be used to pass additional arguments to the function being called by the \emph{functional},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+func_tional <- function(func_arg, ...) {
+# functional accepts function and additional '...' arguments
+  func_arg(...)  # apply input function to '...' arguments
+}  # end func_tional
+func_tional(sum, 1, 2, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()}\hskip0.5em\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      An important example of \emph{functionals} are the \texttt{apply()} functions,
+      \vskip1ex
+      The function \texttt{apply()} returns the result of applying a function to the rows or columns of an array or matrix,
+      \vskip1ex
+      If \texttt{MARGIN=1} then the function will be applied over the matrix \emph{rows,}
+      \vskip1ex
+      If \texttt{MARGIN=2} then the function will be applied over the matrix \emph{columns},
+      \vskip1ex
+      The function \texttt{apply()} can replace \texttt{"for"} loops,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+str(apply)  # get list of arguments
+my_var <- matrix(6:1, nrow=2, ncol=3)  # create a matrix
+my_var
+# sum the rows and columns
+row_sums <- apply(my_var, 1, sum)
+col_sums <- apply(my_var, 2, sum)
+m.totals <- cbind(c(sum(row_sums), row_sums), 
+                  rbind(col_sums, my_var))
+dimnames(m.totals) <- list(c("col_sums", "row1", "row2"), 
+                           c("row_sums", "col1", "col2", "col3"))
+m.totals
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()} Function with \texttt{"..."} Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+str(apply)  # get list of arguments
+my_var <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
+my_var
+apply(my_var, 2, sort)  # sort matrix columns
+apply(my_var, 2, sort, decreasing=TRUE)  # sort decreasing order
+      @
+    \column{0.5\textwidth}
+        <<echo=1:30,tidy=FALSE>>=
+my_var[2, 2] <- NA  # introduce NA value
+my_var
+# calculate median of columns
+apply(my_var, 2, median)
+# calculate median of columns with na.rm=TRUE
+apply(my_var, 2, median, na.rm=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functionals with Anonymous Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{R} allows defining functions without assigning a name to them,
+      \vskip1ex
+      \emph{Anonymous} functions are functions that are not assigned to a name,
+      \vskip1ex
+      \emph{Anonymous} functions can be passed as arguments to \emph{functionals},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+func_tional <- function(..., func_arg=function(x, y, z) {x+y+z}) {
+# functional accepts function and additional '...' arguments
+  func_arg(...)  # apply input function to '...' arguments
+}  # end func_tional
+func_tional(func_arg=sum, 2, 3, 4)
+func_tional(2, 3, 4)
+func_tional(2, 3, 4, 5)
+func_tional(func_arg=function(x, y, z) {x*y*z}, 2, 3, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{apply()} Function with Anonymous Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The \texttt{apply()} function combined with \emph{anonymous} functions can be used to loop over function parameters,
+      \vskip1ex
+  The \texttt{"..."} argument in \texttt{apply()} is designed to pass additional arguments to the function being called by \texttt{apply()},
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+ts.rets <- 100*diff(log(EuStockMarkets[, 1]))  # DAX percent returns
+library("moments")  # load library"moments"
+str(moment)  # get list of arguments
+moment(x=ts.rets, order=3)  # the moment function
+v.orders <- as.matrix(1:4)  # 4x1 matrix of moment orders
+# anonymous function allows looping over function parameters
+apply(X=v.orders, MARGIN=1, 
+      FUN=function(n.order) {moment(x=ts.rets, order=n.order)})
+# another way of passing data into moment() function
+apply(X=v.orders, MARGIN=1, FUN=moment, x=ts.rets)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Functions \texttt{lapply()} and  \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{lapply()} and  \texttt{sapply()} functions are specialized versions of the \texttt{apply()} function,
+      \vskip1ex
+      The \texttt{lapply()} function applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The \texttt{sapply()} function applies a function to a list or vector of objects and returns a vector,
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+iris.list <- as.list(iris[1:5, 1:3])  # create list
+iris.list
+lapply(iris.list, mean)  # compute list of means of list elements
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=1:30,tidy=FALSE>>=
+# compute vector of means of list elements
+sapply(iris.list, mean)
+
+# create a matrix
+my_var <- matrix(sample(12), nrow=3, ncol=4)
+# calculate row sums
+apply(my_var, 1, sum)
+
+# now the same calculation using sapply
+sapply(1:nrow(my_var), function(n.row) {  # anonymous function
+    sum(my_var[n.row, ])
+  }  # end anonymous function
+)  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname\hskip0.5em That Return \secname}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions can also return a function as their value,
+      \vskip1ex
+      Functions returned by a function are called \emph{closures},
+      \vskip1ex
+      Functions that return closures can be used as \emph{function factories},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+FuncPower <- function(n.exp) {  # wrapper function
+# a power function factory
+  function(n.arg) {  # anonymous closure
+    n.arg^n.exp
+  }
+}  # end FuncPower
+FuncSquare <- FuncPower(2)  # define square power
+FuncSquare(4)
+FuncCube <- FuncPower(3)  # define cube power
+FuncCube(2)
+FuncCubeRoot <- FuncPower(1/3)  # define cube root
+FuncCubeRoot(8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mutable States}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{mutable state} is an object that is preserved between function calls,
+      \vskip1ex
+      Functions that return closures can also be used for creating \emph{mutable states},
+      \vskip1ex
+      A function \emph{evaluation} environment is only temporary and disappears after the function returns its value,
+      \vskip1ex
+      But a \emph{closure} assigned to a name maintains access to the environment in which it was created,
+      \vskip1ex
+      Therefore the \emph{closure} maintains access to its parent function's arguments and locally defined variables,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+MuteCounter <- function() {
+# counter function with mutable state
+  i.count <- 0  # initialize counter
+  cat('counter = ', i.count)
+  function() {  # return anonymous advance function
+    i.count <<- i.count + 1  # advance counter
+    cat('counter = ', i.count)
+  }  # end advance function
+}  # end MuteCounter
+CounterOne <- MuteCounter()  # create new counter
+CounterOne()  # advance counter
+CounterOne()  # advance counter
+CounterTwo <- MuteCounter()  # create another counter
+CounterTwo()  # advance counter two
+CounterOne()  # advance counter one
+CounterTwo()  # advance counter two
+CounterOne()  # advance counter one
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Pseudo-Random Generating Function}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \emph{Mutable states} can be used to implement pseudo-random number generators,
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+RandomSeed <- function(seed) {  # seed must be an integer
+# Returns pseudo-random generating function based on logistic map
+# the formal argument 'seed' exists in the evaluation environment of RandomSeed
+  pseudo.random <- as.numeric(paste('0.', seed, sep=''))  # initialize
+  RandomVector <- function(n.rand=1) {  # assign function name for recursion
+# Returns a vector of pseudo-random numbers of length n.rand
+    pseudo.random <<- 4*pseudo.random*(1 - pseudo.random)  # logistic map
+    if(n.rand == 1) {
+      return(pseudo.random)
+    } else {
+      return(c(pseudo.random, RandomVector(n.rand - 1)))
+    }
+  }
+}  # end RandomSeed
+
+PseudoRandom <- RandomSeed(88)  # set seed
+PseudoRandom(10)  #  calculate vector of 10 pseudo-random numbers
+ls(environment(PseudoRandom))  # list objects in scope of PseudoRandom
+      @
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bank Account Using Mutable States}
+\begin{frame}[fragile,t]{\subsecname}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<echo=(-(1:3)),tidy=FALSE>>=
+rm(list=ls())
+# the super-assignment operator '<<-' adjusts the balance
+# 'balance' exists in OpenAccount evaluation environment
+# bank account example (from Venables) demonstrates mutable states
+# 'balance' is persistent between function calls
+OpenAccount <- function(balance) {
+# returns function list for account operations
+  list(
+    deposit = function(amount) {  # make deposit
+      if(amount > 0) {
+        balance <<- balance + amount  # '<<-' super-assignment operator
+        cat(amount, "deposited. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("Deposits must be positive!\n")
+      }
+    },  # end deposit
+    withdraw = function(amount) {  # make withdrawal
+      if(amount <= balance) {
+        balance <<- balance - amount  # '<<-' super-assignment operator
+        cat(amount, "withdrawn. Your balance is now:", 
+            balance, "\n")
+      } else {
+        cat("You don't have that much money!\n")
+      }
+    },  # end withdraw
+    get.balance = function() {  # get balance
+      cat("Your current balance is:", balance, "\n")
+    }  # end get.balance
+  )  # end list
+}  # end OpenAccount
+@
+    \column{0.5\textwidth}
+      \vspace{-2em}
+        <<tidy=FALSE>>=
+# perform account operations
+# open an account with 100 deposit
+my.account <- OpenAccount(100)
+ls(my.account)  # my.account is a list
+# add my.account to search path
+attach(my.account)
+withdraw(30)  # withdrawal to buy groceries
+deposit(100)  # deposit paycheck to account
+withdraw(200)  # withdrawal to buy Gucci bag
+get.balance()  # get account balance
+
+# list objects in scope of get.balance
+ls(environment(get.balance))
+
+detach(my.account)  # remove my.account from search path
+@
+  \end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Warning and Error Messages in\hskip0.5em\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A simple way to produce a message from within a function is to call the \texttt{cat()} function,
+      \vskip1ex
+      A better way to produce messages from within a function is to call the \texttt{warning()} and \texttt{error()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+catch_missing <- function(v.in1, v.in2=NA) {
+# returns the sum of its two arguments
+  if (is.na(v.in2)) {  # check if v.in2 was input
+    v.in1  # v.in2 wasn't input
+  } else {
+    v.in1 + v.in2  # v.in2 was input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Infix Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Most functions in \texttt{R} are \emph{prefix} operators (where the function name is followed by an argument list),
+      \vskip1ex
+      \emph{Infix} operators (where the the function name comes in between its arguments) can also be applied using \emph{prefix} syntax,
+      \vskip1ex
+      \texttt{R} also allows defining new \emph{infix} functions,
+      \vskip1ex
+      All user defined \emph{infix} function names must start and end with a \texttt{"\%"} character,
+      \vskip1ex
+      The new \emph{infix} function name must be used in quotes,
+      \vskip1ex
+
+By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the enclosing environment in which the function was \emph{defined}, and so on,
+      \vskip1ex
+      \emph{Dynamic} scoping means that variables are evaluated in the calling environment from which the function was \emph{called},
+      \vskip1ex
+      The standard assignment operator \texttt{"<-"} creates a variable in the \emph{evaluation} environment,
+      \vskip1ex
+      The special assignment operator \texttt{"<<-"} modifies or creates a variable in the \emph{enclosing} environment,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+'+' (2, 3)  # infix operator applied using prefix syntax
+
+n.globvar <- 1  # define a global variable
+MyFunc <- function() {  # function for exploring scope
+  n.locvar <- 1  # define a local variable
+  new.globvar <<- 11  # define a global variable
+  cat('objects in parent environment:\t', 
+      ls(parent.env(environment())), '\n')
+  cat('objects in function environment:\t', 
+      ls(environment()), '\n')
+  cat('this is n.globvar:\t', n.globvar, '\n')
+  n.globvar <- 10  # re-define the global variable
+  cat('this is re-defined n.globvar:\t', n.globvar, '\n')
+}  # end MyFunc
+MyFunc()
+n.globvar  # global variable is restored
+new.globvar  # new.globvar is preserved
+n.locvar  # local variable is gone!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Object-Oriented Programming in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{S3} Object-Oriented Programming System in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vspace{-1em}
+      \texttt{S3} is a popular object oriented (OO) programming system in \texttt{R}, based on the \texttt{R} class system and on \emph{generic functions},
+      \vskip1ex
+      Generic functions have different \emph{methods} that are dispatched depending on the \emph{class} of the object,
+      \vskip1ex
+      The actual function that is executed is determined by the class of the object on which the generic function is called,
+      \vskip1ex
+      The different versions of a generic function are called \emph{methods},
+      \vskip1ex
+      For example \texttt{plot()} and \texttt{cbind()} are generic functions,
+      \vskip1ex
+      Generic function methods follow the naming convention \texttt{generic.class()},
+      \vskip1ex
+      The generic function \texttt{cbind()} has many \emph{methods} with names \texttt{cbind.*()},
+      \vskip1ex
+      The \texttt{cbind()} method dispatched to \texttt{zoo} objects is called \texttt{cbind.zoo()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),tidy=FALSE>>=
+rm(list=ls())
+library(zoo)  # load package zoo
+# get all methods for generic function "cbind"
+tail(methods("cbind"))
+
+# show method of "cbind" applied to "zoo" objects
+cbind.zoo
+
+# get generic function methods applied to "zoo" objects
+methods(class="zoo")[5:10]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Creating New Classes and Methods}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A new \texttt{R} class can be created by simply assigning to the \emph{class} attribute,
+      \vskip1ex
+      Then new \emph{methods} can be defined, and \texttt{R} will automatically dispatch them to objects of the new \emph{class},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),tidy=FALSE>>=
+rm(list=ls())
+my.ts <- zoo(rnorm(4), order.by=(Sys.Date() + 0:3))
+class(my.ts)
+length(my.ts)
+
+# coerce "zoo" object to new class "newts"
+class(my.ts) <- "newts"
+class(my.ts)
+
+# define "length" method for class "newts"
+length.newts <- function(in.ts) {
+# "length" method for class" "newts"
+  cat("getting length of object from newts class\n")
+  length(unclass(in.ts))
+}  # end length.newts
+
+# apply new "length" method
+length(my.ts)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simple \secname\hskip0.5em Example}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},
+
+    \column{0.7\textwidth}
+      \vspace{-1em}
+        <<echo=(-1),tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize random number generator
+v.xvar <- seq(from=0.1, to=3.0, by=0.1)  # independent variable
+v.yvar <- 3 + 2*v.xvar + rnorm(30)  # dependent variable plus noise
+lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
+summary(lm.simp)  # regression summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Plotting a \secname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{datasets} is a base package containing various datasets, for example \texttt{EuStockMarkets},
+
+        <<simp_reg,echo=(-1),tidy=FALSE,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # initialize random number generator
+v.xvar <- seq(from=0.1, to=3.0, by=0.1)
+v.yvar <- 3 + 2*v.xvar + rnorm(30)
+lm.simp <- lm(v.yvar ~ v.xvar)  # perform regression
+# set plot paramaters - margins and font scale
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 0.5, 0))  # axis title and labels
+par(mar=c(5, 3, 1, 1), cex.lab=0.8, 
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(v.yvar ~ v.xvar)  # plot scatterplot
+title(main="Simple Regression", line=-1)
+abline(lm.simp, col="red")  # add reg line
+      @
+
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simp_reg}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Homework Assignment}
+\begin{frame}[t]{\subsecname}
+
+\begin{block}{Required}
+  \begin{itemize}
+    \item Create a function for calculating the kurtosis of a time series of returns,
+    \item Using this function calculate the kurtosis of DAX returns, and of t-distribution returns with four degrees of freedom (use the same number of data points in both cases),
+    \item Plot the probability density of DAX returns together with t-distribution returns with four degrees of freedom on a single plot,
+  \end{itemize}
+\end{block}
+\pause
+
+\begin{block}{Recommended}
+  \begin{itemize}
+    \item Read chapters 4, 5, 10: \fullcite{website:rintro}
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Additional Reading}
+\begin{frame}[t]{\subsecname}
+
+Download \texttt{R} Interpreter from \texttt{CRAN} (Comprehensive \texttt{R} Archive Network)\\
+\hskip1em\url{http://cran.r-project.org/}\\
+\vskip4ex
+Download \texttt{RStudio} IDE (Integrated Development Environment)\\
+\hskip1em\url{http://www.rstudio.com/products/rstudio/}\\
+\vskip4ex
+
+\end{frame}
+
+
+\end{document}

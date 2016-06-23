@@ -39,8 +39,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -945,6 +945,8 @@ boxplot(x=eu_rets)
     \column{0.5\textwidth}
       The package \texttt{zoo} is designed for managing \emph{irregular} time series and ordered objects of class \texttt{"zoo"},
       \vskip1ex
+      \emph{Irregular} time series have \emph{date-time} indeices that aren't equally spaced (because of weekends, overnight hours, etc.),
+      \vskip1ex
       The function \texttt{zoo()} creates a \texttt{zoo} object from a \texttt{numeric} vector or matrix, and an associated \emph{date-time} index,
       \vskip1ex
       The \texttt{zoo} index is a vector of \emph{date-time} objects, and can be from any \emph{date-time} class,
@@ -971,7 +973,7 @@ tail(zoo_series, 3)  # get last few elements
 
 
 %%%%%%%%%%%%%%%
-\subsection{Operations on \texttt{zoo} Objects}
+\subsection{Operations on \texttt{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1111,7 +1113,7 @@ zoo_series[as.Date("2014-10-15")]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Sequential Joining \texttt{zoo} Objects}
+\subsection{Sequential Joining \texttt{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1151,7 +1153,7 @@ title(main="Random Prices", line=-1)  # add title
 
 
 %%%%%%%%%%%%%%%
-\subsection{Merging \texttt{zoo} Objects}
+\subsection{Merging \texttt{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1222,135 +1224,6 @@ na.omit(zoo_series)  # remove NA's using omit
 
 
 %%%%%%%%%%%%%%%
-\subsection{Aggregating \texttt{zoo} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The method \texttt{aggregate.zoo()} performs aggregations of \texttt{zoo} objects,
-      <<echo=(-(1:6)),eval=TRUE>>=
-set.seed(1121)  # reset random number generator
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # load package zoo
-# create zoo time series
-in_dex <- Sys.Date() + 0:365
-zoo_series <- zoo(rnorm(length(in_dex)), order.by=in_dex)
-# create monthly dates
-dates_agg <- as.Date(as.yearmon(index(zoo_series)))
-# perform monthly 'mean' aggregation
-zoo_agg <- aggregate(zoo_series, by=dates_agg, 
-                     FUN=mean)
-# merge with original zoo - union of dates
-zoo_agg <- merge(zoo_series, zoo_agg)
-# replace NA's using locf
-zoo_agg <- na.locf(zoo_agg)
-# extract aggregated zoo
-zoo_agg <- zoo_agg[index(zoo_series), 2]
-      @
-      \vspace{-2em}
-      <<zoo_agg,echo=TRUE,eval=FALSE,fig.show='hide'>>=
-# plot original and aggregated zoo
-plot(cumsum(zoo_series), xlab="", ylab="")
-lines(cumsum(zoo_agg), lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, cex=0.8, title="Aggregated Prices", 
-       leg=c("orig prices", "agg prices"), lwd=2, bg="white", 
-       col=c("black", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_agg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interpolating \texttt{zoo} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \texttt{zoo} has two functions for replacing \texttt{NA} values using interpolation:
-      \begin{itemize}
-        \item \texttt{na.approx()} performs linear interpolation,
-        \item \texttt{na.spline()} performs spline interpolation,
-      \end{itemize}
-      \vspace{-1em}
-      <<zoo_interpol,echo=(-1),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# perform monthly 'mean' aggregation
-zoo_agg <- aggregate(zoo_series, by=dates_agg, 
-                     FUN=mean)
-# merge with original zoo - union of dates
-zoo_agg <- merge(zoo_series, zoo_agg)
-# replace NA's using linear interpolation
-zoo_agg <- na.approx(zoo_agg)
-# extract interpolated zoo
-zoo_agg <- zoo_agg[index(zoo_series), 2]
-# plot original and interpolated zoo
-plot(cumsum(zoo_series), xlab="", ylab="")
-lines(cumsum(zoo_agg), lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices", 
-       leg=c("orig prices", "interpol prices"), lwd=2, bg="white", 
-       col=c("black", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_interpol-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling Functions on \texttt{zoo} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \texttt{zoo} has several functions for rolling calculations:
-      \begin{itemize}
-        \item \texttt{rollapply()} applying function over a rolling (sliding) window,
-        \item \texttt{rollmean()} calculate rolling means,
-        \item \texttt{rollmedian()} calculate rolling median,
-        \item \texttt{rollmax()} calculate rolling max,
-      \end{itemize}
-      \vspace{-1em}
-      <<zoo_roll,echo=(-1),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# "mean" aggregation over window with width=11
-zoo_mean <- rollapply(zoo_series, width=11, 
-                      FUN=mean, align="right")
-# merge with original zoo - union of dates
-zoo_mean <- merge(zoo_series, zoo_mean)
-# replace NA's using na.locf
-zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
-# extract mean zoo
-zoo_mean <- zoo_mean[index(zoo_series), 2]
-# plot original and interpolated zoo
-plot(cumsum(zoo_series), xlab="", ylab="")
-lines(cumsum(zoo_mean), lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, cex=0.8, title="Mean Prices", 
-       leg=c("orig prices", "mean prices"), lwd=2, bg="white", 
-       col=c("black", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_roll-1}
-      \vspace{-3em}
-      The argument \texttt{align="right"} determines that aggregations are taken from the past,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Coercing Time Series Objects Into \texttt{zoo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1393,7 +1266,7 @@ head(zoo_series, 3)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{zoo} Objects Into Class \texttt{ts}}
+\subsection{Coercing \texttt{zoo} Time Series Into Class \texttt{ts}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1515,15 +1388,15 @@ set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series
 in_dex <- Sys.Date() + 0:3
-xts_series <- xts(rnorm(length(in_dex)), 
+x_ts <- xts(rnorm(length(in_dex)), 
                order.by=in_dex)
-names(xts_series) <- "random"
-xts_series
-tail(xts_series, 3)  # get last few elements
-first(xts_series)  # get first element
-last(xts_series)  # get last element
-class(xts_series)  # class 'xts'
-attributes(xts_series)
+names(x_ts) <- "random"
+x_ts
+tail(x_ts, 3)  # get last few elements
+first(x_ts)  # get first element
+last(x_ts)  # get last element
+class(x_ts)  # class 'xts'
+attributes(x_ts)
       @
   \end{columns}
 \end{block}
@@ -1532,7 +1405,7 @@ attributes(xts_series)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{zoo} Objects Into Class \texttt{xts}}
+\subsection{Coercing \texttt{zoo} Time Series Into Class \texttt{xts}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1547,19 +1420,69 @@ attributes(xts_series)
 load(file="C:/Develop/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
-dim(xts_stx)
-head(xts_stx[, 1:4], 4)
+st_ox <- as.xts(zoo_stx_adj)
+dim(st_ox)
+head(st_ox[, 1:4], 4)
       @
       \vspace{-2em}
       <<xts_plot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.xts method
-plot(xts_stx[, "AdjClose"], xlab="", ylab="", main="")
+plot(st_ox[, "AdjClose"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # add title
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_plot-2}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Multiple \texttt{xts} Using Packages \texttt{xts} and \texttt{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<xts_mult_plot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(xts)  # load xts
+library(lubridate)  # load lubridate
+# coerce EuStockMarkets into class xts
+x_ts <- xts(coredata(EuStockMarkets), 
+            order.by=date_decimal(index(EuStockMarkets)))
+# plot all columns in single panel: xts v.0.9-8
+col_ors <- rainbow(NCOL(x_ts))
+plot(x_ts, main="EuStockMarkets using xts", 
+     col=col_ors, major.ticks="years", 
+     minor.ticks=FALSE)
+legend("topleft", legend=colnames(EuStockMarkets), 
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)), 
+       lwd=3, col=col_ors, bg="white")
+# plot only first column: xts v.0.9-7
+plot(x_ts[, 1], main="EuStockMarkets using xts", 
+     col=col_ors[1], major.ticks="years", 
+     minor.ticks=FALSE)
+# plot remaining columns
+for(col_umn in 2:NCOL(x_ts))
+  lines(x_ts[, col_umn], col=col_ors[col_umn])
+# plot using quantmod
+library(quantmod)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+chart_Series(x=x_ts, theme=plot_theme, 
+             name="EuStockMarkets using quantmod")
+legend("topleft", legend=colnames(EuStockMarkets), 
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)), 
+       lwd=3, col=col_ors, bg="white")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_mult_plot}\\
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_quantmod_plot}\\
   \end{columns}
 \end{block}
 
@@ -1576,12 +1499,12 @@ title(main="MSFT Prices")  # add title
       \texttt{xts} time series can be plotted using the package \texttt{ggplot2},
       <<xts_ggplot,echo=(-(1:3)),eval=FALSE,fig.width=5,fig.show='hide'>>=
 library(ggplot2)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 # create ggplot object
-etf_gg <- qplot(x=index(etf_series_ad[, 1]), 
-                y=as.numeric(etf_series_ad[, 1]), 
+etf_gg <- qplot(x=index(env_etf$price_s[, 1]), 
+                y=as.numeric(env_etf$price_s[, 1]), 
                 geom="line", 
-                main=names(etf_series_ad[, 1])) + 
+                main=names(env_etf$price_s[, 1])) + 
   xlab("") + ylab("") + 
   theme(
     legend.position=c(0.1, 0.5), 
@@ -1611,12 +1534,12 @@ etf_gg
 suppressMessages(library(xts, quietly=TRUE))
 suppressMessages(library(ggplot2, quietly=TRUE))
 suppressMessages(library(plotly, quietly=TRUE))
-suppressMessages(load(file="C:/Develop/data/etf_data.Rdata"))
+suppressMessages(load(file="C:/Develop/data/etf_data.RData"))
 # create ggplot object
-etf_gg <- qplot(x=index(etf_series_ad[, 1]), 
-                y=as.numeric(etf_series_ad[, 1]), 
+etf_gg <- qplot(x=index(env_etf$price_s[, 1]), 
+                y=as.numeric(env_etf$price_s[, 1]), 
                 geom="line", 
-                main=names(etf_series_ad[, 1])) + 
+                main=names(env_etf$price_s[, 1])) + 
   xlab("") + ylab("") + 
   theme(
     legend.position=c(0.1, 0.5), 
@@ -1648,24 +1571,36 @@ suppressWarnings(ggplotly(etf_gg))
       \texttt{xts} time series can be subset by year, week, days, or even seconds,
       \vskip1ex
       If only the date is subset, then a comma \texttt{","} after the date range isn't necessary,
+      \vskip1ex
+      The function \texttt{.subset\_xts()} allows fast subsetting of \texttt{xts} time series, which is at least three times faster than the bracket \texttt{"[]"} notation,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1))>>=
 library(xts)  # load package xts
 # subset xts using a date range string
-xts_sub <- xts_stx["2014-10-15/2015-01-10", 1:4]
-first(xts_sub)
-last(xts_sub)
+stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
+first(stox_sub)
+last(stox_sub)
 # subset Nov 2014 using a date string
-xts_sub <- xts_stx["2014-11", 1:4]
-first(xts_sub)
-last(xts_sub)
+stox_sub <- st_ox["2014-11", 1:4]
+first(stox_sub)
+last(stox_sub)
 # subset all data after Nov 2014
-xts_sub <- xts_stx["2014-11/", 1:4]
-first(xts_sub)
-last(xts_sub)
+stox_sub <- st_ox["2014-11/", 1:4]
+first(stox_sub)
+last(stox_sub)
 # comma after date range not necessary
-identical(xts_stx["2014-11", ], xts_stx["2014-11"])
+identical(st_ox["2014-11", ], st_ox["2014-11"])
+# benchmark the speed of subsetting
+library(microbenchmark)
+summary(microbenchmark(
+  bracket=sapply(10*(10:1000), 
+        function(in_dex)  
+          max(SPY[in_dex:(in_dex+10), ])), 
+  subset=sapply(10*(10:1000), 
+        function(in_dex)  
+          max(.subset_xts(SPY, in_dex:(in_dex+10)))), 
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -1697,12 +1632,12 @@ min_ticks <- seq.POSIXt(
   to=as.POSIXct("2015-04-16"), 
   by="min")
 # xts of 1-minute times (ticks)
-xts_series <- xts(rnorm(length(min_ticks)), 
+x_ts <- xts(rnorm(length(min_ticks)), 
                      order.by=min_ticks)
 # subset recurring time interval using "T notation",
-xts_series <- xts_series["T09:30:00/T16:00:00"]
-first(xts_series["2015-04-15"])  # first element of day
-last(xts_series["2015-04-15"])  # last element of day
+x_ts <- x_ts["T09:30:00/T16:00:00"]
+first(x_ts["2015-04-15"])  # first element of day
+last(x_ts["2015-04-15"])  # last element of day
 # suppress timezone warning messages
 options(xts_check_TZ=FALSE)
       @
@@ -1730,15 +1665,15 @@ options(xts_check_TZ=FALSE)
       \vspace{-1em}
       <<echo=(-(1))>>=
 library(xts)  # load package xts
-str(xts_stx)  # display structure of xts
+str(st_ox)  # display structure of xts
 # subsetting zoo to single column drops dim attribute
 dim(zoo_stx_adj)
 dim(zoo_stx_adj[, 1])
 # zoo with single column are vectors not matrices
 c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
 # xts always have a dim attribute
-rbind(base=dim(xts_stx), subs=dim(xts_stx[, 1]))
-c(is.matrix(xts_stx), is.matrix(xts_stx[, 1]))
+rbind(base=dim(st_ox), subs=dim(st_ox[, 1]))
+c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
       @
   \end{columns}
 \end{block}
@@ -1767,10 +1702,10 @@ library(xts)  # load package xts
 # lag of zoo shortens it by one row
 rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
 # lag of xts doesn't shorten it
-rbind(base=dim(xts_stx), lag=dim(lag(xts_stx)))
+rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_stx_adj), 4)
-head(lag(xts_stx), 4)
+head(lag(st_ox), 4)
       @
   \end{columns}
 \end{block}
@@ -1795,8 +1730,8 @@ head(lag(xts_stx), 4)
       <<echo=(-(1))>>=
 library(xts)  # load package xts
 # lower the periodicity to months
-xts_monthly <- to.period(x=xts_stx[, "AdjClose"], 
-                         period="months", name="MSFT")
+xts_monthly <- to.period(x=st_ox, 
+                   period="months", name="MSFT")
 # convert colnames to standard OHLC format
 colnames(xts_monthly)
 colnames(xts_monthly) <- sapply(
@@ -1806,7 +1741,7 @@ colnames(xts_monthly) <- sapply(
 head(xts_monthly, 3)
 # lower the periodicity to years
 xts_yearly <- to.period(x=xts_monthly, 
-                         period="years", name="MSFT")
+                   period="years", name="MSFT")
 colnames(xts_yearly) <- sapply(
   strsplit(colnames(xts_yearly), split=".", fixed=TRUE), 
   function(na_me) na_me[-1]
@@ -1832,12 +1767,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 load(file="C:/Develop/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-xts_stx <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_stx_adj)
 # subset xts using a date
-xts_sub <- xts_stx["2014-11", 1:4]
+stox_sub <- st_ox["2014-11", 1:4]
 
 # plot OHLC using plot.xts method
-plot(xts_sub, type="candles", main="")
+plot(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
       @
     \column{0.5\textwidth}
@@ -1875,9 +1810,9 @@ ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])
 library(xts)
-xts_stx <- as.xts(zoo_stx)
-class(xts_stx)
-tail(xts_stx[, 1:4])
+st_ox <- as.xts(zoo_stx)
+class(st_ox)
+tail(st_ox[, 1:4])
       @
   \end{columns}
 \end{block}

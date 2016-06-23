@@ -5,7 +5,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#7]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#7, Fall 2015}
+\subtitle{Lecture\#7, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{Oct 26, 2015}
+\date{May 16, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -70,629 +70,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-glob_var <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
-
-new_env <- new.env()  # create new environment
-parent.env(new_env)  # get calling environment of new environment
-assign("new_var1", 3, envir=new_env)  # assign Value to Name
-new_env$new_var2 <- 11  # create object in new environment
-ls(new_env)  # get objects in new environment
-ls(environment())  # get objects in current environment
-new_env$new_var1  # environments are subset like lists
-new_env[["new_var1"]]  # environments are subset like lists
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
-      \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
-      \end{itemize}
-      The function \texttt{search()} returns the search path for \texttt{R} objects,
-      \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
-      \vskip1ex
-      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-search()  # get search path for R objects
-my_list <- list(flowers=c("rose", "daisy", "tulip"),  # create a list
-                        trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is part of the datasets base package
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Referencing Object Components \texttt{with()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
-      \vskip1ex
-      \texttt{with()} allows referencing object components by their names alone,
-      \vskip1ex
-      It's often better to use \texttt{with()} instead of \texttt{attach()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, c(mean(Girth), mean(Height), mean(Volume)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{\texttt{R} Packages}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-
-\begin{block}{Types of \subsecname}
-  \texttt{R} can run libraries of functions called packages,
-  \vskip1ex
-  \texttt{R} packages can can also  contain data,
-  \vskip1ex
-  Most packages need to be \emph{loaded} into \texttt{R} before they can be used,
-  \vskip1ex
-  \texttt{R} includes a number of \texttt{base} packages that are already installed and loaded,
-  \vskip1ex
-  There's also a special package called the \texttt{base} package, which is responsible for all the basic \texttt{R} functionality,
-  \vskip1ex
-  \texttt{datasets} is a \texttt{base} package containing various datasets, for example \texttt{EuStockMarkets},
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{base} Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} includes a number of packages that are pre-installed (often called \texttt{base} packages),\\
-      Some \texttt{base} packages:
-      \begin{itemize}
-        \item \texttt{base} - basic \texttt{R} functionality,
-        \item \texttt{stats} - statistical functions and random number generation,
-        \item \texttt{graphics} - basic graphics,
-        \item \texttt{utils} - utility functions,
-        \item \texttt{datasets} - popular datasets,
-        \item \texttt{parallel} - support for parallel computation,
-      \end{itemize}
-    \column{0.5\textwidth}
-      Very popular packages:
-      \begin{itemize}
-        \item \texttt{MASS} - functions and datasets for "Modern Applied Statistics with S",
-        \item \texttt{ggplot2} - grammar of graphics plots,
-        \item \texttt{shiny} - interactive web graphics from R,
-        \item \texttt{slidify} - HTML5 slide shows from R,
-        \item \texttt{devtools} - create R packages,
-        \item \texttt{roxygen2} - document R packages,
-        \item \texttt{Rcpp} - integrate C++ code with R,
-        \item \texttt{RcppArmadillo} - interface to Armadillo linear algebra library,
-        \item \texttt{forecast} - linear models and forecasting,
-        \item \texttt{tseries} - time series analysis and computational finance,
-        \item \texttt{zoo} - time series and ordered objects,
-        \item \texttt{xts} - advanced time series objects,
-        \item \texttt{quantmod} - quantitative financial modeling framework,
-        \item \texttt{caTools} - moving window statistics for graphics and time series objects,
-      \end{itemize}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{CRAN} Package Views}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{columns}[T]
-  \column{0.4\textwidth}
-    \begin{block}{}
-      \texttt{CRAN} view for package \texttt{AER}:\\
-      \hskip1em\url{http://cran.r-project.org/web/packages/AER/}\\
-    \end{block}
-    \begin{block}{}
-      Note:
-      \begin{itemize}
-        \item Authors,
-        \item Version number,
-        \item Reference manual,
-        \item Vignettes,
-        \item Dependencies on other packages.
-      \end{itemize}
-    \end{block}
-    \begin{block}{}
-      The package source code can be downloaded by clicking on the \href{package source}{package source} link,
-    \end{block}
-  \column{0.6\textwidth}
-    \includegraphics[height=1.0\textwidth]{image/CRAN_Package.png}
-\end{columns}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{CRAN} Task Views}
-\begin{frame}[fragile,t]{\subsecname}
-
-\begin{columns}[T]
-  \column{0.4\textwidth}
-    \begin{block}{}
-      \texttt{CRAN} Finance Task View\\
-      \hskip1em\url{http://cran.r-project.org//}\\
-    \end{block}
-    \begin{block}{}
-      Note:
-      \begin{itemize}
-        \item Maintainer,
-        \item Topics,
-        \item List of packages.
-      \end{itemize}
-    \end{block}
-  \column{0.6\textwidth}
-    \vspace{-1em}
-    \includegraphics[height=1.0\textwidth]{image/CRAN_Views.png}
-\end{columns}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Loading Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.6\textwidth}
-      Most packages need to be \emph{loaded} before they can be used in an \texttt{R} session,
-      \vskip1ex
-      Loading a package means attaching the package \texttt{namespace} to the search path of an \texttt{R} session,
-      \vskip1ex
-      This allows \texttt{R} to call the package functions and data,
-      \vskip1ex
-      The functions \texttt{library()} and \texttt{require()} load packages, but in slightly different ways,
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library("MASS")
-# or
-require("MASS")
-      @
-  \end{columns}
-\end{block}
-%\vskip1ex
-
-\begin{block}{Difference between \texttt{library()} and \texttt{require()}}
-  \texttt{library()} halts execution if the package can't be loaded,\\
-  \texttt{require()} returns a logical value, TRUE if the package is loaded successfully, FALSE if it isn't.\\
-\end{block}
-
-\begin{block}{\color{red}{Rule of Thumb}}
-  Use \texttt{library()} in script files that might be sourced,\\
-  Use \texttt{require()} inside other functions.\\
-\end{block}
-
-\begin{block}{Installing Packages}
-  Some packages like \texttt{MASS} are installed with base \texttt{R} (but not loaded),\\
-  But most packages need to be \texttt{installed} before they can be loaded,\\
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Installed Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{defaultPackages} contains a list of packages loaded on startup by default,
-      \vskip1ex
-      The function \texttt{installed.packages()} returns a matrix of all packages installed on the system,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-getOption("defaultPackages")
-pack_info <- installed.packages()  # matrix of packages
-# get a few package names and their versions
-pack_info[sample(x=1:100, 5), c("Package", "Version")]
-t(pack_info["xts", ])  # get info for package "xts"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{Ecdat} contains data sets for econometric analysis,
-      \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package,
-      \vskip1ex
-      The data frame \texttt{Garch} contains daily currency prices,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library()  # list all packages installed on the system
-search()  # list all loaded packages on search path
-
-# get documentation for package "Ecdat"
-packageDescription("Ecdat")  # get short description
-help(package="Ecdat")  # load help page
-library(Ecdat)  # load package "Ecdat"
-data(package="Ecdat")  # list all datasets in "Ecdat"
-ls("package:Ecdat")  # list all objects in "Ecdat"
-detach("package:Ecdat")  # remove Ecdat from search path
-      @
-
-      <<>>=
-library("Ecdat")  # load econometric data sets
-class(Garch)  # Garch is a data frame from "Ecdat"
-dim(Garch)  # daily currency prices
-head(Garch[, -2])  # col 'dm' is Deutsch Mark
-detach("package:Ecdat")  # remove Ecdat from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Installing Packages}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Installing} a package means downloading and saving its files to a local computer directory (hard disk), so they can be \texttt{loaded} by the \texttt{R} system,
-      \vskip1ex
-      The function \texttt{install.packages()} installs packages from the \texttt{R} command line,
-      \vskip1ex
-      Most widely used packages are available on the \texttt{CRAN} repository:\\
-      \hskip1em\url{http://cran.r-project.org/web/packages/}
-      \vskip1ex
-      Or on \texttt{R-Forge} or \texttt{GitHub}:\\
-      \hskip1em\url{https://r-forge.r-project.org/}\\
-      \hskip1em\url{https://github.com/}
-      \vskip1ex
-      Packages can also be installed in \emph{RStudio} from the menu (go to \alert{Tools} and then \alert{Install packages}),\\
-      \vskip1ex
-      Packages residing on GitHub can be installed using the devtools packages,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-getOption("repos")  # get default package source
-.libPaths()  # get package save directory
-      @
-      \vspace{-2em}
-      <<eval=FALSE>>=
-install.packages("AER")  # install "AER" from CRAN
-# install "PerformanceAnalytics" from R-Forge
-install.packages(
-  pkgs="PerformanceAnalytics",  # name
-  lib="C:/Users/Jerzy/Downloads",  # directory
-  repos="http://R-Forge.R-project.org")  # source
-      @
-      \vspace{-2em}
-      <<eval=FALSE>>=
-# install devtools from CRAN
-install.packages("devtools")
-# load devtools
-library(devtools)
-# install package "babynames" from GitHub
-install_github(repo="hadley/babynames")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Installing Packages From Source}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Sometimes packages aren't available in compiled form, so it's necessary to install them from their source code, 
-      \vskip1ex
-      To install a package from source, the user needs to first install compilers and development tools:\\
-      \hskip1em For Windows install \texttt{Rtools}:\\
-\url{https://cran.r-project.org/bin/windows/Rtools/}\\
-      \hskip1em For Mac OSX install \texttt{XCode} developer tools:\\
-\url{https://developer.apple.com/xcode/downloads/}
-      \vskip1ex
-      The function \texttt{install.packages()} with argument \texttt{type="source"} installs a package from source,
-      \vskip1ex
-      The function \texttt{download.packages()} downloads the package's installation files (compressed tar format) to a local directory, 
-      \vskip1ex
-      The function \texttt{install.packages()} can then be used to install the package from the downloaded files,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE, eval=FALSE>>=
-# install package "PortfolioAnalytics" from source
-install.packages("PortfolioAnalytics", 
-  type="source", 
-  repos="http://r-forge.r-project.org")
-# download files for package "PortfolioAnalytics"
-download.packages(pkgs = "PortfolioAnalytics", 
-  destdir = ".",  # download to cwd
-  type = "source",
-  repos="http://r-forge.r-project.org")
-# install "PortfolioAnalytics" from local tar source
-install.packages(
-  "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz", 
-  repos=NULL, type="source")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package Files and Directories}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Package installation files are organized into multiple directories, including some of the following:
-      \begin{itemize}
-        \item \texttt{\textasciitilde{}/R} containing \texttt{R} source code files, 
-        \item \texttt{\textasciitilde{}/src} containing \texttt{C++} and \texttt{Fortran} source code files,
-        \item \texttt{\textasciitilde{}/data} containing datasets, 
-        \item \texttt{\textasciitilde{}/man} containing documentation files, 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE, eval=TRUE>>=
-# list directories in "PortfolioAnalytics" sub-directory
-gsub(
-  "C:/Users/Jerzy/Documents/R/win-library/3.1", 
-  "~",
-  list.dirs(
-    file.path(
-      .libPaths()[1], 
-      "PortfolioAnalytics")))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package Namespaces}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Package \texttt{namespaces}:
-      \begin{itemize}
-        \item Provide a mechanism for calling objects from a package,
-        \item Hide functions and data internal to the package,
-        \item Prevent naming conflicts between user and package names,
-      \end{itemize}
-      When a package is loaded using \texttt{library()} or \texttt{require()}, its \texttt{namespace} is attached to the search path,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-search()  # get search path for R objects
-library("MASS")  # load package "MASS"
-head(ls("package:MASS"))  # list some objects in "MASS"
-detach("package:MASS")  # remove "MASS" from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package Namespaces and the Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Packages may be loaded without their \texttt{namespace} being attached to the search path,
-      \vskip1ex
-      When packages are loaded, then packages they depend on are also loaded, but their \texttt{namespaces} aren't necessarily attached to the search path,
-      \vskip1ex
-      The function \texttt{loadedNamespaces()} lists all loaded \texttt{namespaces}, including those that aren't on the search path,
-      \vskip1ex
-      The function \texttt{search()} returns the current search path for \texttt{R} objects,
-      \vskip1ex
-      \texttt{search()} returns many package \texttt{namespaces}, but not all the loaded \texttt{namespaces},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-loadedNamespaces()  # get names of loaded namespaces
-
-search()  # get search path for R objects
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Not Attached Namespaces}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{sessionInfo()} returns information about the current \texttt{R} session, including packages that are loaded, but \emph{not attached} to the search path,
-      \vskip1ex
-      \texttt{sessionInfo()} lists those packages as "loaded via a \texttt{namespace} (and not attached)"
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# get session info,
-# including packages not attached to the search path
-sessionInfo()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Non-Visible Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Non-visible objects (variables or functions) are either:
-      \begin{itemize}
-        \item objects from \emph{not attached} \texttt{namespaces},
-        \item objects \emph{not exported} outside a package,
-      \end{itemize}
-      Objects from packages that aren't attached can be accessed using the double-colon operator \texttt{"::"},
-      \vskip1ex
-      Objects that are \emph{not exported} outside a package can be accessed using the triple-colon operator \texttt{":::"},
-      \vskip1ex
-      Colon operators automatically load the associated package,
-      \vskip1ex
-      Non-visible objects in namespaces often use the \texttt{".*"} name syntax,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-plot.xts  # package xts isn't loaded and attached
-head(xts::plot.xts, 3)
-methods("cbind")  # get all methods for function "cbind"
-stats::cbind.ts  # cbind isn't exported from package stats
-stats:::cbind.ts  # view the non-visible function
-getAnywhere("cbind.ts")
-library("MASS")  # load package 'MASS'
-select  # code of primitive function from package 'MASS'
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Namespaces and Non-Visible Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{getAnywhere()} displays information about \texttt{R} objects, including non-visible objects,
-      \vskip1ex
-      Objects referenced \emph{within} packages have different search paths than other objects:\\
-      Their search path starts in the package \texttt{namespace}, then the global environment and then finally the regular search path,
-      \vskip1ex
-      This way references to objects from \texttt{within} a package are resolved to the package, and they're not masked by objects of the same name in other environments,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-getAnywhere("cbind.ts")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%
@@ -1180,6 +557,207 @@ last.xts_xtra <- function(in_ts) {
   drop(NextMethod())
 }  # end last.xts_xtra
 last(new_xts)  # apply "last" from "xts_xtra" class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Parallel Computing}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing in \texttt{R}}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+
+\begin{block}{Parallel Computing in \texttt{R}}
+      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
+      \vskip1ex
+      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \texttt{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
+      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
+      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
+      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
+\end{block}
+
+\begin{block}{\texttt{R} Base Package \texttt{parallel}}
+  The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+  \vskip1ex
+  The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
+  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
+  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
+\end{block}
+
+\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
+      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Using Package \texttt{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+      \vskip1ex
+      The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
+      \vskip1ex
+      Different \texttt{parallel} functions need to be called depending on the operating system (\emph{Windows}, \emph{Mac}, or \emph{Linux}),
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores,
+      \vskip1ex
+      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops,
+      \vskip1ex
+      The function \texttt{parLapply()} performs an apply loop using parallel computing on several CPU cores, similar to \texttt{lapply()},
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+      @
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply with parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Computing Overhead of Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
+      \vskip1ex
+      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
+      <<echo=(-(1:10)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+      lapply=lapply(1:max_iterations, paws,
+                    sleep_time=sleep_time),
+      parallel=parLapply(clus_ters, 1:max_iterations,
+              paws, sleep_time=sleep_time),
+      times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+              names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/parallel_plot.png}\\
+      \vspace{-1em}
+      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+      y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+       inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Over Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often we need to perform time consuming calculations over columns of matrices,
+      \vskip1ex
+      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:length(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ters, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ters, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)
       @
   \end{columns}
 \end{block}

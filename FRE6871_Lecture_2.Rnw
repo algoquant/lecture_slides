@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Fall 2015}
+\subtitle{Lecture\#2, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{Sep 21, 2015}
+\date{April 11, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,55 +72,124 @@ knit_theme$set(thm)
 \maketitle
 
 
+%%%%%%%%%%%%%%%
+\section{Operators}
+
 
 %%%%%%%%%%%%%%%
-\section{Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Data Objects in \texttt{R}}
+\subsection{Logical Operators}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      All data objects in \texttt{R} are \emph{vectors}, or consist of \emph{vectors},
+    \column{0.4\textwidth}
+      \texttt{R} has the following logical operators:
+      \begin{itemize}
+        \item \texttt{"<"} less than,
+        \item \texttt{"<="} less than or equal to,
+        \item \texttt{">"} greater than,
+        \item \texttt{">="} greater than or equal to,
+        \item \texttt{"=="} exactly equal to,
+        \item \texttt{"!="} not equal to,
+        \item \texttt{"!x"} Not \texttt{x},
+        \item \texttt{"x \& y"} \texttt{x} AND \texttt{y},
+        \item \texttt{"x | y"} \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators are applied to vectors element-wise,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+TRUE | FALSE
+TRUE | NA
+vec_tor1 <- c(2, 4, 6)
+vec_tor1 < 5  # element-wise comparison
+(vec_tor1 < 5) & (vec_tor1 > 3)
+vec_tor1[(vec_tor1 < 5) & (vec_tor1 > 3)]
+vec_tor2 <- c(-10, 0, 10)
+vec_tor1 < vec_tor2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Long Form Logical Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} also has two long form logical operators:
+      \begin{itemize}
+        \item \texttt{"x \&\& y"} \texttt{x} AND \texttt{y},
+        \item \texttt{"x || y"} \texttt{x} OR \texttt{y},
+      \end{itemize}
+      These operators differ from the short form operators in two ways:
+      \begin{itemize}
+        \item They only evaluate the first elements of their vector arguments,
+        \item They short-circuit (stop evaluation as soon as the expression is determined),
+      \end{itemize}
+      {\color{red}{Rule of Thumb}}
+      \begin{itemize}
+        \item Use \texttt{"\&\&"} and \texttt{"||"} in if-clauses,
+      \end{itemize}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+echo_true <- function() {cat("echo_true\t"); TRUE}
+echo_false <- function() {cat("echo_false\t"); FALSE}
+echo_true() | echo_false()
+echo_true() || echo_false()  # echo_false() isn't evaluated at all!
+vec_tor <- c(2, 4, 6)
+# works (does nothing) using '&&'
+if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
+}
+# no short-circuit so fails (produces an error)
+if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Comparing Objects With \texttt{identical()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{identical()} tests if two objects are exactly the same, and always returns a single logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
       \vskip1ex
-      Single numbers and character strings are vectors of length \texttt{"1"},
+      For atomic arguments \texttt{identical()} often gives the same result as the \texttt{"=="} operator, but it's not synonymous with it in general,
       \vskip1ex
-      \emph{Atomic} vectors are \emph{homogeneous} objects whose elements are all of the same \emph{mode} (type), 
-      \vskip1ex
-      \emph{Lists} and \emph{data frames} are \emph{recursive} (heterogeneous) objects, whose elements can be vectors of different \emph{mode},
-      \vskip1ex
-      The functions \texttt{is.atomic()} and \texttt{is.recursive()} return logical values depending on whether their arguments are \emph{atomic} or \emph{recursive},
-      \vskip1ex
-      \renewcommand\arraystretch{1.5} % scale table rows
-      \renewcommand\tabcolsep{8pt} % set table column width - 6pt is default
-      \centering{{\color{blue}{\texttt{R} Data Objects}}}\\[1ex]
-      \begin{tabular}{c||c|c|}
-        & \text{\emph{Atomic}} & \text{\emph{Recursive}} \\
-        \hline
-        \hline
-        \text{1-dim} & Vectors & Lists \\
-        \hline
-        \text{2-dim} & Matrices & Data frames \\
-        \hline
-        \text{n-dim} & Arrays & NA \\
-      \end{tabular}
-    \column{0.5\textwidth}
+      The \texttt{"=="} operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# single numbers are vectors of length 1
-1
-# character strings are vectors of length 1
-"a"
-# strings without quotes are variable names
-a  # variable "a" doesn't exist
-# list elements can have different mode
-list(aa=c('a', 'b'), bb=1:5)
-data.frame(aa=c('a', 'b'), bb=1:2)
-is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
-is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+num_var <- 2
+num_var==2
+identical(num_var, 2)
+
+identical(num_var, NULL) 
+num_var==NULL
+is.null(num_var)
+
+vec_tor <- c(2, 4, 6)
+vec_tor==2
+identical(vec_tor, 2)
       @
   \end{columns}
 \end{block}
@@ -129,120 +198,36 @@ is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Type, Mode, and Class of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{type}, \emph{mode}, and \emph{class} are \texttt{character} strings representing various object properties,
-      \vskip1ex
-      The \emph{type} of an atomic object represents how it's stored in memory (\texttt{logical}, \texttt{character}, \texttt{integer}, \texttt{double}, etc.)
-      \vskip1ex
-      The \emph{mode} of an atomic object is the kind of data it represents (\texttt{logical}, \texttt{character}, \texttt{numeric}, etc.)
-      \vskip1ex
-      The \emph{mode} of an object often coincides with its \emph{type} (except for \texttt{integer} and \texttt{double} types),
-      \vskip1ex
-      Recursive objects (such as \texttt{lists}) have both \emph{type} and \emph{mode} equal to the recursive type (\texttt{list}, etc.),
-      \vskip1ex
-      The \emph{class} of an object is either an explicit \emph{class} attribute, or is derived from the object \texttt{dim} attribute, or its \emph{mode} (implicit \emph{class}), 
-      \vskip1ex
-      The function \texttt{class()} returns the explicit or implicit \emph{class} of an object,
-      \vskip1ex
-      The \emph{class} attribute is used for function dispatching in the \texttt{S3} object-oriented programming system in \texttt{R},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- "hello"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- runif(5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(runif(10), 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- list(aa=c('a', 'b'), bb=1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Implicit Class of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If an object has a \texttt{dim} attribute, then its implicit \emph{class} is \texttt{matrix} or \texttt{array}, 
-      \vskip1ex
-      If an object has no explicit \emph{class} nor \texttt{dim} attributes, then its implicit \emph{class} is derived from its \emph{mode} (except for \texttt{integer} vectors have implicit class \texttt{"integer"}), 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-my_var <- matrix(1:10, 2)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- vector(mode="numeric", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- vector(mode="integer", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} Object Attributes}
+\subsection{Lookup and Matching}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \texttt{R} objects can have different attributes, such as: \texttt{names}, \texttt{dimnames}, \texttt{dimensions}, \emph{class}, etc., 
+      The function \texttt{which()} returns the indices of the \texttt{TRUE} elements of a boolean \texttt{vector} or \texttt{array}, 
       \vskip1ex
-      The attributes of an object is a named \texttt{list} of \texttt{symbol=value} pairs,
+      If the argument is an \texttt{array} and \texttt{arr.ind=TRUE}, then \texttt{which()} returns a matrix with rows containing the indices of the \texttt{TRUE} elements,
       \vskip1ex
-      The function \texttt{attributes()} returns the attributes of an object,
-      \vskip1ex
-      The attributes of an \texttt{R} object can be modified using the \texttt{"attributes() <-"} assignment,
-      \vskip1ex
-      The function \texttt{structure()} adds attributes (specified as \texttt{symbol=value} pairs) to an object, and returns it,
-      \vskip1ex
-      A \texttt{vector} that is assigned an attribute other than \texttt{names} is not treated as a \texttt{vector},
-      \vskip1ex
-      The function \texttt{is.vector()} returns \texttt{TRUE} if its argument is a vector, and returns \texttt{FALSE} otherwise,
+      The functions \texttt{which.max()} and \texttt{which.min()} return the index of the minimum or maximum of a \texttt{numeric} or \texttt{boolean} vector,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<>>=
-attributes(5:10)  # a simple vector has no attributes
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-attributes(my_var)  # named vector has "names" attribute
-my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
-attributes(my_var) <- list(my_attr="foo")
-my_var
-is.vector(my_var)  # is the object a vector?
-my_var <- 0
-attributes(my_var) <- list(class="Date")
-my_var  # "Date" object
-structure(0, class="Date")  # "Date" object
+        <<>>=
+vec_tor <- sample(1:9)
+mat_rix <- matrix(vec_tor, ncol=3)
+vec_tor
+which(vec_tor == 5)
+# equivalent but less efficient than above
+(1:length(vec_tor))[vec_tor == 5]
+which(vec_tor > 5)
+# find indices of TRUE elements of boolean matrix
+which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
+# equivalent but less efficient than above
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)), 
+         dim(mat_rix), dimnames(mat_rix))
+which.max(vec_tor)
+# equivalent but less efficient than above
+which(vec_tor == max(vec_tor))
+which.min(vec_tor)
       @
   \end{columns}
 \end{block}
@@ -251,32 +236,41 @@ structure(0, class="Date")  # "Date" object
 
 
 %%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{class} Attributes}
-\begin{frame}[fragile,t]{\subsecname}
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Objects without an explicit \emph{class} don't have a \emph{class} attribute, and the function \texttt{class()} returns the implicit \emph{class},
+      \texttt{match()} returns the index of the first element of its second argument, that matches its first argument,
       \vskip1ex
-      The \emph{class} of an object can be modified using the \texttt{"class() <-"} assignment,
+      The binary operator \texttt{\%in\%} returns a boolean \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
       \vskip1ex
-      An object can have a main \emph{class}, and also an inherited \emph{class} (the \emph{class} attribute can be a vector of strings),
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
       \vskip1ex
-      The function \texttt{unclass()} removes the explicit class attribute from an object,
+      \texttt{\%in\%} never returns \texttt{NA}, so it's preferred in \texttt{if()} statements,
+      \vskip1ex
+      \texttt{any()} returns \texttt{TRUE} if at least one element of a boolean vector is \texttt{TRUE}, and \texttt{FALSE} otherwise,
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<>>=
-my_var <- matrix(runif(10), 2, 5)
-class(my_var)  # has implicit class
-attributes(my_var)  # but no explicit "class" attribute
-c(typeof(my_var), mode(my_var), class(my_var))
-class(my_var) <- "my_class"  # assign explicit "class" attribute
-class(my_var)  # has explicit "class"
-attributes(my_var)  # has explicit "class" attribute
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
-attributes(unclass(my_var))
+        <<>>=
+match(5, vec_tor)
+# equivalent but less efficient than above
+which(vec_tor == 5)
+match(-5, vec_tor)
+5 %in% vec_tor
+# equivalent to above
+match(5, vec_tor, nomatch=0) > 0
+-5 %in% vec_tor
+c(5, -5) %in% vec_tor
+# equivalent to "5 %in% vec_tor"
+any(vec_tor == 5)
+# equivalent to "-5 %in% vec_tor"
+any(vec_tor == (-5))
+if(any(vec_tor < 0))
+  cat("vector contains negative values\n")
       @
   \end{columns}
 \end{block}
@@ -285,46 +279,321 @@ attributes(unclass(my_var))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Object Coercion}
+\subsection{Assignment Operators}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Coercion} means changing the \emph{type}, \emph{mode}, or \emph{class} of an object, often without changing the underlying data,
+      The standard assignment operator in \texttt{R} is \texttt{"<-"},
       \vskip1ex
-      Changing the \emph{mode} of an object can change its \emph{class} as well, but not always,
+      Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in \texttt{R},
       \vskip1ex
-      Objects can be explicitly coerced using the \texttt{"as.*"} coercion functions,
+      The \texttt{"<-"} operator may cause an error if \texttt{R} confuses it with the \texttt{"<"} logical operator,
       \vskip1ex
-      Most coercion functions strip the \emph{attributes} from the object,
+      But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),
       \vskip1ex
-      Implicit coercion occurs when objects with different \texttt{modes} are combined into a vector, forcing the elements to have the same \emph{mode},
+      The \texttt{"="} operator is used for named arguments in function calls,
       \vskip1ex
-      Implicit coercion can cause bugs that are difficult to trace,
+      When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,
       \vskip1ex
-      The rule is that coercion is into larger types (\texttt{numeric} objects are coerced into \texttt{character} strings),
-      \vskip1ex
-      Coercion can introduce bad data, such as \texttt{NA} values,
+      {\color{red}{Rule of Thumb}}:\\
+      Use \texttt{"<-"} in \texttt{R} scripts and inside functions,\\
+      Use \texttt{"="} only in function calls,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-mode(my_var) <- "character"  # coerce to "character"
-my_var
-c(typeof(my_var), mode(my_var), class(my_var))
-my_var <- as.character(1:5)  # explicitly coerce to "character"
-c(typeof(my_var), mode(my_var), class(my_var))
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
-mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
-as.logical(0:3)  # explicit coercion to "logical"
-as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, 'a')  # implicit coercion to "character"
-as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
+num_var1 <- 3  # "<-" and "=" are valid assignment operators
+num_var1
+num_var1 = 3
+num_var1
+2<-3  # "<" operator confused with "<-"
+2 < -3  # add space or brackets to avoid confusion
+median(x=1:10)  # "=" assignment within argument list
+x  # x doesn't exist outside the function
+median(x <- 1:10)  # "<-" assignment within argument list
+x  # x exists outside the function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Control Structures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{"if() else"} Control Statement}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} has the familiar \texttt{"if() \{...\} else \{...\}"} statement to control execution flow depending on logical conditions,
+      \vskip1ex
+      The logical conditions must be either a logical or numeric type, otherwise an error is produced,
+      \vskip1ex
+      The \texttt{"else"} statement can also be omitted,
+      \vskip1ex
+      \texttt{"if"} statements can be nested using multiple \texttt{"else if"} statements,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+num_var1 <- 1
+
+if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+  num_var2 <- 4
+} else if (num_var1 == 0) {  # 'else if' together on same line
+  num_var2 <- 0
+} else {  # 'else' together with curly braces
+  num_var2 <- -4
+}  # end if
+
+num_var2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{switch()} Control Statement}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{switch()} evaluates its first argument \texttt{"EXPR"}, and depending on its value, chooses one of the named arguments passed to the dots \texttt{"..."} argument,
+      \vskip1ex
+      The dots \texttt{"..."} argument accepts a named list (symbol-value pairs),
+      \vskip1ex
+      If \texttt{"EXPR"} is a character string, then the element with that name is returned by \texttt{switch()},
+      \vskip1ex
+      If \texttt{switch()} can't match the string to any name, then it returns \texttt{NULL}, 
+      \vskip1ex
+      If \texttt{"EXPR"} is an integer, then \texttt{switch()} returns the element from that position, 
+      \vskip1ex
+      Using \texttt{switch()} is a convenient alternative to a cascade of \texttt{"if() else"} statements, 
+      \vskip1ex
+      The function \texttt{match.arg()} matches a string to one of the possible values, and returns the matched value, or produces an \texttt{error} if it can't match it,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+switch("a", a="aaahh", b="bee", c="see", d=2, "else this")
+switch("c", a="aaahh", b="bee", c="see", d=2, "else this")
+switch(3, a="aaahh", b="bee", c="see", d=2, "else this")
+switch("cc", a="aaahh", b="bee", c="see", d=2, "else this")
+# measure of central tendency
+centra_lity <- function(in_put, 
+            meth_od=c("mean", "mean_narm", "median")) {
+# validate "meth_od" argument
+  meth_od <- match.arg(meth_od)
+  switch(meth_od,
+         mean=mean(in_put),
+         mean_narm=mean(in_put, na.rm=TRUE),
+         median=median(in_put))
+}  # end centra_lity
+foo <- rnorm(100, mean=2)
+centra_lity(foo, "mean")
+centra_lity(foo, "mean_narm")
+centra_lity(foo, "median")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Iteration Using \texttt{for()} and \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{"for() \{...\}"} statement iterates a \emph{bound} variable over elements of a vector or list, 
+      \vskip1ex
+      The \texttt{for()} loop creates the \emph{bound} variable, which then iterates over the elements of the vector, and upon loop exit the \emph{bound} variable is left equal to the last element of the vector, 
+      \vskip1ex
+      \texttt{R} also has a \texttt{"while() \{...\}"} loop,
+      \vskip1ex
+      \texttt{while()} loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
+      \vskip1ex
+      But \texttt{while()} loops risk producing infinite loops if not written
+properly, so \alert{Use Them With Care!}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+color_list <- list("red", "white", "blue")
+for (some_color in color_list) {  # loop over list
+  print(some_color)
+}
+for (in_dex in 1:3) {  # loop over vector
+  print(color_list[[in_dex]])
+}
+
+in_dex <- 1  # while loops need initialization
+while (in_dex < 4) {  # while loop
+  print(color_list[[in_dex]])
+  in_dex <- in_dex + 1
+}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fibonacci Sequence Using \texttt{for()} Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_{n} = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_{1} = 0, F_{2} = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_{n} = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration,
+      \vskip1ex
+      A more efficicent way to perform iteration is by pre-allocating the vector,
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+# fib_seq <- numeric()  # zero length numeric vector
+# pre-allocate vector instead of "growing" it
+fib_seq <- numeric(10)
+fib_seq[1] <- 0  # initialize
+fib_seq[2] <- 1  # initialize
+for (i in 3:10) {  # perform recurrence loop
+  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
+}  # end for
+fib_seq
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Recursive Data Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lists}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Lists are a type of vector that contain elements of different \emph{types},
+      \vskip1ex
+      Lists are recursive object types, meaning each list element can contain other vectors or lists,
+      \vskip1ex
+      The function \texttt{list()} creates a list from a list of vectors,
+      \vskip1ex
+      \texttt{list()} creates a named list from a list of symbol-value pairs,
+      \vskip1ex
+      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise,
+      \vskip1ex
+      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion),
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<>>=
+# create a list with two elements
+list_var <- list(c('a', 'b'), 1:4)
+list_var
+c(typeof(list_var), mode(list_var), class(list_var))
+# lists are also vectors
+c(is.vector(list_var), is.list(list_var))
+length(list_var)
+# create named list
+list_var <- list(first=c('a', 'b'), second=1:4)
+list_var
+names(list_var)
+unlist(list_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Lists can be subset (indexed) using:
+      \begin{itemize}
+        \item the \texttt{"["} operator (returns sublist),
+        \item the \texttt{"[["} operator (returns an element),
+        \item the \texttt{"\$"} operator (for named lists only),
+      \end{itemize}
+      \vskip1ex
+      Partial name matching allows subsetting with partial name, as long as it can be resolved, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+list_var[2]  # extract second element as sublist
+list_var[[2]]  # extract second element
+list_var[[2]][3]  # extract third element of second element
+list_var[[c(2, 3)]]  # third element of second element
+list_var$second  # extract second element
+list_var$s  # extract second element - partial name matching
+list_var$second[3]  # third element of second element
+list_var <- list()  # empty list
+list_var$a <- 1
+list_var[2] <- 2
+list_var
+names(list_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{as.list()} coerces vectors and other objects into lists,
+      \vskip1ex
+      \texttt{as.list()} returns a list with the same elements as the vector,
+      \vskip1ex
+      \texttt{list()} called on a vector returns a single element equal to the vector,
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+as.list(c(1,2,3))
+list(c(1,2,3))
       @
   \end{columns}
 \end{block}
@@ -338,7 +607,7 @@ as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Factors are similar to vectors, but their elements can only take values from a set of \emph{levels},
       \vskip1ex
       Factors are designed for categorical data which can only take certain values,
@@ -352,7 +621,7 @@ as.numeric(c(1:3, 'a'))  # explicit coercion to "numeric"
       The function \texttt{as.numeric()} extracts the encoding vector (indices) of a factor,
       \vskip1ex
       The function \texttt{as.vector()} coerces a factor to a character vector,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
 # create factor vector
@@ -364,7 +633,8 @@ levels(fac_tor)  # get allowed values
 as.numeric(fac_tor)  # get encoding vector
 is.vector(fac_tor)
 as.factor(1:5)  # coerce vector to factor
-as.vector(as.factor(1:5))  # coerce factor to character vector
+# coerce factor to character vector
+as.vector(as.factor(1:5))
       @
   \end{columns}
 \end{block}
@@ -373,28 +643,35 @@ as.vector(as.factor(1:5))  # coerce factor to character vector
 
 
 %%%%%%%%%%%%%%%
-\subsection{Tables of Categorical Data}
+\subsection{Data Frames}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{table()} calculates the frequency distribution of categorical data,
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types},
       \vskip1ex
-      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
+      Data frames can be thought of as lists of vectors of the same length,
+      \vskip1ex
+      The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor), 
-       function(le_vel) {
-         sum(fac_tor==le_vel)
-       })  # end sapply
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0)
+                    )  # end data.frame
+data_frame
+dim(data_frame)  # get dimension attribute
+colnames(data_frame)  # get the colnames attribute
+rownames(data_frame)  # get the rownames attribute
+class(data_frame)  # get object class
+typeof(data_frame)  # data frames are lists
+is.data.frame(data_frame)
+
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
       @
   \end{columns}
 \end{block}
@@ -403,126 +680,479 @@ sapply(levels(fac_tor),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Classifying Continuous Numeric Data Into Categories}
-\begin{frame}[fragile,t]{\subsecname}
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+      \vskip1ex
+      Depending on how a data frame is subset, the result can be either a data frame or a vector,
+      \vskip1ex
+      Extracting a single column from a data frame produces a vector,
+      \vskip1ex
+      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"},
+      \vskip1ex
+      Extracting a single row from a data frame produces a data frame,
+      \vskip1ex
+      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector, 
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<>>=
+data_frame[, 3]  # extract third column
+data_frame[[3]]  # extract third column
+data_frame[[3]][2]  # second element from third column
+data_frame$price[2]  # second element from 'price' column
+is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
+data_frame[, 3, drop=FALSE]  # extract third column
+data_frame[2, ]  # extract second row
+data_frame[2, ][3]  # third element from second column
+data_frame[2, 3]  # third element from second column
+unlist(data_frame[2, ])  # coerce to vector
+is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()},
+      \vskip1ex
+      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results,
+      \vskip1ex
+      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0),
+                      row.names=c('flower1', 'flower2', 'flower3'),
+                      stringsAsFactors=FALSE
+                    )  # end data.frame
+data_frame
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
+# set option to not coerce character vectors to factors
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+default.stringsAsFactors()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+str(data_frame)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames can be sorted on any column,
+      \vskip1ex
+      The function \texttt{sort()} returns a sorted vector,
+      \vskip1ex
+      The function \texttt{order()} returns a permutation index,
+      \vskip1ex
+      \texttt{order()} can take several vectors as input, to break any ties,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:7))>>=
+type <- c('rose', 'daisy', 'tulip')  # character vector
+color <- c('red', 'white', 'yellow')  # character vector
+price <- c(1.5, 0.5, 1.0)  # numeric vector
+# create a data frame
+data_frame <- data.frame(type, color, price)
+# assign rownames
+rownames(data_frame) <- c('flower1', 'flower2', 'flower3')
+sort_data <- sample(1:6)  # permute data
+sort_data
+sort(sort_data)  # sorted data
+order(sort_data)  # permution index
+sort_data[order(sort_data)]  # permution index
+order(data_frame$price)  # permute on price
+data_frame[order(data_frame$price), ]  # sort on price
+data_frame[order(data_frame$color), ]  # sort on color
+order(c(2, 1:4))  # there's a tie
+order(c(2, 1:4), 1:5)  # there's a tie
+# read sort() Examples
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{as.matrix()} coerces vectors and data frames into matrices,
+      \vskip1ex
+      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character},
+      \vskip1ex
+      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+as.matrix(data_frame)
+vec_tor <- sample(9)
+matrix(vec_tor, ncol=3)
+as.matrix(vec_tor, ncol=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Numeric data that represents a \emph{magnitude}, \emph{intensity}, or \emph{score} can be classified into categorical data, given a vector of \emph{breakpoints},
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
       \vskip1ex
-      The \emph{breakpoints} create intervals that correspond to different \emph{categories},
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
       \vskip1ex
-      The \emph{categories} combine elements that have a similar numeric \emph{magnitude},
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
       \vskip1ex
-      \texttt{findInterval()} returns the index of the element of \texttt{"vec"} that most closely matches the element of \texttt{"x"},
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
       \vskip1ex
-      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
+      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()},
       \vskip1ex
-      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+library(microbenchmark)
+# call method instead of generic function
+as.data.frame.matrix(mat_rix)
+# a few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# function method is faster than generic function
+summary(microbenchmark(
+  as_data_frame_matrix=
+    as.data.frame.matrix(mat_rix),
+  as_data_frame=as.data.frame(mat_rix),
+  data_frame=data.frame(mat_rix), 
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices can be coerced into lists in at least two different ways, 
       \vskip1ex
-      If all the elements of \texttt{"vec"} are greater than the element of \texttt{"x"}, then \texttt{findInterval()} returns \texttt{zero},
+      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()}, 
+      \vskip1ex
+      Matrices can be directly coerced into a list using function \texttt{lapply()}, 
+      \vskip1ex
+      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function, 
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=TRUE>>=
 library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7), 
-             all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7), 
-             rightmost.closed=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Numeric Data Into Categories Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Temperature can be categorized into "cold", "warm", "hot", etc.
-      \vskip1ex
-      A named numeric vector of \emph{breakpoints} can be used to convert a temperature into one of the \emph{categories},
-      \vskip1ex
-      \emph{Breakpoints} correspond to \emph{categories} of the data,
-      \vskip1ex
-      The first \emph{breakpoint} should correspond to the lowest \emph{category}, and should have a value less than any of the data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# named numeric vector of breakpoints
-brea_ks <- c("freezing"=0, "very_cold"=30, 
-             "cold"=50, "pleasant"=60, 
-             "warm"=80, "hot"=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures, 
-                       vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Converting Numeric Data Into Factors Using \texttt{cut()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cut()} converts a numeric vector into a vector of factors, representing the intervals to which the numeric values belong, 
-      \vskip1ex
-      \texttt{cut()} divides the range of values into intervals, based on a vector of breaks, 
-      \vskip1ex
-      \texttt{cut()} then assigns factors to the numeric values, representing the intervals to which the numeric values belong, 
-      \vskip1ex
-      The argument \texttt{"breaks"} is a numeric vector of break points that divide the range of values into intervals, 
-      \vskip1ex
-      The argument \texttt{"labels"} is a vector of labels for the intervals, 
-      \vskip1ex
-      The argument \texttt{"right"} is a boolean indicating if the intervals should be closed on the right (and open on the left), or vice versa, 
-      \vskip1ex
-      \texttt{cut()} can produce the same classification as \texttt{findInterval()}, but \texttt{findInterval()} is faster than \texttt{cut()}, because it's a compiled function, 
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2, 
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
+# lapply is faster than coercion function
 summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)), 
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)), 
+  as_list=
+    as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=
+    lapply(seq_along(mat_rix[1, ]), 
+           function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      \vskip1ex
+      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{Cars93} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
+        <<Cars93_hist,fig.show='hide'>>=
+library(MASS)
+# ?Cars93  # get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # extract list of car types
+# sapply(Cars93, mean)  # calculate means of Cars93 columns
+# plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1", 
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/Cars93_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Data Management and Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bad Data}
+\begin{frame}[fragile,t]{Types of \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Possible sources of bad data are: imported data, class coercion, numeric overflow,
+      \vskip1ex
+      Types of bad data:
+      \begin{itemize}
+        \item \texttt{NA} means Not Available (missing) data,
+        \item \texttt{NaN} means Not a Number data,
+        \item \texttt{Inf} means numeric overflow - divide by zero,
+      \end{itemize}
+      \vskip1ex
+      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error},
+      \vskip1ex
+      \texttt{NA} or \texttt{NaN} values are not \emph{errors},
+      \vskip1ex
+      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values,
+      \vskip1ex
+      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
+NA*1:4  # create vector of Nas
+da_ta <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+da_ta
+mean(da_ta)  # returns NA, when NAs are input
+mean(da_ta, na.rm=TRUE)  # remove NAs from input data
+da_ta[!is.na(da_ta)]  # delete the NA values
+sum(!is.na(da_ta))  # count non-NA values
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())
+head(airquality)  # airquality data has some NAs
+dim(airquality)
+sum(!complete.cases(airquality))  # number of NAs
+# display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Rows containing bad data may be either removed or replaced with an estimated value,
+      \vskip1ex
+      The function \texttt{na.locf()} from package \texttt{zoo} replaces NAs with most recent non-NA prior to it,
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())
+# remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+head(good_air)  # NAs removed
+library(zoo)  # load package zoo
+good_air <- na.locf(airquality)  # replace NAs
+dim(good_air)
+head(good_air)  # NAs replaced
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{NULL} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{NULL} is a reserved word that represents a value that doesn't exist,
+      \vskip1ex
+      \texttt{NULL} is a legitimate value, not bad data,
+      \vskip1ex
+      The function \texttt{is.null()} tests for \texttt{NULL} values,
+      \vskip1ex
+      \texttt{NULL} is often returned by functions whose value is undefined,
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration,
+      \vskip1ex
+      A more efficicent way to perform iteration is by pre-allocating the vector,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(length(NULL), length(NA))
+# check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)  
+# vectors can be initialized to NULL
+da_ta <- NULL
+for (in_dex in 1:5)
+  da_ta <- c(da_ta, in_dex)
+da_ta
+# NA value isn't ignored
+da_ta <- NA
+for (in_dex in 1:5)
+  da_ta <- c(da_ta, in_dex)
+da_ta
       @
   \end{columns}
 \end{block}
@@ -646,56 +1276,71 @@ bind_dots(1, 2, 3)  # "in_put" not bound, but has default
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Wrapper \secname \hskip0.4em With dots \texttt{"..."} Argument}
+\section{Higher-order Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions as First Class Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Wrapper} functions provide a convenient user interface to functions, by assigning default argument values, validating data, and formatting the output, 
-      \vskip1ex
-      \emph{Wrapper} functions are designed to perform the actions of other functions, while reducing their complexity,
-      \vskip1ex
-      The dots \texttt{"..."} argument of the \emph{wrapper} function allows passing additional arguments on to the wrapped function,
-      \vskip1ex
-      \emph{Wrapper} functions should be used with caution, since wrapping a function creates extra code (overhead), which slows down \texttt{R},
+      Functions in \texttt{R} are \emph{first class objects}, which means they can be treated like any other \texttt{R} object:
+      \begin{itemize}
+        \item Functions can be passed as arguments to other functions,
+        \item Functions can be nested (defined inside other functions),
+        \item Functions can return functions as their return value,
+      \end{itemize}
+      \emph{Higher-order} functions are \texttt{R} functions that either accept a function as their argument (input) or return a function as their value (output),
     \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# wrapper for mean() with default na.rm=TRUE
-my_mean <- function(x, na.rm=TRUE, ...) {
-  mean(x=x, na.rm=na.rm, ...)
-}  # end my_mean
-foo <- sample(c(1:10, NA, rep(0.1, t=5)))
-mean(c(foo, NA))
-mean(c(foo, NA), na.rm=TRUE)
-my_mean(c(foo, NA))
-my_mean(c(foo, NA), trim=0.4)  # pass extra argument
-# wrapper for saving data into default directory
-save_data <- function(..., 
-                      file=stop("error: no file name"),
-                      my_dir="C:/Develop/data") {
-# create file path
-  file <- file.path(my_dir, file)
-  save(..., file=file)
-}  # end save_data
-foo <- 1:10
-save_data(foo, file="scratch.Rdata")
-save_data(foo, file="scratch.Rdata", my_dir="C:/Develop")
-# wrapper for testing negative arguments
-stop_if_neg <- function(in_put) {
-  if(!is.numeric(in_put) || in_put<0)
-    stop("argument not numeric or negative")
-}  # end stop_if_neg
-# wrapper for sqrt()
-my_sqrt <- function(in_put) {
-  stop_if_neg(in_put)
-  sqrt(in_put)
-}  # end my_sqrt
-my_sqrt(2)
-my_sqrt(-2)
-my_sqrt(NA)
+# create functional that accepts a function as input argument
+func_tional <- function(func_name) {
+# calculates statistic on random numbers
+  set.seed(1)
+  func_name(runif(1e4))  # apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions That Return Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions can also return a function as their value,
+      \vskip1ex
+      Functions returned by a function are called \emph{closures},
+      \vskip1ex
+      Functions that return closures can be used as \emph{function factories},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define a power function factory
+make_func <- function(arg_param) {  # wrapper function
+  function(in_put) {  # anonymous closure
+    in_put^arg_param
+  }
+}  # end make_func
+
+square_func <- make_func(2)  # define square function
+square_func(4)
+cube_func <- make_func(3)  # define cube function
+cube_func(2)
+cube_root_func <- make_func(1/3)  # define cube root function
+cube_root_func(8)
       @
   \end{columns}
 \end{block}
@@ -972,7 +1617,7 @@ apply(mat_rix, 2, median, na.rm=TRUE)
 rm(list=ls())
 # DAX percent returns
 dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
-library("moments")  # load library"moments"
+library(moments)  # load package moments
 str(moment)  # get list of arguments
 # apply moment function
 moment(x=dax_rets, order=3)
@@ -1012,18 +1657,18 @@ apply(X=moment_orders, MARGIN=1, FUN=moment,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE>>=
-str(moment)  # argument list of moment()
-str(sapply)  # argument list of sapply()
-# calculate moments from 1 to 4
-sapply(X=1:4, FUN=moment, x=dax_rets)
 # function with three arguments
-my_func <- function(in_put, param1, param2) {
-  c(input=in_put, param1=param1, param2=param2)
+my_func <- function(arg1, arg2, arg3) {
+  c(arg1=arg1, arg2=arg2, arg3=arg3)
 }  # end my_func
 my_func(1, 2, 3)
-sapply(X=1:4, FUN=my_func, param1=2, param2=3)
-sapply(X=1:4, FUN=my_func, in_put=1, param1=2)
-sapply(X=1:4, FUN=my_func, in_put=1, param2=3)
+da_ta <- as.matrix(1:4)
+# pass da_ta to arg1
+apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
+# pass da_ta to arg2
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
+# pass da_ta to arg3
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
       @
   \end{columns}
 \end{block}
@@ -1049,13 +1694,13 @@ sapply(X=1:4, FUN=my_func, in_put=1, param2=3)
 sapply(iris[, -5], mean)  # vector of means of numeric columns
 lapply(iris[, -5], mean)  # list of means of numeric columns
 unlist(lapply(iris,  # lapply using anonymous function
-              function(co_lumn) {
-                if (is.numeric(co_lumn)) mean(co_lumn)
+              function(col_umn) {
+                if (is.numeric(col_umn)) mean(col_umn)
               }  # end anonymous function
               )  # end sapply
        )  # end unlist
-unlist(sapply(iris, function(co_lumn) {
-  if (is.numeric(co_lumn)) mean(co_lumn)}))
+unlist(sapply(iris, function(col_umn) {
+  if (is.numeric(col_umn)) mean(col_umn)}))
       @
   \end{columns}
 \end{block}

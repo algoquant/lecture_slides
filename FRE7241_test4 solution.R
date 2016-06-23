@@ -1,132 +1,253 @@
 #################################
-### FRE7241 Test #4 Solutions Oct 20, 2015
+### FRE7241 Test #4 Solutions May 17, 2016
 #################################
-# Max score 60pts
+# Max score 90pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 ##############
-# Summary: calculate a matrix of names of the best 
-# performing ETFs in each year. 
+# Summary: Optimize portfolios using the Sortino ratio. 
+# Study how the weights of the optimal portfolio 
+# change as the risk-free rate changes. 
 
-# Download the file "etf_data.Rdata" from NYU Classes, 
+# Download the file etf_data_new.RData from NYU Classes,
 # and load() it. 
-# "etf_data.Rdata" contains an xts series called "etf_rets", 
-# with ETF returns,
+# etf_data_new.RData contains the environment env_etf, 
+# which contains the xts series called re_turns, with 
+# ETF returns. 
 
-library(xts)
 library(quantmod)
-library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_data_new.RData")
 
-load(file="C:/Develop/data/etf_data.Rdata")
 
-# create a vector of symbol names called "sym_bols", 
+# 1. (20pts) Create a vector of symbol names called 
+# sym_bols. 
+# Create a named vector of initial portfolio weights 
+# for sym_bols, all equal to 1, and call it weight_s. 
+# The names of weight_s should be equal to sym_bols. 
+# You can use functions rep() and names(). 
 
-sym_bols <- c("VTI", "VNQ", "DBC", "XLP", "XLK")
+sym_bols <- c("VTI", "IEF", "XLP")
+n_weights <- length(sym_bols)
+weight_s <- rep(1, n_weights)
+names(weight_s) <- sym_bols
 
-# 1. (25pts) Create a vector of yearly end points 
-# for "etf_rets", called "end_points", 
-# you must use function endpoints() from package xts, 
+# You should get the following output:
+# > weight_s
+# VTI IEF XLP
+# 1   1   1
 
-end_points <- endpoints(etf_rets, on="years")
+# Create a variable called risk_free, with the risk 
+# free rate, equal to 1 basis point (0.01%). 
 
-# Perform an lapply() loop over the "end_points", and call 
-# the result "list_capm". 
-# Inside the loop subset "etf_rets" to the "sym_bols" and 
-# end points, and calculate a data frame of statistics 
-# using table.CAPM(). 
-# Simplify the columnn names and return the data frame. 
-# "list_capm" should be a list of data frames like this: 
-# list_capm[[1]]
-#                         VNQ     DBC    XLP    XLK
-# Alpha               -0.0013  0.0012 0.0004 0.0005
-# Beta                 1.3835  0.1306 0.5371 0.8745
-# Beta+                1.5589 -0.1205 0.4994 0.8482
-# Beta-                1.2093  0.2158 0.5446 0.8607
-# R-squared            0.6283  0.0178 0.6136 0.7505
-# Annualized Alpha    -0.2776  0.3686 0.1137 0.1450
-# Correlation          0.7927  0.1333 0.7833 0.8663
-# Correlation p-value  0.0000  0.0555 0.0000 0.0000
-# Tracking Error       0.1847  0.2129 0.1028 0.0849
-# Active Premium      -0.2940  0.2964 0.0863 0.1424
-# Information Ratio   -1.5915  1.3926 0.8401 1.6777
-# Treynor Ratio       -0.1626  2.7993 0.2894 0.2418
+risk_free <- 0.01
 
-# You can use functions lapply(), sapply(), table.CAPM(), 
-# colnames(), strsplit(), and an anonymous function, 
+# Create an objective function called object_ive(), 
+# equal to minus the Sortino ratio. 
+# The function object_ive() should accept two arguments:
+# - p_weights: a named numeric vector of portfolio weights. 
+# - risk_free: the risk free rate. 
+# 
+# Calculate the Sortino ratio as the average returns 
+# minus the risk free rate, divided by the standard 
+# deviation of returns that are below the risk free 
+# rate. 
+# You cannot use the function SortinoRatio(), from 
+# package PerformanceAnalytics. 
+# 
+# object_ive() should subset env_etf$re_turns by the 
+# names of p_weights, and multiply the returns by 
+# p_weights, to obtain the portfolio returns. 
+# object_ive() should scale (divide) the portfolio 
+# returns by the sum of p_weights, and then subtract 
+# the risk free rate from them. object_ive() should 
+# finally return minus the Sortino ratio. 
+# You can use functions mean(), sd(), sum(), and the 
+# "%*%" operator. 
+# Use percentages in your calculation, by multiplying 
+# env_etf$re_turns by 100. 
 
-list_capm <- 
-  lapply(2:length(end_points), 
-         function(in_dex) {
-           x_ts <- 
-             etf_rets[end_points[(in_dex-1)]:end_points[in_dex], sym_bols]
-           cap_m <- table.CAPM(Ra=x_ts[, -1], 
-                               Rb=x_ts[, 1], scale=252)
-           colnames(cap_m) <- 
-             sapply(colnames(cap_m), 
-                    function (str) {strsplit(str, split=" ")[[1]][1]})
-           cap_m
-         })  # end lapply
+# object_ive() returns minus the Sortino ratio
+object_ive <- function(p_weights, risk_free) {
+  portf_rets <- 100*env_etf$re_turns[, names(p_weights)] %*% p_weights / sum(p_weights)
+  portf_rets <- portf_rets - risk_free
+  -mean(portf_rets)/sd(portf_rets[portf_rets<0])
+}  # end object_ive
 
-# Assign names to the list using the years of the "end_points". 
-# You can use functions names(), format(), and index(), 
+# Calculate object_ive() for the equal weight portfolio,
+# and for a portfolio with double the weights, and
+# verify that they both produce the same number.
 
-names(list_capm) <- format(index(etf_rets[end_points, ]), "%Y")
+# You should get the following output:
+# > object_ive(weight_s, risk_free)
+# [1] -0.04826844
+# > object_ive(2*weight_s, risk_free)
+# [1] -0.04826844
 
-# 2. (15pts) Perform an sapply() loop over "list_capm", 
-# and call the result "names_capm". 
-# Inside the loop subset the data frames to extract the 
-# row with "Annualized Alpha", sort it in descending order,
-# and return the names of the data frame (not the values). 
-# You can use functions sapply(), sort(), names(), 
-# and an anonymous function, 
 
-names_capm <- sapply(list_capm, 
-                     function(cap_m) {
-                       cap_m <- cap_m["Annualized Alpha", ]
-                       cap_m <- sort(cap_m, decreasing=TRUE)
-                       names(cap_m)
-                     })  # end sapply
+# 2. (10pts) Perform a portfolio optimization to find 
+# the weights that minimize object_ive().
+# You can use the function optim(), with the "upper" 
+# and "lower" parameters equal to 10 and -10, respectively.
+# 
+# You must use the dots "..." argument of function optim(), 
+# to pass the risk_free argument to function object_ive(). 
 
-# "names_capm" should be a matrix of ETF names like this: 
-#      2007  2008  2009  2010  2011  2012  2013  2014  2015 
-# [1,] "DBC" "VNQ" "XLK" "VNQ" "XLP" "VNQ" "XLP" "VNQ" "XLK"
-# [2,] "XLK" "XLP" "DBC" "XLP" "VNQ" "XLP" "XLK" "XLP" "XLP"
-# [3,] "XLP" "XLK" "XLP" "DBC" "XLK" "XLK" "DBC" "XLK" "DBC"
-# [4,] "VNQ" "DBC" "VNQ" "XLK" "DBC" "DBC" "VNQ" "DBC" "VNQ"
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights), 
+                   risk_free=risk_free)
 
-# 3. (10pts) Perform an sapply() loop over "list_capm", 
-# and call the result "alphas_capm". 
-# Inside the loop subset the data frames to extract the 
-# row with "Annualized Alpha", sort it in descending order,
-# and return the data frame. 
-# You can use functions sapply(), sort(), 
-# and an anonymous function, 
+# Rescale the optimal weights, so their sum is equal to 1.
 
-alphas_capm <- sapply(list_capm, 
-                      function(cap_m) {
-                        cap_m <- cap_m["Annualized Alpha", ]
-                        cap_m <- sort(cap_m, decreasing=TRUE)
-                        cap_m
-                      })  # end sapply
+weight_s <- optim_run$par/sum(optim_run$par)
 
-# "alphas_capm" should be a matrix of alphas like this: 
-#      2007  2008  2009  2010  2011  2012  2013  2014  2015 
-# DBC 0.3686  0.4663  0.2132 0.0571  0.1294  0.0517  0.0106  0.2169  0.0386 
-# XLK 0.145   0.0487  0.0363 0.0317  0.0842  0.0162  -0.0134 0.0745  -0.0485
-# XLP 0.1137  -0.0886 0.0085 0.0033  0.016   -0.0098 -0.1722 0.052   -0.0659
-# VNQ -0.2776 -0.1694 -0.092 -0.0419 -0.0041 -0.06   -0.2216 -0.2912 -0.1036
+# You should get the following output (or close to it):
+# > weight_s
+#       VTI        IEF        XLP
+# -0.04091966  0.63082065  0.41009901
 
-# 4. (20pts) Create a scatterplot of alphas for "2008" and "2009", 
-# and add labels with ETF names,
-# use functions structure(), plot() and text(),
+# Calculate the optimal portfolio returns, and coerce 
+# them to an xts series, and call them optim_rets.
+# You can use the index of env_etf$re_turns. 
+# Remember to use percentage returns in your calculation, 
+# by multiplying env_etf$re_turns by 100. 
+# You can use functions xts() and index(),
 
-year1 <- "2008"
-year2 <- "2009"
-alphas_2008 <- structure(alphas_capm[, year1], names=names_capm[, year1])[sym_bols[-1]]
-alphas_2009 <- structure(alphas_capm[, year2], names=names_capm[, year2])[sym_bols[-1]]
+optim_rets <- 100*xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
+                      order.by=index(env_etf$re_turns))
 
-plot(x=alphas_2008, y=alphas_2009, xlab=year1, ylab=year2)
-text(x=alphas_2008, y=alphas_2009, labels=sym_bols[-1], pos=4, cex=0.8)
+# Plot the optimal portfolio cumulative returns using
+# chart_Series() from package quantmod.
+# Place the title "Sortino portfolio" on the upper left. 
+# You must use functions cumsum() and chart_Series(). 
+
+library(quantmod)
+x11()
+# the paste() part is optional and isn't required for full credit
+chart_Series(x=cumsum(optim_rets), 
+             name=paste("Sortino portfolio\n", 
+                        paste(names(weight_s), collapse=" "), "\n", 
+                        paste(format(weight_s, digits=2), collapse=" ")))
+
+
+# 3. (30pts) Calculate the optimal portfolio weights
+# for a vector of risk-free rates. 
+
+# Create a named vector of 6 risk-free rates, 
+# from 0.0 to 0.025, with the element names equal 
+# to their values:
+
+risk_free_rates <- seq(from=0.0, to=0.025, by=0.005)
+names(risk_free_rates) <- risk_free_rates
+
+# You should get the following output:
+# > risk_free_rates
+#     0 0.005  0.01 0.015  0.02 0.025
+# 0.000 0.005 0.010 0.015 0.020 0.025
+
+# Perform an sapply() loop over risk_free_rates. 
+# In each step perform a portfolio optimization, 
+# and return the rescaled optimal weights. 
+# Call the output weights_optim. 
+# Allow only positive weights by changing the 
+# "lower" parameter of optim().
+# Remember to use the dots "..." argument of function 
+# optim(), to pass the risk_free argument to function 
+# object_ive(). 
+
+weights_optim <- sapply(risk_free_rates, function(risk_free) {
+  # perform portfolio optimization
+  optim_run <- optim(par=weight_s,
+                     fn=object_ive,
+                     method="L-BFGS-B",
+                     upper=rep(10, n_weights),
+                     lower=rep(0, n_weights), 
+                     risk_free=risk_free)
+  # Rescale the optimal weights, so their sum is equal to 1.
+  optim_run$par/sum(optim_run$par)
+})  # end sapply
+
+# You should get the following output:
+# > weights_optim
+#             0   0.005       0.01    0.015     0.02       0.025
+# VTI 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000 0.0000000
+# IEF 0.6695571 0.6614521 0.6421029 0.6189144 0.5628829 0.4297936
+# XLP 0.3304429 0.3385479 0.3578971 0.3810856 0.4371171 0.5702064
+
+
+# Calculate a named matrix of returns and standard 
+# deviations of the optimal portfolios, called ret_sd_optim. 
+# You can use functions apply(), c(), mean(), and sd(). 
+
+ret_sd_optim <- apply(weights_optim, 2, function(weight_s) {
+  portf_rets <- 100*env_etf$re_turns[, sym_bols] %*% weight_s
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end apply
+
+# You should get the following output:
+# > ret_sd_optim
+#           0      0.005      0.01      0.015       0.02      0.025
+# ret 0.03126726 0.03142853 0.03181355 0.03227497 0.0333899 0.03603816
+# sd  0.34434843 0.34632742 0.35200499 0.36050250 0.3878860 0.48206050
+
+
+# 4. (30pts) Create a scatterplot of random portfolios 
+# following the example of the lecture slides, and add 
+# to it points for the optimal portfolios from p.3 above. 
+# Change the lecture code in two ways: 
+# Allow only positive weights by changing the parameter 
+# to runif().
+# Rescale the random weights so that their sum is equal 
+# to 1 (not their sum of squares). 
+# Remember to use percentage returns in your calculation, 
+# by multiplying env_etf$re_turns by 100. 
+
+# You should get a plot similar to efficient_portfolios.png
+# on NYU Classes. 
+
+# Define the number of weights:
+n_weights <- length(sym_bols)
+# Define the number of random portfolios:
+n_portf <- 1000
+
+# Calculate a matrix of mean returns and standard 
+# deviations of random portfolios, and call it ret_sd. 
+
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights, min=0, max=10)
+  weight_s <- weight_s/sum(weight_s)
+  portf_rets <- 100*env_etf$re_turns[, sym_bols] %*% weight_s
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+
+# plot a scatterplot of random portfolios. 
+
+x11()
+plot(x=ret_sd[2, ], y=ret_sd[1, ], 
+     xlim=c(0, max(ret_sd[2, ])), 
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
+     main="Max Sortino and Random Portfolios", 
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+
+# Add points for the optimal portfolios from p.3 above. 
+
+points(ret_sd_optim[2, ], ret_sd_optim[1, ], col="green", lwd=3)
+text(ret_sd_optim[2, ], ret_sd_optim[1, ], labels=colnames(ret_sd_optim), pos=2, cex=0.8)
+
+# Add Capital Market Lines corresponding to the risk_free_rates. 
+# You can use functions for(), points(), text(), format(), and 
+# abline(). 
+
+for(risk_free_rate in risk_free_rates) {
+  points(x=0, y=risk_free_rate)
+  text(0, risk_free_rate, labels=paste0("risk-free=", risk_free_rate), pos=4, cex=0.8)
+  abline(a=risk_free_rate, 
+         b=(ret_sd_optim[1, format(risk_free_rate)]-risk_free_rate)/ret_sd_optim[2, format(risk_free_rate)], 
+         col="blue")
+}  # end for
+
 

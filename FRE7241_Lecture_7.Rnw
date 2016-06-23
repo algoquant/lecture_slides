@@ -5,7 +5,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#7]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#7, Fall 2015}
+\subtitle{Lecture\#7, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{Oct 27, 2015}
+\date{May 17, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -85,16 +85,16 @@ knit_theme$set(thm)
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:2)),eval=TRUE>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 # rebalancing period
 re_balance <- "weeks"
 # look-back period in number of re_balance
 win_dow <- 40
 
 # create index of rebalancing period end points
-end_points <- endpoints(etf_rets, 
+end_points <- endpoints(env_etf$re_turns, 
                       on=re_balance)
 end_points[1] <- 1
 
@@ -108,10 +108,10 @@ periods <- lapply(win_dow:(length(end_points)-1),
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # calculate risk&ret stats for some symbols, over a range of dates
 risk_ret_stats <- 
-  function(x_ts=etf_rets,  # daily returns
+  function(x_ts=env_etf$re_turns,  # daily returns
            sym_bols=colnames(x_ts),  # names
            range=index(x_ts),  # date range
            ret="mean",  # return stat
@@ -143,12 +143,12 @@ head(risk_ret_stats(range=
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # calculate stats over overlapping period date windows
 period_stats <- lapply(periods,
          function(point)
            cbind(risk_ret_stats(range=point$back),
-            fut_ret=sapply(etf_rets[point$fwd, ], sum))
+            fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
 )  # end lapply
 head(period_stats[[1]])
       @
@@ -168,7 +168,7 @@ c(sum(period_stat[, "fut_ret"]*weights), weights)
 # calculate pnls over all windows
 pnl_xts <- t(sapply(period_stats, pnl_period))
 pnl_xts <- xts(pnl_xts,
-     order.by=index(etf_rets)
+     order.by=index(env_etf$re_turns)
  [end_points[win_dow:(length(end_points)-1)]]
  )  # end xts
 colnames(pnl_xts)[1] <- "pnl"
@@ -244,7 +244,7 @@ betas <- xts(rowSums(betas),
     order.by=index(pnl_xts))
 colnames(betas) <- "betas"
 plot.zoo(cbind(betas, 
-    cumsum(etf_rets[, 1])[index(betas)]),
+    cumsum(env_etf$re_turns[, 1])[index(betas)]),
     main="betas & VTI", xlab="")
       @
     \column{0.6\textwidth}
@@ -276,7 +276,7 @@ tot_pnl <- function(win_dow) {
   period_stats <- lapply(periods,
        function(point)
          cbind(risk_ret_stats(range=point$back),
-           fut_ret=sapply(etf_rets[point$fwd, ], sum))
+           fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
   )  # end lapply
   pnl_xts <- t(sapply(period_stats, pnl_period))
   co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))

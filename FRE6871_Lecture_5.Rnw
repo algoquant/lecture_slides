@@ -11,17 +11,19 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
-  
-  
-  % Define document options
+
+
+% Define document options
 \documentclass[10pt]{beamer}
 \mode<presentation>
-  \usetheme{AnnArbor}
+\usetheme{AnnArbor}
 % \usecolortheme{whale}
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{mathtools}
+% bbold package for unitary vector or matrix symbol
+\usepackage{bbold}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -41,8 +43,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +54,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#5]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#5, Fall 2015}
+\subtitle{Lecture\#5, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{Oct 13, 2015}
+\date{May 2, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -74,656 +76,502 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Data Input and Output}
+\section{Hypothesis Testing}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Text Strings}
+\subsection{Hypothesis Testing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{cat()} concatenates strings and writes them to standard output or to files,
+      \emph{Hypothesis Testing} is designed to test the validity of a \emph{null hypothesis},
       \vskip1ex
-      \texttt{cat()} interprets its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value,
+      A \emph{Hypothesis Test} consists of:
+      \begin{itemize}
+        \item \emph{null hypothesis},
+        \item test \emph{statistic} (from sample),
+        \item \emph{significance level} $\alpha$, determining whether to accept or reject the \emph{null hypothesis},
+        \item \emph{p}-value (probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE}),
+      \end{itemize}
+      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected,
       \vskip1ex
-      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it,
+      The objective of \emph{Hypothesis Testing} is to invalidate the \emph{null hypothesis},
       \vskip1ex
-      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object,
-      \vskip1ex
-      The function \texttt{save()} writes objects to a binary file,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-setwd("C:/Develop/data")
-cat("Enter\ttab")  # cat() interprets backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # print() returns its argument
-
-# create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # write to text file
-
-cat("Title: My Text",  # write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,", 
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.Rdata")  # write to binary file
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Text from Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list,
-      \vskip1ex
-      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings,
-      \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string,
-      \vskip1ex
-      The function \texttt{file.show()} reads text or data from a file and displays in editor,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-setwd("C:/Develop/data")
-# read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# read lines from file
-readLines(con="mytext.txt")
-
-# read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
-# coerce to numeric
-in_put <- as.numeric(in_put)
-
-# read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Data Frames from \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from text files,
-      \vskip1ex
-      \texttt{write.table()} coerces objects to data frames before it writes them,
-      \vskip1ex
-      \texttt{read.table()} returns a data frame, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
-      \vskip1ex
-      \texttt{read.table()} and \texttt{write.table()} can be used to read and write matrices from text files, but they have to be coerced back to matrices,
-      \vskip1ex
-      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4))>>=
-setwd("C:/Develop/data")
-data_frame <- data.frame(
-              type=c("rose", "daisy", "tulip"), 
-              color=c("red", "white", "yellow"), 
-              price=c(1.5, 0.5, 1.0), 
-              row.names=c("flower1", "flower2", "flower3")
-              )  # end data.frame
-mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:nrow(mat_rix), sep="")
-# write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # a data frame
-
-# write matrix to text file, and then read it back
-write.table(mat_rix, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Copying Data Frames Between the \protect\emph{clipboard} and \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()},
-      \vskip1ex
-      Data frames in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()},
-      \vskip1ex
-      This allows convenient copying of data frames between \emph{Excel} and \texttt{R},
-      \vskip1ex
-      Data frames can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-setwd("C:/Develop/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t", 
-                      header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE, 
-                       col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t", 
-              row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Data Frames from \protect\emph{csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \emph{csv} format files,
-      \vskip1ex
-      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
-      \vskip1ex
-      \texttt{read.csv()} coerces non-numeric values to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is set,
-      \vskip1ex
-      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used,
-      \vskip1ex
-      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names,
-      \vskip1ex
-      The \texttt{*.csv()} functions are very inefficient for large data sets,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-setwd("C:/Develop/data")
-# write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv", 
-                       stringsAsFactors=FALSE)
-data_read  # the row names are read in as extra column
-# restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # remove extra column
-data_read
-# read row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Data Frames from \protect\emph{csv} Files (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write data frames from \emph{csv} format files \emph{without using row names},
-      \vskip1ex
-      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-setwd("C:/Develop/data")
-# write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # a data frame without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Matrices from \protect\emph{csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write matrices from \emph{csv} format files,
-      \vskip1ex
-      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}, 
-      \vskip1ex
-      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-setwd("C:/Develop/data")
-# write matrix to csv file, and then read it back
-write.csv(mat_rix, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", row.names=1)
-mat_read  # read.csv() reads matrix as data frame
-class(mat_read)
-mat_read <- as.matrix(mat_read)  # coerce to matrix
-identical(mat_rix, mat_read)
-write.csv(mat_rix, row.names=FALSE, 
-          file="matrix_ex_rows.csv")
-mat_read <- read.csv(file="matrix_ex_rows.csv")
-mat_read <- as.matrix(mat_read)
-mat_read  # a matrix without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Matrices (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed,
-      \vskip1ex
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names,
-      \vskip1ex
-      \texttt{write.matrix()} is part of package \texttt{MASS},
-      \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily,
-      \vskip1ex
-      Removing row names simplifies the reading and writing of matrices,
-      \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings,
-      \vskip1ex
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1))>>=
-setwd("C:/Develop/data")
-library("MASS")  # load library "MASS"
-# write to CSV file by row - it's very SLOW!!!
-write.matrix(mat_rix, file="matrix.csv", sep=",")
-system.time(  # scan reads faster - skip first line with colnames
-  mat_read <- scan(file="matrix.csv", sep=",", 
-                  skip=1, what=numeric()))
-col_names <- readLines(con="matrix.csv", n=1)  # read colnames
-col_names  # this is a string!
-col_names <- strsplit(col_names, s=",")[[1]]  # convert to char vector
-mat_read  # mat_read is a vector, not matrix!
-# coerce by row to matrix
-mat_read <- matrix(mat_read, ncol=length(col_names), 
-                  byrow=TRUE)
-colnames(mat_read) <- col_names  # restore colnames
-mat_read
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Matrices Containing Bad Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Very often data that is read from external sources contains elements with bad data,
-      \vskip1ex
-      An example of bad data are \texttt{character} strings in \texttt{numeric} data,
-      \vskip1ex
-      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()},
-      \vskip1ex
-      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-setwd("C:/Develop/data")
-# read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv", row.names=1,
-                     stringsAsFactors=FALSE)
-mat_rix
-class(mat_rix)
-# columns with bad data are character or factor
-sapply(mat_rix, class)
-row_names <- row.names(mat_rix)  # copy row names
-# coerce columns to numeric, using apply loop over columns
-mat_rix <- as.matrix(apply(mat_rix, 2, as.numeric))
-row.names(mat_rix) <- row_names  # restore row names
-# replace NAs with zero
-mat_rix[is.na(mat_rix)] <- 0
-# matrix without NAs
-mat_rix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing \texttt{zoo} Series From \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{zoo} contains functions \texttt{read.zoo()} and \texttt{write.zoo()} for reading and writing \texttt{zoo} objects from \emph{text} and \emph{csv} files,
-      \vskip1ex
-      \texttt{read.zoo()} and \texttt{write.zoo()} are wrappers for \texttt{read.table()} and \texttt{write.table()},
-      \vskip1ex
-      By default these functions read and write data in \emph{space}-delimited format, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4))>>=
-setwd("C:/Develop/data")
-rm(list=ls())
-set.seed(1121)  # reset random number generator
-library(zoo)  # load package zoo
-# create zoo with Date index
-in_dex <- seq(from=as.Date("2013-06-15"), 
-                  by="day", length.out=100)
-zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
-                  order.by=in_dex)
-tail(zoo_series, 3)
-# write zoo to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_series <- read.zoo("zoo_series.txt")  # read it back
-tail(zoo_series, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing \texttt{zoo} Series With \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      If the index of a \texttt{zoo} series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as separate columns with a \emph{space} between them, 
-      \vskip1ex
-      To properly read separate date and time columns from \emph{text} files, \texttt{read.zoo()} must be passed arguments \texttt{"index.column=list(1,2)"} and \texttt{"tz"},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4))>>=
-setwd("C:/Develop/data")
-rm(list=ls())
-set.seed(1121)  # reset random number generator
-library(zoo)  # load package zoo
-# create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"), 
-                  by="hour", length.out=1000)
-zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
-                  order.by=in_dex)
-tail(zoo_series, 3)
-# write zoo to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_series <- read.zoo("zoo_series.txt")  # read it back
-# time field was read as a separate column
-tail(zoo_series, 3)
-# read and specify that second column is time field
-zoo_series <- read.zoo(file="zoo_series.txt", 
-                       index.column=list(1,2), 
-                       tz="America/New_York")
-tail(zoo_series, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing \texttt{zoo} Series From \protect\emph{csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Very often \emph{csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting,
-      \vskip1ex
-      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing columns of the input data into a \emph{date-time} object suitable for the \texttt{zoo} index,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2))>>=
-setwd("C:/Develop/data")
-library(zoo)  # load package zoo
-# write zoo to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv", sep=",")
-zoo_series <- read.zoo(file="zoo_series.csv", 
-                  header=TRUE, sep=",", FUN=as.POSIXct,
-                  tz="America/New_York")
-tail(zoo_series, 3)
-# read zoo from CSV file, with custom date-time format
-zoo_frame <- read.table(file="zoo_series2.csv", sep=",")
-tail(zoo_frame, 3)  # date-time format mm/dd/yyyy hh:mm
-zoo_series <- read.zoo(file="zoo_series2.csv", 
-                  header=TRUE, sep=",", FUN=as.POSIXct, 
-                  tz="America/New_York",
-                  format="%m/%d/%Y %H:%M")
-tail(zoo_series, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Passing Arguments to the \texttt{save()} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{save()} writes objects to a binary file,
-      \vskip1ex
-      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument,
-      \vskip1ex
-      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings,
-      \vskip1ex
-      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""},
-      \vskip1ex
-      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())  # remove all objects
-var1 <- 1; var2 <- 2
-ls()  # list all objects
-ls()[1]  # list first object
-args(save)  # list arguments of save function
-# save "var1" to a binary file
-save("var1", file="my_data.RData")  # use string
-save(var1, file="my_data.RData")  # use object name
-save(var1, var2, file="my_data.RData")  # mulltiple object names
-# save first list object "var1" by passing it to the "..." argument
-save(ls()[1], file="my_data.RData")  # 'ls()[1]' not evaluated
-# save first list object "var1" by passing it to the "list" argument
-save(list=ls()[1], file="my_data.RData")
-# save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading and Writing Lists of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
-      \vskip1ex
-      The vector of names can be used to manipulate the objects in loops, or to pass them to functions,
+      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE}; we can only conclude that it's very unlikely to be \texttt{FALSE} (given the data),
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
-rm(list=ls())  # remove all objects
-# load objects from file
-load_ed <- load(file="my_data.RData")
-load_ed  # vector of loaded objects
-ls()  # list objects
-# assign new values to objects in  global environment
-sapply(load_ed, function(sym_bol) {
-  assign(sym_bol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # list objects
-# assign new values to objects using for loop
-for (sym_bol in load_ed) {
-  assign(sym_bol, runif(1))
+### Perform two-tailed test that sample is
+### from Standard Normal Distribution (mean=0, SD=1)
+# generate vector of samples and store in data frame
+test_frame <- data.frame(samples=rnorm(1000))
+
+# significance level, two-tailed test, critical value=2*SD
+signif_level <- 2*(1-pnorm(2))
+signif_level
+# get p-values for all the samples
+test_frame$p_values <- sapply(test_frame$samples, pnorm)
+test_frame$p_values <- 2*(0.5-abs(test_frame$p_values-0.5))
+# compare p_values to significance level
+test_frame$result <- test_frame$p_values > signif_level
+sum(!test_frame$result)  # number of null rejections
+# show null rejections
+head(test_frame[!test_frame$result, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Visualizing Hypothesis Testing Using Package \texttt{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<hyp_test_ggp2,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+rm(list=ls())
+par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(ggplot2)  # load ggplot2
+
+qplot(  # simple ggplot2
+    main="Standard Normal Distribution",
+    c(-4, 4),
+    stat="function",
+    fun=dnorm,
+    geom="line",
+    xlab=NULL, ylab=NULL
+    ) +  # end qplot
+
+theme(  # modify plot theme
+    plot.title=element_text(vjust=-1.0),
+    plot.background=element_blank()
+    ) +  # end theme
+
+geom_vline(  # add vertical line
+  aes(xintercept=c(-2.0, 2.0)),
+  colour="red",
+  linetype="dashed"
+  )  # end geom_vline
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/hyp_test_ggp2-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Visualizing Hypothesis Testing Using \texttt{ggplot2} (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<hyp_test_ggp2_2,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+rm(list=ls())
+par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+### create ggplot2 with shaded area
+x_var <- -400:400/100
+norm_frame <- data.frame(x_var=x_var,
+                       d.norm=dnorm(x_var))
+norm_frame$shade <- ifelse(
+                  abs(norm_frame$x_var) >= 2,
+                  norm_frame$d.norm, NA)
+ggplot(  # main function
+  data=norm_frame,
+  mapping=aes(x=x_var, y=d.norm)
+  ) +  # end ggplot
+# plot line
+  geom_line() +
+# plot shaded area
+  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
+# no axis labels
+  xlab("") + ylab("") +
+# add title
+  ggtitle("Standard Normal Distribution") +
+# modify plot theme
+  theme(
+        plot.title=element_text(vjust=-1.0),
+        plot.background=element_blank()
+  )  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/hyp_test_ggp2_2-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Formula Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
+      \vskip1ex
+      Formulas can be defined as separate objects, manipulated, and passed to functions,
+      \vskip1ex
+      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
+      \vskip1ex
+      The function \texttt{update()} modifies existing \texttt{formulas},
+      \vskip1ex
+      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# formula of linear model with zero intercept
+lin_formula <- z ~ x + y - 1
+lin_formula
+
+# collapsing a character vector into a text string
+paste0("x", 1:5)
+paste(paste0("x", 1:5), collapse="+")
+
+# creating formula from text string
+lin_formula <- as.formula(  # coerce text strings to formula
+              paste("z ~ ",
+                paste(paste0("x", 1:5), collapse="+")
+                )  # end paste
+            )  # end as.formula
+class(lin_formula)
+lin_formula
+# modify the formula using "update"
+update(lin_formula, log(.) ~ . + beta)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simple Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \beta x_i + \varepsilon_i
+      \end{displaymath}
+      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
+      \vskip1ex
+      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
+      \begin{align*}
+        RSS = \sum_{i=1}^{n} {\varepsilon_i^2} = \sum_{i=1}^{n} {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
+      \end{align*}
+      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^{n} {x_i}$
+    \column{0.5\textwidth}
+      The regression coefficients can be found by equating the RSS derivatives to zero:
+      \begin{align*}
+        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
+        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
+      \end{align*}
+      The solution for $\alpha$ is:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      The solution for $\beta$ is:
+      \begin{flalign*}
+        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
+        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
+        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
+        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
+      \end{flalign*}
+      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
+      \vskip1ex
+      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression with Multiple Explanatory Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      \vskip1ex
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
+      \vskip1ex
+      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
+      \vskip1ex
+      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
+      \vskip1ex
+      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
+      \begin{itemize}
+        \item call - the model formula,
+        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
+        \item residuals - the model residuals (response minus fitted values),
+      \end{itemize}
+      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=TRUE>>=
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+# response equals linear form plus error terms
+res_ponse <- 3 + 2*explana_tory + rnorm(30)
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Regression Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
+      \vskip1ex
+      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
+      \vskip1ex
+      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
+        <<reg_scatter_plot,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+plot(reg_formula)  # plot scatterplot using formula
+title(main="Simple Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+# plot fitted (predicted) response values
+points(x=explana_tory, y=reg_model$fitted.values,
+       pch=16, col="blue")
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Summary}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{summary.lm()} produces a list of regression model summary statistics:
+      \begin{itemize}
+        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
+        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
+        \item adj.r.squared: r.squared adjusted for higher model complexity,
+        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
+      \end{itemize}
+      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
+      \vskip1ex
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
+      \vskip1ex
+      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+reg_model_sum <- summary(reg_model)  # copy regression summary
+reg_model_sum  # print the summary to console
+attributes(reg_model_sum)$names  # get summary elements
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interpreting the Regression Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The regression \texttt{summary} is a list, and its elements can be accessed individually,
+      \vskip1ex
+      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
+      \vskip1ex
+      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
+      \vskip1ex
+      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
+      \vskip1ex
+      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
+      \vskip1ex
+      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+reg_model_sum$adj.r.squared
+reg_model_sum$fstatistic
+# standard error of beta
+reg_model_sum$
+  coefficients["explana_tory", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(explana_tory)/
+  sqrt(unname(reg_model_sum$fstatistic[3]))
+anova(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Weak Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+set.seed(1121)  # initialize random number generator
+# high noise compared to coefficient
+res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
+reg_model <- lm(reg_formula)  # perform regression
+# estimate of regression coefficient is not
+# statistically significant
+summary(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Influence of Noise on Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
+reg_stats <- function(std_dev) {  # noisy regression
+  set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+  res_ponse <- 3 + 0.2*explana_tory +
+    rnorm(30, sd=std_dev)
+# specify regression formula
+  reg_formula <- res_ponse ~ explana_tory
+# perform regression and get summary
+  reg_model_sum <- summary(lm(reg_formula))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <- t(sapply(vec_sd, reg_stats))
+# plot in loop
+par(mfrow=c(ncol(mat_stats), 1))
+for (in_dex in 1:ncol(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(nrow(mat_stats)),
+       labels=rownames(mat_stats))
 }  # end for
-ls()  # list objects
-# save vector of objects
-save(list=load_ed, file="my_data.RData")
-# remove only loaded objects
-rm(list=load_ed)
-# remove the object "load_ed"
-rm(load_ed)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Saving Output of \texttt{R} to a File}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding \emph{graphics}) to a file, or ends the diversion,
-      \vskip1ex
-      Remember to call \texttt{sink()} to end the diversion!
-      \vskip1ex
-      The function \texttt{pdf()} diverts \emph{graphics} output to a pdf file (text output isn't diverted), in vector graphics format,
-      \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert \emph{graphics} output to graphics files (text output isn't diverted), in pixel graphics format,
-      \vskip1ex
-      The function \texttt{dev.off()} ends the diversion,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-setwd("C:/Develop/data")
-{
-sink("sinkdata.txt")# redirect text output to file
-
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
-
-sink()  # turn redirect off
-
-pdf("Rgraph.pdf", width=7, height=4)  # redirect graphics to pdf file
-
-cat("Redirect data from R into pdf file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn pdf output off
-
-png("Rgraph.png")  # redirect output to png file
-
-cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn png output off
-}
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Benchmarking the Speed of \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
-      \vskip1ex
-      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting),
-      \vskip1ex
-      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()},
-      \vskip1ex
-      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
   \end{columns}
 \end{block}
 
@@ -731,42 +579,51 @@ microbenchmark(sqrt(foo), foo^0.5, times=10)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\subsection{Influence of Noise on Regression Another Method}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}, 
-      \vskip1ex
-      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
-      \vskip1ex
-      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
-      \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
-      \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+    \vspace{-2em}
+      <<eval=FALSE,echo=TRUE>>=
+reg_stats <- function(da_ta) {  # get regression
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <-
+    paste(col_names[2], col_names[1], sep="~")
+  reg_model_sum <- summary(lm(reg_formula,
+                              data=da_ta))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <-
+  t(sapply(vec_sd, function (std_dev) {
+    set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+    res_ponse <- 3 + 0.2*explana_tory +
+      rnorm(30, sd=std_dev)
+    reg_stats(data.frame(explana_tory, res_ponse))
+    }))
+# plot in loop
+par(mfrow=c(ncol(mat_stats), 1))
+for (in_dex in 1:ncol(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(nrow(mat_stats)),
+       labels=rownames(mat_stats))
+}  # end for
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-foo <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(foo), mean(foo), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
-  )[, c(1, 4, 5)]
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
   \end{columns}
 \end{block}
 
@@ -774,48 +631,47 @@ summary(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
+\subsection{Regression Diagnostic Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
+      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
       \vskip1ex
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
+      {\scriptsize
+      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
       \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
+      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
       \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
+      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
       \vskip1ex
-      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data,
+      The residuals should be randomly distributed around the horizontal line representing zero residual error,
       \vskip1ex
-      Such specialized functions are faster but less flexible, so they may fail with different types of data,
+      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
+      \vskip1ex
+      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
+      \vskip1ex
+      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
+      \vskip1ex
+      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
+      \vskip1ex
+      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
+      \vskip1ex
+      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
+      }
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-mat_rix <- matrix(1:9, ncol=3, # create matrix
-  dimnames=list(paste0("row", 1:3), 
-                paste0("col", 1:3)))
-# create specialized function
-matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for(in_dex in 1:n_col)  # populate vector
-    dframe <- mat_rix[, in_dex]
-  attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(nrow(mat_rix))
-  attr(dframe, "class") <- "data.frame"
-  dframe  # return data frame
-}  # end matrix_to_dframe
-# compare speed of three methods
-summary(microbenchmark(
-  matrix_to_dframe(mat_rix),
-  as.data.frame.matrix(mat_rix),
-  as.data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]
+      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+# set plot paramaters - margins and font scale
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2, 2))  # plot 2x2 panels
+plot(reg_model)  # plot diagnostic scatterplots
+plot(reg_model, which=2)  # plot just Q-Q
       @
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_reg-1}
   \end{columns}
 \end{block}
 
@@ -823,37 +679,31 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
+\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      All the different \texttt{R} loops have similar speed, with \texttt{vpply()} and \texttt{lapply()} the fastest, then \texttt{apply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest, 
+    \column{0.5\textwidth}
+      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
       \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
+      The test statistic is:
+      \begin{displaymath}
+        DW = \frac {\sum_{i=2}^{n} (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^{n} \varepsilon_i^2}
+      \end{displaymath}
+      Where $\varepsilon_i$ are the regression residuals,
       \vskip1ex
-      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and are therefore faster than other \texttt{apply()} functions, 
-    \column{0.6\textwidth}
+      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
+      \vskip1ex
+      The \emph{DW} is close to two for autocorrelations close to zero,
+      \vskip1ex
+      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
-# allocate memory for row sums
-row_sums <- numeric(nrow(big_matrix))
-summary(microbenchmark(
-  v_apply=vapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
-    FUN.VALUE=c(sum=0)),  # end vapply
-  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  apply=apply(big_matrix, 1, sum),
-  s_apply=sapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:nrow(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
-  },  # end for
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(lmtest)  # load lmtest
+# perform Durbin-Watson test
+dwtest(reg_model)
       @
   \end{columns}
 \end{block}
@@ -862,145 +712,196 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Increasing Speed of Loops by Pre-allocating Memory}
+\subsection{Omitted Variable Bias}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
+      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors,
       \vskip1ex
-      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
+      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
       \vskip1ex
-      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow, 
-      \vskip1ex
-      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment, 
-      \vskip1ex
-      Adding elements to a vector in a loop is very slow, and therefore not recommended,
-      \vskip1ex
-      Pre-allocating memory for large vectors before performing loops increases their speed, 
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
-      \vskip1ex
-      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
-    \column{0.5\textwidth}
+      But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
       \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
-summary(microbenchmark(
-# allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(length(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  grow_vec={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  com_bine={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
-    }},  # end for
-  times=10))[, c(1, 4, 5)]
+        <<echo=(-(1:1)),eval=TRUE>>=
+library(lmtest)  # load lmtest
+design_matrix <- data.frame(  # design matrix
+  explana_tory=1:30, omit_var=sin(0.2*1:30))
+# response depends on both explanatory variables
+res_ponse <- with(design_matrix,
+          0.2*explana_tory + omit_var + 0.2*rnorm(30))
+# mis-specified regression only one explanatory
+reg_model <- lm(res_ponse ~ explana_tory,
+                data=design_matrix)
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dwtest(reg_model)$p.value
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{How to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
-      \begin{itemize}
-        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task, 
-        \item call function methods directly instead of calling generic functions, 
-        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
-        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
-        \item pre-allocate memory for new vectors,
-        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops, 
-        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function), 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Writing Fast \texttt{R} Code Using Vectorized Operations}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Vector Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value,
-      \vskip1ex
-      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast, 
-      \vskip1ex
-      The following \emph{vectorized} \emph{compiled} functions calculate cumulative values over large vectors:
-      \begin{itemize}
-        \item \texttt{cummax()}
-        \item \texttt{cummin()}
-        \item \texttt{cumsum()}
-        \item \texttt{cumprod()}
-      \end{itemize}
-      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized} \emph{compiled} functions,
-      \vskip1ex
-      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized} \emph{compiled} functions for logical operations,
-      \vskip1ex
-      But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
-    \column{0.5\textwidth}
       \vspace{-2em}
-        <<eval=TRUE>>=
-vec_tor1 <- rnorm(1000000)
-vec_tor2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for(i in 1:length(vec_tor1)) {
-    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_tor1 + vec_tor2)
-# allocate memory for cumulative sum
-cum_sum <- numeric(length(big_vector))
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for(i in 2:length(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-# cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
+        <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, data=design_matrix)
+abline(reg_model, lwd=2, col="red")
+title(main="OVB Regression", line=-1)
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ovb_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Spurious Time Series Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Regression of non-stationary time series creates \emph{spurious} regressions,
+      \vskip1ex
+      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
+      \vskip1ex
+      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
+      \vskip1ex
+      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=TRUE>>=
+set.seed(1121)
+library(lmtest)
+# spurious regression in unit root time series
+explana_tory <- cumsum(rnorm(100))  # unit root time series
+res_ponse <- cumsum(rnorm(100))
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+# summary indicates statistically significant regression
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(reg_model)
+c(dw_test$statistic[[1]], dw_test$p.value)
+      @
+      \vspace{-2em}
+        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/spur_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions Using Regression Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a generic function for performing predictions based on a given model,
+      \vskip1ex
+      \texttt{predict.lm()} is the predict method for linear models (regressions),
+      \vspace{-1em}
+        <<predict_lm,echo=TRUE,fig.show='hide'>>=
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*explana_tory + rnorm(30)
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+new_data <- data.frame(explana_tory=0.1*31:40)
+predict_lm <- predict(object=reg_model,
+                      newdata=new_data, level=0.95,
+                      interval="confidence")
+predict_lm <- as.data.frame(predict_lm)
+head(predict_lm, 2)
+plot(reg_formula, xlim=c(1.0, 4.0),
+     ylim=range(res_ponse, predict_lm),
+     main="Regression predictions")
+abline(reg_model, col="red")
+with(predict_lm, {
+  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
+  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
+  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+})  # end with
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/predict_lm-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Debugging and Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler,
+      \vskip1ex
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler,
+      \vskip1ex
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
+      \begin{itemize}
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
+        \item \emph{one} - warnings are printed as they occur,
+        \item \emph{two} or larger - warnings are turned into errors,
+      \end{itemize}
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# ?options  # get info on global options
+getOption("warn")  # global option for "warn"
+options("warn")  # global option for "warn"
+getOption("error")  # global option for "error"
+sqrt_safe <- function(in_put) {
+# returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
       @
   \end{columns}
 \end{block}
@@ -1009,30 +910,224 @@ system.time(cum_sum <- cumsum(big_vector))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Matrix Computations}
+\subsection{Validating Function Arguments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type},
       \vskip1ex
-      \texttt{R} has very fast \emph{vectorized} \emph{compiled} functions for calculating sums and means of rows and columns:
-      \begin{itemize}
-        \item \texttt{rowSums()}
-        \item \texttt{colSums()}
-        \item \texttt{rowMeans()}
-        \item \texttt{colMeans()}
-      \end{itemize}
-      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations, 
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call,
+      \vskip1ex
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise,
+      \vskip1ex
+      Missing arguments can be detected by:\\
+      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments,
+      \vskip1ex
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
+      \vskip1ex
+      The function \texttt{return()} returns its argument and terminates futher function execution,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Inside Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution,
+      \vskip1ex
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code,
+      \vskip1ex
+      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced,
+      \vskip1ex
+      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition,
+      \vskip1ex
+      \texttt{cat()} statements inside the function body provide information about the state of its variables,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put=", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+      @
+      \vspace{-2em}
+      <<eval=FALSE>>=
+# print the call stack
+traceback()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()},
+      \vskip1ex
+      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution,
+      \vskip1ex
+      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if()} statements,
+      \vskip1ex
+      \texttt{stopifnot()} is often used to check the validity of function arguments,
+      \vskip1ex
+      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+vali_date <- function(in_put) {
+# check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+              is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments and Assertions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE},
+      \vskip1ex
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions,
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function,
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # even more robust
+# check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+              !missing(in_put2))
+# check if arguments are valid and return sum
+  if (is.numeric(in_put1) &&
+      is.numeric(in_put2)) {
+    in_put1 + in_put2  # both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Debugger Facility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger,
+      \vskip1ex
+      After a function is flagged for debugging with the call \texttt{"debug(my\_func)"}, then the function call \texttt{"my\_func()"} automatically invokes the debugger (browser),
+      \vskip1ex
+      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"},
+      \vskip1ex
+      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key,
+      \vskip1ex
+      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones,
+      \vskip1ex
+      The command \texttt{"c"} executes the remainder of the function code without pausing,
+      \vskip1ex
+      The command \texttt{"Q"} exits the debugger (browser),
+      \vskip1ex
+      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<eval=FALSE>>=
-# calculate row sums two different ways
-summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# flag "vali_date" for debugging
+debug(vali_date)
+# calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
       @
   \end{columns}
 \end{block}
@@ -1041,36 +1136,37 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fast \texttt{R} Code for Matrix Computations}
+\subsection{Debugging Using \texttt{browser()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments, 
+      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body,
       \vskip1ex
-      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary, 
+      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called,
       \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors, 
+      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()},
       \vskip1ex
-      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()}, 
+      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition,
       \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"},
+      \vskip1ex
+      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-str(pmax)
-# calculate row maximums two different ways 
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int, 
-      lapply(seq_along(big_matrix[1, ]), 
-        function(in_dex) big_matrix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]), 
-        function(in_dex) max(big_matrix[in_dex, ]))),
-  times=10))[, c(1, 4, 5)]
+        <<>>=
+vali_date <- function(in_put) {
+  browser()  # pause and invoke browser
+# check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+              is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # invokes debugger
+options("error")  # show default NULL "error" option
+options(error=recover)  # set "error" option to "recover"
+options(error=NULL)  # set back to default "error" option
       @
   \end{columns}
 \end{block}
@@ -1079,40 +1175,24 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \texttt{matrixStats} for Fast Matrix Computations}
+\subsection{Using the Debugger in \texttt{RStudio}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \texttt{matrixStats} contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
+      \texttt{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
       \begin{itemize}
-        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc., 
-        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc., 
-        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc., 
-        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc., 
+        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
+        \item stepping into functions,
+        \item environment pane with environment stack, instead of calling \texttt{ls()},
+        \item traceback pane, instead of calling \texttt{traceback()},
       \end{itemize}
-      A summary of \texttt{matrixStats} functions can be found under:\\
-      \url{https://cran.r-project.org/web/packages/matrixStats/vignettes/matrixStats-methods.html}
-      \vskip1ex
-      The \texttt{matrixStats} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+      \texttt{RStudio} provides an online debugging tutorial:
+      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-library(matrixStats)  # load package "matrixStats"
-# calculate row min values three different ways
-summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
-  p_min=
-    do.call(pmin.int, 
-            lapply(seq_along(big_matrix[1, ]), 
-                   function(in_dex) 
-                     big_matrix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int, 
-            as.data.frame.matrix(big_matrix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{image/rstudio_debug.png}
   \end{columns}
 \end{block}
 
@@ -1120,253 +1200,44 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \texttt{caTools} for Moving Window Functions}
+\subsection{Handling Exception Conditions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \texttt{caTools} contains functions for calculating moving (rolling) window aggregations over a \texttt{vector} of data:
-      \begin{itemize}
-        \item \texttt{runmax} and \texttt{runmin} for rolling maximum and minimum, 
-        \item \texttt{runsd()} for rolling standard deviation,
-        \item \texttt{runmad()} for rolling Median Absolute Deviation (MAD),
-        \item \texttt{runquantile()} for rolling quantile,
-      \end{itemize}
-      Time series need to be coerced to \texttt{vectors} before they are passed to \texttt{caTools} functions,
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
       \vskip1ex
-      The \texttt{caTools} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(caTools)  # load package "caTools"
-# get documentation for package "caTools"
-packageDescription("caTools")  # get short description
-help(package="caTools")  # load help page
-data(package="caTools")  # list all datasets in "caTools"
-ls("package:caTools")  # list all objects in "caTools"
-detach("package:caTools")  # remove caTools from search path
-# median filter
-vol_window <- 11
-med_ian <- runmed(x=big_vector, k=vol_window)
-# vector of rolling volatility
-vo_lat <- runsd(x=big_vector, k=vol_window, 
-                endrule="constant", align="center")
-# vector of rolling quantiles
-quan_tiles <- runquantile(x=big_vector, 
-                  k=vol_window, probs=0.9, 
-                  endrule="constant", 
-                  align="center")
-      @
-      \vspace{-1em}
-      The argument \texttt{"endrule"} determines how the end values of the data are treated,
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument,
       \vskip1ex
-      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using Vectorized Operations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R}-style code is code that relies on \emph{vectorized} \emph{compiled} functions, instead of \texttt{for()} loops,
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression,
       \vskip1ex
-      \texttt{for()} loops in \texttt{R} are slow because they call functions multiple times, and individual function calls are compute-intensive and slow,
+      If a \texttt{condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{condition},
       \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{vectorized} \emph{compiled} function, and is therefore very fast, 
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console,
       \vskip1ex
-      Vectorized assignments using brackets \texttt{"[]"} and \texttt{boolean} or \texttt{integer} vectors to subset vectors or matrices are therefore preferable to \texttt{for()} loops,
-      \vskip1ex
-      \texttt{R} code that uses \emph{vectorized} \emph{compiled} functions can be as fast as \texttt{C++} code,
-      \vskip1ex
-      \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-summary(microbenchmark(  # assign values to vector three different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2}, 
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2}, 
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2}, 
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector two different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)}, 
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)}, 
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Creating Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Functions which use vectorised operations and functions are automatically \emph{vectorized} themselves, 
-      \vskip1ex
-      But not all functions are vectorised, or they're not vectorised with respect to their \emph{parameters},
-      \vskip1ex
-      Functions which only call other compiled \texttt{C} vectorised functions, are also very fast, 
-      \vskip1ex
-      Some \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# define function vectorized automatically
-my_fun <- function(in_put, pa_ram) {
-  pa_ram*in_put
-}  # end my_fun
-my_fun(in_put=1:3, pa_ram=2)  # "in_put" is vectorized
-my_fun(in_put=10, pa_ram=2:4)  # "pa_ram" is vectorized
-rnorm(1, sd=1:3) # rnorm() "sd" argument not vectorized
-# sapply produces desired vector output
-sapply(1:3, function(sd, ...) rnorm(sd=sd, ...), n=3)
-sapply(1:3, rnorm, n=3, mean=0)
-sapply(-1:1, 
-       function(mean, ...) rnorm(mean=mean, ...), n=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorizing Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Sometimes we also want to \emph{vectorize} a function with respect to some of its \emph{arguments} or \emph{parameters},
-      \vskip1ex
-      In order to \emph{vectorize} a function with respect to an argument, it's necessary to perform a loop over that argument,
-      \vskip1ex
-      The function \texttt{Vectorize()} performs an \texttt{apply()} loop over the arguments of a function, and returns a vectorized version of the function,
-      \vskip1ex
-      \texttt{Vectorize()} vectorizes the arguments passed to \texttt{"vectorize.args"},
-      \vskip1ex
-      \texttt{Vectorize()} is an example of a \emph{higher-order} function: it accepts a function as its argument and returns a function as its value,
-      \vskip1ex
-      Functions that are vectorized using \texttt{Vectorize()} or \texttt{apply()} loops are just as slow as \texttt{apply()} loops, but convenient to use,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# rnorm vectorized with respect to "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    sapply(sd, rnorm, n=n, mean=mean)
-}  # end vec_rnorm
-foo <- structure(1:3, names=paste0("sd=", 1:3))
-vec_rnorm(n=3, sd=foo)
-# rnorm vectorized with respect to "mean" and "sd"
-vec_rnorm <- Vectorize(
-              FUN=rnorm,
-              vectorize.args=c("mean", "sd")
-)  # end Vectorize
-vec_rnorm(n=3, sd=foo)
-foo <- structure(-1:1, names=paste0("mean=", -1:1))
-vec_rnorm(n=3, mean=foo)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{mapply()} Functional}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way, 
-      \vskip1ex
-      \texttt{mapply()} accepts a multivariate function passed to the \texttt{"FUN"} argument and any number of vector arguments passed to the dots \texttt{"..."},
-      \vskip1ex
-      \texttt{mapply()} calls \texttt{"FUN"} on the vectors passed to the dots \texttt{"..."}, one element at a time:
-      \begin{multline*}
-        mapply(FUN=fun, vec_{1}, vec_{2}, \ldots) = \\
-        [ fun(vec_{1,1}, vec_{2,1}, \ldots), \ldots, \\
-        fun(vec_{1,i}, vec_{2,i}, \ldots), \ldots ]
-      \end{multline*}
-      \texttt{mapply()} passes the first vector to the first argument of \texttt{"FUN"}, the second vector to the second argument, etc.
-      \vskip1ex
-      The first element of the output vector is equal to \texttt{"FUN"} called on the first elements of the input vectors, the second element is \texttt{"FUN"} called on the second elements, etc.
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
-str(sum)
-# na.rm is bound by name
-mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
-str(rnorm)
-# mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=(-1:1), sd=(1:3))
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
 
-mapply(function(in_put, e_xp) in_put^e_xp, 
-       1:5, seq(from=1, by=0.2, length.out=5))
-      @
-      The output of \texttt{mapply()} is a vector of length equal to the longest vector passed to the dots \texttt{"..."} argument, with the elements of the other vectors recycled if necessary,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorizing Functions Using \texttt{mapply()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way, 
-      \vskip1ex
-      \texttt{mapply()} can be used to vectorize several function arguments simultaneously,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# rnorm vectorized with respect to both "mean" and "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(mean)==1 && length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    mapply(rnorm, n=n, mean=mean, sd=sd)
-}  # end vec_rnorm
-# call vec_rnorm() on vector of "sd"
-foo <- structure(1:3, names=paste0("sd=", 1:3))
-vec_rnorm(n=3, sd=foo)
-# call vec_rnorm() on vector of "mean"
-foo <- structure(-1:1, names=paste0("mean=", -1:1))
-vec_rnorm(n=3, mean=foo)
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  },
+  error=function(error_cond)  # handler captures error condition
+    print(paste("error handler: ", error_cond)),
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
       @
   \end{columns}
 \end{block}
@@ -1375,83 +1246,31 @@ vec_rnorm(n=3, mean=foo)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Vectorized \texttt{if-else} Statements Using Function \texttt{ifelse()}}
+\subsection{Error Conditions in Loops}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
+      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result,
       \vskip1ex
-      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
-        <<func_ifelse,eval=FALSE,echo=TRUE,fig.show='hide'>>=
-# create two numeric vectors
-vec_tor1 <- sin(0.25*pi*1:10)
-vec_tor2 <- cos(0.25*pi*1:10)
-# create third vector using 'ifelse'
-vec_tor3 <- ifelse(vec_tor1 > vec_tor2, 
-                  vec_tor1, vec_tor2)
-# cbind all three together
-vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
-
-# set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
-    cex.sub=0.5)
-# plot matrix
-matplot(vec_tor4, type="l", lty="solid", 
-        col=c("green", "blue", "red"), 
-        lwd=c(2, 2, 2), xlab="", ylab="")
-# add legend
-legend(x="bottomright", legend=colnames(vec_tor4), 
-       title="", inset=0.05, cex=0.8, lwd=2, 
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance,
+      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished,
       \vskip1ex
-      Below is an example of a simulation of random prices hitting a barrier level,
-        <<simu_while,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-simu_max <- 1000  # max simulation trials
-simu_prices <- numeric(simu_max)  # initialize prices
-barrier_level <- 20  # barrier level
-simu_prices[1] <- 0  # first simulated price
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_max) && 
-         (simu_prices[in_dex - 1] < barrier_level)) {
-  simu_prices[in_dex] <- # simulate next price
-    simu_prices[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-if (in_dex <= simu_max) {  # fill zero prices
-  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
-}
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
-      @
+      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result,
+      \vskip1ex
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition},
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_while-1}
+      <<echo=(-1)>>=
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    stopifnot(num_var != 3)  # check for error
+    cat("(cat) num_var =", num_var, "\n")  # broadcast
+    paste("(return) num_var =", num_var)  # return value
+  }  # end anonymous function
+)  # end apply
+      @
   \end{columns}
 \end{block}
 
@@ -1459,42 +1278,37 @@ title(main="Random Prices", line=0)  # add title
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using Vectorized Functions}
+\subsection{Exception Handling in Loops}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre- computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results,
       \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
-        <<simu_vector,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-simu_max <- 1000  # max simulation trials
-barrier_level <- 20  # barrier level
-# simulated prices
-simu_prices <- cumsum(rnorm(simu_max))
-# find index when prices cross barrier_level
-which_index <- which(simu_prices > barrier_level)
-# fill prices after crossing barrier_level
-if (length(which_index)>0) {
-  simu_prices[(which_index[1]+1):simu_max] <- 
-    simu_prices[which_index[1]]
-}  # end if
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, 
-             start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
-      @
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()},
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()},
+      \vskip1ex
+      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs,
     \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_vector-1}
-      \vspace{-4em}
-      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
+      \vspace{-1em}
+      <<echo=1:30>>=
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    tryCatch(  # with error handler
+      {  # body
+        stopifnot(num_var != 3)  # check for error
+        cat("(cat) num_var =", num_var, "\t")  # broadcast
+        paste("(return) num_var =", num_var)  # return value
+      },
+      error=function(error_cond)  # handler captures error condition
+        paste("handler: ", error_cond),
+      finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
   \end{columns}
 \end{block}
 

@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -40,8 +40,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -94,7 +94,8 @@ knit_theme$set(thm)
       The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
@@ -138,7 +139,8 @@ print(foo, digits=20)
       The function \texttt{ceiling()} returns the smallest integer which is greater than the given number,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
@@ -184,7 +186,8 @@ trunc(3.675)  # truncate
       \url{http://stackoverflow.com/questions/13614749/modulus-bug-in-r}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 4.7 %/% 0.5  # modulo division
 4.7 %% 0.5  # remainder of modulo division
 # reversing modulo division usually
@@ -207,6 +210,144 @@ print(0.2, digits=22)
 
 %%%%%%%%%%%%%%%
 \section{Optimizing \texttt{R} Code for Speed and Memory Usage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining the Memory Usage of \texttt{R} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{object.size()} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects,
+      \vskip1ex
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
+      \vskip1ex
+      The method \texttt{format.object\_size()} defines a \emph{megabyte} as \texttt{1,048,576} \emph{bytes} ($2^{20}$), not \texttt{1,000,000} \emph{bytes},
+      \vskip1ex
+      The function \texttt{get()} accepts a character string and returns the value of the corresponding object in a specified \emph{environment},
+      \vskip1ex
+      \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
+      \vskip1ex
+      The function \texttt{ll()} from package \texttt{gdata} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4)),eval=FALSE>>=
+# get size of an object
+object.size(runif(1e6))
+format(object.size(runif(1e6)), units="MB")
+load(file="C:/Develop/data/etf_data.RData")
+# get sizes of objects in workspace
+sort(sapply(ls(),
+  function(ob_ject) {
+    format(object.size(get(ob_ject)), units="KB")}))
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+sort(sapply(mget(ls()),
+      function(ob_ject) {
+        format(object.size(ob_ject), units="KB")}
+))
+# get sizes of objects in env_etf environment
+sort(sapply(ls(env_etf),
+  function(ob_ject) {
+    object.size(get(ob_ject, env_etf))}))
+# get sizes of objects in env_etf environment
+sort(sapply(mget(ls(env_etf), env_etf),
+            object.size))
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+library(gdata)  # load package gdata
+# get names, class, and size of objects in workspace
+ob_jects <- ll(unit="bytes")
+# sort by memory size (descending)
+ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
+ll()[order(ll()$KB, decreasing=TRUE), ]
+# get sizes of objects in env_etf environment
+ll(unit="bytes", env_etf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Very Large Datasets Using Package \texttt{SOAR}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      The package \texttt{SOAR} allows performing calculations with multiple, very large datasets, without loading them all at once into \texttt{R} memory,
+      \vskip1ex
+      Package \texttt{SOAR} uses \emph{delayed assignment} of objects (\emph{lazy loading}), which means that they don't reside in \texttt{R} memory, but they're silently loaded from the hard drive when they're needed,
+      \vskip1ex
+      The function \texttt{Store()} removes objects from memory, stores them in an \emph{object cache}, and places the \emph{object cache} on the search path,
+      \vskip1ex
+      The \emph{object cache} is a sub-directory of the \emph{cwd} called \texttt{.R\_Cache}, and contains \texttt{.RData} files with the stored objects,
+      \vskip1ex
+      The stored objects aren't listed in the \texttt{R} workspace, but they are visible on the search path as \emph{promises},
+      \vskip1ex
+      The function \texttt{Ls()} lists the objects stored in the \emph{object cache}, and attaches the \emph{cache} to the search path,
+      \vskip1ex
+      The function \texttt{find()} finds where objects are located on the search path,
+      \vskip1ex
+      The function \texttt{data()} isn't required to load data sets that are set up for \emph{lazy loading},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
+library(SOAR)  # load package SOAR
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+Store(etf_list)  # store in object cache
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+search()  # get search path for R objects
+Ls()  # list object cache
+find("etf_list")  # find object on search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Memory Usage and Garbage Collection in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      \emph{Garbage collection} is the process of releasing memory occupied by objects no longer in use by a computer program,
+      \vskip1ex
+      The function \texttt{gc()} performs garbage collection and reports the memory used by \texttt{R} in units of \emph{Vcells} (vector cells, which are \texttt{8} \emph{bytes} each),
+      \vskip1ex
+      \texttt{R} performs garbage collection automatically, so calling \texttt{gc()} is designed mostly to report the memory used by \texttt{R},
+      \vskip1ex
+      The memory used by \texttt{R} is usually greater than the total size of all objects in the workspace, because \texttt{R} requires additional memory,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
+# get R memory
+v_cells <- gc()["Vcells", "used"]
+# create vector with 1,000,000 cells
+foo_bar <- numeric(1000000)
+# get extra R memory
+gc()["Vcells", "used"] - v_cells
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -244,7 +385,7 @@ microbenchmark(sqrt(foo), foo^0.5, times=10)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}, 
+      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R},
       \vskip1ex
       This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
       \vskip1ex
@@ -256,7 +397,7 @@ microbenchmark(sqrt(foo), foo^0.5, times=10)
       \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(microbenchmark)
 # sum() is a compiled primitive function
 sum
@@ -303,7 +444,7 @@ summary(
       <<echo=TRUE,eval=FALSE>>=
 library(microbenchmark)
 mat_rix <- matrix(1:9, ncol=3, # create matrix
-  dimnames=list(paste0("row", 1:3), 
+  dimnames=list(paste0("row", 1:3),
                 paste0("col", 1:3)))
 # create specialized function
 matrix_to_dframe <- function(mat_rix) {
@@ -312,7 +453,7 @@ matrix_to_dframe <- function(mat_rix) {
   for(in_dex in 1:n_col)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(nrow(mat_rix))
+    .set_row_names(NROW(mat_rix))
   attr(dframe, "class") <- "data.frame"
   dframe  # return data frame
 }  # end matrix_to_dframe
@@ -336,28 +477,28 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest, 
+      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest,
       \vskip1ex
       More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
       \vskip1ex
-      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and are therefore faster than other \texttt{apply()} functions, 
+      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and are therefore faster than other \texttt{apply()} functions,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # matrix with 5,000 rows
 big_matrix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
-row_sums <- numeric(nrow(big_matrix))
+row_sums <- numeric(NROW(big_matrix))
 summary(microbenchmark(
   ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
+  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:nrow(big_matrix), function(in_dex)
+  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ]),
     FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:nrow(big_matrix), function(in_dex)
+  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:nrow(big_matrix)) {
+  for_loop=for(i in 1:NROW(big_matrix)) {
     row_sums[i] <- sum(big_matrix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -379,13 +520,13 @@ summary(microbenchmark(
       \vskip1ex
       \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
       \vskip1ex
-      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow, 
+      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow,
       \vskip1ex
-      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment, 
+      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment,
       \vskip1ex
       Adding elements to a vector in a loop is very slow, and therefore not recommended,
       \vskip1ex
-      Pre-allocating memory for large vectors before performing loops increases their speed, 
+      Pre-allocating memory for large vectors before performing loops increases their speed,
       \vskip1ex
       The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
       \vskip1ex
@@ -432,13 +573,13 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
       \begin{itemize}
-        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task, 
-        \item call function methods directly instead of calling generic functions, 
+        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task,
+        \item call function methods directly instead of calling generic functions,
         \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
         \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
         \item pre-allocate memory for new vectors,
-        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops, 
-        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function), 
+        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops,
+        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function),
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -470,23 +611,23 @@ summary(
     \column{0.5\textwidth}
       \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value,
       \vskip1ex
-      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast, 
+      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast,
       \vskip1ex
-      The following \emph{vectorized} \emph{compiled} functions calculate cumulative values over large vectors:
+      The following \emph{vectorized compiled} functions calculate cumulative values over large vectors:
       \begin{itemize}
         \item \texttt{cummax()}
         \item \texttt{cummin()}
         \item \texttt{cumsum()}
         \item \texttt{cumprod()}
       \end{itemize}
-      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized} \emph{compiled} functions,
+      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized compiled} functions,
       \vskip1ex
-      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized} \emph{compiled} functions for logical operations,
+      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized compiled} functions for logical operations,
       \vskip1ex
       But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
     \column{0.5\textwidth}
       \vspace{-2em}
-        <<eval=TRUE>>=
+        <<eval=FALSE>>=
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
@@ -524,14 +665,14 @@ system.time(cum_sum <- cumsum(big_vector))
     \column{0.5\textwidth}
       \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
       \vskip1ex
-      \texttt{R} has very fast \emph{vectorized} \emph{compiled} functions for calculating sums and means of rows and columns:
+      \texttt{R} has very fast \emph{vectorized compiled} functions for calculating sums and means of rows and columns:
       \begin{itemize}
         \item \texttt{rowSums()}
         \item \texttt{colSums()}
         \item \texttt{rowMeans()}
         \item \texttt{colMeans()}
       \end{itemize}
-      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations, 
+      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<eval=FALSE>>=
@@ -554,13 +695,13 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments, 
+      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments,
       \vskip1ex
-      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary, 
+      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary,
       \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors, 
+      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors,
       \vskip1ex
-      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()}, 
+      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()},
       \vskip1ex
       \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
     \column{0.5\textwidth}
@@ -568,14 +709,14 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 library(microbenchmark)
 str(pmax)
-# calculate row maximums two different ways 
+# calculate row maximums two different ways
 summary(microbenchmark(
   p_max=
-    do.call(pmax.int, 
-      lapply(seq_along(big_matrix[1, ]), 
+    do.call(pmax.int,
+      lapply(seq_along(big_matrix[1, ]),
         function(in_dex) big_matrix[, in_dex])),
   l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]), 
+    lapply(seq_along(big_matrix[, 1]),
         function(in_dex) max(big_matrix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
       @
@@ -594,10 +735,10 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The package \texttt{matrixStats} contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
       \begin{itemize}
-        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc., 
-        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc., 
-        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc., 
-        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc., 
+        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc.,
+        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc.,
+        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc.,
+        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc.,
       \end{itemize}
       A summary of \texttt{matrixStats} functions can be found under:\\
       \url{https://cran.r-project.org/web/packages/matrixStats/vignettes/matrixStats-methods.html}
@@ -606,69 +747,20 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<eval=FALSE>>=
-library(matrixStats)  # load package "matrixStats"
+library(matrixStats)  # load package matrixStats
 # calculate row min values three different ways
 summary(microbenchmark(
   row_mins=rowMins(big_matrix),
   p_min=
-    do.call(pmin.int, 
-            lapply(seq_along(big_matrix[1, ]), 
-                   function(in_dex) 
+    do.call(pmin.int,
+            lapply(seq_along(big_matrix[1, ]),
+                   function(in_dex)
                      big_matrix[, in_dex])),
   as_data_frame=
-    do.call(pmin.int, 
+    do.call(pmin.int,
             as.data.frame.matrix(big_matrix)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{caTools} for Moving Window Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \texttt{caTools} contains functions for calculating moving (rolling) window aggregations over a \texttt{vector} of data:
-      \begin{itemize}
-        \item \texttt{runmax} and \texttt{runmin} for rolling maximum and minimum, 
-        \item \texttt{runsd()} for rolling standard deviation,
-        \item \texttt{runmad()} for rolling Median Absolute Deviation (MAD),
-        \item \texttt{runquantile()} for rolling quantile,
-      \end{itemize}
-      Time series need to be coerced to \texttt{vectors} before they are passed to \texttt{caTools} functions,
-      \vskip1ex
-      The \texttt{caTools} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(caTools)  # load package "caTools"
-# get documentation for package "caTools"
-packageDescription("caTools")  # get short description
-help(package="caTools")  # load help page
-data(package="caTools")  # list all datasets in "caTools"
-ls("package:caTools")  # list all objects in "caTools"
-detach("package:caTools")  # remove caTools from search path
-# median filter
-vol_window <- 11
-med_ian <- runmed(x=big_vector, k=vol_window)
-# vector of rolling volatility
-vo_lat <- runsd(x=big_vector, k=vol_window, 
-                endrule="constant", align="center")
-# vector of rolling quantiles
-quan_tiles <- runquantile(x=big_vector, 
-                  k=vol_window, probs=0.9, 
-                  endrule="constant", 
-                  align="center")
-      @
-      \vspace{-1em}
-      The argument \texttt{"endrule"} determines how the end values of the data are treated,
-      \vskip1ex
-      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
   \end{columns}
 \end{block}
 
@@ -682,15 +774,15 @@ quan_tiles <- runquantile(x=big_vector,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R}-style code is code that relies on \emph{vectorized} \emph{compiled} functions, instead of \texttt{for()} loops,
+      \texttt{R}-style code is code that relies on \emph{vectorized compiled} functions, instead of \texttt{for()} loops,
       \vskip1ex
       \texttt{for()} loops in \texttt{R} are slow because they call functions multiple times, and individual function calls are compute-intensive and slow,
       \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{vectorized} \emph{compiled} function, and is therefore very fast, 
+      The brackets \texttt{"[]"} operator is a \emph{vectorized compiled} function, and is therefore very fast,
       \vskip1ex
       Vectorized assignments using brackets \texttt{"[]"} and \texttt{boolean} or \texttt{integer} vectors to subset vectors or matrices are therefore preferable to \texttt{for()} loops,
       \vskip1ex
-      \texttt{R} code that uses \emph{vectorized} \emph{compiled} functions can be as fast as \texttt{C++} code,
+      \texttt{R} code that uses \emph{vectorized compiled} functions can be as fast as \texttt{C++} code,
       \vskip1ex
       \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code,
     \column{0.5\textwidth}
@@ -699,26 +791,26 @@ quan_tiles <- runquantile(x=big_vector,
 summary(microbenchmark(  # assign values to vector three different ways
 # fast vectorized assignment loop performed in C using brackets "[]"
   brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2}, 
+    vec_tor[] <- 2},
 # slow because loop is performed in R
   for_loop={vec_tor <- numeric(10)
     for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2}, 
+      vec_tor[in_dex] <- 2},
 # very slow because no memory is pre-allocated
 # "vec_tor" is "grown" with each new element
   grow_vec={vec_tor <- numeric(0)
     for (in_dex in 1:10)
 # add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2}, 
+      vec_tor[in_dex] <- 2},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 summary(microbenchmark(  # assign values to vector two different ways
 # fast vectorized assignment loop performed in C using brackets "[]"
   brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)}, 
+    vec_tor[4:7] <- rnorm(4)},
 # slow because loop is performed in R
   for_loop={vec_tor <- numeric(10)
     for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)}, 
+      vec_tor[in_dex] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -734,16 +826,17 @@ summary(microbenchmark(  # assign values to vector two different ways
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Functions which use vectorized operations and functions are automatically \emph{vectorized} themselves, 
+      Functions which use vectorized operations and functions are automatically \emph{vectorized} themselves,
       \vskip1ex
-      Functions which only call other compiled \texttt{C} vectorized functions, are also very fast, 
+      Functions which only call other compiled \texttt{C} vectorized functions, are also very fast,
       \vskip1ex
       But not all functions are vectorized, or they're not vectorized with respect to their \emph{parameters},
       \vskip1ex
       Some \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 # define function vectorized automatically
 my_fun <- function(in_put, pa_ram) {
   pa_ram*in_put
@@ -752,15 +845,15 @@ my_fun <- function(in_put, pa_ram) {
 my_fun(in_put=1:3, pa_ram=2)
 # "pa_ram" is vectorized
 my_fun(in_put=10, pa_ram=2:4)
-# define vectors of parameters of rnorm() 
-sd_vec <- 
+# define vectors of parameters of rnorm()
+std_devs <-
   structure(1:3, names=paste0("sd=", 1:3))
-mean_vec <- 
+me_ans <-
   structure(-1:1, names=paste0("mean=", -1:1))
 # "sd" argument of rnorm() isn't vectorized
-rnorm(1, sd=sd_vec)
+rnorm(1, sd=std_devs)
 # "mean" argument of rnorm() isn't vectorized
-rnorm(1, mean=mean_vec)
+rnorm(1, mean=me_ans)
       @
   \end{columns}
 \end{block}
@@ -777,20 +870,21 @@ rnorm(1, mean=mean_vec)
     \column{0.5\textwidth}
       Many functions aren't vectorized with respect to their \emph{parameters},
       \vskip1ex
-      Performing \texttt{sapply()} loops over a function's parameters produces vector output, 
+      Performing \texttt{sapply()} loops over a function's parameters produces vector output,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 # sapply produces desired vector output
 set.seed(1121)
-sapply(sd_vec, function(sd) rnorm(n=2, sd=sd))
+sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
 set.seed(1121)
-sapply(sd_vec, rnorm, n=2, mean=0)
+sapply(std_devs, rnorm, n=2, mean=0)
 set.seed(1121)
-sapply(mean_vec, 
-       function(mean) rnorm(n=2, mean=mean))
+sapply(me_ans,
+       function(me_an) rnorm(n=2, mean=me_an))
 set.seed(1121)
-sapply(mean_vec, rnorm, n=2)
+sapply(me_ans, rnorm, n=2)
       @
   \end{columns}
 \end{block}
@@ -816,8 +910,9 @@ sapply(mean_vec, rnorm, n=2)
       Functions that are vectorized using \texttt{Vectorize()} or \texttt{apply()} loops are just as slow as \texttt{apply()} loops, but convenient to use,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
-# rnorm() vectorized with respect to "sd"
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
+# rnorm() vectorized with respect to "std_dev"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (length(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
@@ -825,15 +920,15 @@ vec_rnorm <- function(n, mean=0, sd=1) {
     sapply(sd, rnorm, n=n, mean=mean)
 }  # end vec_rnorm
 set.seed(1121)
-vec_rnorm(n=2, sd=sd_vec)
-# rnorm() vectorized to "mean" and "sd"
+vec_rnorm(n=2, sd=std_devs)
+# rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- Vectorize(FUN=rnorm,
               vectorize.args=c("mean", "sd")
 )  # end Vectorize
 set.seed(1121)
-vec_rnorm(n=2, sd=sd_vec)
+vec_rnorm(n=2, sd=std_devs)
 set.seed(1121)
-vec_rnorm(n=2, mean=mean_vec)
+vec_rnorm(n=2, mean=me_ans)
       @
   \end{columns}
 \end{block}
@@ -848,7 +943,7 @@ vec_rnorm(n=2, mean=mean_vec)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way, 
+      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way,
       \vskip1ex
       \texttt{mapply()} accepts a multivariate function passed to the \texttt{"FUN"} argument and any number of vector arguments passed to the dots \texttt{"..."},
       \vskip1ex
@@ -863,14 +958,15 @@ vec_rnorm(n=2, mean=mean_vec)
       The first element of the output vector is equal to \texttt{"FUN"} called on the first elements of the input vectors, the second element is \texttt{"FUN"} called on the second elements, etc.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 str(sum)
 # na.rm is bound by name
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
 str(rnorm)
 # mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=mean_vec, sd=sd_vec)
-mapply(function(in_put, e_xp) in_put^e_xp, 
+mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
+mapply(function(in_put, e_xp) in_put^e_xp,
        1:5, seq(from=1, by=0.2, length.out=5))
       @
       The output of \texttt{mapply()} is a vector of length equal to the longest vector passed to the dots \texttt{"..."} argument, with the elements of the other vectors recycled if necessary,
@@ -887,12 +983,13 @@ mapply(function(in_put, e_xp) in_put^e_xp,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way, 
+      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way,
       \vskip1ex
       \texttt{mapply()} can be used to vectorize several function arguments simultaneously,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (length(mean)==1 && length(sd)==1)
@@ -901,9 +998,9 @@ vec_rnorm <- function(n, mean=0, sd=1) {
     mapply(rnorm, n=n, mean=mean, sd=sd)
 }  # end vec_rnorm
 # call vec_rnorm() on vector of "sd"
-vec_rnorm(n=2, sd=sd_vec)
+vec_rnorm(n=2, sd=std_devs)
 # call vec_rnorm() on vector of "mean"
-vec_rnorm(n=2, mean=mean_vec)
+vec_rnorm(n=2, mean=me_ans)
       @
   \end{columns}
 \end{block}
@@ -926,22 +1023,22 @@ vec_rnorm(n=2, mean=mean_vec)
 vec_tor1 <- sin(0.25*pi*1:10)
 vec_tor2 <- cos(0.25*pi*1:10)
 # create third vector using 'ifelse'
-vec_tor3 <- ifelse(vec_tor1 > vec_tor2, 
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
                   vec_tor1, vec_tor2)
 # cbind all three together
 vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
 
 # set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), 
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
     cex.sub=0.5)
 # plot matrix
-matplot(vec_tor4, type="l", lty="solid", 
-        col=c("green", "blue", "red"), 
+matplot(vec_tor4, type="l", lty="solid",
+        col=c("green", "blue", "red"),
         lwd=c(2, 2, 2), xlab="", ylab="")
 # add legend
-legend(x="bottomright", legend=colnames(vec_tor4), 
-       title="", inset=0.05, cex=0.8, lwd=2, 
+legend(x="bottomright", legend=colnames(vec_tor4),
+       title="", inset=0.05, cex=0.8, lwd=2,
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
       @
     \column{0.5\textwidth}
@@ -952,8 +1049,48 @@ legend(x="bottomright", legend=colnames(vec_tor4),
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using \texttt{while()} Loops}
+\section{Simulation}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Monte Carlo Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution, 
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# MC estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/sample_length
+# MC estimate of quantile
+qnorm(0.75)
+sam_ple[0.75*sample_length]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Options Using \texttt{while()} Loops}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -970,7 +1107,7 @@ simu_prices <- numeric(simu_length)  # initialize prices
 barrier_level <- 20  # barrier level
 simu_prices[1] <- 0  # first simulated price
 in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_length) && 
+while ((in_dex <= simu_length) &&
          (simu_prices[in_dex - 1] < barrier_level)) {
   simu_prices[in_dex] <- # simulate next price
     simu_prices[in_dex - 1] + rnorm(1)
@@ -996,13 +1133,13 @@ title(main="Random Prices", line=0)  # add title
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Barrier Options Using Vectorized Functions}
+\subsection{Simulating Options Using Vectorized Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre- computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
       \vskip1ex
       Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
         <<simu_vector,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
@@ -1016,11 +1153,11 @@ simu_prices <- cumsum(rnorm(simu_length))
 which_index <- which(simu_prices > barrier_level)
 # fill prices after crossing barrier_level
 if (length(which_index)>0) {
-  simu_prices[(which_index[1]+1):simu_length] <- 
+  simu_prices[(which_index[1]+1):simu_length] <-
     simu_prices[which_index[1]]
 }  # end if
 # create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, 
+ts_var <- ts(data=simu_prices, frequency=365,
              start=c(2011, 1))
 plot(ts_var, type="l", col="black",  # create plot
      lty="solid", xlab="", ylab="")
@@ -1032,6 +1169,421 @@ title(main="Random Prices", line=0)  # add title
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_vector-1}
       \vspace{-4em}
       The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Bootstrap} simulation consists of generating random samples with replacement from observed data, 
+      \vskip1ex
+      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      \vskip1ex
+      The \emph{bootstrap} procedure creates new samples of data by randomly sampling with replacement from an existing data sample,
+      \vskip1ex
+      The \emph{bootstrap} samples are then used to re-calculate the estimator many times, producing a vector of values,
+      \vskip1ex
+      The \emph{bootstrapped} estimator values can then be used to calculate the probability distribution of the estimator and its standard error,
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators that are sensitive to the ordering of sample data, and on the correlations in the sample,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    sam_ple[sample.int(sample_length,
+                       replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(sample_length)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Regression Coefficients Using Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of the regression coefficients can be calculated using a \emph{bootstrap} simulation, 
+      \vskip1ex
+      The \emph{bootstrap} procedure creates new design matrices by randomly sampling with replacement from the design matrix, 
+      \vskip1ex
+      Regressions are performed on the \emph{bootstrapped} design matrices, and the regression coefficients are saved into a matrix of \emph{bootstrapped} coefficients, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # initialize random number generator
+# define explanatory and response variables
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+res_ponse <- -3 + explana_tory + noise
+# define design matrix and regression formula
+design_matrix <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(design_matrix)[1], 
+  paste(colnames(design_matrix)[-1], collapse="+"), 
+  sep=" ~ ")
+# bootstrap the regression
+boot_strap <- sapply(1:100, function(x) {
+  boot_sample <- 
+    sample.int(dim(design_matrix)[1], replace=TRUE)
+  reg_model <- lm(reg_formula,
+                data=design_matrix[boot_sample, ])
+  reg_model$coefficients
+})  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Bootstrapped Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bootstrapped} coefficient values can be used to calculate the probability distribution of the coefficients and their standard errors,
+        <<boot_distribution,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=1, 
+      function(x) c(mean=mean(x), sd=sd(x)))
+# means and standard errors from regression summary
+reg_model <- lm(reg_formula, data=design_matrix)
+reg_model$coefficients
+summary(reg_model)$coefficients[, "Std. Error"]
+plot(density(boot_strap["explana_tory", ]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap["explana_tory", ]), 
+       lwd=2, col="red")
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/boot_distribution.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping Regressions Using Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing, 
+      \vskip1ex
+      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
+      \vskip1ex
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process, 
+      \vskip1ex
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, 
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# bootstrap the regression under Windows
+boot_strap <- parLapply(clus_ter, 1:1000, 
+  function(x, reg_formula, design_matrix) {
+    boot_sample <- 
+      sample.int(dim(design_matrix)[1], replace=TRUE)
+    reg_model <- lm(reg_formula,
+      data=design_matrix[boot_sample, ])
+    reg_model$coefficients
+  }, 
+  reg_formula=reg_formula, 
+  design_matrix=design_matrix)  # end parLapply
+# bootstrap the regression under Mac-OSX or Linux
+boot_strap <- mclapply(1:1000, 
+  function(x) {
+    boot_sample <- 
+      sample.int(dim(design_matrix)[1], replace=TRUE)
+    lm(reg_formula,
+      data=design_matrix[boot_sample, ])$coefficients
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), sd=sd(x)))
+x11(width=6, height=6)
+plot(density(boot_strap[, "explana_tory"]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap[, "explana_tory"]), 
+       lwd=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Parallel Computing}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing in \texttt{R}}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+
+\begin{block}{Parallel Computing in \texttt{R}}
+      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
+      \vskip1ex
+      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \texttt{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
+      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
+      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
+      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
+\end{block}
+
+\begin{block}{\texttt{R} Base Package \texttt{parallel}}
+  The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+  \vskip1ex
+  The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
+  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
+  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
+\end{block}
+
+\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
+      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Using Package \texttt{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+      \vskip1ex
+      The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
+      \vskip1ex
+      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Parallel Loops Using Package \texttt{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops, 
+      \vskip1ex
+      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops (similar to \texttt{lapply()}) using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
+      \vskip1ex
+      Under \emph{Windows}, a cluster of \texttt{R} processes (one per each CPU core) need to be started first, by calling the function \texttt{makeCluster()},
+      \vskip1ex
+      \emph{Mac-OSX} and \emph{Linux} don't require calling the function \texttt{makeCluster()},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# perform parallel loop under Mac-OSX or Linux
+foo <- mclapply(1:10, paws, mc.cores=num_cores, 
+                sleep_time=0.01)
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+foo <- parLapply(clus_ter, 1:10, paws, 
+                 sleep_time=0.01)
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Computing Overhead of Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
+      \vskip1ex
+      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
+      <<echo=(-(1:10)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+      lapply=lapply(1:max_iterations, paws,
+                    sleep_time=sleep_time),
+      parallel=parLapply(clus_ter, 1:max_iterations,
+              paws, sleep_time=sleep_time),
+      times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+              names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/parallel_plot.png}\\
+      \vspace{-1em}
+      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+      y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+       inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Over Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often we need to perform time consuming calculations over columns of matrices,
+      \vskip1ex
+      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:length(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ter, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ter, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ter)
+      @
   \end{columns}
 \end{block}
 
@@ -1055,7 +1607,7 @@ title(main="Random Prices", line=0)  # add title
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
       \vskip1ex
       \vspace{-1em}
-        <<eval=TRUE,echo=(-(1:1))>>=
+        <<eval=FALSE,echo=(-(1:1))>>=
 options(width=50, dev='pdf')
 str(optimize)
 # objective function with multiple minima
@@ -1104,15 +1656,15 @@ title(main="Objective Function", line=-1)  # add title
       \end{displaymath}
       In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
       \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments, 
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
 # sample of normal variables
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
 object_ive <- function(parm, sam_ple) {
-  sum(2*log(parm[2]) + 
+  sum(2*log(parm[2]) +
     ((sam_ple - parm[1])/parm[2])^2)
 }  # end object_ive
 # vectorize objective function
@@ -1124,16 +1676,16 @@ vec_objective <- Vectorize(
 # objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd, 
+objective_grid <- outer(par_mean, par_sd,
         vec_objective, sam_ple=sam_ple)
 objective_min <- which(  # grid search
-  objective_grid==min(objective_grid), 
+  objective_grid==min(objective_grid),
   arr.ind=TRUE)
 objective_min
 par_mean[objective_min[1]]  # mean
 par_sd[objective_min[2]]  # sd
 objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
+objective_grid[(objective_min[, 1] + -1:1),
                (objective_min[, 2] + -1:1)]
       @
   \end{columns}
@@ -1153,7 +1705,7 @@ objective_grid[(objective_min[, 1] + -1:1),
       \vskip1ex
       The argument \texttt{"z"} accepts a matrix containing the function values,
       \vskip1ex
-      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots, 
+      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots,
       \vskip1ex
       The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
       \vskip1ex
@@ -1166,9 +1718,9 @@ persp(z=-objective_grid,
       border="green", zlab="objective",
       main="objective function")
 # interactive perspective plot of log-likelihood function
-library(rgl)
+library(rgl)  # load package rgl
 par3d(cex=2.0)  # scale text by factor of 2
-persp3d(z=-objective_grid, zlab="objective", 
+persp3d(z=-objective_grid, zlab="objective",
         col="green", main="objective function")
       @
     \column{0.5\textwidth}
@@ -1187,12 +1739,12 @@ persp3d(z=-objective_grid, zlab="objective",
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # initial parameters
 par_init <- c(mean=0, sd=1)
 # perform optimization quasi-Newton method
-optim_run <- optim(par=par_init, 
-             fn=object_ive, 
+optim_run <- optim(par=par_init,
+             fn=object_ive,
              sam_ple=sam_ple,
              method="L-BFGS-B",
              upper=c(10, 10),
@@ -1204,13 +1756,13 @@ optim_run$par
       <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # plot histogram
 histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE, 
+plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_run$par["mean"],
-                 sd=optim_run$par["sd"]), 
+                 sd=optim_run$par["sd"]),
       add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL, 
-       leg="optimal parameters", 
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+       leg="optimal parameters",
        lwd=2, bg="white", col="red")
       @
     \column{0.5\textwidth}
@@ -1230,16 +1782,17 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 # sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0), 
+sam_ple <- c(rnorm(100, sd=1.0),
                    rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
 object_ive <- function(parm, sam_ple) {
-  likelihood <- parm[1]/parm[3] * 
+  likelihood <- parm[1]/parm[3] *
   dnorm((sam_ple-parm[2])/parm[3]) +
   (1-parm[1])/parm[5]*dnorm((sam_ple-parm[4])/parm[5])
-  if(any(likelihood <= 0)) Inf else
+  if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # vectorize objective function
@@ -1251,7 +1804,7 @@ vec_objective <- Vectorize(
 # objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd, 
+objective_grid <- outer(par_mean, par_sd,
           vec_objective, sam_ple=sam_ple,
           w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
@@ -1260,7 +1813,7 @@ objective_min <- which(objective_grid==
   min(objective_grid), arr.ind=TRUE)
 objective_min
 objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
+objective_grid[(objective_min[, 1] + -1:1),
                (objective_min[, 2] + -1:1)]
       @
     \column{0.5\textwidth}
@@ -1290,12 +1843,13 @@ persp(par_mean, par_sd, -objective_grid,
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
-optim_run <- optim(par=par_init, 
-            fn=object_ive, 
+optim_run <- optim(par=par_init,
+            fn=object_ive,
             sam_ple=sam_ple,
             method="L-BFGS-B",
             upper=c(1,10,10,10,10),
@@ -1306,16 +1860,16 @@ optim_run$par
       <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # plot histogram
 histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE, 
+plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, parm) {
-  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) + 
+  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) +
     (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
 }  # end fit_func
 curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
       type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL, 
-       leg="optimal parameters", 
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+       leg="optimal parameters",
        lwd=2, bg="white", col="red")
       @
     \column{0.5\textwidth}

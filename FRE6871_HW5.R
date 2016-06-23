@@ -1,127 +1,123 @@
 #################################
-### FRE6871 Homework #5 due Nov 2, 2015
+### FRE6871 Homework #5 due May 16, 2016
 #################################
-# Max score 60pts
+# Max score 70pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw5.R
 # and upload the file to NYU Classes
 
-### write your code here
-
-##############
-# Summary: Estimate the probability of crossing a price barrier 
-# by performing multiple simulations of prices.  
-# Estimate the probabilities for several different price barrier 
-# levels. 
-# Start by defining the simulation parameters: 
-
-# number of simulations
-simu_times <- 500
-# number of steps in each simulation
-simu_length <- 1000
-# barrier level
-barrier_level <- 20
-
-# Each simulation should consist of a number of simulation steps 
-# equal to "simu_length".  At each step of the simulation, a random 
-# number should be generated representing the price return (price 
-# difference).  The prices should be equal to the cumulative returns.  
-# If in a given simulation the prices cross a barrier called 
-# "barrier_level", then a boolean vector called "did_cross" 
-# should be set to TRUE, and otherwise it should be FALSE. 
-# You will need to perform the simulations multiple times, equal 
-# to "simu_times", each time recording the value of "did_cross". 
-
-# 1. (20pts) Perform an sapply() loop multiple times, up to 
-# "simu_times". Inside the loop perform a simulation of prices 
-# crossing a barrier.  Adapt the code from the slide titled 
-# "Simulating Barrier Options Using Vectorized Functions".
-# The sapply() loop should return a boolean vector called 
-# "did_cross" that should be set to TRUE if prices 
-# crossed "barrier_level", and otherwise it should be FALSE. 
-# "did_cross" should be a vector of length "simu_times". 
-
-# hint: you can use an anonymous function that accepts an 
-# integer argument (the loop count) and returns a boolean 
-# value. 
-# You can compare the simulated price vector to "barrier_level", 
-# to determine if at any point the prices reached above the 
-# "barrier_level".  If they did, then they must have crossed 
-# "barrier_level" at some point. 
-# The comparison of the prices with the "barrier_level" 
-# produces a boolean vector, whose sum is zero only if prices 
-# never crossed "barrier_level", and is greater than zero if
-# they did. 
-# You can use functions sapply(), sum(), cumsum(), and rnorm(), 
-
-# reset random number generator
-set.seed(1121)
+############## Part I
+# 1. (30pts) Create a function called lag_it() that applies 
+# a lag to vectors. 
+# lag_it() should accept two arguments:
+# - vec_tor a vector argument to which a lag should be applied, 
+# - "lag" an integer, specifying the number of periods to lag. 
+# - "lag" should have a default value of 1. 
+# lag_it() should first check if "lag" is numeric, and if not 
+# then it should produce a warning message and return NULL. 
+# lag_it() should next check if vec_tor is a vector, and if not 
+# then it should produce a warning message and return NULL. 
+# If both these tests pass, then lag_it() should return a vector 
+# of the same length as vec_tor, that is lagged by the number 
+# of periods specified by "lag". 
+# A positive "lag" should replace the present value with values 
+# from the past, and a negative lag should replace with values 
+# from the future. 
+# lag_it() should add NA values in place of values that are missing. 
+# for example, lag_it() should produce the following output:
+#  lag_it(c(1:5), lag=2)
+#  [1] NA NA  1  2  3
+# 
+#  lag_it(c(1:5), lag=-2)
+#  [1]  3  4  5 NA NA
+# 
+# you can use functions is.vector(), is.numeric(), 
+# length(), c(), rep(), warning(), and return(), 
 
 ### write your code here
 
-# Calculate the probability of crossing the "barrier_level" 
-# as the sum of "did_cross" divided by "simu_times". 
+# call lag_it() as below, to verify it works correctly,
+lag_it(1:9)
+lag_it(1:9, lag=2)
+lag_it(1:9, lag=-1)
+lag_it(1:9, lag=-2)
+lag_it(matrix(1:9, ncol=1))
+lag_it("a", "b")
 
-### write your code here
+# You should get the following results:
+# > lag_it(1:9, lag=2)
+# [1] NA NA  1  2  3  4  5  6  7
+# > lag_it(1:9, lag=-1)
+# [1]  2  3  4  5  6  7  8  9 NA
 
 
-# 2. (20pts) Perform the same simulation as in p.1 but without 
-# using an apply() loop, only using vectorized functions. 
-# Start by creating a matrix of random numbers with dimensions 
-# "simu_times" columns by "simu_length" rows, using rnorm(), 
-# and call it "price_s". 
-# Apply function colCumsums() from package "matrixStats" to 
-# "price_s", to calculate the cumulative sums of its columns. 
-# You can use functions matrix(), colCumsums(), and rnorm(), 
 
-# load package matrixStats
-library(matrixStats)
-# reset random number generator
-set.seed(1121)
+############## Part II
+# Summary: Estimate the standard errors of regression 
+# coefficients using bootstrap simulations. 
 
-### write your code here
+# 1. (10pts) Specify a regression as follows:
 
-# The columns of "price_s" represent vectors of simulated prices. 
-# Following the methodology of p.1, compare the simulated prices 
-# to "barrier_level", and produce a boolean matrix. 
-# Sum up the columns of the boolean matrix to determine the 
-# simulations for which the prices crossed the "barrier_level". 
-# and call this boolean vector "did_cross". 
-# "did_cross" should be a vector of length "simu_times". 
-# You can use function colSums() from package "matrixStats", 
+set.seed(1121)  # reset random number generator
+# define explanatory and response variables
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+res_ponse <- 3 + 2*explana_tory + rnorm(length(explana_tory))
+# specify regression formula and perform regression
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)
 
-### write your code here
-
-# Calculate the probability of crossing the "barrier_level" 
-# as the sum of "did_cross" divided by "simu_times". 
+# Extract the regression coefficient standard errors 
+# from the regression model summary, and call them 
+# std_errors.
+# You can use the function summary().
 
 ### write your code here
 
 
-# 3. (20pts) Estimate the probabilities for a vector of 
-# different price barrier levels. 
-# Create a named numeric vector called "barrier_levels" 
-# with values from=5, to=60, by=5. 
-# You can use functions seq(), structure(), and names(), 
+# 2. (20pts) Perform an sapply() loop 10000 times. 
+# In each loop bootstrap (sample) the variables 
+# explana_tory and res_ponse, perform the regression, 
+# and return the regression coefficients.  
+# Call the matrix output by sapply() boot_strap. 
+# hint: download the latest version of the 
+# statistics.pdf file from NYU Classes and follow 
+# the bootstrap example there. 
+# You can use the functions sample.int(), lm(), 
+# coef(), and sapply().
 
 ### write your code here
 
-# Perform an sapply() loop over "barrier_levels". 
-# Inside the loop calculate the probabilities of crossing 
-# the "barrier_level", and call the resulting vector 
-# "cross_probs". 
-# hint: you don't need to recalculate "price_s", and can 
-# use the "price_s" from p.2, 
-# To receive full credit you shouldn't recalculate "price_s"
-# for different values of "barrier_levels". 
-# You can use functions sapply(), sum(), colSums(), and 
-# an anonymous function.
+# You should get the following output:
+# > boot_strap[, 1:3]
+#                 [,1]     [,2]     [,3]
+# (Intercept)  3.339112 3.458160 3.108136
+# explana_tory 1.809326 1.737513 1.864102
+
+# Calculate the standard errors from bootstrap, 
+# and call them boot_errors.
+# You can use the functions sd() and apply(). 
+# Calculate the differences between boot_errors 
+# and std_errors. 
 
 ### write your code here
 
-# Create a scatterplot of "cross_probs" versus "barrier_levels". 
-# You can use functions plot() and title(). 
+# You should get the following output:
+# > boot_errors
+# (Intercept) explana_tory 
+#   0.2655507    0.1326947
+
+
+# 3. (10pts) Create a density plot of the bootstrapped 
+# coefficients boot_strap["explana_tory", ], 
+# with plot title "Bootstrapped regression slopes". 
+# and with x-axis label "regression slopes". 
+# Add a vertical line in red at the x-axis point: 
+#   mean(boot_strap["explana_tory", ]). 
+# You can use the functions x11(), plot(), density(), 
+# and abline(). 
+
+x11()
 
 ### write your code here
 

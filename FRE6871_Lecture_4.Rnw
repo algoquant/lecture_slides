@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#4]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#4, Fall 2015}
+\subtitle{Lecture\#4, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{Oct 5, 2015}
+\date{April 25, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -70,6 +70,430 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Vectors and Matrices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators Applied to Vectors and Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      When logical operators are applied to vectors and matrices, they are applied element-wise, producing \texttt{boolean} vectors and matrices,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+vec_tor <- sample(1:9)
+vec_tor
+vec_tor < 5  # element-wise comparison
+vec_tor == 5  # element-wise comparison
+mat_rix <- matrix(vec_tor, ncol=3)
+mat_rix
+mat_rix < 5  # element-wise comparison
+mat_rix == 5  # element-wise comparison
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Vectors Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Vectors can be coerced into matrices by adding a dimension attribute,
+      \vskip1ex
+      The \texttt{dimnames} attribute can be assigned a named list to convert it into a named matrix,
+      \vskip1ex
+      The function \texttt{structure()} adds attributes (specified as \texttt{symbol=value} pairs) to an object, and returns it,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+mat_rix <- 1:6  # create a vector
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+structure(mat_rix, dim=c(2, 3))  # matrix object
+# adding dimension attribute coerces into matrix
+dim(mat_rix) <- c(2, 3)
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+# assign dimnames attribute
+dimnames(mat_rix) <- list(rows=c("row1", "row2"),
+                        columns=c("col1", "col2", "col3"))
+mat_rix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Matrices Into Other Types}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Matrices can be explicitly coerced using the \texttt{"as.*"} coercion functions,
+      \vskip1ex
+      But coercion functions strip the \emph{attributes} from an object,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+mat_rix
+# as.numeric strips dim attribute from matrix
+as.numeric(mat_rix)
+mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binding Vectors and Matrices Together}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Vectors can be bound into matrices using the functions \texttt{cbind()} and \texttt{rbind()},
+      \vskip1ex
+      The \emph{recycling rule} allows operations on vectors of different lengths:\\
+      \begin{enumerate}
+        \item Vectors are scanned from left to right,
+        \item Shorter vectors are extended in length by recycling their values until they match the length of longer vectors,
+      \end{enumerate}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+vec_tor1 <- 1:3  # define vector
+vec_tor2 <- 6:4  # define vector
+cbind(vec_tor1, vec_tor2)  # bind into columns
+rbind(vec_tor1, vec_tor2)  # bind into rows
+vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
+cbind(vec_tor1, vec_tor2)  # recycling rule applied
+1:6 + c(10, 20)  # another example of recycling rule
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Replicating Objects Using \texttt{rep()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{rep()} replicates vectors and lists a given number of times,
+      \vskip1ex
+      \texttt{rep()} accepts a vector or list \texttt{"x"}, and an integer specifying the type and number of replications, 
+      \vskip1ex
+      Argument \texttt{"times"} replicates the whole vector a given number of times,
+      \vskip1ex
+      Argument \texttt{"each"} replicates each vector element a given number of times,
+      \vskip1ex
+      Argument \texttt{"length.out"} replicates the whole vector a certain number of times, so that the output vector length is equal to \texttt{"length.out"}, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# replicate a single element
+rep("a", 5)
+# replicate the whole vector several times
+rep(c("a", "b"), 5)
+rep(c("a", "b"), times=5)
+# replicate the first element, then the second, etc.
+rep(c("a", "b"), each=5)
+# replicate to specified length
+rep(c("a", "b"), length.out=5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Inner Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices,
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication consists of multiplying the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \begin{displaymath}
+        C_{i,j} = \sum_{k=1}^{n} A_{i,k} B_{k,j}
+      \end{displaymath}
+      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
+      \vskip1ex
+      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second), otherwise an error is produced,
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+mat_rix <- matrix(1:6, ncol=3)  # create matrix
+vec_tor1
+vec_tor2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_tor1 * vec_tor2
+# calculate inner product
+vec_tor1 %*% vec_tor2
+# calculate inner product and drop dimensions
+drop(vec_tor1 %*% vec_tor2)
+mat_rix
+# multiply vector by matrix
+mat_rix %*% vec_tor1  # single column matrix
+drop(mat_rix %*% vec_tor1)  # vector
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Transpose}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{t()} returns the transpose of a matrix,
+      \vskip1ex
+      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+# multiplication fails because dimensions aren't conformable
+vec_tor1 %*% mat_rix
+# works after transpose
+drop(vec_tor1 %*% t(mat_rix))
+# calculate inner product
+crossprod(vec_tor1, vec_tor2)
+# create matrix and vector
+mat_rix <- matrix(1:3000, ncol=3)
+tmat_rix <- t(mat_rix)
+vec_tor <- 1:3
+# crossprod is slightly faster than "%*%" operator
+summary(microbenchmark(
+  cross_prod=crossprod(tmat_rix, vec_tor),
+  inner_prod=mat_rix %*% vec_tor,
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Outer Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = A_{i} \cdot B_{j}
+      \end{displaymath}
+      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = f(A_{i}, B_{j})
+      \end{displaymath}
+      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
+      \vskip1ex
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments, 
+      \vskip1ex
+      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# define named vectors
+vec_tor1 <- sample(1:4)
+names(vec_tor1) <- paste0("row", 1:4, "=", vec_tor1)
+vec_tor1
+vec_tor2 <- sample(1:3)
+names(vec_tor2) <- paste0("col", 1:3, "=", vec_tor2)
+vec_tor2
+# calculate outer product of two vectors
+mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix
+# calculate vectorized function spanned over two vectors
+mat_rix <- outer(vec_tor1, vec_tor2, 
+                 FUN=function(x1, x2) x2*sin(x1))
+mat_rix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Environments in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
+      \vskip1ex
+      There are three system environments:
+      \begin{itemize}
+        \item \texttt{globalenv()} the user's workspace,
+        \item \texttt{baseenv()} the environment of the base package,
+        \item \texttt{emptyenv()} the only environment without an enclosure,
+      \end{itemize}
+      Environments form a tree structure of successive enclosures, with the empty environment at its root,
+      \vskip1ex
+      Packages have their own environments,
+      \vskip1ex
+      The enclosure of the base package is the empty environment,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+# get base environment
+baseenv()
+# get global environment
+globalenv()
+# get current environment
+environment()
+# get environment class
+class(environment())
+# define variable in current environment
+glob_var <- 1
+# get objects in current environment
+ls(environment())
+# create new environment
+new_env <- new.env()
+# get calling environment of new environment
+parent.env(new_env)
+# assign Value to Name
+assign("new_var1", 3, envir=new_env)
+# create object in new environment
+new_env$new_var2 <- 11
+# get objects in new environment
+ls(new_env)
+# get objects in current environment
+ls(environment())
+# environments are subset like lists
+new_env$new_var1
+# environments are subset like lists
+new_env[["new_var1"]]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} evaluates variables using the search path, a series of environments:
+      \begin{itemize}
+        \item global environment,
+        \item package environments,
+        \item base environment,
+      \end{itemize}
+      The function \texttt{search()} returns the search path for \texttt{R} objects,
+      \vskip1ex
+      The function \texttt{attach()} attaches objects to the search path,
+      \vskip1ex
+      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
+      \vskip1ex
+      The function \texttt{detach()} detaches objects from the search path,
+      \vskip1ex
+      The function \texttt{find()} finds where objects are located on the search path,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+search()  # get search path for R objects
+my_list <- 
+  list(flowers=c("rose", "daisy", "tulip"), 
+       trees=c("pine", "oak", "maple"))
+my_list$trees
+attach(my_list)
+trees
+search()  # get search path for R objects
+detach(my_list)
+head(trees)  # "trees" is in datasets base package
+      @
+      \begin{block}{\color{red}{Rule of Thumb}}
+        Be very careful with using \texttt{attach()},
+        \vskip1ex
+        Make sure to \texttt{detach()} objects once they're not needed,
+      \end{block}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Referencing Object Components Using \texttt{with()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{with()} evaluates an expression in an environment constructed from the data, 
+      \vskip1ex
+      \texttt{with()} allows referencing object components by their names alone,
+      \vskip1ex
+      It's often better to use \texttt{with()} instead of \texttt{attach()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# "trees" is in datasets base package
+head(trees, 3)
+colnames(trees)
+mean(Girth)
+mean(trees$Girth)
+with(trees, 
+     c(mean(Girth), mean(Height), mean(Volume)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -382,7 +806,8 @@ do.call(cbind, data_cars)
       The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
@@ -426,7 +851,8 @@ print(foo, digits=20)
       The function \texttt{ceiling()} returns the smallest integer which is greater than the given number,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
@@ -472,7 +898,8 @@ trunc(3.675)  # truncate
       \url{http://stackoverflow.com/questions/13614749/modulus-bug-in-r}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
 4.7 %/% 0.5  # modulo division
 4.7 %% 0.5  # remainder of modulo division
 # reversing modulo division usually
@@ -485,6 +912,319 @@ trunc(3.675)  # truncate
 # 0.2 stored as binary number
 # slightly larger than 0.2
 print(0.2, digits=22)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining the Memory Usage of \texttt{R} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{object.size()} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects, 
+      \vskip1ex
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
+      \vskip1ex
+      The method \texttt{format.object\_size()} defines a \emph{megabyte} as \texttt{1,048,576} \emph{bytes} ($2^{20}$), not \texttt{1,000,000} \emph{bytes}, 
+      \vskip1ex
+      The function \texttt{get()} accepts a character string and returns the value of the corresponding object in a specified \emph{environment},
+      \vskip1ex
+      \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
+      \vskip1ex
+      The function \texttt{ll()} from package \texttt{gdata} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+# get size of an object
+object.size(runif(1e6))
+format(object.size(runif(1e6)), units="MB")
+load(file="C:/Develop/data/etf_data.RData")
+# get sizes of objects in workspace
+sort(sapply(ls(), 
+  function(ob_ject) {
+    format(object.size(get(ob_ject)), units="KB")}))
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+sort(sapply(mget(ls()),
+      function(ob_ject) {
+        format(object.size(ob_ject), units="KB")}
+))
+# get sizes of objects in env_data environment
+sort(sapply(ls(env_data), 
+  function(ob_ject) {
+    object.size(get(ob_ject, env_data))}))
+# get sizes of objects in env_data environment
+sort(sapply(mget(ls(env_data), env_data), 
+            object.size))
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+library(gdata)  # load package gdata
+# get names, class, and size of objects in workspace
+ob_jects <- ll(unit="bytes")
+# sort by memory size (descending)
+ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
+ll()[order(ll()$KB, decreasing=TRUE), ]
+# get sizes of objects in env_data environment
+ll(unit="bytes", env_data)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Benchmarking the Speed of \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
+      \vskip1ex
+      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting),
+      \vskip1ex
+      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()},
+      \vskip1ex
+      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+microbenchmark(sqrt(foo), foo^0.5, times=10)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}, 
+      \vskip1ex
+      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
+      \vskip1ex
+      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
+      \vskip1ex
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(microbenchmark)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+foo <- runif(1e6)
+# sum() is much faster than mean()
+summary(
+  microbenchmark(sum(foo), mean(foo), times=10)
+  )[, c(1, 4, 5)]
+# any() is a compiled primitive function
+any
+# any() is much faster than %in% wrapper for match()
+summary(
+  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
+  )[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
+      \vskip1ex
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
+      \vskip1ex
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
+      \vskip1ex
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
+      \vskip1ex
+      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data,
+      \vskip1ex
+      Such specialized functions are faster but less flexible, so they may fail with different types of data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+mat_rix <- matrix(1:9, ncol=3, # create matrix
+  dimnames=list(paste0("row", 1:3), 
+                paste0("col", 1:3)))
+# create specialized function
+matrix_to_dframe <- function(mat_rix) {
+  n_col <- ncol(mat_rix)
+  dframe <- vector("list", n_col)  # empty vector
+  for(in_dex in 1:n_col)  # populate vector
+    dframe <- mat_rix[, in_dex]
+  attr(dframe, "row.names") <-  # add attributes
+    .set_row_names(nrow(mat_rix))
+  attr(dframe, "class") <- "data.frame"
+  dframe  # return data frame
+}  # end matrix_to_dframe
+# compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(mat_rix),
+  as.data.frame.matrix(mat_rix),
+  as.data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest, 
+      \vskip1ex
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
+      \vskip1ex
+      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and are therefore faster than other \texttt{apply()} functions, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# matrix with 5,000 rows
+big_matrix <- matrix(rnorm(10000), ncol=2)
+# allocate memory for row sums
+row_sums <- numeric(nrow(big_matrix))
+summary(microbenchmark(
+  ap_ply=apply(big_matrix, 1, sum),  # end apply
+  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:nrow(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ]),
+    FUN.VALUE=c(sum=0)),  # end vapply
+  s_apply=sapply(1:nrow(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ])),  # end sapply
+  for_loop=for(i in 1:nrow(big_matrix)) {
+    row_sums[i] <- sum(big_matrix[i,])
+  },  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Increasing Speed of Loops by Pre-allocating Memory}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
+      \vskip1ex
+      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
+      \vskip1ex
+      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow, 
+      \vskip1ex
+      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment, 
+      \vskip1ex
+      Adding elements to a vector in a loop is very slow, and therefore not recommended,
+      \vskip1ex
+      Pre-allocating memory for large vectors before performing loops increases their speed, 
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
+      \vskip1ex
+      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+big_vector <- rnorm(5000)
+summary(microbenchmark(
+# allocate full memory for cumulative sum
+  for_loop={cum_sum <- numeric(length(big_vector))
+    cum_sum[1] <- big_vector[1]
+    for(i in 2:length(big_vector)) {
+      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+    }},  # end for
+# allocate zero memory for cumulative sum
+  grow_vec={cum_sum <- numeric(0)
+    cum_sum[1] <- big_vector[1]
+    for(i in 2:length(big_vector)) {
+# add new element to "cum_sum" ("grow" it)
+      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+    }},  # end for
+# allocate zero memory for cumulative sum
+  com_bine={cum_sum <- numeric(0)
+    cum_sum[1] <- big_vector[1]
+    for(i in 2:length(big_vector)) {
+# add new element to "cum_sum" ("grow" it)
+      cum_sum <- c(cum_sum, big_vector[i])
+    }},  # end for
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{How to Write Fast \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
+      \begin{itemize}
+        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task, 
+        \item call function methods directly instead of calling generic functions, 
+        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
+        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
+        \item pre-allocate memory for new vectors,
+        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops, 
+        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function), 
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+summary(
+  microbenchmark(sqrt(foo), foo^0.5, times=10)
+  )[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}

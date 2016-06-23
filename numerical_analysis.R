@@ -1,9 +1,10 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+load(file="C:/Develop/data/etf_data.RData")
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
@@ -18,6 +19,7 @@ print(foo, digits=20)
 # ?.Machine
 # machine precision
 .Machine$double.eps
+load(file="C:/Develop/data/etf_data.RData")
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
@@ -34,6 +36,7 @@ round(3.675)
 c(round(2.5), round(3.5), round(4.5))
 round(4:20/2)  # round to nearest even number
 trunc(3.675)  # truncate
+load(file="C:/Develop/data/etf_data.RData")
 4.7 %/% 0.5  # modulo division
 4.7 %% 0.5  # remainder of modulo division
 # reversing modulo division usually
@@ -46,6 +49,56 @@ trunc(3.675)  # truncate
 # 0.2 stored as binary number
 # slightly larger than 0.2
 print(0.2, digits=22)
+# get size of an object
+object.size(runif(1e6))
+format(object.size(runif(1e6)), units="MB")
+load(file="C:/Develop/data/etf_data.RData")
+# get sizes of objects in workspace
+sort(sapply(ls(),
+  function(ob_ject) {
+    format(object.size(get(ob_ject)), units="KB")}))
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+sort(sapply(mget(ls()),
+function(ob_ject) {
+  format(object.size(ob_ject), units="KB")}
+))
+# get sizes of objects in env_data environment
+sort(sapply(ls(env_data),
+  function(ob_ject) {
+    object.size(get(ob_ject, env_data))}))
+# get sizes of objects in env_data environment
+sort(sapply(mget(ls(env_data), env_data),
+      object.size))
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+library(gdata)  # load package gdata
+# get names, class, and size of objects in workspace
+ob_jects <- ll(unit="bytes")
+# sort by memory size (descending)
+ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
+ll()[order(ll()$KB, decreasing=TRUE), ]
+# get sizes of objects in env_data environment
+ll(unit="bytes", env_data)
+load(file="C:/Develop/data/etf_data.RData")
+library(SOAR)  # load package SOAR
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+Store(etf_list)  # store in object cache
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+search()  # get search path for R objects
+Ls()  # list object cache
+find("etf_list")  # find object on search path
+load(file="C:/Develop/data/etf_data.RData")
+# get R memory
+v_cells <- gc()["Vcells", "used"]
+# create vector with 1,000,000 cells
+foo_bar <- numeric(1000000)
+# get extra R memory
+gc()["Vcells", "used"] - v_cells
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
 library(microbenchmark)
 foo <- runif(1e6)
 system.time(foo^0.5)
@@ -92,12 +145,12 @@ big_matrix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
 row_sums <- numeric(nrow(big_matrix))
 summary(microbenchmark(
+  ap_ply=apply(big_matrix, 1, sum),  # end apply
+  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ])),  # end lapply
   v_apply=vapply(1:nrow(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ]),
     FUN.VALUE=c(sum=0)),  # end vapply
-  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  apply=apply(big_matrix, 1, sum),
   s_apply=sapply(1:nrow(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end sapply
   for_loop=for(i in 1:nrow(big_matrix)) {
@@ -171,7 +224,7 @@ lapply(seq_along(big_matrix[1, ]),
     lapply(seq_along(big_matrix[, 1]),
   function(in_dex) max(big_matrix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
-library(matrixStats)  # load package "matrixStats"
+library(matrixStats)  # load package matrixStats
 # calculate row min values three different ways
 summary(microbenchmark(
   row_mins=rowMins(big_matrix),
@@ -184,24 +237,6 @@ summary(microbenchmark(
     do.call(pmin.int,
       as.data.frame.matrix(big_matrix)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-library(caTools)  # load package "caTools"
-# get documentation for package "caTools"
-packageDescription("caTools")  # get short description
-help(package="caTools")  # load help page
-data(package="caTools")  # list all datasets in "caTools"
-ls("package:caTools")  # list all objects in "caTools"
-detach("package:caTools")  # remove caTools from search path
-# median filter
-vol_window <- 11
-med_ian <- runmed(x=big_vector, k=vol_window)
-# vector of rolling volatility
-vo_lat <- runsd(x=big_vector, k=vol_window,
-          endrule="constant", align="center")
-# vector of rolling quantiles
-quan_tiles <- runquantile(x=big_vector,
-            k=vol_window, probs=0.9,
-            endrule="constant",
-            align="center")
 summary(microbenchmark(  # assign values to vector three different ways
 # fast vectorized assignment loop performed in C using brackets "[]"
   brack_ets={vec_tor <- numeric(10)
@@ -226,45 +261,64 @@ summary(microbenchmark(  # assign values to vector two different ways
     for (in_dex in 4:7)
       vec_tor[in_dex] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+load(file="C:/Develop/data/etf_data.RData")
 # define function vectorized automatically
 my_fun <- function(in_put, pa_ram) {
   pa_ram*in_put
 }  # end my_fun
-my_fun(in_put=1:3, pa_ram=2)  # "in_put" is vectorized
-my_fun(in_put=10, pa_ram=2:4)  # "pa_ram" is vectorized
-rnorm(1, sd=1:3) # rnorm() "sd" argument not vectorized
+# "in_put" is vectorized
+my_fun(in_put=1:3, pa_ram=2)
+# "pa_ram" is vectorized
+my_fun(in_put=10, pa_ram=2:4)
+# define vectors of parameters of rnorm()
+std_devs <-
+  structure(1:3, names=paste0("sd=", 1:3))
+me_ans <-
+  structure(-1:1, names=paste0("mean=", -1:1))
+# "sd" argument of rnorm() isn't vectorized
+rnorm(1, sd=std_devs)
+# "mean" argument of rnorm() isn't vectorized
+rnorm(1, mean=me_ans)
+load(file="C:/Develop/data/etf_data.RData")
 # sapply produces desired vector output
-sapply(1:3, function(sd, ...) rnorm(sd=sd, ...), n=3)
-sapply(1:3, rnorm, n=3, mean=0)
-sapply(-1:1, 
-       function(mean, ...) rnorm(mean=mean, ...), n=3)
-# rnorm vectorized with respect to "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
+set.seed(1121)
+sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
+set.seed(1121)
+sapply(std_devs, rnorm, n=2, mean=0)
+set.seed(1121)
+sapply(me_ans,
+ function(me_an) rnorm(n=2, mean=me_an))
+set.seed(1121)
+sapply(me_ans, rnorm, n=2)
+load(file="C:/Develop/data/etf_data.RData")
+# rnorm() vectorized with respect to "std_dev"
+vec_rnorm <- function(n, mean=0, std_dev=1) {
+  if (length(std_dev)==1)
+    rnorm(n=n, mean=mean, sd=std_dev)
   else
-    sapply(sd, rnorm, n=n, mean=mean)
+    sapply(std_dev, rnorm, n=n, mean=mean)
 }  # end vec_rnorm
-foo <- structure(1:3, names=paste0("sd=", 1:3))
-vec_rnorm(n=3, sd=foo)
-# rnorm vectorized with respect to "mean" and "sd"
-vec_rnorm <- Vectorize(
-      FUN=rnorm,
-      vectorize.args=c("mean", "sd")
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+# rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- Vectorize(FUN=rnorm,
+        vectorize.args=c("mean", "sd")
 )  # end Vectorize
-vec_rnorm(n=3, sd=foo)
-foo <- structure(-1:1, names=paste0("mean=", -1:1))
-vec_rnorm(n=3, mean=foo)
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+set.seed(1121)
+vec_rnorm(n=2, mean=me_ans)
+load(file="C:/Develop/data/etf_data.RData")
 str(sum)
 # na.rm is bound by name
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
 str(rnorm)
 # mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=(-1:1), sd=(1:3))
-
-mapply(function(in_put, e_xp) in_put^e_xp, 
-       1:5, seq(from=1, by=0.2, length.out=5))
-# rnorm vectorized with respect to both "mean" and "sd"
+mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
+mapply(function(in_put, e_xp) in_put^e_xp,
+ 1:5, seq(from=1, by=0.2, length.out=5))
+load(file="C:/Develop/data/etf_data.RData")
+# rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (length(mean)==1 && length(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
@@ -272,11 +326,9 @@ vec_rnorm <- function(n, mean=0, sd=1) {
     mapply(rnorm, n=n, mean=mean, sd=sd)
 }  # end vec_rnorm
 # call vec_rnorm() on vector of "sd"
-foo <- structure(1:3, names=paste0("sd=", 1:3))
-vec_rnorm(n=3, sd=foo)
+vec_rnorm(n=2, sd=std_devs)
 # call vec_rnorm() on vector of "mean"
-foo <- structure(-1:1, names=paste0("mean=", -1:1))
-vec_rnorm(n=3, mean=foo)
+vec_rnorm(n=2, mean=me_ans)
 # create two numeric vectors
 vec_tor1 <- sin(0.25*pi*1:10)
 vec_tor2 <- cos(0.25*pi*1:10)
@@ -300,19 +352,19 @@ legend(x="bottomright", legend=colnames(vec_tor4),
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-simu_max <- 1000  # max simulation trials
-simu_prices <- numeric(simu_max)  # initialize prices
+simu_length <- 1000  # number of simulation steps
+simu_prices <- numeric(simu_length)  # initialize prices
 barrier_level <- 20  # barrier level
 simu_prices[1] <- 0  # first simulated price
 in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_max) &&
+while ((in_dex <= simu_length) &&
  (simu_prices[in_dex - 1] < barrier_level)) {
   simu_prices[in_dex] <- # simulate next price
     simu_prices[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # advance in_dex
 }  # end while
-if (in_dex <= simu_max) {  # fill zero prices
-  simu_prices[in_dex:simu_max] <- simu_prices[in_dex - 1]
+if (in_dex <= simu_length) {  # fill zero prices
+  simu_prices[in_dex:simu_length] <- simu_prices[in_dex - 1]
 }
 # create daily time series starting 2011
 ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
@@ -322,15 +374,15 @@ abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
 title(main="Random Prices", line=0)  # add title
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-simu_max <- 1000  # max simulation trials
+simu_length <- 1000  # number of simulation steps
 barrier_level <- 20  # barrier level
-# simulated prices
-simu_prices <- cumsum(rnorm(simu_max))
+# simulate prices
+simu_prices <- cumsum(rnorm(simu_length))
 # find index when prices cross barrier_level
 which_index <- which(simu_prices > barrier_level)
 # fill prices after crossing barrier_level
 if (length(which_index)>0) {
-  simu_prices[(which_index[1]+1):simu_max] <-
+  simu_prices[(which_index[1]+1):simu_length] <-
     simu_prices[which_index[1]]
 }  # end if
 # create daily time series starting 2011
@@ -340,6 +392,96 @@ plot(ts_var, type="l", col="black",  # create plot
      lty="solid", xlab="", ylab="")
 abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
 title(main="Random Prices", line=0)  # add title
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+load(file="C:/Develop/data/etf_data.RData")
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply with parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+lapply=lapply(1:max_iterations, paws,
+              sleep_time=sleep_time),
+parallel=parLapply(clus_ters, 1:max_iterations,
+        paws, sleep_time=sleep_time),
+times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+        names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+ inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:length(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ters, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ters, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)
 options(width=50, dev='pdf')
 str(optimize)
 # objective function with multiple minima
@@ -388,7 +530,7 @@ theta=45, phi=30, shade=0.5,
 border="green", zlab="objective",
 main="objective function")
 # interactive perspective plot of log-likelihood function
-library(rgl)
+library(rgl)  # load package rgl
 par3d(cex=2.0)  # scale text by factor of 2
 persp3d(z=-objective_grid, zlab="objective",
   col="green", main="objective function")
@@ -413,12 +555,13 @@ add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
+load(file="C:/Develop/data/etf_data.RData")
 # sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0), 
+sam_ple <- c(rnorm(100, sd=1.0),
              rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
 object_ive <- function(parm, sam_ple) {
-  likelihood <- parm[1]/parm[3] * 
+  likelihood <- parm[1]/parm[3] *
   dnorm((sam_ple-parm[2])/parm[3]) +
   (1-parm[1])/parm[5]*dnorm((sam_ple-parm[4])/parm[5])
   if(any(likelihood <= 0)) Inf else
@@ -433,7 +576,7 @@ vec_objective <- Vectorize(
 # objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd, 
+objective_grid <- outer(par_mean, par_sd,
     vec_objective, sam_ple=sam_ple,
     w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
@@ -442,7 +585,7 @@ objective_min <- which(objective_grid==
   min(objective_grid), arr.ind=TRUE)
 objective_min
 objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
+objective_grid[(objective_min[, 1] + -1:1),
          (objective_min[, 2] + -1:1)]
 # perspective plot of objective function
 persp(par_mean, par_sd, -objective_grid,
@@ -451,11 +594,12 @@ shade=0.5,
 col=rainbow(50),
 border="green",
 main="objective function")
+load(file="C:/Develop/data/etf_data.RData")
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
-optim_run <- optim(par=par_init, 
-      fn=object_ive, 
+optim_run <- optim(par=par_init,
+      fn=object_ive,
       sam_ple=sam_ple,
       method="L-BFGS-B",
       upper=c(1,10,10,10,10),

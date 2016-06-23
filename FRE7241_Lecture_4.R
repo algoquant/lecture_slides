@@ -5,7 +5,8 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
+etf_rets <- na.omit(etf_rets)
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform regression
@@ -15,13 +16,12 @@ plot(reg_formula, data=etf_rets)
 title(main="Regression XLP ~ VTI", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
-
-
 reg_model_sum <- summary(reg_model)
 coef(reg_model_sum)
 # Durbin-Watson test autocorrelation residuals
 library(lmtest)
 dwtest(reg_model)
+library(quantmod)  # load quantmod
 library(lmtest)  # load lmtest
 # perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
@@ -58,10 +58,12 @@ CAPM.beta.bear(Ra=etf_rets[, "XLP"],
 CAPM.alpha(Ra=etf_rets[, "XLP"], 
      Rb=etf_rets[, "VTI"])
 library(PerformanceAnalytics)
-etf_betas <- sapply(etf_rets, CAPM.beta,
-      Rb=etf_rets[, "VTI"])
-etf_annrets <- sapply(etf_rets,
-      Return.annualized)
+etf_betas <- sapply(
+  etf_rets[, colnames(etf_rets)!="VXX"],
+  CAPM.beta, Rb=etf_rets[, "VTI"])
+etf_annrets <- sapply(
+  etf_rets[, colnames(etf_rets)!="VXX"],
+  Return.annualized)
 # plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas",
       ylab="ann. rets", xlim=c(-0.25, 1.6))
@@ -95,10 +97,8 @@ etf_perf_stats <- t(etf_perf_stats)
 etf_perf_stats <- etf_perf_stats[
   order(etf_perf_stats[, "Annualized Alpha"],
   decreasing=TRUE), ]
-load(file="C:/Develop/data/etf_data.Rdata")
+# load(file="C:/Develop/data/etf_data.RData")
 etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
-# load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
 library(quantmod)
 #Perform pair-wise correlation analysis
 # Calculate correlation matrix
@@ -134,7 +134,8 @@ line=-0.5)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+# load(file="C:/Develop/data/etf_data.RData")
+etf_rets <- na.omit(etf_rets)
 #Perform principal component analysis PCA
 etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
 barplot(etf_pca$sdev[1:10], 
@@ -215,7 +216,7 @@ ls("package:factorAnalytics")
 detach("package:factorAnalytics")
 library(factorAnalytics)
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
+# load(file="C:/Develop/data/etf_data.RData")
 # fit a three-factor model using PCA
 factor_pca <- fitSfm(etf_rets, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
@@ -229,7 +230,7 @@ factor_pca$r2  # R-squared regression
 # covariance matrix estimated by factor model
 factor_pca$Omega[1:3, 4:6]
 library(factorAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
+# load(file="C:/Develop/data/portf_optim.RData")
 plot(factor_pca, which.plot.group=3,
      n.max=30, loop=FALSE)
 # ?plot.sfm
@@ -261,8 +262,8 @@ plot(factor_pca, asset.name="VTI",
      xlim=c(-0.007, 0.007))
 library(PortfolioAnalytics)
 # residual Q-Q plot
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=9, 
+plot(factor_pca, asset.name="VTI",
+     which.plot.single=9,
      plot.single=TRUE, loop=FALSE)
 # SACF and PACF of residuals
 plot(factor_pca, asset.name="VTI",

@@ -1,118 +1,9 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-rm(list=ls())
-baseenv()  # get base environment
-globalenv()  # get global environment
-environment()  # get current environment
-class(environment())  # get environment class
-glob_var <- 1  # define variable in current environment
-ls(environment())  # get objects in current environment
-
-new_env <- new.env()  # create new environment
-parent.env(new_env)  # get calling environment of new environment
-assign("new_var1", 3, envir=new_env)  # assign Value to Name
-new_env$new_var2 <- 11  # create object in new environment
-ls(new_env)  # get objects in new environment
-ls(environment())  # get objects in current environment
-new_env$new_var1  # environments are subset like lists
-new_env[["new_var1"]]  # environments are subset like lists
-search()  # get search path for R objects
-my_list <- list(flowers=c("rose", "daisy", "tulip"),  # create a list
-                trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is part of the datasets base package
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, c(mean(Girth), mean(Height), mean(Volume)))
-library("MASS")
-# or
-require("MASS")
-getOption("defaultPackages")
-pack_info <- installed.packages()  # matrix of packages
-# get a few package names and their versions
-pack_info[sample(x=1:100, 5), c("Package", "Version")]
-t(pack_info["xts", ])  # get info for package "xts"
-library()  # list all packages installed on the system
-search()  # list all loaded packages on search path
-
-# get documentation for package "Ecdat"
-packageDescription("Ecdat")  # get short description
-help(package="Ecdat")  # load help page
-library(Ecdat)  # load package "Ecdat"
-data(package="Ecdat")  # list all datasets in "Ecdat"
-ls("package:Ecdat")  # list all objects in "Ecdat"
-detach("package:Ecdat")  # remove Ecdat from search path
-library("Ecdat")  # load econometric data sets
-class(Garch)  # Garch is a data frame from "Ecdat"
-dim(Garch)  # daily currency prices
-head(Garch[, -2])  # col 'dm' is Deutsch Mark
-detach("package:Ecdat")  # remove Ecdat from search path
-getOption("repos")  # get default package source
-.libPaths()  # get package save directory
-install.packages("AER")  # install "AER" from CRAN
-# install "PerformanceAnalytics" from R-Forge
-install.packages(
-  pkgs="PerformanceAnalytics",  # name
-  lib="C:/Users/Jerzy/Downloads",  # directory
-  repos="http://R-Forge.R-project.org")  # source
-# install devtools from CRAN
-install.packages("devtools")
-# load devtools
-library(devtools)
-# install package "babynames" from GitHub
-install_github(repo="hadley/babynames")
-# install package "PortfolioAnalytics" from source
-install.packages("PortfolioAnalytics",
-  type="source",
-  repos="http://r-forge.r-project.org")
-# download files for package "PortfolioAnalytics"
-download.packages(pkgs = "PortfolioAnalytics",
-  destdir = ".",  # download to cwd
-  type = "source",
-  repos="http://r-forge.r-project.org")
-# install "PortfolioAnalytics" from local tar source
-install.packages(
-  "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
-  repos=NULL, type="source")
-# list directories in "PortfolioAnalytics" sub-directory
-gsub(
-  "C:/Users/Jerzy/Documents/R/win-library/3.1", 
-  "~",
-  list.dirs(
-    file.path(
-      .libPaths()[1], 
-      "PortfolioAnalytics")))
-rm(list=ls())
-search()  # get search path for R objects
-library("MASS")  # load package "MASS"
-head(ls("package:MASS"))  # list some objects in "MASS"
-detach("package:MASS")  # remove "MASS" from search path
-loadedNamespaces()  # get names of loaded namespaces
-
-search()  # get search path for R objects
-# get session info,
-# including packages not attached to the search path
-sessionInfo()
-plot.xts  # package xts isn't loaded and attached
-head(xts::plot.xts, 3)
-methods("cbind")  # get all methods for function "cbind"
-stats::cbind.ts  # cbind isn't exported from package stats
-stats:::cbind.ts  # view the non-visible function
-getAnywhere("cbind.ts")
-library("MASS")  # load package 'MASS'
-select  # code of primitive function from package 'MASS'
-getAnywhere("cbind.ts")
 library(zoo)  # load package zoo
 # show the generic function "merge"
 merge
@@ -277,3 +168,93 @@ last.xts_xtra <- function(in_ts) {
   drop(NextMethod())
 }  # end last.xts_xtra
 last(new_xts)  # apply "last" from "xts_xtra" class
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+load(file="C:/Develop/data/etf_data.RData")
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply with parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+lapply=lapply(1:max_iterations, paws,
+              sleep_time=sleep_time),
+parallel=parLapply(clus_ters, 1:max_iterations,
+        paws, sleep_time=sleep_time),
+times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+        names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+ inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+library(parallel)  # load package parallel
+# calculate number of available cores
+no_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ters <- makeCluster(no_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:length(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ters, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ters, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ters)

@@ -1,0 +1,1111 @@
+% Define knitr options
+% !Rnw weave=knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% mathtools package for math symbols
+% \usepackage{mathtools}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text footnotesize
+\renewcommand\UrlFont{\footnotesize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+% Title page setup
+\title[Backup Slides Deleted from Other Files]{Backup Slides Deleted from Other Files}
+\subtitle{FRE6871 \& FRE7241, Spring 2016}
+% \subject{Getting Started With R}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+% \email{jp3900@poly.edu}
+\date{\today}
+% \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
+% \logo{\pgfuseimage{engineering_long_white}}
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Backup Slides Deleted from Other Files}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Argument Handling in Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} provides many ways to handle various unexpected argument values, by checking them before making any calculations,
+      \vskip1ex
+      Assigning default values to formal arguments allows for better control over \emph{erroneous} values,
+      \vskip1ex
+      The function \texttt{stopifnot()} stops function execution and produces an \emph{error} if its argument is \texttt{FALSE},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+catch_missing <- function(in_var1, in_var2=NULL) {
+# returns the sum of its two arguments
+  if (is.numeric(in_var2)) {  # check if in_var2 was input
+    in_var1 + in_var2  # in_var2 was input
+  } else {
+    in_var1  # in_var2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5, 'a')
+catch_missing <- function(in_var1, in_var2) {  # even more robust
+  stopifnot((!missing(in_var1) && is.numeric(in_var1)) || 
+               (!missing(in_var2) && is.numeric(in_var2)))
+  if (!missing(in_var2) && is.numeric(in_var2)) {  # check if in_var2 is valid input
+    in_var1 + in_var2  # in_var2 was input
+  } else {
+    in_var1  # in_var2 wasn't input
+  }
+}  # end catch_missing
+catch_missing(5, 'a')
+catch_missing('a')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Warning and Error Messages in Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A simple way to produce a message from within a function is to call the \texttt{cat()} function,
+      \vskip1ex
+      A better way to produce messages from within a function is to call the \texttt{warning()} and \texttt{error()} functions,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+catch_missing <- function(in_var1=NULL, in_var2=NULL) {
+# returns the sum of its two arguments
+  if (is.null(in_var2)) {  # check if in_var2 was input
+    warning("in_var2 wasn't input")
+    in_var1  # in_var2 wasn't input
+  } else if (is.null(in_var2)) {
+    in_var1 + in_var2  # in_var2 wasn't input
+  } else {
+    in_var1 + in_var2  # in_var2 was input
+  }
+}  # end catch_missing
+catch_missing(1, 2)
+catch_missing(5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Conditions} are \texttt{R} objects containing information about errors, warnings etc., produced while evaluating expressions,
+      \vskip1ex
+      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      \vskip1ex
+      If no condition is produced then \texttt{tryCatch()} just returns the value of the expression,
+      \vskip1ex
+      If a condition is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the condition, 
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast,
+    \column{0.6\textwidth}
+        <<echo=(-1)>>=
+rm(list=ls())
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    n.val <- 101  # assign
+    stop('my error')  # throw error
+  }, 
+  error=function(e.cond)  # handler captures error condition
+    print(paste("error handler: ", e.cond)),
+  finally=print(paste("n.val=", n.val))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Barplots in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{barplot()} creates bar plots of discrete data, such as frequency distributions,
+      \vskip1ex
+      The \emph{Poisson} distribution gives the probability of the number of events occurring in intervals of space or time (for example the amount of mail received each day),
+      \vskip1ex
+        The \emph{Poisson} distribution has one parameter $\lambda$ that determines the average number of events per interval,
+      \vskip1ex
+      The function \texttt{rpois()} produces random numbers from the Poisson distribution,
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
+        <<poisbarplot,fig.show='hide'>>=
+poisson_var <- rpois(100, 4)  # produce 100 Poisson random numbers
+pois_table <- table(poisson_var)  # calculate contingency table
+pois_table <- pois_table/sum(pois_table)  # calculate frequency table
+pois_table
+names(pois_table)  # get names of table
+
+# open Windows graphics device
+x11(width=11, height=7, title="function plot")
+
+# create histogram of Poisson variables
+library(MASS)
+truehist(poisson_var, nbins="FD", col="blue", xlab="No. of events", ylab="Frequency of events", main="Poisson histogram")
+# add Poisson density
+x_var <- 0:max(poisson_var)
+lines(x=x_var, y=dpois(x_var, lambda=4), lwd=4, col="red")
+# add legend
+legend(x="topright", legend="Poisson density",
+       title="", inset=0.05, cex=1.0, bg="white",
+       lwd=4, lty=1, col="red")
+
+graphics.off()  # close all graphics devices
+      @
+
+    \column{0.5\textwidth}
+    \vspace{-2em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/poisbarplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Poisson Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Poisson} distribution gives the probability of the number of events in intervals of space or time (for example the amount of mail received each day),
+      \vskip1ex
+      The Poisson probability function is given by:
+      \begin{displaymath}
+        P(k; \lambda) = \frac{{\lambda^k}{\cdot}{e^{-\lambda}}}{k!}
+      \end{displaymath}
+      The parameter $\lambda$ determines the average number of events per interval,
+        <<poiss_dist,echo=(-1),fig.show='hide'>>=
+rm(list=ls())
+poisson_func <- function(x, lambda) 
+                    {exp(-lambda)*lambda^x/factorial(x)}
+poisson_events <- 0:11  # Poisson events
+poisson_dist <- dpois(poisson_events, lambda=4)  # Poisson probabilities
+names(poisson_dist) <- as.character(poisson_events)
+poisson_dist
+x11(width=11, height=7, title="function plot")
+barplot(poisson_dist, ylab="Frequency of events", xlab="No. of events", main="Poisson distribution")
+curve(expr=poisson_func(x, lambda=4), add=TRUE, xlim=c(0, 11), ylab="", lwd=2, col="red")
+legend(x="topright", legend="Poisson density", title="", 
+       inset=0.1, cex=1.0, bg="white", lwd=4, lty=1, col="red")
+graphics.off()  # close all graphics devices
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/poiss_dist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames are objects containing tabular data,
+      \vskip1ex
+      Data frames are 2-D objects (like matrices), but the columns can be of different classes,
+      \vskip1ex
+      Data frames can also be thought of as lists in which all the elements are vectors of the same length,\\
+      Each list element is a column of elements of the same class,
+      \vskip1ex
+      Data frames share properties of both lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())
+type <- c('rose', 'daisy', 'tulip')  # character vector
+color <- c('red', 'white', 'yellow')  # character vector
+price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(type,  # create a data frame
+                         color, price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+dim(df.florist)  # get dimension attribute
+colnames(df.florist)  # get the colnames attribute
+rownames(df.florist)  # get the rownames attribute
+class(df.florist)  # get object class
+class(df.florist$type)  # get column class
+class(df.florist$price)  # get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5))>>=
+type <- c('rose', 'daisy', 'tulip')  # character vector
+color <- c('red', 'white', 'yellow')  # character vector
+price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(type,  # create a data frame
+                         color, price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+df.florist[2, ]  # get second row
+df.florist[2, 3]  # get second row and third column
+df.florist[[3]]  # get third column
+df.florist$color[3]  # get third row from column 'color'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.3\textwidth}
+      The function \texttt{str()} compactly displays the structure of an \texttt{R} object,
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
+    \column{0.7\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5))>>=
+type <- c('rose', 'daisy', 'tulip')  # character vector
+color <- c('red', 'white', 'yellow')  # character vector
+price <- c(1.5, 0.5, 1.0)  # numeric vector
+df.florist <- data.frame(type,  # create a data frame
+                         color, price)
+rownames(df.florist) <- c('flower1',  # assign rownames
+                          'flower2', 'flower3')
+df.florist
+str(df.florist)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \texttt{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from text files,
+      \vskip1ex
+      \texttt{write.table()} coerces objects to data frames before it writes them,
+      \vskip1ex
+      \texttt{read.table()} returns a data frame, and reads non-numeric values as \texttt{factors} (not \texttt{character}),
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} can be used read and write matrices from text files, but they have to be coerced back to matrices,
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2))>>=
+data_frame <- data.frame(
+              type=c('rose', 'daisy', 'tulip'), 
+              color=c('red', 'white', 'yellow'), 
+              price=c(1.5, 0.5, 1.0), 
+              row.names=c('flower1', 'flower2', 'flower3')
+              )  # end data_frame
+mat_var <- matrix(1:6, nrow=2, ncol=3, dimnames=list(c("row1", "row2"), c("col1", "col2", "col3")))
+# write data frame to text file, and then read it back
+write.table(data_frame, file='florist.txt')
+data_frame <- read.table(file='florist.txt')
+data_frame  # a data frame
+
+mat_var  # a matrix
+class(mat_var)
+# write matrix to text file, and then read it back
+write.table(mat_var, file='matrix.txt')
+mat_var <- read.table(file='matrix.txt')
+mat_var  # write.table() coerced matrix to data frame
+class(mat_var)
+# coerce from data frame back to matrix
+mat_var <- as.matrix(mat_var)
+class(mat_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Copying Data Frames Between the \texttt{clipboard} and \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames stored in the \texttt{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()},
+      \vskip1ex
+      Data frames in \texttt{R} can be copied into the \texttt{clipboard} using the function \texttt{write.table()},
+      \vskip1ex
+      This allows convenient copying of data frames between \texttt{Excel} and \texttt{R},
+      \vskip1ex
+      Data frames can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:3))>>=
+data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+setwd("C:/Develop/data")
+data_frame <- read.table("mydata.txt", header=TRUE)
+data_frame <- read.table("clipboard", header=TRUE)
+
+write.table(x=data_frame, file="clipboard", sep="\t")
+
+# wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t", 
+                      header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+data_frame <- read_clip()
+
+# wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write.clip <- function(data, row.names=FALSE, 
+                       col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t", 
+              row.names=row.names, col.names=col.names, ...)
+}  # end write.clip
+
+write.clip(data=data_frame)
+
+# launch spreadsheet-style data editor
+# data_frame <- edit(data_frame)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \texttt{.CSV} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} are wrappers for \texttt{read.table()} and \texttt{write.table()}, and read and write data frames from \texttt{.CSV} format files,
+      \vskip1ex
+      The \texttt{*.csv()} functions is very inefficient for large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2))>>=
+data_frame <- data.frame(
+              type=c('rose', 'daisy', 'tulip'), 
+              color=c('red', 'white', 'yellow'), 
+              price=c(1.5, 0.5, 1.0), 
+              row.names=c('flower1', 'flower2', 'flower3')
+              )  # end data_frame
+mat_var <- matrix(1:6, nrow=2, ncol=3, dimnames=list(c("row1", "row2"), c("col1", "col2", "col3")))
+# write data frame to CSV file, and then read it back
+write.csv(data_frame, file='florist.csv')
+data_frame <- read.csv(file='florist.csv')
+data_frame  # the rownames are read in as extra column
+# restore rownames
+rownames(data_frame) <- as.character(data_frame[, 1])
+data_frame <- data_frame[, -1]  # remove extra column
+
+# write matrix to csv file, and then read it back
+write.csv(mat_var, file='matrix.csv')
+mat_var <- read.csv(file='matrix.csv')
+mat_var  # write.csv() coerced matrix to data frame
+class(mat_var)
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+# coerce from data frame back to matrix
+mat_var <- as.matrix(mat_var)
+class(mat_var)
+mat_var  # a matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} allow reading and writing matrices from CSV format files,
+      \vskip1ex
+      Using the \texttt{*.csv()} functions is very inefficient for large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+mat_var <- matrix(1:6, nrow=2, ncol=3, dimnames=list(c("row1", "row2"), c("col1", "col2", "col3")))
+mat_var  # a matrix
+# introduce bad data element
+mat_var["row2", "col2"] <- "."
+# write data frame to CSV file, and then read it back
+write.csv(mat_var, file='matrix.csv')
+mat_var <- read.csv(file='matrix.csv')
+
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+# coerce from data frame back to matrix
+mat_var <- as.matrix(mat_var)
+class(mat_var)
+mat_var  # a matrix
+
+class(mat_var[, "col2"])  # numeric coerced to factor by bad data
+mat_var$price <- as.numeric(  # explicitly coerce to numeric
+                            as.character(mat_var$price))
+mat_var$price[2] <- 0.5  # fix value
+mean(mat_var$price)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      There are many other ways of reading and writing matrices from files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      Reading and writing matrices without rownames can be simplified,
+      \vskip1ex
+      The function \texttt{write.matrix()} is part of library \texttt{MASS},
+      \vskip1ex
+      The advantage of using the function \texttt{scan()} is its speed, but it doesn't handle rownames,\\
+      Although a test with 300x100 matrix showed almost same system.time(),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+mat_var <- matrix(1:6, nrow=2, ncol=3,  # create a matrix without rownames
+                dimnames=list(NULL, c("col1", "col2", "col3")))
+mat_var  # matrix without rownames
+library('MASS')  # load library 'MASS'
+write.matrix(mat_var, file='matrix.csv',  # write to CSV file by row - it's very SLOW!!!
+                               sep=',')
+system.time(mat_in <- scan(file='matrix.csv',  # skip first line with colnames
+                          sep=',', skip=1, what=numeric()))
+mat_in  # this is a vector!
+mat_in <- matrix(mat_in, nrow=2, byrow=TRUE)  # coerce by row to matrix
+#        dim(mat_in) <- c(2, 3)  # coerce by column to matrix!
+col_names <- readLines(con='matrix.csv', n=1)  # read colnames
+col_names  # this is a string!
+col_names <- strsplit(col_names, s=',')[[1]]  # convert to char vector
+colnames(mat_in) <- col_names  # restore colnames
+mat_in
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data from \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \texttt{.csv} format files,
+      \vskip1ex
+      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
+      \vskip1ex
+      \texttt{read.csv()} reads row names as an extra column,
+      \vskip1ex
+      The \texttt{*.csv()} functions are very inefficient for large data sets,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3))>>=
+data_frame <- data.frame(
+              type=c('rose', 'daisy', 'tulip'), 
+              color=c('red', 'white', 'yellow'), 
+              price=c(1.5, 0.5, 1.0), 
+              row.names=c('flower1', 'flower2', 'flower3')
+              )  # end data_frame
+mat_var <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_var) <- paste("row", 1:nrow(mat_var), sep="")
+# write data frame to CSV file, and then read it back
+write.csv(data_frame, file='florist.csv')
+data_frame <- read.csv(file='florist.csv')
+data_frame  # the rownames are read in as extra column
+# restore rownames
+rownames(data_frame) <- as.character(data_frame[, 1])
+data_frame <- data_frame[, -1]  # remove extra column
+
+# write matrix to csv file, and then read it back
+write.csv(mat_var, file='matrix.csv')
+mat_var <- read.csv(file='matrix.csv')
+mat_var  # write.csv() coerced matrix to data frame
+class(mat_var)
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+# coerce from data frame back to matrix
+mat_var <- as.matrix(mat_var)
+class(mat_var)
+mat_var  # a matrix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Very often when data is read from external sources, it contains fields with bad data,
+      \vskip1ex
+      Coercion of bad data elements to \texttt{numeric} introduces \texttt{NA} values,
+      \vskip1ex
+      Additional code is needed to scrub bad data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+mat_var <- read.csv(file='badmatrix.csv')
+# restore rownames
+rownames(mat_var) <- as.character(mat_var[, 1])
+mat_var <- mat_var[, -1]  # remove extra column
+dim_names <- dimnames(mat_var)  # save dimnames
+num_col <- ncol(mat_var)  # save num columns
+mat_var  # data frame with bad data
+class(mat_var)
+class(mat_var[, 1])
+class(mat_var[, 2])  # numeric coerced to factor by bad data
+# convert non-numeric to NA by coercing to matrix and then to numeric
+mat_var <- as.numeric(as.matrix(mat_var))
+mat_var  # vector with NAs
+mat_var[is.na(mat_var)] <- 0  # overwrite NAs
+# coerce from vector back to matrix
+mat_var <- matrix(mat_var, ncol=num_col, dimnames=dim_names)
+mat_var  # matrix without NAs
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      There are many other ways of reading and writing matrices from files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      The function \texttt{write.matrix()} is part of library \texttt{MASS},
+      \vskip1ex
+      The advantage of using the function \texttt{scan()} is its speed, but it doesn't handle rownames,
+      \vskip1ex
+      Reading and writing matrices without rownames can be simplified,
+      \vskip1ex
+      The function \texttt{system.time()} measures CPU time spent on executing code,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+mat_var <- matrix(1:6, nrow=2, ncol=3,  # create a matrix without rownames
+                dimnames=list(NULL, c("col1", "col2", "col3")))
+mat_var  # matrix without rownames
+library('MASS')  # load library 'MASS'
+# write to CSV file by row - it's very SLOW!!!
+write.matrix(mat_var, file='matrix.csv', sep=',')
+system.time(  # scan reads faster - skip first line with colnames
+  mat_var <- scan(file='matrix.csv', sep=',', 
+                  skip=1, what=numeric()))
+col_names <- readLines(con='matrix.csv', n=1)  # read colnames
+col_names  # this is a string!
+col_names <- strsplit(col_names, s=',')[[1]]  # convert to char vector
+mat_var  # mat_var is a vector, not matrix!
+# coerce by row to matrix
+mat_var <- matrix(mat_var, ncol=length(col_names), 
+                  byrow=TRUE)
+colnames(mat_var) <- col_names  # restore colnames
+mat_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Namespaces}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Typing an object name from a package whose \texttt{namespace} isn't attached produces an error,
+      \vskip1ex
+      In addition, not all package objects are exported outside a package,
+      \vskip1ex
+      Objects from packages that aren't attached can be accessed using the double-colon operator \texttt{"::"},
+      \vskip1ex
+      The triple-colon operator \texttt{":::"} provides access to objects that aren't exported,\\
+      \vskip1ex
+      Colon operators automatically load the associated package,
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays package objects, even not attached and non-visible objects,
+      \vskip1ex
+      Objects referenced \texttt{within} packages have different search paths than other objects:\\
+      Their search path starts in the package \texttt{namespace}, then the global environment and then finally the regular search path,
+      \vskip1ex
+      This way references to objects from \texttt{within} a package are resolved to the package, and they're not masked by objects of the same name in other environments,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+methods("cbind")  # get all methods for function "cbind"
+stats::cbind.ts  # cbind isn't exported from package stats
+stats:::cbind.ts  # view the non-visible function
+getAnywhere("cbind.ts")
+plot.xts  # package xts isn't loaded and attached
+head(xts::plot.xts)
+library("MASS")  # load package 'MASS'
+select  # code of primitive function from package 'MASS'
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_{k} = \frac{1}{\sigma^2} {\sum_{i=k+1}^{n} (x_{i}-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      The package \texttt{forecast} contains functions for univariate time series forecasting,
+        <<eustx_acf,echo=(-(1:4)),fig.height=8,eval=TRUE,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+par(mfrow=c(2,1))  # set plot panels
+library(forecast)  # load forecast
+# autocorrelation from "stats"
+acf(dax_rets, lag=5, xlab=NA)
+title(main="acf (base package)", line=-1)
+# autocorrelation from "forecast"
+Acf(dax_rets, lag=5, xlab=NA)
+title(main="acf (forecast package)", line=-1)
+      @
+      The horizontal dashed lines are confidence intervals of the mean estimator (corresponding to the 95\% significance level), and are only meant as reference levels,
+      \vskip1ex
+      The DAX time series does not appear to have statistically significant autocorrelations,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering \texttt{zoo} Time Series - with index conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_zoo_filter,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# coerce DAX time series to zoo
+dax_zoo <- as.zoo(EuStockMarkets)[, 1]
+index(dax_zoo) <-  # index to class 'Dates'
+  as.Date(365*(index(dax_zoo)-1970))
+# filter past values only (sides=1)
+dax_filt <- filter(dax_zoo, 
+                   filter=rep(1/5,5), sides=1)
+dax_filt <- zoo(coredata(dax_filt), 
+                order.by=index(dax_zoo))
+dax_filt <- merge(dax_zoo, dax_filt)
+dax_filt <- na.omit(dax_filt)
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt, 
+                   start=as.Date("1997-01-01"), 
+                   end=as.Date("1998-01-01"))
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX", facets=NULL
+      ) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5), 
+    plot.title=element_text(vjust=-2.0), 
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_zoo_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{ggplot2} is a very popular \texttt{R} package for advanced plotting,
+      \vskip1ex
+      The function \texttt{autoplot()} creates a \texttt{ggplot2} object,
+      \vskip1ex
+      The function \texttt{theme()} allows customizing \texttt{ggplot2} objects,
+      <<quantlib,echo=(-(1:2)),fig.width=6,fig.height=4,fig.show='hide'>>=
+rm(list=ls())
+set.seed(1121)  # reset random number generator
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(scales)  # load scales
+# coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo_series) <- as.Date(365*(index(zoo_series)-1970))
+# create simple ggplot2 in single pane
+gg2.zoo <- autoplot(zoo_series, main="Eu Stox", 
+                    facets=NULL)
+# customize ggplot2 using 'theme' function
+gg2.zoo + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.background=element_blank())
+
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-3em}
+      \includegraphics[width=0.55\paperwidth,valign=t]{figure/quantlib-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{zoo} Time Series Using \texttt{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<quantlib_plot,echo=(-(1:2)),fig.width=6,fig.height=7,fig.show='hide'>>=
+rm(list=ls())
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)
+# coerce to zoo
+zoo_series <- as.zoo(EuStockMarkets)
+# coerce index into class 'Dates'
+index(zoo_series) <- 
+  as.Date(365*(index(zoo_series)-1970))
+# plot ggplot2 in single pane
+ggp.zoo1 <- autoplot(zoo_series, main="Eu Stox", 
+         facets=NULL) + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+  )
+# plot ggplot2 in multiple panes
+ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox", 
+         facets=Series ~ .) + xlab("") + 
+  theme(legend.position=c(0.1, 0.5), 
+  plot.title=element_text(vjust=-2.0), 
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"), 
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+  )
+# create plot ggplot2 in multiple panes
+grid.arrange(ggp.zoo1, ggp.zoo2, ncol=1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/quantlib_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{acf()} from the base package \texttt{stats} has two problems:
+      returns the lag-zero autocorrelation (which is simply \texttt{1}),
+      \vskip1ex
+      We can easily create a wrapper function for \texttt{acf()} that omits the lag-zero autocorrelation,
+      <<echo=(-(1:4))>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+library(forecast)  # load forecast
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# autocorrelation from "stats"
+dax_acf <- acf(dax_rets, plot=FALSE)
+str(dax_acf)  # get the structure of the "acf" object
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      If a return value is wrapped in the function \texttt{invisible()} then it isn't printed automatically when the function is called,
+      <<>>=
+# wrapper for base acf()
+acf_plus <- function (ts_data, plot=TRUE, xlab="", 
+                      ylab="", main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+  acf_data$acf <-  # remove first element
+    array(data=acf_data$acf[-1], 
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  # remove first element
+    array(data=acf_data$lag[-1], 
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if(plot) {
+    kurtosis <- sum(((ts_data - mean(ts_data))/
+                     sd(ts_data))^4)/length(ts_data)
+    ci <- qnorm((1 + 0.95)/2)*sqrt(kurtosis/length(ts_data))
+    ylim <- max(ci, max(abs(range(acf_data$acf[-1, , 1]))))
+    plot(acf_data, xlab=xlab, ylab=ylab, ylim=c(-ylim, ylim), main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_{k} = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^{n} (x_{i}-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \texttt{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
+        <<acf_func,echo=(-1),fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# autocorrelation from "stats"
+acf(coredata(dax_rets), lag=5, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      The package \texttt{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      \texttt{coredata} extracts the core underlying data from a complex object,
+    \column{0.5\textwidth}
+      \vspace{-2.5em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/acf_func-1}
+      \vspace{-3.5em}
+      The horizontal dashed lines are confidence intervals of the mean estimator (at 95\% significance level), and are only meant as reference levels,
+      \vskip1ex
+      The DAX time series does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has two drawbacks:\\
+      it plots the lag-zero autocorrelation (which is simply \texttt{1}),\\
+      it plots the confidence intervals of the mean estimator, instead of the variance estimator,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Inspection of the data that is invisibly returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=(-1)>>=
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(dax_rets), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation, and plots the correct confidence intervals of the variance estimator,
+      this has a bug - variance of autocorrelation estimator is 1, not kurtosis
+      <<>>=
+acf_plus <- function (ts_data, plot=TRUE, 
+                      xlab="Lag", ylab="", 
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1], 
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1], 
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if(plot) {
+    kurtosis <- sum(((ts_data-mean(ts_data))/
+               sd(ts_data))^4)/length(ts_data)
+    ci <- qnorm((1+0.95)/2)*sqrt(kurtosis/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1, , 1])),
+              max(ci, range(acf_data$acf[-1, , 1])))
+    plot(acf_data, xlab=xlab, ylab=ylab, 
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\end{document}

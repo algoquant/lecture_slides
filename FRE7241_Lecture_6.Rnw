@@ -5,7 +5,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -41,8 +41,8 @@ knit_theme$set(thm)
 % Define colors for hyperlinks
 \definecolor{links}{HTML}{2A1B81}
 \hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
-% Make url text footnotesize
-\renewcommand\UrlFont{\footnotesize}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
 \setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
 \setbeamerfont{date}{size=\small}
@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#6]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#6, Fall 2015}
+\subtitle{Lecture\#6, Spring 2016}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{Oct 20, 2015}
+\date{May 10, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -70,6 +70,203 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Correlation in Two-asset Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<corr_two_assets,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+re_turns <- c(0.01, 0.02)
+std_devs <- c(0.1, 0.2)
+cor_rel <- 0.6
+co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
+co_var <- t(t(std_devs*co_var)*std_devs)
+weight_s <- seq(from=-1, to=2, length.out=31)
+portf_rets <- weight_s*re_turns[1] + 
+  (1 - weight_s)*re_turns[2]
+portf_sd <- sqrt(co_var[1, 1]*weight_s^2 + 
+               co_var[2, 2]*(1 - weight_s)^2 + 
+               2*weight_s*(1 - weight_s)*co_var[1, 2])
+in_dex <- which.max(portf_rets/portf_sd)
+plot(portf_sd, portf_rets, t="l", 
+ main=paste0("Two assets correlation = ", 100*cor_rel, "%"), 
+ xlim=c(0, max(portf_sd)), 
+ ylim=c(0, max(portf_rets)))
+points(portf_sd[in_dex], portf_rets[in_dex], 
+       col="red", lwd=3)
+points(std_devs, re_turns, col="green", lwd=3)
+abline(a=0, b=portf_rets[in_dex]/portf_sd[in_dex], 
+       col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/corr_two_assets.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Two-asset Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<simple_two_assets,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# vector of symbol names
+some_symbols <- c("VTI", "IEF")
+# vector of portfolio weights
+weight_s <- seq(from=-1, to=2, length.out=31)
+# calculate portfolio returns and volatilities
+ret_sd <- sapply(weight_s, function(wei_ght) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% c(wei_ght, 1-wei_ght)
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+ret_sd <- rbind(ret_sd, ret_sd[1, ]/ret_sd[2, ])
+rownames(ret_sd)[3] <- "sr"
+in_dex <- which.max(ret_sd[3, ])
+# plot scatterplot of portfolios
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+title(main="Two-asset portfolios", line=-1)
+# Add red point for maximum Sharpe ratio portfolio
+points(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex], 
+       col="red", lwd=3, pch=21)
+text(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex], 
+     labels=paste(c("maxSR\n", 
+       structure(c(weight_s[in_dex], 1-weight_s[in_dex]), 
+               names=some_symbols)), collapse=" "), 
+     pos=2, cex=0.8)
+# Add point at origin and draw line to maximum Sharpe ratio point
+points(x=0, y=0, labels="origin")
+text(x=0, y=0, labels="origin", pos=1, cex=0.8)
+abline(a=0, b=ret_sd[3, in_dex], col="blue")
+# plot max Sharpe ratio portfolio returns
+library(quantmod)
+optim_rets <- 
+  xts(x=env_etf$re_turns[, some_symbols] %*% 
+        c(weight_s[in_dex], 1-weight_s[in_dex]),
+      order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), 
+             name="Max Sharpe two-asset portfolio")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simple_two_assets.png}\\
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/maxsr_two_assets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<random_portfolios,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# vector of symbol names
+some_symbols <- c("VTI", "IEF", "XLP")
+# calculate random portfolios
+n_portf <- 1000
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights, min=-10, max=10)
+  weight_s <- weight_s/sqrt(sum(weight_s^2))
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weight_s
+  c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+# plot scatterplot of random portfolios
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
+     main="Random and minvar portfolios", 
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+# vector of initial portfolio weights equal to 1
+n_weights <- length(some_symbols)
+weight_s <- rep(1, n_weights)
+names(weight_s) <- some_symbols
+# objective function equal to standard deviation of returns
+object_ive <- function(weights) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weights
+  sd(portf_rets)/sqrt(sum(weights^2))
+}  # end object_ive
+# object_ive() for equal weight portfolio
+object_ive(weight_s)
+object_ive(2*weight_s)
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# Rescale the optimal weights
+weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
+# minimum variance portfolio returns
+library(quantmod)
+optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
+# Add red point for minimum variance portfolio
+optim_sd <- sd(optim_rets)
+optim_ret <- mean(optim_rets)
+points(x=optim_sd, y=optim_ret,
+       col="red", lwd=3, pch=21)
+text(x=optim_sd, y=optim_ret,
+     labels="minvar", pos=2, cex=0.8)
+## objective function equal to minus Sharpe ratio
+object_ive <- function(weights) {
+  portf_rets <- env_etf$re_turns[, some_symbols] %*% weights
+  -mean(portf_rets)/sd(portf_rets)
+}  # end object_ive
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# maximum Sharpe ratio portfolio returns
+weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
+optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
+optim_sd <- sd(optim_rets)
+optim_ret <- mean(optim_rets)
+points(x=optim_sd, y=optim_ret, 
+       col="blue", lwd=3, pch=21)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=3, cex=0.8)
+# Add point at origin and draw line to maximum Sharpe ratio point
+points(x=0, y=0, labels="origin")
+text(x=0, y=0, labels="origin", pos=1, cex=0.8)
+abline(a=0, b=optim_ret/optim_sd)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -123,14 +320,14 @@ detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search pa
       \texttt{add.constraint} adds or updates constraints on of the portfolio object,
       \vskip1ex
       \texttt{add.objective} adds or updates risk/return objectives of the portfolio object,
-      <<echo=TRUE,eval=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(PortfolioAnalytics)
 # load ETF returns
-load(file="C:/Develop/data/etf_data.Rdata")
-portf_names <- c("VTI", "IEF", "DBC", "XLF", 
+load(file="C:/Develop/data/etf_data.RData")
+portf_names <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names), 
+portf_init <- rep(1/length(portf_names),
                   length(portf_names))
 # named vector
 names(portf_init) <- portf_names
@@ -140,7 +337,7 @@ portf_init <- portfolio.spec(
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_maxSR <- add.constraint(
@@ -149,16 +346,16 @@ portf_maxSR <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_maxSR <- add.constraint(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_maxSR <- add.objective(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSR <- add.objective(
-  portfolio=portf_maxSR, 
+  portfolio=portf_maxSR,
   type="risk",  # minimize StdDev
   name="StdDev")
       @
@@ -181,18 +378,18 @@ load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
   trace=TRUE, traceDE=0)
 # plot optimization
-chart.RiskReward(maxSR_DEOpt, 
-  risk.col="StdDev", 
+chart.RiskReward(maxSR_DEOpt,
+  risk.col="StdDev",
   return.col="mean")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
 options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -217,30 +414,30 @@ maxSR_DEOpt$objective_measures$StdDev[[1]]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_SR_scatter,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<optim_SR_scatter,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PortfolioAnalytics)
 # plot optimization
-chart.RiskReward(maxSR_DEOpt, 
-  risk.col="StdDev", 
+chart.RiskReward(maxSR_DEOpt,
+  risk.col="StdDev",
   return.col="mean")
 
 # plot risk/ret points in portfolio scatterplot
-risk_ret_points <- function(rets=etf_rets, 
+risk_ret_points <- function(rets=env_etf$re_turns,
         risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
   risk <- match.arg(risk)  # match to arg list
   if (risk=="ETL") {
     stopifnot(
-      "package:PerformanceAnalytics" %in% search() || 
+      "package:PerformanceAnalytics" %in% search() ||
       require("PerformanceAnalytics", quietly=TRUE))
   }  # end if
   risk <- match.fun(risk)  # match to function
-  risk_ret <- t(sapply(rets[, sym_bols], 
-     function(x_ts) 
+  risk_ret <- t(sapply(rets[, sym_bols],
+     function(x_ts)
        c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
-  points(x=risk_ret[, "risk"], y=risk_ret[, "ret"], 
+  points(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
          col="red", lwd=3, pch=21)
-  text(x=risk_ret[, "risk"], y=risk_ret[, "ret"], 
-       labels=rownames(risk_ret), col="red", 
+  text(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
+       labels=rownames(risk_ret), col="red",
        lwd=2, pos=4)
 }  # end risk_ret_points
 
@@ -263,32 +460,32 @@ risk_ret_points()
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-2em}
-      <<optim_portf_SR_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_portf_SR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
-plot_portf <- function(portfolio, 
-            rets_data=etf_rets) {
+plot_portf <- function(portfolio,
+            rets_data=env_etf$re_turns) {
   portf_weights <- portfolio$weights
   portf_names <- names(portf_weights)
   # calculate xts of portfolio
   portf_max <- xts(
-    rets_data[, portf_names] %*% portf_weights, 
+    rets_data[, portf_names] %*% portf_weights,
     order.by=index(rets_data))
-  colnames(portf_max) <- 
+  colnames(portf_max) <-
     deparse(substitute(portfolio))
-  graph_params <- par(oma=c(1, 0, 1, 0), 
-    mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), 
-    cex.lab=0.8, cex.axis=1.0, 
+  graph_params <- par(oma=c(1, 0, 1, 0),
+    mgp=c(2, 1, 0), mar=c(2, 1, 2, 1),
+    cex.lab=0.8, cex.axis=1.0,
     cex.main=0.8, cex.sub=0.5)
-  layout(matrix(c(1,2), 2), 
+  layout(matrix(c(1,2), 2),
     widths=c(1,1), heights=c(1,3))
-  barplot(portf_weights, names.arg=portf_names, 
+  barplot(portf_weights, names.arg=portf_names,
           las=3, ylab="", xlab="Symbol", main="")
-  title(main=paste("Loadings", 
+  title(main=paste("Loadings",
                 colnames(portf_max)), line=-1)
   chart.CumReturns(
-    cbind(portf_max, rets_data[, c("IEF", "VTI")]), 
+    cbind(portf_max, rets_data[, c("IEF", "VTI")]),
     lwd=2, ylab="", legend.loc="topleft", main="")
-  title(main=paste0(colnames(portf_max), 
+  title(main=paste0(colnames(portf_max),
                     ", IEF, VTI"), line=-1)
   par(graph_params)  # restore original parameters
   invisible(portf_max)
@@ -315,7 +512,7 @@ maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(PortfolioAnalytics)
 # add leverage constraint abs(weight_sum)
 portf_maxSRN <- add.constraint(
@@ -323,17 +520,17 @@ portf_maxSRN <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add box constraint long/short
 portf_maxSRN <- add.constraint(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="box", min=-0.2, max=0.2)
 
 # add objectives
 portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN, 
+  portfolio=portf_maxSRN,
   type="risk",  # minimize StdDev
   name="StdDev")
       @
@@ -356,24 +553,24 @@ load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSRN,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
   trace=TRUE, traceDE=0)
 # plot optimization
-chart.RiskReward(maxSRN_DEOpt, 
-  risk.col="StdDev", 
-  return.col="mean", 
+chart.RiskReward(maxSRN_DEOpt,
+  risk.col="StdDev",
+  return.col="mean",
   xlim=c(
-    maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001, 
+    maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001,
     0.016))
-  points(x=maxSR_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSR_DEOpt$objective_measures$mean[1], 
+  points(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSR_DEOpt$objective_measures$mean[1],
          col="green", lwd=3, pch=21)
-  text(x=maxSR_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSR_DEOpt$objective_measures$mean[1], 
-       labels="maxSR", col="green", 
+  text(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSR_DEOpt$objective_measures$mean[1],
+       labels="maxSR", col="green",
        lwd=2, pos=4)
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points()
@@ -382,7 +579,7 @@ risk_ret_points()
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
     \vspace{-2em}
-      <<echo=(-(1:2)),eval=TRUE,tidy=TRUE>>=
+      <<echo=(-(1:2)),eval=FALSE,tidy=TRUE>>=
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 maxSRN_DEOpt$weights
@@ -403,9 +600,9 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_portf_SRN_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_portf_SRN_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
-maxSRN_DEOpt_xts <- 
+maxSRN_DEOpt_xts <-
   plot_portf(portfolio=maxSRN_DEOpt)
       @
     \column{0.5\textwidth}
@@ -429,12 +626,12 @@ maxSRN_DEOpt_xts <-
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts), 
-  lwd=2, ylab="", 
+  cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts),
+  lwd=2, ylab="",
   legend.loc="topleft", main="")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE>>=
 options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -464,7 +661,7 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]])
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_maxSTARR <- add.constraint(
@@ -473,17 +670,17 @@ portf_maxSTARR <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_maxSTARR <- add.constraint(
-  portfolio=portf_maxSTARR, 
+  portfolio=portf_maxSTARR,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
+  portfolio=portf_maxSTARR,
   type="return",  # maximize mean return
   name="mean")
 # add objectives
 portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR, 
-  type="risk",  # minimize StdDev
+  portfolio=portf_maxSTARR,
+  type="risk",  # minimize Expected Sshortfall
   name="ES")
       @
   \end{columns}
@@ -505,21 +702,21 @@ load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSTARR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSTARR=TRUE,  # maximize STARR
   trace=TRUE, traceDE=0)
 
 # plot optimization
-chart.RiskReward(maxSTARR_DEOpt, 
-  risk.col="ES", 
+chart.RiskReward(maxSTARR_DEOpt,
+  risk.col="ES",
   return.col="mean")
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
 options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -544,9 +741,9 @@ maxSTARR_DEOpt$objective_measures$ES[[1]]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_STARR_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_STARR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
-maxSTARR_DEOpt_xts <- 
+maxSTARR_DEOpt_xts <-
   plot_portf(portfolio=maxSTARR_DEOpt)
       @
     \column{0.5\textwidth}
@@ -570,12 +767,12 @@ maxSTARR_DEOpt_xts <-
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts), 
-  lwd=2, ylab="", 
+  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts),
+  lwd=2, ylab="",
   legend.loc="topleft", main="")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE>>=
 options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -595,25 +792,29 @@ maxSTARR_DEOpt$objective_measures$ES[[1]])
 
 
 %%%%%%%%%%%%%%%
-\subsection{Efficient Frontier}
+\subsection{The Efficient Frontier and Capital Market Line}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_eff_front,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
+      \vskip1ex
+      The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
+      \vskip1ex
+      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
+      <<optim_eff_front,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PortfolioAnalytics)
 # plot the efficient frontier
-chart.EfficientFrontier(maxSR_DEOpt, 
-                match.col="StdDev", 
+chart.EfficientFrontier(maxSR_DEOpt,
+                match.col="StdDev",
                 n.portfolios=15, type="l")
-points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSRN_DEOpt$objective_measures$mean[1], 
+points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSRN_DEOpt$objective_measures$mean[1],
          col="green", lwd=3, pch=21)
-text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]], 
-         y=maxSRN_DEOpt$objective_measures$mean[1], 
-       labels="maxSRN", col="green", 
+text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSRN_DEOpt$objective_measures$mean[1],
+       labels="maxSRN", col="green",
        lwd=2, pos=4)
       @
     \column{0.5\textwidth}
@@ -636,7 +837,7 @@ text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
       \vspace{-1em}
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=(-1),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(PortfolioAnalytics)
 # add constraints
 portf_minES <- add.constraint(
@@ -645,11 +846,11 @@ portf_minES <- add.constraint(
   min_sum=0.9, max_sum=1.1)
 # add constraints
 portf_minES <- add.constraint(
-  portfolio=portf_minES, 
+  portfolio=portf_minES,
   type="long_only")  # box constraint min=0, max=1
 # add objectives
 portf_minES <- add.objective(
-  portfolio=portf_minES, 
+  portfolio=portf_minES,
   type="risk",  # minimize ES
   name="ES")
       @
@@ -672,27 +873,27 @@ load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 minES_ROI <- optimize.portfolio(
-  R=etf_rets[, portf_names],  # specify returns
+  R=env_etf$re_turns[, portf_names],  # specify returns
   portfolio=portf_minES,  # specify portfolio
   optimize_method="ROI", # use ROI
   trace=TRUE, traceDE=0)
 
 # plot optimization
-chart.RiskReward(maxSTARR_DEOpt, 
-  risk.col="ES", 
+chart.RiskReward(maxSTARR_DEOpt,
+  risk.col="ES",
   return.col="mean")
-  points(x=minES_ROI$objective_measures$ES[[1]], 
-         y=mean(minES_ROI_xts), 
+  points(x=minES_ROI$objective_measures$ES[[1]],
+         y=mean(minES_ROI_xts),
          col="green", lwd=3, pch=21)
-  text(x=minES_ROI$objective_measures$ES[[1]], 
-         y=mean(minES_ROI_xts), 
-       labels="minES", col="green", 
+  text(x=minES_ROI$objective_measures$ES[[1]],
+         y=mean(minES_ROI_xts),
+       labels="minES", col="green",
        lwd=2, pos=4)
 # plot risk/ret points in portfolio scatterplot
 risk_ret_points(risk="ETL")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE,tidy=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
 options(width=50)
 library(PortfolioAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -716,9 +917,9 @@ minES_ROI$objective_measures$ES[[1]]
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_minES_vis,echo=(-1),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+      <<optim_minES_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
-minES_ROI_xts <- 
+minES_ROI_xts <-
   plot_portf(portfolio=minES_ROI)
       @
     \column{0.5\textwidth}
@@ -742,12 +943,12 @@ minES_ROI_xts <-
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
 chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, minES_ROI_xts), 
-  lwd=2, ylab="", 
+  cbind(maxSR_DEOpt_xts, minES_ROI_xts),
+  lwd=2, ylab="",
   legend.loc="topleft", main="")
       @
     \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE>>=
+      <<echo=(-(1:3)),eval=FALSE>>=
 options(width=50)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/portf_optim.RData")
@@ -780,7 +981,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["/2011", portf_names],
+  R=env_etf$re_turns["/2011", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -788,7 +989,7 @@ maxSR_DEOpt <- optimize.portfolio(
 weights_1h <- maxSR_DEOpt$weights
 
 # plot optimization
-maxSR_DEOpt_xts <- 
+maxSR_DEOpt_xts <-
   plot_portf(portfolio=maxSR_DEOpt)
       @
     \column{0.5\textwidth}
@@ -814,7 +1015,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=etf_rets["2011/", portf_names],
+  R=env_etf$re_turns["2011/", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -822,7 +1023,7 @@ maxSR_DEOpt <- optimize.portfolio(
 weights_2h <- maxSR_DEOpt$weights
 
 # plot optimization
-maxSR_DEOpt_xts <- 
+maxSR_DEOpt_xts <-
   plot_portf(portfolio=maxSR_DEOpt)
       @
     \column{0.5\textwidth}
@@ -842,7 +1043,7 @@ maxSR_DEOpt_xts <-
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 options(width=50)
 weights_1h
 weights_2h
@@ -852,13 +1053,13 @@ weights_1h - weights_2h
       <<optim_weights,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
-barplot(weights_1h, 
-        names.arg=names(weights_1h), 
-        las=3, ylab="", xlab="", 
+barplot(weights_1h,
+        names.arg=names(weights_1h),
+        las=3, ylab="", xlab="",
         main="Portfolio Weights First Half")
-barplot(weights_2h, 
-        names.arg=names(weights_2h), 
-        las=3, ylab="", xlab="", 
+barplot(weights_2h,
+        names.arg=names(weights_2h),
+        las=3, ylab="", xlab="",
         main="Portfolio Weights Second Half")
       @
     \column{0.5\textwidth}
@@ -868,6 +1069,381 @@ barplot(weights_2h,
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Investor Risk Preferences and Portfolio Selection}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Single Period Binary Gamble}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Imagine a binary betting game (gamble) with the probability of winning equal to \texttt{p}, the payout odds in case of win equal to \texttt{b}, and the loss equal to \texttt{-a},
+      \vskip1ex
+      The investor makes no up-front payments, and can either win an amount \texttt{b}, or lose an amount \texttt{-a},
+      \vskip1ex
+      Assuming an investor makes decisions exclusively on the basis of the expected value (level) of future wealth, then she would choose to bet all her wealth on the gamble if its expected value is positive, and choose not to bet at all if its expected value is negative,
+    \column{0.5\textwidth}
+      <<results='asis',echo=FALSE>>=
+library(xtable)
+binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "-a"))
+rownames(binbet_table) <- c("probability", "payout")
+# print(xtable(binbet_table), comment=FALSE, size="tiny")
+print(xtable(binbet_table), comment=FALSE)
+      @
+      The expected value of the gamble is equal to: $ev=p \cdot b - q \cdot a$,
+      \vskip1ex
+      The variance of the gamble is equal to: $var=p \cdot q \cdot (a+b)^2$,
+      \vskip1ex
+      Without loss of generality we can assume $p=q=\frac{1}{2}$,\\
+      $ev=0.5 \cdot (b-a)$,\\
+      $var=0.25 \cdot (a+b)^2$,
+      \vskip1ex
+      The \emph{Sharpe} ratio of the gamble is then equal to:
+      \begin{displaymath}
+        S_{r}=\frac{ev}{sqrt(var)}=\frac{(b-a)}{(a+b)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Investor Utility and Fractional Betting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{expected utility} hypothesis states that investor risk preferences are based on the expected value of the \emph{utility} of their wealth, instead of on the level of wealth,
+      \vskip1ex
+      In 1738 Daniel Bernoulli introduced the concept of \emph{logarithmic utility} in his work "\emph{Specimen Theoriae Novae de Mensura Sortis}" (New Theory of the Measurement of Risk),
+      \vskip1ex
+      \emph{Logarithmic utility} is defined as the logarithm of wealth, 
+      \vskip1ex
+      The expected value of \emph{logarithmic utility} for the binary gamble is equal to: $g(f)=p \cdot log(1+fb) + q \cdot log(1-fa)$,
+      \vskip1ex
+      Under \emph{logarithmic utility} investor preferences are based on the percentage change of their wealth, instead of the absolute change of their wealth,
+      \vskip1ex
+      An investor under \emph{logarithmic utility} doesn't bet either all her wealth or nothing at all, but instead bets only a certain fraction \texttt{f} of wealth, depending on the risk/return of the gamble,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<util_plot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# define utility
+utility <- function(frac, p=0.5, a=1, b=4) {
+  p*log(1+frac*b) + (1-p)*log(1-frac*a)
+}  # end utility
+# plot utility
+curve(expr=utility, xlim=c(0, 1), 
+      ylim=c(-0.5, 0.3), xlab="betting fraction", 
+      ylab="utility", main="", lwd=2)
+title(main="logarithmic utility", line=-0.8)
+      @
+      \vspace{-2.5em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/util_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Fractional Betting and the Kelly Criterion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Given the odds and probability of winning, there's an optimal fraction \texttt{f} of wealth that the investor should risk on each bet, 
+      \vskip1ex
+      The betting fraction that maximizes the \emph{utility} can be found by equating the derivative of \emph{utility} to zero:
+      \begin{displaymath}
+        \frac{\mathrm{d}g(f)}{\mathrm{d}f}=\frac{p \cdot b}{1+fb} - \frac{q \cdot a}{1-fa} = 0
+      \end{displaymath}
+      \begin{displaymath}
+        f=\frac{p}{a}-\frac{q}{b}=\frac{p \cdot b-q \cdot a}{a \cdot b}
+      \end{displaymath}
+      The optimal \texttt{f} is called the \emph{Kelly} fraction, and it depends on the parameters of the gamble,
+      \vskip1ex
+      The \emph{Kelly} fraction can be greater than \texttt{1} (leverage), or be negative (shorting),
+      \vskip1ex
+      If we assume $a=1$, then: $f=\frac{p(b+1)-1}{b}$
+      \vskip1ex
+      The \emph{Kelly} fraction is equal to the expected net winnings divided by the odds,
+    \column{0.5\textwidth}
+      \vspace{-1.5em}
+      <<kelly_plot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# define and plot Kelly fraction
+kelly <- function(b, p=0.5, a=1) {
+  p/a - (1-p)/b
+}  # end kelly
+curve(expr=kelly, xlim=c(0, 5), 
+      ylim=c(-2, 1), xlab="betting odds", 
+      ylab="kelly", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="max Kelly fraction=0.5")
+title(main="Kelly fraction", line=-0.8)
+      @
+      \vspace{-2.5em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/kelly_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Kelly Fractional Betting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Investors under \emph{logarithmic utility} are sensitive to the risk of ruin (losing all their wealth),
+      \vskip1ex
+      The loss amount \texttt{"a"} determines the risk of ruin, with larger values of \texttt{"a"} increasing the risk of ruin,
+      \vskip1ex
+      Therefore investors will choose a smaller betting fraction \texttt{f} for larger values of \texttt{"a"},
+      \vskip1ex
+      This means that even for huge odds in their favor, investors may choose not to bet all their wealth, because of the risk of ruin,
+      \vskip1ex
+      For example, if the betting odds are very large $b \to \infty$, then the \emph{Kelly} fraction: $f=\frac{p}{a}$,
+      \vspace{-1em}
+      <<kelly_max_plot,eval=FALSE,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot several Kelly fractions
+curve(expr=kelly, xlim=c(0, 5), 
+      ylim=c(-1, 1.5), xlab="betting odds", 
+      ylab="kelly", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="a=1.0; max fraction=0.5")
+kelly2 <- function(b) {kelly(b=b, a=0.5)}
+curve(expr=kelly2, add=TRUE, main="", lwd=2)
+abline(h=1.0, lwd=2, col="red")
+text(x=1.5, y=1.0, pos=3, cex=0.8, labels="a=0.5; max fraction=1.0")
+title(main="Kelly fraction", line=-0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/kelly_max_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multiperiod Betting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiperiod betting consists of \texttt{n} rounds of betting, with random returns equal to $r_{i}$, 
+      \vskip1ex
+      Then after \texttt{n} rounds the wealth is equal to: $w=(1+r_{1}) (1+r_{2}) \ldots (1+r_{n})$,
+      \vskip1ex
+      The expected value of wealth after \texttt{n} rounds is equal to: $E[w]=(1+E[r_{i}])^n$ (since the $r_{i}$ are i.i.d. - independent and identically distributed),
+      \vskip1ex
+      If only a fraction \texttt{f} of wealth is bet each time, then the wealth is equal to: $w=(1+f \cdot r_{1}) (1+f \cdot r_{2}) \ldots (1+f \cdot r_{n})$, \\
+      and the expected wealth is equal to: $E[w]=(1+f \cdot E[r_{i}])^n$,
+      \vskip1ex
+      The utility is equal to the logarithm of wealth: $g(w)=log(w)=\sum_{i=1}^{n} log(1+f \cdot r_{i})$, \\
+      and the expected utility is equal to: $E[g(w)]=n \cdot E[log(1+f \cdot r_{i})]$,
+      \vskip1ex
+      The expected utility for multiperiod betting is \texttt{n} times the expected utility for single period betting,
+      \vskip1ex
+      The \emph{Kelly} fraction for multiperiod betting is the same as for single period betting,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<multi_betting,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+# simulated wealth path
+wealth_path <- cumprod(1+runif(1000, 
+                      min=-0.1, max=0.1))
+plot(wealth_path, type="l", 
+     lty="solid", xlab="", ylab="")
+title(main="wealth path", line=-1)
+      @
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/multi_betting-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binomial Multiperiod Betting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kelly} fraction for multiperiod betting can be found by maximizing the expected \emph{utility} of the final wealth distribution:
+      \begin{multline*}
+        g(f)=\sum_{k=0}^{n} \binom{n}{k} p^k q^{n-k} log((1+fb)^k (1-fa)^{n-k})\\
+        =log(1+fb) \sum_{k=0}^{n} {\binom{n}{k} p^k q^{n-k} k} + \\
+        log(1-fa) \sum_{k=0}^{n} {\binom{n}{k} p^k q^{n-k} (n-k)} \\
+        =n \cdot p \cdot log(1+fb) + n \cdot q \cdot log(1-fa)
+      \end{multline*}
+      The above is just the single period \emph{utility} multiplied by the number of rounds of betting \texttt{n},
+      \vskip1ex
+      The \emph{Kelly} fraction \texttt{f} for multiperiod betting is the same as for single period betting:
+      \begin{displaymath}
+        f=\frac{p}{a}-\frac{q}{b}
+      \end{displaymath}
+    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Multiperiod Betting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In multiperiod betting the investor participates in \texttt{n} rounds of betting,
+      \vskip1ex
+      Each round of betting multiplies the wealth by either $(1+fb)$ or $(1-fa)$, 
+      \vskip1ex
+      If there were \texttt{i} wins and \texttt{j} losses, then the final wealth is equal to: 
+      \begin{displaymath}
+        w=(1+fb)^i \cdot (1-fa)^j
+      \end{displaymath}
+      The betting fraction that maximizes the final wealth is equal to:
+      \begin{displaymath}
+        f=\frac{pfreq}{a}-\frac{qfreq}{b}
+      \end{displaymath}
+      where $pfreq=\frac{i}{n}$ and $qfreq=1-pfreq$,
+      \vskip1ex
+      The most likely value of \texttt{pfreq} is equal to the probability of winning \texttt{p}, 
+      \vskip1ex
+      So the \emph{Kelly} fraction is the betting fraction that maximizes the final wealth in multiperiod betting, provided the fraction of wins is equal to the probability of winning \texttt{p},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<kelly_multi,eval=FALSE,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# wealth of multiperiod binary betting
+wealth <- function(f, b=2, a=1, n=100, i=51) {
+  (1+f*b)^i * (1-f*a)^(n-i)
+}  # end wealth
+curve(expr=wealth, xlim=c(0, 1), 
+      xlab="betting fraction", 
+      ylab="wealth", main="", lwd=2)
+title(main="wealth of multiperiod betting", line=0.1)
+      @
+    \vspace{-2em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/kelly_multi-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Utility Function of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let the returns over a short time period be equal to \texttt{r}, with probability distribution \texttt{p(r)},
+      \vskip1ex
+      The mean return $\bar{r}$, and variance ${\sigma}^2$ are:
+      \begin{displaymath}
+        \bar{r} = \int {r \, p(r) \, \mathrm{d}r} \; ; \quad
+        {\sigma}^2 = \int {(r - \bar{r})^2 \, p(r) \, \mathrm{d}r}
+      \end{displaymath}
+      Since the returns are over a short time period, we have: $r \ll 1$ and $\bar{r} \ll \sigma$, so that we can replace $r - \bar{r}$ with \texttt{r} as follows:
+      \begin{displaymath}
+        \int {(r - \bar{r})^2 \, p(r) \, \mathrm{d}r} \approx \int {r^2 \, p(r) \, \mathrm{d}r}
+      \end{displaymath}
+      The logarithmic utility $g(w)$ is given by:
+      \begin{multline*}
+        g(w) = \int {log(1+f \cdot r) \, p(r) \, \mathrm{d}r} \\
+        \hspace*{-1em}
+        = \int {(f \cdot r - \frac{(f \cdot r)^2}{2} + 
+        \frac{(f \cdot r)^3}{3} - \frac{(f \cdot r)^4}{4}) \, p(r) \, \mathrm{d}r}\\
+        \hspace*{-2em}
+        = f\bar{r} - \frac{f^2 {\sigma}^2}{2} + \frac{f^3 {\sigma}^3 \hat{s}}{3} - \frac{f^4 {\sigma}^4 \hat{k}}{4}
+      \end{multline*}
+      Where $\hat{s}$ is the skewness, and $\hat{k}$ is the kurtosis,
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<utility_returns,eval=TRUE,echo=(-1),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_data.RData")
+ts_rets <- env_etf$re_turns[, "VTI"]
+c(mean(ts_rets), sd(ts_rets))
+utility <- function(frac, r=ts_rets) {
+sapply(frac, function (fract) sum(log(1+fract*r)))
+}  # end utility
+curve(expr=utility, 
+      xlim=c(0.1, 2*KellyRatio(R=ts_rets, method="full")), 
+      xlab="kelly", ylab="utility", main="", lwd=2)
+title(main="utility", line=-2)
+      @
+    \vspace{-3em}
+    \includegraphics[width=0.5\paperwidth,valign=t]{figure/utility_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Kelly Criterion for Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kelly} fraction can be found by equating the derivative of \emph{utility} to zero:
+      \begin{displaymath}
+        \frac{\mathrm{d}g(f)}{\mathrm{d}f} = \bar{r} - f{\sigma}^2 + f^2 {\sigma}^3 \hat{s} - f^3 {\sigma}^4 \hat{k} = 0
+      \end{displaymath}
+      Assuming $\hat{s}$ and $\hat{k}$ are small and can be neglected, we get:
+      \begin{displaymath}
+        f = \frac{\bar{r}}{{\sigma}^2} = \frac{S_{r}}{\sigma} \; ; \quad g(w) = \frac{1}{2} \frac{{\bar{r}}^2}{{\sigma}^2} = \frac{1}{2} S_{r}^2
+      \end{displaymath}
+      Where $S_{r}$ is the \emph{Sharpe} ratio, 
+      \vskip1ex
+      The \emph{Kelly} fraction is equal to the \emph{Sharpe} ratio divided by the \emph{standard deviation},
+      \vskip1ex
+      The optimal utility $g(w)$ is equal to half the \emph{Sharpe} ratio squared,
+      \vskip1ex
+      The \emph{standard deviation} and \emph{Sharpe} ratio are calculated over the same time interval as the returns (not annualized),
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<eval=TRUE,echo=(-(1:4)),fig.show='hide'>>=
+par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/etf_data.RData")
+ts_rets <- env_etf$re_turns[, "VTI"]
+KellyRatio(R=ts_rets, method="full")
+      @
+%    \vspace{-1em}
+%    \includegraphics[width=0.5\paperwidth,valign=t]{figure/kelly_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 

@@ -1,121 +1,163 @@
 #################################
-### FRE6871 Homework #4 Solution due Oct 26, 2015
+### FRE6871 Homework #4 Solution due May 9, 2016
 #################################
-# Max score 75pts
+# Max score 70pts
 
 # The below solutions are examples,
 # Slightly different solutions are also possible.
 
 
-##############
-# Download the file "student_scores.csv" from NYU Classes. 
-# The file contains a data frame with student names, track, and scores. 
-# Read the file into a variable called "student_scores" using read.csv(),
+############## Part I
+# Summary: Perform aggregations over data frame columns, 
+# given intervals defined by breakpoints. 
 
-student_scores <- read.csv(file="student_scores.csv")
+# 1. (10pts) calculate a vector containing the number 
+# of NAs in each column of the airquality data frame. 
+# You can use functions sapply(), is.na(), sum(), 
+# and an anonymous function. 
 
-# The data frame "student_scores" contains 8 columns: student names, 
-# track, and six columns of numerical scores for homeworks and tests. 
-# But some of the numeric columns contain NAs and characters, which 
-# forces their coercion into factors.
+sapply(airquality, function(col_umn) sum(is.na(col_umn)))
 
-# 1. (10pts) Perform an sapply() loop over the columns containing 
-# numerical scores and coerce them to numeric. 
-# You can use functions sapply() and as.numeric(), 
+# You should get the following result:
+#   Ozone Solar.R    Wind    Temp   Month     Day 
+#     37       7       0       0       0       0
 
-student_scores[, -(1:2)] <- sapply(student_scores[, -(1:2)], as.numeric)
 
-# Extract the "class" of the columns of "student_scores" using 
-# functions class() and sapply(),
-# make sure that none of the columns are factors, 
-# except for "finance_track" and "letter_grades",
+# Create a data frame called good_air, by subsetting 
+# the "Temp" and "Solar.R" columns of the airquality data 
+# frame, and then removing any rows containing NAs. 
+# You can use function complete.cases(). 
 
-sapply(student_scores, class)
+good_air <- airquality[, c("Temp", "Solar.R")]
+good_air <- good_air[complete.cases(good_air), ]
 
-# Now the columns containing numerical scores should all be class 
-# "numeric", with some NAs in them, representing scores that are 
-# not available. 
+# You should get a data frame with the following dimensions:
+# dim(good_air)
+# [1] 146   6
 
-# 2. (15pts) Calculate a vector called "num_nas" containing the 
-# number of NA scores for each student, and bind it to 
-# "student_scores" as the last (9th) column,
-# You can use functions apply(), cbind(), sum(), is.na(), 
-# and an anonymous function, 
 
-num_nas <- apply(student_scores[, -(1:2)], MARGIN=1, function(row) {
-  sum(is.na(row))
-})  # end apply
+# 2. (10pts) Calculate a vector of breakpoints based on 
+# the "Temp" column of good_air. 
+# You can use function hist() with argument "plot=FALSE". 
+# The function hist() returns a structure (list) with an 
+# element called "breaks", which are the breakpoints. 
 
-student_scores <- cbind(student_scores, num_nas)
+hist_air <- hist(good_air$Temp, plot=FALSE)
+hist_air$breaks
 
-# Sort "student_scores" in descending order by column "num_nas", 
-# use function order()
+# You should get the following vector of breakpoints:
+# [1]  55  60  65  70  75  80  85  90  95 100
 
-student_scores <- student_scores[order(student_scores$num_nas, decreasing=TRUE), ]
 
-# 3. (10pts) Calculate a vector called "avg_score" containing the 
-# average score of each student, and bind it to "student_scores" as 
-# the last (10th) column,
-# Remember to omit NA values. 
-# You can use functions apply(), cbind(), and mean(). 
-# You cannot use an anonymous function. 
+# 3. (10pts) Calculate a vector of categorical data 
+# from the "Temp" column of good_air, using the 
+# breakpoints from p.2.  Add the categorical vector 
+# as a column to good_air called "categ".
+# The categorical column shows to which category 
+# of "Temp" each row of good_air belongs. 
+# You can use the function findInterval(). 
 
-avg_score <- apply(student_scores[, 3:8], MARGIN=1, mean, na.rm=TRUE)
+good_air$categ <- findInterval(x=good_air$Temp, vec=hist_air$breaks)
 
-student_scores <- cbind(student_scores, avg_score)
+# You should get the following output:
+# head(good_air)
+#   Temp Solar.R categ
+# 1   67     190     3
+# 2   72     118     4
+# 3   74     149     4
+# 4   62     313     2
+# 7   65     299     3
+# 8   59      99     1
 
-# 4. (20pts) Assign letter grades to each student, based on their 
-# "avg_score" column. 
-# First calculate a histogram of "avg_score" values, using the function 
-# hist(), with the Freedman-Diaconis rule for determining the breakpoints. 
 
-student_hist <- hist(student_scores$avg_score, col="lightblue1", 
-                     main="Student scores", xlab="student scores", breaks="FD")
+# 4. (20pts) Perform a split-apply-combine procedure on 
+# the "Solar.R" column of good_air, using the categorical 
+# column of good_air from p.3.  
+# You can use the function aggregate() with argument 
+# "formula". 
+# Pass the function range() to aggregate(), so that it's 
+# applied to the "Solar.R" column of good_air. 
+# Assign the data frame returned by function aggregate() 
+# to a variable called "ran_ge". 
 
-# The function hist() invisibly returns a list that includes a vector 
-# of breakpoints called "breaks". 
-# Calculate a vector of letter grades corresponding to the "avg_score" 
-# values, using the "breaks" from function hist(), and call it 
-# "letter_grades". 
-# You must use function findInterval(), 
+ran_ge <- aggregate(formula=(Solar.R ~ categ), 
+                    data=good_air, FUN=range)
 
-letter_grades <- findInterval(x=student_scores[, "avg_score"], vec=student_hist$breaks)
+# Add the breakpoints from p.2. as a column to ran_ge 
+# called "temp".
 
-# "letter_grades" is an integer vector.
-# Convert "letter_grades" to a vector of strings representing letter grades.
-# Use the following vector of strings called "grade_s":
+ran_ge$temp <- hist_air$breaks[ran_ge$categ]
 
-grade_s <- c("A", "A-", "B+", "B", "B-", "C+", "C")
+# The end result of the split-apply-combine procedure 
+# should be a data frame as follows:
+# ran_ge
+#   categ Solar.R.1 Solar.R.2 temp
+# 1     1         8       266   55
+# 2     2        19       334   60
+# 3     3        13       322   65
+# 4     4         7       320   70
+# 5     5        27       322   75
+# 6     6        24       332   80
+# 7     7        82       323   85
+# 8     8       167       291   90
+# 9     9       203       237   95
 
-# Be careful to consider that the highest "avg_score" should correspond 
-# to the letter grade "A", which has index equal to 1 in "grade_s", 
+# Plot the difference between the two "Solar.R" columns 
+# of ran_ge versus "temp", to display how the variability 
+# of "Solar.R" depends on "temp". 
+# You can use the functions with() and plot(). 
 
-letter_grades <- grade_s[max(letter_grades) - letter_grades + 1]
+with(ran_ge, plot(temp, Solar.R[, 2]-Solar.R[, 1], t="l", 
+                  xlab="temp", ylab="Solar range"))
 
-# cbind "letter_grades" to the data frame "student_scores" as 
-# the last column,
 
-student_scores <- cbind(student_scores, letter_grades)
-head(student_scores)
 
-# 5. (20pts) Calculate the average scores for students in each 
-# "finance_track" category, using the split-apply-combine procedure, 
-# you can use functions with(), tapply(), and mean(),
+############## Part II
+# Summary: Create a functional called do_call(), which is 
+# a generalization of do_call_rbind() from the lecture slides.  
 
-with(student_scores, 
-     tapply(avg_score, finance_track, mean)
-)  # end with
+# 1. (20pts) do_call() should apply a function to 
+# a list of objects, and return a single object.
+# do_call() should accept three arguments:
+# - func_tion - a function that returns a single object 
+#   from a list of input objects (for example paste(), 
+#   rbind(), etc). 
+# - li_st - a list or vector of objects.
+# - "..." - dots optional arguments to func_tion. 
+# The dots "..." argument should be passed to func_tion. 
+# You can use functions length(), while(), lapply(), 
+# and return(). 
 
-# Find the names of the students with the highest average scores 
-# in each "finance_track" category, using the split-apply-combine 
-# procedure, 
-# you can use functions with(), tapply(), max(), and match(),
+do_call <- function(func_tion, li_st, ...) {
+  # produce function name from argument
+  func_tion <- match.fun(func_tion)
+  while (length(li_st) > 1) {
+    # index of odd list elements
+    odd_index <- seq(from=1, to=length(li_st), by=2)
+    # bind neighboring elements and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+      if (in_dex==length(li_st)) {
+        return(li_st[[in_dex]])
+      }
+      return(func_tion(li_st[[in_dex]], li_st[[in_dex+1]], ...))
+    })  # end lapply
+  }  # end while
+  # li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call
 
-with(student_scores, 
-     name[
-       match(
-         tapply(avg_score, finance_track, max), 
-         avg_score)  # end match
-       ]  # end name
-)  # end with
+
+# call do_call() as below, to verify that it works correctly,
+
+do_call(paste, c("a", "b", "c"), sep="/")
+# should produce:
+# [1] "a/b/c"
+
+do_call(rbind, list(1:4, 8:11))
+# should produce:
+#       [,1] [,2] [,3] [,4]
+# [1,]    1    2    3    4
+# [2,]    8    9   10   11
+
+
 

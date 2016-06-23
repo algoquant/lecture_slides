@@ -1,124 +1,159 @@
 #################################
-### FRE7241 HW #1 due Sep 22, 2015
+### FRE7241 Homework #1 due April 19, 2016
 #################################
-# Max score 55 pts
+# Max score 100pts
 
 # Please write in this file the R code needed to perform the tasks below, 
 # rename it to your_name_hw1.R
 # and upload the file to NYU Classes
 
 
-##################################
-# 1. (15pts) create a vector of weekly "POSIXct" dates corresponding  
-# to Mondays at 09:30AM, and call it "mon_days", 
-# start with the date "2015-02-09", and end at the most recent Monday
-# before today (today is defined by Sys.time()),
-# set the timezone to "America/New_York", 
-# hint: first calculate the number of weeks between today and the start 
-# date, and use that number to create a vector of weekly "POSIXct" dates,
-# you can use functions Sys.setenv(), as.POSIXct(), difftime() and ceiling(), 
-# and lubridate function weeks(),
+############## Part I
+# Summary: Create a function which returns a list of attributes of 
+# a time series object. Coerce time series objects into class xts, 
+# and list their attributes. 
 
-### write your code here
-
-
-# convert "mon_days" to the days of the week, using three different methods,
-# to verify that all the dates in "mon_days" are indeed Mondays,
-# use function weekdays(),
-
-### write your code here
-
-# use function as.POSIXlt(),
-
-### write your code here
-
-# use lubridate function wday(),
-
-### write your code here
-
-
-
-###############
-# 2. (20pts) Download from Yahoo the "AdjClose" prices and "Volume" for 
-# MSFT stock, starting from Jun/01/2007, and call it "zoo_msft",
-# use tseries function get.hist.quote(),
-
-library(tseries)  # load package tseries
-library(zoo)  # load package zoo
-
-### write your code here
-
-
-# calculate the 50-day moving average of the "AdjClose" prices,
-# merge the moving average with "zoo_msft" by adding it as the last column,
-# rename the last column to "50DMA",
-# use function rollmean(), with the proper "align" argument, 
-# so that the averages are calculated using values from the past,
-
-### write your code here
-
-
-# plot "zoo_msft" columns "AdjClose" and "50DMA" in the same panel, 
-# starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
-
-### write your code here
-
-
-# calculate the vector of dates when zoo_msft[, "AdjClose"] 
-# crosses "50DMA", and call it "cross_es", 
-# "cross_es" should be TRUE for dates when a cross had just occurred, 
-# and FALSE otherwise,
-
-### write your code here
-
-
-# add vertical ablines to the plot above, at the dates of "cross_es",
+# 1. (20pts) Create a function called attri_butes() which returns a list 
+# of attributes of a time series object. 
+# The function attri_butes() should accept a single input called time_series, 
+# and verify that it's a time series object of either class ts, zoo, or xts, 
+# and if not, then it should produce and error and stop. 
+# hint: you can use functions stopifnot(), is.ts(), is.zoo(), and is.xts(), 
+# and the "||" operator. 
+# 
+# The function attri_butes() should return a named list of data 
+# with the following information about the input time_series: 
+# - dimensions, 
+# - number of rows, 
+# - number of rows with missing values (NA), 
+# - number of columns, 
+# - column names, 
+# - the time_series class, 
+# - the time index class of time_series, 
+# - the first and last rows of time_series, 
+# hint: you can use functions list(), dim(), if(), is.null(), 
+# nrow(), length(), sum(), complete.cases(), ncol(), 
+# colnames(), class(), index(), head(), and tail().
 
 ### write your code here
 
 
 
-###############
-# 3. (20pts) Calculate the 50-day rolling maximum and minimum of 
-# the "AdjClose" prices,
-# use function rollmax() with the proper "align" argument, so that 
-# the aggregations are calculated using values from the past,
-# calculate the difference between the rolling maximum and minimum, 
-# and call it "ba_nd",
+# 2. (10pts) Coerce the EuStockMarkets time series into class xts, 
+# and call it xts_eustocks. 
+# The time index of xts_eustocks should be of class POSIXct, and 
+# the timezone should be equal to "America/New_York". 
+# hint: you can use functions coredata(), xts(), index(), 
+# and date_decimal(). 
+
+### write your code here
+
+# plot all 4 columns of xts_eustocks in a single panel:
+
+### write your code here
+
+# call attri_butes() as follows, to verify that it works correctly: 
+
+attri_butes(EuStockMarkets)
+attri_butes(EuStockMarkets[, 1])
+attri_butes(xts_eustocks)
+attri_butes(xts_eustocks[, 1])
+
+
+
+############## Part II
+# Summary: The package "Ecdat" contains a data frame called "Garch". 
+# The column Garch$date contains dates as numeric values in the 
+# format "yymmdd". 
+# Coerce the numeric values into date-time objects. 
+
+# 1. (10pts) Create a vector of dates of class Date from Garch$date, 
+# and call it "in_dex". 
+# You will need to add the century value "19" to the year. 
+# You can use functions paste() and as.Date(), with the proper 
+# "format" argument. 
+
+library(Ecdat)  # load econometric data sets
 
 ### write your code here
 
 
-# calculate the rolling upper (lower) band as the moving average
-# plus (minus) one half of "ba_nd",
-# merge the rolling upper and lower bands with "zoo_msft" by adding 
-# them as the last columns,
-# rename the last columns to "Up_band" and "Low_band",
-# remove rows with NAs using function na.omit(), 
+# Use three different methods to create a vector of POSIXct dates 
+# from Garch$date, and call it "in_dex". 
+# 
+# 2. (10pts) First method: create strings in the format "19yy-mm-dd", 
+# and then coerce them into POSIXct.  
+# hint: Extract substrings corresponding to the year, month, and day 
+# using substr(), and then combine them using paste(). 
+# Apply function as.POSIXct() and set the timezone to "America/New_York". 
 
 ### write your code here
 
 
-# plot "zoo_msft" columns "AdjClose", "Up_band", and "Low_band" in the 
-# same panel, starting from "2015-01-01",
-# use method plot.zoo() with the proper argument "plot.type",
-# add legend so that it doesn't obscure the plot,
+# 3. (10pts) Second method: create strings in the format "19yymmdd", 
+# and then coerce them into POSIXct. 
+# hint: Apply function as.POSIXct() with the proper "format" argument,
+# and set the timezone to "America/New_York". 
 
 ### write your code here
 
 
-# calculate the vector of dates when zoo_msft[, "AdjClose"] 
-# crosses any of the bands, and call it "cross_es", 
-# "cross_es" should be TRUE for dates when a cross had just occurred, 
-# and FALSE otherwise,
+# 4. (10pts) Third method: use function ymd() from package lubridate,
+# and set the timezone to "America/New_York", 
 
 ### write your code here
 
 
-# add vertical ablines to the plot above, at the dates of "cross_es",
+# 5. (20pts) Create an xts object called xts_series from the 
+# columns Garch$dm and Garch$cd, and the vector in_dex. 
+# Use functions c() and xts(). 
 
 ### write your code here
 
+# Change the column names of xts_series to "DMark" and "CAD". 
+# Use functions c() and colnames(). 
+
+### write your code here
+
+# Calculate the rolling mean of the "DMark" column of xts_series, 
+# over a window of 11 points in the past, and call the result dm_mean,
+# Use the function runMean() from package TTR. 
+
+library(TTR)
+
+### write your code here
+
+# Add dm_mean as the third column of xts_series, 
+# using the generic function cbind(). 
+
+### write your code here
+
+# Change the third column name of xts_series to "dm_mean". 
+# Use function colnames(). 
+
+### write your code here
+
+# Calculate the number of NA values in xts_series. 
+# Use functions is.na() and sum(). 
+
+### write your code here
+
+# Remove any NAs in xts_series using na.omit(). 
+
+### write your code here
+
+# Subset xts_series to the dates from "1982-01-01" to "1986-01-01". 
+
+### write your code here
+
+# 6. (10pts) Plot the "DMark" and "dm_mean" columns of xts_series, 
+# for the years from 1984 to 1985, using the generic function plot(). 
+# Add a legend using the function legend(). 
+
+### write your code here
+
+# Save xts_series to a comma-delimited csv file called "dmcad.csv". 
+# Use function write.zoo(). 
+
+### write your code here
 

@@ -1,9 +1,9 @@
-##################################
+##############################
 ### Homework and test ideas
-##################################
+##############################
 
 
-##################################
+##############################
 # miscellaneous
 
 # remove all
@@ -38,11 +38,71 @@ stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 
 
-##################################
+##############################
 # expressions data structures
-##################################
+##############################
+
+############## hw
+# 1. (10pts) 
+# Summary: Write code for performing operations in the R workspace, 
+# change options settings and display them.
+
+# remove all objects in the workspace:
+rm(list=ls())
+
+# set the maximum number of items printed to console equal to 80:
+# you can use function options(),
+options(max.print=80)
+
+# show the max number of rows printed to console:
+# you can use function options(),
+options("max.print")
+
+# set the number of digits printed for numeric values equal to 3:
+# you can use function options(),
+options(digits=3)
+
+# show the number of digits printed to console for numeric values:
+# you can use function options(),
+options("digits")
+
+# display today's date and time in the format: 
+# "Today is April 05, 2016 at 12:38:36"
+paste("Today is", format(Sys.time(), "%B %d, %Y at %H:%M:%S"))
+
+# Create objects called var1, var2, var3, 
+# and assign the values rnorm(1) to them: 
+var1 <- rnorm(1)
+var2 <- rnorm(1)
+var3 <- rnorm(1)
+
+# list all objects with names starting with "v". 
+# hint: you can use function glob2rx() and function 
+# ls() with the "pattern" argument,
+ls(pattern=glob2rx("v*"))
+
+# save all objects with names ending with "1" to a file 
+# called "vobjects.RData" in your cwd. 
+# hint: you can use function save() with the "list" argument,
+save(list=ls(pattern=glob2rx("*1")), file="my_data.RData")
+
+# remove all objects with names starting with "v": 
+rm(list=ls(pattern=glob2rx("v*")))
+
+
 
 ############## test
+# 1. (10pts) Create objects called var1, var2, var3, 
+# and assign the values rnorm(1) to them. 
+# You must use a for() loop, instead of individual assignments. 
+# hint: you can use functions paste0() and assign(),
+
+for (new_var in paste0("var", 1:3))
+  assign(x=new_var, rnorm(1))
+
+
+
+############## test - already in slides
 # 1. (20pts) Create the character string "y = x1 + x2 - x3 - x4" from 
 # characters "x", "y", "=", "+", "-", and the vectors 1:2 and 3:4, using 
 # the functions paste0() and paste() with a collapse string,
@@ -51,13 +111,13 @@ stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 paste("y", "=", 
       paste(
-      paste(paste0("x", 1:2), collapse=" + "), 
-      paste(paste0("x", 3:4), collapse=" - "), 
+        paste(paste0("x", 1:2), collapse=" + "), 
+        paste(paste0("x", 3:4), collapse=" - "), 
       sep=" - "))
 
 
 
-############## test
+############## test - too simple
 # 3. (15pts) create a vector of 20 random normal numbers:
 vec_tor <- rnorm(20)
 # find the indices of numbers greater than 1:
@@ -73,9 +133,9 @@ vec_tor[which.max(vec_tor)]
 
 ############## test
 # 1. (15pts) Create a vector of permutations of integers from 1 to 90, 
-# and call it "vec_tor", 
-# extract every third element of "vec_tor", starting with the first one, 
-# into a single column matrix called "mat_rix",
+# and call it vec_tor, 
+# extract every third element of vec_tor, starting with the first one, 
+# into a single column matrix called mat_rix,
 # hint: you can use functions sample(), seq() and function matrix(), 
 # with the proper "byrow" argument,
 
@@ -85,7 +145,7 @@ mat_rix <- matrix(vec_tor[seq(from=1, to=length(vec_tor), by=3)], ncol=1)
 mat_rix <- matrix(vec_tor, ncol=3, byrow=TRUE)
 mat_rix <- mat_rix[, 1, drop=FALSE]
 
-# extract a vector of odd index elements of "vec_tor" (first, third, etc), 
+# extract a vector of odd index elements of vec_tor (first, third, etc), 
 # and a vector of even index elements (second, fourth, etc.),
 # calculate the scalar ("inner") product of the two vectors,
 # the value should be a vector with a single element, not a matrix,
@@ -102,11 +162,11 @@ drop(mat_rix[, 1] %*% mat_rix[, 2])
 
 
 ############## test
-# 1. (15pts) Create a matrix called "mat_rix", as follows:
+# 1. (15pts) Create a matrix called mat_rix, as follows:
 
 mat_rix <- matrix(1:6, ncol=3)
 
-# assign to "mat_rix" row names "row1", "row2", and 
+# assign to mat_rix row names "row1", "row2", and 
 # column names "col1", "col2", "col3",
 # You can use the functions rownames(), colnames(), 
 # and/or dimnames(), 
@@ -123,40 +183,47 @@ dimnames(mat_rix)$rows <- c("first_row", "second_row")
 
 
 ############## test
-# 1. (20pts) 
+# Summary: Multiply the columns of a matrix by the 
+# elements of a vector. 
 
-# Create a vector called "vec_tor" and a matrix called "mat_rix", 
-# as follows:
+# Create a vector and a matrix as follows:
 
 vec_tor <- c(2, 1, 3)
 set.seed(1121)
 mat_rix <- matrix(sample(1:12), ncol=3)
 
-# Multiply "mat_rix" by "vec_tor", so that the first column 
-# of "mat_rix" is multiplied by the first element of "vec_tor", 
-# the second column by the second element, etc. 
-# Call this product  "mult_matrix". 
-# "mult_matrix" should have the same dimensions as "mat_rix". 
+# 1. (20pts) Multiply mat_rix by vec_tor, so that the 
+# first column of mat_rix is multiplied by the first 
+# element of vec_tor, the second column by the second 
+# element, etc. 
+# Call this product mult_matrix. 
+# mult_matrix should have the same dimensions as mat_rix. 
+# You can use the function t(), and the "*" operator. 
+# hint: use the function t() twice. 
+
+mult_matrix <- t(t(mat_rix)*vec_tor)
+
 # You should get the following result:
+# > mult_matrix
 #      [,1] [,2] [,3]
 # [1,]   14    5   33
 # [2,]    8   10    3
 # [3,]   24    6   24
 # [4,]    6    9    6
 
-# You can use the function t(), and the "*" operator, 
-
-mult_matrix <- t(t(mat_rix)*vec_tor)
-
-# Calculate the row sums of "mult_matrix". 
-# You should get the following result:
-# [1] 52 21 54 21
+# Calculate the row sums of mult_matrix. 
 # You can use the function rowSums(), 
 
 rowSums(mult_matrix)
 
-# Calculate the inner product of "mat_rix" and "vec_tor". 
+# You should get the following result:
+# [1] 52 21 54 21
+
+# Calculate the inner product of mat_rix and vec_tor. 
 # You can use the "%*%" operator, 
+
+mat_rix %*% vec_tor
+
 # You should get the following result:
 #      [,1]
 # [1,]   52
@@ -164,11 +231,11 @@ rowSums(mult_matrix)
 # [3,]   54
 # [4,]   21
 
-mat_rix %*% vec_tor
 
 
 ############## test
-# Summary: perform vectorized operations on vectors.
+# Summary: Perform loops over vectors, and then perform 
+# the equivalent vectorized operations over the vectors.
 
 # First create a vector of random numbers as follows: 
 
@@ -176,8 +243,8 @@ set.seed(1121)
 vec_tor <- rnorm(10)
 
 
-# 1. (10pts) Perform a for() loop to replace those elements 
-# of "vec_tor" that are greater than "1" with the number "5". 
+# 1. (20pts) Perform a for() loop to replace those elements 
+# of vec_tor that are greater than "1" with the number "5". 
 # You can use functions for() and seq_along(), 
 
 for(in_dex in seq_along(vec_tor)) {
@@ -185,14 +252,15 @@ for(in_dex in seq_along(vec_tor)) {
     vec_tor[in_dex] <- 5
 }  # end for
 
-# "vec_tor" should be like this:
+# vec_tor should be like this:
 # [1]  0.1449583  0.4383221  0.1531912  5.0000000  5.0000000 -0.8118832
 # [7]  0.1602680  0.5858923  0.3600880 -0.0253084
 
 
-# 2. (10pts) Perform an sapply() loop to perform the same 
-# calculations as in p.1. 
-# You can use functions sapply() and seq_along(), 
+# 2. (20pts) Perform an sapply() loop over vec_tor, and 
+# perform exactly the same calculations as in p.1. 
+# You must use either functions apply() lapply(), or sapply(). 
+# You can also use functions length() and seq_along(), 
 # and an anonymous function.
 
 set.seed(1121)
@@ -214,26 +282,29 @@ vec_tor <- sapply(seq_along(vec_tor),
                   })  # end sapply
 
 
-# 3. (10pts) Perform the same calculations as in p.1, 
-# but only using vectorized operations. 
-# You cannot use any for() or apply() loops, 
+# 3. (20pts) Perform the same calculations as in p.1, 
+# but only using vectorized operations (logical 
+# operators and subsetting). 
+# You cannot use any for() or apply() loops. 
 
 set.seed(1121)
 vec_tor <- rnorm(10)
 vec_tor[vec_tor>1] <- 5
 
 
-# 4. (10pts) Perform the same calculations as in p.1, 
+# 4. (20pts) Perform the same calculations as in p.1, 
 # but using function ifelse(). 
-# You must use function ifelse(), 
+# You cannot use any for() or apply() loops. 
+# You must use function ifelse(). 
 
 set.seed(1121)
 vec_tor <- rnorm(10)
 vec_tor <- ifelse(vec_tor>1, 5, vec_tor)
 
 
-# 5. (10pts) Benchmark the CPU time used by the code from p.2 
-# with the code from p.4, using the function microbenchmark(). 
+# 5. (10pts) Benchmark the CPU time used by the code 
+# from p.2 with the code from p.4, using the function 
+# microbenchmark(). 
 # Assign the names "s_apply" and "if_else" to each method. 
 
 library(microbenchmark)
@@ -249,53 +320,66 @@ summary(microbenchmark(
 
 
 
-############## test
-# Summary: create a function called get_index(), that calculates 
+############## hw
+# Summary: create a function called which_true(), which calculates 
 # the indices of the TRUE elements of a boolean vector. 
-# get_index() should produce the same result as function which(), 
+# which_true() should produce the same result as function which(), 
 # when applied to boolean vectors. 
-# Implement get_index() using two different methods. 
+# Implement which_true() using two different methods. 
 
-# 1. (20pts) First method: you must perform a loop, 
-# you can also use functions length(), seq_along(), 
-# and then apply vector subsetting,
+# 1. (20pts) First method: you must perform a for() loop. 
+# hint: you can first create an empty integer vector, 
+# and then perform a for() loop to populate it with the 
+# index values. 
+# you can use functions integer(), seq_along(), c(). 
 
-get_index <- function(vec_tor){
+which_true <- function(vec_tor){
+  in_dex <- integer()
+  for (i in seq_along(vec_tor)) {
+    if (vec_tor[i])
+      in_dex <- c(in_dex, i)
+  }  # end for
+  in_dex
+}  # end which_true
+
+# or a more complicated method:
+which_true <- function(vec_tor){
   in_dex <- integer()
   j <- 1
   for (i in seq_along(vec_tor)) {
-    if (vec_tor[i]==TRUE) {
+    if (vec_tor[i]) {
       in_dex[j] <- i
       j <- j + 1
     }  # end if
   }  # end for
   in_dex
-}  # end get_index
+}  # end which_true
 
 
 # 2. (20pts) Second method: you cannot perform any type 
 # of loop, only vectorized functions, 
-# hint: you can use functions length(), seq_along(), 
+# hint: you can use functions length() or seq_along(), 
 # and then apply vector subsetting,
 
-get_index <- function(vec_tor) (seq_along(vec_tor))[vec_tor]
+which_true <- function(vec_tor) (seq_along(vec_tor))[vec_tor]
 # or
-get_index <- function(vec_tor) (1:length(vec_tor))[vec_tor]
+which_true <- function(vec_tor) (1:length(vec_tor))[vec_tor]
 
-# apply the function get_index() to a boolean vector, and 
+# apply the function which_true() to a boolean vector, and 
 # compare the result with using function which(), to verify 
-# that it works correctly,
+# that it works correctly:
 
 set.seed(1121)
 vec_tor <- sample(1:20, replace=TRUE)
-get_index(vec_tor==18)
+which_true(vec_tor==18)
 which(vec_tor==18)
 
 
 
-############## hw
-# Calculate the row and column index (number) containing 
-# the specified value of a matrix, without using which(),
+############## test - similar to hw
+# 1. (20pts) Calculate the row and column index (number) 
+# containing the specified value of a matrix, 
+# without using which(),
 
 # first, create a matrix,
 set.seed(1121)
@@ -310,21 +394,22 @@ val_ue <- sample(x=mat_rix, size=1)
 bool_matrix <- (mat_rix==val_ue)
 
 # first find the column index,
-co_lumn <- as.logical(apply(bool_matrix, 2, sum))
-co_lumn <- (seq_along(mat_rix[1, ]))[co_lumn]
+col_umn <- as.logical(apply(bool_matrix, 2, sum))
+col_umn <- (seq_along(mat_rix[1, ]))[col_umn]
 # then find the row index,
-in_dex <- (val_ue==mat_rix[, co_lumn])
+in_dex <- (val_ue==mat_rix[, col_umn])
 r_ow <- (seq_along(in_dex))[in_dex]
 
 
 
-############## test
+############## deprecated ##############
+############## test - already in slides?
 # Summary: extract and filter the elements of a matrix. 
 
 # 1. (5pts) create a numeric vector of length 15 containing 
 # random normal variates (rnorm), 
 # coerce the vector into a matrix of 5 rows and 3 columns,
-# call the matrix "mat_rix", 
+# call the matrix mat_rix, 
 # you can use functions matrix() and dim(), 
 
 mat_rix <- matrix(rnorm(15), ncol=3)
@@ -332,12 +417,12 @@ mat_rix <- matrix(rnorm(15), ncol=3)
 mat_rix <- rnorm(15)
 dim(mat_rix) <- c(5, 3)
 
-# 2. (5pts) extract all the elements of "mat_rix" that are greater than 1.0,
+# 2. (5pts) extract all the elements of mat_rix that are greater than 1.0,
 
 mat_rix[mat_rix>1.0]
 
 # 3. (5pts) calculate the row and column indices of all the elements 
-# of "mat_rix" that are greater than 1.0,
+# of mat_rix that are greater than 1.0,
 # you can use function which() with argument "arr.ind", 
 
 which(mat_rix>1.0, arr.ind=TRUE)
@@ -349,7 +434,7 @@ which(mat_rix>1.0, arr.ind=TRUE)
 row_sums <- apply(mat_rix, 1, sum)
 col_sums <- apply(mat_rix, 2, sum)
 
-# 5. (5pts) bind the vectors of sums to "mat_rix", as extra 
+# 5. (5pts) bind the vectors of sums to mat_rix, as extra 
 # rows and columns, respectively, 
 # you can use functions cbind() and rbind(), 
 
@@ -365,6 +450,7 @@ mat_rix <- cbind(c(sum(row_sums), row_sums),
 
 dimnames(mat_rix) <- list(c("col_sums", paste0("row", 1:(nrow(mat_rix)-1))), 
                           c("row_sums", paste0("col", 1:(ncol(mat_rix)-1))))
+############## end deprecated ##############
 
 
 
@@ -421,8 +507,9 @@ sd(vec_tor)
 c(vec_tor, 31:33)
 
 
-############## test
-# 3. (5pts) Create a matrix of 100 random normal elements, with 4 columns.
+
+############## test - too easy
+# 3. (5pts) Create a matrix of 100 random normal elements, with 4 columns and 25 rows.
 mat_rix <- matrix(rnorm(100), ncol=4)
 
 # 4. (5pts) Calculate column means using the function apply(), and omit the NA values.
@@ -434,6 +521,7 @@ mat_rix[mat_rix > 1]
 
 
 
+############## deprecated ##############
 # comment: this part is already in lecture notes "The lapply() Functional"
 ############## test
 # 1. (15pts) Calculate a vector of means of the numeric columns 
@@ -443,7 +531,7 @@ mat_rix[mat_rix > 1]
 # you can use functions lapply(), sapply(), apply(), is.numeric(), 
 # unlist(), and mean(), and an anonymous function.
 
-unlist(sapply(iris, function(co_lumn) {if (is.numeric(co_lumn)) mean(co_lumn)}))
+unlist(sapply(iris, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
 # or
 sapply(iris[, sapply(iris, is.numeric)], mean)
 
@@ -454,53 +542,29 @@ unique(iris$Species)
 # hint: first create a data frame of the "setosa" species, which is a subset of the "iris" data frame.
 # hint: Then apply the expression from point #1 on the data frame of the "setosa" species.
 iris_setosa <- iris[iris$Species=="setosa", ]
-unlist(sapply(iris_setosa, function(co_lumn) {if (is.numeric(co_lumn)) mean(co_lumn)}))
-
-
-
-############## test
-# 1. (30pts) summary:
-# benchmark the speed of cumulative sum calculations in the 
-# slide titled "Vectorized Functions for Vector Computations", 
-# using the function microbenchmark(),
-# 
-# create a vector of 1000 random normal numbers,
-
-big_vector <- rnorm(1000)
-
-# calculate the cumulative sum of "big_vector" using two 
-# different methods:
-# first using the function cumsum(), second using a for() loop, 
-# 
-# benchmark the speed of both calculations using the function 
-# microbenchmark(),
-# assign the names "cum_sum" and "for_loop" to each method, 
-
-library(microbenchmark)
-summary(microbenchmark(
-  cum_sum=cumsum(big_vector), 
-  for_loop={
-# allocate memory for cumulative sum
-    cum_sum <- numeric(length(big_vector))
-    cum_sum[1] <- big_vector[1]
-# cumulative sum using "for" loop
-      for(i in 2:length(big_vector)) {
-        cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-      }},  # end for
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+unlist(sapply(iris_setosa, function(col_umn) {if (is.numeric(col_umn)) mean(col_umn)}))
+############## end deprecated ##############
 
 
 
 ############## hw
-# 1. (30pts) Create a data frame containing the homework and test scores for 20 students, 
-# and call the data frame "student_scores",
+# Summary: Read a data frame containing student homework and test 
+# scores, and assign letter grades. 
+
+############## deprecated ##############
+# 1. (30pts) Create a data frame containing the homework 
+# and test scores for 20 students, and call the data 
+# frame student_scores, 
 # 
-# create a vector of strings containing student names, called "student_names",
-student_names <- c("Chloe", "Olivia", "Madison", "Ethan", "James", "Amelia", "Anthony", 
-                   "Joseph", "Evelyn", "Matthew", "Michael", "Liam", "Allison", "Mason", 
-                   "Emma", "Jayden", "Emily", "William", "Ella", "Elizabeth")
+# First create a vector of strings containing student names, 
+# called "student_names": 
 
+student_names <- c("Chloe", "Olivia", "Madison", "Ethan", "James", "Amelia", 
+                   "Anthony", "Joseph", "Evelyn", "Matthew", "Michael", "Liam", 
+                   "Allison", "Mason", "Emma", "Jayden", "Emily", "William", 
+                   "Ella", "Elizabeth")
 
+# 1. (30pts) Create a data frame containing the homework and test scores 
 # create a factor variable called "tra_ck" of length(student_names),
 # containing values sampled from the following vector of strings:
 # "Corporate", "Computational", "InfoTech", "Risk",
@@ -510,21 +574,17 @@ tra_ck <- as.factor(sample(
   size=length(student_names),
   replace=TRUE))
 
-
-# Create the data frame "student_scores" from the vectors "student_names" and "tra_ck",
+# Create the data frame student_scores from the vectors "student_names" and "tra_ck",
 # Use function data.frame() with "stringsAsFactors=FALSE" to avoid coercing "character" to "factor",
-student_scores <- data.frame(
-  name=student_names, 
-  finance_track=tra_ck,
-  stringsAsFactors=FALSE)
-
+student_scores <- data.frame(name=student_names, 
+                             finance_track=tra_ck,
+                             stringsAsFactors=FALSE)
 
 # Create a numeric matrix with six columns, called "sco_res", 
 # and assign to it random integer scores between 30 and 60,
 # Use functions sample() and matrix(), 
 sco_res <- matrix(sample(x=30:60, size=6*length(student_names), 
                          replace=TRUE), ncol=6)
-
 
 # calculate a vector containing average scores for each student, and bind it to "sco_res",
 # Use functions cbind() and rowMeans(), 
@@ -535,34 +595,36 @@ sco_res <- cbind(sco_res, rowMeans(sco_res))
 colnames(sco_res) <- c("HW1_score", "HW2_score", "HW3_score", "HW4_score", "test1_score", "test2_score", "avg_score")
 head(sco_res)
 
-# cbind "sco_res" to the data frame "student_scores",
+# cbind "sco_res" to the data frame student_scores,
 student_scores <- cbind(student_scores, sco_res)
 head(student_scores)
 
+############## end deprecated ##############
 
-### this is a version where students download "student_scores":
+### this is a version where students download student_scores:
 
 # Download the file "student_scores.csv" from NYU Classes. 
-# The file contains a data frame with student names, track, and scores. 
-# Read the file into a variable called "student_scores" using read.csv(),
+# The file contains a data frame with student names, track, 
+# and scores. 
+# Read the file into a variable called student_scores using 
+# read.csv(). 
 
-student_scores <- read.csv(file="student_scores.csv")
+student_scores <- read.csv(file="student_scores.csv", stringsAsFactors=FALSE)
 
-# The data frame "student_scores" contains 8 columns: student names, 
+# The data frame student_scores contains 8 columns: student names, 
 # track, and six columns of numerical scores for homeworks and tests. 
 # But some of the numeric columns contain NAs and characters, which 
 # forces their coercion into factors.
 
-# 1. (10pts) Perform an sapply() loop over the columns containing 
-# numerical scores and coerce them to numeric. 
+# 1. (10pts) Perform an sapply() loop over the columns 3 to 8, 
+# containing numerical scores and coerce them to numeric. 
 # You can use functions sapply() and as.numeric(), 
 
 student_scores[, -(1:2)] <- sapply(student_scores[, -(1:2)], as.numeric)
 
-# Extract the "class" of the columns of "student_scores" using 
-# functions class() and sapply(),
-# make sure that none of the columns are factors, 
-# except for "finance_track" and "letter_grades",
+# Extract the "class" of the columns of student_scores using 
+# functions class() and sapply(), and verify that the columns with 
+# scores are numeric. 
 
 sapply(student_scores, class)
 
@@ -570,26 +632,28 @@ sapply(student_scores, class)
 # "numeric", with some NAs in them, representing scores that are 
 # not available. 
 
-# 2. (15pts) Calculate a vector called "num_nas" containing the 
-# number of NA scores for each student, and bind it to 
-# "student_scores" as the last (9th) column,
+
+# 2. (20pts) Calculate a vector called "num_nas" containing the 
+# number of NA scores for each student, and cbind() it to 
+# student_scores as the last (9th) column,
 # You can use functions apply(), cbind(), sum(), is.na(), 
 # and an anonymous function, 
 
-num_nas <- apply(student_scores[, -(1:2)], MARGIN=1, function(row) {
-  sum(is.na(row))
-})  # end apply
+num_nas <- apply(student_scores[, -(1:2)], MARGIN=1, 
+                 function(row) sum(is.na(row))
+                 )  # end apply
 
 student_scores <- cbind(student_scores, num_nas)
 
-# Sort "student_scores" in descending order by column "num_nas", 
+# Sort student_scores in descending order by column "num_nas", 
 # use function order()
 
 student_scores <- student_scores[order(student_scores$num_nas, decreasing=TRUE), ]
 
-# 3. (10pts) Calculate a vector called "avg_score" containing the 
-# average score of each student, and bind it to "student_scores" as 
-# the last (10th) column,
+
+# 3. (10pts) Calculate a vector called avg_score 
+# containing the average score of each student, and 
+# bind it to student_scores as the last (10th) column. 
 # Remember to omit NA values. 
 # You can use functions apply(), cbind(), and mean(). 
 # You cannot use an anonymous function. 
@@ -598,146 +662,214 @@ avg_score <- apply(student_scores[, 3:8], MARGIN=1, mean, na.rm=TRUE)
 
 student_scores <- cbind(student_scores, avg_score)
 
-# 4. (20pts) Assign letter grades to each student, based on their 
-# "avg_score" column. 
-# First calculate a histogram of "avg_score" values, using the function 
-# hist(), with the Freedman-Diaconis rule for determining the breakpoints. 
+
+# 4. (20pts) Assign letter grades to each student, based on 
+# their avg_score column. 
+# First calculate a histogram of avg_score values, using the 
+# function hist(), with the Freedman-Diaconis rule for 
+# determining the breakpoints. 
+# The function hist() invisibly returns a list that includes 
+# a vector of breakpoints called "breaks". 
+# Assign the return value of function hist() to a list 
+# called student_hist
 
 student_hist <- hist(student_scores$avg_score, col="lightblue1", 
-                     main="Student scores", xlab="student scores", breaks="FD")
+                     main="Student scores", xlab="student scores", 
+                     breaks="FD")
 
-# The function hist() invisibly returns a list that includes a vector 
-# of breakpoints called "breaks". 
-# Calculate a vector of letter grades corresponding to the "avg_score" 
-# values, using the "breaks" from function hist(), and call it 
-# "letter_grades". 
+# Calculate a vector of letter grades corresponding to 
+# the avg_score values, using the vector of breaks: 
+#   student_hist$breaks
+# and call it letter_grade. 
 # You must use function findInterval(), 
 
-letter_grades <- findInterval(x=student_scores[, "avg_score"], vec=student_hist$breaks)
+letter_grade <- findInterval(x=student_scores[, "avg_score"], 
+                              vec=student_hist$breaks)
 
-# "letter_grades" is an integer vector. 
-# Convert "letter_grades" to a vector of strings representing letter grades. 
-# Use the following vector of strings called "grade_s": 
+# letter_grade is an integer vector from 1 to 5, 
+# with 1 corresponding to the highest avg_score 
+# category, and 5 corresponding to the lowest category. 
+# Convert letter_grade to a vector of strings 
+# representing letter grades. 
+# Use the following vector of strings called grade_s: 
 
-grade_s <- c("A", "A-", "B+", "B", "B-", "C+", "C")
+grade_s <- c("A", "B", "C", "D", "F")
 
-# Be careful to consider that the highest "avg_score" should correspond 
-# to the letter grade "A", which has index equal to 1 in "grade_s". 
-# Assign the letter grade "A" to the highest "letter_grades" value, 
-# then assign "A-" to the second highest value, etc. 
-# Also note that the length of "letter_grades" may be less than the 
-# length of "grade_s". 
+# Convert the letter_grade to a vector of strings, 
+# by assigning 1 to letter grade "A", 2 to letter 
+# grade "B", etc.
 
-letter_grades <- grade_s[max(letter_grades) - letter_grades + 1]
+letter_grade <- grade_s[max(letter_grade) - letter_grade + 1]
 
-# cbind "letter_grades" to the data frame "student_scores" as 
-# the last column,
+# cbind() letter_grade to the data frame student_scores as 
+# the last column. 
 
-student_scores <- cbind(student_scores, letter_grades)
+student_scores <- cbind(student_scores, letter_grade)
 head(student_scores)
 
-# 5. (20pts) Calculate the average scores for students in each 
-# "finance_track" category, using the split-apply-combine procedure, 
-# you can use functions with(), tapply(), and mean(),
+
+# 5. (15pts) Plot a histogram of the number of students 
+# in each "letter_grade" category. 
+# You can use the lecture slide titled "Cars93 Data Frame". 
+# 
+# There are at least two ways of doing this, but you need 
+# to do it only one way.
+# 
+# In the first method you can use column "avg_score" 
+# and function hist(), and the vector student_hist$breaks. 
+
+hist(student_scores$avg_score, breaks=student_hist$breaks)
+
+# In the second method you can use column "letter_grade", 
+# and functions table() and barplot(). 
+
+cont_table <- table(student_scores$letter_grade)
+cont_table <- cont_table[order(names(cont_table), decreasing=TRUE)]
+barplot(cont_table)
+
+
+# this part is in case student_scores have to be loaded from student_scores.RData
+############## hw
+# Summary: Perform tapply() and sapply() loops to aggregate 
+# student scores. 
+
+# Download the file student_scores.RData from NYU Classes,
+# and load() it.
+# student_scores.RData contains the data frame student_scores.
+
+load(file="C:/Develop/data/student_scores.RData")
+
+
+# 6. (30pts) Calculate the average scores for students 
+# in each finance_track category (the average of the 
+# "avg_score" column), using the split-apply-combine 
+# procedure. 
+# You must perform the calculation in two different ways. 
+# In the first method you must use functions with(), 
+# tapply(), and mean(). 
 
 with(student_scores, 
      tapply(avg_score, finance_track, mean)
 )  # end with
 
-# Find the names of the students with the highest average scores 
-# in each "finance_track" category, using the split-apply-combine 
-# procedure, 
-# you can use functions with(), tapply(), max(), and match(),
+# You should get the following output:
+# Computational     Corporate      InfoTech       Risk 
+#     25.60833      28.53333      20.20000      29.66250
+
+# In the second method you must use functions with(), 
+# sapply(), levels(), and mean().  You cannot use tapply(). 
+# hint: use argument "USE.NAMES=TRUE" in sapply(). 
 
 with(student_scores, 
-     name[
-       match(
-         tapply(avg_score, finance_track, max), 
-                avg_score)  # end match
-       ]  # end name
-)  # end with
+     sapply(levels(finance_track), function(x) {
+       mean(avg_score[x==finance_track])
+     }, USE.NAMES=TRUE))  # end with
 
 
+# 7. (20pts) Calculate the highest avg_scores in each 
+# finance_track category, and call it high_scores. 
+# You can use functions with(), tapply(), and max(). 
+# Or you can use functions with(), sapply(), 
+# levels(), and max().
 
-### old version below
+high_scores <- with(student_scores, 
+                    tapply(avg_score, finance_track, max))
 
-# Assign letter grades to each student, based on their "avg_score" column, 
-# use the following table:
-# "A" if "avg_score" >= 50.0
-# "A-" if "avg_score" >= 47.5
-# "B+" if "avg_score" >= 45.0
-# "B" if "avg_score" >= 42.5
-# "B-" if "avg_score" >= 40.0
-# "C+" if "avg_score" >= 37.5
-# "C" if "avg_score" >= 35.0
-
-# breakpoints correspond to categories of the data,
-# the first breakpoint should correspond to the lowest category,
-# and should have a value less than any of the data,
-# Create a named numeric vector of breakpoints for "avg_score", 
-# called "brea_ks" as follows: 
-
-brea_ks <- seq(from=35, to=50.0, by=2.5)
-names(brea_ks) <- c("C", "C+", "B-", "B", "B+", "A-", "A")
+# or: 
+high_scores <- with(student_scores, 
+               sapply(levels(finance_track), function(x) {
+                 max(avg_score[x==finance_track])
+               }, USE.NAMES=TRUE))  # end with
 
 
-# Create a factor variable containing letter grades, called "letter_grades", 
-# There are at least two ways of doing this, but you only need to do it one way,
-# 
-# In the first approach you can use the names of "brea_ks", and either 
-# a for() loop, and/or if() and else(), and/or logical operators "<", ">", etc., 
+# 8. (20pts) Find the names of the students with the 
+# highest avg_score in each finance_track category. 
+# You must perform the calculation in two different ways. 
+# In the first method you must use high_scores and 
+# the function match(). 
+# hint: use the "name" column of student_scores. 
 
-# first create vector "letter_grades" containing empty strings:
-letter_grades <- character(20)
-# next populate "letter_grades" with letter grades using a for() loop:
-# perform for() loop over breaks, which is shorter than number of students
-for (brea_k in seq_along(brea_ks)) {
-# create boolean vector indicating if student score is greater than break score
-  in_dex <- (student_scores[, "avg_score"] >= brea_ks[brea_k])
-# assign break score to students
-  letter_grades[in_dex] <- names(brea_ks[brea_k])
-}  # end for
-letter_grades <- as.factor(letter_grades)
+student_scores$name[match(high_scores, student_scores$avg_score)]
 
-# In the second approach you can use function findInterval() 
-# and the names of "brea_ks",
+# You should get the following output:
+# [1] William   Jayden    Elizabeth Amelia
 
-letter_grades <- names(brea_ks[findInterval(x=student_scores[, "avg_score"], 
-                                            vec=brea_ks)])
-letter_grades <- as.factor(letter_grades)
+# In the second method you must use functions with() 
+# and sapply(). 
+
+with(student_scores, 
+     sapply(high_scores, function(x) {
+       name[x==avg_score]
+     })
+     )  # end with
 
 
-# 3. (15pts) Plot a histogram of the number of students in each 
-# "letter_grade" category, you can use the lecture slide titled 
-# "Cars93 Data Frame",
-# 
-# There are at least two ways of doing this, but you need to do 
-# it only one way.
-# 
-# In the first approach you can use column "student_scores$avg_score" 
-# and function hist(), and the vector "brea_ks",
-hist(student_scores$avg_score, breaks=brea_ks)
-
-# In the second approach you can use column "student_scores$letter_grade", 
-# and functions table() and barplot(), 
-cont_table <- table(student_scores$letter_grade)
-cont_table <- cont_table[order(names(cont_table), decreasing=TRUE)]
-barplot(cont_table)
-
-# 2. (15pts) Sort "student_scores" by "avg_score" column, 
+# 9. (10pts) Sort student_scores by avg_score column, 
 # first in descending order, then in ascending order,
 # use function order()
+
 student_scores <- student_scores[order(student_scores$avg_score), ]
 head(student_scores)
 student_scores <- student_scores[order(student_scores$avg_score, decreasing=TRUE), ]
 head(student_scores)
 
-# save "student_scores" to a comma-delimited CSV file, 
-# use function write.csv(), 
+# Save student_scores to a comma-delimited CSV file. 
+# You must use function write.csv(). 
 
-write.csv(student_scores, row.names=FALSE, file="student_scores.csv")
+write.csv(student_scores, row.names=FALSE, 
+          file="student_scores.csv")
 
-### end old version
+
+
+############## deprecated ##############
+
+# Assign letter grades to each student, based on their avg_score column, 
+# use the following table:
+# "A" if avg_score >= 50.0
+# "A-" if avg_score >= 47.5
+# "B+" if avg_score >= 45.0
+# "B" if avg_score >= 42.5
+# "B-" if avg_score >= 40.0
+# "C+" if avg_score >= 37.5
+# "C" if avg_score >= 35.0
+
+# breakpoints correspond to categories of the data,
+# the first breakpoint should correspond to the lowest category,
+# and should have a value less than any of the data,
+# Create a named numeric vector of breakpoints for avg_score, 
+# called brea_ks as follows: 
+
+brea_ks <- seq(from=35, to=50.0, by=2.5)
+names(brea_ks) <- c("C", "C+", "B-", "B", "B+", "A-", "A")
+
+
+# Create a factor variable containing letter grades, called letter_grade, 
+# There are at least two ways of doing this, but you only need to do it one way,
+# 
+# In the first method you can use the names of brea_ks, and either 
+# a for() loop, and/or if() and else(), and/or logical operators "<", ">", etc., 
+
+# first create vector letter_grade containing empty strings:
+letter_grade <- character(20)
+# next populate letter_grade with letter grades using a for() loop:
+# perform for() loop over breaks, which is shorter than number of students
+for (brea_k in seq_along(brea_ks)) {
+# create boolean vector indicating if student score is greater than break score
+  in_dex <- (student_scores[, avg_score] >= brea_ks[brea_k])
+# assign break score to students
+  letter_grade[in_dex] <- names(brea_ks[brea_k])
+}  # end for
+letter_grade <- as.factor(letter_grade)
+
+# In the second method you can use function findInterval() 
+# and the names of brea_ks,
+
+letter_grade <- names(brea_ks[findInterval(x=student_scores[, avg_score], 
+                                            vec=brea_ks)])
+letter_grade <- as.factor(letter_grade)
+
+
+############## end deprecated ##############
 
 
 
@@ -746,14 +878,14 @@ write.csv(student_scores, row.names=FALSE, file="student_scores.csv")
 # that reproduces the function findInterval(),
 
 # 1. (30pts) 
-# find_interval() should accept a vector argument called "vec_tor", 
+# find_interval() should accept a vector argument called vec_tor, 
 # containing numeric values, which should be classified into intervals,
 # according to break_points, 
 # should also accept a vector of breakpoints called "break_points", 
 # which determines the intervals,
 # find_interval() should return an integer vector of length equal 
-# to "vec_tor", specifying the intervals to which the numeric values 
-# contained in "vec_tor" belong, 
+# to vec_tor, specifying the intervals to which the numeric values 
+# contained in vec_tor belong, 
 # hint: you can perform a for() loop over break_points, 
 # you can use functions integer(), length(), seq_along(), 
 # logical operators, and a for() loop
@@ -804,18 +936,22 @@ summary(microbenchmark(
 
 
 
-############## test
-# Summary: create a function that calculates a contingency table 
-# for a single vector or factor, similar to function table(). 
+############## test - simple adaptation of lecture slides from data_structures
+# Summary: Create a function that calculates a contingency 
+# table for a single vector or factor, similar to function 
+# table(). 
 # 
-# 1. (20pts) Create a function that calculates a contingency table 
-# and call it ta_ble(). 
-# ta_ble() should accept a single argument, and calculate and return
-# a named vector containing the number of times an element occurs in 
-# the input argument.  The order of the elements is not important.  
-# The names should be the elements of the input argument. 
-# you can't use function table(), 
-# you can use functions sapply(), unique(), sum(), and an anonymous function,
+# 1. (20pts) Create a function that calculates a contingency 
+# table, called ta_ble(). 
+# ta_ble() should accept a single argument, either a vector 
+# or a factor, and return a named vector containing the 
+# number of times an element occurs in the input argument.  
+# The names of the output vector should be the elements of 
+# the input argument. 
+# The order of the output vector elements is not important. 
+# You can't use function table(), 
+# You can use functions sapply(), unique(), sum(), and an 
+# anonymous function.
 
 ta_ble <- function(in_put) {
   sapply(unique(in_put), 
@@ -824,30 +960,126 @@ ta_ble <- function(in_put) {
          }) # end sapply
 }  # end ta_ble
 
-# call ta_ble() as follows, to verify that it works correctly:
+# Call ta_ble() as follows, and compare its output to that 
+# of table(), to verify that they produce similar output:
 
-vec_tor <- sample(c("a", "b", "c", "d"), size=10, replace=TRUE)
+vec_tor <- sample(c("a", "b", "c", "d"), 
+                  size=20, replace=TRUE)
 ta_ble(vec_tor)
 table(vec_tor)
 
 
 
-############## test
-# 1. (20pts) calculate a vector containing the number of NAs 
-# in each column of the "airquality" data frame, 
-# you can use functions sapply(), is.na(), sum(), 
-# and an anonymous function,
+############## hw
+# Summary: Perform aggregations over data frame columns, 
+# given intervals defined by breakpoints. 
+
+# 1. (10pts) calculate a vector containing the number 
+# of NAs in each column of the airquality data frame. 
+# You can use functions sapply(), is.na(), sum(), 
+# and an anonymous function. 
 
 sapply(airquality, function(col_umn) sum(is.na(col_umn)))
 
-# replace the NAs in column "Solar.R" with zeros, 
-# you can use function is.na(),
-
-airquality[is.na(airquality$Solar.R), "Solar.R"] <- 0
-
+# You should get the following result:
+#   Ozone Solar.R    Wind    Temp   Month     Day 
+#     37       7       0       0       0       0
 
 
-############## test
+# Create a data frame called good_air, by subsetting 
+# the "Temp" and "Solar.R" columns of the airquality data 
+# frame, and then removing any rows containing NAs. 
+# You can use function complete.cases(). 
+
+good_air <- airquality[, c("Temp", "Solar.R")]
+good_air <- good_air[complete.cases(good_air), ]
+
+# You should get a data frame with the following dimensions:
+# dim(good_air)
+# [1] 146   2
+
+
+# 2. (10pts) Calculate a vector of breakpoints based on 
+# the "Temp" column of good_air. 
+# You can use function hist() with argument "plot=FALSE". 
+# The function hist() returns a structure (list) with an 
+# element called "breaks", which are the breakpoints. 
+
+hist_air <- hist(good_air$Temp, plot=FALSE)
+hist_air$breaks
+
+# You should get the following vector of breakpoints:
+# [1]  55  60  65  70  75  80  85  90  95 100
+
+
+# 3. (10pts) Calculate a vector of categorical data 
+# from the "Temp" column of good_air, using the 
+# breakpoints from p.2.  Add the categorical vector 
+# as a column to good_air called "categ".
+# The categorical column shows to which category 
+# of "Temp" each row of good_air belongs. 
+# You can use the function findInterval(). 
+
+good_air$categ <- findInterval(x=good_air$Temp, vec=hist_air$breaks)
+
+# You should get the following output:
+# head(good_air)
+#   Temp Solar.R categ
+# 1   67     190     3
+# 2   72     118     4
+# 3   74     149     4
+# 4   62     313     2
+# 7   65     299     3
+# 8   59      99     1
+
+
+# 4. (20pts) Perform a split-apply-combine procedure on 
+# the "Solar.R" column of good_air, using the categorical 
+# column of good_air from p.3.  
+# You can use the function aggregate() with argument 
+# "formula". 
+# Pass the function range() to aggregate(), so that it's 
+# applied to the "Solar.R" column of good_air. 
+# Assign the data frame returned by function aggregate() 
+# to a variable called "ran_ge". 
+
+ran_ge <- aggregate(formula=(Solar.R ~ categ), 
+                    data=good_air, FUN=range)
+
+# Add the breakpoints from p.2. as a column to ran_ge 
+# called "temp".
+
+ran_ge$temp <- hist_air$breaks[ran_ge$categ]
+
+# The end result of the split-apply-combine procedure 
+# should be a data frame as follows:
+# ran_ge
+#   categ Solar.R.1 Solar.R.2 temp
+# 1     1         8       266   55
+# 2     2        19       334   60
+# 3     3        13       322   65
+# 4     4         7       320   70
+# 5     5        27       322   75
+# 6     6        24       332   80
+# 7     7        82       323   85
+# 8     8       167       291   90
+# 9     9       203       237   95
+
+# Plot the difference between the two "Solar.R" columns 
+# of ran_ge versus "temp", to display how the variability 
+# of "Solar.R" depends on "temp". 
+# You can use the functions with() and plot(). 
+
+with(ran_ge, plot(temp, Solar.R[, 2]-Solar.R[, 1], t="l", 
+                  xlab="temp", ylab="Solar range"))
+
+
+
+# comment: some of the below is already in lecture notes "Tables of Categorical Data"
+# it's also in the test for function ta_ble()
+############## hw
+# Summary: create a function that calculates a contingency table 
+
 # 1. (5pts) Calculate the vector of "class" attributes of the 
 # columns of the data frame "Cars93", and call it "class_cars",
 # you can use functions class() and sapply(), 
@@ -861,8 +1093,6 @@ class_cars <- sapply(Cars93, class)
 
 unique(class_cars)
 
-# comment: the below part is already in lecture notes "Tables of Categorical Data"
-# it's also in the test for function ta_ble()
 # 2. (10pts) calculate the number of columns with each 
 # unique "class" attribute in "class_cars", 
 # that is, calculate how many columns are of class "factor", 
@@ -935,29 +1165,53 @@ with(mtcars[mtcars$cyl==6, ], barplot(mpg))
 
 
 ############## test
-# 1. (5pts) using the function which() perform the following,
-# create a data frame that is a subset of mtcars, 
-# and that contains only cars with 6 cylinders,
-mtcars_6cyl <- mtcars[mtcars$cyl==6, ]
-mtcars_6cyl[mtcars_6cyl$hp==max(mtcars_6cyl$hp), ]
-which(mtcars_6cyl$hp==max(mtcars_6cyl$hp))
+# Summary: Use function which() to extract elements of 
+# data frames. 
+# Perform an sapply() loop over unique elements of 
+# data frames, and extract its elements. 
 
-# 2. (5pts) find the name of the car with the highest horsepower among 6 cylinder cars,
-best_car <- mtcars_6cyl[mtcars_6cyl$hp==max(mtcars_6cyl$hp), ]
+# 1. (10pts) Select a subset of the mtcars data frame, 
+# that contains only cars with 6 cylinders, and call 
+# it mtcars_6cyl. 
+
+mtcars_6cyl <- mtcars[mtcars$cyl==6, ]
+
+
+# 2. (10pts) Select the row of mtcars_6cyl that 
+# contains the car with the highest horsepower, 
+# and call it best_car.
+# hint: you can use function which.max(). 
+
+best_car <- mtcars_6cyl[which.max(mtcars_6cyl$hp), ]
+
+# Print the name of the car with the highest horsepower: 
+
 rownames(best_car)
 
-# calculate the horsepower and the weight of that car,
+# You should get the following result:
+# [1] "Ferrari Dino"
+
+# Print the horsepower and the weight of that car:
+
 best_car$hp
 best_car$wt
 
-# calculate a vector of names of cars with the highest horsepower in each cylinder category,
-# calculate named vector of cars with the highest horsepower in each cylinder category,
+
+# 3. (30pts) Calculate a named vector of names of 
+# cars with the highest horsepower in each cylinder 
+# category. 
+# You can use functions unique, which.max(), 
+# structure(), sapply(), and an anonymous function. 
 
 sapply(unique(mtcars$cyl), function(cyl) {
-  cars_cyl <- mtcars[mtcars$cyl==cyl, ]
-  structure(rownames(cars_cyl[cars_cyl$hp==max(cars_cyl$hp), ]), 
+  mtcars_cyl <- mtcars[mtcars$cyl==cyl, ]
+  structure(rownames(mtcars_cyl[which.max(mtcars_cyl$hp), ]), 
             names=paste(cyl, "cylinders"))
-})
+})  # end sapply
+
+# You should get the following result:
+#   6 cylinders     4 cylinders     8 cylinders 
+# "Ferrari Dino"  "Lotus Europa" "Maserati Bora" 
 
 
 
@@ -1016,122 +1270,226 @@ identical(out_er(1:3, 5:7, foo), outer(1:3, 5:7, foo))
 
 
 
-##################################
+##############################
 # statistis and probability
-##################################
+##############################
 
 
 ############## test
-# 1. create a matrix of 30rows x 10columns with random normal variates, (5pts)
+# 1. (5pts) create a matrix of 30rows x 10columns with random 
+# normal variates, 
 mat_rix <- matrix(rnorm(300), ncol=10)
 
-# 2. calculate the mean, standard deviation, skewness, and kurtosis of: (10pts)
-# the 5th row, 
-in_data <- mat_rix[5, ]
-len_data <- length(in_data)
-mean_data <- mean(in_data)
-sd_data <- sd(in_data)
-skew_data <- len_data*sum(((in_data - mean_data)/sd_data)^3)/((len_data-1)*(len_data-2))
-kurtosis_data <- len_data*(len_data+1)*sum(((in_data - mean_data)/sd_data)^4)/((len_data-1)^3)
+# 2. (10pts) calculate the mean, standard deviation, skewness, 
+# and kurtosis of the 5th row: 
+
+da_ta <- mat_rix[5, ]
+len_data <- length(da_ta)
+mean_data <- mean(da_ta)
+sd_data <- sd(da_ta)
+skew_data <- len_data*sum(((da_ta - mean_data)/sd_data)^3)/((len_data-1)*(len_data-2))
+kurtosis_data <- len_data*(len_data+1)*sum(((da_ta - mean_data)/sd_data)^4)/((len_data-1)^3)
 c(mean_data, sd_data, skew_data, kurtosis_data)
 
 # the 8th column,
-in_data <- mat_rix[, 8]
-len_data <- length(in_data)
-mean_data <- mean(in_data)
-sd_data <- sd(in_data)
-skew_data <- len_data*sum(((in_data - mean_data)/sd_data)^3)/((len_data-1)*(len_data-2))
-kurtosis_data <- len_data*(len_data+1)*sum(((in_data - mean_data)/sd_data)^4)/((len_data-1)^3)
+da_ta <- mat_rix[, 8]
+len_data <- length(da_ta)
+mean_data <- mean(da_ta)
+sd_data <- sd(da_ta)
+skew_data <- len_data*sum(((da_ta - mean_data)/sd_data)^3)/((len_data-1)*(len_data-2))
+kurtosis_data <- len_data*(len_data+1)*sum(((da_ta - mean_data)/sd_data)^4)/((len_data-1)^3)
 c(mean_data, sd_data, skew_data, kurtosis_data)
 
 
 
 ############## hw
-# 1. Create a function for calculating the kurtosis of a time series of returns,
-calc_kurtosis <- function(in_data=rnorm(1000)) {  # default is normal
-  # Calculates the kurtosis of a time series of returns.
-  len_data <- length(in_data)
-  mean_data <- mean(in_data)
-  sd_data <- sd(in_data)
-  len_data*(len_data+1)*sum(((in_data - mean_data)/sd_data)^4)/((len_data-1)^3)
-}  # end calc_kurtosis
+# Summary: Create a function called kur_tosis(), for calculating 
+# the kurtosis of a time series of returns (a vector of data). 
 
-# 2. Using this function calculate the kurtosis of DAX returns, and of t-distribution returns with four degrees of freedom (use the same number of data points in both cases),
-# DAX returns in scale 1% = 1.0
+# 1. (10pts) The function kur_tosis() should accept a single numeric 
+# argument called da_ta. 
+# The function kur_tosis() should verify that da_ta is numeric, and 
+# if it's not, then it should produce a warning and return NULL. 
+# If da_ta is numeric, then kur_tosis() should calculate the kurtosis 
+# of da_ta and return it. 
+# The argument da_ta should be assigned a default value equal to a 
+# vector of 1000 random numbers taken from the standard normal 
+# distribution. 
+# You can use functions is.numeric(), warning(), paste(), return(), 
+# length(), mean(), sd(), and sum(). 
+
+kur_tosis <- function(da_ta=rnorm(1000)) {
+  if (!is.numeric(da_ta)) {
+    warning(paste("argument", da_ta, "isn't numeric"))
+    return(NULL)
+  }  # end if
+  len_data <- length(da_ta)
+  mean_data <- mean(da_ta)
+  sd_data <- sd(da_ta)
+  len_data*(len_data+1)*sum(((da_ta-mean_data)/sd_data)^4)/((len_data-1)^3)
+}  # end kur_tosis
+
+
+# 2. (10pts) Use the function kur_tosis() to calculate the kurtosis  
+# of DAX returns from the dataset EuStockMarkets. 
+# Next, calculate the kurtosis of a vector of normal random numbers, 
+# of the same length as the DAX returns. 
+# Next, calculate the kurtosis of a vector of random numbers taken 
+# from the t-distribution with four degrees of freedom, of the same 
+# length as the DAX returns. 
+# You can use the functions rt(), rnorm(), and length():
+
 ts_rets <- 100*diff(log(EuStockMarkets[, 1]))
-# calculate kurtosis of DAX returns
-calc_kurtosis(in_data=ts_rets)
-# calculate kurtosis of t-distribution
-calc_kurtosis(in_data=rt(n=length(ts_rets), df=4))
+
+# call kur_tosis() as follows, to verify that it works correctly: 
+kur_tosis(da_ta="hello")
+kur_tosis()
+
+# calculate kurtosis of DAX returns:
+kur_tosis(da_ta=ts_rets)
+
+# calculate kurtosis of normal returns:
+kur_tosis(da_ta=rnorm(n=length(ts_rets)))
+
+# calculate kurtosis of t-distribution returns:
+kur_tosis(da_ta=rt(n=length(ts_rets), df=4))
 
 
 
-
-##################################
+##############################
 # functions
-##################################
+##############################
 
-############## test
-# Perform sapply() loops over the parameters of function 
-# rnorm() using an anonymous function. 
+############## hw
+# Summary: Perform sapply() loops over the parameters of 
+# function rnorm(), both with, and without using an 
+# anonymous function. 
 
-# Define vectors of parameters of function rnorm(), 
+# 1. (10pts) Define two named vectors of parameters called  
+# me_ans and std_devs, containing mean and sd parameter values 
+# to be passed to function rnorm(). 
+# The values of mean and sd should be:
+# mean <- -1:1
+# sd <- 1:3
+# your code should produce the following named vectors: 
+# me_ans= 
+#   mean=-1  mean=0  mean=1 
+#        -1       0       1 
+# std_devs= 
+#   sd=1 sd=2 sd=3 
+#      1    2    3 
+# You can use functions paste0(), names(), and/or structure(), 
 
-sd_vec <- structure(1:3, names=paste0("sd=", 1:3))
-mean_vec <- structure(-1:1, names=paste0("mean=", -1:1))
+me_ans <- structure(-1:1, names=paste0("mean=", -1:1))
+std_devs <- structure(1:3, names=paste0("sd=", 1:3))
 
-# 1. (20pts) Perform an sapply() loop over the "sd" 
-# parameter of function rnorm(), and pass to it the vector 
-# "sd_vec" and the argument "n=2". 
-# you must use function sapply() and an anonymous function, 
+
+# 2. (20pts) Perform an sapply() loop over the vector 
+# me_ans, and pass its values to the mean parameter of 
+# function rnorm(). 
+# Pass the parameter "n=2" to rnorm(), so that each call 
+# produces two random numbers. 
+# You must use functions rnorm() and sapply(). 
+# You must perform the calculation in two different ways: 
+# the first way without using an anonymous function, and 
+# the second way using an anonymous function.
 
 set.seed(1121)
-sapply(sd_vec, function(sd) rnorm(n=2, sd=sd))
+
+# first without using an anonymous function:
+sapply(me_ans, rnorm, n=2, sd=1)
+
+# second way using an anonymous function: 
+sapply(me_ans, 
+       function(me_an) 
+         rnorm(n=2, mean=me_an))
 # or
-sapply(sd_vec, function(sd, ...) rnorm(sd=sd, ...), n=2)
+sapply(me_ans, 
+       function(me_an, ...) 
+         rnorm(mean=me_an, ...), n=2)
 
 # your code should produce a matrix like this: 
-#        sd=1     sd=2   sd=3
-# [1,] -1.955 -0.06721 2.6153
-# [2,] -1.310  0.49516 0.9008
+#        mean=-1 mean=0 mean=1
+#   [1,] -0.8550 0.1532 2.9995
+#   [2,] -0.5617 1.0849 0.1881
 
-# Perform an sapply() loop over the "mean" parameter 
-# of function rnorm(), and pass to it the vector 
-# "mean_vec" and the argument "n=2". 
-# you must use function sapply() and an anonymous function, 
+
+# Perform an sapply() loop over the vector std_devs, and 
+# pass its values to the sd parameter of function rnorm(). 
+# Pass the parameter "n=2" to rnorm(), so that each call 
+# produces two random numbers. 
+# You must use functions rnorm() and sapply(). 
+# You must perform the calculation in two different ways: 
+# the first way without using an anonymous function, and 
+# the second way using an anonymous function.
 
 set.seed(1121)
-sapply(mean_vec, function(mean) rnorm(n=2, mean=mean))
+
+# first without using an anonymous function:
+sapply(std_devs, rnorm, n=2, mean=0)
+
+# second way using an anonymous function: 
+sapply(std_devs, 
+       function(std_dev) 
+         rnorm(n=2, sd=std_dev))
 # or
-sapply(mean_vec, 
-       function(mean, ...) rnorm(mean=mean, ...), n=2)
+sapply(std_devs, 
+       function(std_dev, ...) 
+         rnorm(sd=std_dev, ...), n=2)
 
 # your code should produce a matrix like this: 
-#      mean=-1 mean=0  mean=1
-# [1,]  0.2158 -1.083 0.05898
-# [2,]  0.2454  1.191 0.84032
+#        sd=1   sd=2  sd=3
+# [1,] 0.1450 0.3064  5.999
+# [2,] 0.4383 2.1699 -2.436
 
+
+# 3. (20pts) Calculate a matrix of random numbers, by 
+# performing two sapply() loops, first over the vector 
+# me_ans, and a second loop over the vector std_devs, 
+# and pass the values of me_ans and std_devs to the 
+# mean and sd parameters of the function rnorm(). 
+# Pass the parameter "n=1" to the function rnorm(). 
+# You must use functions rnorm() and sapply(). 
+# hint: you can use an anonymous function with two 
+# arguments. The anonymous function should contain 
+# the second sapply() loop. 
+
+set.seed(1121)
+
+sapply(me_ans, 
+       function(me_an, std_devs) 
+         sapply(std_devs, rnorm, n=1, mean=me_an), 
+       std_devs=std_devs)
+
+# your code should produce a matrix like this: 
+#      mean=-1 mean=0 mean=1
+# sd=1 -0.8550  1.085  1.160
+# sd=2 -0.1234  3.999  2.172
+# sd=3 -0.5404 -2.436  2.080
+
+# deprecate
 # 1. (20pts) Perform the same two sapply() loops as above, 
 # but without using anonymous functions. 
 # Each time reset the seed using set.seed() to be able to 
 # compare the results, 
 
 set.seed(1121)
-sapply(sd_vec, rnorm, n=2, mean=0)
+sapply(me_ans, rnorm, n=2, sd=1)
 set.seed(1121)
-sapply(mean_vec, rnorm, n=2)
+sapply(std_devs, rnorm, n=2, mean=0)
 
 # run microbenchmark() to see which code is faster, 
 
 library(microbenchmark)
 summary(microbenchmark(
-  anon={sapply(sd_vec, function(sd) rnorm(n=2, sd=sd))}, 
-  no_anon={sapply(sd_vec, rnorm, n=2, mean=0)},
+  anon={sapply(std_devs, function(sd) rnorm(n=2, sd=sd))}, 
+  no_anon={sapply(std_devs, rnorm, n=2, mean=0)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# end deprecate
 
 
 
-############## test
+############## test - too simple?
 # Summary: create a wrapper for function sum(), 
 # 
 # 1. (20pts) Create a wrapper for function sum(), called my_sum(). 
@@ -1161,13 +1519,14 @@ my_sum(1, 2, 3, NA)
 # then multiply the sum by "fac_tor", and return the result,
 # you can use function sum(), 
 
-mult_dots <- function (..., fac_tor) {
+mult_dots <- function(..., fac_tor) {
   fac_tor*sum(...)
 }  # end mult_dots
 
 # apply the function mult_dots() so that it adds the numbers "1, 2, 3", 
 # and then multiplies the sum by "2",
 mult_dots(1, 2, 3, fac_tor=2)
+
 
 
 ############## test
@@ -1189,7 +1548,7 @@ mult_dots(1, 2, 3, fac_tor=2)
 # to the dots, then get_dots() should produce an error,
 # you can use functions list(), length(),
 
-get_dots <- function (..., in_dex) {
+get_dots <- function(..., in_dex) {
   dots <- list(...)
   stopifnot(in_dex <= length(dots))
   dots[[in_dex]]
@@ -1200,46 +1559,70 @@ get_dots <- function (..., in_dex) {
 get_dots(in_dex=2, 7, 5, 6)
 
 
-############## test
-# Summary: perform an apply() loop to calculate the max and min 
-# values of every column of a matrix. 
 
-# create a matrix as follows:
+############## test
+# Summary: Define an aggregation function which accepts 
+# a dots "..." argument. 
+# Perform an apply() loop over the columns of a matrix, 
+# and pass additional arguments through the dots "..." 
+# argument to the aggregation function. 
+
+# Create a matrix that contains NA values as follows:
 
 set.seed(1121)
-mat_rix <- matrix(sample(16), nrow=4, ncol=4)
+mat_rix <- matrix(sample(c(1:96, rep(NA, 4))), ncol=4)
 
-# introduce an NA value
 
-mat_rix[3, 2] <- NA
-
-# 1. (5pts) assign to "mat_rix" the column names "col1", "col2", etc.,
-# you can use functions colnames(), ncol(), and paste0(), 
+# 1. (10pts) Assign the following column names to mat_rix: 
+# "col1", "col2", etc. 
+# You can use functions colnames(), ncol(), and paste0(). 
+# You cannot use function c(). 
 
 colnames(mat_rix) <- paste0("col", 1:ncol(mat_rix))
 
 
-# 2. (20pts) perform a single apply() loop over the columns 
-# of "mat_rix", 
-# the output should be a matrix with two rows named "max" and "min", 
-# and with the same number of columns as "mat_rix", 
-# the output matrix from apply() should not contain any NAs, 
-# to get full credit you must pass the argument "na.rm=TRUE"
-# into max() and min() through the dots argument of the 
-# apply() function, 
-# you must use functions apply(), max(), min(), c(), 
-# you can only perform a single apply() loop, 
-# you can use an anonymous function, 
+# 2. (10pts) The function agg_regate() calculates the 
+# maximum and minimum values over a column of data: 
 
-apply(mat_rix, 2, 
-      function(co_lumn, na.rm) 
-        c(max=max(co_lumn, na.rm=na.rm), 
-          min=min(co_lumn, na.rm=na.rm)), 
-      na.rm=TRUE)
+agg_regate <- function(col_umn) {
+  c(max=max(col_umn), min=min(col_umn))
+}  # end agg_regate
 
+# Perform an apply() loop over the columns of mat_rix, 
+# and apply agg_regate() to each column.
+
+apply(mat_rix, 2, agg_regate)
+
+# You should get the following result:
+#     col1 col2 col3 col4
+# max   96   NA   NA   NA
+# min   19   NA   NA   NA
 
 
-############## hw
+# 3. (20pts) Modify agg_regate() by adding a dots "..." 
+# argument to it, and pass the dots to the functions 
+# max() and min(). 
+
+agg_regate <- function(col_umn, ...) {
+  c(max=max(col_umn, ...), min=min(col_umn, ...))
+}  # end agg_regate
+
+# Perform an apply() loop over the columns of mat_rix, 
+# and apply agg_regate() to each column.
+# This time pass the argument "na.rm=TRUE" into max() 
+# and min() through the dots "..." argument of the 
+# apply() function. 
+
+apply(mat_rix, 2, agg_regate, na.rm=TRUE)
+
+# You should get the following result:
+#     col1 col2 col3 col4
+# max   96   91   94   95
+# min   19    2    1    5
+
+
+
+############## test
 # Summary: perform an apply() loop, and pass values to a function
 # through the dots "..." argument of the functional apply().
 
@@ -1271,17 +1654,18 @@ apply(X=da_ta, MARGIN=1, my_func, arg1=5, arg3=6)
 
 
 ############## hw
-# 1. (30pts) Create a function called lag_it() that applies a lag to vectors. 
+# 1. (30pts) Create a function called lag_it() that applies 
+# a lag to vectors. 
 # lag_it() should accept two arguments:
-#  "vec_tor" a vector argument to which a lag should be applied, 
-#  "lag" an integer, specifying the number of periods to lag. 
-#  "lag" should have a default value of 1. 
-# lag_it() should first check if "lag" is an integer, and if not 
+# - vec_tor a vector argument to which a lag should be applied, 
+# - "lag" an integer, specifying the number of periods to lag. 
+# - "lag" should have a default value of 1. 
+# lag_it() should first check if "lag" is numeric, and if not 
 # then it should produce a warning message and return NULL. 
-# lag_it() should next check if "vec_tor" is a vector, and if not 
+# lag_it() should next check if vec_tor is a vector, and if not 
 # then it should produce a warning message and return NULL. 
 # If both these tests pass, then lag_it() should return a vector 
-# of the same length as "vec_tor", that is lagged by the number 
+# of the same length as vec_tor, that is lagged by the number 
 # of periods specified by "lag". 
 # A positive "lag" should replace the present value with values 
 # from the past, and a negative lag should replace with values 
@@ -1324,6 +1708,11 @@ lag_it(1:9, lag=-2)
 lag_it(matrix(1:9, ncol=1))
 lag_it("a", "b")
 
+# You should get the following results:
+# > lag_it(1:9, lag=2)
+# [1] NA NA  1  2  3  4  5  6  7
+# > lag_it(1:9, lag=-1)
+# [1]  2  3  4  5  6  7  8  9 NA
 
 
 ############## hw
@@ -1351,7 +1740,7 @@ lag_it("a", "b")
 # you cannot use a for() loop, 
 # do not "grow" vectors by adding new elements to them,
 
-my_rep <- function (in_put, n_rep) {
+my_rep <- function(in_put, n_rep) {
   if (is.vector(in_put)) {
     if (length(in_put)>1)
       in_put <- in_put[1]
@@ -1394,7 +1783,7 @@ my_rep(in_put=matrix(1:10, ncol=2), n_rep=3)  # output: NULL Warning message:
 # you can only use one for() loop in each logical branch,
 # do not "grow" vectors by adding new elements to them,
 
-my_rep <- function (in_put, n_rep, meth_od=c("times", "each", "length.out")) {
+my_rep <- function(in_put, n_rep, meth_od=c("times", "each", "length.out")) {
   meth_od <- match.arg(meth_od)
 # create empty vector of same mode as "in_put"
   out_put <- vector(mode=mode(in_put), length=n_rep*length(in_put))
@@ -1429,7 +1818,7 @@ my_rep(in_put=1:3, n_rep=5, meth_od="length.out")
 
 
 
-############## hw
+############## test - very simple
 # 1. (15pts) Create a function called match_matrix(), similar to match(), 
 # but which accepts matrix arguments, as well as vectors. 
 # match_matrix() should return the row and column indices of the first 
@@ -1446,6 +1835,7 @@ mat_rix <- matrix(1:6, ncol=3)
 match_matrix(5, mat_rix)
 
 
+############## deprecated ##############
 # this is old - match_matrix() above is better
 ############## hw
 # Create a function which calculates row and column containing the extreme value of a matrix.
@@ -1458,6 +1848,7 @@ which_matrix <- function(mat_rix, func_tion="max") {
 # coordinates <- as.numeric(c(rownames(mat_rix)[tmp[1,1]], colnames(mat_rix)[tmp[1,2]]))
 # coordinates
 }  # end which_matrix
+############## end deprecated ##############
 
 
 
@@ -1496,17 +1887,24 @@ my_sqrt("a")
 
 
 ############## hw
-# create function called read_numeric() that reads numbers input by the user, and returns them in a vector,
-# read_numeric() should ask the user to input a number, and should read the input using the function readline(),
-# read_numeric() should read numbers from the console in a "while" loop,
-# read_numeric() should validate the inputs, and produce errors and Warnings,
-# if the user input is numeric, then read_numeric() should append the input to the numeric output vector,
-# if the input is not numeric, then read_numeric() should produce a Warning "input is not numeric!",
-# if the input is empty, then read_numeric() should terminate, and return the numeric output vector,
-# hint: read_numeric() should use readline(), and can also use is.na(), nchar(), as.numeric(), length(), identical(), etc.
-# the function reads numeric lines from input, and returns them in a vector,
-# read_numeric() should create a numeric vector consisting of the input numbers, 
-# ignore it
+# Summary: Create function called read_numeric() that reads 
+# numbers input by the user, and returns them in a vector. 
+# read_numeric() should ask the user to input a number, and 
+# should read the input using the function readline(). 
+# read_numeric() should read numbers from the console in 
+# a "while" loop. 
+# read_numeric() should validate the inputs, and produce 
+# errors and Warnings: 
+# - if the user input is numeric, then read_numeric() should 
+#   append the input to the numeric output vector,
+# - if the input is not numeric, then read_numeric() should 
+#   produce a Warning "input is not numeric!",
+# - if the input is empty, then read_numeric() should 
+#   terminate, and return the numeric output vector. 
+# hint: read_numeric() should use readline(), and can also 
+# use is.na(), nchar(), as.numeric(), length(), identical(), etc.
+# read_numeric() should create a numeric vector consisting of 
+# the input numbers, ignore it. 
 
 read_numeric <- function() {
   out_put <- numeric(0)
@@ -1569,6 +1967,39 @@ re_move("bye", c("hello", "there"))
 
 
 
+############## hw - already in slides?
+# 1. (30pts) summary:
+# benchmark the speed of cumulative sum calculations in the 
+# slide titled "Vectorized Functions for Vector Computations", 
+# using the function microbenchmark(),
+# 
+# create a vector of 1000 random normal numbers,
+
+big_vector <- rnorm(1000)
+
+# calculate the cumulative sum of "big_vector" using two 
+# different methods:
+# first using the function cumsum(), second using a for() loop, 
+# 
+# benchmark the speed of both calculations using the function 
+# microbenchmark(),
+# assign the names "cum_sum" and "for_loop" to each method, 
+
+library(microbenchmark)
+summary(microbenchmark(
+  cum_sum=cumsum(big_vector), 
+  for_loop={
+    # allocate memory for cumulative sum
+    cum_sum <- numeric(length(big_vector))
+    cum_sum[1] <- big_vector[1]
+    # cumulative sum using "for" loop
+    for(i in 2:length(big_vector)) {
+      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+    }},  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+
+
 ############## hw
 # Summary: create a functional called cumu_late(), 
 # which calculates cumulative values (sums, products, etc.) 
@@ -1576,9 +2007,9 @@ re_move("bye", c("hello", "there"))
 # and reproduces the functions cumsum() and cumprod().
 
 # 1. (20pts) create a functional called cumu_late(), that accepts 
-# a vector argument "vec_tor", and a function argument "func_tion",
+# a vector argument vec_tor, and a function argument "func_tion",
 # cumu_late() should return a vector with elements equal to the 
-# application of "func_tion" to the sub-vectors of "vec_tor", 
+# application of "func_tion" to the sub-vectors of vec_tor, 
 # cumu_late() should be equivalent to the functions cumsum(), cumprod(), etc.,
 # you can use the functions sapply(), seq_along(), match.fun(), and do.call(), 
 # and an anonymous function,
@@ -1594,7 +2025,7 @@ cumu_late <- function(vec_tor, func_tion) {
            })  # end sapply
 }  # end cumu_late
 
-# call cumu_late() as follows, to verify that it is correct: 
+# call cumu_late() as follows, to verify that it works correctly: 
 
 cumu_late(1:5, sum)
 cumu_late(1:5, prod)
@@ -1617,16 +2048,113 @@ identical(
   cumprod(1:5)
 )  # end identical
 
+# 2. (10pts) Benchmark the speed of cumu_late() and cumsum(), 
+# on the vector 1:100, using the function microbenchmark(). 
+
+library(microbenchmark)
+summary(microbenchmark(
+  cumu_late=cumu_late(1:100, sum), 
+  cum_sum=cumsum(1:1000), 
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 
-############## test
+
+############## hw
+# Summary: Create a functional called apply_agg(), that 
+# applies an aggregation function over columns of data. 
+
+# 1. (30pts) apply_agg() should accept two arguments:
+# - da_ta - a data object with multiple columns (matrix, 
+#   data frame, or time series). 
+# - agg_regate() - an aggregation function that can return 
+#   a vector. 
+# apply_agg() should first verify if da_ta has a dim attribute. 
+# If da_ta does not have a dim attribute, then apply_agg() 
+# should directly apply the function agg_regate() to the da_ta 
+# and return it. 
+# If da_ta does have a dim attribute, then apply_agg() should 
+# perform an apply loop over the columns of da_ta, and apply 
+# the function agg_regate() to each column. 
+# apply_agg() should return a vector or a matrix, with its 
+# elements equal to the results of agg_regate(). 
+# hint: you can use functions is.null(), dim(), sapply()
+# and and if() statement. 
+
+apply_agg <- function(da_ta, agg_regate) {
+# validate function name
+  agg_regate <- match.fun(agg_regate)
+# check if da_ta has a dim attribute
+  if (is.null(dim(da_ta)))
+# call agg_regate on da_ta
+    agg_regate(da_ta)
+  else
+# perform apply loop over columns of da_ta
+    sapply(da_ta, agg_regate)
+}  # end apply_agg
+
+# call apply_agg() as follows, to verify that it works correctly: 
+apply_agg(1:5, sum)
+apply_agg(EuStockMarkets[, 1], mean)
+apply_agg(EuStockMarkets, mean)
+
+
+
+############## hw
+# Summary: Create a functional called do_call(), which is 
+# a generalization of do_call_rbind() from the lecture slides.  
+
+# 1. (20pts) do_call() should apply a function to 
+# a list of objects, and return a single object.
+# do_call() should accept three arguments:
+# - func_tion - a function that returns a single object 
+#   from a list of input objects (for example paste(), 
+#   rbind(), etc). 
+# - li_st - a list or vector of objects.
+# - "..." - dots optional arguments to func_tion. 
+# The dots "..." argument should be passed to func_tion. 
+# You can use functions length(), while(), lapply(), 
+# and return(). 
+
+do_call <- function(func_tion, li_st, ...) {
+# produce function name from argument
+  func_tion <- match.fun(func_tion)
+  while (length(li_st) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=length(li_st), by=2)
+# bind neighboring elements and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+      if (in_dex==length(li_st)) {
+        return(li_st[[in_dex]])
+      }
+      return(func_tion(li_st[[in_dex]], li_st[[in_dex+1]], ...))
+    })  # end lapply
+  }  # end while
+# li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call
+
+
+# call do_call() as below, to verify that it works correctly,
+
+do_call(paste, c("a", "b", "c"), sep="/")
+# should produce:
+# [1] "a/b/c"
+
+do_call(rbind, list(1:4, 8:11))
+# should produce:
+#       [,1] [,2] [,3] [,4]
+# [1,]    1    2    3    4
+# [2,]    8    9   10   11
+
+
+
+############## hw
 # Summary: create a vectorized version of function sum(), 
 # called vec_sum(), 
-# comment: 
-# the "+" operator is a vectorized function, as can be seen on 
-# this example:
+# comment: the "+" operator is a vectorized function, as 
+# can be seen on this example:
 (1:3 + 4)
-# but sum() isn't a vectorized function, since it produces 
+# But sum() isn't a vectorized function, since it produces 
 # a single number, not a vector:
 sum(1:3, 4)
 
@@ -1667,7 +2195,7 @@ vec_sum(1:3, 4)
 # first few elements of a vector,
 # 
 # 1. (10pts) create a function called sum_first(), that sums up 
-# the elements of a vector called "vec_tor", from element "1" 
+# the elements of a vector called vec_tor, from element "1" 
 # up to "first_elements",
 sum_first <- function(vec_tor, first_elements) {
   sum(vec_tor[1:first_elements])
@@ -1700,9 +2228,9 @@ sum_first(vec_tor=1:10, first_elements=3:5)
 
 
 
-##################################
+##############################
 # plotting
-##################################
+##############################
 
 
 ############## hw
@@ -1731,15 +2259,15 @@ legend("topright", title="DAX vs t-distr", legend=c("t-distr", "DAX"),
 
 
 
-##################################
+##############################
 # dates and times
-##################################
+##############################
 
 
 
-##################################
+##############################
 # numerical methods
-##################################
+##############################
 
 
 ############## test
@@ -1765,132 +2293,142 @@ fib_seq
 
 
 ############## hw
-# Summary: Estimate the probability of crossing a price barrier 
-# by performing multiple simulations of prices.  
-# Estimate the probabilities for several different price barrier 
-# levels. 
+# add estimate of standard error of estimated price?
+# add bootstrap random numbers by sampling columns or rows?
+############## hw
+# Summary: Estimate the probability of crossing a price 
+# barrier by performing multiple simulations of prices.  
+# Estimate the probabilities for several different price 
+# barrier levels. 
+# 
 # Start by defining the simulation parameters: 
-
 # number of simulations
-simu_times <- 500
+simu_number <- 500
 # number of steps in each simulation
 simu_length <- 1000
 # barrier level
-barrier_level <- 20
+lev_el <- 20
 
-# Each simulation should consist of a number of simulation steps 
-# equal to "simu_length".  At each step of the simulation, a random 
-# number should be generated representing the price return (price 
-# difference).  The prices should be equal to the cumulative returns.  
-# If in a given simulation the prices cross a barrier called 
-# "barrier_level", then a boolean vector called "did_cross" 
-# should be set to TRUE, and otherwise it should be FALSE. 
-# You will need to perform the simulations multiple times, equal 
-# to "simu_times", each time recording the value of "did_cross". 
 
-# 1. (20pts) Perform an sapply() loop multiple times, up to 
-# "simu_times". Inside the loop perform a simulation of prices 
-# crossing a barrier.  Adapt the code from the slide titled 
+# 1. (20pts) 
+# Summary: You'll need to perform a number simulations of 
+# prices crossing a barrier, equal to simu_number.
+# Each simulation should consist of a number of simulation 
+# steps equal to simu_length.  
+
+# Perform an sapply() loop, starting from one to 
+# simu_number. Inside each loop perform a simulation of 
+# prices crossing a barrier.  
+# hint: you can adapt the code from the slide titled 
 # "Simulating Barrier Options Using Vectorized Functions".
 # The sapply() loop should return a boolean vector called 
-# "did_cross" that should be set to TRUE if prices 
-# crossed "barrier_level", and otherwise it should be FALSE. 
-# "did_cross" should be a vector of length "simu_times". 
+# did_cross, that should be equal to TRUE if prices did 
+# cross the lev_el, and otherwise it should be FALSE. 
+# did_cross should be a vector of length simu_number. 
 
 # hint: you can use an anonymous function that accepts an 
 # integer argument (the loop count) and returns a boolean 
 # value. 
-# You can compare the simulated price vector to "barrier_level", 
+
+# You can compare the simulated price vector to lev_el, 
 # to determine if at any point the prices reached above the 
-# "barrier_level".  If they did, then they must have crossed 
-# "barrier_level" at some point. 
-# The comparison of the prices with the "barrier_level" 
-# produces a boolean vector, whose sum is zero only if prices 
-# never crossed "barrier_level", and is greater than zero if
-# they did. 
-# You can use functions sapply(), sum(), cumsum(), and rnorm(), 
+# lev_el.  If they did, then they must have crossed lev_el 
+# at some point. 
+# The comparison of prices with lev_el produces a boolean 
+# vector, whose sum is zero only if prices never crossed 
+# lev_el, and is greater than zero if they did. 
+# You can use functions sapply(), sum(), cumsum(), and 
+# rnorm(), 
 
 # reset random number generator
 set.seed(1121)
-did_cross <- sapply(1:simu_times, function(sim_u) {
-# simulate prices, return TRUE if they crossed "barrier_level"
-  sum(cumsum(rnorm(simu_length)) > barrier_level) > 0
+
+did_cross <- sapply(1:simu_number, function(sim_u) {
+# simulate prices, return TRUE if they crossed lev_el
+  sum(cumsum(rnorm(simu_length)) > lev_el) > 0
 })  # end sapply
 
-# Calculate the probability of crossing the "barrier_level" 
-# as the sum of "did_cross" divided by "simu_times". 
+# Calculate the probability of crossing the lev_el 
+# as the sum of did_cross divided by simu_number. 
+# The probability should be equal to 0.516. 
 
-sum(did_cross)/simu_times
+sum(did_cross)/simu_number
 
 
-# 2. (20pts) Perform the same simulation as in p.1 but without 
-# using an apply() loop, only using vectorized functions. 
-# Start by creating a matrix of random numbers with dimensions 
-# "simu_times" columns by "simu_length" rows, using rnorm(), 
-# and call it "price_s". 
-# Apply function colCumsums() from package "matrixStats" to 
-# "price_s", to calculate the cumulative sums of its columns. 
-# You can use functions matrix(), colCumsums(), and rnorm(), 
+# 2. (20pts) Perform the same simulation as in p.1 but 
+# without using an sapply() loop, only using vectorized 
+# functions. 
+# Start by creating a matrix of random numbers with 
+# dimensions equal to simu_number columns by simu_length 
+# rows, and call it price_s. 
+# Apply function colCumsums() from package matrixStats to 
+# price_s, to calculate the cumulative sums of its columns. 
+# You can use functions matrix(), colCumsums(), and rnorm(). 
 
 # load package matrixStats
 library(matrixStats)
 # reset random number generator
 set.seed(1121)
-price_s <- matrix(rnorm(simu_times*simu_length), 
-                  ncol=simu_times)
+price_s <- matrix(rnorm(simu_number*simu_length), 
+                  ncol=simu_number)
 price_s <- colCumsums(price_s)
 
-# The columns of "price_s" represent vectors of simulated prices. 
-# Following the methodology of p.1, compare the simulated prices 
-# to "barrier_level", and produce a boolean matrix. 
+# The columns of price_s represent vectors of simulated prices. 
+# Following the methodology of p.1, compare the simulated 
+# prices to lev_el, and produce a boolean matrix. 
 # Sum up the columns of the boolean matrix to determine the 
-# simulations for which the prices crossed the "barrier_level". 
-# and call this boolean vector "did_cross". 
-# "did_cross" should be a vector of length "simu_times". 
-# You can use function colSums() from package "matrixStats", 
+# simulations for which the prices crossed the lev_el. 
+# and call this boolean vector did_cross. 
+# did_cross should be a vector of length simu_number. 
+# You can use function colSums() from package matrixStats, 
 
-did_cross <- colSums(price_s > barrier_level) > 0
+did_cross <- colSums(price_s > lev_el) > 0
 
-# Calculate the probability of crossing the "barrier_level" 
-# as the sum of "did_cross" divided by "simu_times". 
+# Calculate the probability of crossing the lev_el 
+# as the sum of did_cross divided by simu_number. 
+# The probability should be equal to 0.516. 
 
-sum(did_cross)/simu_times
+sum(did_cross)/simu_number
 
 
 # 3. (20pts) Estimate the probabilities for a vector of 
 # different price barrier levels. 
-# Create a named numeric vector called "barrier_levels" 
-# with values from=5, to=60, by=5. 
+# Create a named numeric vector called lev_els with 
+# values from=5, to=60, by=5. 
 # You can use functions seq(), structure(), and names(), 
 
-barrier_levels <- seq(from=5, to=60, by=5)
-barrier_levels <- structure(barrier_levels, names=paste0("barr", barrier_levels))
+lev_els <- seq(from=5, to=60, by=5)
+names(lev_els) <- paste0("level=", lev_els)
 # or
-barrier_levels <- seq(from=5, to=60, by=5)
-names(barrier_levels) <- paste0("barr", barrier_levels)
+lev_els <- seq(from=5, to=60, by=5)
+lev_els <- structure(lev_els, names=paste0("level=", lev_els))
 
-# Perform an sapply() loop over "barrier_levels". 
-# Inside the loop calculate the probabilities of crossing 
-# the "barrier_level", and call the resulting vector 
-# "cross_probs". 
-# hint: you don't need to recalculate "price_s", and can 
-# use the "price_s" from p.2, 
-# To receive full credit you shouldn't recalculate "price_s"
-# for different values of "barrier_levels". 
+# You should get the following result:
+# lev_els
+# level=5 level=10 level=15 level=20 level=25
+#       5       10       15       20       25
+
+# Perform an sapply() loop over lev_els. 
+# In each loop calculate the probabilities of crossing 
+# the lev_el, and call the resulting vector cross_probs. 
+# To receive full credit you shouldn't recalculate 
+# price_s for each loop (lev_el), but instead use the 
+# price_s already calculated in p.2. 
 # You can use functions sapply(), sum(), colSums(), and 
 # an anonymous function.
 
-cross_probs <- sapply(barrier_levels, function(barrier_level) {
-# sum up number of simulations when prices crossed "barrier_level"
-  sum(colSums(price_s > barrier_level) > 0)/simu_times
+cross_probs <- sapply(lev_els, function(lev_el) {
+# sum up number of simulations when prices crossed lev_el
+  sum(colSums(price_s > lev_el) > 0)/simu_number
 })  # end sapply
 
-# Create a scatterplot of "cross_probs" versus "barrier_levels". 
+# Create a scatterplot of cross_probs versus lev_els. 
 # You can use functions plot() and title(). 
 
-plot(x=barrier_levels, y=cross_probs)
+plot(x=lev_els, y=cross_probs)
 # add title
 title(main="barrier crossing probabilities", line=-1)
+
 
 
 ############## hw
@@ -1904,20 +2442,20 @@ title(main="barrier crossing probabilities", line=-1)
 
 set.seed(1121)  # for reproducibility
 simu_length <- 1000  # number of simulation steps
-barrier_level <- -10  # barrier level
+lev_el <- -10  # barrier level
 # simulated prices
 simu_prices <- cumsum(rnorm(simu_length))
 
 
 ### modify some of the code below this line, as needed,
 
-# in_dex should be "1" after prices cross barrier_level
-in_dex <- cummax(simu_prices < barrier_level)
+# in_dex should be "1" after prices cross lev_el
+in_dex <- cummax(simu_prices < lev_el)
 
-# find index when prices cross barrier_level
+# find index when prices cross lev_el
 which_index <- which(diff(in_dex)==1)
 
-# fill prices after crossing barrier_level
+# fill prices after crossing lev_el
 if (length(which_index)>0) {
   simu_prices[as.logical(in_dex)] <- 
     simu_prices[which_index + 1]
@@ -1989,6 +2527,220 @@ plot(ts_prices, type="l", col="black", lty="solid", xlab="", ylab="")
 abline(h=barrier_first, lwd=2, col="blue")  # add horizontal line
 abline(h=barrier_second, lwd=2, col="red")  # add horizontal line
 title(main="Random Prices", line=0)  # add title
+
+
+
+############## hw
+# Summary: Perform regressions in an sapply loop, 
+# and produce a warning when the p-value is greater 
+# than the significance level. 
+
+# 1. (20pts) Create a function called reg_stats() which 
+# performs a regression and returns a vector of regression 
+# statistics. 
+# reg_stats() should accept a single argument called da_ta, 
+# which is a data frame containing the design matrix. 
+# The first column of da_ta is the response, and the 
+# remaining columns are the explanatory variables. 
+# reg_stats() should create a formula from the columns of 
+# da_ta, then perform a regression, and finally should 
+# return a named vector of the regression statistics: 
+# p-value, adj.r.squared, fstatistic. 
+# hint: you can adapt the code from the slide titled 
+# "Influence of Noise on Regression Another Method". 
+
+reg_stats <- function(da_ta) {
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <- as.formula(paste(col_names[1], 
+            paste(col_names[-1], collapse="+"), sep="~"))
+  reg_model_sum <- summary(lm(reg_formula, data=da_ta))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+                        adj_rsquared=adj.r.squared,
+                        fstat=fstatistic[1]))
+}  # end reg_stats
+
+# Create a design matrix data frame of response and 
+# two explanatory variables as follows:
+
+len_gth <- 10000
+set.seed(1121)
+noise <- rnorm(len_gth)
+explana_tory1 <- rnorm(len_gth)
+explana_tory2 <- rnorm(len_gth)
+noise_level <- 10
+res_ponse <- explana_tory1 + explana_tory2 + noise_level*noise
+da_ta <- data.frame(res_ponse, explana_tory1, explana_tory2)
+
+# Apply reg_stats() to da_ta. 
+# You should get the following output:
+# > reg_stats(da_ta)
+#      pval     adj_rsquared  fstat.value
+# 5.413256e-26 2.146549e-02 1.106709e+02
+
+
+# 2. (20pts) Create a named vector of noise levels 
+# called noise_levels, 
+# from 0.0 to 0.03, with the element names equal 
+# to their values:
+
+noise_levels <- seq(from=10, to=100, by=10)
+names(noise_levels) <- noise_levels
+
+# You should get the following output:
+# > noise_levels
+# 10  20  30  40  50  60  70  80  90 100
+# 10  20  30  40  50  60  70  80  90 100
+
+# Perform an sapply() loop over noise_levels. 
+# In each step create a design matrix data frame 
+# with a response and two explanatory variables, 
+# and call reg_stats() to perform a regression. 
+# If the p-value is greater than the significance 
+# level, then produce a warning with text that 
+# contains the p-value in it. 
+# Finally at the end return the reg_stats() values. 
+# You can use the functions sapply(), data.frame(), 
+# reg_stats(), paste0(), warning(), and an 
+# anonymous function. 
+
+# specify significance level:
+
+sign_level <- 2*pnorm(-2)
+
+regression_stats <- sapply(noise_levels, function(noise_level) {
+# create design matrix data frame end perform regression
+  res_ponse <- explana_tory1 + explana_tory2 + noise_level*noise
+  da_ta <- data.frame(res_ponse, explana_tory1, explana_tory2)
+  regstats <- reg_stats(da_ta)
+  if(regstats["pval"] > sign_level)
+    warning(paste0("regression p-value=", format(regstats["pval"], digits=4), "\tgreater than significance level"))
+  regstats
+})  # end sapply
+
+# You should get:
+# Warning messages:
+#   1: In FUN(X[[i]], ...) :
+#   regression p-value=0.06155	greater than significance level
+# 2: In FUN(X[[i]], ...) :
+#   regression p-value=0.09136	greater than significance level
+# 3: In FUN(X[[i]], ...) :
+#   regression p-value=0.1218	greater than significance level
+# 4: In FUN(X[[i]], ...) :
+#   regression p-value=0.1514	greater than significance level
+
+# You should get the following output:
+# > regression_stats
+#                     10           20           30           40           50           60           70
+# pval         5.413256e-26 3.971562e-08 1.432442e-04 0.003106125 0.0143015190 0.0347503907 0.0615452232
+# adj_rsquared 2.146549e-02 5.732749e-03 2.643543e-03 0.001517169 0.0009763702 0.0006723125 0.0004828453
+# fstat.value  1.106709e+02 2.982613e+01 1.425142e+01 8.596609788 5.8861334606 4.3634877194 3.4151514443
+#                    80           90          100
+# pval         0.0913585883 0.1217981403 0.1514400901
+# adj_rsquared 0.0003559211 0.0002662028 0.0002001017
+# fstat.value  2.7800613301 2.3312354440 2.0006085829
+
+
+
+############## hw - most is already incorporated into lecture slides
+# Summary: Estimate the standard errors of regression 
+# coefficients using bootstrap simulations. 
+
+# 1. (10pts) Specify a regression as follows:
+
+set.seed(1121)  # reset random number generator
+# define explanatory and response variables
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+res_ponse <- 3 + 2*explana_tory + rnorm(length(explana_tory))
+# specify regression formula and perform regression
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)
+
+# Extract the regression coefficient standard errors 
+# from the regression model summary, and call them 
+# std_errors.
+# You can use the function summary().
+
+reg_model_sum <- summary(reg_model)
+std_errors <- reg_model_sum$coefficients[, 2]
+
+
+# 2. (20pts) Perform an sapply() loop 10000 times. 
+# In each loop bootstrap (sample) the variables 
+# explana_tory and res_ponse, perform the regression, 
+# and return the regression coefficients.  
+# Call the matrix output by sapply() boot_strap. 
+# hint: download the latest version of the 
+# statistics.pdf file from NYU Classes and follow 
+# the bootstrap example there. 
+# You can use the functions sample.int(), lm(), 
+# coef(), and sapply().
+
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sample.int(length(explana_tory), replace=TRUE)
+  explana_tory <- explana_tory[boot_sample]
+  res_ponse <- res_ponse[boot_sample]
+  coef(lm(res_ponse ~ explana_tory))
+})  # end sapply
+
+# You should get the following output:
+# > boot_strap[, 1:3]
+#                 [,1]     [,2]     [,3]
+# (Intercept)  3.339112 3.458160 3.108136
+# explana_tory 1.809326 1.737513 1.864102
+
+# Calculate the standard errors from bootstrap, 
+# and call them boot_errors.
+# You can use the functions sd() and apply(). 
+# Calculate the differences between boot_errors 
+# and std_errors. 
+
+boot_errors <- apply(boot_strap, MARGIN=1, sd)
+boot_errors - std_errors
+
+# You should get the following output:
+# > boot_errors
+# (Intercept) explana_tory 
+#   0.2655507    0.1326947
+
+
+# 3. (10pts) Create a density plot of the bootstrapped 
+# coefficients boot_strap["explana_tory", ], 
+# with plot title "Bootstrapped regression slopes". 
+# and with x-axis label "regression slopes". 
+# Add a vertical line in red at the x-axis point: 
+#   mean(boot_strap["explana_tory", ]). 
+# You can use the functions x11(), plot(), density(), 
+# and abline(). 
+
+x11()
+plot(density(boot_strap["explana_tory", ]), 
+     lwd=2, xlab="regression slopes", 
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap["explana_tory", ]), lwd=2, col="red")
+
+
+
+############## hw
+# Summary: Create function for bootstrapping a statistical model.
+
+# 1. (10pts) Specify a regression as follows:
+# The function read_matrix() should have two arguments:
+#   "file" - for a string containing the input file name, 
+#   "na_replace" - for a number to replace bad data elements,
+# 
+# The function read_matrix() should perform the following steps:
+#   - read a comma-delimited CSV file - use read.csv() 
+#       with "stringsAsFactors=FALSE",
+#   - assign rownames from first column of data, and then remove it,
+#   - verify that every column of input data is numeric, 
+#   - if necessary coerce column data to numeric,
+#   - and replace NA elements with "na_replace", 
+#     - use sapply(), as.numeric(), is.na(), 
+# 
+
+
 
 
 
@@ -2075,21 +2827,21 @@ plot(x=coin_biases, y=num_flips, t="l",
 
 
 
-##################################
+##############################
 # data munging input output error handling
-##################################
+##############################
 
 
-############## test
+############## hw - already in slides?
 # Summary: load and scrub a matrix containing bad data. 
 
 # 1. (5pts) 
 # Download the file "matrix_bad.csv" from NYU Classes),
 # the file contains a numeric matrix with row and column names, 
 # with some columns containing bad data elements that aren't numeric.
-# Read the file into a variable called "mat_rix" using read.csv(),
+# Read the file into a variable called mat_rix using read.csv(),
 # make sure to read strings as strings, not as factors,
-# and read in properly the row names of "mat_rix". 
+# and read in properly the row names of mat_rix. 
 # You can either use the first column of data for row names, 
 # or use function read.csv() with arguments 
 # "row.names=1" and "stringsAsFactors=FALSE", 
@@ -2101,9 +2853,9 @@ mat_rix <- mat_rix[, -1]
 mat_rix <- read.csv(file="badmatrix.csv", row.names=1,
                     stringsAsFactors=FALSE)
 
-# 2. (15pts) determine the class of "mat_rix", and 
+# 2. (15pts) determine the class of mat_rix, and 
 # calculate a vector of the classes of the columns 
-# of "mat_rix". 
+# of mat_rix. 
 # You can use the functions sapply() and class(), 
 
 class(mat_rix)
@@ -2116,19 +2868,19 @@ col_class <- sapply(mat_rix, class)
 col_index <- which(col_class=="character")
 
 # 3. (15pts) perform an sapply() loop over the "character" 
-# columns of "mat_rix", coerce them to "numeric" vectors, 
+# columns of mat_rix, coerce them to "numeric" vectors, 
 # and call the result "col_fixed", 
 # you can use functions sapply() and as.numeric(), 
 
 col_fixed <- sapply(mat_rix[, col_index], as.numeric)
 
-# replace the "character" columns of "mat_rix" with 
+# replace the "character" columns of mat_rix with 
 # "col_fixed", using the vector "col_index", 
 
 mat_rix[, col_index] <- col_fixed
 
 # 4. (10pts) Perform an apply() loop over the rows of 
-# "mat_rix", calculate the row means, and call the result 
+# mat_rix, calculate the row means, and call the result 
 # "row_means", 
 # You can use functions apply() and mean(), 
 # ignore NA values using the argument "na.rm=TRUE". 
@@ -2136,7 +2888,7 @@ mat_rix[, col_index] <- col_fixed
 
 row_means <- apply(mat_rix, 1, mean, na.rm=TRUE)
 
-# 5. (20pts) Replace NA values in "mat_rix" with the 
+# 5. (20pts) Replace NA values in mat_rix with the 
 # corresponding row means. 
 # You can use function is.na(), and function which() with 
 # the argument "arr.ind=TRUE". 
@@ -2145,7 +2897,7 @@ row_means <- apply(mat_rix, 1, mean, na.rm=TRUE)
 is_na <- which(is.na(mat_rix), arr.ind=TRUE)
 mat_rix[is_na] <- row_means[is_na[, 1]]
 
-# coerce "mat_rix" to a matrix, 
+# coerce mat_rix to a matrix, 
 # you can use as.matrix(),
 
 mat_rix <- as.matrix(mat_rix)
@@ -2171,7 +2923,7 @@ mat_rix <- as.matrix(mat_rix)
 # The function read_matrix() should return a numeric matrix with 
 # proper dimensions and names,
 
-read_matrix <- function (file, na_replace=0) {
+read_matrix <- function(file, na_replace=0) {
 # read the CSV file
   mat_rix <- read.csv(
     file="badmatrix.csv",
@@ -2182,10 +2934,10 @@ read_matrix <- function (file, na_replace=0) {
 # save dimnames
   dim_names <- dimnames(mat_rix)
 # coerce columns to numeric and replace NAs
-  mat_rix <- sapply(mat_rix, function(co_lumn) {
-    co_lumn <- as.numeric(co_lumn)
-    co_lumn[is.na(co_lumn)] <- na_replace
-    co_lumn
+  mat_rix <- sapply(mat_rix, function(col_umn) {
+    col_umn <- as.numeric(col_umn)
+    col_umn[is.na(col_umn)] <- na_replace
+    col_umn
   }  # end anon function
   )  # end sapply
 # restore dimnames
@@ -2251,17 +3003,20 @@ draw_downs[, 4:7] <- sapply(draw_downs[, 4:7], as.numeric)
 draw_downs[, 4:7] <- sapply(draw_downs[, 4:7], as.numeric)
 
 
-############## hw
-# error handling within an sapply loop,
-# 
-# download the file "matrix_bad.csv" from NYU Classes),
-# the file contains a numeric matrix with row and column names, 
-# one column contains a bad data element that isn't numeric,
-# read the file into a variable called "mat_rix" using read.csv(),
-# make sure to read strings as strings, not as factors,
-# read in properly the row names of "mat_rix",
-# you can either use the first column of data for row names, 
-# or use function read.csv() with arguments 
+
+############## test
+# Summary: Perform error handling within an sapply loop. 
+
+# 1. (10pts) Download the file "matrix_bad.csv" from NYU 
+# Classes. 
+# The file contains a numeric matrix with row and column 
+# names.  One column contains a bad data element that 
+# isn't numeric. 
+# Read the file into a variable called mat_rix using 
+# read.csv(). Make sure to read strings as strings, not 
+# as factors. Read in properly the row names of mat_rix. 
+# You can either use the first column of data for row 
+# names, or use function read.csv() with arguments 
 # "row.names=1" and "stringsAsFactors=FALSE",
 
 mat_rix <- read.csv(file="matrix_bad.csv", stringsAsFactors=FALSE)
@@ -2271,49 +3026,57 @@ mat_rix <- mat_rix[, -1]
 mat_rix <- read.csv(file="matrix_bad.csv", row.names=1,
                     stringsAsFactors=FALSE)
 
-# 1. (5pts) calculate the sums of the columns of "mat_rix",
-# by performing an sapply loop over the columns of "mat_rix" 
-# you can use sapply(), sum() with argument "na.rm",
-# and an anonymous function,
-# the anonymous function should coerce each column to numeric, 
-# and then calculate its sum,
 
-col_sums <- sapply(mat_rix, function(co_lumn) {
-  sum(as.numeric(co_lumn), na.rm=TRUE)
+# 2. (10pts) Calculate the sums of the columns of mat_rix, 
+# by performing an sapply loop over the columns of mat_rix, 
+# and call the vector col_sums. 
+# You can use functions sapply(), as.numeric(), sum() with 
+# argument "na.rm=TRUE", and an anonymous function. 
+# The anonymous function should coerce each column to 
+# numeric, and then calculate its sum. 
+
+col_sums <- sapply(mat_rix, function(col_umn) {
+  sum(as.numeric(col_umn), na.rm=TRUE)
 }  # end anon function
-)  # end apply
+)  # end sapply
 
-# set warning option to "2",
-# perform the above sapply() loop again,
-# it now produces an error, and doesn't return anything,
-# you can use options() with argument "warn",
+# Set the warning option "warn" equal to 2, using the 
+# function options(). 
 
 options(warn=2)
 
-# 3. (45pts) rewrite the above sapply loop and wrap the body 
-# of the anonymous function in tryCatch(),
-# create another anonymous function to use as an error handler 
-# in tryCatch(), 
-# the error handler should write the text of the error condition 
-# to the console, 
-# the error handler should also write the column data to a file 
-# called "error.txt",
-# you can omit the "finally" argument,
+# Perform the above sapply() loop again. 
+# It now produces an error, and doesn't return anything,
+
+
+# 3. (40pts) Rewrite the above sapply loop and wrap the 
+# body of the anonymous function in tryCatch(). 
+# Create another anonymous function to use as an error 
+# handler in tryCatch(). 
+# The error handler should write the text of the error 
+# condition to the console using cat(). 
+# The error handler should also write the column data 
+# that caused the error to a text file called "error.txt", 
+# using cat(). 
+# You can omit the "finally" argument. 
+# You can use functions sapply(), as.numeric(), sum() with 
+# argument "na.rm=TRUE", tryCatch(), cat(), and an 
+# anonymous function. 
 
 col_sums <- sapply(mat_rix, 
-                   function(co_lumn)
+                   function(col_umn)
                      tryCatch( {  # body
-                       sum(as.numeric(co_lumn), na.rm=TRUE)
+                       sum(as.numeric(col_umn), na.rm=TRUE)
                      },
                      error=function(error_cond) {
                        cat(paste("error:", error_cond))
-                       cat(co_lumn, file="error.txt", sep="\n", append=TRUE)
+                       cat(col_umn, file="error.txt")
                      }  # end error handler
                      )  # end tryCatch
 )  # end sapply
 
-# the apply loop returns a list,
-# flatten the list into a vector using do.call() and cbind(),
+# The apply loop returns a list instead of a vector. 
+# Flatten the list into a vector using do.call() and cbind(). 
 
 do.call(cbind, col_sums)
 

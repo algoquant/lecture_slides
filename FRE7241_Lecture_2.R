@@ -4,347 +4,12 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-#Perform two-tailed test that sample is 
-#from Standard Normal Distribution (mean=0, SD=1)
-# generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1000))
-
-# significance level, two-tailed test, critical value=2*SD
-signif_level <- 2*(1-pnorm(2))
-signif_level
-# get p-values for all the samples
-test_frame$p_values <- sapply(test_frame$samples, pnorm)
-test_frame$p_values <- 2*(0.5-abs(test_frame$p_values-0.5))
-# compare p_values to significance level
-test_frame$result <- test_frame$p_values > signif_level
-sum(!test_frame$result)  # number of null rejections
-# show null rejections
-head(test_frame[!test_frame$result, ])
-rm(list=ls())
-par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(ggplot2)  # load ggplot2
-
-qplot(  # simple ggplot2
-    main="Standard Normal Distribution",
-    c(-4, 4),
-    stat="function",
-    fun=dnorm,
-    geom="line",
-    xlab=NULL, ylab=NULL
-    ) +  # end qplot
-
-theme(  # modify plot theme
-    plot.title=element_text(vjust=-1.0),
-    plot.background=element_blank()
-    ) +  # end theme
-
-geom_vline(  # add vertical line
-  aes(xintercept=c(-2.0, 2.0)),
-  colour="red",
-  linetype="dashed"
-  )  # end geom_vline
-rm(list=ls())
-par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-#create ggplot2 with shaded area
-x_var <- -400:400/100
-norm_frame <- data.frame(x_var=x_var,
-                 d.norm=dnorm(x_var))
-norm_frame$shade <- ifelse(
-            abs(norm_frame$x_var) >= 2,
-            norm_frame$d.norm, NA)
-ggplot(  # main function
-  data=norm_frame,
-  mapping=aes(x=x_var, y=d.norm)
-  ) +  # end ggplot
-# plot line
-  geom_line() +
-# plot shaded area
-  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
-# no axis labels
-  xlab("") + ylab("") +
-# add title
-  ggtitle("Standard Normal Distribution") +
-# modify plot theme
-  theme(
-  plot.title=element_text(vjust=-1.0),
-  plot.background=element_blank()
-  )  # end theme
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-
-# Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(length(dax_rets)))
-
-# Shapiro-Wilk test for DAX returns
-shapiro.test(dax_rets)
-
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(length(dax_rets)))
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-library(tseries)  # load package tseries
-
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(length(dax_rets)))
-
-# Jarque-Bera test for DAX returns
-jarque.bera.test(dax_rets)
-
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(length(dax_rets)))
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # load package zoo
-# autocorrelation from "stats"
-acf(coredata(dax_rets), lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-library(zoo)  # load package zoo
-dax_acf <- acf(coredata(dax_rets), plot=FALSE)
-summary(dax_acf)  # get the structure of the "acf" object
-# print(dax_acf)  # print acf data
-dim(dax_acf$acf)
-dim(dax_acf$lag)
-head(dax_acf$acf)
-acf_plus <- function (ts_data, plot=TRUE,
-                xlab="Lag", ylab="",
-                main="", ...) {
-  acf_data <- acf(x=ts_data, plot=FALSE, ...)
-# remove first element of acf data
-  acf_data$acf <-  array(data=acf_data$acf[-1],
-    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <-  array(data=acf_data$lag[-1],
-    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  if(plot) {
-    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
-    ylim <- c(min(-ci, range(acf_data$acf[-1])),
-        max(ci, range(acf_data$acf[-1])))
-    plot(acf_data, xlab=xlab, ylab=ylab,
-   ylim=ylim, main=main, ci=0)
-    abline(h=c(-ci, ci), col="blue", lty=2)
-  }
-  invisible(acf_data)  # return invisibly
-}  # end acf_plus
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # load package zoo
-# improved autocorrelation function
-acf_plus(coredata(dax_rets), lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# autocorrelation of squared DAX returns
-acf_plus(coredata(dax_rets)^2,
-   lag=10, main="")
-title(main="acf of squared DAX returns",
-line=-1)
-# autocorrelation of squared random returns
-acf_plus(rnorm(length(dax_rets))^2,
-   lag=10, main="")
-title(main="acf of squared random returns",
-line=-1)
-library(Ecdat)  # load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # coerce to "zoo"
-    Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # generic ggplot2 for "zoo"
-  object=macro_zoo, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-macro_diff <- na.omit(diff(macro_zoo))
-
-acf_plus(coredata(macro_diff[, "unemprate"]),
-   lag=10)
-title(main="quarterly unemployment rate",
-line=-1)
-
-acf_plus(coredata(macro_diff[, "3mTbill"]),
-   lag=10)
-title(main="3 month T-bill EOQ", line=-1)
-library(Ecdat)  # load Ecdat
-macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX data
-# 'lag' is the number of autocorrelation coefficients
-Box.test(dax_rets, lag=10, type="Ljung")
-
-# changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"], 
-   lag=10, type="Ljung")
-
-# changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"], 
-   lag=10, type="Ljung")
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-library(gridExtra)  # load gridExtra
-# extract DAX time series
-dax_ts <- EuStockMarkets[, 1]
-# filter past values only (sides=1)
-dax_filt <- filter(dax_ts,
-             filter=rep(1/5,5), sides=1)
-# coerce to zoo and merge the time series
-dax_filt <- merge(as.zoo(dax_ts),
-            as.zoo(dax_filt))
-colnames(dax_filt) <- c("DAX", "DAX filtered")
-dax_data <- window(dax_filt,
-             start=1997, end=1998)
-autoplot(  # plot ggplot2
-    dax_data, main="Filtered DAX",
-    facets=NULL) +  # end autoplot
-xlab("") + ylab("") +
-theme(  # modify plot theme
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-    plot.background=element_blank(),
-    axis.text.y=element_blank()
-    )  # end theme
-# end ggplot2
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-dax_rets <- na.omit(diff(log(dax_filt)))
-par(mfrow=c(2,1))  # set plot panels
-
-acf_plus(coredata(dax_rets[, 1]), lag=10,
-   xlab="")
-title(main="DAX", line=-1)
-
-acf_plus(coredata(dax_rets[, 2]), lag=10,
-   xlab="")
-title(main="DAX filtered", line=-1)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# autocorrelation from "stats"
-acf_plus(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered autocorrelations", line=-1)
-# partial autocorrelation
-pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered partial autocorrelations",
-      line=-1)
-# ARIMA processes
-library(ggplot2)  # load ggplot2
-library(gridExtra)  # load gridExtra
-in_dex <- Sys.Date() + 0:728  # two year daily series
-set.seed(1121)  # reset random numbers
-zoo_arima <- zoo(  # AR time series of returns
-  x=arima.sim(n=729, model=list(ar=0.2)),
-  order.by=in_dex)  # zoo_arima
-zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
-colnames(zoo_arima) <- c("AR returns", "AR prices")
-autoplot(object=zoo_arima, # ggplot AR process
- facets="Series ~ .",
- main="Autoregressive process (phi=0.2)") +
-  facet_grid("Series ~ .", scales="free_y") +
-  xlab("") + ylab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
-zoo_arima <- sapply(  # create three AR time series
-  ar_coeff, function(phi) {
-    set.seed(1121)  # reset random numbers
-    arima.sim(n=729, model=list(ar=phi))
-  } )
-zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
-# convert returns to prices
-zoo_arima <- cumsum(zoo_arima)
-colnames(zoo_arima) <-
-  paste("autocorr", ar_coeff)
-autoplot(zoo_arima, main="AR prices",
-   facets=Series ~ .) +
-    facet_grid(Series ~ ., scales="free_y") +
-xlab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# simulate AR(1) process
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-# ACF of AR(1) process
-acf_plus(ari_ma, lag=10, xlab="", ylab="",
-   main="ACF of AR(1) process")
-# PACF of AR(1) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(1) process")
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-            order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# add legend
-legend(x="topleft",
- legend=colnames(rand_walk),
- col=c("black", "red", "blue"), lty=1)
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-            order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# add legend
-legend(x="topleft",
- legend=colnames(rand_walk),
- col=c("black", "red", "blue"), lty=1)
-library(tseries)  # load tseries
-# simulate AR(1) process
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
-adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(729))
-adf.test(rand_walk)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(10000))
-adf.test(rand_walk)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-ar3_zoo <- zoo(  # AR(3) time series of returns
-  x=arima.sim(n=365,
-    model=list(ar=c(0.1, 0.5, 0.1))),
-  order.by=in_dex)  # zoo_arima
-# ACF of AR(3) process
-acf_plus(ar3_zoo, lag=10,
- xlab="", ylab="", main="ACF of AR(3) process")
-
-# PACF of AR(3) process
-pacf(ar3_zoo, lag=10,
-     xlab="", ylab="", main="PACF of AR(3) process")
-ar3_zoo <- arima.sim(n=1000, 
-      model=list(ar=c(0.1, 0.3, 0.1)))
-arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
-library(forecast)  # load forecast
-auto.arima(ar3_zoo)  # fit ARIMA model
-# get documentation for package "tseries"
+# get documentation for package tseries
 packageDescription("tseries")  # get short description
 
 help(package="tseries")  # load help page
 
-library(tseries)  # load package "tseries"
+library(tseries)  # load package tseries
 
 data(package="tseries")  # list all datasets in "tseries"
 
@@ -365,11 +30,11 @@ ts_stx <- suppressWarnings(
 )  # end suppressWarnings
 load(file="C:/Develop/data/zoo_data.RData")
 # create price adjustment vector
-adj_close <- ts_stx[, "AdjClose"] - 
+adj_close <- ts_stx[, "AdjClose"] -
   ts_stx[, "Close"]
 # adjust OHLC prices
 ts_stx_adj <- ts_stx
-ts_stx_adj[, c("Open","High","Low","Close")] <- 
+ts_stx_adj[, c("Open","High","Low","Close")] <-
   ts_stx[, c("Open","High","Low","Close")] + adj_close
 # inspect the data
 tsp(ts_stx_adj)  # frequency=1
@@ -399,7 +64,7 @@ head(adj_close, 5)
 tail(adj_close, 5)
 # adjust OHLC prices
 zoo_stx_adj <- zoo_stx
-zoo_stx_adj[, c("Open","High","Low","Close")] <- 
+zoo_stx_adj[, c("Open","High","Low","Close")] <-
   zoo_stx[, c("Open","High","Low","Close")] + adj_close
 head(zoo_stx_adj)
 tail(zoo_stx_adj)
@@ -447,8 +112,8 @@ names(zoo_series) <-
              paste, c("Close", "Volume"), sep="."))
 # save zoo_series to a comma-separated CSV file
 write.zoo(zoo_series, file='zoo_series.csv', sep=",")
-# save zoo_series to a binary .Rdata file
-save(zoo_series, file='zoo_series.Rdata')
+# save zoo_series to a binary .RData file
+save(zoo_series, file='zoo_series.RData')
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 load(file="C:/Develop/data/zoo_data.RData")
 # get start and end dates
@@ -479,47 +144,6 @@ ts_stx <- ts(data=da_ta, start=decimal_date(as.Date("2015-01-01")),
           frequency=fre_quency)
 seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
 title(main="MSFT Open and Close Prices", line=-1)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
-#plot with two "y" axes
-par(las=1)  # set text printing to "horizontal"
-# plot first ts
-plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# set range of "y" coordinates for second axis
-par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
-lines(zoo_stxeur[, 2], col="red")  # second plot
-axis(side=4, col="red")  # second "y" axis on right
-# print axis labels
-mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-title(main="EUR and MSFT")  # add title
-# add legend without box
-legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
- lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# slightly different method using par(new=TRUE)
-# par(las=1)  # set text printing to "horizontal"
-# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# par(new=TRUE)  # allow new plot on same chart
-# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
-# axis(side=4, col="red")  # second "y" axis on right
-# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-# title(main="EUR and MSFT", line=-1)  # add title
-# legend("bottomright", legend=colnames(zoo_stxeur),
-#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# "x" axis with monthly ticks - doesn't work
-# plot first ts wthout "x" axis
-# plot(zoo_stxeur[, 1], xaxt="n", xlab=NA, ylab=NA)
-# # add "x" axis with monthly ticks
-# month.ticks <- unique(as.yearmon(index(zoo_eurusd)))
-# axis(side=1, at=month.ticks, labels=format(month.ticks, "%b-%y"), tcl=-0.7)
-
 library(tseries)  # load package tseries
 library(zoo)  # load package zoo
 load(file="C:/Develop/data/zoo_data.RData")
@@ -548,6 +172,51 @@ sharpe(zoo_stx[, "Close"], r=0.01)
 # add title
 plot(zoo_stx[, "Close"], xlab="", ylab="")
 title(main="MSFT Close Prices", line=-1)
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT",
+           start=Sys.Date()-365,
+           end=Sys.Date(),
+           origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+library(tseries)  # load package tseries
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT",
+           start=Sys.Date()-365,
+           end=Sys.Date(),
+           origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+# load package quantmod
+library(quantmod)
+# get documentation for package quantmod
+# get short description
+packageDescription("quantmod")
+# load help page
+help(package="quantmod")
+# list all datasets in "quantmod"
+data(package="quantmod")
+# list all objects in "quantmod"
+ls("package:quantmod")
+# remove quantmod from search path
+detach("package:quantmod")
 rm(list=ls())
 setwd("C:/Develop/data")
 library(xtable)
@@ -579,21 +248,14 @@ etf_list["IEF", "Name"] <- "Treasury Bond Fund"
 etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
 etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny")
-library(quantmod)  # load package "quantmod"
-# get documentation for package "quantmod"
-packageDescription("quantmod")  # get short description
-help(package="quantmod")  # load help page
-data(package="quantmod")  # list all datasets in "quantmod"
-ls("package:quantmod")  # list all objects in "quantmod"
-detach("package:quantmod")  # remove quantmod from search path
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
+load(file="C:/Develop/data/etf_data.RData")
+library(quantmod)  # load package quantmod
 env_data <- new.env()  # new environment for data
 # download data for sym_bols into env_data
 getSymbols(sym_bols, env=env_data, adjust=TRUE,
     from="2007-01-03", to="2015-05-01")
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
+load(file="C:/Develop/data/etf_data.RData")
+library(quantmod)  # load package quantmod
 ls(env_data)  # list files in env_data
 # get class of object in env_data
 class(get(x=sym_bols[1], envir=env_data))
@@ -601,8 +263,76 @@ class(get(x=sym_bols[1], envir=env_data))
 class(env_data$VTI)
 colnames(env_data$VTI)
 head(env_data$VTI, 3)
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
+library(quantmod)  # load package quantmod
+# create name corresponding to "^GSPC" ticker
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# download S&P500 prices into env_data
+getSymbols("SP500", env=env_data,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=env_data$SP500["2016/"],
+       TA="add_Vo()",
+       name="SP500 index")
+library(quantmod)  # load package quantmod
+library(RCurl)  # load package RCurl
+library(XML)  # load package XML
+# extract tables from a URL directly
+sp_500 <- readHTMLTable(
+  "http://www.cboe.com/products/snp500.aspx",
+          stringsAsFactors=FALSE)
+# download text data from URL
+sp_500 <- getURL(
+  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+# extract tables from the text data
+sp_500 <- readHTMLTable(sp_500,
+              stringsAsFactors=FALSE)
+str(sp_500)
+# extract colnames of data frames
+lapply(sp_500, colnames)
+# extract S&P500 constituents
+sp_500 <- sp_500[[1]]
+head(sp_500)
+# write data frame of S&P500 constituents to CSV file
+write.csv(sp_500,
+  file="C:/Develop/data/SP500_Yahoo.csv",
+  row.names=FALSE)
+library(quantmod)  # load package quantmod
+# load data frame of S&P500 constituents from CSV file
+sp_500 <-
+  read.csv(file="C:/Develop/data/SP500_Yahoo.csv",
+     stringsAsFactors=FALSE)
+# find tickers containing "-" character
+tick_ers <- grep("-", sp_500$Ticker, value=TRUE)
+# create names corresponding to invalid tickers
+for (tick_er in tick_ers) {
+  cat("processing: ", tick_er, "\n")
+  setSymbolLookup(structure(
+    list(list(name=tick_er)),
+    names=gsub("-", "_", tick_er)))
+}  # end for
+env_data <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_data), envir=env_data)
+# download data and copy it into environment
+getSymbols(gsub("-", "_", sp_500$Ticker),
+   env=env_data, adjust=TRUE, from="1990-01-01")
+# or download in loop
+for (tick_er in gsub("-", "_", sp_500$Ticker)) {
+  cat("processing: ", tick_er, "\n")
+  getSymbols(tick_er, env=env_data,
+  adjust=TRUE, from="1990-01-01")
+}  # end for
+save(env_data, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_data$BRK_B["2016/"], TA="add_Vo()",
+       name="BRK-B stock")
+load(file="C:/Develop/data/etf_data.RData")
+library(quantmod)  # load package quantmod
+# check of object is an OHLC time series
+is.OHLC(env_data$VTI)
 # adjust single OHLC object using its name
 env_data$VTI <- adjustOHLC(env_data$VTI,
                      use.Adjusted=TRUE)
@@ -619,9 +349,9 @@ for (sym_bol in sym_bols) {
    adjustOHLC(get(sym_bol, envir=env_data),
               use.Adjusted=TRUE),
    envir=env_data)
-}
-load(file="C:/Develop/data/etf_data.Rdata")
-library(quantmod)  # load package "quantmod"
+}  # end for
+load(file="C:/Develop/data/etf_data.RData")
+library(quantmod)  # load package quantmod
 # extract and merge all data, subset by symbols
 etf_series <- do.call(merge,
             as.list(env_data)[sym_bols])
@@ -647,11 +377,11 @@ unlist(eapply(globalenv(), is.xts))
 # save xts to csv file
 write.zoo(etf_series,
      file='etf_series.csv', sep=",")
-# save data to .Rdata file
+# save data to .RData file
 save(env_data, etf_series, etf_series_ad,
-     file='etf_data.Rdata')
+     file='etf_data.RData')
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
 # remove rows with NA values
 etf_series_ad <- 
   etf_series_ad[complete.cases(etf_series_ad)]
@@ -675,39 +405,148 @@ class(etf_rets)
 dim(etf_rets)
 head(etf_rets[, 1:3])
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
-# is it an OHLC time series?
-is.OHLC(env_data$VTI)
+load(file="C:/Develop/data/etf_data.RData")
 # plot OHLC candlechart with volume
-chartSeries(env_data$VTI,
+chartSeries(env_data$VTI["2014-11"],
       name="VTI",
       theme=chartTheme("white"))
-# redraw plot only for Nov-2014
-reChart(type="candlesticks", subset="2014-11")
 # plot OHLC bar chart with volume
 chartSeries(env_data$VTI["2014-11"],
       type="bars",
       name="VTI",
       theme=chartTheme("white"))
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+load(file="C:/Develop/data/etf_data.RData")
+# plot OHLC candlechart with volume
+chartSeries(env_data$VTI["2008-11/2009-04"],
+      name="VTI")
+# redraw plot only for Feb-2009, with white theme
+reChart(subset="2009-02",
+  theme=chartTheme("white"))
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
 # candlechart with Bollinger Bands
 chartSeries(env_data$VTI["2014"],
-      TA="addBBands();addBBands(draw='percent');addVo()",
+      TA="addBBands(): addBBands(draw='percent'): addVo()",
       name="VTI with Bollinger Bands",
       theme=chartTheme("white"))
 # candlechart with two Moving Averages
 chartSeries(env_data$VTI["2014"],
-      TA="addVo();addEMA(10);addEMA(30)",
+      TA="addVo(): addEMA(10): addEMA(30)",
       name="VTI with Moving Averages",
       theme=chartTheme("white"))
 # candlechart with Commodity Channel Index
 chartSeries(env_data$VTI["2014"],
-      TA="addVo();addBBands();addCCI()",
+      TA="addVo(): addBBands(): addCCI()",
       name="VTI with Technical Indicators",
       theme=chartTheme("white"))
 library(quantmod)
-load(file="C:/Develop/data/etf_data.Rdata")
+library(TTR)
+load(file="C:/Develop/data/etf_data.RData")
+da_ta <- env_data$VTI["2009-02/2009-03"]
+adj_vti <- Ad(da_ta); vol_vti <- Vo(da_ta)
+v_wap <- VWAP(price=adj_vti, volume=vol_vti,
+        n=10)
+# plot OHLC candlechart with volume
+chartSeries(da_ta, name="VTI plus VWAP",
+      theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=v_wap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(adj_vti-v_wap), col='red')
+library(quantmod)
+library(TTR)
+load(file="C:/Develop/data/etf_data.RData")
+da_ta <- env_data$VTI
+adj_vti <- Ad(da_ta)
+vol_vti <- Vo(da_ta)
+v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
+adj_vti <- adj_vti["2009-02/2009-03"]
+da_ta <- da_ta["2009-02/2009-03"]
+v_wap <- v_wap["2009-02/2009-03"]
+# plot OHLC candlechart with volume
+chartSeries(da_ta, name="VTI plus VWAP shaded",
+      theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=v_wap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(adj_vti-v_wap), col='red')
+# add background shading of areas
+addTA((adj_vti-v_wap) > 0, on=-1,
+col="lightgreen", border="lightgreen")
+addTA((adj_vti-v_wap) < 0, on=-1,
+col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines at v_wap minimum
+addLines(v=which.min(v_wap), col='red')
+addLines(h=min(v_wap), col='red')
+library(quantmod)
+library(TTR)
+load(file="C:/Develop/data/etf_data.RData")
+da_ta <- env_data$VTI
+adj_vti <- Ad(da_ta)
+vol_vti <- Vo(da_ta)
+v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
+adj_vti <- adj_vti["2009-02/2009-03"]
+da_ta <- da_ta["2009-02/2009-03"]
+v_wap <- v_wap["2009-02/2009-03"]
+# OHLC candlechart VWAP in main plot,
+chart_Series(x=da_ta, # volume in extra panel
+       TA="add_Vo(); add_TA(v_wap, on=1)",
+       name="VTI plus VWAP shaded")
+# add price minus VWAP in extra panel
+add_TA(adj_vti-v_wap, col='red')
+# add background shading of areas
+add_TA((adj_vti-v_wap) > 0, on=-1,
+col="lightgreen", border="lightgreen")
+add_TA((adj_vti-v_wap) < 0, on=-1,
+col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines
+abline(v=which.min(v_wap), col='red')
+abline(h=min(v_wap), col='red')
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
+da_ta <- env_data$VTI["2009-02/2009-03"]
+# extract plot object
+ch_ob <- chart_Series(x=da_ta, plot=FALSE)
+class(ch_ob)
+ls(ch_ob)
+class(ch_ob$get_ylim)
+class(ch_ob$set_ylim)
+# ls(ch_ob$Env)
+class(ch_ob$Env$actions)
+plot_theme <- chart_theme()
+class(plot_theme)
+ls(plot_theme)
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
+da_ta <- env_data$VTI["2010-04/2010-05"]
+# extract, modify theme, format tick marks "%b %d"
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%b %d"
+# create plot object
+ch_ob <- chart_Series(x=da_ta,
+                theme=plot_theme, plot=FALSE)
+# extract ylim using accessor function
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(
+  range(Ad(da_ta)) + c(-1, 1),
+  fixed=TRUE)
+# modify plot object to reduce y-axis range
+ch_ob$set_ylim(y_lim)  # use setter function
+# render the plot
+plot(ch_ob)
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
+# specify plot area with two horizontal panels
+par(mfrow=c(2, 1))
+# plot in top panel
+chart_Series(x=env_data$VTI["2009-02/2009-04"],
+       name="VTI")
+# plot in bottom panel
+chart_Series(x=env_data$XLF["2009-02/2009-04"],
+       name="XLF")
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
 # download U.S. unemployment rate data
 unemp_rate <- getSymbols("UNRATE",
             auto.assign=FALSE,
@@ -720,3 +559,178 @@ chartSeries(unemp_rate["1990/"],
 trs_10yr <- getSymbols("DGS10",
             auto.assign=FALSE,
             src="FRED")
+library(quantmod)  # load package quantmod
+install.packages("devtools")
+library(devtools)
+# install package Quandl from github
+install_github("quandl/R-package")
+library(Quandl)  # load package Quandl
+# register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# get short description
+packageDescription("Quandl")
+# load help page
+help(package="Quandl")
+# remove Quandl from search path
+detach("package:Quandl")
+library(quantmod)  # load package quantmod
+# download EOD AAPL prices from WIKI free database
+price_s <- Quandl(code="WIKI/AAPL", type="xts")
+chart_Series(price_s["2013/", 11], name="AAPL close prices")
+# add trade volume in extra panel
+add_TA(price_s["2013/", 12])
+# download euro currency rates
+price_s <-
+  Quandl(code="BNP/USDEUR", start_date="2013-01-01",
+   end_date="2013-12-01", type="xts")
+# download multiple time series
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+   start_date="2013-01-01", type="xts")
+# download AAPL gross profits
+prof_it <-
+  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
+chart_Series(prof_it, name="AAPL gross profits")
+# download Hurst time series
+price_s <- Quandl(code="PE/AAPL_HURST",
+       start_date="2013-01-01", type="xts")
+chart_Series(price_s["2016/", 1],
+       name="AAPL Hurst")
+library(quantmod)  # load package quantmod
+# load S&P500 stock Quandl codes
+sp_500 <- read.csv(
+  file="C:/Develop/data/SP500_Wiki.csv",
+  stringsAsFactors=FALSE)
+# replace "-" with "_" in tickers
+sp_500$free_code <-
+  gsub("-", "_", sp_500$free_code)
+head(sp_500)
+# vector of tickers in sp_500 frame
+tick_ers <- sp_500$ticker
+# or
+tick_ers <- matrix(unlist(
+  strsplit(sp_500$free_code, split="/"),
+  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
+# or
+tick_ers <- do_call_rbind(
+  strsplit(sp_500$free_code, split="/"))[, 2]
+library(quantmod)  # load package quantmod
+env_data <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_data), envir=env_data)
+# boolean vector of tickers already downloaded
+down_loaded <- tick_ers %in% ls(env_data)
+# download data and copy it into environment
+for (tick_er in tick_ers[!down_loaded]) {
+  cat("processing: ", tick_er, "\n")
+  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
+            start_date="1990-01-01",
+            type="xts")[, -(1:7)]
+  colnames(da_ta) <- paste(tick_er,
+    c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  assign(tick_er, da_ta, envir=env_data)
+}  # end for
+save(env_data, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_data$XOM["2016/"], TA="add_Vo()",
+       name="XOM stock")
+library(quantmod)  # load package quantmod
+# download Fama-French factors from KFRENCH database
+fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
+  start_date="2001-01-01", type="xts")
+dim(fac_tors)
+head(fac_tors)
+tail(fac_tors)
+chart_Series(cumsum(fac_tors["2001/", 1]/100),
+  name="Fama-French factors")
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# get documentation for package "PerformanceAnalytics"
+packageDescription("PerformanceAnalytics")  # get short description
+help(package="PerformanceAnalytics")  # load help page
+data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
+ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
+detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+perf_data <- 
+  unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+data(managers)  # load "managers" data set
+class(managers)
+dim(managers)
+head(managers, 3)
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
+                "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="",
+  legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns",
+line=-1)
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+data(managers)  # load "managers" data set
+charts.PerformanceSummary(ham_1,
+  main="", lwd=2, ylog=TRUE)
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  etf_rets[, c("XLF", "XLP", "IEF")], lwd=2,
+  ylab="", legend.loc="topleft", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+load(file="C:/Develop/data/etf_data.RData")
+options(width=200)
+library(PerformanceAnalytics)
+chart.Drawdown(etf_rets[, "VTI"], ylab="",
+         main="VTI drawdowns")
+load(file="C:/Develop/data/etf_data.RData")
+options(width=200)
+library(PerformanceAnalytics)
+table.Drawdowns(etf_rets[, "VTI"])
+library(PerformanceAnalytics)
+chart.Histogram(etf_rets[, 1], main="",
+  xlim=c(-0.06, 0.06),
+  methods = c("add.density", "add.normal"))
+# add title
+title(main=paste(colnames(etf_rets[, 1]),
+           "density"), line=-1)
+library(PerformanceAnalytics)
+chart.Boxplot(etf_rets[,
+  c(rownames(head(ret_stats, 3)),
+    rownames(tail(ret_stats, 3)))])
+library(PerformanceAnalytics)
+tail(table.Stats(etf_rets[, 
+  c("VTI", "IEF", "DBC", "IUSG")]), 4)
+ret_stats <- table.Stats(etf_rets)
+class(ret_stats)
+# Transpose the data frame
+ret_stats <- as.data.frame(t(ret_stats))
+# plot scatterplot
+plot(Kurtosis ~ Skewness, data=ret_stats,
+     main="Kurtosis vs Skewness")
+# add labels
+text(x=ret_stats$Skewness, y=ret_stats$Kurtosis,
+    labels=rownames(ret_stats),
+    pos=1, cex=0.8)
+load(file="C:/Develop/data/etf_data.RData")
+# add skew_kurt column
+ret_stats$skew_kurt <- 
+  ret_stats$Skewness/ret_stats$Kurtosis
+# sort on skew_kurt
+ret_stats <- ret_stats[
+  order(ret_stats$skew_kurt, 
+  decreasing=TRUE), ]
+# add names column
+ret_stats$Name <- 
+  etf_list[rownames(ret_stats), ]$Name
+ret_stats[, c("Name", "Skewness", "Kurtosis")]
+library(PerformanceAnalytics)
+chart.RiskReturnScatter(etf_rets, Rf=0.01/12)
+library(PerformanceAnalytics)
+vti_ief <- etf_rets[, c("VTI", "IEF")]
+SharpeRatio(vti_ief)
+
+SortinoRatio(vti_ief)
+
+CalmarRatio(vti_ief)
+tail(table.Stats(vti_ief), 4)
