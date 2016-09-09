@@ -4,10 +4,10 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-# display documentation on function "getwd"
-help(getwd)
-?getwd  # equivalent to "help(getwd)"
-help.start()  # open the hypertext documentation
+## # display documentation on function "getwd"
+## help(getwd)
+## ?getwd  # equivalent to "help(getwd)"
+## help.start()  # open the hypertext documentation
 my_var <- 3  # "<-" and "=" are valid assignment operators
 
 my_var  # typing a symbol or expression evaluates it
@@ -40,10 +40,10 @@ ls()  # list objects
 load_ed <- load(file="C:/Develop/data/my_data.RData")
 load_ed
 ls()  # list objects
-  q()  # quit R session
-history(5)  # display last 5 commands
-savehistory(file="myfile")  # default is ".Rhistory"
-loadhistory(file="myfile")  # default is ".Rhistory"
+##   q()  # quit R session
+## history(5)  # display last 5 commands
+## savehistory(file="myfile")  # default is ".Rhistory"
+## loadhistory(file="myfile")  # default is ".Rhistory"
 sessionInfo()  # get R version and other session info
 Sys.getenv()[5:7]  # list some environment variables
 
@@ -58,28 +58,28 @@ Sys.getenv("R_home")  # get R_HOME directory
 R.home()  # get R_HOME directory
 
 R.home("etc")  # get "etc" sub-directory of R_HOME
-# ?options  # long list of global options
-
-# interpret strings as characters, not factors
-getOption("stringsAsFactors")  # display option
-options("stringsAsFactors")  # display option
-options(stringsAsFactors=FALSE)  # set option
-
-# number of digits printed for numeric values
-options(digits=3)
-
-# number of items printed to console
-options(max.print=30)
-
-# warning levels options
-# negative - warnings are ignored
-options(warn=-1)
-# zero - warnings are stored and printed after top-level function has completed
-options(warn=0)
-# one - warnings are printed as they occur
-options(warn=1)
-# two or larger - warnings are turned into errors
-options(warn=2)
+## # ?options  # long list of global options
+## 
+## # interpret strings as characters, not factors
+## getOption("stringsAsFactors")  # display option
+## options("stringsAsFactors")  # display option
+## options(stringsAsFactors=FALSE)  # set option
+## 
+## # number of digits printed for numeric values
+## options(digits=3)
+## 
+## # number of items printed to console
+## options(max.print=30)
+## 
+## # warning levels options
+## # negative - warnings are ignored
+## options(warn=-1)
+## # zero - warnings are stored and printed after top-level function has completed
+## options(warn=0)
+## # one - warnings are printed as they occur
+## options(warn=1)
+## # two or larger - warnings are turned into errors
+## options(warn=2)
 "Hello World!"  # type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name

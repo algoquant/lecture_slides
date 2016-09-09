@@ -90,7 +90,7 @@ calc_skew <- function(time_series=rnorm(1000)) {
 # default is normal time series
   len_data <- length(time_series)  # number of observations
 # normalize time_series
-  time_series <- 
+  time_series <-
     (time_series - mean(time_series))/sd(time_series)
 # calculate skew last statement automatically returned
   len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
@@ -129,7 +129,7 @@ lazy_func(3, 2)  # bind arguments by position
 lazy_func(3)  # first argument written to output
 str(plot)  # dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
@@ -144,7 +144,7 @@ str(sum)  # dots before other arguments
 sum(1, 2, 3)  # dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
 bind_dots <- function(..., in_put) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 # arguments after dots must be bound by full name
@@ -152,7 +152,7 @@ bind_dots(1, 2, 3, in_put=10)
 bind_dots(1, 2, 3, in_put=10, foo=4)  # dots bound
 bind_dots(1, 2, 3)  # "in_put" not bound
 bind_dots <- function(..., in_put=10) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
@@ -166,7 +166,7 @@ mean(c(foo, NA), na.rm=TRUE)
 my_mean(c(foo, NA))
 my_mean(c(foo, NA), trim=0.4)  # pass extra argument
 # wrapper for saving data into default directory
-save_data <- function(..., 
+save_data <- function(...,
               file=stop("error: no file name"),
               my_dir="C:/Develop/data") {
 # create file path
@@ -178,7 +178,7 @@ save_data(foo, file="scratch.RData")
 save_data(foo, file="scratch.RData", my_dir="C:/Develop")
 # wrapper for testing negative arguments
 stop_if_neg <- function(in_put) {
-  if(!is.numeric(in_put) || in_put<0)
+  if (!is.numeric(in_put) || in_put<0)
     stop("argument not numeric or negative")
 }  # end stop_if_neg
 # wrapper for sqrt()
@@ -212,9 +212,9 @@ glob_var <- 1  # define a global variable
 ls(environment())  # get all variables in environment
 func_env <- function() {  # explore function environments
   loc_var <- 1  # define a local variable
-  cat('objects in evaluation environment:\t', 
+  cat('objects in evaluation environment:\t',
       ls(environment()), '\n')
-  cat('objects in enclosing environment:\t', 
+  cat('objects in enclosing environment:\t',
       ls(parent.env(environment())), '\n')
   cat('this is the enclosing environment:')
   parent.env(environment())  # return enclosing environment
@@ -228,10 +228,10 @@ glob_var <- 1  # define a global variable
 probe_scope <- function() {  # explore function scope
   loc_var <- 2*glob_var  # define a local variable
   new_globvar <<- 11  # define a global variable
-  cat('objects in evaluation environment:\t', 
+  cat('objects in evaluation environment:\t',
       ls(environment()), '\n')
   cat('this is a local loc_var:\t', loc_var, '\n')
-  cat('objects in enclosing environment:\n', 
+  cat('objects in enclosing environment:\n',
       ls(parent.env(environment())), '\n')
   cat('this is glob_var:\t', glob_var, '\n')
   glob_var <- 10  # define local glob_var
@@ -370,18 +370,18 @@ open_account <- function(balance) {
 # returns function list for account operations
   list(
     deposit = function(amount) {  # make deposit
-      if(amount > 0) {
+      if (amount > 0) {
 balance <<- balance + amount  # '<<-' super-assignment operator
-cat(amount, "deposited. Your balance is now:", 
+cat(amount, "deposited. Your balance is now:",
     balance, "\n")
       } else {
 cat("Deposits must be positive!\n")
       }
     },  # end deposit
     withdraw = function(amount) {  # make withdrawal
-      if(amount <= balance) {
+      if (amount <= balance) {
 balance <<- balance - amount  # '<<-' super-assignment operator
-cat(amount, "withdrawn. Your balance is now:", 
+cat(amount, "withdrawn. Your balance is now:",
     balance, "\n")
       } else {
 cat("You don't have that much money!\n")
@@ -428,7 +428,7 @@ func_tional(sum, 1, 2, NA, 4, 5)
 func_tional(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
 # function with three arguments and dots '...' arguments
 my_func <- function(in_put, param1, param2, ...) {
-  c(input=in_put, param1=param1, param2=param2, 
+  c(input=in_put, param1=param1, param2=param2,
 dots=c(...))
 }  # end my_func
 my_func(1, 2, 3, param2=4, param1=5)
@@ -439,7 +439,7 @@ func_tional(my_func, 1, 2, 3, 4, 5)
 # anonymous function passed to func_tional
 func_tional(func_name=(function(x) (x + 3)), 5)
 # anonymous function is default value
-func_tional <- 
+func_tional <-
   function(..., func_name=function(x, y, z) {x+y+z}) {
     func_name <- match.fun(func_name)
     func_name(...)  # execute function call
@@ -449,7 +449,7 @@ func_tional(2, 3, 4, 5)
 # func_name bound by name
 func_tional(func_name=sum, 2, 3, 4, 5)
 # pass anonymous function to func_name
-func_tional(func_name=function(x, y, z) {x*y*z}, 
+func_tional(func_name=function(x, y, z) {x*y*z},
     2, 3, 4)
 str(sum)  # sum() accepts multiple arguments
 # sum() can't accept list of arguments
@@ -476,9 +476,9 @@ mat_rix
 # sum the rows and columns
 row_sums <- apply(mat_rix, 1, sum)
 col_sums <- apply(mat_rix, 2, sum)
-mat_rix <- cbind(c(sum(row_sums), row_sums), 
+mat_rix <- cbind(c(sum(row_sums), row_sums),
           rbind(col_sums, mat_rix))
-dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"), 
+dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"),
                  c("row_sums", "col1", "col2", "col3"))
 mat_rix
 str(apply)  # get list of arguments
@@ -502,14 +502,14 @@ moment(x=dax_rets, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
-apply(X=moment_orders, MARGIN=1, 
+apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
   moment(x=dax_rets, order=moment_order)
 }  # end anonymous function
       )  # end apply
 
 # another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment, 
+apply(X=moment_orders, MARGIN=1, FUN=moment,
       x=dax_rets)
 # function with three arguments
 my_func <- function(arg1, arg2, arg3) {
@@ -545,7 +545,7 @@ mat_rix <- matrix(sample(100), ncol=4)
 apply(mat_rix, 2, mean)
 
 # calculate column means using sapply, with anonymous function
-sapply(1:ncol(mat_rix), 
+sapply(1:NCOL(mat_rix),
        function(col_index) {  # anonymous function
  mean(mat_rix[, col_index])
   }  # end anonymous function
@@ -555,10 +555,10 @@ sapply(2:4, function(num) c(el1=num, el2=2*num))
 # vectors of different lengths returned as list
 sapply(2:4, function(num) 1:num)
 # vapply is similar to sapply
-vapply(2:4, function(num) c(el1=num, el2=2*num), 
+vapply(2:4, function(num) c(el1=num, el2=2*num),
        FUN.VALUE=c(row1=0, row2=0))
 # vapply produces an error if it can't simplify
-vapply(2:4, function(num) 1:num, 
+vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
 library(zoo)  # load package zoo
 # show the generic function "merge"
@@ -614,7 +614,7 @@ obj_string
 # overload "print" method for string objects
 print.string <- function (str_ing) {
   print(
-    paste(strsplit(str_ing, split=" ")[[1]], 
+    paste(strsplit(str_ing, split=" ")[[1]],
   collapse=" + "))
 }  # end print.string
 # methods("print")  # view new methods for "print" function
@@ -622,7 +622,7 @@ print(obj_string)
 obj_string
 # overwrite "+" operator
 "+" = function(a, b) {
-  if(is.character(a) && is.character(b)) {
+  if (is.character(a) && is.character(b)) {
     paste(a, "plus", b)
   } else {
     .Primitive("+") (a, b)
@@ -681,7 +681,7 @@ last <- function (a, b, ...) {
 }  # end last
 last(new_zoo)  # now works
 # define generic "string" class converter
-as.string <- function (str_ing, ...) 
+as.string <- function (str_ing, ...)
   UseMethod("as.string")
 # default "string" class converter
 as.string.default <- function (str_ing, ...)

@@ -168,93 +168,93 @@ last.xts_xtra <- function(in_ts) {
   drop(NextMethod())
 }  # end last.xts_xtra
 last(new_xts)  # apply "last" from "xts_xtra" class
-library(parallel)  # load package parallel
-# get short description
-packageDescription("parallel")
-# load help page
-help(package="parallel")
-# list all objects in "parallel"
-ls("package:parallel")
-load(file="C:/Develop/data/etf_data.RData")
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-library(microbenchmark)  # load package microbenchmark
-# compare speed of lapply with parallel computing
-summary(microbenchmark(
-  l_apply=lapply(1:10, paws, sleep_time=0.01),
-  parl_apply=
-    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ters)
-library(parallel)  # load package parallel
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# compare speed of lapply with parallel computing
-iter_ations <- 3:10
-compute_times <- sapply(iter_ations,
-  function(max_iterations, sleep_time) {
-    out_put <- summary(microbenchmark(
-lapply=lapply(1:max_iterations, paws,
-              sleep_time=sleep_time),
-parallel=parLapply(clus_ters, 1:max_iterations,
-        paws, sleep_time=sleep_time),
-times=10))[, c(1, 4)]
-    structure(out_put[, 2],
-        names=as.vector(out_put[, 1]))
-    }, sleep_time=0.01)
-compute_times <- t(compute_times)
-rownames(compute_times) <- iter_ations
-library(parallel)  # load package parallel
-plot(x=rownames(compute_times),
-     y=compute_times[, "lapply"],
-     type="l", lwd=2, col="blue",
-     main="Compute times",
-     xlab="number of iterations in loop", ylab="",
-     ylim=c(0, max(compute_times[, "lapply"])))
-lines(x=rownames(compute_times),
-y=compute_times[, "parallel"], lwd=2, col="green")
-legend(x="topleft", legend=colnames(compute_times),
- inset=0.1, cex=1.0, bg="white",
- lwd=2, lty=c(1, 1), col=c("blue", "green"))
-library(parallel)  # load package parallel
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define large matrix
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
-# define aggregation function over column of matrix
-agg_regate <- function(col_umn) {
-  out_put <- 0
-  for (in_dex in 1:length(col_umn))
-    out_put <- out_put + col_umn[in_dex]
-  out_put
-}  # end agg_regate
-# perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ters, mat_rix, agg_regate)
-# compare speed of apply with parallel computing
-summary(microbenchmark(
-  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ters, mat_rix, agg_regate),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ters)
+## library(parallel)  # load package parallel
+## # get short description
+## packageDescription("parallel")
+## # load help page
+## help(package="parallel")
+## # list all objects in "parallel"
+## ls("package:parallel")
+## load(file="C:/Develop/data/etf_data.RData")
+## # calculate number of available cores
+## no_cores <- detectCores() - 1
+## # initialize compute cluster
+## clus_ters <- makeCluster(no_cores)
+## # define function that pauses execution
+## paws <- function(x, sleep_time) {
+##   Sys.sleep(sleep_time)
+##   x
+## }  # end paws
+## library(microbenchmark)  # load package microbenchmark
+## # compare speed of lapply with parallel computing
+## summary(microbenchmark(
+##   l_apply=lapply(1:10, paws, sleep_time=0.01),
+##   parl_apply=
+##     parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
+##   times=10)
+## )[, c(1, 4, 5)]
+## # stop R processes over cluster
+## stopCluster(clus_ters)
+## library(parallel)  # load package parallel
+## # calculate number of available cores
+## no_cores <- detectCores() - 1
+## # initialize compute cluster
+## clus_ters <- makeCluster(no_cores)
+## # define function that pauses execution
+## paws <- function(x, sleep_time) {
+##   Sys.sleep(sleep_time)
+##   x
+## }  # end paws
+## # compare speed of lapply with parallel computing
+## iter_ations <- 3:10
+## compute_times <- sapply(iter_ations,
+##   function(max_iterations, sleep_time) {
+##     out_put <- summary(microbenchmark(
+## lapply=lapply(1:max_iterations, paws,
+##               sleep_time=sleep_time),
+## parallel=parLapply(clus_ters, 1:max_iterations,
+##         paws, sleep_time=sleep_time),
+## times=10))[, c(1, 4)]
+##     structure(out_put[, 2],
+##         names=as.vector(out_put[, 1]))
+##     }, sleep_time=0.01)
+## compute_times <- t(compute_times)
+## rownames(compute_times) <- iter_ations
+## library(parallel)  # load package parallel
+## plot(x=rownames(compute_times),
+##      y=compute_times[, "lapply"],
+##      type="l", lwd=2, col="blue",
+##      main="Compute times",
+##      xlab="number of iterations in loop", ylab="",
+##      ylim=c(0, max(compute_times[, "lapply"])))
+## lines(x=rownames(compute_times),
+## y=compute_times[, "parallel"], lwd=2, col="green")
+## legend(x="topleft", legend=colnames(compute_times),
+##  inset=0.1, cex=1.0, bg="white",
+##  lwd=2, lty=c(1, 1), col=c("blue", "green"))
+## library(parallel)  # load package parallel
+## # calculate number of available cores
+## no_cores <- detectCores() - 1
+## # initialize compute cluster
+## clus_ters <- makeCluster(no_cores)
+## # define large matrix
+## mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+## # define aggregation function over column of matrix
+## agg_regate <- function(col_umn) {
+##   out_put <- 0
+##   for (in_dex in 1:length(col_umn))
+##     out_put <- out_put + col_umn[in_dex]
+##   out_put
+## }  # end agg_regate
+## # perform parallel aggregations over columns of matrix
+## agg_regations <-
+##   parCapply(clus_ters, mat_rix, agg_regate)
+## # compare speed of apply with parallel computing
+## summary(microbenchmark(
+##   ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+##   parl_apply=
+##     parCapply(clus_ters, mat_rix, agg_regate),
+##   times=10)
+## )[, c(1, 4, 5)]
+## # stop R processes over cluster
+## stopCluster(clus_ters)

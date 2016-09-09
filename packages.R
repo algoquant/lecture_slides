@@ -38,11 +38,11 @@ pack_info[sample(x=1:100, 5), c("Package", "Version")]
 t(pack_info["xts", ])  # get info for package "xts"
 # list directories in "PortfolioAnalytics" sub-directory
 gsub(
-  "C:/Users/Jerzy/Documents/R/win-library/3.1", 
+  "C:/Users/Jerzy/Documents/R/win-library/3.1",
   "~",
   list.dirs(
     file.path(
-      .libPaths()[1], 
+      .libPaths()[1],
       "PortfolioAnalytics")))
 # load package, produce error if can't be loaded
 library(MASS)
@@ -65,6 +65,7 @@ help(package="Ecdat")  # load help page
 library(Ecdat)  # load package "Ecdat"
 data(package="Ecdat")  # list all datasets in "Ecdat"
 ls("package:Ecdat")  # list all objects in "Ecdat"
+browseVignettes("Ecdat")  # view package vignette
 detach("package:Ecdat")  # remove Ecdat from search path
 library(Ecdat)  # load econometric data sets
 class(Garch)  # Garch is a data frame from "Ecdat"

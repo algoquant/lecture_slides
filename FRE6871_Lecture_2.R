@@ -489,7 +489,7 @@ apply(mat_rix, 2, median, na.rm=TRUE)
 rm(list=ls())
 # DAX percent returns
 dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
-library(moments)  # load library"moments"
+library(moments)  # load package moments
 str(moment)  # get list of arguments
 # apply moment function
 moment(x=dax_rets, order=3)
@@ -520,13 +520,13 @@ apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
 sapply(iris[, -5], mean)  # vector of means of numeric columns
 lapply(iris[, -5], mean)  # list of means of numeric columns
 unlist(lapply(iris,  # lapply using anonymous function
-      function(co_lumn) {
-        if (is.numeric(co_lumn)) mean(co_lumn)
+      function(col_umn) {
+        if (is.numeric(col_umn)) mean(col_umn)
       }  # end anonymous function
       )  # end sapply
        )  # end unlist
-unlist(sapply(iris, function(co_lumn) {
-  if (is.numeric(co_lumn)) mean(co_lumn)}))
+unlist(sapply(iris, function(col_umn) {
+  if (is.numeric(col_umn)) mean(col_umn)}))
 sapply(6:10, sqrt)  # sapply on vector
 sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
 

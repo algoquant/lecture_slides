@@ -63,12 +63,12 @@ sort(sapply(mget(ls()),
 function(ob_ject) {
   format(object.size(ob_ject), units="KB")}
 ))
-# get sizes of objects in env_data environment
-sort(sapply(ls(env_data),
+# get sizes of objects in env_etf environment
+sort(sapply(ls(env_etf),
   function(ob_ject) {
-    object.size(get(ob_ject, env_data))}))
-# get sizes of objects in env_data environment
-sort(sapply(mget(ls(env_data), env_data),
+    object.size(get(ob_ject, env_etf))}))
+# get sizes of objects in env_etf environment
+sort(sapply(mget(ls(env_etf), env_etf),
       object.size))
 # get total size of all objects in workspace
 format(object.size(x=mget(ls())), units="MB")
@@ -78,8 +78,8 @@ ob_jects <- ll(unit="bytes")
 # sort by memory size (descending)
 ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
 ll()[order(ll()$KB, decreasing=TRUE), ]
-# get sizes of objects in env_data environment
-ll(unit="bytes", env_data)
+# get sizes of objects in env_etf environment
+ll(unit="bytes", env_etf)
 load(file="C:/Develop/data/etf_data.RData")
 library(SOAR)  # load package SOAR
 # get sizes of objects in workspace
@@ -130,7 +130,7 @@ matrix_to_dframe <- function(mat_rix) {
   for(in_dex in 1:n_col)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(nrow(mat_rix))
+    .set_row_names(NROW(mat_rix))
   attr(dframe, "class") <- "data.frame"
   dframe  # return data frame
 }  # end matrix_to_dframe
@@ -143,17 +143,17 @@ summary(microbenchmark(
 # matrix with 5,000 rows
 big_matrix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
-row_sums <- numeric(nrow(big_matrix))
+row_sums <- numeric(NROW(big_matrix))
 summary(microbenchmark(
   ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
+  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:nrow(big_matrix), function(in_dex)
+  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ]),
     FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:nrow(big_matrix), function(in_dex)
+  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:nrow(big_matrix)) {
+  for_loop=for(i in 1:NROW(big_matrix)) {
     row_sums[i] <- sum(big_matrix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -292,11 +292,11 @@ set.seed(1121)
 sapply(me_ans, rnorm, n=2)
 load(file="C:/Develop/data/etf_data.RData")
 # rnorm() vectorized with respect to "std_dev"
-vec_rnorm <- function(n, mean=0, std_dev=1) {
-  if (length(std_dev)==1)
-    rnorm(n=n, mean=mean, sd=std_dev)
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (length(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
   else
-    sapply(std_dev, rnorm, n=n, mean=mean)
+    sapply(sd, rnorm, n=n, mean=mean)
 }  # end vec_rnorm
 set.seed(1121)
 vec_rnorm(n=2, sd=std_devs)
@@ -350,6 +350,21 @@ lwd=c(2, 2, 2), xlab="", ylab="")
 legend(x="bottomright", legend=colnames(vec_tor4),
        title="", inset=0.05, cex=0.8, lwd=2,
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# MC estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/sample_length
+# MC estimate of quantile
+qnorm(0.75)
+sam_ple[0.75*sample_length]
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 simu_length <- 1000  # number of simulation steps
@@ -392,6 +407,94 @@ plot(ts_var, type="l", col="black",  # create plot
      lty="solid", xlab="", ylab="")
 abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
 title(main="Random Prices", line=0)  # add title
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    sam_ple[sample.int(sample_length,
+                 replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(sample_length)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+set.seed(1121)  # initialize random number generator
+# define explanatory and response variables
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+res_ponse <- -3 + explana_tory + noise
+# define design matrix and regression formula
+design_matrix <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(design_matrix)[1],
+  paste(colnames(design_matrix)[-1], collapse="+"),
+  sep=" ~ ")
+# bootstrap the regression
+boot_strap <- sapply(1:100, function(x) {
+  boot_sample <-
+    sample.int(dim(design_matrix)[1], replace=TRUE)
+  reg_model <- lm(reg_formula,
+          data=design_matrix[boot_sample, ])
+  reg_model$coefficients
+})  # end sapply
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=1,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# means and standard errors from regression summary
+reg_model <- lm(reg_formula, data=design_matrix)
+reg_model$coefficients
+summary(reg_model)$coefficients[, "Std. Error"]
+plot(density(boot_strap["explana_tory", ]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap["explana_tory", ]),
+       lwd=2, col="red")
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# bootstrap the regression under Windows
+boot_strap <- parLapply(clus_ter, 1:1000,
+  function(x, reg_formula, design_matrix) {
+    boot_sample <-
+sample.int(dim(design_matrix)[1], replace=TRUE)
+    reg_model <- lm(reg_formula,
+data=design_matrix[boot_sample, ])
+    reg_model$coefficients
+  },
+  reg_formula=reg_formula,
+  design_matrix=design_matrix)  # end parLapply
+# bootstrap the regression under Mac-OSX or Linux
+boot_strap <- mclapply(1:1000,
+  function(x) {
+    boot_sample <-
+sample.int(dim(design_matrix)[1], replace=TRUE)
+    lm(reg_formula,
+data=design_matrix[boot_sample, ])$coefficients
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+x11(width=6, height=6)
+plot(density(boot_strap[, "explana_tory"]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap[, "explana_tory"]),
+ lwd=2, col="red")
 library(parallel)  # load package parallel
 # get short description
 packageDescription("parallel")
@@ -399,31 +502,37 @@ packageDescription("parallel")
 help(package="parallel")
 # list all objects in "parallel"
 ls("package:parallel")
-load(file="C:/Develop/data/etf_data.RData")
+library(parallel)  # load package parallel
 # calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
+num_cores <- detectCores() - 1
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
   x
 }  # end paws
+# perform parallel loop under Mac-OSX or Linux
+foo <- mclapply(1:10, paws, mc.cores=num_cores,
+          sleep_time=0.01)
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+foo <- parLapply(clus_ter, 1:10, paws,
+           sleep_time=0.01)
 library(microbenchmark)  # load package microbenchmark
-# compare speed of lapply with parallel computing
+# compare speed of lapply versus parallel computing
 summary(microbenchmark(
   l_apply=lapply(1:10, paws, sleep_time=0.01),
   parl_apply=
-    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
   times=10)
 )[, c(1, 4, 5)]
 # stop R processes over cluster
-stopCluster(clus_ters)
+stopCluster(clus_ter)
 library(parallel)  # load package parallel
 # calculate number of available cores
-no_cores <- detectCores() - 1
+num_cores <- detectCores() - 1
 # initialize compute cluster
-clus_ters <- makeCluster(no_cores)
+clus_ter <- makeCluster(num_cores)
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
@@ -436,7 +545,7 @@ compute_times <- sapply(iter_ations,
     out_put <- summary(microbenchmark(
 lapply=lapply(1:max_iterations, paws,
               sleep_time=sleep_time),
-parallel=parLapply(clus_ters, 1:max_iterations,
+parallel=parLapply(clus_ter, 1:max_iterations,
         paws, sleep_time=sleep_time),
 times=10))[, c(1, 4)]
     structure(out_put[, 2],
@@ -458,9 +567,9 @@ legend(x="topleft", legend=colnames(compute_times),
  lwd=2, lty=c(1, 1), col=c("blue", "green"))
 library(parallel)  # load package parallel
 # calculate number of available cores
-no_cores <- detectCores() - 1
+num_cores <- detectCores() - 1
 # initialize compute cluster
-clus_ters <- makeCluster(no_cores)
+clus_ter <- makeCluster(num_cores)
 # define large matrix
 mat_rix <- matrix(rnorm(7*10^5), ncol=7)
 # define aggregation function over column of matrix
@@ -472,16 +581,16 @@ agg_regate <- function(col_umn) {
 }  # end agg_regate
 # perform parallel aggregations over columns of matrix
 agg_regations <-
-  parCapply(clus_ters, mat_rix, agg_regate)
+  parCapply(clus_ter, mat_rix, agg_regate)
 # compare speed of apply with parallel computing
 summary(microbenchmark(
   ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
   parl_apply=
-    parCapply(clus_ters, mat_rix, agg_regate),
+    parCapply(clus_ter, mat_rix, agg_regate),
   times=10)
 )[, c(1, 4, 5)]
 # stop R processes over cluster
-stopCluster(clus_ters)
+stopCluster(clus_ter)
 options(width=50, dev='pdf')
 str(optimize)
 # objective function with multiple minima
@@ -500,7 +609,7 @@ title(main="Objective Function", line=-1)  # add title
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
 object_ive <- function(parm, sam_ple) {
-  sum(2*log(parm[2]) + 
+  sum(2*log(parm[2]) +
     ((sam_ple - parm[1])/parm[2])^2)
 }  # end object_ive
 # vectorize objective function
@@ -512,16 +621,16 @@ vec_objective <- Vectorize(
 # objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd, 
+objective_grid <- outer(par_mean, par_sd,
 vec_objective, sam_ple=sam_ple)
 objective_min <- which(  # grid search
-  objective_grid==min(objective_grid), 
+  objective_grid==min(objective_grid),
   arr.ind=TRUE)
 objective_min
 par_mean[objective_min[1]]  # mean
 par_sd[objective_min[2]]  # sd
 objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1), 
+objective_grid[(objective_min[, 1] + -1:1),
        (objective_min[, 2] + -1:1)]
 par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
 # perspective plot of log-likelihood function
@@ -537,8 +646,8 @@ persp3d(z=-objective_grid, zlab="objective",
 # initial parameters
 par_init <- c(mean=0, sd=1)
 # perform optimization quasi-Newton method
-optim_run <- optim(par=par_init, 
-       fn=object_ive, 
+optim_run <- optim(par=par_init,
+       fn=object_ive,
        sam_ple=sam_ple,
        method="L-BFGS-B",
        upper=c(10, 10),
@@ -564,7 +673,7 @@ object_ive <- function(parm, sam_ple) {
   likelihood <- parm[1]/parm[3] *
   dnorm((sam_ple-parm[2])/parm[3]) +
   (1-parm[1])/parm[5]*dnorm((sam_ple-parm[4])/parm[5])
-  if(any(likelihood <= 0)) Inf else
+  if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # vectorize objective function

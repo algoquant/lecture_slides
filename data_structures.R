@@ -1,5 +1,5 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -250,10 +250,10 @@ match(6, c(3, 5, 7))
 # indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
 # return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7), 
+findInterval(x=1:8, vec=c(3, 5, 7),
        all.inside=TRUE)
 # make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7), 
+findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
 # named numeric vector of breakpoints
 brea_ks <- c("freezing"=0, "very_cold"=30,
@@ -292,6 +292,11 @@ mat_rix[2, ]  # extract second row
 mat_rix[, 3]  # extract third column
 mat_rix[, c(1,3)]  # extract first and third column
 mat_rix[, -2]  # remove second column
+# get the number of rows or columns
+nrow(vec_tor); ncol(vec_tor)
+NROW(vec_tor); NCOL(vec_tor)
+nrow(mat_rix); ncol(mat_rix)
+NROW(mat_rix); NCOL(mat_rix)
 attributes(mat_rix)  # get matrix attributes
 dim(mat_rix)  # get dimension attribute
 class(mat_rix)  # get class attribute
@@ -353,12 +358,13 @@ is.data.frame(data_frame)
 
 class(data_frame$type)  # get column class
 class(data_frame$price)  # get column class
-data_frame[, 3]  # extract third column
-data_frame[[3]]  # extract third column
+data_frame[, 3]  # extract third column as vector
+data_frame[[3]]  # extract third column as vector
+data_frame[3]  # extract third column as data frame
+data_frame[, 3, drop=FALSE]  # extract third column as data frame
 data_frame[[3]][2]  # second element from third column
 data_frame$price[2]  # second element from 'price' column
 is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[, 3, drop=FALSE]  # extract third column
 data_frame[2, ]  # extract second row
 data_frame[2, ][3]  # third element from second column
 data_frame[2, 3]  # third element from second column
@@ -425,7 +431,7 @@ summary(microbenchmark(
   as_list=
     as.list(as.data.frame.matrix(mat_rix)),
   l_apply=
-    lapply(seq_along(mat_rix[1, ]), 
+    lapply(seq_along(mat_rix[1, ]),
      function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # ?iris  # get information on iris

@@ -7,7 +7,7 @@ knit_theme$set(thm)
 # library(xts)  # load package xts
 library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
-end_points <- 0:nrow(price_s)  # define end points
+end_points <- 0:NROW(price_s)  # define end points
 len_gth <- length(end_points)
 win_dow <- 11  # number of data points per look-back window
 # define starting points as lag of end_points
@@ -31,7 +31,7 @@ agg_regations <- xts(agg_regations,
                order.by=index(price_s[end_points]))
 library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
-end_points <- 0:nrow(price_s)  # define end points
+end_points <- 0:NROW(price_s)  # define end points
 len_gth <- length(end_points)
 win_dow <- 11  # number of data points per look-back window
 # define starting points as lag of end_points
@@ -61,7 +61,7 @@ col=plot_theme$col$line.col, bty="n")
 # define functional for rolling aggregations
 roll_agg <- function(x_ts, win_dow, FUN, ...) {
 # define end points at every point
-  end_points <- 0:nrow(x_ts)
+  end_points <- 0:NROW(x_ts)
   len_gth <- length(end_points)
 # define starting points as lag of end_points
   start_points <-  end_points[
@@ -106,7 +106,7 @@ summary(microbenchmark(
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
 # perform aggregations over length of end_points
-agg_regations <- rollapply(price_s, width=win_dow,
+agg_regations <- xts:::rollapply.xts(price_s, width=win_dow,
               FUN=agg_regate, align="right")
 # perform aggregations over length of end_points
 library(PerformanceAnalytics)  # load package PerformanceAnalytics
@@ -117,7 +117,7 @@ library(microbenchmark)
 summary(microbenchmark(
   roll_agg=roll_agg(price_s, win_dow=win_dow,
               FUN=max),
-  roll_apply=rollapply(price_s, width=win_dow,
+  roll_xts=xts:::rollapply.xts(price_s, width=win_dow,
                  FUN=max, align="right"),
   apply_rolling=apply.rolling(price_s,
                         width=win_dow, FUN=max),
@@ -184,11 +184,11 @@ library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])
 # define number of data points per interval
 inter_val <- 11
-# calculate number of "inter_vals" that fit over "price_s"
-n_row <- nrow(price_s)
+# calculate number of inter_vals that fit over price_s
+n_row <- NROW(price_s)
 num_agg <- n_row %/% inter_val
 # if n_row==inter_val*num_agg then whole number
-# of "inter_vals" fit over "price_s"
+# of inter_vals fit over price_s
 end_points <- inter_val*(0:num_agg)
 # if (n_row > inter_val*num_agg)
 # then stub interval at beginning
@@ -449,76 +449,64 @@ charts.PerformanceSummary(ham_1,
   main="", lwd=2, ylog=TRUE)
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
-  etf_rets[, c("XLF", "XLP", "IEF")], lwd=2,
+  env_etf$re_turns[, c("XLF", "XLP", "IEF")], lwd=2,
   ylab="", legend.loc="topleft", main="")
 # add title
 title(main="ETF cumulative returns", line=-1)
 load(file="C:/Develop/data/etf_data.RData")
 options(width=200)
 library(PerformanceAnalytics)
-chart.Drawdown(etf_rets[, "VTI"], ylab="",
+chart.Drawdown(env_etf$re_turns[, "VTI"], ylab="",
          main="VTI drawdowns")
 load(file="C:/Develop/data/etf_data.RData")
 options(width=200)
 library(PerformanceAnalytics)
-table.Drawdowns(etf_rets[, "VTI"])
+table.Drawdowns(env_etf$re_turns[, "VTI"])
 library(PerformanceAnalytics)
-chart.Histogram(etf_rets[, 1], main="",
+chart.Histogram(env_etf$re_turns[, 1], main="",
   xlim=c(-0.06, 0.06),
   methods = c("add.density", "add.normal"))
 # add title
-title(main=paste(colnames(etf_rets[, 1]),
+title(main=paste(colnames(env_etf$re_turns[, 1]),
            "density"), line=-1)
 library(PerformanceAnalytics)
-chart.Boxplot(etf_rets[,
+chart.Boxplot(env_etf$re_turns[,
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")])
 library(PerformanceAnalytics)
-tail(table.Stats(etf_rets[,
+tail(table.Stats(env_etf$re_turns[,
   c("VTI", "IEF", "DBC", "VXX")]), 4)
-ret_stats <- table.Stats(etf_rets)
-class(ret_stats)
+risk_return <- table.Stats(env_etf$re_turns)
+class(risk_return)
 # Transpose the data frame
-ret_stats <- as.data.frame(t(ret_stats))
+risk_return <- as.data.frame(t(risk_return))
 # plot scatterplot
-plot(Kurtosis ~ Skewness, data=ret_stats,
+plot(Kurtosis ~ Skewness, data=risk_return,
      main="Kurtosis vs Skewness")
 # add labels
-text(x=ret_stats$Skewness, y=ret_stats$Kurtosis,
-    labels=rownames(ret_stats),
+text(x=risk_return$Skewness, y=risk_return$Kurtosis,
+    labels=rownames(risk_return),
     pos=1, cex=0.8)
 load(file="C:/Develop/data/etf_data.RData")
 # add skew_kurt column
-ret_stats$skew_kurt <- 
-  ret_stats$Skewness/ret_stats$Kurtosis
+risk_return$skew_kurt <-
+  risk_return$Skewness/risk_return$Kurtosis
 # sort on skew_kurt
-ret_stats <- ret_stats[
-  order(ret_stats$skew_kurt, 
+risk_return <- risk_return[
+  order(risk_return$skew_kurt,
   decreasing=TRUE), ]
 # add names column
-ret_stats$Name <- 
-  etf_list[rownames(ret_stats), ]$Name
-ret_stats[, c("Name", "Skewness", "Kurtosis")]
+risk_return$Name <-
+  etf_list[rownames(risk_return), ]$Name
+risk_return[, c("Name", "Skewness", "Kurtosis")]
 library(PerformanceAnalytics)
 chart.RiskReturnScatter(
-  etf_rets[, colnames(etf_rets)!="VXX"],
+  env_etf$re_turns[, colnames(env_etf$re_turns)!="VXX"],
   Rf=0.01/12)
 library(PerformanceAnalytics)
-vti_ief <- etf_rets[, c("VTI", "IEF")]
+vti_ief <- env_etf$re_turns[, c("VTI", "IEF")]
 SharpeRatio(vti_ief)
 
 SortinoRatio(vti_ief)
 
 CalmarRatio(vti_ief)
 tail(table.Stats(vti_ief), 4)
-# library(xts)  # load package xts
-# load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-data(managers)  # load "managers" data set
-ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
-                "SP500 TR")]
-
-chart.CumReturns(ham_1, lwd=2, ylab="",
-  legend.loc="topleft", main="")
-# add title
-title(main="Managers cumulative returns",
-line=-1)

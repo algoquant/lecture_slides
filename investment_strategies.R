@@ -1,5 +1,5 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -62,7 +62,7 @@ title(main="wealth of multiperiod betting", line=0.1)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.RData")
-ts_rets <- etf_rets[, "VTI"]
+ts_rets <- env_etf$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
 sapply(frac, function (fract) sum(log(1+fract*r)))
@@ -74,7 +74,7 @@ title(main="utility", line=-2)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.RData")
-ts_rets <- etf_rets[, "VTI"]
+ts_rets <- env_etf$re_turns[, "VTI"]
 KellyRatio(R=ts_rets, method="full")
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.RData")
@@ -84,7 +84,7 @@ re_balance <- "weeks"
 win_dow <- 40
 
 # create index of rebalancing period end points
-end_points <- endpoints(etf_rets, 
+end_points <- endpoints(env_etf$re_turns, 
                 on=re_balance)
 end_points[1] <- 1
 
@@ -97,7 +97,7 @@ list(
     )  # end lapply
 # calculate risk&ret stats for some symbols, over a range of dates
 risk_ret_stats <- 
-  function(x_ts=etf_rets,  # daily returns
+  function(x_ts=env_etf$re_turns,  # daily returns
      sym_bols=colnames(x_ts),  # names
      range=index(x_ts),  # date range
      ret="mean",  # return stat
@@ -118,7 +118,7 @@ head(risk_ret_stats(range=
 period_stats <- lapply(periods,
    function(point)
      cbind(risk_ret_stats(range=point$back),
-      fut_ret=sapply(etf_rets[point$fwd, ], sum))
+      fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
 )  # end lapply
 head(period_stats[[1]])
 # calculate pnl for a given period
@@ -134,7 +134,7 @@ c(sum(period_stat[, "fut_ret"]*weights), weights)
 # calculate pnls over all windows
 pnl_xts <- t(sapply(period_stats, pnl_period))
 pnl_xts <- xts(pnl_xts,
-     order.by=index(etf_rets)
+     order.by=index(env_etf$re_turns)
  [end_points[win_dow:(length(end_points)-1)]]
  )  # end xts
 colnames(pnl_xts)[1] <- "pnl"
@@ -160,7 +160,7 @@ betas <- xts(rowSums(betas),
     order.by=index(pnl_xts))
 colnames(betas) <- "betas"
 plot.zoo(cbind(betas,
-    cumsum(etf_rets[, 1])[index(betas)]),
+    cumsum(env_etf$re_turns[, 1])[index(betas)]),
     main="betas & VTI", xlab="")
 # create trading function
 tot_pnl <- function(win_dow) {
@@ -173,7 +173,7 @@ end_points[point-win_dow+1]:(end_points[point]-1),
   period_stats <- lapply(periods,
  function(point)
    cbind(risk_ret_stats(range=point$back),
-     fut_ret=sapply(etf_rets[point$fwd, ], sum))
+     fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
   )  # end lapply
   pnl_xts <- t(sapply(period_stats, pnl_period))
   co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))

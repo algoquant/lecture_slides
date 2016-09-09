@@ -1,6 +1,5 @@
-## NYU Tandon lecture slides
-========
+### NYU Tandon lecture slides for:
 
-### Lecture slides for:  
-* FRE6871 R in Finance
-* FRE7241 Algorithmic Portfolio Management
++ FRE6871 R in Finance
+
++ FRE7241 Algorithmic Portfolio Management

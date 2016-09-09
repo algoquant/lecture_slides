@@ -6,31 +6,31 @@ thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 getOption("repos")  # get default package source
 .libPaths()  # get package save directory
-install.packages("AER")  # install "AER" from CRAN
-# install "PerformanceAnalytics" from R-Forge
-install.packages(
-  pkgs="PerformanceAnalytics",  # name
-  lib="C:/Users/Jerzy/Downloads",  # directory
-  repos="http://R-Forge.R-project.org")  # source
-# install devtools from CRAN
-install.packages("devtools")
-# load devtools
-library(devtools)
-# install package "babynames" from GitHub
-install_github(repo="hadley/babynames")
-# install package "PortfolioAnalytics" from source
-install.packages("PortfolioAnalytics",
-  type="source",
-  repos="http://r-forge.r-project.org")
-# download files for package "PortfolioAnalytics"
-download.packages(pkgs = "PortfolioAnalytics",
-  destdir = ".",  # download to cwd
-  type = "source",
-  repos="http://r-forge.r-project.org")
-# install "PortfolioAnalytics" from local tar source
-install.packages(
-  "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
-  repos=NULL, type="source")
+## install.packages("AER")  # install "AER" from CRAN
+## # install "PerformanceAnalytics" from R-Forge
+## install.packages(
+##   pkgs="PerformanceAnalytics",  # name
+##   lib="C:/Users/Jerzy/Downloads",  # directory
+##   repos="http://R-Forge.R-project.org")  # source
+## # install devtools from CRAN
+## install.packages("devtools")
+## # load devtools
+## library(devtools)
+## # install package "babynames" from GitHub
+## install_github(repo="hadley/babynames")
+## # install package "PortfolioAnalytics" from source
+## install.packages("PortfolioAnalytics",
+##   type="source",
+##   repos="http://r-forge.r-project.org")
+## # download files for package "PortfolioAnalytics"
+## download.packages(pkgs = "PortfolioAnalytics",
+##   destdir = ".",  # download to cwd
+##   type = "source",
+##   repos="http://r-forge.r-project.org")
+## # install "PortfolioAnalytics" from local tar source
+## install.packages(
+##   "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
+##   repos=NULL, type="source")
 getOption("defaultPackages")
 pack_info <- installed.packages()  # matrix of packages
 # get a few package names and their versions
@@ -44,28 +44,28 @@ gsub(
     file.path(
       .libPaths()[1], 
       "PortfolioAnalytics")))
-# load package, produce error if can't be loaded
-library(MASS)
-# load package, return TRUE if loaded successfully
-require(MASS)
-# load quietly
-library(MASS, quietly=TRUE)
-# load without any messages
-suppressMessages(library(MASS))
-# remove package from search path
-detach(MASS)
-# install package if it can't be loaded successfully
-if (!require("xts")) install.packages("xts")
-library()  # list all packages installed on the system
-search()  # list all loaded packages on search path
-
-# get documentation for package "Ecdat"
-packageDescription("Ecdat")  # get short description
-help(package="Ecdat")  # load help page
-library(Ecdat)  # load package "Ecdat"
-data(package="Ecdat")  # list all datasets in "Ecdat"
-ls("package:Ecdat")  # list all objects in "Ecdat"
-detach("package:Ecdat")  # remove Ecdat from search path
+## # load package, produce error if can't be loaded
+## library(MASS)
+## # load package, return TRUE if loaded successfully
+## require(MASS)
+## # load quietly
+## library(MASS, quietly=TRUE)
+## # load without any messages
+## suppressMessages(library(MASS))
+## # remove package from search path
+## detach(MASS)
+## # install package if it can't be loaded successfully
+## if (!require("xts")) install.packages("xts")
+## library()  # list all packages installed on the system
+## search()  # list all loaded packages on search path
+## 
+## # get documentation for package "Ecdat"
+## packageDescription("Ecdat")  # get short description
+## help(package="Ecdat")  # load help page
+## library(Ecdat)  # load package "Ecdat"
+## data(package="Ecdat")  # list all datasets in "Ecdat"
+## ls("package:Ecdat")  # list all objects in "Ecdat"
+## detach("package:Ecdat")  # remove Ecdat from search path
 library(Ecdat)  # load econometric data sets
 class(Garch)  # Garch is a data frame from "Ecdat"
 dim(Garch)  # daily currency prices
@@ -196,34 +196,34 @@ findInterval(x=1:8, vec=c(3, 5, 7),
 # make rightmost interval inclusive
 findInterval(x=1:8, vec=c(3, 5, 7), 
        rightmost.closed=TRUE)
-# named numeric vector of breakpoints
-brea_ks <- c("freezing"=0, "very_cold"=30,
-       "cold"=50, "pleasant"=60,
-       "warm"=80, "hot"=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+## # named numeric vector of breakpoints
+## brea_ks <- c("freezing"=0, "very_cold"=30,
+##        "cold"=50, "pleasant"=60,
+##        "warm"=80, "hot"=90)
+## brea_ks
+## tempe_ratures <- runif(10, min=10, max=100)
+## feels_like <- names(
+##   brea_ks[findInterval(x=tempe_ratures,
+##                  vec=brea_ks)])
+## names(tempe_ratures) <- feels_like
+## tempe_ratures
+## library(microbenchmark)
+## foo <- sample(0:6) + 0.1
+## foo
+## cut(x=foo, breaks=c(2, 4, 6, 8))
+## rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+## # cut() replicates findInterval()
+## cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
+##     right=FALSE)
+## findInterval(x=1:8, vec=c(3, 5, 7))
+## # findInterval() is a compiled function, so it's faster than cut()
+## vec_tor <- rnorm(1000)
+## summary(microbenchmark(
+##   find_interval=
+##     findInterval(x=vec_tor, vec=c(3, 5, 7)),
+##   cuut=
+##     cut(x=vec_tor, breaks=c(3, 5, 7)),
+##   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
@@ -245,191 +245,191 @@ system.time(
 )  # end system.time
 # cumulative sum using "cumsum"
 system.time(cum_sum <- cumsum(big_vector))
-# calculate row sums two different ways
-summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-library(microbenchmark)
-str(pmax)
-# calculate row maximums two different ways
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
-lapply(seq_along(big_matrix[1, ]),
-  function(in_dex) big_matrix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]),
-  function(in_dex) max(big_matrix[in_dex, ]))),
-  times=10))[, c(1, 4, 5)]
-library(matrixStats)  # load package matrixStats
-# calculate row min values three different ways
-summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
-  p_min=
-    do.call(pmin.int,
-      lapply(seq_along(big_matrix[1, ]),
-             function(in_dex)
-               big_matrix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int,
-      as.data.frame.matrix(big_matrix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector three different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector two different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-load(file="C:/Develop/data/etf_data.RData")
-# define function vectorized automatically
-my_fun <- function(in_put, pa_ram) {
-  pa_ram*in_put
-}  # end my_fun
-# "in_put" is vectorized
-my_fun(in_put=1:3, pa_ram=2)
-# "pa_ram" is vectorized
-my_fun(in_put=10, pa_ram=2:4)
-# define vectors of parameters of rnorm()
-sd_vec <-
-  structure(1:3, names=paste0("sd=", 1:3))
-mean_vec <-
-  structure(-1:1, names=paste0("mean=", -1:1))
-# "sd" argument of rnorm() isn't vectorized
-rnorm(1, sd=sd_vec)
-# "mean" argument of rnorm() isn't vectorized
-rnorm(1, mean=mean_vec)
-load(file="C:/Develop/data/etf_data.RData")
-# sapply produces desired vector output
-set.seed(1121)
-sapply(sd_vec, function(sd) rnorm(n=2, sd=sd))
-set.seed(1121)
-sapply(sd_vec, rnorm, n=2, mean=0)
-set.seed(1121)
-sapply(mean_vec,
- function(mean) rnorm(n=2, mean=mean))
-set.seed(1121)
-sapply(mean_vec, rnorm, n=2)
-load(file="C:/Develop/data/etf_data.RData")
-# rnorm() vectorized with respect to "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    sapply(sd, rnorm, n=n, mean=mean)
-}  # end vec_rnorm
-set.seed(1121)
-vec_rnorm(n=2, sd=sd_vec)
-# rnorm() vectorized to "mean" and "sd"
-vec_rnorm <- Vectorize(FUN=rnorm,
-        vectorize.args=c("mean", "sd")
-)  # end Vectorize
-set.seed(1121)
-vec_rnorm(n=2, sd=sd_vec)
-set.seed(1121)
-vec_rnorm(n=2, mean=mean_vec)
-load(file="C:/Develop/data/etf_data.RData")
-str(sum)
-# na.rm is bound by name
-mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
-str(rnorm)
-# mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=mean_vec, sd=sd_vec)
-mapply(function(in_put, e_xp) in_put^e_xp,
- 1:5, seq(from=1, by=0.2, length.out=5))
-load(file="C:/Develop/data/etf_data.RData")
-# rnorm() vectorized with respect to "mean" and "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(mean)==1 && length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    mapply(rnorm, n=n, mean=mean, sd=sd)
-}  # end vec_rnorm
-# call vec_rnorm() on vector of "sd"
-vec_rnorm(n=2, sd=sd_vec)
-# call vec_rnorm() on vector of "mean"
-vec_rnorm(n=2, mean=mean_vec)
-# create two numeric vectors
-vec_tor1 <- sin(0.25*pi*1:10)
-vec_tor2 <- cos(0.25*pi*1:10)
-# create third vector using 'ifelse'
-vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
-          vec_tor1, vec_tor2)
-# cbind all three together
-vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
-
-# set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
-    cex.sub=0.5)
-# plot matrix
-matplot(vec_tor4, type="l", lty="solid",
-col=c("green", "blue", "red"),
-lwd=c(2, 2, 2), xlab="", ylab="")
-# add legend
-legend(x="bottomright", legend=colnames(vec_tor4),
-       title="", inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-simu_length <- 1000  # number of simulation steps
-simu_prices <- numeric(simu_length)  # initialize prices
-barrier_level <- 20  # barrier level
-simu_prices[1] <- 0  # first simulated price
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_length) &&
- (simu_prices[in_dex - 1] < barrier_level)) {
-  simu_prices[in_dex] <- # simulate next price
-    simu_prices[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-if (in_dex <= simu_length) {  # fill zero prices
-  simu_prices[in_dex:simu_length] <- simu_prices[in_dex - 1]
-}
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-simu_length <- 1000  # number of simulation steps
-barrier_level <- 20  # barrier level
-# simulate prices
-simu_prices <- cumsum(rnorm(simu_length))
-# find index when prices cross barrier_level
-which_index <- which(simu_prices > barrier_level)
-# fill prices after crossing barrier_level
-if (length(which_index)>0) {
-  simu_prices[(which_index[1]+1):simu_length] <-
-    simu_prices[which_index[1]]
-}  # end if
-# create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365,
-     start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
+## # calculate row sums two different ways
+## summary(microbenchmark(
+##   row_sums=rowSums(big_matrix),
+##   ap_ply=apply(big_matrix, 1, sum),
+##   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+## library(microbenchmark)
+## str(pmax)
+## # calculate row maximums two different ways
+## summary(microbenchmark(
+##   p_max=
+##     do.call(pmax.int,
+## lapply(seq_along(big_matrix[1, ]),
+##   function(in_dex) big_matrix[, in_dex])),
+##   l_apply=unlist(
+##     lapply(seq_along(big_matrix[, 1]),
+##   function(in_dex) max(big_matrix[in_dex, ]))),
+##   times=10))[, c(1, 4, 5)]
+## library(matrixStats)  # load package matrixStats
+## # calculate row min values three different ways
+## summary(microbenchmark(
+##   row_mins=rowMins(big_matrix),
+##   p_min=
+##     do.call(pmin.int,
+##       lapply(seq_along(big_matrix[1, ]),
+##              function(in_dex)
+##                big_matrix[, in_dex])),
+##   as_data_frame=
+##     do.call(pmin.int,
+##       as.data.frame.matrix(big_matrix)),
+##   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+## summary(microbenchmark(  # assign values to vector three different ways
+## # fast vectorized assignment loop performed in C using brackets "[]"
+##   brack_ets={vec_tor <- numeric(10)
+##     vec_tor[] <- 2},
+## # slow because loop is performed in R
+##   for_loop={vec_tor <- numeric(10)
+##     for (in_dex in seq_along(vec_tor))
+##       vec_tor[in_dex] <- 2},
+## # very slow because no memory is pre-allocated
+## # "vec_tor" is "grown" with each new element
+##   grow_vec={vec_tor <- numeric(0)
+##     for (in_dex in 1:10)
+## # add new element to "vec_tor" ("grow" it)
+##       vec_tor[in_dex] <- 2},
+##   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+## summary(microbenchmark(  # assign values to vector two different ways
+## # fast vectorized assignment loop performed in C using brackets "[]"
+##   brack_ets={vec_tor <- numeric(10)
+##     vec_tor[4:7] <- rnorm(4)},
+## # slow because loop is performed in R
+##   for_loop={vec_tor <- numeric(10)
+##     for (in_dex in 4:7)
+##       vec_tor[in_dex] <- rnorm(1)},
+##   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+## load(file="C:/Develop/data/etf_data.RData")
+## # define function vectorized automatically
+## my_fun <- function(in_put, pa_ram) {
+##   pa_ram*in_put
+## }  # end my_fun
+## # "in_put" is vectorized
+## my_fun(in_put=1:3, pa_ram=2)
+## # "pa_ram" is vectorized
+## my_fun(in_put=10, pa_ram=2:4)
+## # define vectors of parameters of rnorm()
+## std_devs <-
+##   structure(1:3, names=paste0("sd=", 1:3))
+## me_ans <-
+##   structure(-1:1, names=paste0("mean=", -1:1))
+## # "sd" argument of rnorm() isn't vectorized
+## rnorm(1, sd=std_devs)
+## # "mean" argument of rnorm() isn't vectorized
+## rnorm(1, mean=me_ans)
+## load(file="C:/Develop/data/etf_data.RData")
+## # sapply produces desired vector output
+## set.seed(1121)
+## sapply(std_devs, function(sd) rnorm(n=2, sd=sd))
+## set.seed(1121)
+## sapply(std_devs, rnorm, n=2, mean=0)
+## set.seed(1121)
+## sapply(me_ans,
+##  function(mean) rnorm(n=2, mean=mean))
+## set.seed(1121)
+## sapply(me_ans, rnorm, n=2)
+## load(file="C:/Develop/data/etf_data.RData")
+## # rnorm() vectorized with respect to "sd"
+## vec_rnorm <- function(n, mean=0, sd=1) {
+##   if (length(sd)==1)
+##     rnorm(n=n, mean=mean, sd=sd)
+##   else
+##     sapply(sd, rnorm, n=n, mean=mean)
+## }  # end vec_rnorm
+## set.seed(1121)
+## vec_rnorm(n=2, sd=std_devs)
+## # rnorm() vectorized to "mean" and "sd"
+## vec_rnorm <- Vectorize(FUN=rnorm,
+##         vectorize.args=c("mean", "sd")
+## )  # end Vectorize
+## set.seed(1121)
+## vec_rnorm(n=2, sd=std_devs)
+## set.seed(1121)
+## vec_rnorm(n=2, mean=me_ans)
+## load(file="C:/Develop/data/etf_data.RData")
+## str(sum)
+## # na.rm is bound by name
+## mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
+## str(rnorm)
+## # mapply vectorizes both arguments "mean" and "sd"
+## mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
+## mapply(function(in_put, e_xp) in_put^e_xp,
+##  1:5, seq(from=1, by=0.2, length.out=5))
+## load(file="C:/Develop/data/etf_data.RData")
+## # rnorm() vectorized with respect to "mean" and "sd"
+## vec_rnorm <- function(n, mean=0, sd=1) {
+##   if (length(mean)==1 && length(sd)==1)
+##     rnorm(n=n, mean=mean, sd=sd)
+##   else
+##     mapply(rnorm, n=n, mean=mean, sd=sd)
+## }  # end vec_rnorm
+## # call vec_rnorm() on vector of "sd"
+## vec_rnorm(n=2, sd=std_devs)
+## # call vec_rnorm() on vector of "mean"
+## vec_rnorm(n=2, mean=me_ans)
+## # create two numeric vectors
+## vec_tor1 <- sin(0.25*pi*1:10)
+## vec_tor2 <- cos(0.25*pi*1:10)
+## # create third vector using 'ifelse'
+## vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
+##           vec_tor1, vec_tor2)
+## # cbind all three together
+## vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+## 
+## # set plotting parameters
+## par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+##     cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
+##     cex.sub=0.5)
+## # plot matrix
+## matplot(vec_tor4, type="l", lty="solid",
+## col=c("green", "blue", "red"),
+## lwd=c(2, 2, 2), xlab="", ylab="")
+## # add legend
+## legend(x="bottomright", legend=colnames(vec_tor4),
+##        title="", inset=0.05, cex=0.8, lwd=2,
+##        lty=c(1, 1, 1), col=c("green", "blue", "red"))
+## par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+## set.seed(1121)  # reset random number generator
+## simu_length <- 1000  # number of simulation steps
+## simu_prices <- numeric(simu_length)  # initialize prices
+## barrier_level <- 20  # barrier level
+## simu_prices[1] <- 0  # first simulated price
+## in_dex <- 2  # initialize simulation index
+## while ((in_dex <= simu_length) &&
+##  (simu_prices[in_dex - 1] < barrier_level)) {
+##   simu_prices[in_dex] <- # simulate next price
+##     simu_prices[in_dex - 1] + rnorm(1)
+##   in_dex <- in_dex + 1  # advance in_dex
+## }  # end while
+## if (in_dex <= simu_length) {  # fill zero prices
+##   simu_prices[in_dex:simu_length] <- simu_prices[in_dex - 1]
+## }
+## # create daily time series starting 2011
+## ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
+## plot(ts_var, type="l", col="black",  # create plot
+##      lty="solid", xlab="", ylab="")
+## abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+## title(main="Random Prices", line=0)  # add title
+## par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+## set.seed(1121)  # reset random number generator
+## simu_length <- 1000  # number of simulation steps
+## barrier_level <- 20  # barrier level
+## # simulate prices
+## simu_prices <- cumsum(rnorm(simu_length))
+## # find index when prices cross barrier_level
+## which_index <- which(simu_prices > barrier_level)
+## # fill prices after crossing barrier_level
+## if (length(which_index)>0) {
+##   simu_prices[(which_index[1]+1):simu_length] <-
+##     simu_prices[which_index[1]]
+## }  # end if
+## # create daily time series starting 2011
+## ts_var <- ts(data=simu_prices, frequency=365,
+##      start=c(2011, 1))
+## plot(ts_var, type="l", col="black",  # create plot
+##      lty="solid", xlab="", ylab="")
+## abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
+## title(main="Random Prices", line=0)  # add title
 setwd("C:/Develop/data")
 cat("Enter\ttab")  # cat() interprets backslash escape sequences
 print("Enter\ttab")
@@ -487,34 +487,34 @@ class(mat_read)
 # coerce from data frame back to matrix
 mat_read <- as.matrix(mat_read)
 class(mat_read)
-setwd("C:/Develop/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t",
-              header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE,
-               col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-      row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
+## setwd("C:/Develop/data")
+## data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+## data_frame <- read.table("mydata.txt", header=TRUE)
+## data_frame <- read.table("clipboard", header=TRUE)
+## 
+## write.table(x=data_frame, file="clipboard", sep="\t")
+## 
+## # wrapper function for copying data frame from clipboard into R
+## # by default, data is tab delimited, with a header
+## read_clip <- function(file="clipboard", sep="\t",
+##               header=TRUE, ...) {
+##   read.table(file=file, sep=sep, header=header, ...)
+## }  # end read_clip
+## 
+## data_frame <- read_clip()
+## 
+## # wrapper function for copying data frame from R into clipboard
+## # by default, data is tab delimited, with a header
+## write_clip <- function(data, row.names=FALSE,
+##                col.names=TRUE, ...) {
+##   write.table(x=data, file="clipboard", sep="\t",
+##       row.names=row.names, col.names=col.names, ...)
+## }  # end write_clip
+## 
+## write_clip(data=data_frame)
+## 
+## # launch spreadsheet-style data editor
+## data_frame <- edit(data_frame)
 setwd("C:/Develop/data")
 # write data frame to CSV file, and then read it back
 write.csv(data_frame, file="florist.csv")
@@ -547,7 +547,7 @@ mat_read <- read.csv(file="matrix_ex_rows.csv")
 mat_read <- as.matrix(mat_read)
 mat_read  # a matrix without row names
 setwd("C:/Develop/data")
-library(MASS)  # load library "MASS"
+library(MASS)  # load package "MASS"
 # write to CSV file by row - it's very SLOW!!!
 write.matrix(mat_rix, file="matrix.csv", sep=",")
 system.time(  # scan reads faster - skip first line with colnames

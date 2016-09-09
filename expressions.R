@@ -31,11 +31,17 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
+load(file="C:/Develop/data/etf_data.RData")
+4.7 * 0.5  # multiplication
+4.7 / 0.5  # division
+# exponentiation
+2**3
+2^3
 num_var <- 2
 num_var==2
 identical(num_var, 2)
 
-identical(num_var, NULL) 
+identical(num_var, NULL)
 num_var==NULL
 is.null(num_var)
 
@@ -52,7 +58,7 @@ which(vec_tor > 5)
 # find indices of TRUE elements of boolean matrix
 which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
 # equivalent but less efficient than above
-arrayInd(which((mat_rix == 5)|(mat_rix == 6)), 
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
  dim(mat_rix), dimnames(mat_rix))
 which.max(vec_tor)
 # equivalent but less efficient than above
@@ -71,7 +77,7 @@ c(5, -5) %in% vec_tor
 any(vec_tor == 5)
 # equivalent to "-5 %in% vec_tor"
 any(vec_tor == (-5))
-if(any(vec_tor < 0))
+if (any(vec_tor < 0))
   cat("vector contains negative values\n")
 num_var1 <- 3  # "<-" and "=" are valid assignment operators
 num_var1
@@ -127,8 +133,8 @@ test_env$my_var1
 # reference an object by string name using get
 get("my_var1", envir=test_env)
 # retrieve and assign value to object
-assign("my_var1", 
- 2*get("my_var1", envir=test_env), 
+assign("my_var1",
+ 2*get("my_var1", envir=test_env),
  envir=test_env)
 get("my_var1", envir=test_env)
 # return all objects in an environment
@@ -152,7 +158,7 @@ ls()  # expression evaluation created new object
 symbol_new
 quote(symbol_name + symbol_new)  # return expression without evaluating it
 # substitute objects in an expression
-ex_pression <- substitute(symbol_name + symbol_new, 
+ex_pression <- substitute(symbol_name + symbol_new,
                 env=list(symbol_name=1, symbol_new=2))
 ex_pression
 eval(ex_pression)  # evaluate expression
@@ -169,7 +175,7 @@ deparse(my_var)
 # convert symbol into string without evaluating it
 deparse(quote(my_var))
 # substitute object with value from named list
-deparse(substitute(symbol_name + symbol_new, 
+deparse(substitute(symbol_name + symbol_new,
              env=list(symbol_new=2)))
 # capture name of input argument
 deparse_name <- function(in_put) {
@@ -196,7 +202,7 @@ switch("c", a="aaahh", b="bee", c="see", d=2, "else this")
 switch(3, a="aaahh", b="bee", c="see", d=2, "else this")
 switch("cc", a="aaahh", b="bee", c="see", d=2, "else this")
 # measure of central tendency
-centra_lity <- function(in_put, 
+centra_lity <- function(in_put,
     meth_od=c("mean", "mean_narm", "median")) {
 # validate "meth_od" argument
   meth_od <- match.arg(meth_od)
@@ -279,6 +285,13 @@ rep(c("a", "b"), times=5)
 rep(c("a", "b"), each=5)
 # replicate to specified length
 rep(c("a", "b"), length.out=5)
+# define vector and matrix
+vec_tor1 <- c(2, 4, 3)
+mat_rix <- matrix(sample(1:12), ncol=3)
+# multiply matrix by vector column-wise
+vec_tor1 * mat_rix
+# multiply matrix by vector row-wise
+t(vec_tor1 * t(mat_rix))
 mat_rix <- matrix(1:6, ncol=3)  # create matrix
 vec_tor1
 vec_tor2 <- 6:4  # define vector
@@ -319,7 +332,7 @@ vec_tor2
 mat_rix <- outer(vec_tor1, vec_tor2)
 mat_rix
 # calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2, 
+mat_rix <- outer(vec_tor1, vec_tor2,
            FUN=function(x1, x2) x2*sin(x1))
 mat_rix
 # create list of vectors
@@ -352,7 +365,7 @@ do_call_rbind <- function(li_st) {
       if (in_dex==length(li_st)) {
 return(li_st[[in_dex]])
       }
-      return(rbind(li_st[[in_dex]], 
+      return(rbind(li_st[[in_dex]],
            li_st[[in_dex+1]]))
     })  # end lapply
   }  # end while
@@ -396,16 +409,16 @@ aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 # mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
-with(mtcars, 
+with(mtcars,
      tapply(X=mpg, INDEX=cyl, FUN=mean))
 # function sapply() instead of tapply()
-with(mtcars, 
+with(mtcars,
      sapply(sort(unique(cyl)), function(x) {
        structure(mean(mpg[x==cyl]), names=x)
        }, USE.NAMES=TRUE))  # end with
 
 # function by() instead of tapply()
-with(mtcars, 
+with(mtcars,
      by(data=mpg, INDICES=cyl, FUN=mean))
 # get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
@@ -575,7 +588,7 @@ vali_date()
 traceback()
 vali_date <- function(in_put) {
 # check argument using long form '&&' operator
-  stopifnot(!missing(in_put) && 
+  stopifnot(!missing(in_put) &&
       is.numeric(in_put))
   2*in_put
 }  # end vali_date
@@ -592,10 +605,10 @@ vali_date("a")
 # sum_two() returns the sum of its two arguments
 sum_two <- function(in_put1, in_put2) {  # even more robust
 # check if at least one argument is not missing
-  stopifnot(!missing(in_put1) && 
+  stopifnot(!missing(in_put1) &&
       !missing(in_put2))
 # check if arguments are valid and return sum
-  if (is.numeric(in_put1) && 
+  if (is.numeric(in_put1) &&
       is.numeric(in_put2)) {
     in_put1 + in_put2  # both valid
   } else if (is.numeric(in_put1)) {
@@ -622,7 +635,7 @@ undebug(vali_date)
 vali_date <- function(in_put) {
   browser()  # pause and invoke browser
 # check argument using long form '&&' operator
-  stopifnot(!missing(in_put) && 
+  stopifnot(!missing(in_put) &&
       is.numeric(in_put))
   2*in_put
 }  # end vali_date
@@ -635,7 +648,7 @@ tryCatch(  # without error handler
   {  # evaluate expressions
     num_var <- 101  # assign
     stop('my error')  # produce error
-  }, 
+  },
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 
@@ -643,7 +656,7 @@ tryCatch(  # with error handler
   {  # evaluate expressions
     num_var <- 101  # assign
     stop('my error')  # produce error
-  }, 
+  },
   error=function(error_cond)  # handler captures error condition
     print(paste("error handler: ", error_cond)),
   finally=print(paste("num_var=", num_var))

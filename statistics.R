@@ -94,30 +94,7 @@ sam_ple <- rnorm(sample_length)
 mean(sam_ple)
 # sample standard deviation
 sd(sam_ple)
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                 replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(sample_length)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
-#Perform two-tailed test that sample is 
+#Perform two-tailed test that sample is
 #from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
 test_frame <- data.frame(samples=rnorm(1000))
@@ -126,12 +103,12 @@ test_frame <- data.frame(samples=rnorm(1000))
 signif_level <- 2*(1-pnorm(2))
 signif_level
 # get p-values for all the samples
-test_frame$p_values <- 
+test_frame$p_values <-
   sapply(test_frame$samples, pnorm)
-test_frame$p_values <- 
+test_frame$p_values <-
   2*(0.5-abs(test_frame$p_values-0.5))
 # compare p_values to significance level
-test_frame$result <- 
+test_frame$result <-
   test_frame$p_values > signif_level
 # number of null rejections
 sum(!test_frame$result)
@@ -229,7 +206,7 @@ acf_plus <- function (ts_data, plot=TRUE,
     dim=c((dim(acf_data$acf)[1]-1), 1, 1))
   acf_data$lag <-  array(data=acf_data$lag[-1],
     dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  if(plot) {
+  if (plot) {
     ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
     ylim <- c(min(-ci, range(acf_data$acf[-1])),
         max(ci, range(acf_data$acf[-1])))
@@ -295,11 +272,11 @@ macro_diff <- na.omit(diff(macro_zoo))
 Box.test(dax_rets, lag=10, type="Ljung")
 
 # changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"], 
+Box.test(macro_diff[, "3mTbill"],
    lag=10, type="Ljung")
 
 # changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"], 
+Box.test(macro_diff[, "unemprate"],
    lag=10, type="Ljung")
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
@@ -452,7 +429,7 @@ acf_plus(ar3_zoo, lag=10,
 # PACF of AR(3) process
 pacf(ar3_zoo, lag=10,
      xlab="", ylab="", main="PACF of AR(3) process")
-ar3_zoo <- arima.sim(n=1000, 
+ar3_zoo <- arima.sim(n=1000,
       model=list(ar=c(0.1, 0.3, 0.1)))
 arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
 library(forecast)  # load forecast
@@ -467,7 +444,7 @@ paste(paste0("x", 1:5), collapse="+")
 
 # creating formula from text string
 lin_formula <- as.formula(  # coerce text strings to formula
-        paste("z ~ ", 
+        paste("z ~ ",
           paste(paste0("x", 1:5), collapse="+")
           )  # end paste
       )  # end as.formula
@@ -477,9 +454,10 @@ lin_formula
 update(lin_formula, log(.) ~ . + beta)
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
 # response equals linear form plus error terms
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
+res_ponse <- -3 + explana_tory + noise
 # specify regression formula
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
@@ -489,6 +467,7 @@ eval(reg_model$call$formula)  # regression formula
 reg_model$coefficients  # regression coefficients
 coef(reg_model)
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
 plot(reg_formula)  # plot scatterplot using formula
 title(main="Simple Regression", line=-1)
 # add regression line
@@ -537,12 +516,12 @@ vec_sd <- seq(from=0.1, to=0.5, by=0.1)
 names(vec_sd) <- paste0("sd=", vec_sd)
 mat_stats <- t(sapply(vec_sd, reg_stats))
 # plot in loop
-par(mfrow=c(ncol(mat_stats), 1))
-for (in_dex in 1:ncol(mat_stats)) {
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
   plot(mat_stats[, in_dex], type="l",
  xaxt="n", xlab="", ylab="", main="")
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(nrow(mat_stats)),
+  axis(1, at=1:(NROW(mat_stats)),
  labels=rownames(mat_stats))
 }  # end for
 reg_stats <- function(da_ta) {  # get regression
@@ -570,12 +549,12 @@ rnorm(30, sd=std_dev)
     reg_stats(data.frame(explana_tory, res_ponse))
     }))
 # plot in loop
-par(mfrow=c(ncol(mat_stats), 1))
-for (in_dex in 1:ncol(mat_stats)) {
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
   plot(mat_stats[, in_dex], type="l",
  xaxt="n", xlab="", ylab="", main="")
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(nrow(mat_stats)),
+  axis(1, at=1:(NROW(mat_stats)),
  labels=rownames(mat_stats))
 }  # end for
 # set plot paramaters - margins and font scale
@@ -674,12 +653,12 @@ res_ponse <- 3 + 2*explana_tory + rnorm(30)
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
 new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model, 
-              newdata=new_data, level=0.95, 
+predict_lm <- predict(object=reg_model,
+              newdata=new_data, level=0.95,
               interval="confidence")
 predict_lm <- as.data.frame(predict_lm)
 head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0), 
+plot(reg_formula, xlim=c(1.0, 4.0),
      ylim=range(res_ponse, predict_lm),
      main="Regression predictions")
 abline(reg_model, col="red")

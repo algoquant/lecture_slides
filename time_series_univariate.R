@@ -29,13 +29,13 @@ ts_stx <- suppressWarnings(
     origin="1970-01-01")
 )  # end suppressWarnings
 load(file="C:/Develop/data/zoo_data.RData")
-# create price adjustment vector
-adj_close <- ts_stx[, "AdjClose"] -
-  ts_stx[, "Close"]
+# calculate price adjustment vector
+adj_vector <-
+  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
 # adjust OHLC prices
 ts_stx_adj <- ts_stx
 ts_stx_adj[, c("Open","High","Low","Close")] <-
-  ts_stx[, c("Open","High","Low","Close")] + adj_close
+  adj_vector * ts_stx[, c("Open","High","Low","Close")]
 # inspect the data
 tsp(ts_stx_adj)  # frequency=1
 head(time(ts_stx_adj))
@@ -58,14 +58,15 @@ dim(zoo_stx)
 head(zoo_stx, 4)
 library(tseries)  # load package tseries
 load(file="C:/Develop/data/zoo_data.RData")
-# create price adjustment vector
-adj_close <- zoo_stx[, "AdjClose"] - zoo_stx[, "Close"]
-head(adj_close, 5)
-tail(adj_close, 5)
+# calculate price adjustment vector
+adj_vector <-
+  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
+head(adj_vector, 5)
+tail(adj_vector, 5)
 # adjust OHLC prices
 zoo_stx_adj <- zoo_stx
 zoo_stx_adj[, c("Open","High","Low","Close")] <-
-  zoo_stx[, c("Open","High","Low","Close")] + adj_close
+  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
 head(zoo_stx_adj)
 tail(zoo_stx_adj)
 library(tseries)  # load package tseries
@@ -229,7 +230,7 @@ sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", 
   "IVW", "IWB", "IWD", "IWF")
 # read etf database into data frame
-etf_list <- read.csv(file='etf_list.csv', 
+etf_list <- read.csv(file='C:/Develop/data/etf_list.csv', 
                stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
@@ -254,21 +255,21 @@ etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny")
 load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
-env_data <- new.env()  # new environment for data
-# download data for sym_bols into env_data
-getSymbols(sym_bols, env=env_data, adjust=TRUE,
+env_etf <- new.env()  # new environment for data
+# download data for sym_bols into env_etf
+getSymbols(sym_bols, env=env_etf, adjust=TRUE,
     from="2007-01-03")
 load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
-ls(env_data)  # list files in env_data
-# get class of object in env_data
-class(get(x=sym_bols[1], envir=env_data))
+ls(env_etf)  # list files in env_etf
+# get class of object in env_etf
+class(get(x=sym_bols[1], envir=env_etf))
 # another way
-class(env_data$VTI)
-colnames(env_data$VTI)
-head(env_data$VTI, 3)
-# get class of all objects in env_data
-eapply(env_data, class)
+class(env_etf$VTI)
+colnames(env_etf$VTI)
+head(env_etf$VTI, 3)
+# get class of all objects in env_etf
+eapply(env_etf, class)
 # get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
 library(quantmod)  # load package quantmod
@@ -279,19 +280,15 @@ getSymbolLookup()
 # view and clear options
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
-# download S&P500 prices into env_data
-getSymbols("sp500", env=env_data,
+# download S&P500 prices into env_etf
+getSymbols("sp500", env=env_etf,
     adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_data$sp500["2016/"],
+chart_Series(x=env_etf$sp500["2016/"],
        TA="add_Vo()",
        name="S&P500 index")
 library(quantmod)  # load package quantmod
 library(RCurl)  # load package RCurl
 library(XML)  # load package XML
-# extract tables from a URL directly
-sp_500 <- readHTMLTable(
-  "http://www.cboe.com/products/snp500.aspx",
-          stringsAsFactors=FALSE)
 # download text data from URL
 sp_500 <- getURL(
   "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
@@ -304,80 +301,79 @@ lapply(sp_500, colnames)
 # extract S&P500 constituents
 sp_500 <- sp_500[[1]]
 head(sp_500)
+# create valid R names from tickers containing "-" or "."characters
+sp_500$names <- gsub("-", "_", sp_500$Ticker)
+sp_500$names <- gsub("[.]", "_", sp_500$names)
 # write data frame of S&P500 constituents to CSV file
 write.csv(sp_500,
   file="C:/Develop/data/sp500_Yahoo.csv",
   row.names=FALSE)
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # load data frame of S&P500 constituents from CSV file
-sp_500 <-
-  read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
+sp_500 <- read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
      stringsAsFactors=FALSE)
-# find tickers containing "-" character
-tick_ers <- grep("-", sp_500$Ticker, value=TRUE)
-# create names corresponding to invalid tickers
-for (tick_er in tick_ers) {
-  cat("processing: ", tick_er, "\n")
+# register tickers corresponding to R names
+for (in_dex in 1:NROW(sp_500)) {
+  cat("processing: ", sp_500$Ticker[in_dex], "\n")
   setSymbolLookup(structure(
-    list(list(name=tick_er)),
-    names=gsub("-", "_", tick_er)))
+    list(list(name=sp_500$Ticker[in_dex])),
+    names=sp_500$names[in_dex]))
 }  # end for
-env_data <- new.env()  # new environment for data
+env_etf <- new.env()  # new environment for data
 # remove all files (if necessary)
-rm(list=ls(env_data), envir=env_data)
+rm(list=ls(env_etf), envir=env_etf)
 # download data and copy it into environment
-getSymbols(gsub("-", "_", sp_500$Ticker),
-   env=env_data, adjust=TRUE, from="1990-01-01")
+HighFreq::get_symbols(sp_500$names,
+   env_out=env_etf, start_date="1990-01-01")
 # or download in loop
-for (tick_er in gsub("-", "_", sp_500$Ticker)) {
-  cat("processing: ", tick_er, "\n")
-  getSymbols(tick_er, env=env_data,
-  adjust=TRUE, from="1990-01-01")
+for (na_me in sp_500$names) {
+  cat("processing: ", na_me, "\n")
+  HighFreq::get_symbols(na_me,
+   env_out=env_etf, start_date="1990-01-01")
 }  # end for
-save(env_data, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_data$BRK_B["2016/"], TA="add_Vo()",
+save(env_etf, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_etf$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
 load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 # check of object is an OHLC time series
-is.OHLC(env_data$VTI)
+is.OHLC(env_etf$VTI)
 # adjust single OHLC object using its name
-env_data$VTI <- adjustOHLC(env_data$VTI,
+env_etf$VTI <- adjustOHLC(env_etf$VTI,
                      use.Adjusted=TRUE)
 
 # adjust OHLC object using string as name
 assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=env_data),
+    get(x=sym_bols[1], envir=env_etf),
     use.Adjusted=TRUE),
-  envir=env_data)
+  envir=env_etf)
 
 # adjust objects in environment using vector of strings
 for (sym_bol in sym_bols) {
   assign(sym_bol,
-   adjustOHLC(get(sym_bol, envir=env_data),
+   adjustOHLC(get(sym_bol, envir=env_etf),
               use.Adjusted=TRUE),
-   envir=env_data)
+   envir=env_etf)
 }  # end for
 load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 # extract and merge all data, subset by symbols
 etf_series <- do.call(merge,
-            as.list(env_data)[sym_bols])
+            as.list(env_etf)[sym_bols])
 
 # extract and merge adjusted prices, subset by symbols
-etf_series_ad <- do.call(merge,
-            lapply(as.list(env_data)[sym_bols], Ad))
+price_s <- do.call(merge,
+         lapply(as.list(env_etf)[sym_bols], Ad))
 
 # extract and merge adjusted prices, subset by symbols
-etf_series_ad <- do.call(merge,
-            eapply(env_data, Ad)[sym_bols])
+price_s <- do.call(merge, eapply(env_etf, Ad)[sym_bols])
 
 # drop ".Adjusted" from colnames
-colnames(etf_series_ad) <-
-  sapply(colnames(etf_series_ad),
+colnames(price_s) <-
+  sapply(colnames(price_s),
     function(col_name)
 strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(etf_series_ad[, 1:2], 3)
+tail(price_s[, 1:2], 3)
 
 # which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
@@ -385,49 +381,79 @@ unlist(eapply(globalenv(), is.xts))
 # save xts to csv file
 write.zoo(etf_series,
      file='etf_series.csv', sep=",")
-# save data to .RData file
-save(env_data, etf_series, etf_series_ad,
-     file='etf_data.RData')
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
 # remove rows with NA values
-etf_series_ad <-
-  etf_series_ad[complete.cases(etf_series_ad)]
-colnames(etf_series_ad)
-
+# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
+# colnames(price_s)
 # calculate returns from adjusted prices
-etf_rets <- lapply(etf_series_ad,
-             function(x_ts) {
+re_turns <- lapply(env_etf$price_s, function(x_ts) {
 # dailyReturn returns single xts with bad colname
   daily_return <- dailyReturn(x_ts)
   colnames(daily_return) <- names(x_ts)
   daily_return
 })  # end lapply
 
-# "etf_rets" is a list of xts
-class(etf_rets)
-class(etf_rets[[1]])
+# "re_turns" is a list of xts
+class(re_turns)
+class(re_turns[[1]])
 
 # flatten list of xts into a single xts
-etf_rets <- do.call(merge, etf_rets)
-class(etf_rets)
-dim(etf_rets)
-head(etf_rets[, 1:3])
+re_turns <- do.call(merge, re_turns)
+class(re_turns)
+dim(re_turns)
+head(re_turns[, 1:3])
+# copy re_turns into env_etf and save to .RData file
+assign("re_turns", re_turns, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+library(quantmod)
+load(file="C:/Develop/data/etf_data.RData")
+start_date <- "2012-05-10"; end_date <- "2013-11-20"
+# subset all objects in environment and return as environment
+new_env <- as.environment(eapply(env_etf, "[",
+            paste(start_date, end_date, sep="/")))
+# subset only sym_bols in environment and return as environment
+new_env <- as.environment(
+  lapply(as.list(env_etf)[sym_bols], "[",
+   paste(start_date, end_date, sep="/")))
+# extract and merge adjusted prices and return to environment
+assign("price_s", do.call(merge,
+         lapply(ls(env_etf), function(sym_bol) {
+           x_ts <- Ad(get(sym_bol, env_etf))
+           colnames(x_ts) <- sym_bol
+           x_ts
+         })), envir=new_env)
+# get sizes of OHLC xts series in env_etf
+sapply(mget(env_etf$sym_bols, envir=env_etf),
+ object.size)
+# extract and merge adjusted prices and return to environment
+col_name <- function(x_ts)
+  strsplit(colnames(x_ts), split="[.]")[[1]][1]
+assign("price_s", do.call(merge,
+         lapply(mget(env_etf$sym_bols, envir=env_etf),
+                function(x_ts) {
+                  x_ts <- Ad(x_ts)
+                  colnames(x_ts) <- col_name(x_ts)
+                  x_ts
+         })), envir=new_env)
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
 # plot OHLC candlechart with volume
-chartSeries(env_data$VTI["2014-11"],
+chartSeries(env_etf$VTI["2014-11"],
       name="VTI",
       theme=chartTheme("white"))
 # plot OHLC bar chart with volume
-chartSeries(env_data$VTI["2014-11"],
+chartSeries(env_etf$VTI["2014-11"],
       type="bars",
       name="VTI",
       theme=chartTheme("white"))
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
 # plot OHLC candlechart with volume
-chartSeries(env_data$VTI["2008-11/2009-04"],
+chartSeries(env_etf$VTI["2008-11/2009-04"],
       name="VTI")
 # redraw plot only for Feb-2009, with white theme
 reChart(subset="2009-02",
@@ -435,24 +461,24 @@ reChart(subset="2009-02",
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
 # candlechart with Bollinger Bands
-chartSeries(env_data$VTI["2014"],
+chartSeries(env_etf$VTI["2014"],
       TA="addBBands(): addBBands(draw='percent'): addVo()",
       name="VTI with Bollinger Bands",
       theme=chartTheme("white"))
 # candlechart with two Moving Averages
-chartSeries(env_data$VTI["2014"],
+chartSeries(env_etf$VTI["2014"],
       TA="addVo(): addEMA(10): addEMA(30)",
       name="VTI with Moving Averages",
       theme=chartTheme("white"))
 # candlechart with Commodity Channel Index
-chartSeries(env_data$VTI["2014"],
+chartSeries(env_etf$VTI["2014"],
       TA="addVo(): addBBands(): addCCI()",
       name="VTI with Technical Indicators",
       theme=chartTheme("white"))
 library(quantmod)
 library(TTR)
 load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_data$VTI["2009-02/2009-03"]
+da_ta <- env_etf$VTI["2009-02/2009-03"]
 adj_vti <- Ad(da_ta); vol_vti <- Vo(da_ta)
 v_wap <- VWAP(price=adj_vti, volume=vol_vti,
         n=10)
@@ -466,7 +492,7 @@ addTA(ta=(adj_vti-v_wap), col='red')
 library(quantmod)
 library(TTR)
 load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_data$VTI
+da_ta <- env_etf$VTI
 adj_vti <- Ad(da_ta)
 vol_vti <- Vo(da_ta)
 v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
@@ -491,7 +517,7 @@ addLines(h=min(v_wap), col='red')
 library(quantmod)
 library(TTR)
 load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_data$VTI
+da_ta <- env_etf$VTI
 adj_vti <- Ad(da_ta)
 vol_vti <- Vo(da_ta)
 v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
@@ -514,7 +540,7 @@ abline(v=which.min(v_wap), col='red')
 abline(h=min(v_wap), col='red')
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_data$VTI["2009-02/2009-03"]
+da_ta <- env_etf$VTI["2009-02/2009-03"]
 # extract plot object
 ch_ob <- chart_Series(x=da_ta, plot=FALSE)
 class(ch_ob)
@@ -528,7 +554,7 @@ class(plot_theme)
 ls(plot_theme)
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_data$VTI["2010-04/2010-05"]
+da_ta <- env_etf$VTI["2010-04/2010-05"]
 # extract, modify theme, format tick marks "%b %d"
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%b %d"
@@ -549,10 +575,10 @@ load(file="C:/Develop/data/etf_data.RData")
 # specify plot area with two horizontal panels
 par(mfrow=c(2, 1))
 # plot in top panel
-chart_Series(x=env_data$VTI["2009-02/2009-04"],
+chart_Series(x=env_etf$VTI["2009-02/2009-04"],
        name="VTI")
 # plot in bottom panel
-chart_Series(x=env_data$XLF["2009-02/2009-04"],
+chart_Series(x=env_etf$XLF["2009-02/2009-04"],
        name="XLF")
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
@@ -623,11 +649,11 @@ tick_ers <- matrix(unlist(
 tick_ers <- do_call_rbind(
   strsplit(sp_500$free_code, split="/"))[, 2]
 library(quantmod)  # load package quantmod
-env_data <- new.env()  # new environment for data
+env_etf <- new.env()  # new environment for data
 # remove all files (if necessary)
-rm(list=ls(env_data), envir=env_data)
+rm(list=ls(env_etf), envir=env_etf)
 # boolean vector of tickers already downloaded
-down_loaded <- tick_ers %in% ls(env_data)
+down_loaded <- tick_ers %in% ls(env_etf)
 # download data and copy it into environment
 for (tick_er in tick_ers[!down_loaded]) {
   cat("processing: ", tick_er, "\n")
@@ -636,10 +662,10 @@ for (tick_er in tick_ers[!down_loaded]) {
             type="xts")[, -(1:7)]
   colnames(da_ta) <- paste(tick_er,
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_data)
+  assign(tick_er, da_ta, envir=env_etf)
 }  # end for
-save(env_data, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_data$XOM["2016/"], TA="add_Vo()",
+save(env_etf, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_etf$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
 library(quantmod)  # load package quantmod
 # download Fama-French factors from KFRENCH database
@@ -650,3 +676,69 @@ head(fac_tors)
 tail(fac_tors)
 chart_Series(cumsum(fac_tors["2001/", 1]/100),
   name="Fama-French factors")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+# install package HighFreq from github
+install.packages("devtools")
+devtools::install_github(repo="algoquant/HighFreq")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+# load package HighFreq
+library(HighFreq)
+# you can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# you can see SPY when listing datasets in HighFreq
+data(package="HighFreq")
+# but the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(SPY)
+# load all the datasets in package HighFreq
+data(hf_data)
+# library(xts)  # load package xts
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
+                "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="",
+  legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns",
+line=-1)

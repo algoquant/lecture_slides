@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2016}
+\subtitle{FRE6871 \& FRE7241, Fall 2016}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -141,13 +141,13 @@ ts_stx <- suppressWarnings(
       \vspace{-2em}
       <<echo=(-1),eval=FALSE>>=
 load(file="C:/Develop/data/zoo_data.RData")
-# create price adjustment vector
-adj_close <- ts_stx[, "AdjClose"] - 
-  ts_stx[, "Close"]
+# calculate price adjustment vector
+adj_vector <- 
+  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
 # adjust OHLC prices
 ts_stx_adj <- ts_stx
 ts_stx_adj[, c("Open","High","Low","Close")] <- 
-  ts_stx[, c("Open","High","Low","Close")] + adj_close
+  adj_vector * ts_stx[, c("Open","High","Low","Close")]
 # inspect the data
 tsp(ts_stx_adj)  # frequency=1
 head(time(ts_stx_adj))
@@ -221,14 +221,15 @@ head(zoo_stx, 4)
       <<echo=(-(1:2)),eval=FALSE>>=
 library(tseries)  # load package tseries
 load(file="C:/Develop/data/zoo_data.RData")
-# create price adjustment vector
-adj_close <- zoo_stx[, "AdjClose"] - zoo_stx[, "Close"]
-head(adj_close, 5)
-tail(adj_close, 5)
+# calculate price adjustment vector
+adj_vector <- 
+  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
+head(adj_vector, 5)
+tail(adj_vector, 5)
 # adjust OHLC prices
 zoo_stx_adj <- zoo_stx
 zoo_stx_adj[, c("Open","High","Low","Close")] <- 
-  zoo_stx[, c("Open","High","Low","Close")] + adj_close
+  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
 head(zoo_stx_adj)
 tail(zoo_stx_adj)
       @
@@ -580,7 +581,7 @@ title(main="MSFT Close Prices", line=-1)
     \column{0.5\textwidth}
       The package \texttt{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data, 
       \vskip1ex
-      \texttt{quantmod} uses time series objects of class\texttt{"xts"}, and provides many useful functions for building quantitative financial models:
+      \texttt{quantmod} uses time series objects of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
       \begin{itemize}
         \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
         \item \texttt{getFinancials()} for downloading financial statements,
@@ -631,7 +632,7 @@ sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", 
   "IVW", "IWB", "IWD", "IWF")
 # read etf database into data frame
-etf_list <- read.csv(file='etf_list.csv', 
+etf_list <- read.csv(file='C:/Develop/data/etf_list.csv', 
                      stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
@@ -779,10 +780,6 @@ chart_Series(x=env_etf$sp500["2016/"],
 library(quantmod)  # load package quantmod
 library(RCurl)  # load package RCurl
 library(XML)  # load package XML
-# extract tables from a URL directly
-sp_500 <- readHTMLTable(
-  "http://www.cboe.com/products/snp500.aspx", 
-                stringsAsFactors=FALSE)
 # download text data from URL
 sp_500 <- getURL(
   "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
@@ -795,6 +792,9 @@ lapply(sp_500, colnames)
 # extract S&P500 constituents
 sp_500 <- sp_500[[1]]
 head(sp_500)
+# create valid R names from tickers containing "-" or "."characters
+sp_500$names <- gsub("-", "_", sp_500$Ticker)
+sp_500$names <- gsub("[.]", "_", sp_500$names)
 # write data frame of S&P500 constituents to CSV file
 write.csv(sp_500, 
   file="C:/Develop/data/sp500_Yahoo.csv", 
@@ -815,35 +815,34 @@ write.csv(sp_500,
     \column{0.4\textwidth}
       Before time series data for S\&P500 constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to tickers containing special characters like \texttt{"-"}, 
       \vskip1ex
+      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} tickers, using valid names in \texttt{R}, 
+      \vskip1ex
       For example \emph{Yahoo} uses the ticker \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()}, 
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
 # load data frame of S&P500 constituents from CSV file
-sp_500 <- 
-  read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
+sp_500 <- read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
      stringsAsFactors=FALSE)
-# find tickers containing "-" character
-tick_ers <- grep("-", sp_500$Ticker, value=TRUE)
-# create names corresponding to invalid tickers
-for (tick_er in tick_ers) {
-  cat("processing: ", tick_er, "\n")
+# register tickers corresponding to R names
+for (in_dex in 1:NROW(sp_500)) {
+  cat("processing: ", sp_500$Ticker[in_dex], "\n")
   setSymbolLookup(structure(
-    list(list(name=tick_er)), 
-    names=gsub("-", "_", tick_er)))
+    list(list(name=sp_500$Ticker[in_dex])), 
+    names=sp_500$names[in_dex]))
 }  # end for
 env_etf <- new.env()  # new environment for data
 # remove all files (if necessary)
 rm(list=ls(env_etf), envir=env_etf)
 # download data and copy it into environment
-getSymbols(gsub("-", "_", sp_500$Ticker), 
-   env=env_etf, adjust=TRUE, from="1990-01-01")
+HighFreq::get_symbols(sp_500$names, 
+   env_out=env_etf, start_date="1990-01-01")
 # or download in loop
-for (tick_er in gsub("-", "_", sp_500$Ticker)) {
-  cat("processing: ", tick_er, "\n")
-  getSymbols(tick_er, env=env_etf, 
-        adjust=TRUE, from="1990-01-01")
+for (na_me in sp_500$names) {
+  cat("processing: ", na_me, "\n")
+  HighFreq::get_symbols(na_me, 
+   env_out=env_etf, start_date="1990-01-01")
 }  # end for
 save(env_etf, file="C:/Develop/data/sp500.RData")
 chart_Series(x=env_etf$BRK_B["2016/"], TA="add_Vo()", 
@@ -1677,6 +1676,206 @@ tail(fac_tors)
 chart_Series(cumsum(fac_tors["2001/", 1]/100), 
         name="Fama-French factors")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{High Frequency and Intraday Time Series Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trade and Quote (\texttt{TAQ}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Trade and Quote (\texttt{TAQ}) data contains intraday trades and quotes on exchange-traded stocks and futures, 
+      \vskip1ex
+      \texttt{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives, 
+      \vskip1ex
+      Each row of \texttt{TAQ} data contains both the quote or trade prices, and the corresponding quote size or trade volume: 
+      \texttt{Bid.Price}, \texttt{Bid.Size}, \texttt{Ask.Price}, \texttt{Ask.Size}, \texttt{Trade.Price}, and \texttt{Volume}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Open-High-Low-Close (\texttt{OHLC}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Open-High-Low-Close (\texttt{OHLC}) data contains intraday trade prices and trade volumes, 
+      \vskip1ex
+      \texttt{OHLC} data is evenly spaced in time, with each row containing the \texttt{Open}, \texttt{High}, \texttt{Low}, and \texttt{Close} prices, and the trade \texttt{Volume}, recorded in the past time interval (called a \texttt{bar} of data), 
+      \vskip1ex
+      The \texttt{Open} and \texttt{Close} prices are the first and last trade prices recorded in the time bar, 
+      \vskip1ex
+      The \texttt{High} and \texttt{Low} prices are the highest and lowest trade prices recorded in the time bar, 
+      \vskip1ex
+      The \texttt{Volume} is the total trading volume recorded in the time bar, 
+      \vskip1ex
+      The \texttt{OHLC} data format provides a way of efficiently compressing \texttt{TAQ} data, while preserving information about price levels, volatility (range), and trading volumes, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{HighFreq} for Managing High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{HighFreq} contains functions for managing high frequency time series data, such as: 
+      \begin{itemize}
+        \item converting \texttt{TAQ} data to \texttt{OHLC} format, 
+        \item chaining and joining time series, 
+        \item scrubbing bad data, 
+        \item managing time zones and alligning time indices, 
+        \item aggregating data to lower frequency (periodicity),
+        \item calculating rolling aggregations (VWAP, Hurst exponent, etc.), 
+        \item calculating seasonality aggregations, 
+        \item estimating volatility, skew, and higher moments, 
+      \end{itemize}
+      The package \texttt{HighFreq} uses time series objects of class \texttt{"xts"}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# install package HighFreq from github
+install.packages("devtools")
+devtools::install_github(repo="algoquant/HighFreq")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Datasets in Package \texttt{HighFreq}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{HighFreq} contains several datasets, stored in a file called \texttt{hf\_data}, 
+      \vskip1ex
+      But even after the \texttt{HighFreq} package is loaded, its datasets aren't loaded into the workspace, so they aren't listed in the workspace, 
+      \vskip1ex
+      That's because the datasets in package \texttt{HighFreq} are set up for \emph{lazy loading}, which means they can be called as if they were loaded, even though they're not loaded into the workspace, 
+      \vskip1ex
+      All the datasets in package \texttt{HighFreq} can be loaded into the workspace using the function \texttt{data()}, 
+      \vskip1ex
+      The package \texttt{HighFreq} contains an \texttt{OHLC} time series in \texttt{xts} format called "\texttt{SPY}", with prices for the \texttt{SPY} etf, 
+      \vskip1ex
+      Each row of SPY contains a single bar of \texttt{OHLC} prices at 1-minute intervals, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# load package HighFreq
+library(HighFreq)
+# you can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# you can see SPY when listing datasets in HighFreq
+data(package="HighFreq")
+# but the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(SPY)
+# load all the datasets in package HighFreq
+data(hf_data)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High Frequency and Intraday Time Series Data
+      tick-by-tick data, trade and quote data, order book data, 
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<foo_chart,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# library(xts)  # load package xts
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ", 
+                      "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="", 
+        legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns", 
+      line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
   \end{columns}
 \end{block}
 

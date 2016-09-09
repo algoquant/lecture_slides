@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Multivariate]{Time Series Multivariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2016}
+\subtitle{FRE6871 \& FRE7241, Fall 2016}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -81,7 +81,7 @@ knit_theme$set(thm)
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<returns_regress,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
 re_turns <- na.omit(env_etf$re_turns)
@@ -121,7 +121,7 @@ dwtest(reg_model)
   \begin{columns}[T]
     \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)  # load quantmod
 library(lmtest)  # load lmtest
 # perform regressions and collect statistics
@@ -158,6 +158,60 @@ etf_reg_stats[, 1:3]
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Beta Regressions Over Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{rollapply()} allows performing regressions over a rolling window, 
+      \vskip1ex
+      The function \texttt{roll\_lm()} from package \texttt{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}, 
+      <<echo=TRUE>>=
+library(HighFreq)
+# specify regression formula
+reg_formula <- XLP ~ VTI
+# perform rolling beta regressions every month
+beta_s <- rollapply(env_etf$re_turns, width=252, 
+  FUN=function(design_matrix) 
+  coef(lm(reg_formula, data=design_matrix))[2],
+  by=22, by.column=FALSE, align="right")
+beta_s <- na.omit(beta_s)
+# plot beta_s in x11() window
+x11(width=(wid_th <- 6), height=(hei_ght <- 4))
+chart_Series(x=beta_s, 
+  name=paste("rolling betas", format(reg_formula)))
+# perform daily rolling beta regressions in parallel
+library(roll)
+beta_s <- roll_lm(x=env_etf$re_turns[, "VTI"], 
+                  y=env_etf$re_turns[, "XLP"],
+                  width=252)$coefficients
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rolling_betas.png}\\
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# compare speed of rollapply() versus roll_lm()
+library(microbenchmark)
+da_ta <- env_etf$re_turns["2012", c("VTI", "XLP")]
+summary(microbenchmark(
+  rollapply=rollapply(da_ta, width=22, 
+      FUN=function(design_matrix) 
+      coef(lm(reg_formula, data=design_matrix))[2],
+        by.column=FALSE, align="right"), 
+  roll_lm=roll_lm(x=da_ta[, "VTI"], 
+                  y=da_ta[, "XLP"],
+                  width=22)$coefficients, 
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
 \subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}

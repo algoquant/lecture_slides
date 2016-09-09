@@ -49,12 +49,12 @@ text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
              hei_ght/wid_th)/(0.25*pi))
 load(file="C:/Develop/data/etf_data.RData")
 # vector of symbol names
-some_symbols <- c("VTI", "IEF")
+sym_bols <- c("VTI", "IEF")
 # vector of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
 # calculate portfolio returns and volatilities
 ret_sd <- sapply(weight_s, function(wei_ght) {
-  portf_rets <- env_etf$re_turns[, some_symbols] %*% c(wei_ght, 1-wei_ght)
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% c(wei_ght, 1-wei_ght)
   100*c(ret=mean(portf_rets), sd=sd(portf_rets))
 })  # end sapply
 risk_free <- 0.01
@@ -76,11 +76,11 @@ points(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
 text(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
      labels=paste(c("maxSR\n",
  structure(c(weight_s[in_dex], 1-weight_s[in_dex]),
-         names=some_symbols)), collapse=" "),
+         names=sym_bols)), collapse=" "),
      pos=3, cex=0.8)
 # Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, some_symbols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, some_symbols], sd)
+re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
+std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
 points(std_devs, re_turns, col="green", lwd=3)
 text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
@@ -96,21 +96,21 @@ text(ret_sd[2, in_dex]/3, (ret_sd[1, in_dex]+risk_free)/2,
 # plot max Sharpe ratio portfolio returns
 library(quantmod)
 optim_rets <-
-  xts(x=env_etf$re_turns[, some_symbols] %*%
+  xts(x=env_etf$re_turns[, sym_bols] %*%
   c(weight_s[in_dex], 1-weight_s[in_dex]),
 order.by=index(env_etf$re_turns))
 chart_Series(x=cumsum(optim_rets),
        name="Max Sharpe two-asset portfolio")
 load(file="C:/Develop/data/etf_data.RData")
 # vector of symbol names
-some_symbols <- c("VTI", "IEF", "XLP")
-n_weights <- length(some_symbols)
+sym_bols <- c("VTI", "IEF", "XLP")
+n_weights <- length(sym_bols)
 # calculate random portfolios
 n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights, min=0, max=10)
-  weight_s <- weight_s/sqrt(sum(weight_s^2))
-  portf_rets <- env_etf$re_turns[, some_symbols] %*% weight_s
+  weight_s <- weight_s/sum(weight_s)
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
   100*c(ret=mean(portf_rets), sd=sd(portf_rets))
 })  # end sapply
 # plot scatterplot of random portfolios
@@ -121,11 +121,11 @@ plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
      xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
 # vector of initial portfolio weights equal to 1
 weight_s <- rep(1, n_weights)
-names(weight_s) <- some_symbols
+names(weight_s) <- sym_bols
 # objective function equal to standard deviation of returns
-object_ive <- function(weights) {
-  portf_rets <- env_etf$re_turns[, some_symbols] %*% weights
-  sd(portf_rets)/sqrt(sum(weights^2))
+object_ive <- function(p_weights) {
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% p_weights
+  sd(portf_rets)/sum(p_weights)
 }  # end object_ive
 # object_ive() for equal weight portfolio
 object_ive(weight_s)
@@ -137,10 +137,10 @@ optim_run <- optim(par=weight_s,
              upper=rep(10, n_weights),
              lower=rep(-10, n_weights))
 # Rescale the optimal weights
-weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
+weight_s <- optim_run$par/sum(optim_run$par)
 # minimum variance portfolio returns
 library(quantmod)
-optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
             order.by=index(env_etf$re_turns))
 chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
 # Add red point for minimum variance portfolio
@@ -150,8 +150,8 @@ points(x=optim_sd, y=optim_ret, col="red", lwd=3)
 text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 # objective function equal to minus Sharpe ratio
 risk_free <- 0.01
-object_ive <- function(weights) {
-  portf_rets <- 100*env_etf$re_turns[, some_symbols] %*% weights
+object_ive <- function(p_weights) {
+  portf_rets <- 100*env_etf$re_turns[, names(p_weights)] %*% p_weights / sum(p_weights)
   -mean(portf_rets-risk_free)/sd(portf_rets)
 }  # end object_ive
 # perform portfolio optimization
@@ -161,8 +161,8 @@ optim_run <- optim(par=weight_s,
              upper=rep(10, n_weights),
              lower=rep(-10, n_weights))
 # maximum Sharpe ratio portfolio returns
-weight_s <- optim_run$par/sqrt(sum(optim_run$par^2))
-optim_rets <- xts(x=env_etf$re_turns[, some_symbols] %*% weight_s,
+weight_s <- optim_run$par/sum(optim_run$par)
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
             order.by=index(env_etf$re_turns))
 chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
 optim_sd <- 100*sd(optim_rets)
@@ -173,8 +173,8 @@ text(x=optim_sd, y=optim_ret,
      labels="maxSR", pos=2, cex=0.8)
 max_sr <- (optim_ret-risk_free)/optim_sd
 # Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, some_symbols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, some_symbols], sd)
+re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
+std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
 points(std_devs, re_turns, col="green", lwd=3)
 text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
@@ -196,8 +196,8 @@ sym_bols <- c("VTI", "VNQ", "DBC")
 portf_weights <- rep(1, length(sym_bols))
 names(portf_weights) <- sym_bols
 # objective equal to minus Sharpe ratio
-object_ive <- function(weights) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weights
+object_ive <- function(p_weights) {
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% p_weights
   -mean(portf_rets)/sd(portf_rets)
 }  # end object_ive
 # objective for equal weight portfolio
@@ -472,7 +472,7 @@ portf_maxSTARR <- add.objective(
 # add objectives
 portf_maxSTARR <- add.objective(
   portfolio=portf_maxSTARR,
-  type="risk",  # minimize Expected Sshortfall
+  type="risk",  # minimize Expected Shortfall
   name="ES")
 load(file="C:/Develop/data/portf_optim.RData")
 library(PortfolioAnalytics)

@@ -4,13 +4,19 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-my_var <- 3  # "<-" and "=" are valid assignment operators
+# "<-" and "=" are valid assignment operators
+my_var <- 3
 
-my_var  # typing a symbol or expression evaluates it
+# typing a symbol or expression evaluates it
+my_var
 
-my_var <- "Hello World!"  # text in quotes is interpreted as a string
+# text in quotes is interpreted as a string
+my_var <- "Hello World!"
 
-my_var  # typing a symbol or expression evaluates it
+# typing a symbol or expression evaluates it
+my_var
+
+my_var  # text after hash is treated as comment
 getwd()  # get cwd
 setwd("C:/Develop/R")  # set cwd
 getwd()  # get cwd
@@ -224,7 +230,7 @@ in_put <- as.numeric(in_put)
 setwd("C:/Develop/data")
 data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
 mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:nrow(mat_rix), sep="")
+rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
 # write data frame to text file, and then read it back
 write.table(data_frame, file="florist.txt")
 data_read <- read.table(file="florist.txt")
@@ -384,13 +390,16 @@ var1 <- 1; var2 <- 2
 ls()  # list all objects
 ls()[1]  # list first object
 args(save)  # list arguments of save function
-# save "var1" to a binary file
-save("var1", file="my_data.RData")  # use string
-save(var1, file="my_data.RData")  # use object name
-save(var1, var2, file="my_data.RData")  # mulltiple object names
-# save first list object "var1" by passing it to the "..." argument
-save(ls()[1], file="my_data.RData")  # 'ls()[1]' not evaluated
-# save first list object "var1" by passing it to the "list" argument
+# save "var1" to a binary file using string argument
+save("var1", file="my_data.RData")
+# save "var1" to a binary file using object name
+save(var1, file="my_data.RData")
+# save multiple objects
+save(var1, var2, file="my_data.RData")
+# save first object in list by passing to "..." argument
+# ls()[1] is not evaluated
+save(ls()[1], file="my_data.RData")
+# save first object in list by passing to "list" argument
 save(list=ls()[1], file="my_data.RData")
 # save whole list by passing it to the "list" argument
 save(list=ls(), file="my_data.RData")

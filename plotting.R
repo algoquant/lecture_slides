@@ -107,10 +107,10 @@ month_ly <- as.yearmon(in_dex)
 library(microbenchmark)
 summary(microbenchmark(
     m_atch=
-      in_dex[match(unique(month_ly), month_ly)], 
+      in_dex[match(unique(month_ly), month_ly)],
     t_apply=
-      as.Date(tapply(X=in_dex, 
-             INDEX=month_ly, FUN=min)), 
+      as.Date(tapply(X=in_dex,
+             INDEX=month_ly, FUN=min)),
     times=10)
   )[, c(1, 4, 5)]
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
