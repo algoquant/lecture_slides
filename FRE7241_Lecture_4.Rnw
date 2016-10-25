@@ -22,6 +22,8 @@ knit_theme$set(thm)
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
 % \usepackage{mathtools}
+% bbold package for unitary vector or matrix symbol
+\usepackage{bbold}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -58,7 +60,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 26, 2016}
+\date{September 27, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -70,6 +72,1214 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{High Frequency and Intraday Time Series Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trade and Quote (\texttt{TAQ}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High frequency data is typically formatted as either Trade and Quote (\texttt{TAQ}) data, or Open-High-Low-Close (\texttt{OHLC}) data, 
+      \vskip1ex
+      Trade and Quote (\texttt{TAQ}) data contains intraday trades and quotes on exchange-traded stocks and futures, 
+      \vskip1ex
+      \texttt{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives, 
+      \vskip1ex
+      Each row of \texttt{TAQ} data contains both the quote and trade prices, and the corresponding quote size or trade volume: 
+      \texttt{Bid.Price}, \texttt{Bid.Size}, \texttt{Ask.Price}, \texttt{Ask.Size}, \texttt{Trade.Price}, and \texttt{Volume}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=TRUE>>=
+# load package HighFreq
+library(HighFreq)
+head(SPY_TAQ)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Open-High-Low-Close (\texttt{OHLC}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Open-High-Low-Close (\texttt{OHLC}) data contains intraday trade prices and trade volumes, 
+      \vskip1ex
+      \texttt{OHLC} data is evenly spaced in time, with each row containing the \texttt{Open}, \texttt{High}, \texttt{Low}, and \texttt{Close} prices, and the trade \texttt{Volume}, recorded in the past time interval (called a \texttt{bar} of data), 
+      \vskip1ex
+      The \texttt{Open} and \texttt{Close} prices are the first and last trade prices recorded in the time bar, 
+      \vskip1ex
+      The \texttt{High} and \texttt{Low} prices are the highest and lowest trade prices recorded in the time bar, 
+      \vskip1ex
+      The \texttt{Volume} is the total trading volume recorded in the time bar, 
+      \vskip1ex
+      The \texttt{OHLC} data format provides a way of efficiently compressing \texttt{TAQ} data, while preserving information about price levels, volatility (range), and trading volumes, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=TRUE>>=
+# load package HighFreq
+library(HighFreq)
+head(SPY)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{HighFreq} for Managing High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{HighFreq} contains functions for managing high frequency time series data, such as: 
+      \begin{itemize}
+        \item converting \texttt{TAQ} data to \texttt{OHLC} format, 
+        \item chaining and joining time series, 
+        \item scrubbing bad data, 
+        \item managing time zones and alligning time indices, 
+        \item aggregating data to lower frequency (periodicity),
+        \item calculating rolling aggregations (VWAP, Hurst exponent, etc.), 
+        \item calculating seasonality aggregations, 
+        \item estimating volatility, skew, and higher moments, 
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# install package HighFreq from github
+devtools::install_github(repo="algoquant/HighFreq")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Datasets in Package \texttt{HighFreq}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{HighFreq} contains several high frequency time series, in \texttt{xts} format, stored in a file called \texttt{hf\_data.RData}: 
+      \begin{itemize}
+        \item a time series called \texttt{SPY\_TAQ}, containing a single day of \texttt{TAQ} data for the \emph{SPY} ETF, 
+        \item three time series called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, containing intraday 1-minute \texttt{OHLC} data for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs, 
+      \end{itemize}
+      Even after the \texttt{HighFreq} package is loaded, its datasets aren't loaded into the workspace, so they aren't listed in the workspace, 
+      \vskip1ex
+      That's because the datasets in package \texttt{HighFreq} are set up for \emph{lazy loading}, which means they can be called as if they were loaded, even though they're not loaded into the workspace, 
+      \vskip1ex
+      The datasets in package \texttt{HighFreq} can be loaded into the workspace using the function \texttt{data()}, 
+      \vskip1ex
+      The data is set up for \emph{lazy loading}, so it doesn't require calling \texttt{data(hf\_data)} to load it into the workspace before calling it, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# load package HighFreq
+library(HighFreq)
+# you can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# you can see SPY when listing datasets in HighFreq
+data(package="HighFreq")
+# but the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(SPY)
+# load all the datasets in package HighFreq
+data(hf_data)
+# HighFreq datasets are now loaded and in the workspace
+head(SPY)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \texttt{PerformanceAnalytics} for Risk and Return Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{PerformanceAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \texttt{PerformanceAnalytics} contains functions and data sets for performance and risk analysis,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+      \texttt{managers} is an \texttt{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# get documentation for package "PerformanceAnalytics"
+packageDescription("PerformanceAnalytics")  # get short description
+help(package="PerformanceAnalytics")  # load help page
+data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
+ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
+detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+      @
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+perf_data <- 
+  unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+data(managers)  # load "managers" data set
+class(managers)
+dim(managers)
+head(managers, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show="hide">>=
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ", 
+                      "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="", 
+        legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns", 
+      line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{PerformanceSummary} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{charts.PerformanceSummary()} plots three charts: cumulative returns, return bars, and drawdowns,
+      <<performance_summary,echo=(-(1:2)),eval=FALSE,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+data(managers)  # load "managers" data set
+charts.PerformanceSummary(ham_1, 
+  main="", lwd=2, ylog=TRUE)
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/performance_summary-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{ETF \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  env_etf$re_turns[, c("XLF", "XLP", "IEF")], lwd=2, 
+  ylab="", legend.loc="topleft", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/etf_cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<drawdown_plot,eval=FALSE,echo=(-(1:2)),fig.width=7,fig.height=6,fig.show="hide">>=
+load(file="C:/Develop/data/etf_data.RData")
+options(width=200)
+library(PerformanceAnalytics)
+chart.Drawdown(env_etf$re_turns[, "VTI"], ylab="", 
+               main="VTI drawdowns")
+      @
+      \vskip27ex
+      <<eval=FALSE,echo=(-(1:3))>>=
+load(file="C:/Develop/data/etf_data.RData")
+options(width=200)
+library(PerformanceAnalytics)
+table.Drawdowns(env_etf$re_turns[, "VTI"])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/drawdown_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Histogram}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_hist,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.Histogram(env_etf$re_turns[, 1], main="", 
+  xlim=c(-0.06, 0.06), 
+  methods = c("add.density", "add.normal"))
+# add title
+title(main=paste(colnames(env_etf$re_turns[, 1]), 
+                 "density"), line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Boxplots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_box,echo=(-1),eval=FALSE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.Boxplot(env_etf$re_turns[, 
+  c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \hspace*{-8em}\includegraphics[width=0.65\paperwidth,valign=t]{figure/returns_box-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+tail(table.Stats(env_etf$re_turns[, 
+  c("VTI", "IEF", "DBC", "VXX")]), 4)
+risk_return <- table.Stats(env_etf$re_turns)
+class(risk_return)
+# Transpose the data frame
+risk_return <- as.data.frame(t(risk_return))
+      @
+      \vspace{-1em}
+      <<returns_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+# plot scatterplot
+plot(Kurtosis ~ Skewness, data=risk_return,
+     main="Kurtosis vs Skewness")
+# add labels
+text(x=risk_return$Skewness, y=risk_return$Kurtosis, 
+          labels=rownames(risk_return), 
+          pos=1, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Statistics Ranking}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1)),eval=FALSE>>=
+load(file="C:/Develop/data/etf_data.RData")
+# add skew_kurt column
+risk_return$skew_kurt <- 
+  risk_return$Skewness/risk_return$Kurtosis
+# sort on skew_kurt
+risk_return <- risk_return[
+  order(risk_return$skew_kurt, 
+        decreasing=TRUE), ]
+# add names column
+risk_return$Name <- 
+  etf_list[rownames(risk_return), ]$Name
+      @
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+risk_return[, c("Name", "Skewness", "Kurtosis")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk vs. Return Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<risk_return_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.RiskReturnScatter(
+  env_etf$re_turns[, colnames(env_etf$re_turns)!="VXX"], 
+  Rf=0.01/12)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/risk_return_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk-adjusted Returns Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe} ratio measures the excess returns per unit of risk, and is equal to the excess returns (over a risk-free return) divided by the standard deviation of the returns:
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_f]}{\sigma}
+      \end{displaymath}
+      The \emph{Sortino} ratio is equal to the excess returns divided by the \emph{downside deviation} (standard deviation of returns below a target rate of return),
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_t]}{\sqrt{\sum_{i=1}^{k} ([R_i-R_t]_{-})^2}}
+      \end{displaymath}
+      The \emph{Calmar} ratio is equal to the excess returns divided by the maximum drawdown of the returns:
+      \begin{displaymath}
+        C_{r}=\frac{E[R-R_f]}{DD}
+      \end{displaymath}
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)
+vti_ief <- env_etf$re_turns[, c("VTI", "IEF")]
+SharpeRatio(vti_ief)
+
+SortinoRatio(vti_ief)
+
+CalmarRatio(vti_ief)
+tail(table.Stats(vti_ief), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Formula Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
+      \vskip1ex
+      Formulas can be defined as separate objects, manipulated, and passed to functions,
+      \vskip1ex
+      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
+      \vskip1ex
+      The function \texttt{update()} modifies existing \texttt{formulas},
+      \vskip1ex
+      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<>>=
+# formula of linear model with zero intercept
+lin_formula <- z ~ x + y - 1
+lin_formula
+
+# collapsing a character vector into a text string
+paste0("x", 1:5)
+paste(paste0("x", 1:5), collapse="+")
+
+# creating formula from text string
+lin_formula <- as.formula(  # coerce text strings to formula
+              paste("z ~ ",
+                paste(paste0("x", 1:5), collapse="+")
+                )  # end paste
+            )  # end as.formula
+class(lin_formula)
+lin_formula
+# modify the formula using "update"
+update(lin_formula, log(.) ~ . + beta)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simple Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \beta x_i + \varepsilon_i
+      \end{displaymath}
+      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
+      \vskip1ex
+      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
+      \begin{align*}
+        RSS = \sum_{i=1}^{n} {\varepsilon_i^2} = \sum_{i=1}^{n} {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
+      \end{align*}
+      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^{n} {x_i}$
+    \column{0.5\textwidth}
+      The regression coefficients can be found by equating the RSS derivatives to zero:
+      \begin{align*}
+        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
+        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
+      \end{align*}
+      The solution for $\alpha$ is:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      The solution for $\beta$ is:
+      \begin{flalign*}
+        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
+        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
+        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
+        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
+      \end{flalign*}
+      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
+      \vskip1ex
+      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression with Multiple Explanatory Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      \vskip1ex
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
+      \vskip1ex
+      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
+      \vskip1ex
+      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
+      \vskip1ex
+      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
+      \begin{itemize}
+        \item call - the model formula,
+        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
+        \item residuals - the model residuals (response minus fitted values),
+      \end{itemize}
+      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=TRUE>>=
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+# response equals linear form plus error terms
+res_ponse <- -3 + explana_tory + noise
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Regression Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
+      \vskip1ex
+      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
+      \vskip1ex
+      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
+        <<reg_scatter_plot,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+plot(reg_formula)  # plot scatterplot using formula
+title(main="Simple Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+# plot fitted (predicted) response values
+points(x=explana_tory, y=reg_model$fitted.values,
+       pch=16, col="blue")
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Summary}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{summary.lm()} produces a list of regression model summary statistics:
+      \begin{itemize}
+        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
+        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
+        \item adj.r.squared: r.squared adjusted for higher model complexity,
+        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
+      \end{itemize}
+      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
+      \vskip1ex
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
+      \vskip1ex
+      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+reg_model_sum <- summary(reg_model)  # copy regression summary
+reg_model_sum  # print the summary to console
+attributes(reg_model_sum)$names  # get summary elements
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interpreting the Regression Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The regression \texttt{summary} is a list, and its elements can be accessed individually,
+      \vskip1ex
+      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
+      \vskip1ex
+      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
+      \vskip1ex
+      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
+      \vskip1ex
+      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
+      \vskip1ex
+      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+reg_model_sum$adj.r.squared
+reg_model_sum$fstatistic
+# standard error of beta
+reg_model_sum$
+  coefficients["explana_tory", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(explana_tory)/
+  sqrt(unname(reg_model_sum$fstatistic[3]))
+anova(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Weak Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+set.seed(1121)  # initialize random number generator
+# high noise compared to coefficient
+res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
+reg_model <- lm(reg_formula)  # perform regression
+# estimate of regression coefficient is not
+# statistically significant
+summary(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Influence of Noise on Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
+reg_stats <- function(std_dev) {  # noisy regression
+  set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+  res_ponse <- 3 + 0.2*explana_tory +
+    rnorm(30, sd=std_dev)
+# specify regression formula
+  reg_formula <- res_ponse ~ explana_tory
+# perform regression and get summary
+  reg_model_sum <- summary(lm(reg_formula))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <- t(sapply(vec_sd, reg_stats))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Influence of Noise on Regression Another Method}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      <<eval=FALSE,echo=TRUE>>=
+reg_stats <- function(da_ta) {  # get regression
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <-
+    paste(col_names[2], col_names[1], sep="~")
+  reg_model_sum <- summary(lm(reg_formula,
+                              data=da_ta))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <-
+  t(sapply(vec_sd, function (std_dev) {
+    set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+    res_ponse <- 3 + 0.2*explana_tory +
+      rnorm(30, sd=std_dev)
+    reg_stats(data.frame(explana_tory, res_ponse))
+    }))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Diagnostic Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
+      \vskip1ex
+      {\scriptsize
+      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
+      \vskip1ex
+      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
+      \vskip1ex
+      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
+      \vskip1ex
+      The residuals should be randomly distributed around the horizontal line representing zero residual error,
+      \vskip1ex
+      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
+      \vskip1ex
+      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
+      \vskip1ex
+      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
+      \vskip1ex
+      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
+      \vskip1ex
+      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
+      \vskip1ex
+      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
+      }
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+# set plot paramaters - margins and font scale
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2, 2))  # plot 2x2 panels
+plot(reg_model)  # plot diagnostic scatterplots
+plot(reg_model, which=2)  # plot just Q-Q
+      @
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        DW = \frac {\sum_{i=2}^{n} (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^{n} \varepsilon_i^2}
+      \end{displaymath}
+      Where $\varepsilon_i$ are the regression residuals,
+      \vskip1ex
+      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
+      \vskip1ex
+      The \emph{DW} is close to two for autocorrelations close to zero,
+      \vskip1ex
+      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(lmtest)  # load lmtest
+# perform Durbin-Watson test
+dwtest(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{devel: Autocorrelated Time Series Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering or smoothing a time series containing an error terms over overlapping periods introduces autocorrelations in the error terms of the time series,
+      \vskip1ex
+      Autocorrelations in the error terms introduces autocorrelations of the regression residuals, causing the Durbin-Watson test to fail,
+      \vskip1ex
+      Autocorrelations in the error terms introduce autocorrelations of the regression residuals, causing the Durbin-Watson test to fail,
+      \vskip1ex
+      The failure of the Durbin-Watson test means that the \emph{standard errors} and \emph{p}-values calculated by the regression model are too small, and therefore the regression may not be statistically significant,
+      \vskip1ex
+      But the failure of the Durbin-Watson test doesn't reject the existence of a linear relationship between the response and explanatory variables, it just puts it in doubt,
+      \vskip1ex
+      Links:
+      https://onlinecourses.science.psu.edu/stat510/node/72
+      http://stats.stackexchange.com/questions/6469/simple-linear-model-with-autocorrelated-errors-in-r
+      \vskip1ex
+      Regression of non-stationary time series creates \emph{spurious} regressions,
+      \vskip1ex
+      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
+      \vskip1ex
+      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
+      \vskip1ex
+      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+foo <- env_etf$re_turns[, c("VTI", "VEU")]
+end_points <- endpoints(foo, on="months")
+head(foo)
+tail(foo)
+class(foo)
+dim(foo)
+reg_model <- lm(paste(names(foo), collapse=" ~ "), data=foo)
+reg_model_sum <- summary(reg_model)
+reg_model_sum
+dwtest(reg_model)
+
+# filter over non-overlapping periods
+bar <- names(foo)
+foo <- merge(period.sum(foo[, 1], INDEX=end_points), period.sum(foo[, 2], INDEX=end_points))
+foo <- foo[complete.cases(foo), ]
+names(foo) <- bar
+
+# filter over overlapping periods
+foo <- rollsum(foo, k=11)
+
+
+set.seed(1121)
+library(lmtest)
+# spurious regression in unit root time series
+explana_tory <- cumsum(rnorm(100))  # unit root time series
+res_ponse <- cumsum(rnorm(100))
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+# summary indicates statistically significant regression
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(reg_model)
+c(dw_test$statistic[[1]], dw_test$p.value)
+      @
+      \vspace{-2em}
+        <<autocorr_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/autocorr_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Omitted Variable Bias}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors,
+      \vskip1ex
+      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
+      \vskip1ex
+      But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=FALSE>>=
+library(lmtest)  # load lmtest
+design_matrix <- data.frame(  # design matrix
+  explana_tory=1:30, omit_var=sin(0.2*1:30))
+# response depends on both explanatory variables
+res_ponse <- with(design_matrix,
+          0.2*explana_tory + omit_var + 0.2*rnorm(30))
+# mis-specified regression only one explanatory
+reg_model <- lm(res_ponse ~ explana_tory,
+                data=design_matrix)
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dwtest(reg_model)$p.value
+      @
+      \vspace{-2em}
+        <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, data=design_matrix)
+abline(reg_model, lwd=2, col="red")
+title(main="OVB Regression", line=-1)
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ovb_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Spurious Time Series Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Regression of non-stationary time series creates \emph{spurious} regressions,
+      \vskip1ex
+      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
+      \vskip1ex
+      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
+      \vskip1ex
+      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+set.seed(1121)
+library(lmtest)
+# spurious regression in unit root time series
+explana_tory <- cumsum(rnorm(100))  # unit root time series
+res_ponse <- cumsum(rnorm(100))
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+# summary indicates statistically significant regression
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(reg_model)
+c(dw_test$statistic[[1]], dw_test$p.value)
+      @
+      \vspace{-2em}
+        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/spur_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions Using Regression Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a generic function for performing predictions based on a given model,
+      \vskip1ex
+      \texttt{predict.lm()} is the predict method for linear models (regressions),
+      \vspace{-1em}
+        <<predict_lm,echo=TRUE,fig.show='hide'>>=
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*explana_tory + rnorm(30)
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+new_data <- data.frame(explana_tory=0.1*31:40)
+predict_lm <- predict(object=reg_model,
+                      newdata=new_data, level=0.95,
+                      interval="confidence")
+predict_lm <- as.data.frame(predict_lm)
+head(predict_lm, 2)
+plot(reg_formula, xlim=c(1.0, 4.0),
+     ylim=range(res_ponse, predict_lm),
+     main="Regression predictions")
+abline(reg_model, col="red")
+with(predict_lm, {
+  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
+  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
+  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+})  # end with
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/predict_lm-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -85,16 +1295,16 @@ knit_theme$set(thm)
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<returns_regress,echo=TRUE,eval=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<returns_regress,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 load(file="C:/Develop/data/etf_data.RData")
-etf_rets <- na.omit(etf_rets)
+re_turns <- na.omit(env_etf$re_turns)
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform regression
-reg_model <- lm(reg_formula, data=etf_rets)
+reg_model <- lm(reg_formula, data=re_turns)
 # plot scatterplot of returns
-plot(reg_formula, data=etf_rets)
+plot(reg_formula, data=re_turns)
 title(main="Regression XLP ~ VTI", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
@@ -125,17 +1335,17 @@ dwtest(reg_model)
   \begin{columns}[T]
     \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)  # load quantmod
 library(lmtest)  # load lmtest
 # perform regressions and collect statistics
-etf_reg_stats <- sapply(colnames(etf_rets)[-1], 
+etf_reg_stats <- sapply(colnames(re_turns)[-1], 
                         function(etf_name) {
 # specify regression formula
   reg_formula <- as.formula(
     paste(etf_name, "~ VTI"))
 # perform regression
-  reg_model <- lm(reg_formula, data=etf_rets)
+  reg_model <- lm(reg_formula, data=re_turns)
 # get regression summary
   reg_model_sum <- summary(reg_model)
 # collect regression statistics
@@ -155,13 +1365,67 @@ etf_reg_stats <- etf_reg_stats[
       @
     \column{0.45\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 etf_reg_stats[, 1:3]
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Beta Regressions Over Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{rollapply()} allows performing regressions over a rolling window, 
+      \vskip1ex
+      The function \texttt{roll\_lm()} from package \texttt{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}, 
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)
+# specify regression formula
+reg_formula <- XLP ~ VTI
+# perform rolling beta regressions every month
+beta_s <- rollapply(env_etf$re_turns, width=252, 
+  FUN=function(design_matrix) 
+  coef(lm(reg_formula, data=design_matrix))[2],
+  by=22, by.column=FALSE, align="right")
+beta_s <- na.omit(beta_s)
+# plot beta_s in x11() window
+x11(width=(wid_th <- 6), height=(hei_ght <- 4))
+chart_Series(x=beta_s, 
+  name=paste("rolling betas", format(reg_formula)))
+# perform daily rolling beta regressions in parallel
+library(roll)
+beta_s <- roll_lm(x=env_etf$re_turns[, "VTI"], 
+                  y=env_etf$re_turns[, "XLP"],
+                  width=252)$coefficients
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rolling_betas.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# compare speed of rollapply() versus roll_lm()
+library(microbenchmark)
+da_ta <- env_etf$re_turns["2012", c("VTI", "XLP")]
+summary(microbenchmark(
+  rollapply=rollapply(da_ta, width=22, 
+      FUN=function(design_matrix) 
+      coef(lm(reg_formula, data=design_matrix))[2],
+        by.column=FALSE, align="right"), 
+  roll_lm=roll_lm(x=da_ta[, "VTI"], 
+                  y=da_ta[, "XLP"],
+                  width=22)$coefficients, 
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
 \subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
@@ -183,16 +1447,16 @@ etf_reg_stats[, 1:3]
       The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
-CAPM.beta(Ra=etf_rets[, "XLP"], 
-          Rb=etf_rets[, "VTI"])
-CAPM.beta.bull(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-CAPM.beta.bear(Ra=etf_rets[, "XLP"], 
-  Rb=etf_rets[, "VTI"])
-CAPM.alpha(Ra=etf_rets[, "XLP"], 
-           Rb=etf_rets[, "VTI"])
+CAPM.beta(Ra=re_turns[, "XLP"], 
+          Rb=re_turns[, "VTI"])
+CAPM.beta.bull(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.beta.bear(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.alpha(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
       @
       The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$,
       \vskip1ex
@@ -218,10 +1482,10 @@ CAPM.alpha(Ra=etf_rets[, "XLP"],
       <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 library(PerformanceAnalytics)
 etf_betas <- sapply(
-  etf_rets[, colnames(etf_rets)!="VXX"], 
-  CAPM.beta, Rb=etf_rets[, "VTI"])
+  re_turns[, colnames(re_turns)!="VXX"], 
+  CAPM.beta, Rb=re_turns[, "VTI"])
 etf_annrets <- sapply(
-  etf_rets[, colnames(etf_rets)!="VXX"], 
+  re_turns[, colnames(re_turns)!="VXX"], 
   Return.annualized)
 # plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas", 
@@ -273,13 +1537,13 @@ text(x=etf_betas[label_names],
       \vskip1ex
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(PerformanceAnalytics)
-TreynorRatio(Ra=etf_rets[, "XLP"], 
-           Rb=etf_rets[, "VTI"])
+TreynorRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
 
-InformationRatio(Ra=etf_rets[, "XLP"], 
-           Rb=etf_rets[, "VTI"])
+InformationRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
       @
   \end{columns}
 \end{block}
@@ -295,30 +1559,33 @@ InformationRatio(Ra=etf_rets[, "XLP"],
   \begin{columns}[T]
     \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
+      <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
-table.CAPM(Ra=etf_rets[, c("XLP", "XLF")], 
-           Rb=etf_rets[, "VTI"], scale=252)
+table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+           Rb=re_turns[, "VTI"], scale=252)
       @
       \vspace{-2em}
       <<eval=FALSE,echo=(-1)>>=
 library(PerformanceAnalytics)
-etf_perf_stats <- table.CAPM(Ra=etf_rets[, -1], 
-              Rb=etf_rets[, "VTI"], scale=252)
-colnames(etf_perf_stats) <- 
-  sapply(colnames(etf_perf_stats), 
+capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"], 
+              Rb=re_turns[, "VTI"], scale=252)
+colnames(capm_stats) <- 
+  sapply(colnames(capm_stats), 
   function (str) {strsplit(str, split=" ")[[1]][1]})
-etf_perf_stats <- as.matrix(etf_perf_stats)
-etf_perf_stats <- t(etf_perf_stats)
-etf_perf_stats <- etf_perf_stats[
-  order(etf_perf_stats[, "Annualized Alpha"], 
+capm_stats <- as.matrix(capm_stats)
+capm_stats <- t(capm_stats)
+capm_stats <- capm_stats[
+  order(capm_stats[, "Annualized Alpha"], 
         decreasing=TRUE), ]
+# copy capm_stats into env_etf and save to .RData file
+assign("capm_stats", capm_stats, envir=env_etf)
+save(env_etf, file='etf_data.RData')
       @
     \column{0.45\textwidth}
       \vspace{-1em}
       <<eval=FALSE,echo=(-1)>>=
 # load(file="C:/Develop/data/etf_data.RData")
-etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
+capm_stats[, c("Information Ratio", "Annualized Alpha")]
       @
   \end{columns}
 \end{block}
@@ -338,9 +1605,9 @@ etf_perf_stats[, c("Information Ratio", "Annualized Alpha")]
 library(quantmod)
 ### Perform pair-wise correlation analysis
 # Calculate correlation matrix
-corr_matrix <- cor(etf_rets)
-colnames(corr_matrix) <- colnames(etf_rets)
-rownames(corr_matrix) <- colnames(etf_rets)
+corr_matrix <- cor(re_turns)
+colnames(corr_matrix) <- colnames(re_turns)
+rownames(corr_matrix) <- colnames(re_turns)
 # Reorder the correlation matrix based on clusters
 # Calculate permutation vector
 library(corrplot)
@@ -420,14 +1687,14 @@ title("Dissimilarity = 1-Correlation",
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<pca_plot,echo=(-(1:5)),fig.height=5,fig.show='hide'>>=
+      <<pca_plot,echo=(-(1:5)),fig.height=5,fig.show='hide',eval=FALSE>>=
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # load ETF returns
 # load(file="C:/Develop/data/etf_data.RData")
-etf_rets <- na.omit(etf_rets)
+re_turns <- na.omit(env_etf$re_turns)
 ### Perform principal component analysis PCA
-etf_pca <- prcomp(etf_rets, center=TRUE, scale=TRUE)
+etf_pca <- prcomp(re_turns, center=TRUE, scale=TRUE)
 barplot(etf_pca$sdev[1:10], 
         names.arg=colnames(etf_pca$rotation)[1:10], 
         las=3, ylab="STDEV", xlab="PCVec", 
@@ -502,18 +1769,18 @@ for (in_dex in 1:3) {
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<echo=(-(1:1))>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# PC returns from rotation and scaled etf_rets
-etf_rets_scaled <- apply(etf_rets, 2, scale)
-pca_rets <- etf_rets_scaled %*% etf_pca$rotation
+# PC returns from rotation and scaled re_turns
+re_turns_scaled <- apply(re_turns, 2, scale)
+pca_rets <- re_turns_scaled %*% etf_pca$rotation
 # "x" matrix contains time series of PC returns
 dim(etf_pca$x)
 class(etf_pca$x)
 head(etf_pca$x[, 1:3], 3)
 # convert PC matrix to xts and rescale to decimals
 pca_rets <- xts(etf_pca$x/100, 
-    order.by=index(etf_rets))
+    order.by=index(re_turns))
       @
 \vspace{-1em}
       <<pca_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
@@ -541,7 +1808,7 @@ title(main="ETF cumulative returns", line=-1)
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
+      <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
 # Calculate PC correlation matrix
 corr_matrix <- cor(pca_rets)
@@ -549,256 +1816,9 @@ colnames(corr_matrix) <- colnames(pca_rets)
 rownames(corr_matrix) <- colnames(pca_rets)
 corr_matrix[1:3, 1:3]
 table.CAPM(Ra=pca_rets[, 1:3], 
-    Rb=etf_rets[, "VTI"], scale=252)
+    Rb=re_turns[, "VTI"], scale=252)
       @
     \column{0.5\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Factor Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{factorAnalytics}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{factorAnalytics} performs estimation and risk analysis of linear factor models for portfolio asset returns,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(factorAnalytics)  # load package "factorAnalytics"
-# get documentation for package "factorAnalytics"
-packageDescription("factorAnalytics")  # get short description
-help(package="factorAnalytics")  # load help page
-      @
-      \vspace{-1em}
-      <<eval=FALSE,echo=(-(1:2)),tidy=TRUE>>=
-options(width=50)
-library(factorAnalytics)  # load package "factorAnalytics"
-# list all objects in "factorAnalytics"
-ls("package:factorAnalytics")
-
-# list all datasets in "factorAnalytics"
-# data(package="factorAnalytics")
-
-# remove factorAnalytics from search path
-detach("package:factorAnalytics")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fitting Factor Models Using PCA}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(factorAnalytics)
-# load ETF returns
-# load(file="C:/Develop/data/etf_data.RData")
-# fit a three-factor model using PCA
-factor_pca <- fitSfm(etf_rets, k=3)
-head(factor_pca$loadings, 3)  # factor loadings
-# factor realizations (time series)
-head(factor_pca$factors)
-# residuals from regression
-factor_pca$residuals[1:3, 1:3]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(factorAnalytics)
-factor_pca$alpha  # estimated alphas
-factor_pca$r2  # R-squared regression
-# covariance matrix estimated by factor model
-factor_pca$Omega[1:3, 4:6]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Factor Loadings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
-library(factorAnalytics)
-# load(file="C:/Develop/data/portf_optim.RData")
-plot(factor_pca, which.plot.group=3, 
-     n.max=30, loop=FALSE)
-# ?plot.sfm
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_load-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Series of Factors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_tsplot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot factor cumulative returns
-chart.CumReturns(factor_pca$factors, 
-    lwd=2, ylab="", legend.loc="topleft", 
-    main="")
-
-# plot time series of factor returns
-# plot(factor_pca, which.plot.group=2, 
-#   loop=FALSE)
-      @
-    \column{0.6\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_tsplot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Asset Correlations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_corr_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=7,fig.show='hide'>>=
-# asset correlations "hclust" hierarchical clustering order
-plot(factor_pca, which.plot.group=7, 
-     loop=FALSE, order="hclust", 
-     method="ellipse")
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_corr_plot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Series of Residuals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot residual cumulative returns
-chart.CumReturns(
-  factor_pca$residuals[, c("IEF", 
-                  "DBC", "XLF")], 
-  lwd=2, ylab="", legend.loc="topleft", 
-  main="")
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_plot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Residual Returns Histogram}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_hist,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot residual histogram with normal curve
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=8, 
-     plot.single=TRUE, loop=FALSE, 
-     xlim=c(-0.007, 0.007))
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_hist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Residual Returns \texttt{Q-Q} Plot}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_qq,eval=FALSE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# residual Q-Q plot
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=9, 
-     plot.single=TRUE, loop=FALSE)
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_qq-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Residuals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_autocorr,eval=FALSE,echo=TRUE,fig.width=7,fig.height=9,fig.show='hide'>>=
-# SACF and PACF of residuals
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=5, 
-     plot.single=TRUE, loop=FALSE)
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_autocorr-1}
   \end{columns}
 \end{block}
 
@@ -815,7 +1835,7 @@ plot(factor_pca, asset.name="VTI",
 \begin{frame}[t]{\secname}
 \vspace{-1em}
 \begin{block}{Required}
-  A file with the homework will be uploaded to NYU Classes,
+  Read all the lecture slides in \texttt{FRE7241\_Lecture\_4.pdf}, and run all the code in \texttt{FRE7241\_Lecture\_4.R}
 \end{block}
 
 \begin{block}{Recommended}

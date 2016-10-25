@@ -384,7 +384,6 @@ title(main="wealth of multiperiod betting", line=0.1)
       <<utility_returns,eval=TRUE,echo=(-1),fig.show='hide'>>=
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
 ts_rets <- env_etf$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
@@ -427,10 +426,9 @@ title(main="utility", line=-2)
       The \emph{standard deviation} and \emph{Sharpe} ratio are calculated over the same time interval as the returns (not annualized),
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<eval=TRUE,echo=(-(1:4)),fig.show='hide'>>=
+      <<eval=TRUE,echo=(-(1:3)),fig.show='hide'>>=
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
 ts_rets <- env_etf$re_turns[, "VTI"]
 KellyRatio(R=ts_rets, method="full")
       @
@@ -444,61 +442,233 @@ KellyRatio(R=ts_rets, method="full")
 
 
 %%%%%%%%%%%%%%%
-\section{Backtesting Active Investment Strategies}
+\section{Active Investment Strategies}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Backtesting Framework}
+\subsection{Moving Average Technical Indicators}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes, 
+      \vskip1ex
+      Moving averages (such as \emph{VWAP}) are often used to define technical indicators (trading signals), 
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# calculate open, close, and lagged prices
+open_prices <- Op(env_etf$VTI)
+price_s <- Cl(env_etf$VTI)
+prices_lag <- rutils::lag_xts(price_s)
+# define lookback window and calculate VWAP
+win_dow <- 150
+VTI_vwap <- HighFreq::roll_vwap(env_etf$VTI, 
+            win_dow=win_dow)
+# calculate VWAP indicator
+vwap_indic <- sign(price_s - VTI_vwap)
+# determine dates right after VWAP has crossed prices
+vwap_crosses <- 
+  (rutils::diff_xts(vwap_indic) != 0)
+trade_dates <- which(vwap_crosses) + 1
+      @
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:2)),eval=TRUE>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
-# rebalancing period
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/vwap_indic.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot prices and VWAP
+chart_Series(x=price_s, 
+  name="VTI prices", col='orange')
+add_TA(VTI_vwap, on=1, lwd=2, col='blue')
+legend("top", legend=c("VTI", "VWAP"), 
+bg="white", lty=c(1, 1), lwd=c(2, 2), 
+col=c('orange', 'blue'), bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moving Average Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In a trend-following \emph{Moving Average Crossover} strategy, when the current price crosses above the \emph{VWAP}, then the strategy switches its position to long risk, and vice versa, 
+      \vskip1ex
+      The strategy trades at the \texttt{Open} price in the next period after prices cross the \emph{VWAP}, to reflect that in practice it's impossible to trade immediately, 
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# calculate positions, either: -1, 0, or 1
+pos_ition <- NA*numeric(NROW(env_etf$VTI))
+pos_ition[1] <- 0
+pos_ition[trade_dates] <- vwap_indic[trade_dates]
+pos_ition <- na.locf(pos_ition)
+pos_ition <- xts(pos_ition, order.by=index((env_etf$VTI)))
+position_lagged <- rutils::lag_xts(pos_ition)
+# calculate periodic profits and losses
+pn_l <- position_lagged*(price_s - prices_lag)
+pn_l[trade_dates] <- position_lagged[trade_dates] * 
+  (open_prices[trade_dates] - prices_lag[trade_dates]) +
+  pos_ition[trade_dates] * 
+  (price_s[trade_dates] - open_prices[trade_dates])
+# calculate annualized Sharpe ratio of strategy returns
+sqrt(260)*sum(pn_l)/sd(pn_l)/NROW(pn_l)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/vwap_strat.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot prices and VWAP
+pn_l <- xts(cumsum(pn_l), order.by=index((env_etf$VTI)))
+chart_Series(x=(price_s-as.numeric(price_s[1, ])), name="VTI prices", col='orange')
+add_TA(pn_l, on=1, lwd=2, col='blue')
+add_TA(pos_ition > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(pos_ition < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=c("VTI", "VWAP strategy"), 
+bg="white", lty=c(1, 1), lwd=c(2, 2), 
+col=c('orange', 'blue'), bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Backtesting Active Investment Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Framework with Overlapping Aggregations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      \vskip1ex
+      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
+      \vskip1ex
+      The variable \texttt{win\_dow} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in that window, 
+      \vskip1ex
+      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(HighFreq)  # load package HighFreq
+# define time interval for end points
 re_balance <- "weeks"
-# look-back period in number of re_balance
-win_dow <- 40
-
+# look-back window is multiple of re_balance
+win_dow <- 41
 # create index of rebalancing period end points
-end_points <- endpoints(env_etf$re_turns, 
-                      on=re_balance)
-end_points[1] <- 1
+end_points <- xts::endpoints(env_etf$re_turns, 
+                             on=re_balance)
+# start_points are multi-period lag of end_points
+len_gth <- length(end_points)
+start_points <-  end_points[
+  c(rep_len(1, win_dow-1), 
+    1:(len_gth-win_dow+1))]
+# create list of look-back intervals
+inter_vals <- lapply(2:len_gth, 
+    function(in_dex) {
+      start_points[in_dex]:end_points[in_dex]
+  })  # end lapply
+      @
+  \end{columns}
+\end{block}
 
-# create index of rebalancing periods
-periods <- lapply(win_dow:(length(end_points)-1),
-    function(point)
-      list(
-  back=end_points[point-win_dow+1]:(end_points[point]-1),
-  fwd=end_points[point]:end_points[point+1])  # end list
-    )  # end lapply
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Overlapping Aggregations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      \vskip1ex
+      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
+      \vskip1ex
+      The variable \texttt{win\_dow} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in that window, 
+      \vskip1ex
+      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(HighFreq)  # load package HighFreq
+# create list of symbols for model
+sym_bols <- c("VTI", "IEF", "DBC")
+
+# calculate risk&ret stats for some symbols, over a range of dates
+# perform lapply() loop over inter_vals
+risk_stats <- lapply(inter_vals, 
+  function(inter_val) {
+    x_ts <- 
+      env_etf$re_turns[inter_val, sym_bols]
+    t(sapply(x_ts, 
+      function(col_umn)
+        c(return=mean(col_umn), risk=mad(col_umn))
+      ))  # end sapply
+    })  # end lapply
+# rbind list into single xts or matrix
+# risk_stats <- rutils::do_call_rbind(risk_stats)
+# head(risk_stats)
+# calculate non-overlapping returns in interval
+re_turns <-sapply(2:len_gth, 
+    function(in_dex) {
+    sapply(env_etf$re_turns[
+      (end_points[in_dex-1]+1):end_points[in_dex], 
+      sym_bols], sum)
+  })  # end sapply
+re_turns <- t(re_turns)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Rolling Model Calibrations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      \vskip1ex
+      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate list of portfolio weights
+# perform lapply() loop over risk_stats
+weight_s <- sapply(risk_stats, 
+    function(risk_stat) {
+      weight_s <- risk_stat[, 1]/risk_stat[, 2]
+      weight_s <- weight_s - mean(weight_s)
+      weight_s <- weight_s/sum(abs(weight_s))
+    })  # end sapply
+weight_s <- t(weight_s)
+weights_xts <- xts(weight_s, 
+  order.by=index(env_etf$re_turns[end_points]))
+# plot weights
+x11()
+zoo::plot.zoo(weights_xts, xlab=NULL)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# calculate risk&ret stats for some symbols, over a range of dates
-risk_ret_stats <- 
-  function(x_ts=env_etf$re_turns,  # daily returns
-           sym_bols=colnames(x_ts),  # names
-           range=index(x_ts),  # date range
-           ret="mean",  # return stat
-           risk="mad") {  # risk stat
-  ret <- match.fun(ret)  # match to function
-  risk <- match.fun(risk)  # match to function
-  stats <- sapply(x_ts[range, sym_bols], 
-        function(ts)
-          c(ret=ret(ts), risk=risk(ts))
-  )  # end sapply
-  t(stats)
-}  # end risk_ret_stats
-
-# example
-head(risk_ret_stats(range=
-              periods[[1]]$back))
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_weights.png}
   \end{columns}
 \end{block}
 
@@ -512,85 +682,29 @@ head(risk_ret_stats(range=
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# calculate stats over overlapping period date windows
-period_stats <- lapply(periods,
-         function(point)
-           cbind(risk_ret_stats(range=point$back),
-            fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
-)  # end lapply
-head(period_stats[[1]])
+      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      \vskip1ex
+      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate pnls over all windows
+pn_l <- rowSums(weight_s[-NROW(weight_s), ] * 
+                  re_turns[-1, ])
+# calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+cost_s <- bid_offer*abs(diff(weight_s))
+cost_s <- rowSums(cost_s)
+pn_l <- pn_l - cost_s
+pn_l <- xts(cumsum(pn_l), 
+  order.by=index(env_etf$re_turns[end_points[-(1:2)]]))
+colnames(pn_l)[1] <- "pnl"
+# plot strategy pnl
+x11()
+chart_Series(x=pn_l, name="Strategy PnL")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# calculate pnl for a given period
-pnl_period <- 
-  function(period_stat, de_mean=FALSE) {
-  weights <- period_stat[, "ret"]/
-    period_stat[, "risk"]
-  weights <- weights - de_mean*mean(weights)
-  weights <- weights/sum(abs(weights))
-c(sum(period_stat[, "fut_ret"]*weights), weights)
-}  # end pnl_period
-
-# calculate pnls over all windows
-pnl_xts <- t(sapply(period_stats, pnl_period))
-pnl_xts <- xts(pnl_xts,
-     order.by=index(env_etf$re_turns)
- [end_points[win_dow:(length(end_points)-1)]]
- )  # end xts
-colnames(pnl_xts)[1] <- "pnl"
-
-# calculate transaction costs
-bid_offer <- 0.001  # 10 bps for liquid ETFs
-co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
-co_sts[1, ] <- 0
-co_sts <- rowSums(co_sts)
-pnl_xts[, "pnl"] <- pnl_xts[, "pnl"] - co_sts
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/backtest_pnl.png}
   \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtest Performance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<back_perform,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# plot cumulative pnl of strategy
-plot(cumsum(pnl_xts[, "pnl"]), 
-  main=colnames(pnl_xts[, "pnl"]))
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_perform-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Weights}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-      <<back_weights,eval=FALSE,echo=(-1),fig.width=15,fig.height=9,fig.show='hide'>>=
-portf_names <- c("VTI", "IEF", "DBC", "XLF", "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
-# plot portfolio weights
-plot.zoo(pnl_xts[, portf_names], main="")
-      @
-\vspace{-2em}
-\hspace*{-1em}
-      \includegraphics[width=1.0\paperwidth,valign=t]{figure/back_weights-1}
 \end{block}
 
 \end{frame}
@@ -602,24 +716,29 @@ plot.zoo(pnl_xts[, portf_names], main="")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<back_beta,eval=FALSE,echo=TRUE,fig.width=8,fig.height=11,fig.show='hide'>>=
-# calculate xts of net beta
-betas <- c(1, etf_reg_stats[, 3])
-names(betas)[1] <- colnames(pnl_xts[, 2])
+      <<echo=TRUE,eval=FALSE>>=
+# calculate betas
+beta_s <- c(1, env_etf$capm_stats[
+  match(sym_bols[-1], 
+        rownames(env_etf$capm_stats)), 
+  "Beta"])
+names(beta_s)[1] <- sym_bols[1]
 # weights times betas
-betas <- pnl_xts[, -1] * betas
-betas <- xts(rowSums(betas), 
-    order.by=index(pnl_xts))
-colnames(betas) <- "betas"
-plot.zoo(cbind(betas, 
-    cumsum(env_etf$re_turns[, 1])[index(betas)]),
-    main="betas & VTI", xlab="")
+beta_s <- weight_s %*% beta_s
+beta_s <- xts(beta_s, 
+  order.by=index(
+    env_etf$re_turns[end_points[-1]]))
+colnames(beta_s) <- "portf_beta"
+x11()
+plot.zoo(cbind(beta_s, 
+  env_etf$VTI[, 4])[index(beta_s)],
+  main="betas & VTI", xlab="")
       @
-    \column{0.6\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_beta-1}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/backtest_betas.png}
   \end{columns}
 \end{block}
 
@@ -634,33 +753,49 @@ plot.zoo(cbind(betas,
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<back_optim,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<echo=TRUE,eval=FALSE>>=
 # create trading function
-tot_pnl <- function(win_dow) {
-  periods <- lapply(win_dow:(length(end_points)-1),
-    function(point)
-      list(back=
-      end_points[point-win_dow+1]:(end_points[point]-1),
-         fwd=end_points[point]:end_points[point+1])
-  )  # end sapply
-  period_stats <- lapply(periods,
-       function(point)
-         cbind(risk_ret_stats(range=point$back),
-           fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
-  )  # end lapply
-  pnl_xts <- t(sapply(period_stats, pnl_period))
-  co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
-  co_sts <- rowSums(co_sts)
-  co_sts <- c(0, co_sts)
-  pnl_xts[, 1] <- pnl_xts[, 1] - co_sts
-  sum(pnl_xts[, 1])
-}  # end tot_pnl
-strat_profile <- sapply(4*(5:15), tot_pnl)
-plot(cbind(4*(5:15), strat_profile), t="l")
+run_strat <- function(win_dow) {
+  start_points <-  end_points[
+    c(rep_len(1, win_dow-1), 
+      1:(len_gth-win_dow+1))]
+  inter_vals <- lapply(2:len_gth, 
+                       function(in_dex) {
+                         start_points[in_dex]:end_points[in_dex]
+                       })  # end lapply
+  risk_stats <- lapply(inter_vals, 
+                       function(inter_val) {
+                         x_ts <- env_etf$re_turns[inter_val, sym_bols]
+                         t(sapply(x_ts, 
+                                  function(col_umn)
+                                    c(return=mean(col_umn), risk=mad(col_umn))
+                         ))  # end sapply
+                       })  # end lapply
+  weight_s <- sapply(risk_stats, 
+                     function(risk_stat) {
+                       weight_s <- risk_stat[, 1]/risk_stat[, 2]
+                       weight_s <- weight_s - mean(weight_s)
+                       weight_s <- weight_s/sum(abs(weight_s))
+                     })  # end sapply
+  weight_s <- t(weight_s)
+  pn_l <- rowSums(weight_s[-NROW(weight_s), ] * re_turns[-1, ])
+  cost_s <- bid_offer*abs(diff(weight_s))
+  cost_s <- rowSums(cost_s)
+  pn_l <- pn_l - cost_s
+  sum(pn_l)
+}  # end run_strat
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/back_optim-1}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/strat_profile}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+window_s <- 8*(1:7)
+strat_profile <- sapply(window_s, run_strat)
+plot(cbind(window_s, strat_profile), t="l", 
+     main="Strategy PnL as function of window size", 
+     xlab="window", ylab="pnl")
+      @
   \end{columns}
 \end{block}
 

@@ -22,6 +22,8 @@ knit_theme$set(thm)
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
 % \usepackage{mathtools}
+% bbold package for unitary vector or matrix symbol
+\usepackage{bbold}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -58,7 +60,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 25, 2016}
+\date{October 3, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,30 +74,47 @@ knit_theme$set(thm)
 \maketitle
 
 
+%%%%%%%%%%%%%%%
+\section{Data Input and Output}
+
 
 %%%%%%%%%%%%%%%
-\section{Manipulating Vectors and Matrices}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Logical Operators Applied to Vectors and Matrices}
+\subsection{Writing Text Strings}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      When logical operators are applied to vectors and matrices, they are applied element-wise, producing \texttt{boolean} vectors and matrices,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
+      The function \texttt{cat()} concatenates strings and writes them to standard output or to files,
+      \vskip1ex
+      \texttt{cat()} interprets its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value,
+      \vskip1ex
+      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it,
+      \vskip1ex
+      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object,
+      \vskip1ex
+      The function \texttt{save()} writes objects to a binary file,
+    \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE>>=
-vec_tor <- sample(1:9)
-vec_tor
-vec_tor < 5  # element-wise comparison
-vec_tor == 5  # element-wise comparison
-mat_rix <- matrix(vec_tor, ncol=3)
-mat_rix
-mat_rix < 5  # element-wise comparison
-mat_rix == 5  # element-wise comparison
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+cat("Enter\ttab")  # cat() interprets backslash escape sequences
+print("Enter\ttab")
+
+my_text <- print("hello")
+my_text  # print() returns its argument
+
+# create string
+my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
+
+cat(my_text, file="mytext.txt")  # write to text file
+
+cat("Title: My Text",  # write several lines to text file
+    "Some numbers: 1,2,3,...",
+    "Rprofile files contain code executed at R startup,", 
+    file="mytext.txt", sep="\n")
+
+save(my_text, file="mytext.RData")  # write to binary file
       @
   \end{columns}
 \end{block}
@@ -104,34 +123,543 @@ mat_rix == 5  # element-wise comparison
 
 
 %%%%%%%%%%%%%%%
-\subsection{Coercing Vectors Into Matrices}
+\subsection{Displaying Numeric Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      Vectors can be coerced into matrices by adding a dimension attribute,
+    \column{0.5\textwidth}
+      The function \texttt{print()} displays numeric data objects, with the number of digits given by the global option \texttt{"digits"}, 
       \vskip1ex
-      The \texttt{dimnames} attribute can be assigned a named list to convert it into a named matrix,
+      The function \texttt{sprintf()} returns strings formatted from text strings and numeric data, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+print(pi)
+print(pi, digits=10)
+getOption("digits")
+foo <- 12
+bar <- "months"
+sprintf("There are %i %s in the year", foo, bar)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Text from Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list,
       \vskip1ex
-      The function \texttt{structure()} adds attributes (specified as \texttt{symbol=value} pairs) to an object, and returns it,
-    \column{0.6\textwidth}
+      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings,
+      \vskip1ex
+      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string,
+      \vskip1ex
+      The function \texttt{file.show()} reads text or data from a file and displays in editor,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+# read text from file
+scan(file="mytext.txt", what=character(), sep="\n")
+
+# read lines from file
+readLines(con="mytext.txt")
+
+# read text from console
+in_put <- readline("Enter a number: ")
+class(in_put)
+# coerce to numeric
+in_put <- as.numeric(in_put)
+
+# read text from file and display in editor:
+# file.show("mytext.txt")
+# file.show("mytext.txt", pager="")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data Frames from \protect\emph{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{read.table()} and \texttt{write.table()} read and write data frames from text files,
+      \vskip1ex
+      \texttt{write.table()} coerces objects to data frames before it writes them,
+      \vskip1ex
+      \texttt{read.table()} returns a data frame, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set),
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} can be used to read and write matrices from text files, but they have to be coerced back to matrices,
+      \vskip1ex
+      \texttt{read.table()} and \texttt{write.table()} are inefficient for very large data sets,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+setwd("C:/Develop/data")
+data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
+mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
+# write data frame to text file, and then read it back
+write.table(data_frame, file="florist.txt")
+data_read <- read.table(file="florist.txt")
+data_read  # a data frame
+
+# write matrix to text file, and then read it back
+write.table(mat_rix, file="matrix.txt")
+mat_read <- read.table(file="matrix.txt")
+mat_read  # write.table() coerced matrix to data frame
+class(mat_read)
+# coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Copying Data Frames Between the \protect\emph{clipboard} and \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data frames stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()},
+      \vskip1ex
+      Data frames in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()},
+      \vskip1ex
+      This allows convenient copying of data frames between \emph{Excel} and \texttt{R},
+      \vskip1ex
+      Data frames can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+setwd("C:/Develop/data")
+data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+data_frame <- read.table("mydata.txt", header=TRUE)
+data_frame <- read.table("clipboard", header=TRUE)
+
+write.table(x=data_frame, file="clipboard", sep="\t")
+
+# wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t", 
+                      header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+data_frame <- read_clip()
+
+# wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write_clip <- function(data, row.names=FALSE, 
+                       col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t", 
+              row.names=row.names, col.names=col.names, ...)
+}  # end write_clip
+
+write_clip(data=data_frame)
+
+# launch spreadsheet-style data editor
+data_frame <- edit(data_frame)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data Frames from \protect\emph{csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} read and write data frames from \emph{csv} format files,
+      \vskip1ex
+      These functions are wrappers for \texttt{read.table()} and \texttt{write.table()},
+      \vskip1ex
+      \texttt{read.csv()} coerces non-numeric values to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is set,
+      \vskip1ex
+      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used,
+      \vskip1ex
+      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names,
+      \vskip1ex
+      The \texttt{*.csv()} functions are very inefficient for large data sets,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+# write data frame to CSV file, and then read it back
+write.csv(data_frame, file="florist.csv")
+data_read <- read.csv(file="florist.csv", 
+                       stringsAsFactors=FALSE)
+data_read  # the row names are read in as extra column
+# restore row names
+rownames(data_read) <- data_read[, 1]
+data_read <- data_read[, -1]  # remove extra column
+data_read
+# read row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+data_read
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Data Frames from \protect\emph{csv} Files (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write data frames from \emph{csv} format files \emph{without using row names},
+      \vskip1ex
+      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+# write data frame to CSV file, without row names
+write.csv(data_frame, row.names=FALSE, file="florist.csv")
+data_read <- read.csv(file="florist.csv")
+data_read  # a data frame without row names
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices from \protect\emph{csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{read.csv()} and \texttt{write.csv()} can read and write matrices from \emph{csv} format files,
+      \vskip1ex
+      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}, 
+      \vskip1ex
+      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+# write matrix to csv file, and then read it back
+write.csv(mat_rix, file="matrix.csv")
+mat_read <- read.csv(file="matrix.csv", row.names=1)
+mat_read  # read.csv() reads matrix as data frame
+class(mat_read)
+mat_read <- as.matrix(mat_read)  # coerce to matrix
+identical(mat_rix, mat_read)
+write.csv(mat_rix, row.names=FALSE, 
+          file="matrix_ex_rows.csv")
+mat_read <- read.csv(file="matrix_ex_rows.csv")
+mat_read <- as.matrix(mat_read)
+mat_read  # a matrix without row names
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Matrices (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed,
+      \vskip1ex
+      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names,
+      \vskip1ex
+      \texttt{write.matrix()} is part of package \texttt{MASS},
+      \vskip1ex
+      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily,
+      \vskip1ex
+      Removing row names simplifies the reading and writing of matrices,
+      \vskip1ex
+      The function \texttt{readLines} reads whole lines and returns them as single strings,
+      \vskip1ex
+      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+setwd("C:/Develop/data")
+library(MASS)  # load package "MASS"
+# write to CSV file by row - it's very SLOW!!!
+write.matrix(mat_rix, file="matrix.csv", sep=",")
+system.time(  # scan reads faster - skip first line with colnames
+  mat_read <- scan(file="matrix.csv", sep=",", 
+                  skip=1, what=numeric()))
+col_names <- readLines(con="matrix.csv", n=1)  # read colnames
+col_names  # this is a string!
+col_names <- strsplit(col_names, s=",")[[1]]  # convert to char vector
+mat_read  # mat_read is a vector, not matrix!
+# coerce by row to matrix
+mat_read <- matrix(mat_read, ncol=length(col_names), 
+                  byrow=TRUE)
+colnames(mat_read) <- col_names  # restore colnames
+mat_read
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Matrices Containing Bad Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often data that is read from external sources contains elements with bad data,
+      \vskip1ex
+      An example of bad data are \texttt{character} strings in \texttt{numeric} data,
+      \vskip1ex
+      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()},
+      \vskip1ex
+      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+setwd("C:/Develop/data")
+# read data from a csv file, including row names
+mat_rix <- read.csv(file="matrix_bad.csv", row.names=1,
+                     stringsAsFactors=FALSE)
+mat_rix
+class(mat_rix)
+# columns with bad data are character or factor
+sapply(mat_rix, class)
+row_names <- row.names(mat_rix)  # copy row names
+# sapply loop over columns and coerce to numeric
+mat_rix <- sapply(mat_rix, as.numeric)
+row.names(mat_rix) <- row_names  # restore row names
+# replace NAs with zero
+mat_rix[is.na(mat_rix)] <- 0
+# matrix without NAs
+mat_rix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing \texttt{zoo} Series From \protect\emph{Text} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{zoo} contains functions \texttt{read.zoo()} and \texttt{write.zoo()} for reading and writing \texttt{zoo} objects from \emph{text} and \emph{csv} files,
+      \vskip1ex
+      \texttt{read.zoo()} and \texttt{write.zoo()} are wrappers for \texttt{read.table()} and \texttt{write.table()},
+      \vskip1ex
+      By default these functions read and write data in \emph{space}-delimited format, but they can also read and write data to \emph{comma}-delimited \emph{csv} files by passing the parameter \texttt{sep=","}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+setwd("C:/Develop/data")
+rm(list=ls())
+set.seed(1121)  # reset random number generator
+library(zoo)  # load package zoo
+# create zoo with Date index
+in_dex <- seq(from=as.Date("2013-06-15"), 
+                  by="day", length.out=100)
+zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
+                  order.by=in_dex)
+tail(zoo_series, 3)
+# write zoo to text file, and then read it back
+write.zoo(zoo_series, file="zoo_series.txt")
+zoo_series <- read.zoo("zoo_series.txt")  # read it back
+tail(zoo_series, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing \texttt{zoo} Series With \protect\emph{Date-time} Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the index of a \texttt{zoo} series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as separate columns with a \emph{space} between them, 
+      \vskip1ex
+      To properly read separate date and time columns from \emph{text} files, \texttt{read.zoo()} must be passed arguments \texttt{"index.column=list(1,2)"} and \texttt{"tz"},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+setwd("C:/Develop/data")
+rm(list=ls())
+set.seed(1121)  # reset random number generator
+library(zoo)  # load package zoo
+# create zoo with POSIXct date-time index
+in_dex <- seq(from=as.POSIXct("2013-06-15"), 
+                  by="hour", length.out=1000)
+zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
+                  order.by=in_dex)
+tail(zoo_series, 3)
+# write zoo to text file, and then read it back
+write.zoo(zoo_series, file="zoo_series.txt")
+zoo_series <- read.zoo("zoo_series.txt")  # read it back
+# time field was read as a separate column
+tail(zoo_series, 3)
+# read and specify that second column is time field
+zoo_series <- read.zoo(file="zoo_series.txt", 
+                       index.column=list(1,2), 
+                       tz="America/New_York")
+tail(zoo_series, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing \texttt{zoo} Series From \protect\emph{csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often \emph{csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting,
+      \vskip1ex
+      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing columns of the input data into a \emph{date-time} object suitable for the \texttt{zoo} index,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2))>>=
+setwd("C:/Develop/data")
+library(zoo)  # load package zoo
+# write zoo to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv", sep=",")
+zoo_series <- read.zoo(file="zoo_series.csv", 
+                  header=TRUE, sep=",", FUN=as.POSIXct,
+                  tz="America/New_York")
+tail(zoo_series, 3)
+# read zoo from CSV file, with custom date-time format
+zoo_frame <- read.table(file="zoo_series2.csv", sep=",")
+tail(zoo_frame, 3)  # date-time format mm/dd/yyyy hh:mm
+zoo_series <- read.zoo(file="zoo_series2.csv", 
+                  header=TRUE, sep=",", FUN=as.POSIXct, 
+                  tz="America/New_York",
+                  format="%m/%d/%Y %H:%M")
+tail(zoo_series, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Passing Arguments to the \texttt{save()} Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{save()} writes objects to a binary file,
+      \vskip1ex
+      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument,
+      \vskip1ex
+      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings,
+      \vskip1ex
+      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""},
+      \vskip1ex
+      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+rm(list=ls())  # remove all objects
+var1 <- 1; var2 <- 2
+ls()  # list all objects
+ls()[1]  # list first object
+args(save)  # list arguments of save function
+# save "var1" to a binary file using string argument
+save("var1", file="my_data.RData")
+# save "var1" to a binary file using object name
+save(var1, file="my_data.RData")
+# save multiple objects
+save(var1, var2, file="my_data.RData")
+# save first object in list by passing to "..." argument
+# ls()[1] is not evaluated
+save(ls()[1], file="my_data.RData")
+# save first object in list by passing to "list" argument
+save(list=ls()[1], file="my_data.RData")
+# save whole list by passing it to the "list" argument
+save(list=ls(), file="my_data.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading and Writing Lists of Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
+      \vskip1ex
+      The vector of names can be used to manipulate the objects in loops, or to pass them to functions,
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
-mat_rix <- 1:6  # create a vector
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-structure(mat_rix, dim=c(2, 3))  # matrix object
-# adding dimension attribute coerces into matrix
-dim(mat_rix) <- c(2, 3)
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-# assign dimnames attribute
-dimnames(mat_rix) <- list(rows=c("row1", "row2"),
-                        columns=c("col1", "col2", "col3"))
-mat_rix
+rm(list=ls())  # remove all objects
+# load objects from file
+load_ed <- load(file="my_data.RData")
+load_ed  # vector of loaded objects
+ls()  # list objects
+# assign new values to objects in  global environment
+sapply(load_ed, function(sym_bol) {
+  assign(sym_bol, runif(1), envir=globalenv())
+})  # end sapply
+ls()  # list objects
+# assign new values to objects using for loop
+for (sym_bol in load_ed) {
+  assign(sym_bol, runif(1))
+}  # end for
+ls()  # list objects
+# save vector of objects
+save(list=load_ed, file="my_data.RData")
+# remove only loaded objects
+rm(list=load_ed)
+# remove the object "load_ed"
+rm(load_ed)
       @
   \end{columns}
 \end{block}
@@ -140,279 +668,53 @@ mat_rix
 
 
 %%%%%%%%%%%%%%%
-\subsection{Coercing Matrices Into Other Types}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Matrices can be explicitly coerced using the \texttt{"as.*"} coercion functions,
-      \vskip1ex
-      But coercion functions strip the \emph{attributes} from an object,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
-mat_rix
-# as.numeric strips dim attribute from matrix
-as.numeric(mat_rix)
-mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Binding Vectors and Matrices Together}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Vectors can be bound into matrices using the functions \texttt{cbind()} and \texttt{rbind()},
-      \vskip1ex
-      The \emph{recycling rule} allows operations on vectors of different lengths:\\
-      \begin{enumerate}
-        \item Vectors are scanned from left to right,
-        \item Shorter vectors are extended in length by recycling their values until they match the length of longer vectors,
-      \end{enumerate}
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-vec_tor1 <- 1:3  # define vector
-vec_tor2 <- 6:4  # define vector
-cbind(vec_tor1, vec_tor2)  # bind into columns
-rbind(vec_tor1, vec_tor2)  # bind into rows
-vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
-cbind(vec_tor1, vec_tor2)  # recycling rule applied
-1:6 + c(10, 20)  # another example of recycling rule
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Replicating Objects Using \texttt{rep()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{rep()} replicates vectors and lists a given number of times,
-      \vskip1ex
-      \texttt{rep()} accepts a vector or list \texttt{"x"}, and an integer specifying the type and number of replications, 
-      \vskip1ex
-      Argument \texttt{"times"} replicates the whole vector a given number of times,
-      \vskip1ex
-      Argument \texttt{"each"} replicates each vector element a given number of times,
-      \vskip1ex
-      Argument \texttt{"length.out"} replicates the whole vector a certain number of times, so that the output vector length is equal to \texttt{"length.out"}, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# replicate a single element
-rep("a", 5)
-# replicate the whole vector several times
-rep(c("a", "b"), 5)
-rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
-rep(c("a", "b"), each=5)
-# replicate to specified length
-rep(c("a", "b"), length.out=5)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Inner Multiplication}
+\subsection{Saving Output of \texttt{R} to a File}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices,
+      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding \emph{graphics}) to a file, or ends the diversion,
       \vskip1ex
-      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      Remember to call \texttt{sink()} to end the diversion!
       \vskip1ex
-      \emph{Inner} multiplication consists of multiplying the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
-      \begin{displaymath}
-        C_{i,j} = \sum_{k=1}^{n} A_{i,k} B_{k,j}
-      \end{displaymath}
-      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
+      The function \texttt{pdf()} diverts \emph{graphics} output to a pdf file (text output isn't diverted), in vector graphics format,
       \vskip1ex
-      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second), otherwise an error is produced,
+      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert \emph{graphics} output to graphics files (text output isn't diverted), in pixel graphics format,
       \vskip1ex
-      The function \texttt{drop()} removes any dimensions of length \emph{one},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1))>>=
-mat_rix <- matrix(1:6, ncol=3)  # create matrix
-vec_tor1
-vec_tor2 <- 6:4  # define vector
-# multiply two vectors element-by-element
-vec_tor1 * vec_tor2
-# calculate inner product
-vec_tor1 %*% vec_tor2
-# calculate inner product and drop dimensions
-drop(vec_tor1 %*% vec_tor2)
-mat_rix
-# multiply vector by matrix
-mat_rix %*% vec_tor1  # single column matrix
-drop(mat_rix %*% vec_tor1)  # vector
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Transpose}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{t()} returns the transpose of a matrix,
-      \vskip1ex
-      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# multiplication fails because dimensions aren't conformable
-vec_tor1 %*% mat_rix
-# works after transpose
-drop(vec_tor1 %*% t(mat_rix))
-# calculate inner product
-crossprod(vec_tor1, vec_tor2)
-# create matrix and vector
-mat_rix <- matrix(1:3000, ncol=3)
-tmat_rix <- t(mat_rix)
-vec_tor <- 1:3
-# crossprod is slightly faster than "%*%" operator
-summary(microbenchmark(
-  cross_prod=crossprod(tmat_rix, vec_tor),
-  inner_prod=mat_rix %*% vec_tor,
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Outer Multiplication}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = A_{i} \cdot B_{j}
-      \end{displaymath}
-      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = f(A_{i}, B_{j})
-      \end{displaymath}
-      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments, 
-      \vskip1ex
-      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# define named vectors
-vec_tor1 <- sample(1:4)
-names(vec_tor1) <- paste0("row", 1:4, "=", vec_tor1)
-vec_tor1
-vec_tor2 <- sample(1:3)
-names(vec_tor2) <- paste0("col", 1:3, "=", vec_tor2)
-vec_tor2
-# calculate outer product of two vectors
-mat_rix <- outer(vec_tor1, vec_tor2)
-mat_rix
-# calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2, 
-                 FUN=function(x1, x2) x2*sin(x1))
-mat_rix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
+      The function \texttt{dev.off()} ends the diversion,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=(-1)>>=
-rm(list=ls())
-# get base environment
-baseenv()
-# get global environment
-globalenv()
-# get current environment
-environment()
-# get environment class
-class(environment())
-# define variable in current environment
-glob_var <- 1
-# get objects in current environment
-ls(environment())
-# create new environment
-new_env <- new.env()
-# get calling environment of new environment
-parent.env(new_env)
-# assign Value to Name
-assign("new_var1", 3, envir=new_env)
-# create object in new environment
-new_env$new_var2 <- 11
-# get objects in new environment
-ls(new_env)
-# get objects in current environment
-ls(environment())
-# environments are subset like lists
-new_env$new_var1
-# environments are subset like lists
-new_env[["new_var1"]]
+setwd("C:/Develop/data")
+{
+sink("sinkdata.txt")# redirect text output to file
+
+cat("Redirect text output from R\n")
+print(runif(10))
+cat("\nEnd data\nbye\n")
+
+sink()  # turn redirect off
+
+pdf("Rgraph.pdf", width=7, height=4)  # redirect graphics to pdf file
+
+cat("Redirect data from R into pdf file\n")
+my_var <- seq(-2*pi, 2*pi, len=100)
+plot(x=my_var, y=sin(my_var), main="Sine wave", 
+   xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn pdf output off
+
+png("Rgraph.png")  # redirect output to png file
+
+cat("Redirect graphics from R into png file\n")
+plot(x=my_var, y=sin(my_var), main="Sine wave", 
+ xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn png output off
+}
       @
   \end{columns}
 \end{block}
@@ -420,75 +722,55 @@ new_env[["new_var1"]]
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
+\section{Regression Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hypothesis Testing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
+      \emph{Hypothesis Testing} is designed to test the validity of a \emph{null hypothesis},
+      \vskip1ex
+      A \emph{Hypothesis Test} consists of:
       \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
+        \item \emph{null hypothesis},
+        \item test \emph{statistic} (from sample),
+        \item \emph{significance level} $\alpha$, determining whether to accept or reject the \emph{null hypothesis},
+        \item \emph{p}-value (probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE}),
       \end{itemize}
-      The function \texttt{search()} returns the search path for \texttt{R} objects,
+      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected,
       \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
+      The objective of \emph{Hypothesis Testing} is to invalidate the \emph{null hypothesis},
       \vskip1ex
-      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \vskip1ex
-      The function \texttt{find()} finds where objects are located on the search path,
+      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE}; we can only conclude that it's very unlikely to be \texttt{FALSE} (given the data),
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
-search()  # get search path for R objects
-my_list <- 
-  list(flowers=c("rose", "daisy", "tulip"), 
-       trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is in datasets base package
-      @
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-  \end{columns}
-\end{block}
+      <<>>=
+### Perform two-tailed test that sample is
+### from Standard Normal Distribution (mean=0, SD=1)
+# generate vector of samples and store in data frame
+test_frame <- data.frame(samples=rnorm(1000))
 
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Referencing Object Components Using \texttt{with()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{with()} evaluates an expression in an environment constructed from the data, 
-      \vskip1ex
-      \texttt{with()} allows referencing object components by their names alone,
-      \vskip1ex
-      It's often better to use \texttt{with()} instead of \texttt{attach()},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, 
-     c(mean(Girth), mean(Height), mean(Volume)))
+# significance level, two-tailed test, critical value=2*SD
+signif_level <- 2*(1-pnorm(2))
+signif_level
+# get p-values for all the samples
+test_frame$p_values <-
+  sapply(test_frame$samples, pnorm)
+test_frame$p_values <-
+  2*(0.5-abs(test_frame$p_values-0.5))
+# compare p_values to significance level
+test_frame$result <-
+  test_frame$p_values > signif_level
+# number of null rejections
+sum(!test_frame$result)
+# show null rejections
+head(test_frame[!test_frame$result, ])
       @
   \end{columns}
 \end{block}
@@ -496,35 +778,47 @@ with(trees,
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Manipulating Lists and Data Frames}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Flattening a List of Vectors to a Matrix Using \texttt{do.call()}}
+\subsection{Formula Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
       \vskip1ex
-      If the list contains vectors of different lengths, then \texttt{R} applies the recycling rule,
+      Formulas can be defined as separate objects, manipulated, and passed to functions,
       \vskip1ex
-      If the list contains a \texttt{NULL} element, that element is skipped,
+      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
+      \vskip1ex
+      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
+      \vskip1ex
+      The function \texttt{update()} modifies existing \texttt{formulas},
+      \vskip1ex
+      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<>>=
-num_list <- list(1, 2, 3, 4)  # create numeric list
-do.call(rbind, num_list)  # returns single column matrix
-do.call(cbind, num_list)  # returns single row matrix
-# recycling rule applied
-do.call(cbind, list(1:2, 3:5))
-# NULL element is skipped
-do.call(cbind, list(1, NULL, 3, 4))
-# NA element isn't skipped
-do.call(cbind, list(1, NA, 3, 4))
+      <<>>=
+# formula of linear model with zero intercept
+lin_formula <- z ~ x + y - 1
+lin_formula
+
+# collapsing a character vector into a text string
+paste0("x", 1:5)
+paste(paste0("x", 1:5), collapse="+")
+
+# creating formula from text string
+lin_formula <- as.formula(  # coerce text strings to formula
+              paste("z ~ ",
+                paste(paste0("x", 1:5), collapse="+")
+                )  # end paste
+            )  # end as.formula
+class(lin_formula)
+lin_formula
+# modify the formula using "update"
+update(lin_formula, log(.) ~ . + beta)
       @
   \end{columns}
 \end{block}
@@ -533,296 +827,415 @@ do.call(cbind, list(1, NA, 3, 4))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Efficient Binding of Lists Into Matrices}
+\subsection{Simple Linear Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+    \column{0.5\textwidth}
+      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \beta x_i + \varepsilon_i
+      \end{displaymath}
+      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
       \vskip1ex
-      But for large vectors this procedure can be very slow, and often causes an out of memory error,
+      $\alpha$ and $\beta$ are the unknown regression coefficients,
       \vskip1ex
-      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix,
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
       \vskip1ex
-      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion, 
+      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
+      \begin{align*}
+        RSS = \sum_{i=1}^{n} {\varepsilon_i^2} = \sum_{i=1}^{n} {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
+      \end{align*}
+      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^{n} {x_i}$
+    \column{0.5\textwidth}
+      The regression coefficients can be found by equating the RSS derivatives to zero:
+      \begin{align*}
+        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
+        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
+      \end{align*}
+      The solution for $\alpha$ is:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      The solution for $\beta$ is:
+      \begin{flalign*}
+        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
+        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
+        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
+        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
+      \end{flalign*}
+      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
       \vskip1ex
-      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half,
+      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression with Multiple Explanatory Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
       \vskip1ex
-      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \texttt{qmao}:\\
-\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
-    \column{0.6\textwidth}
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Regression Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
+      \vskip1ex
+      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
+      \vskip1ex
+      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
+      \vskip1ex
+      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
+      \begin{itemize}
+        \item call - the model formula,
+        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
+        \item residuals - the model residuals (response minus fitted values),
+      \end{itemize}
+      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=TRUE>>=
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+# response equals linear form plus error terms
+res_ponse <- -3 + explana_tory + noise
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Regression Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
+      \vskip1ex
+      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
+      \vskip1ex
+      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
+        <<reg_scatter_plot,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+plot(reg_formula)  # plot scatterplot using formula
+title(main="Simple Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+# plot fitted (predicted) response values
+points(x=explana_tory, y=reg_model$fitted.values,
+       pch=16, col="blue")
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Summary}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{summary.lm()} produces a list of regression model summary statistics:
+      \begin{itemize}
+        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
+        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
+        \item adj.r.squared: r.squared adjusted for higher model complexity,
+        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
+      \end{itemize}
+      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
+      \vskip1ex
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
+      \vskip1ex
+      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
-list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(list_var) {
-  while (length(list_var) > 1) {
-# index of odd list elements
-    odd_index <- seq(from=1, to=length(list_var), by=2)
-# bind neighboring elements and divide list_var by half
-    list_var <- lapply(odd_index, function(in_dex) {
-      if (in_dex==length(list_var)) {
-        return(list_var[[in_dex]])
+reg_model_sum <- summary(reg_model)  # copy regression summary
+reg_model_sum  # print the summary to console
+attributes(reg_model_sum)$names  # get summary elements
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interpreting the Regression Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The regression \texttt{summary} is a list, and its elements can be accessed individually,
+      \vskip1ex
+      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
+      \vskip1ex
+      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
+      \vskip1ex
+      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
+      \vskip1ex
+      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
+      \vskip1ex
+      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+reg_model_sum$adj.r.squared
+reg_model_sum$fstatistic
+# standard error of beta
+reg_model_sum$
+  coefficients["explana_tory", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(explana_tory)/
+  sqrt(unname(reg_model_sum$fstatistic[3]))
+anova(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Weak Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+set.seed(1121)  # initialize random number generator
+# high noise compared to coefficient
+res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
+reg_model <- lm(reg_formula)  # perform regression
+# estimate of regression coefficient is not
+# statistically significant
+summary(reg_model)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Influence of Noise on Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
+reg_stats <- function(std_dev) {  # noisy regression
+  set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+  res_ponse <- 3 + 0.2*explana_tory +
+    rnorm(30, sd=std_dev)
+# specify regression formula
+  reg_formula <- res_ponse ~ explana_tory
+# perform regression and get summary
+  reg_model_sum <- summary(lm(reg_formula))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <- t(sapply(vec_sd, reg_stats))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Influence of Noise on Regression Another Method}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      <<eval=FALSE,echo=TRUE>>=
+reg_stats <- function(da_ta) {  # get regression
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <-
+    paste(col_names[2], col_names[1], sep="~")
+  reg_model_sum <- summary(lm(reg_formula,
+                              data=da_ta))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+         adj_rsquared=adj.r.squared,
+         fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <-
+  t(sapply(vec_sd, function (std_dev) {
+    set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+    res_ponse <- 3 + 0.2*explana_tory +
+      rnorm(30, sd=std_dev)
+    reg_stats(data.frame(explana_tory, res_ponse))
+    }))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+       xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+       labels=rownames(mat_stats))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Diagnostic Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
+      \vskip1ex
+      {\scriptsize
+      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
+      \vskip1ex
+      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
+      \vskip1ex
+      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
+      \vskip1ex
+      The residuals should be randomly distributed around the horizontal line representing zero residual error,
+      \vskip1ex
+      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
+      \vskip1ex
+      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
+      \vskip1ex
+      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
+      \vskip1ex
+      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
+      \vskip1ex
+      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
+      \vskip1ex
+      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
       }
-      return(rbind(list_var[[in_dex]], 
-                   list_var[[in_dex+1]]))
-    })  # end lapply
-  }  # end while
-# list_var has only one element - return it
-  list_var[[1]]
-}  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Filtering Data Frames Using \texttt{subset()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Filtering} means extracting rows from a data frame that satisfy a logical condition,
-      \vskip1ex
-      Data frames can be filtered using boolean vectors and brackets \texttt{"[]"} operators, 
-      \vskip1ex
-      The function \texttt{subset()} filters data frames, by applying logical conditions to its columns, using the column names, 
-      \vskip1ex
-      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using boolean vectors and brackets \texttt{"[]"} operators, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)), eval=FALSE>>=
-library(microbenchmark)
-airquality[(airquality$Solar.R>320 & 
-              !is.na(airquality$Solar.R)), ]
-subset(x=airquality, subset=(Solar.R>320))
-summary(microbenchmark(
-    subset=subset(x=airquality, subset=(Solar.R>320)), 
-    brackets=airquality[(airquality$Solar.R>320 & 
-                  !is.na(airquality$Solar.R)), ], 
-times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Splitting Data Frames Using \texttt{factor} Categorical Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable),
-      \vskip1ex
-      The list's \texttt{names} attribute is equal to the \texttt{factor} levels,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-unique(iris$Species)  # Species has three distinct values
-# split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
-# split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{split-apply-combine} Procedure}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{split-apply-combine} procedure consists of:
-      \begin{itemize}
-        \item dividing an object into a list, according to a factor (attribute),
-        \item applying a function to each list element,
-        \item combining the results,
-      \end{itemize}
-      The \emph{split-apply-combine} procedure is similar to \emph{pivot tables} in Excel,
-      \vskip1ex
-      The \emph{split-apply-combine} procedure, by Hadley Wickham:\\
-      \url{http://www.jstatsoft.org/v40/i01/paper}
-      \vskip1ex
-    \column{0.6\textwidth}
-      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{image/splitapply.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{split-apply-combine} Procedure Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
-      \vskip1ex
-      The \texttt{aggregate()} functional performs the \emph{split-apply-combine} procedure, by applying a function to groups of an object,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-unique(mtcars$cyl)  # cyl has three unique values
-# split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
-names(split_cars)
-# mean mpg for each cylinder group
-unlist(lapply(split_cars, function(x) mean(x$mpg)))
-# function aggregate() performs split-apply-combine
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
-# aggregate() all columns
-aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{tapply()} Functional}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{tapply()} functional is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array},
-      \vskip1ex
-      A \emph{jagged array} is a list consisting of elements which are vectors (or matrices) of different lengths,
-      \vskip1ex
-      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}, 
-      \vskip1ex
-      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a jagged array, and then applies \texttt{"FUN"} to each element of the jagged array, 
-      \vskip1ex
-      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call, 
-      \vskip1ex
-      The \texttt{by()} function is a wrapper for \texttt{tapply()},
-      \vskip1ex
-      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
-# mean mpg for each cylinder group
-tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
-# using with() environment
-with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
-# function by() instead of tapply()
-with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
+      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+# set plot paramaters - margins and font scale
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2, 2))  # plot 2x2 panels
+plot(reg_model)  # plot diagnostic scatterplots
+plot(reg_model, which=2)  # plot just Q-Q
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{split-apply-combine} Returning Matrices Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
-      \vskip1ex
-      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
-      \vskip1ex
-     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
-      \texttt{do.call(fun, list)=
-      fun(list[[1]], list[[2]], \ldots)}
-    \column{0.6\textwidth}
       \vspace{-1em}
-        <<>>=
-# get several mpg stats for each cylinder group
-data_cars <- sapply(split_cars,
-              function(x) {
-                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-              }  # end anonymous function
-              )  # end sapply
-data_cars  # sapply produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
-              function(x) {
-                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-              }  # end anonymous function
-              )  # end sapply
-is.list(data_cars)  # lapply produces a list
-# do.call flattens list into a matrix
-do.call(cbind, data_cars)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Numerical Calculations}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Floating Point Numbers}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Real} numbers can have an infinite number of significant digits, so they can only be represented approximately inside a computer,
-      \vskip1ex
-      Floating point numbers are approximate representations of \emph{real} numbers inside a computer,
-      \vskip1ex
-      \emph{Machine precision} is a number that specifies the accuracy of floating point numbers in a computer,
-      \vskip1ex
-      The representation of floating point numbers in \texttt{R} depends on the \emph{machine precision} of the computer operating system,
-      \vskip1ex
-      \texttt{R} prints floating point numbers without showing their full internal representation, which can cause confusion about their true value,
-      \vskip1ex
-      The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
-foo <- 0.3/3
-foo  # printed as "0.1"
-foo - 0.1  # foo is not equal to "0.1"
-foo == 0.1  # foo is not equal to "0.1"
-print(foo, digits=10)
-print(foo, digits=16)
-# foo is equal to "0.1" within machine precision
-all.equal(foo, 0.1)
-foo <- (3-2.9)
-print(foo, digits=20)
-# info machine precision of computer R is running on
-# ?.Machine
-# machine precision
-.Machine$double.eps
-      @
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_reg-1}
   \end{columns}
 \end{block}
 
@@ -830,182 +1243,31 @@ print(foo, digits=20)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Floating Point Calculations}
+\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Calculations with floating point numbers are subject to \emph{numerical error} (they're not perfectly accurate),
+      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
       \vskip1ex
-      Rounding a number means replacing it with the closest number of a given precision,
+      The test statistic is:
+      \begin{displaymath}
+        DW = \frac {\sum_{i=2}^{n} (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^{n} \varepsilon_i^2}
+      \end{displaymath}
+      Where $\varepsilon_i$ are the regression residuals,
       \vskip1ex
-      The \emph{IEC 60559} convention is to round to the nearest even number (\texttt{1.5} to \texttt{2}, and also \texttt{2.5} to \texttt{2}), which preserves the mean of a sequence,
+      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
       \vskip1ex
-      The function \texttt{round()} rounds a number to the specified number of decimal places,
+      The \emph{DW} is close to two for autocorrelations close to zero,
       \vskip1ex
-      Truncating a number means replacing it with the largest integer which is less than the given number,
-      \vskip1ex
-      The function \texttt{trunc()} truncates a number,
-      \vskip1ex
-      The function \texttt{ceiling()} returns the smallest integer which is greater than the given number,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
-foo <- sqrt(2)
-foo^2  # printed as "2"
-foo^2 == 2  # foo^2 is not equal to "2"
-print(foo^2, digits=20)
-# foo^2 is equal to "2" within machine precision
-all.equal(foo^2, 2)
-# numbers with precision 0.1
-0.1*(1:10)
-# round to precision 0.1
-round(3.675, 1)
-# round to precision 1.0
-round(3.675)
-# round to nearest even number
-c(round(2.5), round(3.5), round(4.5))
-round(4:20/2)  # round to nearest even number
-trunc(3.675)  # truncate
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Arithmetic Operators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Arithmetic \emph{operators} perform arithmetic operations on \texttt{numeric} or \texttt{complex} vectors,
-      \begin{itemize}
-        \item "\texttt{\%/\%}" performs \emph{modulo} division,
-        \item "\texttt{\%\%}" calculates remainder of \emph{modulo} division,
-        \item "\texttt{\textasciicircum{}}" performs exponentiation,
-        \item "\texttt{\%*\%}" performs \emph{inner} (\emph{scalar}) matrix multiplication,
-      \end{itemize}
-      \emph{Modulo} division of floating point (non-integer) numbers sometimes produces incorrect results because of limited \emph{machine precision} of floating point numbers,
-      \vskip1ex
-      For example, the number \texttt{0.2} is stored as a binary number slightly larger than \texttt{0.2}, so the result of calculating \texttt{0.6 \%/\% 0.2} is \texttt{2} instead of \texttt{3},
-      \vskip1ex
-      See discussion in:
-      \url{http://stackoverflow.com/questions/13614749/modulus-bug-in-r}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
-4.7 %/% 0.5  # modulo division
-4.7 %% 0.5  # remainder of modulo division
-# reversing modulo division usually
-# returns the original number
-(4.7 %% 0.5) + 0.5 * (4.7 %/% 0.5)
-# modulo division of non-integer numbers can
-# produce incorrect results
-0.6 %/% 0.2  # produces 2 instead of 3
-6 %/% 2  # use integers to get correct result
-# 0.2 stored as binary number
-# slightly larger than 0.2
-print(0.2, digits=22)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Determining the Memory Usage of \texttt{R} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{object.size()} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects, 
-      \vskip1ex
-      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
-      \vskip1ex
-      The method \texttt{format.object\_size()} defines a \emph{megabyte} as \texttt{1,048,576} \emph{bytes} ($2^{20}$), not \texttt{1,000,000} \emph{bytes}, 
-      \vskip1ex
-      The function \texttt{get()} accepts a character string and returns the value of the corresponding object in a specified \emph{environment},
-      \vskip1ex
-      \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
-      \vskip1ex
-      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
-      \vskip1ex
-      The function \texttt{ll()} from package \texttt{gdata} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-# get size of an object
-object.size(runif(1e6))
-format(object.size(runif(1e6)), units="MB")
-load(file="C:/Develop/data/etf_data.RData")
-# get sizes of objects in workspace
-sort(sapply(ls(), 
-  function(ob_ject) {
-    format(object.size(get(ob_ject)), units="KB")}))
-# get sizes of objects in workspace
-sort(sapply(mget(ls()), object.size))
-sort(sapply(mget(ls()),
-      function(ob_ject) {
-        format(object.size(ob_ject), units="KB")}
-))
-# get sizes of objects in env_data environment
-sort(sapply(ls(env_data), 
-  function(ob_ject) {
-    object.size(get(ob_ject, env_data))}))
-# get sizes of objects in env_data environment
-sort(sapply(mget(ls(env_data), env_data), 
-            object.size))
-# get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
-library(gdata)  # load package gdata
-# get names, class, and size of objects in workspace
-ob_jects <- ll(unit="bytes")
-# sort by memory size (descending)
-ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
-ll()[order(ll()$KB, decreasing=TRUE), ]
-# get sizes of objects in env_data environment
-ll(unit="bytes", env_data)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Benchmarking the Speed of \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
-      \vskip1ex
-      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting),
-      \vskip1ex
-      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()},
-      \vskip1ex
-      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times,
+      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
+library(lmtest)  # load lmtest
+# perform Durbin-Watson test
+dwtest(reg_model)
       @
   \end{columns}
 \end{block}
@@ -1014,42 +1276,47 @@ microbenchmark(sqrt(foo), foo^0.5, times=10)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\subsection{Omitted Variable Bias}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}, 
+      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors,
       \vskip1ex
-      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
+      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
       \vskip1ex
-      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
-      \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
-      \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+      But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=FALSE>>=
+library(lmtest)  # load lmtest
+design_matrix <- data.frame(  # design matrix
+  explana_tory=1:30, omit_var=sin(0.2*1:30))
+# response depends on both explanatory variables
+res_ponse <- with(design_matrix,
+          0.2*explana_tory + omit_var + 0.2*rnorm(30))
+# mis-specified regression only one explanatory
+reg_model <- lm(res_ponse ~ explana_tory,
+                data=design_matrix)
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dwtest(reg_model)$p.value
+      @
+      \vspace{-2em}
+        <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, data=design_matrix)
+abline(reg_model, lwd=2, col="red")
+title(main="OVB Regression", line=-1)
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-foo <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(foo), mean(foo), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
-  )[, c(1, 4, 5)]
-      @
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ovb_reg-1}
   \end{columns}
 \end{block}
 
@@ -1057,48 +1324,50 @@ summary(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
+\subsection{Spurious Time Series Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
+      Regression of non-stationary time series creates \emph{spurious} regressions,
       \vskip1ex
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
+      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
       \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
+      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
       \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
-      \vskip1ex
-      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data,
-      \vskip1ex
-      Such specialized functions are faster but less flexible, so they may fail with different types of data,
+      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+set.seed(1121)
+library(lmtest)
+# spurious regression in unit root time series
+explana_tory <- cumsum(rnorm(100))  # unit root time series
+res_ponse <- cumsum(rnorm(100))
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+# summary indicates statistically significant regression
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(reg_model)
+c(dw_test$statistic[[1]], dw_test$p.value)
+      @
+      \vspace{-2em}
+        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-mat_rix <- matrix(1:9, ncol=3, # create matrix
-  dimnames=list(paste0("row", 1:3), 
-                paste0("col", 1:3)))
-# create specialized function
-matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for(in_dex in 1:n_col)  # populate vector
-    dframe <- mat_rix[, in_dex]
-  attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(nrow(mat_rix))
-  attr(dframe, "class") <- "data.frame"
-  dframe  # return data frame
-}  # end matrix_to_dframe
-# compare speed of three methods
-summary(microbenchmark(
-  matrix_to_dframe(mat_rix),
-  as.data.frame.matrix(mat_rix),
-  as.data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]
-      @
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/spur_reg-1}
   \end{columns}
 \end{block}
 
@@ -1106,126 +1375,39 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest, 
-      \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
-      \vskip1ex
-      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and are therefore faster than other \texttt{apply()} functions, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-# matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
-# allocate memory for row sums
-row_sums <- numeric(nrow(big_matrix))
-summary(microbenchmark(
-  ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
-    FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:nrow(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:nrow(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
-  },  # end for
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Increasing Speed of Loops by Pre-allocating Memory}
+\subsection{Predictions Using Regression Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
+      The function \texttt{predict()} is a generic function for forecasting based on a given model,
       \vskip1ex
-      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
-      \vskip1ex
-      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow, 
-      \vskip1ex
-      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment, 
-      \vskip1ex
-      Adding elements to a vector in a loop is very slow, and therefore not recommended,
-      \vskip1ex
-      Pre-allocating memory for large vectors before performing loops increases their speed, 
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
-      \vskip1ex
-      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
-    \column{0.5\textwidth}
+      \texttt{predict.lm()} is the predict method for linear models (regressions),
       \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
-summary(microbenchmark(
-# allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(length(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  grow_vec={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  com_bine={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
-    }},  # end for
-  times=10))[, c(1, 4, 5)]
+        <<predict_lm,echo=TRUE,fig.show='hide'>>=
+explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*explana_tory + rnorm(30)
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+new_data <- data.frame(explana_tory=0.1*31:40)
+predict_lm <- predict(object=reg_model,
+                      newdata=new_data, level=0.95,
+                      interval="confidence")
+predict_lm <- as.data.frame(predict_lm)
+head(predict_lm, 2)
+plot(reg_formula, xlim=c(1.0, 4.0),
+     ylim=range(res_ponse, predict_lm),
+     main="Regression predictions")
+abline(reg_model, col="red")
+with(predict_lm, {
+  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
+  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
+  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+})  # end with
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{How to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
-      \begin{itemize}
-        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task, 
-        \item call function methods directly instead of calling generic functions, 
-        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
-        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
-        \item pre-allocate memory for new vectors,
-        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops, 
-        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function), 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/predict_lm-1}
   \end{columns}
 \end{block}
 
@@ -1242,9 +1424,8 @@ summary(
 \begin{frame}[t]{\subsecname}
 \vspace{-1em}
 \begin{block}{Required}
-  A file with the homework will be uploaded to NYU Classes,
+  Read all the lecture slides in \texttt{FRE6871\_Lecture\_4.pdf}, and run all the code in \texttt{FRE6871\_Lecture\_4.R}
 \end{block}
-
 \begin{block}{Recommended}
   \begin{itemize}[]
     \item Read chapters 7: \fullcite{website:rintro}

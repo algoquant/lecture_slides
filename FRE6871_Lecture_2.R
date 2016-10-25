@@ -31,11 +31,17 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
+load(file="C:/Develop/data/etf_data.RData")
+4.7 * 0.5  # multiplication
+4.7 / 0.5  # division
+# exponentiation
+2**3
+2^3
 num_var <- 2
 num_var==2
 identical(num_var, 2)
 
-identical(num_var, NULL) 
+identical(num_var, NULL)
 num_var==NULL
 is.null(num_var)
 
@@ -52,7 +58,7 @@ which(vec_tor > 5)
 # find indices of TRUE elements of boolean matrix
 which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
 # equivalent but less efficient than above
-arrayInd(which((mat_rix == 5)|(mat_rix == 6)), 
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
  dim(mat_rix), dimnames(mat_rix))
 which.max(vec_tor)
 # equivalent but less efficient than above
@@ -71,7 +77,7 @@ c(5, -5) %in% vec_tor
 any(vec_tor == 5)
 # equivalent to "-5 %in% vec_tor"
 any(vec_tor == (-5))
-if(any(vec_tor < 0))
+if (any(vec_tor < 0))
   cat("vector contains negative values\n")
 num_var1 <- 3  # "<-" and "=" are valid assignment operators
 num_var1
@@ -100,7 +106,7 @@ switch("c", a="aaahh", b="bee", c="see", d=2, "else this")
 switch(3, a="aaahh", b="bee", c="see", d=2, "else this")
 switch("cc", a="aaahh", b="bee", c="see", d=2, "else this")
 # measure of central tendency
-centra_lity <- function(in_put, 
+centra_lity <- function(in_put,
     meth_od=c("mean", "mean_narm", "median")) {
 # validate "meth_od" argument
   meth_od <- match.arg(meth_od)
@@ -109,10 +115,10 @@ centra_lity <- function(in_put,
  mean_narm=mean(in_put, na.rm=TRUE),
  median=median(in_put))
 }  # end centra_lity
-foo <- rnorm(100, mean=2)
-centra_lity(foo, "mean")
-centra_lity(foo, "mean_narm")
-centra_lity(foo, "median")
+my_var <- rnorm(100, mean=2)
+centra_lity(my_var, "mean")
+centra_lity(my_var, "mean_narm")
+centra_lity(my_var, "median")
 rm(list=ls())
 color_list <- list("red", "white", "blue")
 for (some_color in color_list) {  # loop over list
@@ -163,17 +169,6 @@ list_var
 names(list_var)
 as.list(c(1,2,3))
 list(c(1,2,3))
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
 data_frame <- data.frame(  # create a data frame
                 type=c('rose', 'daisy', 'tulip'),
                 color=c('red', 'white', 'yellow'),
@@ -189,12 +184,13 @@ is.data.frame(data_frame)
 
 class(data_frame$type)  # get column class
 class(data_frame$price)  # get column class
-data_frame[, 3]  # extract third column
-data_frame[[3]]  # extract third column
+data_frame[, 3]  # extract third column as vector
+data_frame[[3]]  # extract third column as vector
+data_frame[3]  # extract third column as data frame
+data_frame[, 3, drop=FALSE]  # extract third column as data frame
 data_frame[[3]][2]  # second element from third column
 data_frame$price[2]  # second element from 'price' column
 is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[, 3, drop=FALSE]  # extract third column
 data_frame[2, ]  # extract second row
 data_frame[2, ][3]  # third element from second column
 data_frame[2, 3]  # third element from second column
@@ -240,6 +236,9 @@ as.matrix(data_frame)
 vec_tor <- sample(9)
 matrix(vec_tor, ncol=3)
 as.matrix(vec_tor, ncol=3)
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
+rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
 library(microbenchmark)
 # call method instead of generic function
 as.data.frame.matrix(mat_rix)
@@ -258,7 +257,7 @@ summary(microbenchmark(
   as_list=
     as.list(as.data.frame.matrix(mat_rix)),
   l_apply=
-    lapply(seq_along(mat_rix[1, ]), 
+    lapply(seq_along(mat_rix[1, ]),
      function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # ?iris  # get information on iris
@@ -353,7 +352,7 @@ lazy_func(3, 2)  # bind arguments by position
 lazy_func(3)  # first argument written to output
 str(plot)  # dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
@@ -368,7 +367,7 @@ str(sum)  # dots before other arguments
 sum(1, 2, 3)  # dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
 bind_dots <- function(..., in_put) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 # arguments after dots must be bound by full name
@@ -376,7 +375,7 @@ bind_dots(1, 2, 3, in_put=10)
 bind_dots(1, 2, 3, in_put=10, foo=4)  # dots bound
 bind_dots(1, 2, 3)  # "in_put" not bound
 bind_dots <- function(..., in_put=10) {
-  paste0("in_put=", in_put, 
+  paste0("in_put=", in_put,
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
@@ -422,7 +421,7 @@ func_tional(sum, 1, 2, NA, 4, 5)
 func_tional(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
 # function with three arguments and dots '...' arguments
 my_func <- function(in_put, param1, param2, ...) {
-  c(input=in_put, param1=param1, param2=param2, 
+  c(input=in_put, param1=param1, param2=param2,
 dots=c(...))
 }  # end my_func
 my_func(1, 2, 3, param2=4, param1=5)
@@ -433,7 +432,7 @@ func_tional(my_func, 1, 2, 3, 4, 5)
 # anonymous function passed to func_tional
 func_tional(func_name=(function(x) (x + 3)), 5)
 # anonymous function is default value
-func_tional <- 
+func_tional <-
   function(..., func_name=function(x, y, z) {x+y+z}) {
     func_name <- match.fun(func_name)
     func_name(...)  # execute function call
@@ -443,7 +442,7 @@ func_tional(2, 3, 4, 5)
 # func_name bound by name
 func_tional(func_name=sum, 2, 3, 4, 5)
 # pass anonymous function to func_name
-func_tional(func_name=function(x, y, z) {x*y*z}, 
+func_tional(func_name=function(x, y, z) {x*y*z},
     2, 3, 4)
 str(sum)  # sum() accepts multiple arguments
 # sum() can't accept list of arguments
@@ -470,9 +469,9 @@ mat_rix
 # sum the rows and columns
 row_sums <- apply(mat_rix, 1, sum)
 col_sums <- apply(mat_rix, 2, sum)
-mat_rix <- cbind(c(sum(row_sums), row_sums), 
+mat_rix <- cbind(c(sum(row_sums), row_sums),
           rbind(col_sums, mat_rix))
-dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"), 
+dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"),
                  c("row_sums", "col1", "col2", "col3"))
 mat_rix
 str(apply)  # get list of arguments
@@ -496,14 +495,14 @@ moment(x=dax_rets, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
-apply(X=moment_orders, MARGIN=1, 
+apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
   moment(x=dax_rets, order=moment_order)
 }  # end anonymous function
       )  # end apply
 
 # another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment, 
+apply(X=moment_orders, MARGIN=1, FUN=moment,
       x=dax_rets)
 # function with three arguments
 my_func <- function(arg1, arg2, arg3) {
@@ -539,7 +538,7 @@ mat_rix <- matrix(sample(100), ncol=4)
 apply(mat_rix, 2, mean)
 
 # calculate column means using sapply, with anonymous function
-sapply(1:ncol(mat_rix), 
+sapply(1:NCOL(mat_rix),
        function(col_index) {  # anonymous function
  mean(mat_rix[, col_index])
   }  # end anonymous function
@@ -549,8 +548,8 @@ sapply(2:4, function(num) c(el1=num, el2=2*num))
 # vectors of different lengths returned as list
 sapply(2:4, function(num) 1:num)
 # vapply is similar to sapply
-vapply(2:4, function(num) c(el1=num, el2=2*num), 
+vapply(2:4, function(num) c(el1=num, el2=2*num),
        FUN.VALUE=c(row1=0, row2=0))
 # vapply produces an error if it can't simplify
-vapply(2:4, function(num) 1:num, 
+vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))

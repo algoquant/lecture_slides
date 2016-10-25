@@ -76,6 +76,55 @@ library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.RData")
 ts_rets <- env_etf$re_turns[, "VTI"]
 KellyRatio(R=ts_rets, method="full")
+library(HighFreq)  # load package HighFreq
+# calculate open, close, and lagged prices
+open_prices <- Op(env_etf$VTI)
+price_s <- Cl(env_etf$VTI)
+prices_lag <- rutils::lag_xts(price_s)
+# define lookback window and calculate VWAP
+win_dow <- 150
+VTI_vwap <- HighFreq::roll_vwap(env_etf$VTI,
+      win_dow=win_dow)
+# calculate VWAP indicator
+vwap_indic <- sign(price_s - VTI_vwap)
+# determine dates right after VWAP has crossed prices
+vwap_crosses <-
+  (rutils::diff_xts(vwap_indic) != 0)
+trade_dates <- which(vwap_crosses) + 1
+# plot prices and VWAP
+chart_Series(x=price_s,
+  name="VTI prices", col='orange')
+add_TA(VTI_vwap, on=1, lwd=2, col='blue')
+legend("top", legend=c("VTI", "VWAP"),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=c('orange', 'blue'), bty="n")
+library(HighFreq)  # load package HighFreq
+# calculate positions, either: -1, 0, or 1
+pos_ition <- NA*numeric(NROW(env_etf$VTI))
+pos_ition[1] <- 0
+pos_ition[trade_dates] <- vwap_indic[trade_dates]
+pos_ition <- na.locf(pos_ition)
+pos_ition <- xts(pos_ition, order.by=index((env_etf$VTI)))
+position_lagged <- rutils::lag_xts(pos_ition)
+# calculate periodic profits and losses
+pn_l <- position_lagged*(price_s - prices_lag)
+pn_l[trade_dates] <- position_lagged[trade_dates] *
+  (open_prices[trade_dates] - prices_lag[trade_dates]) +
+  pos_ition[trade_dates] *
+  (price_s[trade_dates] - open_prices[trade_dates])
+# calculate annualized Sharpe ratio of strategy returns
+sqrt(260)*sum(pn_l)/sd(pn_l)/NROW(pn_l)
+# plot prices and VWAP
+pn_l <- xts(cumsum(pn_l), order.by=index((env_etf$VTI)))
+chart_Series(x=(price_s-as.numeric(price_s[1, ])), name="VTI prices", col='orange')
+add_TA(pn_l, on=1, lwd=2, col='blue')
+add_TA(pos_ition > 0, on=-1,
+ col="lightgreen", border="lightgreen")
+add_TA(pos_ition < 0, on=-1,
+ col="lightgrey", border="lightgrey")
+legend("top", legend=c("VTI", "VWAP strategy"),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=c('orange', 'blue'), bty="n")
 library(PerformanceAnalytics)
 load(file="C:/Develop/data/etf_data.RData")
 # rebalancing period

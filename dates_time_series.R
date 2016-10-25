@@ -99,7 +99,7 @@ trunc(date_time, units="days")  # truncate to closest day
 methods(trunc)  # trunc methods
 trunc.POSIXt
 Sys.timezone()  # get time-zone
-Sys.setenv(tz="UTC")  # set time-zone to UTC
+Sys.setenv(TZ="UTC")  # set time-zone to UTC
 Sys.timezone()  # get time-zone
 # Standard Time in effect
 as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
@@ -111,11 +111,11 @@ format(date_time, tz="America/New_York")
 format(date_time, tz="UTC")
 # parse back to POSIXct
 as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between local time and UTC
+# difference between New_York time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
 # set time-zone to New York
-Sys.setenv(tz="America/New_York")
+Sys.setenv(TZ="America/New_York")
 library(lubridate)  # load lubridate
 # parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
@@ -195,7 +195,7 @@ library(RQuantLib)  # load RQuantLib
 in_dex <- Sys.Date() + -5:2
 in_dex
 
-# create boolean vector of business days
+# create Boolean vector of business days
 is_busday <- isBusinessDay(  # RQuantLib calendar
   calendar="UnitedStates/GovernmentBond", in_dex)
 
@@ -218,7 +218,7 @@ head(monthly_index, 4)  # print first few dates
 qrtly_index <- yearqtr(2010+0:16/4)
 head(qrtly_index, 4)  # print first few dates
 # parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(tz="UTC")
+Sys.setenv(TZ="UTC")
 as.POSIXct(head(qrtly_index, 4))
 library(lubridate)  # load lubridate
 set.seed(1121)  # reset random number generator
@@ -279,7 +279,7 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 # plot histogram
 hist(dax_rets, breaks=30, main="",
      xlim=c(-0.04, 0.04), ylim=c(0, 60),
-     xlab="", ylab="", freq = FALSE)
+     xlab="", ylab="", freq=FALSE)
 # draw kernel density of histogram
 lines(density(dax_rets), col='red', lwd=2)
 # add density of normal distribution
@@ -459,7 +459,7 @@ head(time(ts_series))  # display index dates
 head(as.Date(date_decimal(coredata(time(ts_series)))))
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
-# create weekday boolean vector
+# create weekday Boolean vector
 week_days <- weekdays(index(zoo_series))
 is_weekday <- !((week_days == "Saturday") |
   (week_days == "Sunday"))
@@ -631,7 +631,7 @@ x_ts <- x_ts["T09:30:00/T16:00:00"]
 first(x_ts["2015-04-15"])  # first element of day
 last(x_ts["2015-04-15"])  # last element of day
 # suppress timezone warning messages
-options(xts_check_TZ=FALSE)
+options(xts_check_tz=FALSE)
 library(xts)  # load package xts
 str(st_ox)  # display structure of xts
 # subsetting zoo to single column drops dim attribute

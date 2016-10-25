@@ -4,260 +4,6 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-### Perform two-tailed test that sample is
-### from Standard Normal Distribution (mean=0, SD=1)
-# generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1000))
-
-# significance level, two-tailed test, critical value=2*SD
-signif_level <- 2*(1-pnorm(2))
-signif_level
-# get p-values for all the samples
-test_frame$p_values <- sapply(test_frame$samples, pnorm)
-test_frame$p_values <- 2*(0.5-abs(test_frame$p_values-0.5))
-# compare p_values to significance level
-test_frame$result <- test_frame$p_values > signif_level
-sum(!test_frame$result)  # number of null rejections
-# show null rejections
-head(test_frame[!test_frame$result, ])
-## rm(list=ls())
-## par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-## library(ggplot2)  # load ggplot2
-## 
-## qplot(  # simple ggplot2
-##     main="Standard Normal Distribution",
-##     c(-4, 4),
-##     stat="function",
-##     fun=dnorm,
-##     geom="line",
-##     xlab=NULL, ylab=NULL
-##     ) +  # end qplot
-## 
-## theme(  # modify plot theme
-##     plot.title=element_text(vjust=-1.0),
-##     plot.background=element_blank()
-##     ) +  # end theme
-## 
-## geom_vline(  # add vertical line
-##   aes(xintercept=c(-2.0, 2.0)),
-##   colour="red",
-##   linetype="dashed"
-##   )  # end geom_vline
-## rm(list=ls())
-## par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-## ### create ggplot2 with shaded area
-## x_var <- -400:400/100
-## norm_frame <- data.frame(x_var=x_var,
-##                  d.norm=dnorm(x_var))
-## norm_frame$shade <- ifelse(
-##             abs(norm_frame$x_var) >= 2,
-##             norm_frame$d.norm, NA)
-## ggplot(  # main function
-##   data=norm_frame,
-##   mapping=aes(x=x_var, y=d.norm)
-##   ) +  # end ggplot
-## # plot line
-##   geom_line() +
-## # plot shaded area
-##   geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
-## # no axis labels
-##   xlab("") + ylab("") +
-## # add title
-##   ggtitle("Standard Normal Distribution") +
-## # modify plot theme
-##   theme(
-##   plot.title=element_text(vjust=-1.0),
-##   plot.background=element_blank()
-##   )  # end theme
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapsing a character vector into a text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-        paste("z ~ ",
-          paste(paste0("x", 1:5), collapse="+")
-          )  # end paste
-      )  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-# response equals linear form plus error terms
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-## par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-## plot(reg_formula)  # plot scatterplot using formula
-## title(main="Simple Regression", line=-1)
-## # add regression line
-## abline(reg_model, lwd=2, col="red")
-## # plot fitted (predicted) response values
-## points(x=explana_tory, y=reg_model$fitted.values,
-##        pch=16, col="blue")
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-## par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-## reg_stats <- function(std_dev) {  # noisy regression
-##   set.seed(1121)  # initialize number generator
-## # create explanatory and response variables
-##   explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-##   res_ponse <- 3 + 0.2*explana_tory +
-##     rnorm(30, sd=std_dev)
-## # specify regression formula
-##   reg_formula <- res_ponse ~ explana_tory
-## # perform regression and get summary
-##   reg_model_sum <- summary(lm(reg_formula))
-## # extract regression statistics
-##   with(reg_model_sum, c(pval=coefficients[2, 4],
-##    adj_rsquared=adj.r.squared,
-##    fstat=fstatistic[1]))
-## }  # end reg_stats
-## # apply reg_stats() to vector of std dev values
-## vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-## names(vec_sd) <- paste0("sd=", vec_sd)
-## mat_stats <- t(sapply(vec_sd, reg_stats))
-## # plot in loop
-## par(mfrow=c(ncol(mat_stats), 1))
-## for (in_dex in 1:ncol(mat_stats)) {
-##   plot(mat_stats[, in_dex], type="l",
-##  xaxt="n", xlab="", ylab="", main="")
-##   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-##   axis(1, at=1:(nrow(mat_stats)),
-##  labels=rownames(mat_stats))
-## }  # end for
-## reg_stats <- function(da_ta) {  # get regression
-## # perform regression and get summary
-##   col_names <- colnames(da_ta)
-##   reg_formula <-
-##     paste(col_names[2], col_names[1], sep="~")
-##   reg_model_sum <- summary(lm(reg_formula,
-##                         data=da_ta))
-## # extract regression statistics
-##   with(reg_model_sum, c(pval=coefficients[2, 4],
-##    adj_rsquared=adj.r.squared,
-##    fstat=fstatistic[1]))
-## }  # end reg_stats
-## # apply reg_stats() to vector of std dev values
-## vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-## names(vec_sd) <- paste0("sd=", vec_sd)
-## mat_stats <-
-##   t(sapply(vec_sd, function (std_dev) {
-##     set.seed(1121)  # initialize number generator
-## # create explanatory and response variables
-##     explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-##     res_ponse <- 3 + 0.2*explana_tory +
-## rnorm(30, sd=std_dev)
-##     reg_stats(data.frame(explana_tory, res_ponse))
-##     }))
-## # plot in loop
-## par(mfrow=c(ncol(mat_stats), 1))
-## for (in_dex in 1:ncol(mat_stats)) {
-##   plot(mat_stats[, in_dex], type="l",
-##  xaxt="n", xlab="", ylab="", main="")
-##   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-##   axis(1, at=1:(nrow(mat_stats)),
-##  labels=rownames(mat_stats))
-## }  # end for
-## # set plot paramaters - margins and font scale
-## par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-## par(mfrow=c(2, 2))  # plot 2x2 panels
-## plot(reg_model)  # plot diagnostic scatterplots
-## plot(reg_model, which=2)  # plot just Q-Q
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
-library(lmtest)  # load lmtest
-design_matrix <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
-# response depends on both explanatory variables
-res_ponse <- with(design_matrix,
-  0.2*explana_tory + omit_var + 0.2*rnorm(30))
-# mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
-        data=design_matrix)
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dwtest(reg_model)$p.value
-## par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-## par(mfrow=c(2,1))  # set plot panels
-## plot(reg_formula, data=design_matrix)
-## abline(reg_model, lwd=2, col="red")
-## title(main="OVB Regression", line=-1)
-## plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-set.seed(1121)
-library(lmtest)
-# spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-# summary indicates statistically significant regression
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(reg_model)
-c(dw_test$statistic[[1]], dw_test$p.value)
-## par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-## par(mfrow=c(2,1))  # set plot panels
-## plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
-## title(main="Spurious Regression", line=-1)
-## # add regression line
-## abline(reg_model, lwd=2, col="red")
-## plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model,
-              newdata=new_data, level=0.95,
-              interval="confidence")
-predict_lm <- as.data.frame(predict_lm)
-head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0),
-     ylim=range(res_ponse, predict_lm),
-     main="Regression predictions")
-abline(reg_model, col="red")
-with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
-})  # end with
 # ?options  # get info on global options
 getOption("warn")  # global option for "warn"
 options("warn")  # global option for "warn"
@@ -318,8 +64,8 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
-## # print the call stack
-## traceback()
+# print the call stack
+traceback()
 vali_date <- function(in_put) {
 # check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
@@ -360,12 +106,12 @@ sum_two(5, 'a')
 sum_two('a', 5)
 sum_two('a', 'b')
 sum_two()
-## # flag "vali_date" for debugging
-## debug(vali_date)
-## # calling "vali_date" starts debugger
-## vali_date(3)
-## # unflag "vali_date" for debugging
-## undebug(vali_date)
+# flag "vali_date" for debugging
+debug(vali_date)
+# calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
 vali_date <- function(in_put) {
   browser()  # pause and invoke browser
 # check argument using long form '&&' operator
@@ -417,3 +163,164 @@ finally=print(paste("(finally) num_var =", num_var))
     )  # end tryCatch
   }  # end anonymous function
 )  # end apply
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# perform parallel loop under Mac-OSX or Linux
+foo <- mclapply(1:10, paws, mc.cores=num_cores,
+          sleep_time=0.01)
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+foo <- parLapply(clus_ter, 1:10, paws,
+           sleep_time=0.01)
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+lapply=lapply(1:max_iterations, paws,
+              sleep_time=sleep_time),
+parallel=parLapply(clus_ter, 1:max_iterations,
+        paws, sleep_time=sleep_time),
+times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+        names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+ inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster
+clus_ter <- makeCluster(num_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:length(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ter, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ter, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster
+stopCluster(clus_ter)
+set.seed(1121)  # initialize random number generator
+# define explanatory and response variables
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+res_ponse <- -3 + explana_tory + noise
+# define design matrix and regression formula
+design_matrix <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(design_matrix)[1],
+  paste(colnames(design_matrix)[-1], collapse="+"),
+  sep=" ~ ")
+# bootstrap the regression
+boot_strap <- sapply(1:100, function(x) {
+  boot_sample <-
+    sample.int(dim(design_matrix)[1], replace=TRUE)
+  reg_model <- lm(reg_formula,
+          data=design_matrix[boot_sample, ])
+  reg_model$coefficients
+})  # end sapply
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=1,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# means and standard errors from regression summary
+reg_model <- lm(reg_formula, data=design_matrix)
+reg_model$coefficients
+summary(reg_model)$coefficients[, "Std. Error"]
+plot(density(boot_strap["explana_tory", ]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap["explana_tory", ]),
+       lwd=2, col="red")
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# bootstrap the regression under Windows
+boot_strap <- parLapply(clus_ter, 1:1000,
+  function(x, reg_formula, design_matrix) {
+    boot_sample <-
+sample.int(dim(design_matrix)[1], replace=TRUE)
+    reg_model <- lm(reg_formula,
+data=design_matrix[boot_sample, ])
+    reg_model$coefficients
+  },
+  reg_formula=reg_formula,
+  design_matrix=design_matrix)  # end parLapply
+# bootstrap the regression under Mac-OSX or Linux
+boot_strap <- mclapply(1:1000,
+  function(x) {
+    boot_sample <-
+sample.int(dim(design_matrix)[1], replace=TRUE)
+    lm(reg_formula,
+data=design_matrix[boot_sample, ])$coefficients
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+x11(width=6, height=6)
+plot(density(boot_strap[, "explana_tory"]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap[, "explana_tory"]),
+ lwd=2, col="red")

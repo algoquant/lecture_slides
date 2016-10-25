@@ -58,7 +58,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{May 16, 2016}
+\date{October 24, 2016}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -73,584 +73,102 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Object-Oriented Programming in \texttt{R}}
+\section{Optimization}
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{S3} Object-Oriented Programming System in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{S3} is the standard object oriented (OO) programming system in \texttt{R},
-      \vskip1ex
-      The \texttt{S3} system is based on \emph{generic} functions and the \texttt{R} \emph{class} system,
-      \vskip1ex
-      \emph{Generic} functions are functions that execute different \emph{methods} depending on the class of the object on which the \emph{generic} function is called,
-      \vskip1ex
-      \emph{Methods} are functions that are specific to a \emph{generic} function and a class of objects,
-      \vskip1ex
-      \emph{Methods} follow the naming convention \texttt{generic\_function.classname()},
-      \vskip1ex
-      The actual function that is executed (called a \emph{method}) is determined by the class of the object on which the \emph{generic} function is called,
-      \vskip1ex
-      For example, when the function \texttt{merge()} is called on a \texttt{zoo} object, then \texttt{R} executes the \emph{method} \texttt{merge.zoo()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-library(zoo)  # load package zoo
-# show the generic function "merge"
-merge
-# show the "merge" method dispatched to "zoo" objects
-merge.zoo
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generic Functions and Their Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{generic} function \texttt{merge()} has many \emph{methods} with names \texttt{merge.*()},
-      \vskip1ex
-      The function \texttt{methods()} lists all the \emph{methods} of a generic function, or all the \emph{methods} for a \emph{class} of objects,
-      \vskip1ex
-      The \texttt{merge()} method dispatched to \texttt{zoo} objects is called \texttt{merge.zoo()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(zoo)  # load package zoo
-# get all methods for generic function merge()
-methods(generic.function="merge")
-# get generic function methods applied to "zoo" objects
-methods(class="zoo")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Method Dispatch Using \texttt{UseMethod()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{UseMethod()} can be used to implement \emph{generic} functions,
-      \vskip1ex
-      \texttt{UseMethod()} accepts at least two arguments: the name of a \emph{generic} function, and the arguments passed to the \emph{generic} function,
-      \vskip1ex
-      \texttt{UseMethod()} calls (\emph{dispatches}) a particular \emph{method} associated with the \emph{generic} function, depending on the \emph{class} of the arguments passed to the \emph{generic} function,
-      \vskip1ex
-      The arguments passed to the \emph{generic} function are by default passed to \texttt{UseMethod()}, and then along to the \emph{method} itself,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# define a generic function
-gen_sum <- function (a, b, ...) {
-  UseMethod("gen_sum")
-}  # end gen_sum
-
-# define method for "numeric" class
-gen_sum.numeric <- function (a, b, ...) {
-  sum(a, b)
-}  # end gen_sum.character
-
-# define method for "character" class
-gen_sum.character <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end gen_sum.character
-
-# apply gen_sum to "numeric" objects
-gen_sum(1, 2)
-# apply gen_sum to "character" objects
-gen_sum("a", "b")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Method Dispatch by Internal Generic Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Method} dispatch by \emph{internal generic} functions is performed inside compiled \texttt{C} code, instead of \texttt{R} code using the function \texttt{UseMethod()},
-      \vskip1ex
-      \emph{Internal} functions are implemented using the function \texttt{.Internal()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# 'cbind' is an internal generic function
-cbind
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Operator Overloading}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Operator \emph{overloading} refers to defining new \emph{methods} for an existing \emph{generic} function,
-      \vskip1ex
-      The \texttt{"+"} operator may be overloaded by defining a new \emph{method} for \texttt{"character"} objects,
-      \vskip1ex
-      But for the \emph{overloading} of the \texttt{"+"} operator to work, the objects must have an explicit \texttt{"character"} class \emph{attribute} assigned to them,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# define "+" method for "character" class
-"+.character" <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end +.character
-methods("+")  # view methods for "+" operator
-# define variables with "character" class
-char1 <- "a"
-char2 <- "b"
-class(char1)
-char1 + char2  # add two "character" objects - doesn't work
-attributes(char1)  # doesn't have explicit "character" class - only implicit
-char1 <- structure("a", class="character")
-char2 <- structure("b", class="character")
-attributes(char1)  # now has explicit "character" class
-# add two "character" objects
-char1 + char2
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Overloading the \texttt{print()} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{generic} functions \texttt{print()}, \texttt{plot()} and \texttt{summary()} are very often \emph{overloaded} for newly defined classes,
-      \vskip1ex
-      Since \texttt{print()} is a \emph{generic} function, \texttt{R} \emph{dispatches} the \emph{method} associated with the \emph{class} of that variable,
-      \vskip1ex
-      When a variable is called by its name, then \texttt{R} invokes the \texttt{print()} function on that variable,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# define object of class "string"
-obj_string <- "how are you today?"
-class(obj_string) <- "string"
-obj_string
-# overload "print" method for string objects
-print.string <- function (str_ing) {
-  print(
-    paste(strsplit(str_ing, split=" ")[[1]], 
-          collapse=" + "))
-}  # end print.string
-# methods("print")  # view new methods for "print" function
-print(obj_string)
-obj_string
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Operator Overwriting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Operator \emph{overwriting} refers to redefining an existing function,
-      \vskip1ex
-      The functions \texttt{.Internal()} and \texttt{.Primitive()} call functions that are part of the internal code of \texttt{R},
-      \vskip1ex
-      Operator \emph{overwriting} should be used with care, since it may cause unintended consequences,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# overwrite "+" operator
-"+" = function(a, b) {
-  if(is.character(a) && is.character(b)) {
-    paste(a, "plus", b)
-  } else {
-    .Primitive("+") (a, b)
-  }
-}
-methods("+")  # view methods for "+" operator
-# add two "numeric" objects
-1 + 2
-# add two "character" objects
-"a" + "b"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Operator Overwriting Using \texttt{UseMethod()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Existing functions can be \emph{overwritten} with \emph{generic} functions using \texttt{UseMethod()},
-      \vskip1ex
-      Operator \emph{overwriting} should be used with care, since it may cause unintended consequences,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# overwrite "+" operator with a generic function
-"+" <- function (a, b, ...) {
-  UseMethod("+")
-}  # end gen_sum
-# define method for "numeric" class
-"+.numeric" <- function (a, b, ...) {
-  sum(a, b)
-}  # end gen_sum.character
-# define method for "character" class
-"+.character" <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end gen_sum.character
-methods("+")  # view methods for "+" operator
-# add two "numeric" objects
-1 + 2
-# add two "character" objects
-"a" + "b"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Generic Function Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Most \emph{methods} can be viewed by simply calling their full name, unless they're non-visible,
-      \vskip1ex
-      Non-visible \emph{methods} can be viewed using the triple-colon operator \texttt{":::"},
-      \vskip1ex
-      Non-visible \emph{methods} can also be viewed by calling the function \texttt{getAnywhere()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-cbind.ts  # can't view non-visible method
-stats::cbind.ts  # can't view non-visible method
-stats:::cbind.ts  # display non-visible method
-getAnywhere(cbind.ts)  # display non-visible method
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Defining New Classes and Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A new \texttt{R} class can be created by simply assigning to the \emph{class} attribute of an existing object,
-      \vskip1ex
-      New \emph{methods} can be defined for existing \emph{generic} functions, and \texttt{R} will automatically \emph{dispatch} them for objects of the new \emph{class},
-      \vskip1ex
-      The function unclass() removes the explicit class attribute from an object,
-      \vskip1ex
-      Calling unclass() allows using the \emph{methods} associated with the original object before a new \emph{class} attribute was assigned to it,
-      \vskip1ex
-      The functions \texttt{.Internal()} and \texttt{.Primitive()} call internally implemented (\emph{primitive}) functions.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-new_zoo <- zoo(rnorm(10), order.by=(Sys.Date() + 0:9))
-# coerce "zoo" object to new class "zoo_xtra"
-class(new_zoo) <- "zoo_xtra"
-class(new_zoo)
-methods(generic.function="length")
-length  # primitive function
-# define "length" method for class "zoo_xtra"
-length.zoo_xtra <- function(in_ts) {
-  cat("length of zoo_xtra object:\n")
-# unclass object, then calculate length
-  length(unclass(in_ts))
-}  # end length.zoo_xtra
-length(new_zoo)  # apply "length" method to "zoo_xtra" object
-methods(generic.function="length")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Defining New Generic Functions and Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      New \emph{methods} have to be called by their full name if a \emph{generic} function isn't defined for them, 
-      \vskip1ex
-      Once a \emph{generic} function is defined, then new \emph{methods} can be called by their short name
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# define "last" method for class "zoo_xtra"
-last.zoo_xtra <- function(in_ts) {
-  in_ts[length(in_ts)]
-}  # end last.zoo_xtra
-last(new_zoo)  # doesn't work
-last.zoo_xtra(new_zoo)  # works
-# define a generic function
-last <- function (a, b, ...) {
-  UseMethod("last")
-}  # end last
-last(new_zoo)  # now works
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Creating a "string" Class}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A new \texttt{"string"} class can be created from a \texttt{character} object, by assigning to its \emph{class} attribute,
-      \vskip1ex
-      The \emph{generic} function \texttt{as.string()} converts objects to class "\emph{string}",
-      \vskip1ex
-      The function \texttt{structure()} adds attributes to an object (specified as \texttt{symbol=value} pairs), and returns it,
-      \vskip1ex
-      The function \texttt{inherits()} checks whether the object \emph{class} matches any of the namees in the \texttt{"what"} argument,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# define generic "string" class converter
-as.string <- function (str_ing, ...) 
-  UseMethod("as.string")
-# default "string" class converter
-as.string.default <- function (str_ing, ...)
-  structure(str_ing, class="string", ...)
-# numeric "string" class converter
-as.string.numeric <- function (str_ing, ...)
-  structure(as.character(str_ing), class="string", ...)
-# "string" class checker
-is.string <- function (str_ing)
-  inherits(x=str_ing, what="string")
-# define "string" object
-obj_string <- as.string("how are you today?")
-obj_string
-is.string(obj_string)
-is.string("hello")
-as.string(123)
-is.string(as.string(123))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Inheritance and Derived Classes and Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Inheritance} is a mechanism for defining a new class that is \emph{derived} from a \emph{base} class, 
-      \vskip1ex
-      The \emph{derived} class \emph{inherits} all the \emph{methods} from the \emph{base} class, but can also have new \emph{methods} of its own,
-      \vskip1ex
-      In the \texttt{S3} system \emph{inheritance} is implemented by making the \emph{class} attribute a \emph{vector},
-      \vskip1ex
-      When a \emph{generic} function \texttt{gen\_fun} is called on an object with class attribute \texttt{c("class2", "class1")}, then \texttt{R} \emph{dispatches} a \emph{method} called \texttt{gen\_fun.class2},
-      \vskip1ex
-      If there's no \emph{method} with that name, then \texttt{R} first \emph{dispatches} a \emph{method} called \texttt{gen\_fun.class1},
-      \vskip1ex
-      Finally if there are no \emph{methods} with those names, then \texttt{R} \emph{dispatches} a \emph{method} called \texttt{gen\_fun.default},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())
-library(xts)
-new_xts <- xts(rnorm(10), order.by=(Sys.Date() + 0:9))
-class(new_xts)  # class attribute is a vector
-# "last" is a generic function from package "xts"
-last
-methods(generic.function="last")
-last(new_xts)  # apply "last" method from "xts" class
-# derive object "xts_xtra" from "xts" object
-class(new_xts) <- c("xts_xtra", class(new_xts))
-class(new_xts)  # class attribute is a vector
-# "xts_xtra" object inherits "last" method from "xts" class
-last(new_xts)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Defining New Methods for Derived Classes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{S3} system automatically \emph{dispatches} newly defined \emph{methods} to objects of the new \emph{class},
-      \vskip1ex
-      If new \emph{methods} aren't found, then it \emph{dispatches} existing \emph{methods} from the \emph{base} class to objects of the new \emph{class},
-      \vskip1ex
-      The function \texttt{NextMethod()} \emph{dispatches} the base method of a \emph{generic} function, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# define new "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(in_ts[length(in_ts), ])
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class
-# define "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(NextMethod())
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Parallel Computing}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing in \texttt{R}}
-\begin{frame}[t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{Parallel Computing in \texttt{R}}
-      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
-      \vskip1ex
-      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \texttt{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
-      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
-      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
-      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
-\end{block}
-
-\begin{block}{\texttt{R} Base Package \texttt{parallel}}
-  The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
-  \vskip1ex
-  The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
-  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
-  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
-\end{block}
-
-\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
-      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing Using Package \texttt{parallel}}
+\subsection{One-dimensional Optimization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
-      The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
       \vskip1ex
-      Different \texttt{parallel} functions need to be called depending on the operating system (\emph{Windows}, \emph{Mac}, or \emph{Linux}),
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores,
-      \vskip1ex
-      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops,
-      \vskip1ex
-      The function \texttt{parLapply()} performs an apply loop using parallel computing on several CPU cores, similar to \texttt{lapply()},
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+      \vspace{-1em}
+        <<eval=FALSE,echo=(-(1:1))>>=
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+      @
+      \vspace{-2em}
+        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot the objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+# add title
+title(main="Objective Function", line=-1)
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-library(parallel)  # load package parallel
-# get short description
-packageDescription("parallel")
-# load help page
-help(package="parallel")
-# list all objects in "parallel"
-ls("package:parallel")
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_one_dim-1}
+      \vspace{-2em}
+      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Log-likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
+      \begin{displaymath}
+        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_{i}|\theta)
+      \end{displaymath}
+      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
+      \vskip1ex
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+      \end{displaymath}
+      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
+      \vskip1ex
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-library(microbenchmark)  # load package microbenchmark
-# compare speed of lapply with parallel computing
-summary(microbenchmark(
-  l_apply=lapply(1:10, paws, sleep_time=0.01),
-  parl_apply=
-    parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ters)
+        <<echo=TRUE,eval=FALSE>>=
+# sample of normal variables
+sam_ple <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  sum(2*log(pa_r[2]) +
+    ((sam_ple - pa_r[1])/pa_r[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, sam_ple)
+    object_ive(c(mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd,
+        vec_objective, sam_ple=sam_ple)
+objective_min <- which(  # grid search
+  objective_grid==min(objective_grid),
+  arr.ind=TRUE)
+objective_min
+par_mean[objective_min[1]]  # mean
+par_sd[objective_min[2]]  # sd
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+               (objective_min[, 2] + -1:1)]
       @
   \end{columns}
 \end{block}
@@ -659,60 +177,36 @@ stopCluster(clus_ters)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Computing Overhead of Parallel Computing}
+\subsection{Perspective Plot of Likelihood Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
+      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
       \vskip1ex
-      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
-      <<echo=(-(1:10)),eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# compare speed of lapply with parallel computing
-iter_ations <- 3:10
-compute_times <- sapply(iter_ations,
-  function(max_iterations, sleep_time) {
-    out_put <- summary(microbenchmark(
-      lapply=lapply(1:max_iterations, paws,
-                    sleep_time=sleep_time),
-      parallel=parLapply(clus_ters, 1:max_iterations,
-              paws, sleep_time=sleep_time),
-      times=10))[, c(1, 4)]
-    structure(out_put[, 2],
-              names=as.vector(out_put[, 1]))
-    }, sleep_time=0.01)
-compute_times <- t(compute_times)
-rownames(compute_times) <- iter_ations
+      The argument \texttt{"z"} accepts a matrix containing the function values,
+      \vskip1ex
+      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots,
+      \vskip1ex
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
+      \vskip1ex
+      \texttt{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
+      <<optim_objective,echo=(-(1:1)),eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
+# perspective plot of log-likelihood function
+persp(z=-objective_grid,
+      theta=45, phi=30, shade=0.5,
+      border="green", zlab="objective",
+      main="objective function")
+# interactive perspective plot of log-likelihood function
+library(rgl)  # load package rgl
+par3d(cex=2.0)  # scale text by factor of 2
+persp3d(z=-objective_grid, zlab="objective",
+        col="green", main="objective function")
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/parallel_plot.png}\\
-      \vspace{-1em}
-      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
-library(parallel)  # load package parallel
-plot(x=rownames(compute_times),
-     y=compute_times[, "lapply"],
-     type="l", lwd=2, col="blue",
-     main="Compute times",
-     xlab="number of iterations in loop", ylab="",
-     ylim=c(0, max(compute_times[, "lapply"])))
-lines(x=rownames(compute_times),
-      y=compute_times[, "parallel"], lwd=2, col="green")
-legend(x="topleft", legend=colnames(compute_times),
-       inset=0.1, cex=1.0, bg="white",
-       lwd=2, lty=c(1, 1), col=c("blue", "green"))
-      @
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
   \end{columns}
 \end{block}
 
@@ -720,50 +214,160 @@ legend(x="topleft", legend=colnames(compute_times),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Parallel Computing Over Matrices}
+\subsection{Optimization of Objective Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Very often we need to perform time consuming calculations over columns of matrices,
+      The function \texttt{optim()} performs optimization of an objective function, 
       \vskip1ex
-      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-no_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ters <- makeCluster(no_cores)
-# define large matrix
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
-# define aggregation function over column of matrix
-agg_regate <- function(col_umn) {
-  out_put <- 0
-  for (in_dex in 1:length(col_umn))
-    out_put <- out_put + col_umn[in_dex]
-  out_put
-}  # end agg_regate
-# perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ters, mat_rix, agg_regate)
-# compare speed of apply with parallel computing
-summary(microbenchmark(
-  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ters, mat_rix, agg_regate),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ters)
+      The function \texttt{fitdistr()} from package \texttt{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization, 
+\vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=sam_ple,
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(10, 10), # upper constraint
+  lower=c(-10, 0.1)) # lower constraint
+# optimal parameters
+optim_fit$par
+# perform optimization using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit$estimate
+optim_fit$sd
       @
+\vspace{-2em}
+      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+curve(expr=dnorm(x, mean=optim_fit$par["mean"],
+                 sd=optim_fit$par["sd"]),
+      add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+       leg="optimal parameters",
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
   \end{columns}
 \end{block}
 
 \end{frame}
 
+
+%%%%%%%%%%%%%%%
+\subsection{Mixture Model Likelihood Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sample from mixture of normal distributions
+sam_ple <- c(rnorm(100, sd=1.0),
+                   rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  likelihood <- pa_r[1]/pa_r[3] *
+  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
+  if (any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, sam_ple)
+    object_ive(c(w, m1, s1, mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd,
+          vec_objective, sam_ple=sam_ple,
+          w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+               (objective_min[, 2] + -1:1)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+      theta=45, phi=30,
+      shade=0.5,
+      col=rainbow(50),
+      border="green",
+      main="objective function")
+      @
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimization of Mixture Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_fit <- optim(par=par_init,
+            fn=object_ive,
+            sam_ple=sam_ple,
+            method="L-BFGS-B",
+            upper=c(1,10,10,10,10),
+            lower=c(0,-10,0.2,-10,0.2))
+optim_fit$par
+      @
+\vspace{-2em}
+      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+fit_func <- function(x, pa_r) {
+  pa_r["weight"] * 
+    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"]) * 
+    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
+      type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+       leg="optimal parameters",
+       lwd=2, bg="white", col="red")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -774,8 +378,8 @@ stopCluster(clus_ters)
 \subsection{\secname}
 \begin{frame}[t]{\subsecname}
 \vspace{-1em}
-\begin{block}{No homework!}
-  \hskip10.0em\includegraphics[scale=0.1]{image/smile.png}
+\begin{block}{Required}
+  Read all the lecture slides in \texttt{FRE6871\_Lecture\_7.pdf}, and run all the code in \texttt{FRE6871\_Lecture\_7.R}
 \end{block}
 
 \end{frame}

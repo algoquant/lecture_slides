@@ -253,13 +253,11 @@ etf_list["XLY", "Name"] <-
   "Consumer Discr. Sector Fund"
 etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny")
-load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 env_etf <- new.env()  # new environment for data
 # download data for sym_bols into env_etf
 getSymbols(sym_bols, env=env_etf, adjust=TRUE,
     from="2007-01-03")
-load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 ls(env_etf)  # list files in env_etf
 # get class of object in env_etf
@@ -323,18 +321,17 @@ env_etf <- new.env()  # new environment for data
 # remove all files (if necessary)
 rm(list=ls(env_etf), envir=env_etf)
 # download data and copy it into environment
-HighFreq::get_symbols(sp_500$names,
+rutils::get_symbols(sp_500$names,
    env_out=env_etf, start_date="1990-01-01")
 # or download in loop
 for (na_me in sp_500$names) {
   cat("processing: ", na_me, "\n")
-  HighFreq::get_symbols(na_me,
+  rutils::get_symbols(na_me,
    env_out=env_etf, start_date="1990-01-01")
 }  # end for
 save(env_etf, file="C:/Develop/data/sp500.RData")
 chart_Series(x=env_etf$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
-load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 # check of object is an OHLC time series
 is.OHLC(env_etf$VTI)
@@ -355,7 +352,6 @@ for (sym_bol in sym_bols) {
               use.Adjusted=TRUE),
    envir=env_etf)
 }  # end for
-load(file="C:/Develop/data/etf_data.RData")
 library(quantmod)  # load package quantmod
 # extract and merge all data, subset by symbols
 etf_series <- do.call(merge,
@@ -365,7 +361,7 @@ etf_series <- do.call(merge,
 price_s <- do.call(merge,
          lapply(as.list(env_etf)[sym_bols], Ad))
 
-# extract and merge adjusted prices, subset by symbols
+# same, but works only for OHLC series
 price_s <- do.call(merge, eapply(env_etf, Ad)[sym_bols])
 
 # drop ".Adjusted" from colnames
@@ -385,7 +381,6 @@ write.zoo(etf_series,
 assign("price_s", price_s, envir=env_etf)
 save(env_etf, file='etf_data.RData')
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 # remove rows with NA values
 # price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
 # colnames(price_s)
@@ -410,7 +405,6 @@ head(re_turns[, 1:3])
 assign("re_turns", re_turns, envir=env_etf)
 save(env_etf, file='etf_data.RData')
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 start_date <- "2012-05-10"; end_date <- "2013-11-20"
 # subset all objects in environment and return as environment
 new_env <- as.environment(eapply(env_etf, "[",
@@ -440,7 +434,6 @@ assign("price_s", do.call(merge,
                   x_ts
          })), envir=new_env)
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 # plot OHLC candlechart with volume
 chartSeries(env_etf$VTI["2014-11"],
       name="VTI",
@@ -451,7 +444,6 @@ chartSeries(env_etf$VTI["2014-11"],
       name="VTI",
       theme=chartTheme("white"))
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 # plot OHLC candlechart with volume
 chartSeries(env_etf$VTI["2008-11/2009-04"],
       name="VTI")
@@ -459,7 +451,6 @@ chartSeries(env_etf$VTI["2008-11/2009-04"],
 reChart(subset="2009-02",
   theme=chartTheme("white"))
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 # candlechart with Bollinger Bands
 chartSeries(env_etf$VTI["2014"],
       TA="addBBands(): addBBands(draw='percent'): addVo()",
@@ -477,72 +468,69 @@ chartSeries(env_etf$VTI["2014"],
       theme=chartTheme("white"))
 library(quantmod)
 library(TTR)
-load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_etf$VTI["2009-02/2009-03"]
-adj_vti <- Ad(da_ta); vol_vti <- Vo(da_ta)
-v_wap <- VWAP(price=adj_vti, volume=vol_vti,
-        n=10)
+oh_lc <- env_etf$VTI["2009-02/2009-03"]
+VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
+# calculate volume-weighted average price
+VTI_vwap <- TTR::VWAP(price=VTI_adj,
+volume=VTI_vol, n=10)
 # plot OHLC candlechart with volume
-chartSeries(da_ta, name="VTI plus VWAP",
+chartSeries(oh_lc, name="VTI plus VWAP",
       theme=chartTheme("white"))
 # add VWAP to main plot
-addTA(ta=v_wap, on=1, col='red')
+addTA(ta=VTI_vwap, on=1, col='red')
 # add price minus VWAP in extra panel
-addTA(ta=(adj_vti-v_wap), col='red')
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
 library(quantmod)
 library(TTR)
-load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_etf$VTI
-adj_vti <- Ad(da_ta)
-vol_vti <- Vo(da_ta)
-v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
-adj_vti <- adj_vti["2009-02/2009-03"]
-da_ta <- da_ta["2009-02/2009-03"]
-v_wap <- v_wap["2009-02/2009-03"]
+oh_lc <- env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
 # plot OHLC candlechart with volume
-chartSeries(da_ta, name="VTI plus VWAP shaded",
+chartSeries(oh_lc, name="VTI plus VWAP shaded",
       theme=chartTheme("white"))
 # add VWAP to main plot
-addTA(ta=v_wap, on=1, col='red')
+addTA(ta=VTI_vwap, on=1, col='red')
 # add price minus VWAP in extra panel
-addTA(ta=(adj_vti-v_wap), col='red')
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
 # add background shading of areas
-addTA((adj_vti-v_wap) > 0, on=-1,
+addTA((VTI_adj-VTI_vwap) > 0, on=-1,
 col="lightgreen", border="lightgreen")
-addTA((adj_vti-v_wap) < 0, on=-1,
+addTA((VTI_adj-VTI_vwap) < 0, on=-1,
 col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines at v_wap minimum
-addLines(v=which.min(v_wap), col='red')
-addLines(h=min(v_wap), col='red')
+# add vertical and horizontal lines at VTI_vwap minimum
+addLines(v=which.min(VTI_vwap), col='red')
+addLines(h=min(VTI_vwap), col='red')
 library(quantmod)
 library(TTR)
-load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_etf$VTI
-adj_vti <- Ad(da_ta)
-vol_vti <- Vo(da_ta)
-v_wap <- VWAP(price=adj_vti, volume=vol_vti, n=10)
-adj_vti <- adj_vti["2009-02/2009-03"]
-da_ta <- da_ta["2009-02/2009-03"]
-v_wap <- v_wap["2009-02/2009-03"]
+oh_lc <- env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
 # OHLC candlechart VWAP in main plot,
-chart_Series(x=da_ta, # volume in extra panel
-       TA="add_Vo(); add_TA(v_wap, on=1)",
+chart_Series(x=oh_lc, # volume in extra panel
+       TA="add_Vo(); add_TA(VTI_vwap, on=1)",
        name="VTI plus VWAP shaded")
 # add price minus VWAP in extra panel
-add_TA(adj_vti-v_wap, col='red')
+add_TA(VTI_adj-VTI_vwap, col='red')
 # add background shading of areas
-add_TA((adj_vti-v_wap) > 0, on=-1,
+add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
 col="lightgreen", border="lightgreen")
-add_TA((adj_vti-v_wap) < 0, on=-1,
+add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
 col="lightgrey", border="lightgrey")
 # add vertical and horizontal lines
-abline(v=which.min(v_wap), col='red')
-abline(h=min(v_wap), col='red')
+abline(v=which.min(VTI_vwap), col='red')
+abline(h=min(VTI_vwap), col='red')
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_etf$VTI["2009-02/2009-03"]
+oh_lc <- env_etf$VTI["2009-02/2009-03"]
 # extract plot object
-ch_ob <- chart_Series(x=da_ta, plot=FALSE)
+ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
 class(ch_ob)
 ls(ch_ob)
 class(ch_ob$get_ylim)
@@ -553,35 +541,42 @@ plot_theme <- chart_theme()
 class(plot_theme)
 ls(plot_theme)
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
-da_ta <- env_etf$VTI["2010-04/2010-05"]
+oh_lc <- env_etf$VTI["2010-04/2010-05"]
 # extract, modify theme, format tick marks "%b %d"
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%b %d"
 # create plot object
-ch_ob <- chart_Series(x=da_ta,
+ch_ob <- chart_Series(x=oh_lc,
                 theme=plot_theme, plot=FALSE)
 # extract ylim using accessor function
 y_lim <- ch_ob$get_ylim()
 y_lim[[2]] <- structure(
-  range(Ad(da_ta)) + c(-1, 1),
+  range(Ad(oh_lc)) + c(-1, 1),
   fixed=TRUE)
 # modify plot object to reduce y-axis range
 ch_ob$set_ylim(y_lim)  # use setter function
 # render the plot
 plot(ch_ob)
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
-# specify plot area with two horizontal panels
+# calculate VTI volume-weighted average price
+VTI_vwap <- TTR::VWAP(price=Ad(env_etf$VTI),
+    volume=Vo(env_etf$VTI), n=10)
+# calculate XLF volume-weighted average price
+XLF_vwap <- TTR::VWAP(price=Ad(env_etf$XLF),
+    volume=Vo(env_etf$XLF), n=10)
+# open plot graphics device
+x11()
+# define plot area with two horizontal panels
 par(mfrow=c(2, 1))
 # plot in top panel
-chart_Series(x=env_etf$VTI["2009-02/2009-04"],
-       name="VTI")
+invisible(chart_Series(
+  x=env_etf$VTI["2009-02/2009-04"], name="VTI"))
+add_TA(VTI_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 # plot in bottom panel
-chart_Series(x=env_etf$XLF["2009-02/2009-04"],
-       name="XLF")
+invisible(chart_Series(
+  x=env_etf$XLF["2009-02/2009-04"], name="XLF"))
+add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
 # download U.S. unemployment rate data
 unemp_rate <- getSymbols("UNRATE",
             auto.assign=FALSE,
@@ -652,7 +647,7 @@ library(quantmod)  # load package quantmod
 env_etf <- new.env()  # new environment for data
 # remove all files (if necessary)
 rm(list=ls(env_etf), envir=env_etf)
-# boolean vector of tickers already downloaded
+# Boolean vector of tickers already downloaded
 down_loaded <- tick_ers %in% ls(env_etf)
 # download data and copy it into environment
 for (tick_er in tick_ers[!down_loaded]) {
@@ -678,32 +673,11 @@ chart_Series(cumsum(fac_tors["2001/", 1]/100),
   name="Fama-French factors")
 # load package HighFreq
 library(HighFreq)
-# get documentation for package HighFreq
-# get short description
-packageDescription("HighFreq")
-# load help page
-help(package="HighFreq")
-# list all datasets in "HighFreq"
-data(package="HighFreq")
-# list all objects in "HighFreq"
-ls("package:HighFreq")
-# remove HighFreq from search path
-detach("package:HighFreq")
+head(SPY_TAQ)
 # load package HighFreq
 library(HighFreq)
-# get documentation for package HighFreq
-# get short description
-packageDescription("HighFreq")
-# load help page
-help(package="HighFreq")
-# list all datasets in "HighFreq"
-data(package="HighFreq")
-# list all objects in "HighFreq"
-ls("package:HighFreq")
-# remove HighFreq from search path
-detach("package:HighFreq")
+head(SPY)
 # install package HighFreq from github
-install.packages("devtools")
 devtools::install_github(repo="algoquant/HighFreq")
 # load package HighFreq
 library(HighFreq)
@@ -730,6 +704,8 @@ ls()
 head(SPY)
 # load all the datasets in package HighFreq
 data(hf_data)
+# HighFreq datasets are now loaded and in the workspace
+head(SPY)
 # library(xts)  # load package xts
 # load package "PerformanceAnalytics"
 library(PerformanceAnalytics)
@@ -742,3 +718,445 @@ chart.CumReturns(ham_1, lwd=2, ylab="",
 # add title
 title(main="Managers cumulative returns",
 line=-1)
+# library(HighFreq)  # load package HighFreq
+library(HighFreq)  # load package HighFreq
+price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
+end_points <- 0:NROW(price_s)  # define end points
+len_gth <- length(end_points)
+win_dow <- 11  # number of data points per look-back window
+# define starting points as lag of end_points
+start_points <-  end_points[
+  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+# define aggregation function
+agg_regate <- function(x_ts)
+  c(max=max(x_ts), min=min(x_ts))
+# perform aggregations over length of end_points
+agg_regations <- sapply(2:len_gth,
+    function(in_dex) {
+agg_regate(.subset_xts(price_s,
+  start_points[in_dex]:end_points[in_dex]))
+  })  # end sapply
+# coerce agg_regations into matrix and transpose it
+if (is.vector(agg_regations))
+  agg_regations <- t(agg_regations)
+agg_regations <- t(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+               order.by=index(price_s[end_points]))
+library(HighFreq)  # load package HighFreq
+price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
+end_points <- 0:NROW(price_s)  # define end points
+len_gth <- length(end_points)
+win_dow <- 11  # number of data points per look-back window
+# define starting points as lag of end_points
+start_points <-  end_points[
+  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+# define aggregation function
+agg_regate <- function(x_ts)
+  xts(t(c(max=max(x_ts), min=min(x_ts))),
+order.by=end(x_ts))
+# perform aggregations over length of end_points
+agg_regations <- lapply(2:len_gth,
+    function(in_dex) {
+agg_regate(.subset_xts(price_s,
+  start_points[in_dex]:end_points[in_dex]))
+  })  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+agg_regations <- merge(price_s, agg_regations)
+# plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+# library(HighFreq)  # load package HighFreq
+# define functional for rolling aggregations
+roll_agg <- function(x_ts, win_dow, FUN, ...) {
+# define end points at every point
+  end_points <- 0:NROW(x_ts)
+  len_gth <- length(end_points)
+# define starting points as lag of end_points
+  start_points <-  end_points[
+    c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+# perform aggregations over length of end_points
+  agg_regations <- lapply(2:len_gth,
+        function(in_dex) {
+          FUN(.subset_xts(x_ts,
+              start_points[in_dex]:end_points[in_dex]), ...)
+        })  # end lapply
+# rbind list into single xts or matrix
+  agg_regations <- rutils::do_call_rbind(agg_regations)
+# coerce agg_regations into xts series
+  if (!is.xts(agg_regations))
+    agg_regations <-
+xts(agg_regations, order.by=index(x_ts[end_points]))
+  agg_regations
+}  # end roll_agg
+# define aggregation function
+agg_regate <- function(x_ts)
+  c(max=max(x_ts), min=min(x_ts))
+# perform aggregations over rolling window
+agg_regations <- roll_agg(price_s, win_dow=win_dow,
+              FUN=agg_regate)
+# library(HighFreq)  # load package HighFreq
+# define aggregation function that returns a vector
+agg_vector <- function(x_ts)
+  c(max=max(x_ts), min=min(x_ts))
+# define aggregation function that returns an xts
+agg_xts <- function(x_ts)
+  xts(t(c(max=max(x_ts), min=min(x_ts))),
+order.by=end(x_ts))
+# benchmark the speed of aggregation functions
+library(microbenchmark)
+summary(microbenchmark(
+  agg_vector=roll_agg(price_s, win_dow=win_dow,
+              FUN=agg_vector),
+  agg_xts=roll_agg(price_s, win_dow=win_dow,
+              FUN=agg_xts),
+  times=10))[, c(1, 4, 5)]
+# library(HighFreq)  # load package HighFreq
+# define aggregation function that returns a single value
+agg_regate <- function(x_ts)  max(x_ts)
+# perform aggregations over length of end_points
+agg_regations <- xts:::rollapply.xts(price_s, width=win_dow,
+              FUN=agg_regate, align="right")
+# perform aggregations over length of end_points
+library(PerformanceAnalytics)  # load package PerformanceAnalytics
+agg_regations <- apply.rolling(price_s,
+              width=win_dow, FUN=agg_regate)
+# benchmark the speed of the functionals
+library(microbenchmark)
+summary(microbenchmark(
+  roll_agg=roll_agg(price_s, win_dow=win_dow,
+              FUN=max),
+  roll_xts=xts:::rollapply.xts(price_s, width=win_dow,
+                 FUN=max, align="right"),
+  apply_rolling=apply.rolling(price_s,
+                        width=win_dow, FUN=max),
+  times=10))[, c(1, 4, 5)]
+# library(HighFreq)  # load package HighFreq
+# rolling sum using cumsum()
+roll_sum <- function(x_ts, win_dow) {
+  cum_sum <- cumsum(na.omit(x_ts))
+  out_put <- cum_sum - lag(x=cum_sum, k=win_dow)
+  out_put[1:win_dow, ] <- cum_sum[1:win_dow, ]
+  colnames(out_put) <- paste0(colnames(x_ts), "_stdev")
+  out_put
+}  # end roll_sum
+agg_regations <- roll_sum(price_s, win_dow=win_dow)
+# perform rolling aggregations using apply loop
+agg_regations <- sapply(2:len_gth,
+    function(in_dex) {
+sum(.subset_xts(price_s,
+  start_points[in_dex]:end_points[in_dex]))
+  })  # end sapply
+head(agg_regations)
+tail(agg_regations)
+# benchmark the speed of both methods
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sum=roll_sum(price_s, win_dow=win_dow),
+  s_apply=sapply(2:len_gth,
+    function(in_dex) {
+sum(.subset_xts(price_s,
+  start_points[in_dex]:end_points[in_dex]))
+  }),
+  times=10))[, c(1, 4, 5)]
+# library(TTR)  # load package TTR
+# benchmark the speed of TTR::runSum
+library(microbenchmark)
+summary(microbenchmark(
+  cum_sum=cumsum(coredata(price_s)),
+  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
+  run_sum=TTR::runSum(price_s, n=win_dow),
+  times=10))[, c(1, 4, 5)]
+library(RcppRoll)  # load package RcppRoll
+win_dow <- 11  # number of data points per look-back window
+# calculate rolling sum using rutils
+prices_mean <-
+  rutils::roll_sum(price_s, win_dow=win_dow)
+# calculate rolling sum using RcppRoll
+prices_mean <- RcppRoll::roll_sum(price_s,
+              align="left", n=win_dow)
+# benchmark the speed of RcppRoll::roll_sum
+library(microbenchmark)
+summary(microbenchmark(
+  cum_sum=cumsum(coredata(price_s)),
+  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=win_dow),
+  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
+  times=10))[, c(1, 4, 5)]
+# calculate EWMA sum using RcppRoll
+weight_s <- exp(0.1*1:win_dow)
+prices_mean <- RcppRoll::roll_mean(price_s,
+align="left", n=win_dow, weights=weight_s)
+prices_mean <- merge(price_s,
+  rbind(coredata(price_s[1:(win_dow-1), ]), prices_mean))
+colnames(prices_mean) <- c("SPY", "SPY EWMA")
+# plot EWMA prices with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red")
+x11()
+chart_Series(prices_mean, theme=plot_theme,
+       name="EWMA prices")
+legend("top", legend=colnames(prices_mean),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+# library(HighFreq)  # load package HighFreq
+library(caTools)  # load package "caTools"
+# get documentation for package "caTools"
+packageDescription("caTools")  # get short description
+help(package="caTools")  # load help page
+data(package="caTools")  # list all datasets in "caTools"
+ls("package:caTools")  # list all objects in "caTools"
+detach("package:caTools")  # remove caTools from search path
+# median filter
+win_dow <- 11
+price_s <- Cl(SPY["2012-02-01/2012-04-01"])
+med_ian <- runmed(x=price_s, k=win_dow)
+# vector of rolling volatility
+vol_at <- runsd(x=price_s, k=win_dow,
+          endrule="constant", align="center")
+# vector of rolling quantiles
+quan_tiles <- runquantile(x=price_s,
+            k=win_dow, probs=0.9,
+            endrule="constant",
+            align="center")
+library(HighFreq)  # load package HighFreq
+# extract a single day of minutely price data
+price_s <- Cl(SPY["2012-02-13"])
+# define number of data points per interval
+win_dow <- 11
+# number of win_dows that fit over price_s
+n_row <- NROW(price_s)
+num_agg <- n_row %/% win_dow
+# if n_row==win_dow*num_agg then whole number
+# of win_dows fit over price_s
+end_points <- win_dow*(0:num_agg)
+# if (n_row > win_dow*num_agg)
+# then stub interval at beginning
+end_points <-
+  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+# stub interval at end
+end_points <- c(win_dow*(0:num_agg), n_row)
+# plot data and endpoints as vertical lines
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- "blue"
+chart_Series(price_s, theme=plot_theme,
+  name="prices with endpoints as vertical lines")
+abline(v=end_points, col="red")
+# library(HighFreq)  # load package HighFreq
+# indices of last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+head(end_points)
+# extract the last observations in each hour
+head(price_s[end_points, ])
+# library(HighFreq)  # load package HighFreq
+end_points <- # define end_points with beginning stub
+  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+len_gth <- length(end_points)
+# define starting points as lag of end_points
+start_points <- end_points[c(1, 1:(len_gth-1))] + 1
+# perform sapply() loop over length of end_points
+agg_regations <- sapply(2:len_gth,
+    function(in_dex) {
+x_ts <-
+  price_s[start_points[in_dex]:end_points[in_dex]]
+c(max=max(x_ts), min=min(x_ts))
+  })  # end sapply
+# coerce agg_regations into matrix and transpose it
+if (is.vector(agg_regations))
+  agg_regations <- t(agg_regations)
+agg_regations <- t(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+               order.by=index(price_s[end_points]))
+head(agg_regations)
+# plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("bottomright", legend=colnames(agg_regations),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+# library(HighFreq)  # load package HighFreq
+end_points <- # define end_points with beginning stub
+  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+len_gth <- length(end_points)
+# define starting points as lag of end_points
+start_points <- end_points[c(1, 1:(len_gth-1))] + 1
+# perform lapply() loop over length of end_points
+agg_regations <- lapply(2:len_gth,
+    function(in_dex) {
+x_ts <-
+  price_s[start_points[in_dex]:end_points[in_dex]]
+xts(t(c(max=max(x_ts), min=min(x_ts))),
+      order.by=index(price_s[end_points[in_dex]]))
+  })  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+head(agg_regations)
+# plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("bottomright", legend=colnames(agg_regations),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+# library(HighFreq)  # load package HighFreq
+# define functional for rolling aggregations over end_points
+roll_agg <- function(x_ts, end_points, FUN, ...) {
+  len_gth <- length(end_points)
+# define starting points as lag of end_points
+  start_points <- end_points[c(1, 1:(len_gth-1))] + 1
+# perform aggregations over length of end_points
+  agg_regations <- lapply(2:len_gth,
+    function(in_dex) FUN(.subset_xts(x_ts,
+start_points[in_dex]:end_points[in_dex]), ...))  # end lapply
+# rbind list into single xts or matrix
+  agg_regations <- rutils::do_call_rbind(agg_regations)
+  if (!is.xts(agg_regations))
+    agg_regations <-  # coerce agg_regations into xts series
+    xts(agg_regations, order.by=index(x_ts[end_points]))
+  agg_regations
+}  # end roll_agg
+# apply sum() over end_points
+agg_regations <-
+  roll_agg(price_s, end_points=end_points, FUN=sum)
+agg_regations <-
+  period.apply(price_s, INDEX=end_points, FUN=sum)
+# benchmark the speed of aggregation functions
+summary(microbenchmark(
+  roll_agg=roll_agg(price_s, end_points=end_points, FUN=sum),
+  period_apply=period.apply(price_s, INDEX=end_points, FUN=sum),
+  times=10))[, c(1, 4, 5)]
+agg_regations <- period.sum(price_s, INDEX=end_points)
+head(agg_regations)
+# library(HighFreq)  # load package HighFreq
+# load package HighFreq
+library(HighFreq)
+# extract closing minutely prices
+price_s <- Cl(SPY["2012-02-01/2012-04-01"])
+# apply "mean" over daily periods
+agg_regations <- apply.daily(price_s, FUN=sum)
+head(agg_regations)
+library(HighFreq)  # load package HighFreq
+end_points <- # define end_points with beginning stub
+  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+len_gth <- length(end_points)
+win_dow <- 3  # number of look-back time intervals
+# define starting points as lag of end_points
+start_points <-  end_points[
+  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+# perform lapply() loop over length of end_points
+agg_regations <- lapply(2:len_gth,
+    function(in_dex) {
+x_ts <-
+  price_s[start_points[in_dex]:end_points[in_dex]]
+xts(t(c(max=max(x_ts), min=min(x_ts))),
+      order.by=index(price_s[end_points[in_dex]]))
+  })  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+# plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("bottomright", legend=colnames(agg_regations),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+# library(HighFreq)  # load package HighFreq
+library(HighFreq)  # load package HighFreq
+end_points <- # define end_points with beginning stub
+  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+len_gth <- length(end_points)
+win_dow <- 3  # number of look-back time intervals
+# define starting points as lag of end_points
+start_points <-  end_points[
+  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+# perform lapply() loop over length of end_points
+agg_regations <- lapply(2:len_gth,
+          function(in_dex) {mean(
+price_s[start_points[in_dex]:end_points[in_dex]])
+})  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+agg_regations <- xts(agg_regations,
+    order.by=index(price_s[end_points]))
+agg_regations <- cbind(price_s, agg_regations)
+agg_regations <- na.omit(na.locf(agg_regations))
+colnames(agg_regations)[2] <- "aggregations"
+# plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("bottomright", legend=colnames(agg_regations),
+bg="white", lty=c(1, 1), lwd=c(2, 2),
+col=plot_theme$col$line.col, bty="n")
+set.seed(1121)  # reset random number generator
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create zoo time series of random returns
+in_dex <- Sys.Date() + 0:365
+zoo_series <-
+  zoo(rnorm(length(in_dex)), order.by=in_dex)
+# create monthly dates
+dates_agg <- as.Date(as.yearmon(index(zoo_series)))
+# perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg,
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- merge(zoo_series, zoo_agg)
+# replace NA's using locf
+zoo_agg <- na.locf(zoo_agg)
+# extract aggregated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
+# library(HighFreq)  # load package HighFreq
+# plot original and aggregated cumulative returns
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8,
+ title="Aggregated Prices",
+ leg=c("orig prices", "agg prices"),
+ lwd=2, bg="white", col=c("black", "red"))
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg,
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- merge(zoo_series, zoo_agg)
+# replace NA's using linear interpolation
+zoo_agg <- na.approx(zoo_agg)
+# extract interpolated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
+ leg=c("orig prices", "interpol prices"), lwd=2, bg="white",
+ col=c("black", "red"))
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# "mean" aggregation over window with width=11
+zoo_mean <- rollapply(zoo_series, width=11,
+                FUN=mean, align="right")
+# merge with original zoo - union of dates
+zoo_mean <- merge(zoo_series, zoo_mean)
+# replace NA's using na.locf
+zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
+# extract mean zoo
+zoo_mean <- zoo_mean[index(zoo_series), 2]
+# plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_mean), lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
+ leg=c("orig prices", "mean prices"), lwd=2, bg="white",
+ col=c("black", "red"))

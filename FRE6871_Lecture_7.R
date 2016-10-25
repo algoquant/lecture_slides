@@ -4,257 +4,144 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-library(zoo)  # load package zoo
-# show the generic function "merge"
-merge
-# show the "merge" method dispatched to "zoo" objects
-merge.zoo
-library(zoo)  # load package zoo
-# get all methods for generic function merge()
-methods(generic.function="merge")
-# get generic function methods applied to "zoo" objects
-methods(class="zoo")
-# define a generic function
-gen_sum <- function (a, b, ...) {
-  UseMethod("gen_sum")
-}  # end gen_sum
-
-# define method for "numeric" class
-gen_sum.numeric <- function (a, b, ...) {
-  sum(a, b)
-}  # end gen_sum.character
-
-# define method for "character" class
-gen_sum.character <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end gen_sum.character
-
-# apply gen_sum to "numeric" objects
-gen_sum(1, 2)
-# apply gen_sum to "character" objects
-gen_sum("a", "b")
-# 'cbind' is an internal generic function
-cbind
-# define "+" method for "character" class
-"+.character" <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end +.character
-methods("+")  # view methods for "+" operator
-# define variables with "character" class
-char1 <- "a"
-char2 <- "b"
-class(char1)
-char1 + char2  # add two "character" objects - doesn't work
-attributes(char1)  # doesn't have explicit "character" class - only implicit
-char1 <- structure("a", class="character")
-char2 <- structure("b", class="character")
-attributes(char1)  # now has explicit "character" class
-# add two "character" objects
-char1 + char2
-# define object of class "string"
-obj_string <- "how are you today?"
-class(obj_string) <- "string"
-obj_string
-# overload "print" method for string objects
-print.string <- function (str_ing) {
-  print(
-    paste(strsplit(str_ing, split=" ")[[1]], 
-  collapse=" + "))
-}  # end print.string
-# methods("print")  # view new methods for "print" function
-print(obj_string)
-obj_string
-# overwrite "+" operator
-"+" = function(a, b) {
-  if(is.character(a) && is.character(b)) {
-    paste(a, "plus", b)
-  } else {
-    .Primitive("+") (a, b)
-  }
-}
-methods("+")  # view methods for "+" operator
-# add two "numeric" objects
-1 + 2
-# add two "character" objects
-"a" + "b"
-# overwrite "+" operator with a generic function
-"+" <- function (a, b, ...) {
-  UseMethod("+")
-}  # end gen_sum
-# define method for "numeric" class
-"+.numeric" <- function (a, b, ...) {
-  sum(a, b)
-}  # end gen_sum.character
-# define method for "character" class
-"+.character" <- function (a, b, ...) {
-  paste(a, "plus", b)
-}  # end gen_sum.character
-methods("+")  # view methods for "+" operator
-# add two "numeric" objects
-1 + 2
-# add two "character" objects
-"a" + "b"
-cbind.ts  # can't view non-visible method
-stats::cbind.ts  # can't view non-visible method
-stats:::cbind.ts  # display non-visible method
-getAnywhere(cbind.ts)  # display non-visible method
-rm(list=ls())
-new_zoo <- zoo(rnorm(10), order.by=(Sys.Date() + 0:9))
-# coerce "zoo" object to new class "zoo_xtra"
-class(new_zoo) <- "zoo_xtra"
-class(new_zoo)
-methods(generic.function="length")
-length  # primitive function
-# define "length" method for class "zoo_xtra"
-length.zoo_xtra <- function(in_ts) {
-  cat("length of zoo_xtra object:\n")
-# unclass object, then calculate length
-  length(unclass(in_ts))
-}  # end length.zoo_xtra
-length(new_zoo)  # apply "length" method to "zoo_xtra" object
-methods(generic.function="length")
-# define "last" method for class "zoo_xtra"
-last.zoo_xtra <- function(in_ts) {
-  in_ts[length(in_ts)]
-}  # end last.zoo_xtra
-last(new_zoo)  # doesn't work
-last.zoo_xtra(new_zoo)  # works
-# define a generic function
-last <- function (a, b, ...) {
-  UseMethod("last")
-}  # end last
-last(new_zoo)  # now works
-# define generic "string" class converter
-as.string <- function (str_ing, ...) 
-  UseMethod("as.string")
-# default "string" class converter
-as.string.default <- function (str_ing, ...)
-  structure(str_ing, class="string", ...)
-# numeric "string" class converter
-as.string.numeric <- function (str_ing, ...)
-  structure(as.character(str_ing), class="string", ...)
-# "string" class checker
-is.string <- function (str_ing)
-  inherits(x=str_ing, what="string")
-# define "string" object
-obj_string <- as.string("how are you today?")
-obj_string
-is.string(obj_string)
-is.string("hello")
-as.string(123)
-is.string(as.string(123))
-rm(list=ls())
-library(xts)
-new_xts <- xts(rnorm(10), order.by=(Sys.Date() + 0:9))
-class(new_xts)  # class attribute is a vector
-# "last" is a generic function from package "xts"
-last
-methods(generic.function="last")
-last(new_xts)  # apply "last" method from "xts" class
-# derive object "xts_xtra" from "xts" object
-class(new_xts) <- c("xts_xtra", class(new_xts))
-class(new_xts)  # class attribute is a vector
-# "xts_xtra" object inherits "last" method from "xts" class
-last(new_xts)
-# define new "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(in_ts[length(in_ts), ])
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class
-# define "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(NextMethod())
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class
-## library(parallel)  # load package parallel
-## # get short description
-## packageDescription("parallel")
-## # load help page
-## help(package="parallel")
-## # list all objects in "parallel"
-## ls("package:parallel")
-## load(file="C:/Develop/data/etf_data.RData")
-## # calculate number of available cores
-## no_cores <- detectCores() - 1
-## # initialize compute cluster
-## clus_ters <- makeCluster(no_cores)
-## # define function that pauses execution
-## paws <- function(x, sleep_time) {
-##   Sys.sleep(sleep_time)
-##   x
-## }  # end paws
-## library(microbenchmark)  # load package microbenchmark
-## # compare speed of lapply with parallel computing
-## summary(microbenchmark(
-##   l_apply=lapply(1:10, paws, sleep_time=0.01),
-##   parl_apply=
-##     parLapply(clus_ters, 1:10, paws, sleep_time=0.01),
-##   times=10)
-## )[, c(1, 4, 5)]
-## # stop R processes over cluster
-## stopCluster(clus_ters)
-## library(parallel)  # load package parallel
-## # calculate number of available cores
-## no_cores <- detectCores() - 1
-## # initialize compute cluster
-## clus_ters <- makeCluster(no_cores)
-## # define function that pauses execution
-## paws <- function(x, sleep_time) {
-##   Sys.sleep(sleep_time)
-##   x
-## }  # end paws
-## # compare speed of lapply with parallel computing
-## iter_ations <- 3:10
-## compute_times <- sapply(iter_ations,
-##   function(max_iterations, sleep_time) {
-##     out_put <- summary(microbenchmark(
-## lapply=lapply(1:max_iterations, paws,
-##               sleep_time=sleep_time),
-## parallel=parLapply(clus_ters, 1:max_iterations,
-##         paws, sleep_time=sleep_time),
-## times=10))[, c(1, 4)]
-##     structure(out_put[, 2],
-##         names=as.vector(out_put[, 1]))
-##     }, sleep_time=0.01)
-## compute_times <- t(compute_times)
-## rownames(compute_times) <- iter_ations
-## library(parallel)  # load package parallel
-## plot(x=rownames(compute_times),
-##      y=compute_times[, "lapply"],
-##      type="l", lwd=2, col="blue",
-##      main="Compute times",
-##      xlab="number of iterations in loop", ylab="",
-##      ylim=c(0, max(compute_times[, "lapply"])))
-## lines(x=rownames(compute_times),
-## y=compute_times[, "parallel"], lwd=2, col="green")
-## legend(x="topleft", legend=colnames(compute_times),
-##  inset=0.1, cex=1.0, bg="white",
-##  lwd=2, lty=c(1, 1), col=c("blue", "green"))
-## library(parallel)  # load package parallel
-## # calculate number of available cores
-## no_cores <- detectCores() - 1
-## # initialize compute cluster
-## clus_ters <- makeCluster(no_cores)
-## # define large matrix
-## mat_rix <- matrix(rnorm(7*10^5), ncol=7)
-## # define aggregation function over column of matrix
-## agg_regate <- function(col_umn) {
-##   out_put <- 0
-##   for (in_dex in 1:length(col_umn))
-##     out_put <- out_put + col_umn[in_dex]
-##   out_put
-## }  # end agg_regate
-## # perform parallel aggregations over columns of matrix
-## agg_regations <-
-##   parCapply(clus_ters, mat_rix, agg_regate)
-## # compare speed of apply with parallel computing
-## summary(microbenchmark(
-##   ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-##   parl_apply=
-##     parCapply(clus_ters, mat_rix, agg_regate),
-##   times=10)
-## )[, c(1, 4, 5)]
-## # stop R processes over cluster
-## stopCluster(clus_ters)
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot the objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+# add title
+title(main="Objective Function", line=-1)
+# sample of normal variables
+sam_ple <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  sum(2*log(pa_r[2]) +
+    ((sam_ple - pa_r[1])/pa_r[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, sam_ple)
+    object_ive(c(mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd,
+vec_objective, sam_ple=sam_ple)
+objective_min <- which(  # grid search
+  objective_grid==min(objective_grid),
+  arr.ind=TRUE)
+objective_min
+par_mean[objective_min[1]]  # mean
+par_sd[objective_min[2]]  # sd
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+       (objective_min[, 2] + -1:1)]
+par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
+# perspective plot of log-likelihood function
+persp(z=-objective_grid,
+theta=45, phi=30, shade=0.5,
+border="green", zlab="objective",
+main="objective function")
+# interactive perspective plot of log-likelihood function
+library(rgl)  # load package rgl
+par3d(cex=2.0)  # scale text by factor of 2
+persp3d(z=-objective_grid, zlab="objective",
+  col="green", main="objective function")
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=sam_ple,
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(10, 10), # upper constraint
+  lower=c(-10, 0.1)) # lower constraint
+# optimal parameters
+optim_fit$par
+# perform optimization using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit$estimate
+optim_fit$sd
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+curve(expr=dnorm(x, mean=optim_fit$par["mean"],
+           sd=optim_fit$par["sd"]),
+add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+ leg="optimal parameters",
+ lwd=2, bg="white", col="red")
+# sample from mixture of normal distributions
+sam_ple <- c(rnorm(100, sd=1.0),
+             rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  likelihood <- pa_r[1]/pa_r[3] *
+  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
+  if (any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, sam_ple)
+    object_ive(c(w, m1, s1, mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd,
+    vec_objective, sam_ple=sam_ple,
+    w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+         (objective_min[, 2] + -1:1)]
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+theta=45, phi=30,
+shade=0.5,
+col=rainbow(50),
+border="green",
+main="objective function")
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_fit <- optim(par=par_init,
+      fn=object_ive,
+      sam_ple=sam_ple,
+      method="L-BFGS-B",
+      upper=c(1,10,10,10,10),
+      lower=c(0,-10,0.2,-10,0.2))
+optim_fit$par
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+fit_func <- function(x, pa_r) {
+  pa_r["weight"] *
+    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"]) *
+    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
+type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+ leg="optimal parameters",
+ lwd=2, bg="white", col="red")

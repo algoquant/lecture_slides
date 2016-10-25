@@ -9,12 +9,12 @@ foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
 foo == 0.1  # foo is not equal to "0.1"
-print(foo, digits=10)
-print(foo, digits=16)
+format(foo, digits=10)
+format(foo, digits=16)
 # foo is equal to "0.1" within machine precision
 all.equal(foo, 0.1)
 foo <- (3-2.9)
-print(foo, digits=20)
+format(foo, digits=20)
 # info machine precision of computer R is running on
 # ?.Machine
 # machine precision
@@ -23,7 +23,7 @@ load(file="C:/Develop/data/etf_data.RData")
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
-print(foo^2, digits=20)
+format(foo^2, digits=20)
 # foo^2 is equal to "2" within machine precision
 all.equal(foo^2, 2)
 # numbers with precision 0.1
@@ -48,7 +48,7 @@ load(file="C:/Develop/data/etf_data.RData")
 6 %/% 2  # use integers to get correct result
 # 0.2 stored as binary number
 # slightly larger than 0.2
-print(0.2, digits=22)
+format(0.2, digits=22)
 # get size of an object
 object.size(runif(1e6))
 format(object.size(runif(1e6)), units="MB")
@@ -367,46 +367,50 @@ qnorm(0.75)
 sam_ple[0.75*sample_length]
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-simu_length <- 1000  # number of simulation steps
-simu_prices <- numeric(simu_length)  # initialize prices
-barrier_level <- 20  # barrier level
-simu_prices[1] <- 0  # first simulated price
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
 in_dex <- 2  # initialize simulation index
-while ((in_dex <= simu_length) &&
- (simu_prices[in_dex - 1] < barrier_level)) {
-  simu_prices[in_dex] <- # simulate next price
-    simu_prices[in_dex - 1] + rnorm(1)
+while ((in_dex <= len_gth) &&
+ (pa_th[in_dex - 1] < lev_el)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # advance in_dex
 }  # end while
-if (in_dex <= simu_length) {  # fill zero prices
-  simu_prices[in_dex:simu_length] <- simu_prices[in_dex - 1]
-}
+# fill remaining pa_th after it crosses lev_el
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
 # create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",  # create plot
      lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
+abline(h=lev_el, lwd=2, col="red")  # add horizontal line
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-simu_length <- 1000  # number of simulation steps
-barrier_level <- 20  # barrier level
-# simulate prices
-simu_prices <- cumsum(rnorm(simu_length))
-# find index when prices cross barrier_level
-which_index <- which(simu_prices > barrier_level)
-# fill prices after crossing barrier_level
-if (length(which_index)>0) {
-  simu_prices[(which_index[1]+1):simu_length] <-
-    simu_prices[which_index[1]]
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+# simulate path of Brownian motion
+pa_th <- cumsum(rnorm(len_gth))
+# find index when pa_th crosses lev_el
+cro_ss <- which(pa_th > lev_el)
+# fill remaining pa_th after it crosses lev_el
+if (length(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):len_gth] <-
+    pa_th[cro_ss[1]]
 }  # end if
 # create daily time series starting 2011
-ts_var <- ts(data=simu_prices, frequency=365,
+ts_path <- ts(data=pa_th, frequency=365,
      start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
+# create plot with horizontal line
+plot(ts_path, type="l", col="black",
      lty="solid", xlab="", ylab="")
-abline(h=barrier_level, lwd=2, col="red")  # add horizontal line
-title(main="Random Prices", line=0)  # add title
+abline(h=lev_el, lwd=2, col="red")
+title(main="Brownian motion crossing
+  a barrier level", line=0.5)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 sample_length <- 1000
@@ -601,16 +605,17 @@ unlist(optimize(f=object_ive, interval=c(-4, 2)))
 unlist(optimize(f=object_ive, interval=c(0, 8)))
 options(width=60, dev='pdf')
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot objective function
+# plot the objective function
 curve(expr=object_ive, type="l", xlim=c(-8, 9),
 xlab="", ylab="", lwd=2)
-title(main="Objective Function", line=-1)  # add title
+# add title
+title(main="Objective Function", line=-1)
 # sample of normal variables
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
-object_ive <- function(parm, sam_ple) {
-  sum(2*log(parm[2]) +
-    ((sam_ple - parm[1])/parm[2])^2)
+object_ive <- function(pa_r, sam_ple) {
+  sum(2*log(pa_r[2]) +
+    ((sam_ple - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
@@ -645,21 +650,25 @@ persp3d(z=-objective_grid, zlab="objective",
   col="green", main="objective function")
 # initial parameters
 par_init <- c(mean=0, sd=1)
-# perform optimization quasi-Newton method
-optim_run <- optim(par=par_init,
-       fn=object_ive,
-       sam_ple=sam_ple,
-       method="L-BFGS-B",
-       upper=c(10, 10),
-       lower=c(-10, 0.1))
+# perform optimization using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=sam_ple,
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(10, 10), # upper constraint
+  lower=c(-10, 0.1)) # lower constraint
 # optimal parameters
-optim_run$par
+optim_fit$par
+# perform optimization using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit$estimate
+optim_fit$sd
 # plot histogram
 histo_gram <- hist(sam_ple, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_run$par["mean"],
-           sd=optim_run$par["sd"]),
+curve(expr=dnorm(x, mean=optim_fit$par["mean"],
+           sd=optim_fit$par["sd"]),
 add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
@@ -669,10 +678,10 @@ load(file="C:/Develop/data/etf_data.RData")
 sam_ple <- c(rnorm(100, sd=1.0),
              rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
-object_ive <- function(parm, sam_ple) {
-  likelihood <- parm[1]/parm[3] *
-  dnorm((sam_ple-parm[2])/parm[3]) +
-  (1-parm[1])/parm[5]*dnorm((sam_ple-parm[4])/parm[5])
+object_ive <- function(pa_r, sam_ple) {
+  likelihood <- pa_r[1]/pa_r[3] *
+  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
   if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
@@ -707,22 +716,24 @@ load(file="C:/Develop/data/etf_data.RData")
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
-optim_run <- optim(par=par_init,
+optim_fit <- optim(par=par_init,
       fn=object_ive,
       sam_ple=sam_ple,
       method="L-BFGS-B",
       upper=c(1,10,10,10,10),
       lower=c(0,-10,0.2,-10,0.2))
-optim_run$par
+optim_fit$par
 # plot histogram
 histo_gram <- hist(sam_ple, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
-fit_func <- function(x, parm) {
-  parm["weight"] * dnorm(x, mean=parm["m1"], sd=parm["s1"]) +
-    (1-parm["weight"]) * dnorm(x, mean=parm["m2"], sd=parm["s2"])
+fit_func <- function(x, pa_r) {
+  pa_r["weight"] *
+    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"]) *
+    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
 }  # end fit_func
-curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
+curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
 type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",

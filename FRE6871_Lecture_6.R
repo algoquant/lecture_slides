@@ -4,219 +4,199 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-Sys.Date()  # get today's date
-date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
-date_time
-class(date_time)  # Date object
-as.Date("07-14-2014", "%m-%d-%Y")  # specify format
-date_time + 20  # add 20 days
-# extract internal representation to integer
-as.numeric(date_time)
-date_old <- as.Date("07/14/2013", "%m/%d/%Y")
-date_old
-# difference between dates
-difftime(date_time, date_old, units="weeks")
-weekdays(date_time)  # get day of the week
-# coerce numeric into date-times
-date_time <- 0
-attributes(date_time) <- list(class="Date")
-date_time  # "Date" object
-structure(0, class="Date")  # "Date" object
-structure(10000.25, class="Date")
-date_time <- Sys.time()  # get today's date and time
-date_time
-class(date_time)  # POSIXct object
-# POSIXct stored as integer moment of time
-as.numeric(date_time)
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-date_time <- as.POSIXct("2014-07-14 13:30:10")
-# different time zones can have same clock time
-as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
-as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# format argument allows parsing different date-time string formats
-as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
-     tz="America/New_York")
-# same moment of time corresponds to different clock times
-time_ny <- as.POSIXct("2014-07-14 13:30:10", 
-     tz="America/New_York")
-time_ldn <- as.POSIXct("2014-07-14 13:30:10", 
-     tz="UTC")
-# add five hours to POSIXct
-time_ny + 5*60*60
-# subtract POSIXct
-time_ny - time_ldn
-class(time_ny - time_ldn)
-# compare POSIXct
-time_ny > time_ldn
-# create vector of POSIXct times during trading hours
-trading_times <- seq(
-  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"), 
-  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"), 
-  by="10 min")
-head(trading_times, 3)
-tail(trading_times, 3)
-# POSIXct is stored as integer moment of time
-int_time <- as.numeric(date_time)
-# same moment of time corresponds to different clock times
-as.POSIXct(int_time, origin="1970-01-01", 
-     tz="America/New_York")
-as.POSIXct(int_time, origin="1970-01-01", 
-     tz="UTC")
-# same clock time corresponds to different moments of time
-as.POSIXct("2014-07-14 13:30:10", 
-     tz="America/New_York") - 
-  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# add 20 seconds to POSIXct
-date_time + 20
-date_time  # POSIXct date and time
-# parse POSIXct to string representing the clock time
-format(date_time)
-class(format(date_time))  # character string
-# get clock times in different time zones
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# format with custom format strings
-format(date_time, "%m/%Y")
-format(date_time, "%m-%d-%Y %H hours")
-# trunc to hour
-format(date_time, "%m-%d-%Y %H:00:00")
-# Date converted to midnight UTC moment of time
-as.POSIXct(Sys.Date())
-as.POSIXct(as.numeric(as.POSIXct(Sys.Date())), 
-     origin="1970-01-01",
-     tz="UTC")
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2014-07-14 18:30:10")
-date_time
-class(date_time)  # POSIXlt object
-as.POSIXct(date_time)  # coerce to POSIXct object
-# extract internal list representation to vector
-unlist(date_time)
-date_time + 20  # add 20 seconds
-class(date_time + 20)  # implicit coercion to POSIXct
-trunc(date_time, units="hours")  # truncate to closest hour
-trunc(date_time, units="days")  # truncate to closest day
-methods(trunc)  # trunc methods
-trunc.POSIXt
-Sys.timezone()  # get time-zone
-Sys.setenv(tz="UTC")  # set time-zone to UTC
-Sys.timezone()  # get time-zone
-# Standard Time in effect
-as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-# Daylight Savings Time in effect
-as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
-date_time <- Sys.time()  # today's date and time
-# convert to character in different TZ
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# parse back to POSIXct
-as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between local time and UTC
-as.POSIXct(format(Sys.time(), tz="UTC")) - 
-  as.POSIXct(format(Sys.time(), tz="America/New_York"))
-# set time-zone to New York
-Sys.setenv(tz="America/New_York")
-library(lubridate)  # load lubridate
-# parse strings into date-times
-as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
-date_time <- mdy("07-14-2014", tz="America/New_York")
-date_time
-class(date_time)  # POSIXct object
-dmy("14.07.2014", tz="America/New_York")
+par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+lamb_da <- c(0.5, 1, 1.5)
+col_ors <- c("red", "black", "blue")
+# plot three curves in loop
+for (in_dex in 1:3) {
+  curve(expr=plogis(x, scale=lamb_da[in_dex]),
+xlim=c(-4, 4), type="l",
+xlab="", ylab="", lwd=2,
+col=col_ors[in_dex], add=(in_dex>1))
+}  # end for
+# add title
+title(main="Logistic function", line=0.5)
+# add legend
+legend("topleft", title="Scale parameters",
+       paste("lambda", lamb_da, sep="="),
+       inset=0.05, cex=0.8, lwd=2,
+       lty=c(1, 1, 1), col=col_ors)
+# simulate categorical data
+sco_re <- sort(runif(100))
+thresh_old <- 0.5  # probability threshold
+ac_tive <- ((sco_re + rnorm(100, sd=0.1)) > thresh_old)
+# Wilcoxon test for sco_re predictor
+wilcox.test(sco_re[ac_tive], sco_re[!ac_tive])
+# perform logit regression
+log_it <- glm(ac_tive ~ sco_re, family=binomial(logit))
+summary(log_it)
+plot(x=sco_re, y=log_it$fitted.values, type="l", lwd=3,
+     main="Category densities and logistic function",
+     xlab="score", ylab="probability")
+den_sity <- density(sco_re[ac_tive])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="red")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
+den_sity <- density(sco_re[!ac_tive])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="blue")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
+# add legend
+legend(x="top", bty="n", lty=c(1, NA, NA), lwd=c(3, NA, NA), pch=c(NA, 15, 15),
+ legend=c("logistic fit", "active", "non-active"),
+ col=c("black", "red", "blue"),
+ text.col=c("black", "red", "blue"))
+library(ISLR)  # load package ISLR
+# get documentation for package tseries
+packageDescription("ISLR")  # get short description
 
-# parse numeric into date-times
-as.POSIXct(as.character(14072014), format="%d%m%Y", 
-                  tz="America/New_York")
-dmy(14072014, tz="America/New_York")
+help(package="ISLR")  # load help page
 
-# parse decimal to date-times
-decimal_date(date_time)
-date_decimal(2014.25, tz="America/New_York")
-date_decimal(decimal_date(date_time), tz="America/New_York")
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, 
-               tz="America/New_York")
-date_time
+library(ISLR)  # load package ISLR
 
-# get same moment of time in "UTC" time zone
-with_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
+data(package="ISLR")  # list all datasets in ISLR
 
-# get same clock time in "UTC" time zone
-force_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="America/New_York"), 
-     tz="UTC")
+ls("package:ISLR")  # list all objects in ISLR
 
-# same moment of time
-date_time - with_tz(date_time, "UTC")
+detach("package:ISLR")  # remove ISLR from search path
+library(ISLR)  # load package ISLR
+# load credit default data
+attach(Default)
+summary(Default)
+sapply(Default, class)
+dim(Default); head(Default)
+x_lim <- range(balance)
+y_lim <- range(income)
+# plot data points for non-defaulters
+default_ed <- (default=="Yes")
+plot(income ~ balance,
+     main="Default dataset from package ISLR",
+     xlim=x_lim, ylim=y_lim,
+     data=Default[!default_ed, ],
+     pch=4, col="blue")
+# plot data points for defaulters
+points(income ~ balance,
+ data=Default[default_ed, ],
+ pch=4, col="red")
+# add legend
+legend(x="topright", bty="n",
+ legend=c("non-defaulters", "defaulters"),
+ col=c("blue", "red"), lty=1, pch=4)
+default_ed <- (default=="Yes")
+# Wilcoxon test for balance predictor
+wilcox.test(balance[default_ed], balance[!default_ed])
+# Wilcoxon test for income predictor
+wilcox.test(income[default_ed], income[!default_ed])
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+par(mfrow=c(1,2))  # set plot panels
+# balance boxplot
+boxplot(formula=balance ~ default,
+  col="lightgrey",
+  main="balance", xlab="default")
+# income boxplot
+boxplot(formula=income ~ default,
+  col="lightgrey",
+  main="income", xlab="default")
+# fit logistic regression model
+log_it <- glm(default ~ balance,
+        family=binomial(logit))
+summary(log_it)
+plot(x=balance, y=default_ed,
+     main="Logistic regression of credit defaults", col="orange",
+     xlab="credit balance", ylab="defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=log_it$fitted.values[or_der],
+col="blue", lwd=2)
+legend(x="topleft", inset=0.1,
+ legend=c("defaults", "logit fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# calculate cumulative defaults
+default_ed <- (default=="Yes")
+to_tal <- sum(default_ed)
+default_s <- sapply(balance, function(ba_lance) {
+    sum(default_ed[balance <= ba_lance])
+})  # end sapply
+# perform logit regression
+log_it <- glm(
+  cbind(default_s, to_tal-default_s) ~
+    balance,
+  family=binomial(logit))
+summary(log_it)
+plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
+     main="Cumulative defaults versus balance",
+     xlab="credit balance", ylab="cumulative defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=log_it$fitted.values[or_der],
+col="blue", lwd=2)
+legend(x="topleft", inset=0.1,
+ legend=c("cumulative defaults", "fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# fit multifactor logistic regression model
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1], 
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+log_it <- glm(for_mula, data=Default, 
+        family=binomial(logit))
+summary(log_it)
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+default_ed <- (default=="Yes")
+stu_dent <- (student=="Yes")
+# calculate cumulative defaults
+default_s <- sapply(balance,
+  function(ba_lance) {
+    c(stu_dent=sum(default_ed[stu_dent & (balance <= ba_lance)]),
+non_student=sum(default_ed[(!stu_dent) & (balance <= ba_lance)]))
+})  # end sapply
+to_tal <- c(sum(default_ed[stu_dent]), sum(default_ed[!stu_dent]))
+default_s <- t(default_s / to_tal)
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# plot cumulative defaults
+par(mfrow=c(1,2))  # set plot panels
+or_der <- order(balance)
+plot(x=balance[or_der], y=default_s[or_der, 1],
+     col="red", t="l", lwd=2,
+     main="Cumulative defaults of\n students and non-students",
+     xlab="credit balance", ylab="")
+lines(x=balance[or_der], y=default_s[or_der, 2],
+col="blue", lwd=2)
+legend(x="topleft", bty="n",
+ legend=c("students", "non-students"),
+ col=c("red", "blue"), text.col=c("red", "blue"),
+ lwd=c(3, 3))
+# balance boxplot for student factor
+boxplot(formula=balance ~ student,
+  col="lightgrey",
+  main="balance", xlab="student")
+# fit full logistic regression model
+for_mula <- default ~ balance
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+log_it <- glm(for_mula, data=Default,
+        family=binomial(logit))
+fore_casts <- predict(log_it, type="response")
+length(fore_casts)
+fore_casts[1:10]
+thresh_old <- 0.5  # probability threshold
+# calculate confusion matrix
+table((fore_casts>thresh_old), default_ed)
+sum(default_ed)
 
-# different moments of time
-date_time - force_tz(date_time, "UTC")
-library(lubridate)  # load lubridate
-# Daylight Savings Time handling periods vs durations
-date_time <- as.POSIXct("2013-03-09 11:00:00", 
-                  tz="America/New_York")
-date_time
-date_time + ddays(1)  # add duration
-date_time + days(1)  # add period
+# fit logistic regression over training data
+sam_ple <- sample(x=1:NROW(Default), size=NROW(Default)/2)
+train_data <- Default[sam_ple, ]
+log_it <- glm(for_mula, data=train_data,
+        family=binomial(link="logit"))
 
-leap_year(2012)  # leap year
-date_time <- dmy(01012012, tz="America/New_York")
-date_time
-date_time + dyears(1)  # add duration
-date_time + years(1)  # add period
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, tz="America/New_York")
-date_time
-# add periods to a date-time
-c(date_time + seconds(1), date_time + minutes(1), 
-date_time + days(1), date_time + months(1))
-
-# create vectors of dates
-date_time <- ymd(20140714, tz="America/New_York")
-date_time + 0:2 * months(1)  # monthly dates
-date_time + months(0:2)
-date_time + 0:2 * months(2)  # bi-monthly dates
-date_time + seq(0, 5, by=2) * months(1)
-seq(date_time, length=3, by="2 months")
-library(lubridate)  # load lubridate
-# adding monthly periods can create invalid dates
-date_time <- ymd(20120131, tz="America/New_York")
-date_time + 0:2 * months(1)
-date_time + months(1)
-date_time + months(2)
-
-# create vector of end-of-month dates
-date_time %m-% months(13:1)
-library(zoo)  # load zoo
-library(RQuantLib)  # load RQuantLib
-
-# create daily date series of class 'Date'
-in_dex <- Sys.Date() + -5:2
-in_dex
-
-# create boolean vector of business days
-is_busday <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", in_dex)
-
-# create daily series of business days
-bus_index <- in_dex[is_busday]
-bus_index
-library(zoo)  # load package zoo
-date_time <- Sys.Date()  # create date series of class 'Date'
-in_dex <- date_time + 0:365  # daily series over one year
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y")  # print first few dates
-# create daily date-time series of class 'POSIXct'
-in_dex <- seq(Sys.time(), by="days", length.out=365)
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
-# create series of monthly dates of class 'zoo'
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # print first few dates
-# create series of quarterly dates of class 'zoo'
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # print first few dates
-# parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(tz="UTC")
-as.POSIXct(head(qrtly_index, 4))
+# forecast over test data
+test_data <- Default[-sam_ple, ]
+fore_casts <- predict(log_it, newdata=test_data, type="response")
+# calculate confusion matrix
+table((fore_casts>thresh_old), test_data$default=="Yes")
+detach(Default)

@@ -4,17 +4,23 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-## # display documentation on function "getwd"
-## help(getwd)
-## ?getwd  # equivalent to "help(getwd)"
-## help.start()  # open the hypertext documentation
-my_var <- 3  # "<-" and "=" are valid assignment operators
+# display documentation on function "getwd"
+help(getwd)
+?getwd  # equivalent to "help(getwd)"
+help.start()  # open the hypertext documentation
+# "<-" and "=" are valid assignment operators
+my_var <- 3
 
-my_var  # typing a symbol or expression evaluates it
+# typing a symbol or expression evaluates it
+my_var
 
-my_var <- "Hello World!"  # text in quotes is interpreted as a string
+# text in quotes is interpreted as a string
+my_var <- "Hello World!"
 
-my_var  # typing a symbol or expression evaluates it
+# typing a symbol or expression evaluates it
+my_var
+
+my_var  # text after hash is treated as comment
 getwd()  # get cwd
 setwd("C:/Develop/R")  # set cwd
 getwd()  # get cwd
@@ -40,10 +46,10 @@ ls()  # list objects
 load_ed <- load(file="C:/Develop/data/my_data.RData")
 load_ed
 ls()  # list objects
-##   q()  # quit R session
-## history(5)  # display last 5 commands
-## savehistory(file="myfile")  # default is ".Rhistory"
-## loadhistory(file="myfile")  # default is ".Rhistory"
+  q()  # quit R session
+history(5)  # display last 5 commands
+savehistory(file="myfile")  # default is ".Rhistory"
+loadhistory(file="myfile")  # default is ".Rhistory"
 sessionInfo()  # get R version and other session info
 Sys.getenv()[5:7]  # list some environment variables
 
@@ -58,37 +64,135 @@ Sys.getenv("R_home")  # get R_HOME directory
 R.home()  # get R_HOME directory
 
 R.home("etc")  # get "etc" sub-directory of R_HOME
-## # ?options  # long list of global options
-## 
-## # interpret strings as characters, not factors
-## getOption("stringsAsFactors")  # display option
-## options("stringsAsFactors")  # display option
-## options(stringsAsFactors=FALSE)  # set option
-## 
-## # number of digits printed for numeric values
-## options(digits=3)
-## 
-## # number of items printed to console
-## options(max.print=30)
-## 
-## # warning levels options
-## # negative - warnings are ignored
-## options(warn=-1)
-## # zero - warnings are stored and printed after top-level function has completed
-## options(warn=0)
-## # one - warnings are printed as they occur
-## options(warn=1)
-## # two or larger - warnings are turned into errors
-## options(warn=2)
+# ?options  # long list of global options
+# interpret strings as characters, not factors
+getOption("stringsAsFactors")  # display option
+options("stringsAsFactors")  # display option
+options(stringsAsFactors=FALSE)  # set option
+# number of digits printed for numeric values
+options(digits=3)
+# control exponential scientific notation of print method
+# positive "scipen" values bias towards fixed notation
+# negative "scipen" values bias towards scientific notation
+options(scipen=100)
+# maximum number of items printed to console
+options(max.print=30)
+# warning levels options
+# negative - warnings are ignored
+options(warn=-1)
+# zero - warnings are stored and printed after top-level function has completed
+options(warn=0)
+# one - warnings are printed as they occur
+options(warn=1)
+# two or larger - warnings are turned into errors
+options(warn=2)
+# save all options in variable
+op_tions <- options()
+# restore all options from variable
+options(op_tions)
+# single numbers are vectors of length 1
+1
+# character strings are vectors of length 1
+"a"
+# strings without quotes are variable names
+a  # variable "a" doesn't exist
+# list elements can have different mode
+list(aa=c('a', 'b'), bb=1:5)
+data.frame(aa=c('a', 'b'), bb=1:2)
+is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
+is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+my_var <- "hello"
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- runif(5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(1:10, 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(runif(10), 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- list(aa=c('a', 'b'), bb=1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
+# a simple vector has no attributes
+attributes(5:10)
+my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+# named vector has "names" attribute
+attributes(my_var)
+my_var <- 1:10
+is.vector(my_var)  # is the object a vector?
+attributes(my_var) <- list(my_attr="foo")
+my_var
+is.vector(my_var)  # is the object a vector?
+my_var <- 0
+attributes(my_var) <- list(class="Date")
+my_var  # "Date" object
+structure(0, class="Date")  # "Date" object
+my_var <- matrix(runif(10), 2, 5)
+class(my_var)  # has implicit class
+# but no explicit "class" attribute
+attributes(my_var)
+c(typeof(my_var), mode(my_var), class(my_var))
+# assign explicit "class" attribute
+class(my_var) <- "my_class"
+class(my_var)  # has explicit "class"
+# has explicit "class" attribute
+attributes(my_var)
+is.matrix(my_var)  # is the object a matrix?
+is.vector(my_var)  # is the object a vector?
+attributes(unclass(my_var))
+# integer implicit class derived from type
+my_var <- vector(mode="integer", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+# numeric implicit class derived from mode
+my_var <- vector(mode="numeric", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+# adding dim attribute changes implicit class to matrix
+dim(my_var) <- c(5, 2)
+c(typeof(my_var), mode(my_var), class(my_var))
+# data frames have implicit dim attribute
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
+attributes(my_var)
+dim(my_var)
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+mode(my_var) <- "character"  # coerce to "character"
+my_var
+c(typeof(my_var), mode(my_var), class(my_var))
+# explicitly coerce to "character"
+my_var <- as.character(1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+as.logical(0:3)  # explicit coercion to "logical"
+as.numeric(c(FALSE, TRUE, TRUE, TRUE))
+c(1:3, 'a')  # implicit coercion to "character"
+# explicit coercion to "numeric"
+as.numeric(c(1:3, 'a'))
 "Hello World!"  # type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name
 is.vector(1)  # single number is a vector
 is.vector("a")  # string is a vector
 4:8  # create a vector
-c(1, 2, 3, 4, 5)  # create vector using c() combine function
-c('a', 'b', 'c')  # create vector using c() combine function
-c(1, 'b', 'c')  # create vector using c() combine function
+# create vector using c() combine function
+c(1, 2, 3, 4, 5)
+# create vector using c() combine function
+c('a', 'b', 'c')
+# create vector using c() combine function
+c(1, 'b', 'c')
 str_var <- "Some string"
 str_var
 str_var[1]
@@ -97,7 +201,8 @@ str_var[2]
 length(str_var)  # length of vector
 nchar(str_var)  # length of string
 
-cat("Hello", "World!")  # concatenate and echo to console
+# concatenate and echo to console
+cat("Hello", "World!")
 cat("Enter\ttab")
 cat("Enter\nnewline")
 cat("Enter\\backslash")
@@ -199,6 +304,71 @@ vec_tor < 1  # boolean vector of elements less than one
 vec_tor[vec_tor > 1]
 vec_tor[vec_tor > 0.5]  # filter elements > 0.5
 which(vec_tor > 0.5)  # index of elements > 0.5
+# create factor vector
+fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fac_tor
+fac_tor[3]
+attributes(fac_tor)  # get factor attributes
+levels(fac_tor)  # get allowed values
+as.numeric(fac_tor)  # get encoding vector
+is.vector(fac_tor)
+as.factor(1:5)  # coerce vector to factor
+# coerce factor to character vector
+as.vector(as.factor(1:5))
+fac_tor
+levels(fac_tor)  # get allowed values
+unique(fac_tor)  # get unique elements
+# get contingency (frequency) table
+table(fac_tor)
+# get contingency table using sapply
+sapply(levels(fac_tor), 
+ function(le_vel) {
+   sum(fac_tor==le_vel)
+ })  # end sapply
+library(microbenchmark)
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+       all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+       rightmost.closed=TRUE)
+# named numeric vector of breakpoints
+brea_ks <- c(freezing=0, very_cold=30,
+       cold=50, pleasant=60,
+       warm=80, hot=90)
+brea_ks
+tempe_ratures <- runif(10, min=10, max=100)
+feels_like <- names(
+  brea_ks[findInterval(x=tempe_ratures,
+                 vec=brea_ks)])
+names(tempe_ratures) <- feels_like
+tempe_ratures
+library(microbenchmark)
+foo <- sample(0:6) + 0.1
+foo
+cut(x=foo, breaks=c(2, 4, 6, 8))
+rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+# cut() replicates findInterval()
+cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
+    right=FALSE)
+findInterval(x=1:8, vec=c(3, 5, 7))
+# findInterval() is a compiled function, so it's faster than cut()
+vec_tor <- rnorm(1000)
+summary(microbenchmark(
+  find_interval=
+    findInterval(x=vec_tor, vec=c(3, 5, 7)),
+  cuut=
+    cut(x=vec_tor, breaks=c(3, 5, 7)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
 mat_rix  # by default matrices are constructed column-wise
 # create a matrix row-wise
@@ -208,6 +378,11 @@ mat_rix[2, ]  # extract second row
 mat_rix[, 3]  # extract third column
 mat_rix[, c(1,3)]  # extract first and third column
 mat_rix[, -2]  # remove second column
+# get the number of rows or columns
+nrow(vec_tor); ncol(vec_tor)
+NROW(vec_tor); NCOL(vec_tor)
+nrow(mat_rix); ncol(mat_rix)
+NROW(mat_rix); NCOL(mat_rix)
 attributes(mat_rix)  # get matrix attributes
 dim(mat_rix)  # get dimension attribute
 class(mat_rix)  # get class attribute
@@ -258,46 +433,66 @@ rbinom(n=20, size=3, 0.2)
 # flip unbiased coin once, 20 times
 sample(x=0:1, size=20, replace=TRUE)  # fast
 as.numeric(runif(20) < 0.5)  # slower
-sample(x=5)  # permutation of five numbers
-sample(x=5, size=3)  # sample of size three
-sample(x=5, replace=TRUE)  # sample with replacement
+# permutation of five numbers
+sample(x=5)
+# permutation of four strings
+sample(x=c("apple", "grape", "orange", "peach"))
+# sample of size three
+sample(x=5, size=3)
+# sample with replacement
+sample(x=5, replace=TRUE)
 sample(  # sample of strings
   x=c("apple", "grape", "orange", "peach"),
   size=12,
   replace=TRUE)
-# binomial sample: flip unbiased coin once, 20 times
+# binomial sample: flip coin once, 20 times
 sample(x=0:1, size=20, replace=TRUE)
 # flip unbiased coin once, 20 times
-as.numeric(runif(20) < 0.5)  # slower
+as.numeric(runif(20) > 0.5)  # slower
 rm(list=ls())
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-rand_sample <- rnorm(1000)
+sam_ple <- rnorm(1000)
 
-mean(rand_sample)  # sample mean
+mean(sam_ple)  # sample mean
 
-median(rand_sample)  # sample median
+median(sam_ple)  # sample median
 
-sd(rand_sample)  # sample standard deviation
+sd(sam_ple)  # sample standard deviation
 rm(list=ls())
-ts_rets <- diff(log(EuStockMarkets[, 1]))  # DAX returns
-len_rets <- length(ts_rets)  # number of observations
-mean_rets <- mean(ts_rets)  # calculate mean
-sd_rets <- sd(ts_rets)  # calculate standard deviation
-# calculate skew
-len_rets*(sum(((ts_rets - mean_rets)/sd_rets)^3))/
-  ((len_rets-1)*(len_rets-2))
-# calculate kurtosis
-len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
-  ((len_rets-1)^3)
-ts_rets <- rnorm(len_rets, sd=2)  # random normal returns
-mean_rets <- mean(ts_rets); sd_rets <- sd(ts_rets)
-# calculate skew
-len_rets*(sum(((ts_rets - mean_rets)/sd_rets)^3))/
-  ((len_rets-1)*(len_rets-2))
-# calculate kurtosis
-len_rets*(len_rets+1)*(sum(((ts_rets - mean_rets)/sd_rets)^4))/
-  ((len_rets-1)^3)
+# DAX returns
+ts_rets <- diff(log(EuStockMarkets[, 1]))
+# number of observations
+len_rets <- length(ts_rets)
+# mean of DAX returns
+mean_rets <- mean(ts_rets)
+# standard deviation of DAX returns
+sd_rets <- sd(ts_rets)
+# skew of DAX returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((ts_rets - mean_rets)/sd_rets)^3)
+# kurtosis of DAX returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((ts_rets - mean_rets)/sd_rets)^4)
+# random normal returns
+ts_rets <- rnorm(len_rets, sd=2)
+# mean and standard deviation of random normal returns
+mean_rets <- mean(ts_rets)
+sd_rets <- sd(ts_rets)
+# skew of random normal returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((ts_rets - mean_rets)/sd_rets)^3)
+# kurtosis of random normal returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((ts_rets - mean_rets)/sd_rets)^4)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -351,3 +546,19 @@ test_func <- function(in_put) {
 
 test_func(2)
 test_func("hello")
+setwd("C:/Develop/data")
+# define a function that returns invisibly
+return_invisible <- function(in_put) {
+  invisible(in_put)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects

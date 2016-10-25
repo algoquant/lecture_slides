@@ -287,20 +287,18 @@ class(obj_string)
 # assign to value returned by "class" function
 class(obj_string) <- "string"
 class(obj_string)
-# define replacement function
-'last<-' <- function(vec_tor, in_put) {
-  vec_tor[length(vec_tor)] <- in_put
-  vec_tor
-}  # end last
-ls()
-x <- 1:10
-# produces error
-last(x) <- 11
-# this works!
+# define function last()
 last <- function(vec_tor) {
   vec_tor[length(vec_tor)]
 }  # end last
-last(x) <- 22
+last(1:10)
+# define replacement function last()
+'last<-' <- function(vec_tor, value) {
+  vec_tor[length(vec_tor)] <- value
+  vec_tor
+}  # end last
+x <- 1:5
+last(x) <- 11
 x
 # create functional that accepts a function as input argument
 func_tional <- function(func_name) {
