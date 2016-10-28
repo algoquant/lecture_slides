@@ -48,7 +48,7 @@ ImpliVol_BS <- function(S, K, mat, r, Pr, Type)
   count <- 0
   error <- BS(S, K, mat, r, vol, Type) - Pr  # Difference between real prices and BS prices.
   
-  ## repeat until error is sufficiently small or counter hits 1000
+  repeat until error is sufficiently small or counter hits 1000
   while(abs(error) > 0.00001 && count<1000){
     if(error < 0){
       vol.down <- vol
@@ -61,7 +61,7 @@ ImpliVol_BS <- function(S, K, mat, r, Pr, Type)
     count <- count + 1
   }
   
-  ## return NA if counter hit 1000
+  return NA if counter hit 1000
   if(count==1000){
     return(NA)
   }else{

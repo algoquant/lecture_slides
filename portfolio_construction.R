@@ -4,22 +4,22 @@ options(digits=3)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-load(file="C:/Develop/data/etf_data.RData")
-re_turns <- c(asset1=0.02, asset2=0.04)
 risk_free <- 0.01
+re_turns <- c(asset1=0.02, asset2=0.04)
 std_devs <- c(asset1=0.8, asset2=1.6)
 cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
+co_var <- matrix(c(1, cor_rel, cor_rel, 1),
+           nc=2)
 co_var <- t(t(std_devs*co_var)*std_devs)
 weight_s <- seq(from=-1, to=2, length.out=31)
-portf_rets <- weight_s*re_turns[1] +
-  (1 - weight_s)*re_turns[2]
-portf_sd <- sqrt(co_var[1, 1]*weight_s^2 +
-         co_var[2, 2]*(1 - weight_s)^2 +
-         2*weight_s*(1 - weight_s)*co_var[1, 2])
-in_dex <- which.max((portf_rets-risk_free)/portf_sd)
-max_sr <- (portf_rets[in_dex]-risk_free)/portf_sd[in_dex]
-# plot scatterplot of portfolios
+weight_s <- cbind(weight_s, 1-weight_s)
+portf_rets <- weight_s %*% re_turns
+portf_sd <-
+  sqrt(rowSums(weight_s * (weight_s %*% co_var)))
+sharpe_ratios <- (portf_rets-risk_free)/portf_sd
+in_dex <- which.max(sharpe_ratios)
+max_Sharpe <- max(sharpe_ratios)
+# plot efficient frontier
 x11(width=(wid_th <- 6), height=(hei_ght <- 5))
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(portf_sd, portf_rets, t="l",
@@ -40,57 +40,58 @@ text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
 points(x=0, y=risk_free)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_sr, col="blue")
+abline(a=risk_free, b=max_Sharpe, col="blue")
 range_s <- par("usr")
 text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(max_sr*(range_s[2]-range_s[1])/
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
              (range_s[4]-range_s[3])*
              hei_ght/wid_th)/(0.25*pi))
-load(file="C:/Develop/data/etf_data.RData")
 # vector of symbol names
 sym_bols <- c("VTI", "IEF")
-# vector of portfolio weights
+# matrix of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
+weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
-ret_sd <- sapply(weight_s, function(wei_ght) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% c(wei_ght, 1-wei_ght)
-  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
-})  # end sapply
-risk_free <- 0.01
-ret_sd <- rbind(ret_sd, (ret_sd[1, ]-risk_free)/ret_sd[2, ])
-rownames(ret_sd)[3] <- "sr"
-in_dex <- which.max(ret_sd[3, ])
-max_sr <- ret_sd[3, in_dex]
+portf_rets <- env_etf$re_turns[, sym_bols]
+ret_sd <- portf_rets %*% t(weight_s)
+ret_sd <- 100*cbind(colMeans(ret_sd),
+  matrixStats::colSds(ret_sd))
+colnames(ret_sd) <- c("returns", "StdDev")
+risk_free <- 5.0/260
+ret_sd <- cbind(ret_sd, (ret_sd[, 1]-risk_free)/ret_sd[, 2])
+colnames(ret_sd)[3] <- "Sharpe"
+in_dex <- which.max(ret_sd[, "Sharpe"])
+max_Sharpe <- ret_sd[in_dex, "Sharpe"]
 # plot scatterplot of portfolios in x11() window
 x11(width=(wid_th <- 6), height=(hei_ght <- 4))
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=ret_sd[2, ], y=ret_sd[1, ], t="l",
-     xlim=c(0, max(ret_sd[2, ]/2)),
-     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])),
-     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+plot(x=ret_sd[, 2], y=ret_sd[, 1], t="l",
+     xlim=c(0, max(ret_sd[, 2]/2)),
+     ylim=c(min(0, min(ret_sd[, 1])), max(ret_sd[, 1])),
+     xlab=colnames(ret_sd)[2], ylab=colnames(ret_sd)[1])
 title(main="Stock and bond portfolios", line=-1)
 # Add red point for maximum Sharpe ratio portfolio
-points(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
+points(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1],
  col="red", lwd=3)
-text(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex],
+text(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1],
      labels=paste(c("maxSR\n",
- structure(c(weight_s[in_dex], 1-weight_s[in_dex]),
+ structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]),
          names=sym_bols)), collapse=" "),
      pos=3, cex=0.8)
 # Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
+re_turns <- 100*sapply(portf_rets, mean)
+std_devs <- 100*sapply(portf_rets, sd)
 points(std_devs, re_turns, col="green", lwd=3)
 text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
 points(x=0, y=risk_free)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_sr, col="blue")
+abline(a=risk_free, b=max_Sharpe, col="blue")
 range_s <- par("usr")
-text(ret_sd[2, in_dex]/3, (ret_sd[1, in_dex]+risk_free)/2,
+text(ret_sd[in_dex, 2]/3, (ret_sd[in_dex, 1]+risk_free)/2,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(max_sr*(range_s[2]-range_s[1])/
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
              (range_s[4]-range_s[3])*
              hei_ght/wid_th)/(0.25*pi))
 # plot max Sharpe ratio portfolio returns
@@ -101,7 +102,6 @@ optim_rets <-
 order.by=index(env_etf$re_turns))
 chart_Series(x=cumsum(optim_rets),
        name="Max Sharpe two-asset portfolio")
-load(file="C:/Develop/data/etf_data.RData")
 # vector of symbol names
 sym_bols <- c("VTI", "IEF", "XLP")
 n_weights <- length(sym_bols)
@@ -123,9 +123,9 @@ plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
 weight_s <- rep(1, n_weights)
 names(weight_s) <- sym_bols
 # objective function equal to standard deviation of returns
-object_ive <- function(p_weights) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% p_weights
-  sd(portf_rets)/sum(p_weights)
+object_ive <- function(weight_s) {
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  sd(portf_rets)/sum(weight_s)
 }  # end object_ive
 # object_ive() for equal weight portfolio
 object_ive(weight_s)
@@ -150,8 +150,8 @@ points(x=optim_sd, y=optim_ret, col="red", lwd=3)
 text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 # objective function equal to minus Sharpe ratio
 risk_free <- 0.01
-object_ive <- function(p_weights) {
-  portf_rets <- 100*env_etf$re_turns[, names(p_weights)] %*% p_weights / sum(p_weights)
+object_ive <- function(weight_s) {
+  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
   -mean(portf_rets-risk_free)/sd(portf_rets)
 }  # end object_ive
 # perform portfolio optimization
@@ -171,7 +171,7 @@ points(x=optim_sd, y=optim_ret,
  col="blue", lwd=3)
 text(x=optim_sd, y=optim_ret,
      labels="maxSR", pos=2, cex=0.8)
-max_sr <- (optim_ret-risk_free)/optim_sd
+max_Sharpe <- (optim_ret-risk_free)/optim_sd
 # Add points for individual assets
 re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
 std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
@@ -180,28 +180,27 @@ text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
 points(x=0, y=risk_free)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_sr, col="blue")
+abline(a=risk_free, b=max_Sharpe, col="blue")
 range_s <- par("usr")
 text(optim_sd/3, (optim_ret+risk_free)/2.5,
      labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(max_sr*(range_s[2]-range_s[1])/
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
              (range_s[4]-range_s[3])*
              hei_ght/wid_th)/(0.25*pi))
 library(PortfolioAnalytics)
 # plot the efficient frontier
-load(file="C:/Develop/data/etf_data.RData")
 # create list of symbols for optimized portfolio
 sym_bols <- c("VTI", "VNQ", "DBC")
 # create initial vector of portfolio weights
-portf_weights <- rep(1, length(sym_bols))
-names(portf_weights) <- sym_bols
+weight_s <- rep(1, length(sym_bols))
+names(weight_s) <- sym_bols
 # objective equal to minus Sharpe ratio
-object_ive <- function(p_weights) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% p_weights
+object_ive <- function(weight_s) {
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
   -mean(portf_rets)/sd(portf_rets)
 }  # end object_ive
 # objective for equal weight portfolio
-object_ive(portf_weights)
+object_ive(weight_s)
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # vectorize objective function with respect to third weight
 vec_object <- Vectorize(
@@ -211,7 +210,7 @@ vec_object <- Vectorize(
 # plot objective function with respect to third weight
 curve(expr=vec_object,
       type="l", xlim=c(-4.0, 1.0),
-      xlab=paste("weight of", names(portf_weights[3])),
+      xlab=paste("weight of", names(weight_s[3])),
       ylab="", lwd=2)
 title(main="Objective Function", line=-1)  # add title
 # vectorize function with respect to all weights
@@ -240,7 +239,7 @@ persp3d(
   xlim=c(-5, 5), ylim=c(-5, 5),
   col="green", axes=FALSE)
 # optimization to find weights with maximum Sharpe ratio
-optim_run <- optim(par=portf_weights,
+optim_run <- optim(par=weight_s,
              fn=object_ive,
              method="L-BFGS-B",
              upper=c(1.1, 10, 10),
@@ -265,7 +264,7 @@ barplot(optim_run$par,
   las=3, ylab="", xlab="Symbol", main="")
 # plot optimal returns with "VTI", "VNQ" and "DBC"
 chart.CumReturns(
-  cbind(optim_rets, env_etf$re_turns[, names(portf_weights)]),
+  cbind(optim_rets, env_etf$re_turns[, names(weight_s)]),
   lwd=2, ylab="", legend.loc="topleft", main="")
 library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
 # get documentation for package "PortfolioAnalytics"
@@ -279,8 +278,8 @@ ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
 
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
 library(PortfolioAnalytics)
-# load ETF returns
-load(file="C:/Develop/data/etf_data.RData")
+# use ETF returns from package HighFreq
+library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
@@ -360,11 +359,11 @@ risk_ret_points()
 library(PortfolioAnalytics)
 plot_portf <- function(portfolio,
       rets_data=env_etf$re_turns) {
-  portf_weights <- portfolio$weights
-  portf_names <- names(portf_weights)
+  weight_s <- portfolio$weights
+  portf_names <- names(weight_s)
   # calculate xts of portfolio
   portf_max <- xts(
-    rets_data[, portf_names] %*% portf_weights,
+    rets_data[, portf_names] %*% weight_s,
     order.by=index(rets_data))
   colnames(portf_max) <-
     deparse(substitute(portfolio))
@@ -374,7 +373,7 @@ plot_portf <- function(portfolio,
     cex.main=0.8, cex.sub=0.5)
   layout(matrix(c(1,2), 2),
     widths=c(1,1), heights=c(1,3))
-  barplot(portf_weights, names.arg=portf_names,
+  barplot(weight_s, names.arg=portf_names,
     las=3, ylab="", xlab="Symbol", main="")
   title(main=paste("Loadings",
           colnames(portf_max)), line=-1)

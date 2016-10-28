@@ -60,30 +60,29 @@ xlab="betting fraction",
 ylab="wealth", main="", lwd=2)
 title(main="wealth of multiperiod betting", line=0.1)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(HighFreq)
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
-ts_rets <- env_etf$re_turns[, "VTI"]
+ts_rets <- rutils::env_etf$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
 sapply(frac, function (fract) sum(log(1+fract*r)))
 }  # end utility
-curve(expr=utility, 
-xlim=c(0.1, 2*KellyRatio(R=ts_rets, method="full")), 
+curve(expr=utility,
+xlim=c(0.1, 2*PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")),
 xlab="kelly", ylab="utility", main="", lwd=2)
 title(main="utility", line=-2)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
-ts_rets <- env_etf$re_turns[, "VTI"]
-KellyRatio(R=ts_rets, method="full")
+ts_rets <- rutils::env_etf$re_turns[, "VTI"]
+PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
 library(HighFreq)  # load package HighFreq
 # calculate open, close, and lagged prices
-open_prices <- Op(env_etf$VTI)
-price_s <- Cl(env_etf$VTI)
+open_prices <- Op(rutils::env_etf$VTI)
+price_s <- Cl(rutils::env_etf$VTI)
 prices_lag <- rutils::lag_xts(price_s)
 # define lookback window and calculate VWAP
 win_dow <- 150
-VTI_vwap <- HighFreq::roll_vwap(env_etf$VTI,
+VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI,
       win_dow=win_dow)
 # calculate VWAP indicator
 vwap_indic <- sign(price_s - VTI_vwap)
@@ -100,11 +99,11 @@ bg="white", lty=c(1, 1), lwd=c(2, 2),
 col=c('orange', 'blue'), bty="n")
 library(HighFreq)  # load package HighFreq
 # calculate positions, either: -1, 0, or 1
-pos_ition <- NA*numeric(NROW(env_etf$VTI))
+pos_ition <- NA*numeric(NROW(rutils::env_etf$VTI))
 pos_ition[1] <- 0
 pos_ition[trade_dates] <- vwap_indic[trade_dates]
 pos_ition <- na.locf(pos_ition)
-pos_ition <- xts(pos_ition, order.by=index((env_etf$VTI)))
+pos_ition <- xts(pos_ition, order.by=index((rutils::env_etf$VTI)))
 position_lagged <- rutils::lag_xts(pos_ition)
 # calculate periodic profits and losses
 pn_l <- position_lagged*(price_s - prices_lag)
@@ -115,7 +114,7 @@ pn_l[trade_dates] <- position_lagged[trade_dates] *
 # calculate annualized Sharpe ratio of strategy returns
 sqrt(260)*sum(pn_l)/sd(pn_l)/NROW(pn_l)
 # plot prices and VWAP
-pn_l <- xts(cumsum(pn_l), order.by=index((env_etf$VTI)))
+pn_l <- xts(cumsum(pn_l), order.by=index((rutils::env_etf$VTI)))
 chart_Series(x=(price_s-as.numeric(price_s[1, ])), name="VTI prices", col='orange')
 add_TA(pn_l, on=1, lwd=2, col='blue')
 add_TA(pos_ition > 0, on=-1,
@@ -125,111 +124,126 @@ add_TA(pos_ition < 0, on=-1,
 legend("top", legend=c("VTI", "VWAP strategy"),
 bg="white", lty=c(1, 1), lwd=c(2, 2),
 col=c('orange', 'blue'), bty="n")
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/etf_data.RData")
-# rebalancing period
+# library(HighFreq)  # load package HighFreq
+# define time interval for end points
 re_balance <- "weeks"
-# look-back period in number of re_balance
-win_dow <- 40
-
+# look-back window is multiple of re_balance
+win_dow <- 41
 # create index of rebalancing period end points
-end_points <- endpoints(env_etf$re_turns, 
-                on=re_balance)
-end_points[1] <- 1
+end_points <- xts::endpoints(rutils::env_etf$re_turns,
+                       on=re_balance)
+# start_points are multi-period lag of end_points
+len_gth <- length(end_points)
+start_points <-  end_points[
+  c(rep_len(1, win_dow-1),
+    1:(len_gth-win_dow+1))]
+# create list of look-back intervals
+inter_vals <- lapply(2:len_gth,
+    function(in_dex) {
+start_points[in_dex]:end_points[in_dex]
+  })  # end lapply
+# library(HighFreq)  # load package HighFreq
+# create list of symbols for model
+sym_bols <- c("VTI", "IEF", "DBC")
 
-# create index of rebalancing periods
-periods <- lapply(win_dow:(length(end_points)-1),
-    function(point)
-list(
-  back=end_points[point-win_dow+1]:(end_points[point]-1),
-  fwd=end_points[point]:end_points[point+1])  # end list
-    )  # end lapply
 # calculate risk&ret stats for some symbols, over a range of dates
-risk_ret_stats <- 
-  function(x_ts=env_etf$re_turns,  # daily returns
-     sym_bols=colnames(x_ts),  # names
-     range=index(x_ts),  # date range
-     ret="mean",  # return stat
-     risk="mad") {  # risk stat
-  ret <- match.fun(ret)  # match to function
-  risk <- match.fun(risk)  # match to function
-  stats <- sapply(x_ts[range, sym_bols], 
-  function(ts)
-    c(ret=ret(ts), risk=risk(ts))
-  )  # end sapply
-  t(stats)
-}  # end risk_ret_stats
-
-# example
-head(risk_ret_stats(range=
-        periods[[1]]$back))
-# calculate stats over overlapping period date windows
-period_stats <- lapply(periods,
-   function(point)
-     cbind(risk_ret_stats(range=point$back),
-      fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
-)  # end lapply
-head(period_stats[[1]])
-# calculate pnl for a given period
-pnl_period <-
-  function(period_stat, de_mean=FALSE) {
-  weights <- period_stat[, "ret"]/
-    period_stat[, "risk"]
-  weights <- weights - de_mean*mean(weights)
-  weights <- weights/sum(abs(weights))
-c(sum(period_stat[, "fut_ret"]*weights), weights)
-}  # end pnl_period
-
+# perform lapply() loop over inter_vals
+risk_stats <- lapply(inter_vals,
+  function(inter_val) {
+    x_ts <-
+rutils::env_etf$re_turns[inter_val, sym_bols]
+    t(sapply(x_ts,
+function(col_umn)
+  c(return=mean(col_umn), risk=mad(col_umn))
+))  # end sapply
+    })  # end lapply
+# rbind list into single xts or matrix
+# risk_stats <- rutils::do_call_rbind(risk_stats)
+# head(risk_stats)
+# calculate non-overlapping returns in interval
+re_turns <-sapply(2:len_gth,
+    function(in_dex) {
+    sapply(rutils::env_etf$re_turns[
+(end_points[in_dex-1]+1):end_points[in_dex],
+sym_bols], sum)
+  })  # end sapply
+re_turns <- t(re_turns)
+# calculate list of portfolio weights
+# perform lapply() loop over risk_stats
+weight_s <- sapply(risk_stats,
+    function(risk_stat) {
+weight_s <- risk_stat[, 1]/risk_stat[, 2]
+weight_s <- weight_s - mean(weight_s)
+weight_s <- weight_s/sum(abs(weight_s))
+    })  # end sapply
+weight_s <- t(weight_s)
+weights_xts <- xts(weight_s,
+  order.by=index(rutils::env_etf$re_turns[end_points]))
+# plot weights
+x11()
+zoo::plot.zoo(weights_xts, xlab=NULL)
 # calculate pnls over all windows
-pnl_xts <- t(sapply(period_stats, pnl_period))
-pnl_xts <- xts(pnl_xts,
-     order.by=index(env_etf$re_turns)
- [end_points[win_dow:(length(end_points)-1)]]
- )  # end xts
-colnames(pnl_xts)[1] <- "pnl"
-
+pn_l <- rowSums(weight_s[-NROW(weight_s), ] *
+            re_turns[-1, ])
 # calculate transaction costs
 bid_offer <- 0.001  # 10 bps for liquid ETFs
-co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
-co_sts[1, ] <- 0
-co_sts <- rowSums(co_sts)
-pnl_xts[, "pnl"] <- pnl_xts[, "pnl"] - co_sts
-# plot cumulative pnl of strategy
-plot(cumsum(pnl_xts[, "pnl"]),
-  main=colnames(pnl_xts[, "pnl"]))
-portf_names <- c("VTI", "IEF", "DBC", "XLF", "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
-# plot portfolio weights
-plot.zoo(pnl_xts[, portf_names], main="")
-# calculate xts of net beta
-betas <- c(1, etf_reg_stats[, 3])
-names(betas)[1] <- colnames(pnl_xts[, 2])
+cost_s <- bid_offer*abs(diff(weight_s))
+cost_s <- rowSums(cost_s)
+pn_l <- pn_l - cost_s
+pn_l <- xts(cumsum(pn_l),
+  order.by=index(rutils::env_etf$re_turns[end_points[-(1:2)]]))
+colnames(pn_l)[1] <- "pnl"
+# plot strategy pnl
+x11()
+chart_Series(x=pn_l, name="Strategy PnL")
+# calculate betas
+beta_s <- c(1, rutils::env_etf$capm_stats[
+  match(sym_bols[-1],
+  rownames(rutils::env_etf$capm_stats)),
+  "Beta"])
+names(beta_s)[1] <- sym_bols[1]
 # weights times betas
-betas <- pnl_xts[, -1] * betas
-betas <- xts(rowSums(betas),
-    order.by=index(pnl_xts))
-colnames(betas) <- "betas"
-plot.zoo(cbind(betas,
-    cumsum(env_etf$re_turns[, 1])[index(betas)]),
-    main="betas & VTI", xlab="")
+beta_s <- weight_s %*% beta_s
+beta_s <- xts(beta_s,
+  order.by=index(
+    rutils::env_etf$re_turns[end_points[-1]]))
+colnames(beta_s) <- "portf_beta"
+x11()
+plot.zoo(cbind(beta_s,
+  rutils::env_etf$VTI[, 4])[index(beta_s)],
+  main="betas & VTI", xlab="")
 # create trading function
-tot_pnl <- function(win_dow) {
-  periods <- lapply(win_dow:(length(end_points)-1),
-    function(point)
-list(back=
-end_points[point-win_dow+1]:(end_points[point]-1),
-   fwd=end_points[point]:end_points[point+1])
-  )  # end sapply
-  period_stats <- lapply(periods,
- function(point)
-   cbind(risk_ret_stats(range=point$back),
-     fut_ret=sapply(env_etf$re_turns[point$fwd, ], sum))
-  )  # end lapply
-  pnl_xts <- t(sapply(period_stats, pnl_period))
-  co_sts <- bid_offer*abs(diff(pnl_xts[, -1]))
-  co_sts <- rowSums(co_sts)
-  co_sts <- c(0, co_sts)
-  pnl_xts[, 1] <- pnl_xts[, 1] - co_sts
-  sum(pnl_xts[, 1])
-}  # end tot_pnl
-strat_profile <- sapply(4*(5:15), tot_pnl)
-plot(cbind(4*(5:15), strat_profile), t="l")
+run_strat <- function(win_dow) {
+  start_points <-  end_points[
+    c(rep_len(1, win_dow-1),
+1:(len_gth-win_dow+1))]
+  inter_vals <- lapply(2:len_gth,
+                 function(in_dex) {
+                   start_points[in_dex]:end_points[in_dex]
+                 })  # end lapply
+  risk_stats <- lapply(inter_vals,
+                 function(inter_val) {
+                   x_ts <- rutils::env_etf$re_turns[inter_val, sym_bols]
+                   t(sapply(x_ts,
+                            function(col_umn)
+                              c(return=mean(col_umn), risk=mad(col_umn))
+                   ))  # end sapply
+                 })  # end lapply
+  weight_s <- sapply(risk_stats,
+               function(risk_stat) {
+                 weight_s <- risk_stat[, 1]/risk_stat[, 2]
+                 weight_s <- weight_s - mean(weight_s)
+                 weight_s <- weight_s/sum(abs(weight_s))
+               })  # end sapply
+  weight_s <- t(weight_s)
+  pn_l <- rowSums(weight_s[-NROW(weight_s), ] * re_turns[-1, ])
+  cost_s <- bid_offer*abs(diff(weight_s))
+  cost_s <- rowSums(cost_s)
+  pn_l <- pn_l - cost_s
+  sum(pn_l)
+}  # end run_strat
+window_s <- 8*(1:7)
+strat_profile <- sapply(window_s, run_strat)
+plot(cbind(window_s, strat_profile), t="l",
+     main="Strategy PnL as function of window size",
+     xlab="window", ylab="pnl")

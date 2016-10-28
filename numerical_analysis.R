@@ -4,7 +4,6 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-load(file="C:/Develop/data/etf_data.RData")
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
@@ -19,7 +18,6 @@ format(foo, digits=20)
 # ?.Machine
 # machine precision
 .Machine$double.eps
-load(file="C:/Develop/data/etf_data.RData")
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
@@ -36,7 +34,6 @@ round(3.675)
 c(round(2.5), round(3.5), round(4.5))
 round(4:20/2)  # round to nearest even number
 trunc(3.675)  # truncate
-load(file="C:/Develop/data/etf_data.RData")
 4.7 %/% 0.5  # modulo division
 4.7 %% 0.5  # remainder of modulo division
 # reversing modulo division usually
@@ -52,7 +49,6 @@ format(0.2, digits=22)
 # get size of an object
 object.size(runif(1e6))
 format(object.size(runif(1e6)), units="MB")
-load(file="C:/Develop/data/etf_data.RData")
 # get sizes of objects in workspace
 sort(sapply(ls(),
   function(ob_ject) {
@@ -80,7 +76,6 @@ ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
 ll()[order(ll()$KB, decreasing=TRUE), ]
 # get sizes of objects in env_etf environment
 ll(unit="bytes", env_etf)
-load(file="C:/Develop/data/etf_data.RData")
 library(SOAR)  # load package SOAR
 # get sizes of objects in workspace
 sort(sapply(mget(ls()), object.size))
@@ -90,7 +85,6 @@ sort(sapply(mget(ls()), object.size))
 search()  # get search path for R objects
 Ls()  # list object cache
 find("etf_list")  # find object on search path
-load(file="C:/Develop/data/etf_data.RData")
 # get R memory
 v_cells <- gc()["Vcells", "used"]
 # create vector with 1,000,000 cells
@@ -261,7 +255,6 @@ summary(microbenchmark(  # assign values to vector two different ways
     for (in_dex in 4:7)
       vec_tor[in_dex] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-load(file="C:/Develop/data/etf_data.RData")
 # define function vectorized automatically
 my_fun <- function(in_put, pa_ram) {
   pa_ram*in_put
@@ -279,7 +272,6 @@ me_ans <-
 rnorm(1, sd=std_devs)
 # "mean" argument of rnorm() isn't vectorized
 rnorm(1, mean=me_ans)
-load(file="C:/Develop/data/etf_data.RData")
 # sapply produces desired vector output
 set.seed(1121)
 sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
@@ -290,7 +282,6 @@ sapply(me_ans,
  function(me_an) rnorm(n=2, mean=me_an))
 set.seed(1121)
 sapply(me_ans, rnorm, n=2)
-load(file="C:/Develop/data/etf_data.RData")
 # rnorm() vectorized with respect to "std_dev"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (length(sd)==1)
@@ -308,7 +299,6 @@ set.seed(1121)
 vec_rnorm(n=2, sd=std_devs)
 set.seed(1121)
 vec_rnorm(n=2, mean=me_ans)
-load(file="C:/Develop/data/etf_data.RData")
 str(sum)
 # na.rm is bound by name
 mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
@@ -317,7 +307,6 @@ str(rnorm)
 mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
 mapply(function(in_put, e_xp) in_put^e_xp,
  1:5, seq(from=1, by=0.2, length.out=5))
-load(file="C:/Develop/data/etf_data.RData")
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
   if (length(mean)==1 && length(sd)==1)
@@ -673,7 +662,6 @@ add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
-load(file="C:/Develop/data/etf_data.RData")
 # sample from mixture of normal distributions
 sam_ple <- c(rnorm(100, sd=1.0),
              rnorm(100, mean=4, sd=1.0))
@@ -712,7 +700,6 @@ shade=0.5,
 col=rainbow(50),
 border="green",
 main="objective function")
-load(file="C:/Develop/data/etf_data.RData")
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization

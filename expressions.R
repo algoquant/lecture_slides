@@ -31,7 +31,6 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
-load(file="C:/Develop/data/etf_data.RData")
 4.7 * 0.5  # multiplication
 4.7 / 0.5  # division
 # exponentiation
@@ -48,24 +47,24 @@ is.null(num_var)
 vec_tor <- c(2, 4, 6)
 vec_tor==2
 identical(vec_tor, 2)
-vec_tor <- sample(1:9)
+vec_tor <- sample(1:6, 21, replace=TRUE)
 mat_rix <- matrix(vec_tor, ncol=3)
 vec_tor
 which(vec_tor == 5)
-# equivalent but less efficient than above
+# equivalent but slower than above
 (1:length(vec_tor))[vec_tor == 5]
 which(vec_tor > 5)
-# find indices of TRUE elements of boolean matrix
+# find indices of TRUE elements of Boolean matrix
 which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
-# equivalent but less efficient than above
+# equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
  dim(mat_rix), dimnames(mat_rix))
 which.max(vec_tor)
-# equivalent but less efficient than above
+# equivalent but slower than above
 which(vec_tor == max(vec_tor))
 which.min(vec_tor)
 match(5, vec_tor)
-# equivalent but less efficient than above
+# more general but slower than above
 which(vec_tor == 5)
 match(-5, vec_tor)
 5 %in% vec_tor
@@ -197,10 +196,14 @@ if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
 }  # end if
 
 num_var2
-switch("a", a="aaahh", b="bee", c="see", d=2, "else this")
-switch("c", a="aaahh", b="bee", c="see", d=2, "else this")
-switch(3, a="aaahh", b="bee", c="see", d=2, "else this")
-switch("cc", a="aaahh", b="bee", c="see", d=2, "else this")
+switch("a", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch("c", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch(3, a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch("cc", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
 # measure of central tendency
 centra_lity <- function(in_put,
     meth_od=c("mean", "mean_narm", "median")) {
@@ -353,6 +356,7 @@ do.call(cbind, list(1:2, 3:5))
 do.call(cbind, list(1, NULL, 3, 4))
 # NA element isn't skipped
 do.call(cbind, list(1, NA, 3, 4))
+library(microbenchmark)
 list_vectors <- lapply(1:5, rnorm, n=10)
 mat_rix <- do.call(rbind, list_vectors)
 dim(mat_rix)
@@ -360,13 +364,10 @@ do_call_rbind <- function(li_st) {
   while (length(li_st) > 1) {
 # index of odd list elements
     odd_index <- seq(from=1, to=length(li_st), by=2)
-# bind neighboring elements and divide li_st by half
+# bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
-      if (in_dex==length(li_st)) {
-return(li_st[[in_dex]])
-      }
-      return(rbind(li_st[[in_dex]],
-           li_st[[in_dex+1]]))
+if (in_dex==length(li_st)) return(li_st[[in_dex]])
+rbind(li_st[[in_dex]], li_st[[in_dex+1]])
     })  # end lapply
   }  # end while
 # li_st has only one element - return it
@@ -401,7 +402,7 @@ split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
 # mean mpg for each cylinder group
-unlist(lapply(split_cars, function(x) mean(x$mpg)))
+sapply(split_cars, function(x) mean(x$mpg))
 # function aggregate() performs split-apply-combine
 aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
 # aggregate() all columns

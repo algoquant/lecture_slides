@@ -1,5 +1,5 @@
 ########################
-### contains scripts for lectures
+#contains scripts for lectures
 ########################
 
 
@@ -17,7 +17,7 @@ stopifnot("package:xts" %in% search() || require("xts", quietly=TRUE))
 
 
 ########################
-### temp stuff
+#temp stuff
 
 cor.test(x=ann_alpha[, 1], y=ann_alpha[, 2], method="pearson")
 cor.test(x=ann_alpha[, 2], y=ann_alpha[, 3], method="pearson")
@@ -39,19 +39,19 @@ acf_plus(period_vol)
 
 
 ########################
-### end temp stuff
+#end temp stuff
 
 
 ########################
-### expressions and control statements
+#expressions and control statements
 
 
 
 
 ########################
-### statistics
+#statistics
 
-### seed_random() returns the pseudo-random generating function random_generator
+#seed_random() returns the pseudo-random generating function random_generator
 # this version is with for loop instead of recursion
 # the formal argument 'seed' persists in the evaluation environment of seed_random
 seed_random <- function(seed) {  # seed must be an integer
@@ -78,10 +78,10 @@ ls(environment(make_random))  # list objects in scope of make_random
 
 
 ########################
-### dates and time series
+#dates and time series
 
 
-### Quandl
+#Quandl
 
 # use Quandl Kenneth French Fama/French factors
 # https://www.quandl.com/data/KFRENCH/FACTORS_D
@@ -107,7 +107,7 @@ mtext(
 
 
 
-### calculate DAX percentage returns
+#calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 
 set.seed(1121)  # initialize random number generator
@@ -128,7 +128,7 @@ jarque.bera.test(rnorm(nrow(env_data$VTI)))
 
 
 
-### ARIMA and ADF test
+#ARIMA and ADF test
 
 adf.test(EuStockMarkets[, 1])
 adf.test(diff(log(EuStockMarkets[, 1])))
@@ -218,13 +218,13 @@ adf.test(Ad(env_data$VTI))
 
 
 ########################
-### regression
+#regression
 
 
 
 
 ########################
-### plotting ggplot2
+#plotting ggplot2
 
 library(car)
 # qqPlot with t-quantiles
@@ -232,7 +232,7 @@ qqPlot(dax_rets, distribution="t", df=5, ylab="DAX Returns", envelope=FALSE)
 # Box Plots
 
 
-### autoplot
+#autoplot
 autoplot(object=ar_zoo,  # plot AR returns
          main="Autoregressive process (phi=0.2)", 
          facets=Series ~ .) + facet_grid(Series ~ ., scales="free_y") +
@@ -304,30 +304,30 @@ autoplot(z) +
 
 
 ########################
-### functions
+#functions
 
 
 
 ########################
-### numerical methods
+#numerical methods
 
 
 
 ########################
-### optimization examples
+#optimization examples
 
 
 
 ########################
-### optimization generic
+#optimization generic
 
-### single variable optimization
+#single variable optimization
 # ?optimize
-### generic optimization
+#generic optimization
 # ?optim
 
 
-### optimization one-dim example: fit normal variables
+#optimization one-dim example: fit normal variables
 
 # target vector is histogram of normal distribution
 histo_gram <- hist(rnorm(100, mean=4, sd=2), 
@@ -369,7 +369,7 @@ optim_run$par
 optim_run$convergence
 
 
-### optimization one-dim example: fit mixture of normal variables
+#optimization one-dim example: fit mixture of normal variables
 
 # target vector is histogram of mixture of normal distributions
 target_vector <- c(rnorm(100, sd=1.0), rnorm(100, mean=4, sd=1.0))
@@ -431,7 +431,7 @@ curve(expr=fit_func(x, parm=optim_run$par), add=TRUE,
 
 
 ########################
-### portfolio optimization
+#portfolio optimization
 
 # Zivot datacamp
 # https://campus.datacamp.com/courses/computational-finance-and-financial-econometrics-with-r/lab-7-introduction-to-portfolio-theory?ex=3
@@ -461,7 +461,7 @@ text(x=sigma_msft, y=mu_msft, labels="Stock Name", pos=4)
 
 
 
-### PortfolioAnalytics
+#PortfolioAnalytics
 
 library(PerformanceAnalytics)
 library(TTR)
@@ -473,7 +473,7 @@ library(DEoptim)
 load(file="C:/Develop/data/etf_data.RData")
 
 
-### portfolio setup
+#portfolio setup
 portf_names <- c("VTI", "IEF", "DBC", "XLF", "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # portfolio equal weights
 portf_init <- rep(0.1, length(portf_names))
@@ -486,7 +486,7 @@ portf_init$assets
 
 
 ########################
-### portfolio visualization
+#portfolio visualization
 
 plot_portf <- function(portfolio, rets_data=etf_rets) {
   portf_weights <- portfolio$weights
@@ -513,9 +513,9 @@ plot_portf <- function(portfolio, rets_data=etf_rets) {
 
 
 ########################
-### rbr presentation
+#rbr presentation
 
-### add constraints
+#add constraints
 
 # add constraint such that the portfolio weights sum to 0*
 portf_init <- add.constraint(portf_init, type="weight_sum",
@@ -530,7 +530,7 @@ betas <- t(CAPM.beta(etf_rets, market, Rf))
 portf_init <- add.constraint(portf_init, type="factor_exposure", B=betas,
                              lower=-0.25, upper=0.25)
 
-### add objectives
+#add objectives
 
 # add objective to maximize portfolio return with a target of 0.0015
 portf_objective <- add.objective(portf_init, type="return", name="mean",
@@ -541,7 +541,7 @@ portf_objective <- add.objective(portf_objective, type="risk", name="StdDev",
 
 
 ########################
-### optimize.portfolio using random portfolios
+#optimize.portfolio using random portfolios
 
 # generate random portfolios
 portf_rand <- random_portfolios(portf_init, 10000, "sample")
@@ -558,7 +558,7 @@ chart.EfficientFrontier(portf_optim, match.col="StdDev", n.portfolios=25, type="
 
 
 ########################
-### optimize.portfolio maxSR
+#optimize.portfolio maxSR
 
 # Maximizing Sharpe Ratio can be formulated as a quadratic programming 
 # problem and solved very quickly using optimize_method="ROI". Although "StdDev"
@@ -593,7 +593,7 @@ chart.RiskReward(maxSR_ROI, risk.col="StdDev", return.col="mean")
 
 
 ########################
-### optimize.portfolio maxSTARR
+#optimize.portfolio maxSTARR
 
 # add constraints
 portf_maxSTARR <- add.constraint(portfolio=portf_init, type="full_investment")
@@ -640,10 +640,10 @@ chart.RiskReward(maxSTARR_DEOpt, risk.col="ES", return.col="mean")
 
 
 ########################
-### efficient frontier (without optimize.portfolio)
+#efficient frontier (without optimize.portfolio)
 
 
-### this doesn't produce good scatterplot
+#this doesn't produce good scatterplot
 
 portf_comb <- combine.portfolios(
   list(maxSR=portf_maxSR, maxSRN=portf_maxSRN))
@@ -663,7 +663,7 @@ chart.RiskReward(
 
 
 ########################
-### optimize.portfolio
+#optimize.portfolio
 
 # doesn't work
 # produces something - but no way to get it out
@@ -681,7 +681,7 @@ portfolio_rolling <- optimize.portfolio.rebalancing(
 
 
 ########################
-### efficient frontier (without optimize.portfolio)
+#efficient frontier (without optimize.portfolio)
 
 # add constraints
 portf_eff <- add.constraint(portfolio=portf_init, type="weight_sum", min_sum=0.9, max_sum=1.1)
@@ -719,7 +719,7 @@ barplot(portf_weights,
 chart.CumReturns(cbind(portf_max, etf_rets[, c("IEF", "VTI")]), lwd=2, ylab="", legend.loc="topleft", main="best portf, IEF, VTI")
 
 
-### charts of efficient frontier
+#charts of efficient frontier
 
 # The RAR.text argument can be used for the risk-adjusted-return name on the 
 # legend, by default it is 'Modified Sharpe Ratio'.
@@ -755,7 +755,7 @@ chart.Weights.EF(efficient_front, colorset=bluemono, match.col="StdDev", main=""
 
 
 
-### older
+#older
 
 # Set the MAR parameter
 MAR <- 0.005 # ~6%/year
@@ -779,10 +779,10 @@ SortinoRebalance <- optimize.portfolio.rebalancing(R=indexes[,1:4], constraints=
 
 
 ########################
-### backtest strategy
+#backtest strategy
 
 
-### calculate risk_ret_stats for some symbols, over a range of dates
+#calculate risk_ret_stats for some symbols, over a range of dates
 risk_ret_stats <- function(x_ts=etf_rets,  # daily returns
                            sym_bols=colnames(x_ts),  # names
                            range=index(x_ts),  # date range
@@ -804,7 +804,7 @@ head(risk_ret_stats(range=
 
 
 
-### calculate weights and pnl for a given period
+#calculate weights and pnl for a given period
 pnl_period <- function(period_stat, de_mean=FALSE) {
   weights <- period_stat[, "ret"]/period_stat[, "risk"]
   weights <- weights - de_mean*mean(weights)
@@ -814,7 +814,7 @@ pnl_period <- function(period_stat, de_mean=FALSE) {
 
 
 
-### set up parameters
+#set up parameters
 
 # rebalancing period
 re_balance <- "weeks"
@@ -832,7 +832,7 @@ periods <- lapply(win_dow:(length(end_points)-1),
 
 
 
-### main loop over windows
+#main loop over windows
 
 # calculate stats over overlaping period date windows
 period_stats <- lapply(periods,
@@ -843,7 +843,7 @@ period_stats <- lapply(periods,
 head(period_stats[[1]])
 
 
-### calculate weights and pnls
+#calculate weights and pnls
 
 pnl_xts <- t(sapply(period_stats, pnl_period))
 pnl_xts <- xts(pnl_xts,
@@ -885,7 +885,7 @@ plot(cbind(betas, cumsum(etf_rets[, 1])[index(betas)]),
 
 
 
-### create trading function
+#create trading function
 
 tot_pnl <- function(win_dow) {
   periods <- lapply(win_dow:(length(end_points)-1),
@@ -911,7 +911,7 @@ plot(cbind(3:10, strat_profile), t="l")
 
 
 
-### simplified version for single asset
+#simplified version for single asset
 
 periods_back <- sapply(win_dow:(length(end_points)-1),
                        function(point)
@@ -941,7 +941,7 @@ co_sts[1] <- 0
 sum(bid_offer*co_sts)
 
 
-### create histogram of risk and return stats
+#create histogram of risk and return stats
 
 # flatten list into data.frame
 period_stats <- do.call(rbind, period_stats)
@@ -997,7 +997,7 @@ persp(ret_vec[1:10], risk_vec[1:10], fut_ret_mat,
 
 
 
-### mostly unnecessary code
+#mostly unnecessary code
 # but it's cute, so keep it around for reuse
 
 # create rebalancing period dates
@@ -1021,12 +1021,12 @@ period_windows <- do.call(rbind, period_windows)
 period_windows <- xts(period_windows, 
                       order.by=period_dates[win_dow:(length(period_dates)-1)])
 
-### end unnecessary code - period date windows
+#end unnecessary code - period date windows
 
 
 
 ########################
-### factorAnalytics
+#factorAnalytics
 
 load(file="C:/Develop/data/etf_data.RData")
 load(file="C:/Develop/data/portf_optim.RData")
@@ -1083,7 +1083,7 @@ plot(factor_pca, which.plot.group=9, loop=FALSE)
 plot(factor_pca, which.plot.group=10, loop=FALSE)
 
 
-### individual asset plots
+#individual asset plots
 
 # cumulative residuals
 chart.CumReturns(factor_pca$residuals[, c("IEF", "DBC", "XLF")], lwd=2, ylab="", legend.loc="topleft", main="")
@@ -1131,9 +1131,9 @@ plot(factor_pca, asset.name="VTI", which.plot.single=9, plot.single=TRUE, loop=F
 
 
 ########################
-### data download
+#data download
 
-### scrape ETF ticker table using XML, qmao packages - from 2012, doesn't work now
+#scrape ETF ticker table using XML, qmao packages - from 2012, doesn't work now
 # http://stackoverflow.com/questions/5246843/how-to-get-a-complete-list-of-ticker-symbols-from-yahoo-finance
 
 # first find out how many ETFs there are, then construct a URL
@@ -1153,17 +1153,17 @@ etfs <- etf_dat$Ticker # All ETF tickers from yahoo
 length(etfs)
 head(etfs)
 
-### end scrape ETF ticker table
+#end scrape ETF ticker table
 
 
-### download database of stock tickers using stockSymbols() from package TTR - no ETFs
+#download database of stock tickers using stockSymbols() from package TTR - no ETFs
 library(TTR)
 # stock_table <- stockSymbols("NYSE")
 stock_table <- stockSymbols()
 write.csv(stock_table, file='stock_table.csv')
 
 
-### ETF symbols - tickers for Tactical Asset Allocation System by Mebane Faber
+#ETF symbols - tickers for Tactical Asset Allocation System by Mebane Faber
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ", "DBC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLK", "XLU", "IWB", "IWD", "IWF", "IWM", "IWN", "IWO", "IWP", "IWR", "IWS", "IWV", "IUSV", "IUSG")
 
 # read etf database into data frame
@@ -1173,7 +1173,7 @@ sym_bols %in% etf_list$Symbol
 etf_list <- etf_list[etf_list$Symbol %in% sym_bols, ]
 
 
-### download time series of "AdjClose" and "Volume" for single symbol
+#download time series of "AdjClose" and "Volume" for single symbol
 library(tseries)
 sym_bol <- "MSFT"
 field_names <- c("AdjClose", "Volume")
@@ -1208,7 +1208,7 @@ write.zoo(zoo_series, file='zoo_series.csv', sep=",")
 # save to binary file
 save(zoo_series, file='zoo_series.RData')
 
-### plot
+#plot
 
 etf_gg <- autoplot(zoo_series[, "VTI.Close"], 
                    main="Vanguard Total Stock Market ETF") + 
@@ -1244,7 +1244,7 @@ zoo_series <- suppressWarnings(  # load MSFT data
 
 
 ########################
-### extra unused code
+#extra unused code
 
 
 # contingency table doesn't return zero for bins with missing values (hist does)
@@ -1290,5 +1290,5 @@ legend(x="topright", legend=c("sine", "cosine"),
 
 
 ########################
-### misc stuff for deletion
+#misc stuff for deletion
 

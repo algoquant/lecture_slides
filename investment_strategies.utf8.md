@@ -381,17 +381,16 @@ title(main="wealth of multiperiod betting", line=0.1)
       Where $\hat{s}$ is the skewness, and $\hat{k}$ is the kurtosis,
     \column{0.5\textwidth}
       \vspace{-2em}
-      <<utility_returns,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+      <<utility_returns,eval=TRUE,echo=(-1),fig.show='hide'>>=
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(HighFreq)
 library(PerformanceAnalytics)
-ts_rets <- rutils::env_etf$re_turns[, "VTI"]
+ts_rets <- env_etf$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
 sapply(frac, function (fract) sum(log(1+fract*r)))
 }  # end utility
 curve(expr=utility, 
-      xlim=c(0.1, 2*PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")), 
+      xlim=c(0.1, 2*KellyRatio(R=ts_rets, method="full")), 
       xlab="kelly", ylab="utility", main="", lwd=2)
 title(main="utility", line=-2)
       @
@@ -427,11 +426,11 @@ title(main="utility", line=-2)
       The \emph{standard deviation} and \emph{Sharpe} ratio are calculated over the same time interval as the returns (not annualized),
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<eval=FALSE,echo=(-(1:3))>>=
+      <<eval=TRUE,echo=(-(1:3)),fig.show='hide'>>=
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
-ts_rets <- rutils::env_etf$re_turns[, "VTI"]
-PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
+ts_rets <- env_etf$re_turns[, "VTI"]
+KellyRatio(R=ts_rets, method="full")
       @
 %    \vspace{-1em}
 %    \includegraphics[width=0.5\paperwidth,valign=t]{figure/kelly_returns-1}
@@ -459,12 +458,12 @@ PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
 # calculate open, close, and lagged prices
-open_prices <- Op(rutils::env_etf$VTI)
-price_s <- Cl(rutils::env_etf$VTI)
+open_prices <- Op(env_etf$VTI)
+price_s <- Cl(env_etf$VTI)
 prices_lag <- rutils::lag_xts(price_s)
 # define lookback window and calculate VWAP
 win_dow <- 150
-VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI, 
+VTI_vwap <- HighFreq::roll_vwap(env_etf$VTI, 
             win_dow=win_dow)
 # calculate VWAP indicator
 vwap_indic <- sign(price_s - VTI_vwap)
@@ -506,11 +505,11 @@ col=c('orange', 'blue'), bty="n")
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
 # calculate positions, either: -1, 0, or 1
-pos_ition <- NA*numeric(NROW(rutils::env_etf$VTI))
+pos_ition <- NA*numeric(NROW(env_etf$VTI))
 pos_ition[1] <- 0
 pos_ition[trade_dates] <- vwap_indic[trade_dates]
 pos_ition <- na.locf(pos_ition)
-pos_ition <- xts(pos_ition, order.by=index((rutils::env_etf$VTI)))
+pos_ition <- xts(pos_ition, order.by=index((env_etf$VTI)))
 position_lagged <- rutils::lag_xts(pos_ition)
 # calculate periodic profits and losses
 pn_l <- position_lagged*(price_s - prices_lag)
@@ -527,7 +526,7 @@ sqrt(260)*sum(pn_l)/sd(pn_l)/NROW(pn_l)
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # plot prices and VWAP
-pn_l <- xts(cumsum(pn_l), order.by=index((rutils::env_etf$VTI)))
+pn_l <- xts(cumsum(pn_l), order.by=index((env_etf$VTI)))
 chart_Series(x=(price_s-as.numeric(price_s[1, ])), name="VTI prices", col='orange')
 add_TA(pn_l, on=1, lwd=2, col='blue')
 add_TA(pos_ition > 0, on=-1,
@@ -572,7 +571,7 @@ re_balance <- "weeks"
 # look-back window is multiple of re_balance
 win_dow <- 41
 # create index of rebalancing period end points
-end_points <- xts::endpoints(rutils::env_etf$re_turns, 
+end_points <- xts::endpoints(env_etf$re_turns, 
                              on=re_balance)
 # start_points are multi-period lag of end_points
 len_gth <- length(end_points)
@@ -617,7 +616,7 @@ sym_bols <- c("VTI", "IEF", "DBC")
 risk_stats <- lapply(inter_vals, 
   function(inter_val) {
     x_ts <- 
-      rutils::env_etf$re_turns[inter_val, sym_bols]
+      env_etf$re_turns[inter_val, sym_bols]
     t(sapply(x_ts, 
       function(col_umn)
         c(return=mean(col_umn), risk=mad(col_umn))
@@ -629,7 +628,7 @@ risk_stats <- lapply(inter_vals,
 # calculate non-overlapping returns in interval
 re_turns <-sapply(2:len_gth, 
     function(in_dex) {
-    sapply(rutils::env_etf$re_turns[
+    sapply(env_etf$re_turns[
       (end_points[in_dex-1]+1):end_points[in_dex], 
       sym_bols], sum)
   })  # end sapply
@@ -662,7 +661,7 @@ weight_s <- sapply(risk_stats,
     })  # end sapply
 weight_s <- t(weight_s)
 weights_xts <- xts(weight_s, 
-  order.by=index(rutils::env_etf$re_turns[end_points]))
+  order.by=index(env_etf$re_turns[end_points]))
 # plot weights
 x11()
 zoo::plot.zoo(weights_xts, xlab=NULL)
@@ -696,7 +695,7 @@ cost_s <- bid_offer*abs(diff(weight_s))
 cost_s <- rowSums(cost_s)
 pn_l <- pn_l - cost_s
 pn_l <- xts(cumsum(pn_l), 
-  order.by=index(rutils::env_etf$re_turns[end_points[-(1:2)]]))
+  order.by=index(env_etf$re_turns[end_points[-(1:2)]]))
 colnames(pn_l)[1] <- "pnl"
 # plot strategy pnl
 x11()
@@ -721,20 +720,20 @@ chart_Series(x=pn_l, name="Strategy PnL")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate betas
-beta_s <- c(1, rutils::env_etf$capm_stats[
+beta_s <- c(1, env_etf$capm_stats[
   match(sym_bols[-1], 
-        rownames(rutils::env_etf$capm_stats)), 
+        rownames(env_etf$capm_stats)), 
   "Beta"])
 names(beta_s)[1] <- sym_bols[1]
 # weights times betas
 beta_s <- weight_s %*% beta_s
 beta_s <- xts(beta_s, 
   order.by=index(
-    rutils::env_etf$re_turns[end_points[-1]]))
+    env_etf$re_turns[end_points[-1]]))
 colnames(beta_s) <- "portf_beta"
 x11()
 plot.zoo(cbind(beta_s, 
-  rutils::env_etf$VTI[, 4])[index(beta_s)],
+  env_etf$VTI[, 4])[index(beta_s)],
   main="betas & VTI", xlab="")
       @
     \column{0.5\textwidth}
@@ -766,7 +765,7 @@ run_strat <- function(win_dow) {
                        })  # end lapply
   risk_stats <- lapply(inter_vals, 
                        function(inter_val) {
-                         x_ts <- rutils::env_etf$re_turns[inter_val, sym_bols]
+                         x_ts <- env_etf$re_turns[inter_val, sym_bols]
                          t(sapply(x_ts, 
                                   function(col_umn)
                                     c(return=mean(col_umn), risk=mad(col_umn))

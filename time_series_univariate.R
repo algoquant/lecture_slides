@@ -225,21 +225,21 @@ rm(list=ls())
 setwd("C:/Develop/data")
 library(xtable)
 # ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF", 
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", 
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
+  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
   "IVW", "IWB", "IWD", "IWF")
 # read etf database into data frame
-etf_list <- read.csv(file='C:/Develop/data/etf_list.csv', 
+etf_list <- read.csv(file='C:/Develop/data/etf_list.csv',
                stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
 # shorten names
-etf_names <- sapply(etf_list$Name, 
+etf_names <- sapply(etf_list$Name,
               function(name) {
   name_split <- strsplit(name, split=" ")[[1]]
-  name_split <- 
+  name_split <-
     name_split[c(-1, -length(name_split))]
   name_match <- match("Select", name_split)
   if (!is.na(name_match))
@@ -247,9 +247,9 @@ etf_names <- sapply(etf_list$Name,
   paste(name_split, collapse=" ")
 })  # end sapply
 etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- 
+etf_list["IEF", "Name"] <-
   "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- 
+etf_list["XLY", "Name"] <-
   "Consumer Discr. Sector Fund"
 etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny")
@@ -724,9 +724,9 @@ price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
 len_gth <- length(end_points)
 win_dow <- 11  # number of data points per look-back window
-# define starting points as lag of end_points
+# start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
 # define aggregation function
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
@@ -750,7 +750,7 @@ len_gth <- length(end_points)
 win_dow <- 11  # number of data points per look-back window
 # define starting points as lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
 # define aggregation function
 agg_regate <- function(x_ts)
   xts(t(c(max=max(x_ts), min=min(x_ts))),
@@ -780,7 +780,7 @@ roll_agg <- function(x_ts, win_dow, FUN, ...) {
   len_gth <- length(end_points)
 # define starting points as lag of end_points
   start_points <-  end_points[
-    c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+    c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
 # perform aggregations over length of end_points
   agg_regations <- lapply(2:len_gth,
         function(in_dex) {
@@ -820,10 +820,10 @@ summary(microbenchmark(
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
-# perform aggregations over length of end_points
+# perform aggregations over a rolling window
 agg_regations <- xts:::rollapply.xts(price_s, width=win_dow,
               FUN=agg_regate, align="right")
-# perform aggregations over length of end_points
+# perform aggregations over a rolling window
 library(PerformanceAnalytics)  # load package PerformanceAnalytics
 agg_regations <- apply.rolling(price_s,
               width=win_dow, FUN=agg_regate)
@@ -957,7 +957,7 @@ head(price_s[end_points, ])
 end_points <- # define end_points with beginning stub
   c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
 len_gth <- length(end_points)
-# define starting points as lag of end_points
+# start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform sapply() loop over length of end_points
 agg_regations <- sapply(2:len_gth,
@@ -986,7 +986,7 @@ col=plot_theme$col$line.col, bty="n")
 end_points <- # define end_points with beginning stub
   c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
 len_gth <- length(end_points)
-# define starting points as lag of end_points
+# start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform lapply() loop over length of end_points
 agg_regations <- lapply(2:len_gth,
@@ -1011,7 +1011,7 @@ col=plot_theme$col$line.col, bty="n")
 # define functional for rolling aggregations over end_points
 roll_agg <- function(x_ts, end_points, FUN, ...) {
   len_gth <- length(end_points)
-# define starting points as lag of end_points
+# start_points are single-period lag of end_points
   start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform aggregations over length of end_points
   agg_regations <- lapply(2:len_gth,
@@ -1048,10 +1048,10 @@ library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
 len_gth <- length(end_points)
-win_dow <- 3  # number of look-back time intervals
-# define starting points as lag of end_points
+win_dow <- 4  # number of end points per look-back window
+# start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
 # perform lapply() loop over length of end_points
 agg_regations <- lapply(2:len_gth,
     function(in_dex) {
@@ -1075,10 +1075,10 @@ library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
 len_gth <- length(end_points)
-win_dow <- 3  # number of look-back time intervals
-# define starting points as lag of end_points
+win_dow <- 4  # number of end points per look-back window
+# start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
 # perform lapply() loop over length of end_points
 agg_regations <- lapply(2:len_gth,
           function(in_dex) {mean(

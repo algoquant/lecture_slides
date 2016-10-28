@@ -148,7 +148,7 @@ vec_tor
 vec_tor[2]  # extract second element
 # extract all elements, except the second element
 vec_tor[-2]
-# create boolean vector
+# create Boolean vector
 c(FALSE, TRUE, TRUE)
 # extract second and third elements
 vec_tor[c(FALSE, TRUE, TRUE)]
@@ -173,9 +173,9 @@ numeric(0)  # create zero length vector
 (0:10)/10  # divide vector - decimals from 0 to 1.0
 vec_tor <- c(8, 6, 5, 7)  # create vector
 vec_tor
-# boolean vector TRUE if element is equal to second one
+# Boolean vector TRUE if element is equal to second one
 vec_tor == vec_tor[2]
-# boolean vector TRUE for elements greater than six
+# Boolean vector TRUE for elements greater than six
 vec_tor > 6
 2*vec_tor  # multiply all elements by 2
 vec_tor^2  # square all elements
@@ -208,12 +208,12 @@ vec_tor["eulery"]
 vec_tor[c("pie", "gammy")]
 vec_tor <- runif(5)
 vec_tor
-vec_tor > 0.5  # boolean vector
-# boolean vector of elements equal to the second one
+vec_tor > 0.5  # Boolean vector
+# Boolean vector of elements equal to the second one
 vec_tor == vec_tor[2]
 # extract all elements equal to the second one
 vec_tor[vec_tor == vec_tor[2]]
-vec_tor < 1  # boolean vector of elements less than one
+vec_tor < 1  # Boolean vector of elements less than one
 # extract all elements greater than one
 vec_tor[vec_tor > 1]
 vec_tor[vec_tor > 0.5]  # filter elements > 0.5
@@ -256,9 +256,9 @@ findInterval(x=1:8, vec=c(3, 5, 7),
 findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
 # named numeric vector of breakpoints
-brea_ks <- c("freezing"=0, "very_cold"=30,
-       "cold"=50, "pleasant"=60,
-       "warm"=80, "hot"=90)
+brea_ks <- c(freezing=0, very_cold=30,
+       cold=50, pleasant=60,
+       warm=80, hot=90)
 brea_ks
 tempe_ratures <- runif(10, min=10, max=100)
 feels_like <- names(
@@ -310,7 +310,7 @@ attributes(mat_rix)  # get matrix attributes
 mat_rix  # matrix with column names
 mat_rix[1, ]  # subset rows by index
 mat_rix[, "col1"]  # subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns boolean vector
+mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
 mat_rix[1, ]  # subsetting can produce a vector!
 class(mat_rix); class(mat_rix[1, ])
 is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])

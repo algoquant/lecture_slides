@@ -4,8 +4,7 @@ options(digits=3)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
+library(HighFreq)
 re_turns <- na.omit(env_etf$re_turns)
 # specify regression formula
 reg_formula <- XLP ~ VTI
@@ -52,40 +51,40 @@ library(HighFreq)
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform rolling beta regressions every month
-beta_s <- rollapply(env_etf$re_turns, width=252, 
-  FUN=function(design_matrix) 
+beta_s <- rollapply(env_etf$re_turns, width=252,
+  FUN=function(design_matrix)
   coef(lm(reg_formula, data=design_matrix))[2],
   by=22, by.column=FALSE, align="right")
 beta_s <- na.omit(beta_s)
 # plot beta_s in x11() window
 x11(width=(wid_th <- 6), height=(hei_ght <- 4))
-chart_Series(x=beta_s, 
+chart_Series(x=beta_s,
   name=paste("rolling betas", format(reg_formula)))
 # perform daily rolling beta regressions in parallel
 library(roll)
-beta_s <- roll_lm(x=env_etf$re_turns[, "VTI"], 
+beta_s <- roll_lm(x=env_etf$re_turns[, "VTI"],
             y=env_etf$re_turns[, "XLP"],
             width=252)$coefficients
 # compare speed of rollapply() versus roll_lm()
 library(microbenchmark)
 da_ta <- env_etf$re_turns["2012", c("VTI", "XLP")]
 summary(microbenchmark(
-  rollapply=rollapply(da_ta, width=22, 
-FUN=function(design_matrix) 
+  rollapply=rollapply(da_ta, width=22,
+FUN=function(design_matrix)
 coef(lm(reg_formula, data=design_matrix))[2],
-  by.column=FALSE, align="right"), 
-  roll_lm=roll_lm(x=da_ta[, "VTI"], 
+  by.column=FALSE, align="right"),
+  roll_lm=roll_lm(x=da_ta[, "VTI"],
             y=da_ta[, "XLP"],
-            width=22)$coefficients, 
+            width=22)$coefficients,
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(PerformanceAnalytics)
-CAPM.beta(Ra=re_turns[, "XLP"], 
+CAPM.beta(Ra=re_turns[, "XLP"],
     Rb=re_turns[, "VTI"])
-CAPM.beta.bull(Ra=re_turns[, "XLP"], 
+CAPM.beta.bull(Ra=re_turns[, "XLP"],
   Rb=re_turns[, "VTI"])
-CAPM.beta.bear(Ra=re_turns[, "XLP"], 
+CAPM.beta.bear(Ra=re_turns[, "XLP"],
   Rb=re_turns[, "VTI"])
-CAPM.alpha(Ra=re_turns[, "XLP"], 
+CAPM.alpha(Ra=re_turns[, "XLP"],
      Rb=re_turns[, "VTI"])
 library(PerformanceAnalytics)
 etf_betas <- sapply(
@@ -108,13 +107,13 @@ text(x=etf_betas[label_names],
      y=etf_annrets[label_names],
      labels=label_names, pos=2, cex=0.8)
 library(PerformanceAnalytics)
-TreynorRatio(Ra=re_turns[, "XLP"], 
+TreynorRatio(Ra=re_turns[, "XLP"],
      Rb=re_turns[, "VTI"])
 
-InformationRatio(Ra=re_turns[, "XLP"], 
+InformationRatio(Ra=re_turns[, "XLP"],
      Rb=re_turns[, "VTI"])
 library(PerformanceAnalytics)
-table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+table.CAPM(Ra=re_turns[, c("XLP", "XLF")],
      Rb=re_turns[, "VTI"], scale=252)
 library(PerformanceAnalytics)
 capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"],
@@ -130,7 +129,6 @@ capm_stats <- capm_stats[
 # copy capm_stats into env_etf and save to .RData file
 assign("capm_stats", capm_stats, envir=env_etf)
 save(env_etf, file='etf_data.RData')
-# load(file="C:/Develop/data/etf_data.RData")
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
 library(quantmod)
 #Perform pair-wise correlation analysis
@@ -166,27 +164,25 @@ title("Dissimilarity = 1-Correlation",
 line=-0.5)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
-# load ETF returns
-# load(file="C:/Develop/data/etf_data.RData")
-re_turns <- na.omit(env_etf$re_turns)
 #Perform principal component analysis PCA
+re_turns <- na.omit(env_etf$re_turns)
 etf_pca <- prcomp(re_turns, center=TRUE, scale=TRUE)
-barplot(etf_pca$sdev[1:10], 
-  names.arg=colnames(etf_pca$rotation)[1:10], 
-  las=3, ylab="STDEV", xlab="PCVec", 
+barplot(etf_pca$sdev[1:10],
+  names.arg=colnames(etf_pca$rotation)[1:10],
+  las=3, ylab="STDEV", xlab="PCVec",
   main="PCA Explain VAR")
 # Show first three principal component loadings
 head(etf_pca$rotation[,1:3], 3)
 # Permute second principal component loadings by size
 pca_vec2 <- as.matrix(
-  etf_pca$rotation[order(etf_pca$rotation[, 2], 
+  etf_pca$rotation[order(etf_pca$rotation[, 2],
   decreasing=TRUE), 2])
 colnames(pca_vec2) <- "pca2"
 head(pca_vec2, 3)
 # The option las=3 rotates the names.arg labels
-barplot(as.vector(pca_vec2), 
-  names.arg=rownames(pca_vec2), 
-  las=3, ylab="Loadings", 
+barplot(as.vector(pca_vec2),
+  names.arg=rownames(pca_vec2),
+  las=3, ylab="Loadings",
   xlab="Symbol", main="Loadings pca2")
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(3,1))  # set plot panels
@@ -217,7 +213,7 @@ dim(etf_pca$x)
 class(etf_pca$x)
 head(etf_pca$x[, 1:3], 3)
 # convert PC matrix to xts and rescale to decimals
-pca_rets <- xts(etf_pca$x/100, 
+pca_rets <- xts(etf_pca$x/100,
     order.by=index(re_turns))
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
@@ -231,7 +227,7 @@ corr_matrix <- cor(pca_rets)
 colnames(corr_matrix) <- colnames(pca_rets)
 rownames(corr_matrix) <- colnames(pca_rets)
 corr_matrix[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3], 
+table.CAPM(Ra=pca_rets[, 1:3],
     Rb=re_turns[, "VTI"], scale=252)
 library(factorAnalytics)  # load package "factorAnalytics"
 # get documentation for package "factorAnalytics"
@@ -248,10 +244,8 @@ ls("package:factorAnalytics")
 # remove factorAnalytics from search path
 detach("package:factorAnalytics")
 library(factorAnalytics)
-# load ETF returns
-# load(file="C:/Develop/data/etf_data.RData")
 # fit a three-factor model using PCA
-factor_pca <- fitSfm(re_turns, k=3)
+factor_pca <- fitSfm(env_etf$re_turns, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
 # factor realizations (time series)
 head(factor_pca$factors)
