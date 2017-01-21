@@ -80,15 +80,15 @@ knit_theme$set(thm)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Imagine a binary betting game (gamble) with the probability of winning equal to \texttt{p}, the payout odds in case of win equal to \texttt{b}, and the loss equal to \texttt{-a},
+      Consider a binary betting game (gamble) with the probability of winning equal to \texttt{p}, the winning amount (gain) equal to \texttt{b}, and the loss equal to \texttt{-a},
       \vskip1ex
-      The investor makes no up-front payments, and can either win an amount \texttt{b}, or lose an amount \texttt{-a},
+      The investor makes no up-front payments, and either wins an amount \texttt{b}, or loses an amount \texttt{-a},
       \vskip1ex
       Assuming an investor makes decisions exclusively on the basis of the expected value (level) of future wealth, then she would choose to bet all her wealth on the gamble if its expected value is positive, and choose not to bet at all if its expected value is negative,
     \column{0.5\textwidth}
-      <<results='asis',echo=FALSE>>=
+      <<results='asis',echo=FALSE,eval=FALSE>>=
 library(xtable)
-binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "-a"))
+binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "a"))
 rownames(binbet_table) <- c("probability", "payout")
 # print(xtable(binbet_table), comment=FALSE, size="tiny")
 print(xtable(binbet_table), comment=FALSE)
@@ -273,6 +273,58 @@ title(main="wealth path", line=-1)
       @
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/multi_betting-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Wealth Paths}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider an investment strategy with a probability of gain equal to \texttt{win\_prob}, and with binary payouts equal to either \texttt{pro\_fit} or \texttt{-lo\_ss}, 
+      \vskip1ex
+      The investor makes no up-front payments, and either gains an amount equal to \texttt{pro\_fit}, or loses an amount \texttt{-lo\_ss},
+      \vskip1ex
+      Daily stock returns typically have a slightly greater probability of gaining over losing, and almost equal \texttt{pro\_fit} or \texttt{lo\_ss}, 
+      \vskip1ex
+      On the other hand returns on lottery tickets typically have very small probabilities of gains, but very large \texttt{pro\_fit} versus small \texttt{lo\_ss}, 
+      \vskip1ex
+      The investor makes no up-front payments, and either wins an amount equal to \texttt{pro\_fit}, or loses an amount \texttt{-lo\_ss},
+      \vskip1ex
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+len_gth <- 1000  # number of simulation steps
+n_simu <- 100  # number of simulation paths
+# parameters for stock returns
+prob_ab <- 0.51
+pro_fit <- 0.001
+lo_ss <- 0.001
+# parameters for lottery ticket returns
+prob_ab <- 0.01
+pro_fit <- 0.001*51
+lo_ss <- 0.001/(99/49)
+# simulate random binary wealth paths
+set.seed(1121)  # reset random number generator
+path_s <- matrix(
+  rbinom(n=n_simu*len_gth, size=1, prob=prob_ab), 
+  ncol=n_simu)
+path_s <- (pro_fit + lo_ss)*path_s - lo_ss
+path_s <- matrixStats::colCumsums(path_s)
+x11()
+ts.plot(path_s, xlab="number of steps", ylab="wealth")
+title(main="wealth paths for stocks", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/simu_brown_barrier.png}
   \end{columns}
 \end{block}
 
@@ -642,18 +694,21 @@ re_turns <- t(re_turns)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performing Rolling Model Calibrations}
+\subsection{Calculating Rolling Portfolio Weights}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      As an example, the portfolio weights can be calculated as proportional to the ratio of the trailing mean return divided by the \emph{MAD}, 
       \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
+      Constraints can also be applied to the portfolio weights, 
+      \vskip1ex
+      As an example, the portfolio weights can be de-meaned (so that their sum is equal to zero), to create a long-short portfolio with a small beta, 
+      \vskip1ex
+      Finally the portfolio weights can also be scaled (so that their absolute sum is equal to \texttt{1}), to maintain constant portfolio leverage, 
       <<echo=TRUE,eval=FALSE>>=
-# calculate list of portfolio weights
-# perform lapply() loop over risk_stats
+# calculate weights by performing sapply() loop over risk_stats
 weight_s <- sapply(risk_stats, 
     function(risk_stat) {
       weight_s <- risk_stat[, 1]/risk_stat[, 2]
@@ -661,10 +716,8 @@ weight_s <- sapply(risk_stats,
       weight_s <- weight_s/sum(abs(weight_s))
     })  # end sapply
 weight_s <- t(weight_s)
-weights_xts <- xts(weight_s, 
-  order.by=index(rutils::env_etf$re_turns[end_points]))
-# plot weights
-x11()
+weights_xts <- xts(weight_s, order.by=index(rutils::env_etf$re_turns[end_points]))
+x11()  # plot weights
 zoo::plot.zoo(weights_xts, xlab=NULL)
       @
     \column{0.5\textwidth}
