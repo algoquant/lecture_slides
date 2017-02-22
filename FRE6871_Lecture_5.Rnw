@@ -54,13 +54,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#5]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#5, Fall 2016}
+\subtitle{Lecture\#5, Spring 2017}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{October 10, 2016}
+\date{February 20, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -74,57 +74,216 @@ knit_theme$set(thm)
 \maketitle
 
 
+
 %%%%%%%%%%%%%%%
-\section{Debugging and Exception Handling}
+\section{Manipulating Lists and Data Frames}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Exception Conditions: Errors and Warnings}
+\subsection{Flattening a List of Vectors to a Matrix Using \texttt{do.call()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions,
+    \column{0.4\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
       \vskip1ex
-      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler,
+      If the list contains vectors of different lengths, then \texttt{R} applies the recycling rule,
       \vskip1ex
-      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler,
+      If the list contains a \texttt{NULL} element, that element is skipped,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# create list of vectors
+li_st <- lapply(1:3, function(x) sample(6))
+# bind list elements into matrix - doesn't work
+rbind(li_st)
+# bind list elements into matrix - tedious
+rbind(li_st[[1]], li_st[[2]], li_st[[3]])
+# bind list elements into matrix - works!
+do.call(rbind, li_st)
+# create numeric list
+li_st <- list(1, 2, 3, 4)
+do.call(rbind, li_st)  # returns single column matrix
+do.call(cbind, li_st)  # returns single row matrix
+# recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Binding of Lists Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
       \vskip1ex
-      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
+      But for large vectors this procedure can be very slow, and often causes an out of memory error,
+      \vskip1ex
+      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half,
+      \vskip1ex
+      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \emph{qmao}:\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(li_st) {
+  while (length(li_st) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=length(li_st), by=2)
+# bind odd and even elements, and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+      if (in_dex==length(li_st)) return(li_st[[in_dex]])
+      rbind(li_st[[in_dex]], li_st[[in_dex+1]])
+    })  # end lapply
+  }  # end while
+# li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Data Frames Using \texttt{subset()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Filtering} means extracting rows from a data frame that satisfy a logical condition,
+      \vskip1ex
+      Data frames can be filtered using Boolean vectors and brackets \texttt{"[]"} operators,
+      \vskip1ex
+      The function \texttt{subset()} filters data frames, by applying logical conditions to its columns, using the column names,
+      \vskip1ex
+      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using Boolean vectors and brackets \texttt{"[]"} operators,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+airquality[(airquality$Solar.R>320 &
+              !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R>320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R>320)),
+    brackets=airquality[(airquality$Solar.R>320 &
+                  !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames Using \texttt{factor} Categorical Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable),
+      \vskip1ex
+      The list's \texttt{names} attribute is equal to the \texttt{factor} levels,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+unique(iris$Species)  # Species has three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{split-apply-combine} procedure consists of:
       \begin{itemize}
-        \item \emph{negative} then warnings are ignored,
-        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
-        \item \emph{one} - warnings are printed as they occur,
-        \item \emph{two} or larger - warnings are turned into errors,
+        \item dividing an object into a list, according to a factor (attribute),
+        \item applying a function to each list element,
+        \item combining the results,
       \end{itemize}
-      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings,
-    \column{0.5\textwidth}
+      The \emph{split-apply-combine} procedure is similar to \emph{pivot tables} in Excel,
+      \vskip1ex
+      The \emph{split-apply-combine} procedure, by Hadley Wickham:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.6\textwidth}
+      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{image/splitapply.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{split-apply-combine} Procedure Example}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+      \vskip1ex
+      The \texttt{aggregate()} functional performs the \emph{split-apply-combine} procedure, by applying a function to groups of an object,
+      \vskip1ex
+      \texttt{aggregate()} returns a data frame containing the names of the groups,
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<>>=
-# ?options  # get info on global options
-getOption("warn")  # global option for "warn"
-options("warn")  # global option for "warn"
-getOption("error")  # global option for "error"
-sqrt_safe <- function(in_put) {
-# returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
-  } else {
-    sqrt(in_put)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
+unique(mtcars$cyl)  # cyl has three unique values
+# split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# mean mpg for each cylinder group
+sapply(split_cars, function(x) mean(x$mpg))
+# function aggregate() performs split-apply-combine
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+# aggregate() all columns
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
       @
   \end{columns}
 \end{block}
@@ -133,52 +292,42 @@ sqrt_safe()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments}
+\subsection{The \texttt{tapply()} Functional}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type},
+      The \texttt{tapply()} functional is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array},
       \vskip1ex
-      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call,
+      A \emph{jagged array} is a list consisting of elements which are vectors (or matrices) of different lengths,
       \vskip1ex
-      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise,
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"},
       \vskip1ex
-      Missing arguments can be detected by:\\
-      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
-      - calling the function \texttt{missing()} on the arguments,
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a jagged array, and then applies \texttt{"FUN"} to each element of the jagged array,
       \vskip1ex
-      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call,
       \vskip1ex
-      The function \texttt{return()} returns its argument and terminates futher function execution,
+      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
-# function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
-# check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
+# mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars,
+     tapply(X=mpg, INDEX=cyl, FUN=mean))
+# function sapply() instead of tapply()
+with(mtcars,
+     sapply(sort(unique(cyl)), function(x) {
+       structure(mean(mpg[x==cyl]), names=x)
+       }, USE.NAMES=TRUE))  # end with
+
+# function by() instead of tapply()
+with(mtcars,
+     by(data=mpg, INDICES=cyl, FUN=mean))
       @
   \end{columns}
 \end{block}
@@ -187,42 +336,129 @@ vali_date()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Assertions Inside Functions}
+\subsection{The \protect\emph{split-apply-combine} Returning Matrices Example}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
+      \vskip1ex
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+is.list(data_cars)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Objects of Class \protect\emph{ts}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution,
+      \emph{Time series} are data objects that contain a \emph{date-time} index and data associated with it,
       \vskip1ex
-      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code,
+      The native time series class in \texttt{R} is \emph{ts},
       \vskip1ex
-      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced,
+      \emph{ts} time series are \emph{regular}, i.e. they can only have an equally spaced \emph{date-time} index,
       \vskip1ex
-      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition,
+      \emph{ts} time series have a \texttt{numeric} \emph{date-time} index, usually encoded as a \emph{year-fraction}, or some other unit, like number of months, etc.,
       \vskip1ex
-      \texttt{cat()} statements inside the function body provide information about the state of its variables,
+      For example the date \texttt{"2015-03-31"} can be encoded as a \emph{year-fraction} equal to \texttt{2015.244},
+      \vskip1ex
+      The \emph{stats} base package contains functions for manipulating time series objects of class \emph{ts},
+      \vskip1ex
+      The function \texttt{ts()} creates a \emph{ts} time series from a \texttt{numeric} vector or matrix, and from the associated \emph{date-time} information (the number of data per time unit: year, month, etc.),
+      \vskip1ex
+      The \texttt{frequency} argument is the number of observations per unit of time,
+      \vskip1ex
+      For example, if the \emph{date-time} index is encoded as a \emph{year-fraction}, then \texttt{frequency=12} means \texttt{12} monthly data points per year,
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put=", in_put)
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
+        \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(lubridate)  # load lubridate
+set.seed(1121)  # reset random number generator
+# create daily time series ending today
+start_date <- decimal_date(Sys.Date()-6)
+end_date <- decimal_date(Sys.Date())
+# create vector of geometric Brownian motion
+da_ta <- exp(cumsum(rnorm(6)/100))
+fre_quency <- length(da_ta)/(end_date-start_date)
+ts_series <- ts(data=da_ta,
+                start=start_date,
+                frequency=fre_quency)
+ts_series  # display time series
+# display index dates
+as.Date(date_decimal(coredata(time(ts_series))))
+# bi-monthly geometric Brownian motion starting mid-1990
+ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
+             frequency=6, start=1990.5)
       @
-      \vspace{-2em}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Manipulating \protect\emph{ts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ts} time series don't store their \emph{date-time} indices, and instead store only a \texttt{"tsp"} attribute that specifies the index \texttt{start} and \texttt{end} dates and its \texttt{frequency},
+      \vskip1ex
+      The \emph{date-time} index is calculated as needed from the \texttt{"tsp"} attribute,
+      \vskip1ex
+      The function \texttt{time()} extracts the \emph{date-time} index of a \emph{ts} time series object,
+      \vskip1ex
+      The function \texttt{window()} subsets the a \emph{ts} time series object,
+    \column{0.5\textwidth}
+        \vspace{-1em}
       <<eval=FALSE>>=
-# print the call stack
-traceback()
+# show some methods for class "ts"
+matrix(methods(class="ts")[3:8], ncol=2)
+# "tsp" attribute specifies the date-time index
+attributes(ts_series)
+# extract the index
+tail(time(ts_series), 11)
+# the index is equally spaced
+diff(tail(time(ts_series), 11))
+# subset the time series
+window(ts_series, start=1992, end=1992.25)
       @
   \end{columns}
 \end{block}
@@ -231,40 +467,175 @@ traceback()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\subsection{Plotting \protect\emph{ts} Time Series Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()},
-      \vskip1ex
-      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution,
-      \vskip1ex
-      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements,
-      \vskip1ex
-      \texttt{stopifnot()} is often used to check the validity of function arguments,
-      \vskip1ex
-      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables,
+      The method \texttt{plot.ts()} plots \emph{ts} time series objects,
+      <<ts_obj,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(ts_series, type="l",  # create plot
+     col="red", lty="solid", xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+      @
     \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ts_obj-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EuStockMarkets Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} includes a number of \texttt{base} packages that are already installed and loaded,
+      \vskip1ex
+      \texttt{datasets} is a \texttt{base} package containing various datasets, for example: \texttt{EuStockMarkets},
+      \vskip1ex
+      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,
+      <<>>=
+class(EuStockMarkets)  # multiple ts object
+dim(EuStockMarkets)
+head(EuStockMarkets, 3)  # get first three rows
+# EuStockMarkets index is equally spaced
+diff(tail(time(EuStockMarkets), 4))
+      @
       \vspace{-1em}
-        <<>>=
-vali_date <- function(in_put) {
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-              is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
-# check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
+      <<eustx_ts,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot all the columns
+plot(EuStockMarkets, main="", xlab="")
+# add title
+title(main="EuStockMarkets", line=-2)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_ts-1}
+      \vspace{-2em}
+      \texttt{EuStockMarkets} is a \texttt{mts()} time series object,
+      \vskip1ex
+      The \texttt{EuStockMarkets} \emph{date-time} index is equally spaced (\emph{regular}), so the \emph{year-fraction} dates don't correspond to actual trading days,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Plotting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The argument \texttt{plot.type="single"} for method \texttt{plot.zoo()} allows plotting multiple lines in a single panel (pane),
+      \vskip1ex
+      The four \texttt{EuStockMarkets} time series can be plotted in a single panel (pane),
+      <<eustx_plot,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot in single panel
+plot(EuStockMarkets, main="EuStockMarkets",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue", "green"))
+# add legend
+legend(x=1992, y=8000,
+       legend=colnames(EuStockMarkets),
+       col=c("black", "red", "blue", "green"),
+       lty=1)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Distribution of \subsecname \hskip0.5em Returns}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly, 
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density,
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points,
+        \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# mean and standard deviation of returns
+c(mean(dax_rets), sd(dax_rets))
+      @
+        \vspace{-2em}
+      <<eustx_rets,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot histogram
+hist(dax_rets, breaks=30, main="",
+     xlim=c(-0.04, 0.04), ylim=c(0, 60),
+     xlab="", ylab="", freq=FALSE)
+# draw kernel density of histogram
+lines(density(dax_rets), col='red', lwd=2)
+# add density of normal distribution
+curve(expr=dnorm(x, mean=mean(dax_rets), sd=sd(dax_rets)),
+      add=TRUE, type="l", lwd=2, col="blue")
+title(main="Return distributions", line=0)  # add title
+# add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c(colnames(EuStockMarkets)[1], "Normal"),
+       lwd=2, bg="white", col=c("red", "blue"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_rets-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em Quantile-Quantile Plot}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \texttt{Q-Q} plot is a plot of points with the same quantiles, from two probability distributions,
+      \vskip1ex
+      The function \texttt{qqnorm()} produces a normal Q-Q plot,
+      \vskip1ex
+      The function \texttt{qqline()} fits a line to the normal quantiles,
+      \vskip1ex
+      The \emph{p}-value of the \emph{Shapiro-Wilk} test is very close to zero, which shows that the \texttt{DAX} returns are very unlikely to be normal,
+      <<>>=
+# calculate percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# perform Shapiro-Wilk test
+shapiro.test(dax_rets)
+      @
+    \column{0.5\textwidth}
+      The \texttt{DAX} Q-Q plot shows that the \texttt{DAX} return distribution has fat tails, 
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_qq-1}
+        \vspace{-7em}
+      <<eustx_qq,eval=FALSE,echo=(-1),fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# create normal Q-Q plot
+qqnorm(dax_rets, ylim=c(-0.04, 0.04),
+       xlab='Normal Quantiles', main='')
+# fit a line to the normal quantiles
+qqline(dax_rets, col='red', lwd=2)
+plot_title <- paste(colnames(EuStockMarkets)[1],
+                  'Q-Q Plot')
+title(main=plot_title, line=-1)  # add title
       @
   \end{columns}
 \end{block}
@@ -273,46 +644,69 @@ vali_date("a")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments and Assertions}
+\subsection{Boxplots of Distributions of Values}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE},
+      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values, 
       \vskip1ex
-      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions,
+      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}), 
       \vskip1ex
-      \texttt{cat()} statements can provide information about the state of variables inside a function,
+      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges}, 
       \vskip1ex
-      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error},
+      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range, 
+      \vskip1ex
+      The \emph{whiskers} end at the last values within the nominal range, while the open circles represent outlier values beyond the nominal range,
+      \vskip1ex
+      The function \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (for categorical variables), and another for \texttt{data frames},
+      <<box_plots,eval=FALSE>>=
+# boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars,
+        main="Mileage by number of cylinders",
+        xlab="Cylinders", ylab="Miles per gallon")
+# boxplot method for data frame of EuStockMarkets percentage returns
+boxplot(x=diff(log(EuStockMarkets)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/box_plots-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{zoo} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{zoo} is designed for managing \emph{irregular} time series and ordered objects of class \emph{zoo},
+      \vskip1ex
+      \emph{Irregular} time series have \emph{date-time} indeices that aren't equally spaced (because of weekends, overnight hours, etc.),
+      \vskip1ex
+      The function \texttt{zoo()} creates a \emph{zoo} object from a \texttt{numeric} vector or matrix, and an associated \emph{date-time} index,
+      \vskip1ex
+      The \emph{zoo} index is a vector of \emph{date-time} objects, and can be from any \emph{date-time} class,
+      \vskip1ex
+      The \emph{zoo} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # even more robust
-# check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-              !missing(in_put2))
-# check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-      is.numeric(in_put2)) {
-    in_put1 + in_put2  # both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
+      <<echo=(-(1:2))>>=
+set.seed(1121)  # reset random number generator
+library(zoo)  # load package zoo
+# create zoo time series of random returns
+in_dex <- Sys.Date() + 0:3
+zoo_series <- zoo(rnorm(length(in_dex)),
+               order.by=in_dex)
+zoo_series
+attributes(zoo_series)
+class(zoo_series)  # class 'zoo'
+tail(zoo_series, 3)  # get last few elements
       @
   \end{columns}
 \end{block}
@@ -321,178 +715,33 @@ sum_two()
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Debugger Facility}
+\subsection{Operations on \protect\emph{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger,
+      The function \texttt{coredata()} extracts the data contained in \emph{zoo} object, and returns a vector or matrix,
       \vskip1ex
-      After a function is flagged for debugging with the call \texttt{"debug(my\_func)"}, then the function call \texttt{"my\_func()"} automatically invokes the debugger (browser),
+      The function \texttt{index()} extracts the time index of a \emph{zoo} object,
       \vskip1ex
-      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"},
+      The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \emph{zoo} object,
       \vskip1ex
-      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key,
-      \vskip1ex
-      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones,
-      \vskip1ex
-      The command \texttt{"c"} executes the remainder of the function code without pausing,
-      \vskip1ex
-      The command \texttt{"Q"} exits the debugger (browser),
-      \vskip1ex
-      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-# flag "vali_date" for debugging
-debug(vali_date)
-# calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Debugging Using \texttt{browser()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body,
-      \vskip1ex
-      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called,
-      \vskip1ex
-      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()},
-      \vskip1ex
-      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition,
-      \vskip1ex
-      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"},
-      \vskip1ex
-      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-vali_date <- function(in_put) {
-  browser()  # pause and invoke browser
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-              is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # invokes debugger
-options("error")  # show default NULL "error" option
-options(error=recover)  # set "error" option to "recover"
-options(error=NULL)  # set back to default "error" option
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Using the Debugger in \texttt{RStudio}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
-      \begin{itemize}
-        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
-        \item stepping into functions,
-        \item environment pane with environment stack, instead of calling \texttt{ls()},
-        \item traceback pane, instead of calling \texttt{traceback()},
-      \end{itemize}
-      \texttt{RStudio} provides an online debugging tutorial:
-      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{image/rstudio_debug.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Handling Exception Conditions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
-      \vskip1ex
-      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument,
-      \vskip1ex
-      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression,
-      \vskip1ex
-      If a \texttt{condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{condition},
-      \vskip1ex
-      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console,
-      \vskip1ex
-      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-str(tryCatch)  # get arguments of tryCatch()
-tryCatch(  # without error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-tryCatch(  # with error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  error=function(error_cond)  # handler captures error condition
-    print(paste("error handler: ", error_cond)),
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Error Conditions in Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result,
-      \vskip1ex
-      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished,
-      \vskip1ex
-      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result,
-      \vskip1ex
-      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition},
+      The functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return cumulative sums, minima and maxima of a \emph{zoo} object,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-1)>>=
-rm(list=ls())
-# apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    stopifnot(num_var != 3)  # check for error
-    cat("(cat) num_var =", num_var, "\n")  # broadcast
-    paste("(return) num_var =", num_var)  # return value
-  }  # end anonymous function
-)  # end apply
+library(zoo)  # load package zoo
+coredata(zoo_series)  # extract coredata
+index(zoo_series)  # extract time index
+start(zoo_series)  # first date
+end(zoo_series)  # last date
+zoo_series[start(zoo_series)]  # first element
+zoo_series[end(zoo_series)]  # last element
+coredata(zoo_series) <- rep(1, 4)  # replace coredata
+cumsum(zoo_series)  # cumulative sum
+cummax(cumsum(zoo_series))
+cummin(cumsum(zoo_series))
       @
   \end{columns}
 \end{block}
@@ -501,36 +750,37 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
 
 
 %%%%%%%%%%%%%%%
-\subsection{Exception Handling in Loops}
+\subsection{The \texttt{lag()} and \texttt{diff()} Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results,
+      The method \texttt{lag.zoo()} returns a lagged version of a \emph{zoo} time series, shifting the time index by \texttt{"k"} observations,
       \vskip1ex
-      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()},
+      If \texttt{"k"} is positive, then \texttt{lag.zoo()} shifts values from the future to the present, and if \texttt{"k"} is negative then it shifts them from the past,
       \vskip1ex
-      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()},
+      This is the opposite of what is usually considered as a positive \emph{lag},
       \vskip1ex
-      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs,
+      A positive \emph{lag} should replace the present value with values from the past (negative lags should replace with values from the future),
+      \vskip1ex
+      The method \texttt{diff.zoo()} returns the difference between a \emph{zoo} time series and its proper lagged version from the past, given a positive \emph{lag} value,
+      \vskip1ex
+      By default, the methods \texttt{lag.zoo()} and \texttt{diff.zoo()} omit any \texttt{NA} values they may have produced, and return shorter time series,
+      \vskip1ex
+      If the \texttt{"na.pad"} argument is set to \texttt{TRUE}, then they return time series of the same length, with \texttt{NA} values added where needed,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE>>=
-# apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    tryCatch(  # with error handler
-      {  # body
-        stopifnot(num_var != 3)  # check for error
-        cat("(cat) num_var =", num_var, "\t")  # broadcast
-        paste("(return) num_var =", num_var)  # return value
-      },
-      error=function(error_cond)  # handler captures error condition
-        paste("handler: ", error_cond),
-      finally=print(paste("(finally) num_var =", num_var))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
+      <<echo=(-1)>>=
+library(zoo)  # load package zoo
+coredata(zoo_series) <- (1:4)^2  # replace coredata
+zoo_series
+lag(zoo_series)  # one day lag
+lag(zoo_series, 2)  # two day lag
+lag(zoo_series, k=-1)  # proper one day lag
+diff(zoo_series)  # diff with one day lag
+# proper lag and original length
+lag(zoo_series, -2, na.pad=TRUE)
       @
   \end{columns}
 \end{block}
@@ -538,62 +788,65 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Parallel Computing}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing in \texttt{R}}
-\begin{frame}[t]{\subsecname}
+\subsection{Plotting \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
-
-\begin{block}{Parallel Computing in \texttt{R}}
-      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
-      \vskip1ex
-      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \texttt{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
-      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
-      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
-      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
-\end{block}
-
-\begin{block}{\texttt{R} Base Package \texttt{parallel}}
-  The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
-  \vskip1ex
-  The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
-  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
-  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
-\end{block}
-
-\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
-      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.zoo()} method,
+      <<echo=(-(1:1))>>=
+set.seed(1121)  # reset random number generator
+library(zoo)  # load package zoo
+# create index of daily dates
+in_dex <- seq(from=as.Date("2014-07-14"),
+                  by="day", length.out=1000)
+# create vector of geometric Brownian motion
+zoo_data <- 
+  exp(cumsum(rnorm(length(in_dex))/100))
+# create zoo series of geometric Brownian motion
+zoo_series <- zoo(x=zoo_data, order.by=in_dex)
+      @
+      \vspace{-2em}
+      <<zoo_ts,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot using plot.zoo method
+plot(zoo_series, xlab="", ylab="")
+title(main="Random Prices", line=-1)  # add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_ts-1}
+  \end{columns}
 \end{block}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Parallel Computing Using Package \texttt{parallel}}
+\subsection{Subsetting \protect\emph{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \texttt{parallel} provides functions for parallel computing using multiple cores of CPUs,
+      \emph{zoo} time series can be subset in similar ways to \texttt{matrices} and \emph{ts} time series,
       \vskip1ex
-      The package \texttt{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
+      The function \texttt{window()} can also subset \emph{zoo} time series objects,
       \vskip1ex
-      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+      In addition, \emph{zoo} time series can be subset using \texttt{Date} objects,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-library(parallel)  # load package parallel
-# get short description
-packageDescription("parallel")
-# load help page
-help(package="parallel")
-# list all objects in "parallel"
-ls("package:parallel")
+      <<echo=(-(1))>>=
+library(zoo)  # load package zoo
+# subset zoo as matrix
+zoo_series[459:463, 1]
+# subset zoo using window()
+window(zoo_series,
+       start=as.Date("2014-10-15"),
+       end=as.Date("2014-10-19"))
+# subset zoo using Date object
+zoo_series[as.Date("2014-10-15")]
       @
   \end{columns}
 \end{block}
@@ -602,116 +855,1004 @@ ls("package:parallel")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performing Parallel Loops Using Package \texttt{parallel}}
+\subsection{Sequential Joining \protect\emph{zoo} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops, 
-      \vskip1ex
-      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
-      \vskip1ex
-      The function \texttt{mclapply()} performs apply loops (similar to \texttt{lapply()}) using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
-      \vskip1ex
-      Under \emph{Windows}, a cluster of \texttt{R} processes (one per each CPU core) need to be started first, by calling the function \texttt{makeCluster()},
-      \vskip1ex
-      \emph{Mac-OSX} and \emph{Linux} don't require calling the function \texttt{makeCluster()},
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores, 
+      \emph{zoo} time series can be joined sequentially using function \texttt{rbind()},
+      <<zoo_join_seq,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+set.seed(1121)  # reset random number generator
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# create daily date series of class 'Date'
+in_dex1 <- seq(Sys.Date(), by="days",
+                   length.out=365)
+# create zoo time series of random returns
+zoo_series1 <- zoo(rnorm(length(in_dex1)),
+                 order.by=in_dex1)
+# create another zoo time series of random returns
+in_dex2 <- seq(Sys.Date()+350, by="days",
+                   length.out=365)
+zoo_series2 <- zoo(rnorm(length(in_dex2)),
+                 order.by=in_dex2)
+# rbind the two time series - ts1 supersedes ts2
+zoo_series3 <- rbind(zoo_series1,
+                 zoo_series2[index(zoo_series2) > end(zoo_series1)])
+# plot zoo time series of geometric Brownian motion
+plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
+# add vertical lines at stitch point
+abline(v=end(zoo_series1), col="blue", lty="dashed")
+abline(v=start(zoo_series2), col="red", lty="dashed")
+title(main="Random Prices", line=-1)  # add title
+      @
     \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_join_seq-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Merging \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be combined concurrently by joining their columns using function \texttt{merge()},
+      \vskip1ex
+      Function \texttt{merge()} is similar to function \texttt{cbind()},
+      \vskip1ex
+      If the \texttt{all=TRUE} option is set, then \texttt{merge()} returns the union of their dates, otherwise it returns their intersection,
+      \vskip1ex
+      The \texttt{merge()} operation can produce \texttt{NA} values,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+# create daily date series of class 'Date'
+in_dex1 <- Sys.Date() + -3:1
+# create zoo time series of random returns
+zoo_series1 <- zoo(rnorm(length(in_dex1)),
+               order.by=in_dex1)
+# create another zoo time series of random returns
+in_dex2 <- Sys.Date() + -1:3
+zoo_series2 <- zoo(rnorm(length(in_dex2)),
+               order.by=in_dex2)
+merge(zoo_series1, zoo_series2)  # union of dates
+# intersection of dates
+merge(zoo_series1, zoo_series2, all=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing \texttt{NA} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Operations on time series can produce \texttt{NA} values,
+      \vskip1ex
+      There are two dedicated functions for managing \texttt{NA} values in time series:
+      \begin{itemize}
+        \item \texttt{na.omit()} removes observations containing \texttt{NA} values,
+        \item \texttt{na.locf()} carries the last non-\texttt{NA} observation forward,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # load package zoo
+# create zoo time series
+zoo_series <- zoo(sample(4),
+                  order.by=(Sys.Date() + 0:3))
+# add NA
+zoo_series[3] <- NA
+zoo_series
+
+na.locf(zoo_series)  # replace NA's using locf
+
+na.omit(zoo_series)  # remove NA's using omit
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Time Series Objects Into \protect\emph{zoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The generic function \texttt{as.zoo()} coerces objects into \emph{zoo} time series,
+      \vskip1ex
+      The function \texttt{as.zoo()} creates a \emph{zoo} object with a \texttt{numeric} \emph{date-time} index, with \emph{date-time} encoded as a \emph{year-fraction},
+      \vskip1ex
+      The \emph{year-fraction} can be \emph{approximately} converted to a \texttt{Date} object by first calculating the number of days since the \emph{epoch} (\texttt{1970}), and then coercing the \texttt{numeric} days using \texttt{as.Date()},
+      \vskip1ex
+      The function \texttt{date\_decimal()} from package \emph{lubridate} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
+      \vskip1ex
+      The function \texttt{date\_decimal()} provides a more accurate way of converting a \emph{year-fraction} index to \texttt{POSIXct},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+library(lubridate)  # load lubridate
+library(zoo)  # load package zoo
+# methods(as.zoo)  # many methods of coercing into zoo
+class(EuStockMarkets)  # multiple ts object
+# coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+class(index(zoo_series))  # index is numeric
+head(zoo_series, 3)
+# approximately convert index into class 'Date'
+index(zoo_series) <-
+  as.Date(365*(index(zoo_series)-1970))
+head(zoo_series, 3)
+# convert index into class 'POSIXct'
+zoo_series <- as.zoo(EuStockMarkets)
+index(zoo_series) <- date_decimal(index(zoo_series))
+head(zoo_series, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{zoo} Time Series Into Class \protect\emph{ts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The generic function \texttt{as.ts()} from package \emph{stats} coerces time series objects (including \emph{zoo}) into \emph{ts} time series,
+      \vskip1ex
+      The function \texttt{as.ts()} creates a \emph{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates,
+      \vskip1ex
+      A \emph{ts} time series can be created from a \emph{zoo} using the function \texttt{ts()}, after extracting the data and date attributes from \emph{zoo},
+      \vskip1ex
+      The function \texttt{decimal\_date()} from package \emph{lubridate} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+library(lubridate)  # load lubridate
+library(zoo)  # load package zoo
+set.seed(1121)  # reset random number generator
+# create index of daily dates
+in_dex <- seq(from=as.Date("2014-07-14"),
+                  by="day", length.out=1000)
+# create vector of geometric Brownian motion
+zoo_data <- exp(cumsum(rnorm(length(in_dex))/100))
+# create zoo time series of geometric Brownian motion
+zoo_series <- zoo(x=zoo_data,
+                  order.by=in_dex)
+head(zoo_series, 3)  # zoo object
+# as.ts() creates ts object with frequency=1
+ts_series <- as.ts(zoo_series)
+tsp(ts_series)  # frequency=1
+# get start and end dates of zoo_series
+start_date <- decimal_date(start(zoo_series))
+end_date <- decimal_date(end(zoo_series))
+# calculate frequency of zoo_series
+fre_quency <- length(zoo_series)/(end_date-start_date)
+da_ta <- coredata(zoo_series)  # extract data from zoo_series
+# create ts object using ts()
+ts_series <- ts(data=da_ta, start=start_date,
+                frequency=fre_quency)
+# display start of time series
+window(ts_series, start=start(ts_series),
+       end=start(ts_series)+4/365)
+head(time(ts_series))  # display index dates
+head(as.Date(date_decimal(coredata(time(ts_series)))))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Irregular Time Series Into Class \protect\emph{ts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Irregular time series cannot be properly coerced into \emph{ts} time series without modifying their index,
+      \vskip1ex
+      The function \texttt{as.ts()} creates \texttt{NA} values when it coerces irregular time series into a \emph{ts} time series,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(lubridate)  # load lubridate
+library(zoo)  # load package zoo
+# create weekday Boolean vector
+week_days <- weekdays(index(zoo_series))
+is_weekday <- !((week_days == "Saturday") |
+  (week_days == "Sunday"))
+# remove weekends from zoo time series
+zoo_series <- zoo_series[is_weekday, ]
+head(zoo_series, 7)  # zoo object
+# as.ts() creates NA values
+ts_series <- as.ts(zoo_series)
+head(ts_series, 7)
+# create vector of regular dates, including weekends
+in_dex <- seq(from=start(zoo_series),
+                  by="day",
+                  length.out=length(zoo_series))
+index(zoo_series) <- in_dex
+ts_series <- as.ts(zoo_series)
+head(ts_series, 7)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{\protect\emph{xts} Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{xts} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{xts} defines time series objects of class \emph{xts},
+      \begin{itemize}
+        \item Class \emph{xts} is an extension of the \emph{zoo} class (derived from \emph{zoo}),
+        \item Class \emph{xts} is the most widely accepted time series class,
+        \item Class \emph{xts} is designed for high-frequency and \emph{OHLC} data,
+        \item Class \emph{xts} contains many convenient functions for plotting, calculating rolling max, min, etc.
+      \end{itemize}
+      The function \texttt{xts()} creates a \emph{xts} object from a \texttt{numeric} vector or matrix, and an associated \emph{date-time} index,
+      \vskip1ex
+      The \emph{xts} index is a vector of \emph{date-time} objects, and can be from any \emph{date-time} class,
+      \vskip1ex
+      The \emph{xts} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+set.seed(1121)  # reset random number generator
+library(xts)  # load package xts
+# create xts time series of random returns
+in_dex <- Sys.Date() + 0:3
+x_ts <- xts(rnorm(length(in_dex)),
+               order.by=in_dex)
+names(x_ts) <- "random"
+x_ts
+tail(x_ts, 3)  # get last few elements
+first(x_ts)  # get first element
+last(x_ts)  # get last element
+class(x_ts)  # class 'xts'
+attributes(x_ts)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{zoo} Time Series Into Class \protect\emph{xts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{as.xts()} coerces time series (including \emph{zoo}) into \emph{xts} time series,
+      \vskip1ex
+      \texttt{as.xts()} preserves the \emph{index} attributes of the original time series,
+      \vskip1ex
+      \emph{xts} can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.xts()} method,
+      <<echo=(-(1:1))>>=
+load(file="C:/Develop/data/zoo_data.RData")
+library(xts)  # load package xts
+# as.xts() creates xts from zoo
+st_ox <- as.xts(zoo_stx_adj)
+dim(st_ox)
+head(st_ox[, 1:4], 4)
+      @
+      \vspace{-2em}
+      <<xts_plot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot using plot.xts method
+plot(st_ox[, "AdjClose"], xlab="", ylab="", main="")
+title(main="MSFT Prices")  # add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_plot-2}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Multiple \protect\emph{xts} Using Packages \protect\emph{xts} and \protect\emph{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<xts_mult_plot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(xts)  # load xts
+library(lubridate)  # load lubridate
+# coerce EuStockMarkets into class xts
+x_ts <- xts(coredata(EuStockMarkets),
+            order.by=date_decimal(index(EuStockMarkets)))
+# plot all columns in single panel: xts v.0.9-8
+col_ors <- rainbow(NCOL(x_ts))
+plot(x_ts, main="EuStockMarkets using xts",
+     col=col_ors, major.ticks="years",
+     minor.ticks=FALSE)
+legend("topleft", legend=colnames(EuStockMarkets),
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
+       lwd=3, col=col_ors, bg="white")
+# plot only first column: xts v.0.9-7
+plot(x_ts[, 1], main="EuStockMarkets using xts",
+     col=col_ors[1], major.ticks="years",
+     minor.ticks=FALSE)
+# plot remaining columns
+for (col_umn in 2:NCOL(x_ts))
+  lines(x_ts[, col_umn], col=col_ors[col_umn])
+# plot using quantmod
+library(quantmod)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+chart_Series(x=x_ts, theme=plot_theme,
+             name="EuStockMarkets using quantmod")
+legend("topleft", legend=colnames(EuStockMarkets),
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
+       lwd=3, col=col_ors, bg="white")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_mult_plot}\\
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_quantmod_plot}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{xts} Using Package \protect\emph{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{xts} time series can be plotted using the package \emph{ggplot2},
+      \vskip1ex
+      The function \texttt{qplot()} is the simplest function in the \emph{ggplot2} package, and allows creating line and bar plots,
+      \vskip1ex
+      The function \texttt{theme()} customizes plot objects,
+      <<xts_ggplot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(rutils)
+library(ggplot2)
+# create ggplot object
+etf_gg <- qplot(x=index(env_etf$price_s[, 1]),
+                y=as.numeric(env_etf$price_s[, 1]),
+                geom="line",
+                main=names(env_etf$price_s[, 1])) +
+  xlab("") + ylab("") +
+  theme(  # add legend and title
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.background=element_blank()
+  )  # end theme
+# render ggplot object
+etf_gg
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_ggplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Multiple \protect\emph{xts} Using Package \protect\emph{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{xts} time series can be plotted using the function \texttt{ggplot()} from package \emph{ggplot2},
+      \vskip1ex
+      But \emph{ggplot2} functions don't accept time series objects, so time series must be first formatted into \texttt{data frames},
+      \vspace{-1em}
+      <<xts_mult_ggplot,echo=TRUE,eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(rutils)  # load xts time series data
+library(reshape2)
+library(ggplot2)
+# create data frame of time series
+data_frame <-
+  data.frame(dates=index(env_etf$price_s),
+    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+# reshape data into a single column
+data_frame <-
+  reshape2::melt(data_frame, id="dates")
+x11(width=6, height=5)  # open plot window
+# ggplot the melted data_frame
+ggplot(data=data_frame,
+       mapping=aes(x=dates, y=value, colour=variable)) +
+       geom_line() +
+  xlab("") + ylab("") +
+  ggtitle("VTI and IEF") +
+  theme(  # add legend and title
+    legend.position=c(0.2, 0.8),
+    plot.title=element_text(vjust=-2.0)
+  )  # end theme
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_mult_ggplot.png}\\
+      Time series with multiple columns must be reshaped into a single column, which can be performed using the function \texttt{melt()} from package \emph{reshape2},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive Time Series Plots Using Package \protect\emph{dygraphs}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive, zoomable plots from \emph{xts} time series,
+      \vskip1ex
+      The function \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot,
+      \vskip1ex
+      The function \texttt{dyRangeSelector()} adds a date range selector to the bottom of a \emph{dygraphs} plot,
+      <<time_series_dygraphs,echo=TRUE,eval=FALSE>>=
+# load rutils which contains env_etf dataset
+suppressMessages(suppressWarnings(library(rutils)))
+suppressMessages(suppressWarnings(library(dygraphs)))
+x_ts <- env_etf$price_s[, c("VTI", "IEF")]
+# plot dygraph with date range selector
+dygraph(x_ts, main="VTI and IEF prices") %>%
+  dyOptions(colors=c("blue","green")) %>%
+  dyRangeSelector()
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/time_series_dygraphs.pdf}\\
+      The \emph{dygraphs} package in \texttt{R} is an interface to the \emph{dygraphs} \emph{JavaScript} charting library,
+      \vskip1ex
+      Interactive \emph{dygraphs} plots require running \emph{JavaScript} code, which can be embedded in \emph{HTML} documents, and displayed by web browsers,
+      \vskip1ex
+      But \emph{pdf} documents can't run \emph{JavaScript} code, so they can't display interactive \emph{dygraphs} plots,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive Time Series Plots Using Package \protect\emph{plotly}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{plot\_ly()} from package \emph{plotly} creates interactive plots from data residing in \texttt{data frames},
+      \vskip1ex
+      The function \texttt{add\_trace()} adds elements to a \emph{plotly} plot,
+      \vskip1ex
+      The function \texttt{layout()} modifies the layout of a \emph{plotly} plot,
+      <<time_series_plotly,echo=TRUE,eval=FALSE>>=
+# load rutils which contains env_etf dataset
+suppressMessages(suppressWarnings(library(rutils)))
+suppressMessages(suppressWarnings(library(plotly)))
+# create data frame of time series
+data_frame <-
+  data.frame(dates=index(env_etf$price_s),
+    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+# plotly syntax using pipes
+data_frame %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF") %>%
+  layout(title="VTI and IEF prices",
+         xaxis=list(title="Time"),
+         yaxis=list(title="Stock Prices"),
+         legend=list(x=0.1, y=0.9))
+# or use standard plotly syntax
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF")
+p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
+p_lot
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/time_series_plotly.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{xts} time series can be subset in similar ways to \emph{zoo},
+      \vskip1ex
+      In addition, \emph{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2014-10-15/2015-01-10"]},
+      \vskip1ex
+      \emph{xts} time series can be subset by year, week, days, or even seconds,
+      \vskip1ex
+      If only the date is subset, then a comma \texttt{","} after the date range isn't necessary,
+      \vskip1ex
+      The function \texttt{.subset\_xts()} allows fast subsetting of \emph{xts} time series, which for large datasets can be much faster than the bracket \texttt{"[]"} notation,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+library(xts)  # load package xts
+# subset xts using a date range string
+stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
+first(stox_sub)
+last(stox_sub)
+# subset Nov 2014 using a date string
+stox_sub <- st_ox["2014-11", 1:4]
+first(stox_sub)
+last(stox_sub)
+# subset all data after Nov 2014
+stox_sub <- st_ox["2014-11/", 1:4]
+first(stox_sub)
+last(stox_sub)
+# comma after date range not necessary
+identical(st_ox["2014-11", ], st_ox["2014-11"])
+# benchmark the speed of subsetting
+library(microbenchmark)
+summary(microbenchmark(
+  bracket=sapply(500,
+        function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
+  subset=sapply(500,
+        function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting Recurring \protect\emph{xts} Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{recurring time interval} is the same time interval every day,
+      \vskip1ex
+      \emph{xts} can be subset on recurring time intervals using the \texttt{"T"} notation,
+      \vskip1ex
+      For example, to subset the time interval from 9:30AM to 4:00PM every day: \texttt{["T09:30:00/T16:00:00"]}
+      \vskip1ex
+      Warning messages that "timezone of object is different than current timezone" can be suppressed by calling the function options() with argument \texttt{"xts\_check\_tz=FALSE"}
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+library(xts)  # load package xts
+# vector of 1-minute times (ticks)
+min_ticks <- seq.POSIXt(
+  from=as.POSIXct("2015-04-14", tz="America/New_York"),
+  to=as.POSIXct("2015-04-16"),
+  by="min")
+# xts of 1-minute times (ticks) of random returns
+x_ts <- xts(rnorm(length(min_ticks)),
+                     order.by=min_ticks)
+# subset recurring time interval using "T notation",
+x_ts <- x_ts["T09:30:00/T16:00:00"]
+first(x_ts["2015-04-15"])  # first element of day
+last(x_ts["2015-04-15"])  # last element of day
+# suppress timezone warning messages
+options(xts_check_tz=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Properties of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{xts} series always have a \texttt{dim} attribute, unlike \emph{zoo},
+      \vskip1ex
+      \emph{zoo} series with multiple columns have a \texttt{dim} attribute, and are therefore matrices,
+      \vskip1ex
+      But \emph{zoo} with a single column don't, and are therefore vectors not matrices,
+      \vskip1ex
+      When a \emph{zoo} is subset to a single column, the \texttt{dim} attribute is dropped, which can create errors,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+library(xts)  # load package xts
+str(st_ox)  # display structure of xts
+# subsetting zoo to single column drops dim attribute
+dim(zoo_stx_adj)
+dim(zoo_stx_adj[, 1])
+# zoo with single column are vectors not matrices
+c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
+# xts always have a dim attribute
+rbind(base=dim(st_ox), subs=dim(st_ox[, 1]))
+c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{lag()} and \texttt{diff()} Operations on \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{lag()} and \texttt{diff()} operations on \emph{xts} series differ from those on \emph{zoo},
+      \vskip1ex
+      \texttt{lag()} and \texttt{diff()} operations on \emph{zoo} series shorten the series by one row,
+      \vskip1ex
+      By default, the \texttt{lag()} operation on \emph{xts} replaces the present value with values from the past (negative lags replace with values from the future),
+      \vskip1ex
+      By default, the \texttt{lag()} and \texttt{diff()} operations on \emph{xts} retain the same number of rows, but substitute \texttt{NAs} for missing data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+library(xts)  # load package xts
+# lag of zoo shortens it by one row
+rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
+# lag of xts doesn't shorten it
+rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
+# lag of zoo is in opposite direction from xts
+head(lag(zoo_stx_adj), 4)
+head(lag(st_ox), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Converting \protect\emph{xts} to Lower Periodicity}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{to.period()} converts a time series to a lower periodicity (for example from hourly to daily periodicity),
+      \vskip1ex
+      \texttt{to.period()} returns a time series of open, high, low, and close values (\emph{OHLC}) for the lower period,
+      \vskip1ex
+      \texttt{to.period()} converts both univariate and \emph{OHLC} time series to a lower periodicity,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1))>>=
+library(xts)  # load package xts
+# lower the periodicity to months
+xts_monthly <- to.period(x=st_ox,
+                   period="months", name="MSFT")
+# convert colnames to standard OHLC format
+colnames(xts_monthly)
+colnames(xts_monthly) <- sapply(
+  strsplit(colnames(xts_monthly), split=".", fixed=TRUE),
+  function(na_me) na_me[-1]
+  )  # end sapply
+head(xts_monthly, 3)
+# lower the periodicity to years
+xts_yearly <- to.period(x=xts_monthly,
+                   period="years", name="MSFT")
+colnames(xts_yearly) <- sapply(
+  strsplit(colnames(xts_yearly), split=".", fixed=TRUE),
+  function(na_me) na_me[-1]
+  )  # end sapply
+head(xts_yearly)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \protect\emph{xts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The method (function) \texttt{plot.xts()} can plot \emph{OHLC} time series of class \emph{xts},
+      <<xts_plot_OHLC,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/data/zoo_data.RData")
+library(xts)  # load package xts
+# as.xts() creates xts from zoo
+st_ox <- as.xts(zoo_stx_adj)
+# subset xts using a date
+stox_sub <- st_ox["2014-11", 1:4]
+
+# plot OHLC using plot.xts method
+plot(stox_sub, type="candles", main="")
+title(main="MSFT Prices")  # add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/xts_plot_OHLC-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} and other packages contain a number of different time series classes:
+      \begin{itemize}
+        \item Class \emph{ts} from base package \emph{stats}:\\
+        native time series class in \texttt{R}, but allows only \emph{regular} (equally spaced) date-time index,\\
+        not suitable for sophisticated financial applications,
+        \item Class \emph{zoo}: allows \emph{irregular} date-time index,\\
+        the \emph{zoo} index can be from any \emph{date-time} class,
+        \item Class \emph{xts} extension of \emph{zoo} class: most widely accepted time series class,\\
+        designed for high-frequency and \emph{OHLC} data,\\
+        contains convenient functions for plotting, calculating rolling max, min, etc.
+        \item Class \emph{timeSeries} from the \emph{Rmetrics} suite,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+load(file="C:/Develop/data/zoo_data.RData")
+ts_stx <- as.ts(zoo_stx)
+class(ts_stx)
+tail(ts_stx[, 1:4])
+library(xts)
+st_ox <- as.xts(zoo_stx)
+class(st_ox)
+tail(st_ox[, 1:4])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{One-dimensional Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      \vskip1ex
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
+      \vskip1ex
+      \vspace{-1em}
+        <<eval=FALSE,echo=(-(1:1))>>=
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+      @
+      \vspace{-2em}
+        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot the objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+# add title
+title(main="Objective Function", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_one_dim-1}
+      \vspace{-2em}
+      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive 3d Surface Plots Using Package \protect\emph{rgl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
+      \vskip1ex
+      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
+      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(rgl)  # load rgl
+# define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE)
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+        xlab="x", ylab="y", zlab="sur_face",
+        col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*x)*sin(lambda_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE, 
+        lambda_1=1, lambda_2=2)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      \vskip1ex
+      The argument \texttt{par} are the initial parameter values,
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized,
+      \vskip1ex
+      The argument of the objective function which is to be optimized, must be a vector argument,
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
+    \column{0.5\textwidth}
+        <<eval=FALSE,echo=TRUE>>=
+# define object_ive function of one vector argument and two parameters
+object_ive <- function(vec_tor, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
+# optimization to find weights with maximum Sharpe ratio
+weight_s <- c(pi/6, pi/6)
+object_ive(weight_s)
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=c(4*pi, 4*pi),
+                   lower=c(pi/2, pi/2),
+                   lambda_1=1, lambda_2=1)
+# optimal parameters and value
+optim_run$par
+optim_run$value
+-object_ive(optim_run$par)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Principal Component Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Covariance Matrix of the Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The covariance matrix $\mathbf{V}$, of the data matrix $\mathbf{r}$, is given by:
+      \begin{displaymath}
+        \mathbf{V} = \frac{\mathbf{r}^T \, \mathbf{r}} {n-1}
+      \end{displaymath}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-num_cores <- detectCores() - 1
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# perform parallel loop under Mac-OSX or Linux
-foo <- mclapply(1:10, paws, mc.cores=num_cores, 
-                sleep_time=0.01)
-# initialize compute cluster
-clus_ter <- makeCluster(num_cores)
-# perform parallel loop under Windows
-foo <- parLapply(clus_ter, 1:10, paws, 
-                 sleep_time=0.01)
-library(microbenchmark)  # load package microbenchmark
-# compare speed of lapply versus parallel computing
-summary(microbenchmark(
-  l_apply=lapply(1:10, paws, sleep_time=0.01),
-  parl_apply=
-    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Computing Overhead of Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
-      \vskip1ex
-      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
-      <<echo=(-(1:10)),eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-num_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ter <- makeCluster(num_cores)
-# define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# compare speed of lapply with parallel computing
-iter_ations <- 3:10
-compute_times <- sapply(iter_ations,
-  function(max_iterations, sleep_time) {
-    out_put <- summary(microbenchmark(
-      lapply=lapply(1:max_iterations, paws,
-                    sleep_time=sleep_time),
-      parallel=parLapply(clus_ter, 1:max_iterations,
-              paws, sleep_time=sleep_time),
-      times=10))[, c(1, 4)]
-    structure(out_put[, 2],
-              names=as.vector(out_put[, 1]))
-    }, sleep_time=0.01)
-compute_times <- t(compute_times)
-rownames(compute_times) <- iter_ations
+# select ETF symbols
+sym_bols <- c("IEF", "DBC", "XLF", "XLP", "XLI", "VXX")
+# select and de-mean the returns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+in_dex <- index(re_turns)
+re_turns <- t(t(re_turns) - sapply(re_turns, sum)/NROW(re_turns))
+# re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
+# re_turns <- do.call(cbind, re_turns)
+# re_turns <- scale(re_turns, scale=FALSE)
+# covariance matrix and variance vector of the data
+cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
+vari_ance <- diag(cov_mat)
+cor_mat <- cov_mat / sqrt(vari_ance)
+cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
+# cor_mat <- cor(re_turns)
+# reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat, 
+              order="hclust", 
+              hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
+    method="square", col=color_ramp(8), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
+                method="complete", col="red")
       @
     \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cor_mat.png}\\
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/parallel_plot.png}\\
-      \vspace{-1em}
-      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
-library(parallel)  # load package parallel
-plot(x=rownames(compute_times),
-     y=compute_times[, "lapply"],
-     type="l", lwd=2, col="blue",
-     main="Compute times",
-     xlab="number of iterations in loop", ylab="",
-     ylim=c(0, max(compute_times[, "lapply"])))
-lines(x=rownames(compute_times),
-      y=compute_times[, "parallel"], lwd=2, col="green")
-legend(x="topleft", legend=colnames(compute_times),
-       inset=0.1, cex=1.0, bg="white",
-       lwd=2, lty=c(1, 1), col=c("blue", "green"))
+            <<echo=TRUE,eval=FALSE>>=
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
+    method="square", col=color_ramp(8), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
+                method="complete", col="red")
       @
+
   \end{columns}
 \end{block}
 
@@ -719,183 +1860,295 @@ legend(x="topleft", legend=colnames(compute_times),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Parallel Computing Over Matrices}
+\subsection{Principal Components of the Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Very often we need to perform time consuming calculations over columns of matrices,
+      \emph{Principal components} are linear combinations of the vectors of the data $\mathbf{r}_i$, 
       \vskip1ex
-      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-num_cores <- detectCores() - 1
-# initialize compute cluster
-clus_ter <- makeCluster(num_cores)
-# define large matrix
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
-# define aggregation function over column of matrix
-agg_regate <- function(col_umn) {
-  out_put <- 0
-  for (in_dex in 1:length(col_umn))
-    out_put <- out_put + col_umn[in_dex]
-  out_put
-}  # end agg_regate
-# perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ter, mat_rix, agg_regate)
-# compare speed of apply with parallel computing
-summary(microbenchmark(
-  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ter, mat_rix, agg_regate),
-  times=10)
-)[, c(1, 4, 5)]
-# stop R processes over cluster
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Regression Coefficients Using Bootstrap}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors of the regression coefficients can be calculated using a \emph{bootstrap} simulation, 
+      The first principal component $\mathbf{pc}$, is given by:
+      \begin{displaymath}
+        \mathbf{pc} = \sum_{i=1}^k {w_i \, \mathbf{r}_i} = \mathbf{r} \, \mathbf{w}
+      \end{displaymath}
+      Where $w_i$ is a vector of weights (loadings), such that its sum of squares is equal to \texttt{1}: $\mathbf{w}^T \, \mathbf{w} = 1$,
       \vskip1ex
-      The \emph{bootstrap} procedure creates new design matrices by randomly sampling with replacement from the design matrix, 
-      \vskip1ex
-      Regressions are performed on the \emph{bootstrapped} design matrices, and the regression coefficients are saved into a matrix of \emph{bootstrapped} coefficients, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)  # initialize random number generator
-# define explanatory and response variables
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-res_ponse <- -3 + explana_tory + noise
-# define design matrix and regression formula
-design_matrix <- data.frame(res_ponse, explana_tory)
-reg_formula <- paste(colnames(design_matrix)[1], 
-  paste(colnames(design_matrix)[-1], collapse="+"), 
-  sep=" ~ ")
-# bootstrap the regression
-boot_strap <- sapply(1:100, function(x) {
-  boot_sample <- 
-    sample.int(dim(design_matrix)[1], replace=TRUE)
-  reg_model <- lm(reg_formula,
-                data=design_matrix[boot_sample, ])
-  reg_model$coefficients
-})  # end sapply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Bootstrapped Regression Coefficients}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrapped} coefficient values can be used to calculate the probability distribution of the coefficients and their standard errors,
-        <<boot_distribution,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-x11(width=6, height=6)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=1, 
-      function(x) c(mean=mean(x), sd=sd(x)))
-# means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=design_matrix)
-reg_model$coefficients
-summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["explana_tory", ]),
-     lwd=2, xlab="regression slopes",
-     main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["explana_tory", ]), 
-       lwd=2, col="red")
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/boot_distribution.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping Regressions Using Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing, 
-      \vskip1ex
-      Different functions from package \texttt{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
-      \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process, 
-      \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, 
-      \vskip1ex
-      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
-    \column{0.5\textwidth}
+      The weights $\mathbf{w}$ are chosen to maximize the variance of the principal component:
+      \begin{displaymath}
+        \mathbf{w} = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}^T \, \mathbf{pc} \right\} = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{w}^T \, \mathbf{r}^T \, \mathbf{r} \, \mathbf{w} \right\}
+      \end{displaymath}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
-# bootstrap the regression under Windows
-boot_strap <- parLapply(clus_ter, 1:1000, 
-  function(x, reg_formula, design_matrix) {
-    boot_sample <- 
-      sample.int(dim(design_matrix)[1], replace=TRUE)
-    reg_model <- lm(reg_formula,
-      data=design_matrix[boot_sample, ])
-    reg_model$coefficients
-  }, 
-  reg_formula=reg_formula, 
-  design_matrix=design_matrix)  # end parLapply
-# bootstrap the regression under Mac-OSX or Linux
-boot_strap <- mclapply(1:1000, 
-  function(x) {
-    boot_sample <- 
-      sample.int(dim(design_matrix)[1], replace=TRUE)
-    lm(reg_formula,
-      data=design_matrix[boot_sample, ])$coefficients
-  }, mc.cores=num_cores)  # end mclapply
-stopCluster(clus_ter)  # stop R processes over cluster
-boot_strap <- do.call(rbind, boot_strap)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2, 
-      function(x) c(mean=mean(x), sd=sd(x)))
-x11(width=6, height=6)
-plot(density(boot_strap[, "explana_tory"]),
-     lwd=2, xlab="regression slopes",
-     main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "explana_tory"]), 
-       lwd=2, col="red")
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) + 
+    1000*(1 - sum(weight_s*weight_s))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# compare speed of two methods
+summary(microbenchmark(
+  trans_pose=t(portf_rets) %*% portf_rets,
+  s_um=sum(portf_rets*portf_rets),
+  times=10))[, c(1, 4, 5)]
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_load.png}\\
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(1.0, n_weights),
+                   lower=rep(-1.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# plot first principal component loadings
+barplot(weight_s, names.arg=names(weight_s), 
+        xlab="", ylab="", 
+        main="first principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Order Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}, 
+      \vskip1ex
+      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}, 
+      <<echo=TRUE,eval=FALSE>>=
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) + 
+    1000*(1 - sum(weight_s*weight_s))^2 + 
+    1000*sum(pc_1*portf_rets)^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(1.0, n_weights),
+                   lower=rep(-1.0, n_weights))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_load2.png}\\
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="second principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of the Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The maximization of the portfolio variance: $\mathbf{w}^T \, \mathbf{V} \, \mathbf{w}$, under the constraint $\mathbf{w}^T \, \mathbf{w} = 1$, can be redefined using the method of \emph{Lagrange multipliers} as the maximization of:
+      \begin{displaymath}
+        \mathbf{w}^T \, \mathbf{V} \, \mathbf{w} \, - \, \lambda \, \mathbf{w}^T \, \mathbf{w}
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier}, 
+      \vskip1ex
+      The solution can be found by differentiating the above with respect to $\mathbf{w}$ and setting it to zero:
+      \begin{displaymath}
+        \mathbf{V} \, \mathbf{w} = \lambda \, \mathbf{w}
+      \end{displaymath}
+      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbf{V}$, and the optimal weights $\mathbf{w}$ form an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $\mathbf{w}$, 
+      \vskip1ex
+      The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the data variances:
+      \begin{displaymath}
+        \sum_{i=1}^k \lambda_i = \sum_{i=1}^k \mathbf{r}_i^T \, \mathbf{r}_i
+      \end{displaymath}
+      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_eigen_values.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # plot eigenvalues
+        names.arg=paste0("PC", 1:n_weights), 
+        las=3, xlab="", ylab="", main="PC eigenvalues (variances)")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data, and returns the results as an object of class \texttt{prcomp}, 
+      \vskip1ex
+      The first few \emph{principal components} explain most of the volatility in the data, so \emph{PCA} is a form of \emph{dimensionality reduction}, 
+      <<echo=TRUE,eval=FALSE>>=
+# perform principal component analysis PCA
+p_ca <- prcomp(re_turns, 
+               center=TRUE, scale=FALSE)
+# plot standard deviations
+barplot(p_ca$sdev, 
+        names.arg=colnames(p_ca$rotation), 
+        las=3, xlab="", ylab="", 
+        main="PC volatilities")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_std_dev.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Loadings (Weights)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns,
+      \vskip1ex
+      The \emph{principal component} portfolios represent the different orthogonal modes of the data variance, 
+      <<echo=TRUE,eval=FALSE>>=
+# principal component loadings (weights)
+p_ca$rotation
+# plot loading barplots in multiple panels
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:n_weights) {
+  barplot(p_ca$rotation[, or_der], 
+        las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, 
+        col.main="red")
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_loadings.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data,
+      \vskip1ex
+      Higher order \emph{principal components} are gradually less volatile,
+      <<echo=TRUE,eval=FALSE>>=
+# principal component time series
+pca_ts <- xts(re_turns %*% p_ca$rotation, 
+                order.by=in_dex)
+pca_ts <- cumsum(pca_ts)
+# plot principal component time series in multiple panels
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:n_weights) {
+  plot.zoo(pca_ts[, or_der], 
+           ylim=ra_nge, 
+           xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_time_series.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series from Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The original time series data can be calculated exactly from the time series of \emph{principal components}, by inverting the loadings matrix, 
+      \vskip1ex
+      The original time series can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimensionality reduction}, 
+      \vskip1ex
+      The function \texttt{solve()} solves a system of linear equations, and also inverts a square matrix, 
+      <<echo=TRUE,eval=FALSE>>=
+# invert principal component time series
+pca_rets <- re_turns %*% p_ca$rotation
+sol_ved <- pca_rets %*% solve(p_ca$rotation)
+all.equal(re_turns, sol_ved)
+sol_ved <- pca_rets[, 1:3] %*% solve(p_ca$rotation)[1:3, ]
+# plot the solved returns
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+col_names <- colnames(re_turns)
+for (or_der in 1:n_weights) {
+  plot.zoo(
+    cumsum(as.xts(cbind(re_turns[, or_der], sol_ved[, or_der]))), 
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topright", 
+         legend=paste0(col_names[or_der], c("", " solved")),
+         title="", inset=0.05, cex=1.0, lwd=c(6, 6),
+         lty=c(1, 1), col=c("black", "blue"))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_time_series_solved.png}
   \end{columns}
 \end{block}
 
@@ -912,12 +2165,18 @@ abline(v=mean(boot_strap[, "explana_tory"]),
 \begin{frame}[t]{\subsecname}
 \vspace{-1em}
 \begin{block}{Required}
-  Read all the lecture slides in \texttt{FRE6871\_Lecture\_5.pdf}, and run all the code in \texttt{FRE6871\_Lecture\_5.R}
+  \begin{itemize}[]
+    \item Read all the lecture slides in \emph{FRE6871\_Lecture\_5.pdf}, and run all the code in \emph{FRE6871\_Lecture\_5.R}
+  \end{itemize}
 \end{block}
 \begin{block}{Recommended}
   \begin{itemize}[]
-    \item Read chapters 10, 13: \fullcite{website:rintro}
-    \item Read chapters 7, 9: \citetitle{matloffbook}
+    \item Read about why \emph{CVAR} is a coherent risk measure:\\
+    \url{https://en.wikipedia.org/wiki/Expected_shortfall}\\
+    \url{https://en.wikipedia.org/wiki/Coherent_risk_measure\#Value_at_risk}
+    \item Read about why \emph{CVAR} has very large standard errors:\\
+    \emph{Danielsson CVAR Estimation Standard Error.pdf}\\
+    \url{http://www.bloomberg.com/view/articles/2016-05-23/big-banks-risk-does-not-compute}
   \end{itemize}
 \end{block}
 

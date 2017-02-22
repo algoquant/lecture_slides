@@ -4,206 +4,6 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-vec_tor <- sample(1:9)
-vec_tor
-vec_tor < 5  # element-wise comparison
-vec_tor == 5  # element-wise comparison
-mat_rix <- matrix(vec_tor, ncol=3)
-mat_rix
-mat_rix < 5  # element-wise comparison
-mat_rix == 5  # element-wise comparison
-mat_rix <- 1:6  # create a vector
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-structure(mat_rix, dim=c(2, 3))  # matrix object
-# adding dimension attribute coerces into matrix
-dim(mat_rix) <- c(2, 3)
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-# assign dimnames attribute
-dimnames(mat_rix) <- list(rows=c("row1", "row2"),
-                  columns=c("col1", "col2", "col3"))
-mat_rix
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
-mat_rix
-# as.numeric strips dim attribute from matrix
-as.numeric(mat_rix)
-mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
-vec_tor1 <- 1:3  # define vector
-vec_tor2 <- 6:4  # define vector
-cbind(vec_tor1, vec_tor2)  # bind into columns
-rbind(vec_tor1, vec_tor2)  # bind into rows
-vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
-cbind(vec_tor1, vec_tor2)  # recycling rule applied
-1:6 + c(10, 20)  # another example of recycling rule
-# replicate a single element
-rep("a", 5)
-# replicate the whole vector several times
-rep(c("a", "b"), 5)
-rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
-rep(c("a", "b"), each=5)
-# replicate to specified length
-rep(c("a", "b"), length.out=5)
-# define vector and matrix
-vec_tor1 <- c(2, 4, 3)
-mat_rix <- matrix(sample(1:12), ncol=3)
-# multiply matrix by vector column-wise
-vec_tor1 * mat_rix
-# multiply matrix by vector row-wise
-t(vec_tor1 * t(mat_rix))
-mat_rix <- matrix(1:6, ncol=3)  # create matrix
-vec_tor1
-vec_tor2 <- 6:4  # define vector
-# multiply two vectors element-by-element
-vec_tor1 * vec_tor2
-# calculate inner product
-vec_tor1 %*% vec_tor2
-# calculate inner product and drop dimensions
-drop(vec_tor1 %*% vec_tor2)
-mat_rix
-# multiply vector by matrix
-mat_rix %*% vec_tor1  # single column matrix
-drop(mat_rix %*% vec_tor1)  # vector
-library(microbenchmark)
-# multiply matrix by vector fails because dimensions aren't conformable
-vec_tor1 %*% mat_rix
-# works after transpose
-drop(vec_tor1 %*% t(mat_rix))
-# calculate inner product
-crossprod(vec_tor1, vec_tor2)
-# create matrix and vector
-mat_rix <- matrix(1:3000, ncol=3)
-tmat_rix <- t(mat_rix)
-vec_tor <- 1:3
-# crossprod is slightly faster than "%*%" operator
-summary(microbenchmark(
-  cross_prod=crossprod(tmat_rix, vec_tor),
-  inner_prod=mat_rix %*% vec_tor,
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# define named vectors
-vec_tor1 <- sample(1:4)
-names(vec_tor1) <- paste0("row", 1:4, "=", vec_tor1)
-vec_tor1
-vec_tor2 <- sample(1:3)
-names(vec_tor2) <- paste0("col", 1:3, "=", vec_tor2)
-vec_tor2
-# calculate outer product of two vectors
-mat_rix <- outer(vec_tor1, vec_tor2)
-mat_rix
-# calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2,
-           FUN=function(x1, x2) x2*sin(x1))
-mat_rix
-# create list of vectors
-li_st <- lapply(1:3, function(x) sample(6))
-# bind list elements into matrix - doesn't work
-rbind(li_st)
-# bind list elements into matrix - tedious
-rbind(li_st[[1]], li_st[[2]], li_st[[3]])
-# bind list elements into matrix - works!
-do.call(rbind, li_st)
-# create numeric list
-li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # returns single column matrix
-do.call(cbind, li_st)  # returns single row matrix
-# recycling rule applied
-do.call(cbind, list(1:2, 3:5))
-# NULL element is skipped
-do.call(cbind, list(1, NULL, 3, 4))
-# NA element isn't skipped
-do.call(cbind, list(1, NA, 3, 4))
-list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(li_st) {
-  while (length(li_st) > 1) {
-# index of odd list elements
-    odd_index <- seq(from=1, to=length(li_st), by=2)
-# bind neighboring elements and divide li_st by half
-    li_st <- lapply(odd_index, function(in_dex) {
-      if (in_dex==length(li_st)) {
-return(li_st[[in_dex]])
-      }
-      return(rbind(li_st[[in_dex]],
-           li_st[[in_dex+1]]))
-    })  # end lapply
-  }  # end while
-# li_st has only one element - return it
-  li_st[[1]]
-}  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
-library(microbenchmark)
-airquality[(airquality$Solar.R>320 &
-        !is.na(airquality$Solar.R)), ]
-subset(x=airquality, subset=(Solar.R>320))
-summary(microbenchmark(
-    subset=subset(x=airquality, subset=(Solar.R>320)),
-    brackets=airquality[(airquality$Solar.R>320 &
-            !is.na(airquality$Solar.R)), ],
-times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-unique(iris$Species)  # Species has three distinct values
-# split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
-# split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
-unique(mtcars$cyl)  # cyl has three unique values
-# split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
-names(split_cars)
-# mean mpg for each cylinder group
-unlist(lapply(split_cars, function(x) mean(x$mpg)))
-# function aggregate() performs split-apply-combine
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
-# aggregate() all columns
-aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
-# mean mpg for each cylinder group
-tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
-# using with() environment
-with(mtcars,
-     tapply(X=mpg, INDEX=cyl, FUN=mean))
-# function sapply() instead of tapply()
-with(mtcars,
-     sapply(sort(unique(cyl)), function(x) {
-       structure(mean(mpg[x==cyl]), names=x)
-       }, USE.NAMES=TRUE))  # end with
-
-# function by() instead of tapply()
-with(mtcars,
-     by(data=mpg, INDICES=cyl, FUN=mean))
-# get several mpg stats for each cylinder group
-data_cars <- sapply(split_cars,
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
-data_cars  # sapply produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
-is.list(data_cars)  # lapply produces a list
-# do.call flattens list into a matrix
-do.call(cbind, data_cars)
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
 library(microbenchmark)
 # sum() is a compiled primitive function
 sum
@@ -220,27 +20,6 @@ any
 summary(
   microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
   )[, c(1, 4, 5)]
-library(microbenchmark)
-mat_rix <- matrix(1:9, ncol=3, # create matrix
-  dimnames=list(paste0("row", 1:3),
-          paste0("col", 1:3)))
-# create specialized function
-matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for(in_dex in 1:n_col)  # populate vector
-    dframe <- mat_rix[, in_dex]
-  attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(NROW(mat_rix))
-  attr(dframe, "class") <- "data.frame"
-  dframe  # return data frame
-}  # end matrix_to_dframe
-# compare speed of three methods
-summary(microbenchmark(
-  matrix_to_dframe(mat_rix),
-  as.data.frame.matrix(mat_rix),
-  as.data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]
 # matrix with 5,000 rows
 big_matrix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
@@ -281,12 +60,6 @@ summary(microbenchmark(
       cum_sum <- c(cum_sum, big_vector[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
@@ -362,7 +135,6 @@ summary(microbenchmark(  # assign values to vector two different ways
     for (in_dex in 4:7)
       vec_tor[in_dex] <- rnorm(1)},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-load(file="C:/Develop/data/etf_data.RData")
 # define function vectorized automatically
 my_fun <- function(in_put, pa_ram) {
   pa_ram*in_put
@@ -380,56 +152,6 @@ me_ans <-
 rnorm(1, sd=std_devs)
 # "mean" argument of rnorm() isn't vectorized
 rnorm(1, mean=me_ans)
-load(file="C:/Develop/data/etf_data.RData")
-# sapply produces desired vector output
-set.seed(1121)
-sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
-set.seed(1121)
-sapply(std_devs, rnorm, n=2, mean=0)
-set.seed(1121)
-sapply(me_ans,
- function(me_an) rnorm(n=2, mean=me_an))
-set.seed(1121)
-sapply(me_ans, rnorm, n=2)
-load(file="C:/Develop/data/etf_data.RData")
-# rnorm() vectorized with respect to "std_dev"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    sapply(sd, rnorm, n=n, mean=mean)
-}  # end vec_rnorm
-set.seed(1121)
-vec_rnorm(n=2, sd=std_devs)
-# rnorm() vectorized with respect to "mean" and "sd"
-vec_rnorm <- Vectorize(FUN=rnorm,
-        vectorize.args=c("mean", "sd")
-)  # end Vectorize
-set.seed(1121)
-vec_rnorm(n=2, sd=std_devs)
-set.seed(1121)
-vec_rnorm(n=2, mean=me_ans)
-load(file="C:/Develop/data/etf_data.RData")
-str(sum)
-# na.rm is bound by name
-mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
-str(rnorm)
-# mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
-mapply(function(in_put, e_xp) in_put^e_xp,
- 1:5, seq(from=1, by=0.2, length.out=5))
-load(file="C:/Develop/data/etf_data.RData")
-# rnorm() vectorized with respect to "mean" and "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(mean)==1 && length(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    mapply(rnorm, n=n, mean=mean, sd=sd)
-}  # end vec_rnorm
-# call vec_rnorm() on vector of "sd"
-vec_rnorm(n=2, sd=std_devs)
-# call vec_rnorm() on vector of "mean"
-vec_rnorm(n=2, mean=me_ans)
 # create two numeric vectors
 vec_tor1 <- sin(0.25*pi*1:10)
 vec_tor2 <- cos(0.25*pi*1:10)
@@ -451,6 +173,62 @@ lwd=c(2, 2, 2), xlab="", ylab="")
 legend(x="bottomright", legend=colnames(vec_tor4),
        title="", inset=0.05, cex=0.8, lwd=2,
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
+# sapply produces desired vector output
+set.seed(1121)
+sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
+set.seed(1121)
+sapply(std_devs, rnorm, n=2, mean=0)
+set.seed(1121)
+sapply(me_ans,
+ function(me_an) rnorm(n=2, mean=me_an))
+set.seed(1121)
+sapply(me_ans, rnorm, n=2)
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+summary(
+  microbenchmark(sqrt(foo), foo^0.5, times=10)
+  )[, c(1, 4, 5)]
+set.seed(1121)  # reset random number generator
+# flip unbiased coin once, 20 times
+rbinom(n=20, size=1, 0.5)
+# number of heads after flipping twice, 20 times
+rbinom(n=20, size=2, 0.5)
+# number of heads after flipping thrice, 20 times
+rbinom(n=20, size=3, 0.5)
+# number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.8)
+# number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.2)
+# flip unbiased coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)  # fast
+as.numeric(runif(20) < 0.5)  # slower
+# permutation of five numbers
+sample(x=5)
+# permutation of four strings
+sample(x=c("apple", "grape", "orange", "peach"))
+# sample of size three
+sample(x=5, size=3)
+# sample with replacement
+sample(x=5, replace=TRUE)
+sample(  # sample of strings
+  x=c("apple", "grape", "orange", "peach"),
+  size=12,
+  replace=TRUE)
+# binomial sample: flip coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)
+# flip unbiased coin once, 20 times
+as.numeric(runif(20) > 0.5)  # slower
+rm(list=ls())
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sam_ple <- rnorm(1000)
+
+mean(sam_ple)  # sample mean
+
+median(sam_ple)  # sample median
+
+sd(sam_ple)  # sample standard deviation
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 sample_length <- 1000
@@ -466,52 +244,14 @@ sum(sam_ple<1)/sample_length
 # MC estimate of quantile
 qnorm(0.75)
 sam_ple[0.75*sample_length]
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
-pa_th[1] <- 0  # initialize path
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
- (pa_th[in_dex - 1] < lev_el)) {
-# simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-# fill remaining pa_th after it crosses lev_el
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
-# create daily time series starting 2011
-ts_var <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_var, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")  # add horizontal line
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-# simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses lev_el
-cro_ss <- which(pa_th > lev_el)
-# fill remaining pa_th after it crosses lev_el
-if (length(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# create daily time series starting 2011
-ts_var <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
-# create plot with horizontal line
-plot(ts_var, type="l", col="black",
-     lty="solid", xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")
-title(main="Brownian motion crossing
-  a barrier level", line=0.5)
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 sample_length <- 1000
@@ -535,21 +275,161 @@ sd(sam_ple)/sqrt(sample_length)
 sd(boot_strap["mean", ])
 # standard error of median from bootstrap
 sd(boot_strap["median", ])
-set.seed(1121)  # initialize random number generator
-# define explanatory and response variables
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-res_ponse <- -3 + explana_tory + noise
-# define design matrix and regression formula
-design_matrix <- data.frame(res_ponse, explana_tory)
-reg_formula <- paste(colnames(design_matrix)[1],
-  paste(colnames(design_matrix)[-1], collapse="+"),
-  sep=" ~ ")
-# bootstrap the regression
-boot_strap <- sapply(1:100, function(x) {
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sample_length <- 1000
+sam_ple <- rnorm(sample_length)
+# estimate the 95% quantile
+boot_strap <- sapply(1:10000, function(x) {
   boot_sample <-
-    sample.int(dim(design_matrix)[1], replace=TRUE)
-  reg_model <- lm(reg_formula,
-          data=design_matrix[boot_sample, ])
-  reg_model$coefficients
+    sam_ple[sample.int(sample_length,
+                 replace=TRUE)]
+  quantile(boot_sample, 0.95)
 })  # end sapply
+sd(boot_strap)
+# estimate the 95% quantile using antithetic sampling
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    sam_ple[sample.int(sample_length,
+                 replace=TRUE)]
+  quantile(c(boot_sample, -boot_sample), 0.95)
+})  # end sapply
+# standard error of mean from bootstrap
+sd(boot_strap)
+sqrt(2)*sd(boot_strap)
+# define correlation parameters
+rh_o <- 0.05
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default thresholds
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# allocate vector of defaults
+de_faults <- numeric(num_simu)
+# perform loop to calculate de_faults
+for (i in 1:num_simu) {
+  asset_values <-
+    rho_sqrt*system_atic[i] +
+    rho_sqrtm*rnorm(num_assets)
+  de_faults[i] <-
+    sum(asset_values < default_thresh)
+}  # end for
+# define default probability density function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.08)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) - def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+type="l", xlim=c(0, 0.1), lwd=3,
+xlab="fraction of defaults", ylab="density",
+col="green", main="Distribution of defaults")
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
+type="l", xlim=c(0, 0.1), add=TRUE,
+xlab="default fraction", ylab="", lwd=3,
+col="blue", main="")
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=3)
+text(x=0.023, y=8,
+ labels="default probability",
+ lwd=2, srt=90, pos=3)
+# define loss distribution density function
+portf_loss <- function(x, def_thresh=-2, rh_o=0.08, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(portf_loss, low=0, up=0.3, def_thresh=-2, rh_o=0.08, l_gd=0.4)
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
+type="l", xlim=c(0, 0.06),
+xlab="loss fraction", ylab="density", lwd=3,
+col="orange", main="Distribution of Losses")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+ lwd=2, srt=90, pos=3)
+# add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35,
+ code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss",
+     lwd=2, pos=3)
+# add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25,
+ code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+ lwd=2, srt=90, pos=3)
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
+type="l", xlim=c(0, 0.06),
+xlab="loss fraction", ylab="density", lwd=3,
+col="orange", main="Conditional Value at Risk")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+ lwd=2, srt=90, pos=3)
+# add lines for VaR
+abline(v=0.04, col="red", lwd=3)
+text(x=0.04-0.001, y=10, labels="VaR",
+ lwd=2, srt=90, pos=3)
+# add shading for CVaR
+v_ar <- 0.04; var_max <- 0.07
+var_s <- seq(v_ar, var_max, length=100)
+dens_ity <- sapply(var_s,
+  portf_loss, def_thresh=qnorm(0.05), rh_o=0.08)
+# draw shaded polygon
+polygon(c(v_ar, var_s, var_max),
+  c(-1, dens_ity, -1), col="red", border=NA)
+text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
+# integrate portf_loss over full range
+integrate(portf_loss, low=0.0, up=0.3,
+    def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
+# calculate expected losses using portf_loss
+integrate(function(x, ...) x*portf_loss(x, ...),
+    low=0.0, up=0.3,
+    def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
+# calculate confidence levels of VaR values
+var_s <- seq(0.04, 0.06, 0.001)
+conf_levels <- sapply(var_s, function(low, ...) {
+  integrate(portf_loss, low=low, up=0.3, ...)
+}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
+conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
+colnames(conf_levels) <- c("conf_levels", "VaRs")
+# calculate 95% confidence level VaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05),
+  "VaRs"]
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "VaRs"],
+     xlab="conf_levels", ylab="VaRs",
+     t="l", main="VaR values and confidence levels")
+# Define model parameters
+num_assets <- 300
+num_simu <- 1000
+l_gd <- 0.4
+# define correlation parameters
+rh_o <- 0.08
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default probabilities and thresholds
+set.seed(1121)
+default_probs <- runif(num_assets, max=0.1)
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate losses under Vasicek model
+asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+loss_es <-
+  l_gd*colSums(asset_values < default_thresh)/num_assets
+# calculate VaRs
+conf_levels <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=conf_levels)
+names(var_s) <- round(conf_levels, 3)
+plot(x=conf_levels, y=var_s, t="l",
+     main="Simulated VaR and confidence levels")

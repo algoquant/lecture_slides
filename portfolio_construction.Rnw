@@ -19,7 +19,7 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{mathtools}
 % bbold package for unitary vector or matrix symbol
 \usepackage{bbold}
 \usepackage[latin1]{inputenc}
@@ -53,7 +53,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Portfolio Construction]{Portfolio Construction}
-\subtitle{FRE6871 \& FRE7241, Fall 2016}
+\subtitle{FRE6871 \& FRE7241, Spring 2017}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -96,8 +96,8 @@ library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names),
-                  length(portf_names))
+portf_init <- rep(1/NROW(portf_names),
+                  NROW(portf_names))
 # named vector
 names(portf_init) <- portf_names
 # create portfolio object
@@ -156,8 +156,8 @@ library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names),
-                  length(portf_names))
+portf_init <- rep(1/NROW(portf_names),
+                  NROW(portf_names))
 # named vector
 names(portf_init) <- portf_names
 # create portfolio object
@@ -196,7 +196,111 @@ portf_maxSR <- add.objective(
 
 
 %%%%%%%%%%%%%%%
-\section{Portfolio Optimization}
+\section{Equity Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# vector of symbol names
+sym_bols <- c("VTI", "IEF", "XLP")
+n_weights <- NROW(sym_bols)
+# calculate random portfolios
+n_portf <- 1000
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights, min=0, max=10)
+  weight_s <- weight_s/sum(weight_s)
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+# plot scatterplot of random portfolios
+x11(width=(wid_th <- 6), height=(hei_ght <- 5))
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
+     main="Random portfolios", 
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+# vector of initial portfolio weights equal to 1
+weight_s <- rep(1, n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to standard deviation of returns
+object_ive <- function(weight_s) {
+  portf_rets <- na.omit(rutils::env_etf$re_turns[, sym_bols]) %*% weight_s
+  sd(portf_rets)/sum(weight_s)
+}  # end object_ive
+# object_ive() for equal weight portfolio
+object_ive(weight_s)
+object_ive(2*weight_s)
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# Rescale the optimal weights
+weight_s <- optim_run$par/sum(optim_run$par)
+# minimum variance portfolio returns
+library(quantmod)
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
+# Add red point for minimum variance portfolio
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, col="red", lwd=3)
+text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
+# objective function equal to minus Sharpe ratio
+risk_free <- 0.01
+object_ive <- function(weight_s) {
+  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
+  -mean(portf_rets-risk_free)/sd(portf_rets)
+}  # end object_ive
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# maximum Sharpe ratio portfolio returns
+weight_s <- optim_run$par/sum(optim_run$par)
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, 
+       col="blue", lwd=3)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=2, cex=0.8)
+max_Sharpe <- (optim_ret-risk_free)/optim_sd
+# Add points for individual assets
+re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
+std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
+points(std_devs, re_turns, col="green", lwd=3)
+text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
+# Add point at risk_free rate and draw Capital Market Line
+points(x=0, y=risk_free)
+text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
+abline(a=risk_free, b=max_Sharpe, col="blue")
+range_s <- par("usr")
+text(optim_sd/3, (optim_ret+risk_free)/2.5, 
+     labels="Capital Market Line", cex=0.8, , pos=3, 
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
+                   (range_s[4]-range_s[3])*
+                   hei_ght/wid_th)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -341,111 +445,7 @@ chart_Series(x=cumsum(optim_rets),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Random Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# vector of symbol names
-sym_bols <- c("VTI", "IEF", "XLP")
-n_weights <- length(sym_bols)
-# calculate random portfolios
-n_portf <- 1000
-ret_sd <- sapply(1:n_portf, function(in_dex) {
-  weight_s <- runif(n_weights, min=0, max=10)
-  weight_s <- weight_s/sum(weight_s)
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
-  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
-})  # end sapply
-# plot scatterplot of random portfolios
-x11(width=(wid_th <- 6), height=(hei_ght <- 5))
-plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
-     main="Random portfolios", 
-     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
-     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
-# vector of initial portfolio weights equal to 1
-weight_s <- rep(1, n_weights)
-names(weight_s) <- sym_bols
-# objective function equal to standard deviation of returns
-object_ive <- function(weight_s) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
-  sd(portf_rets)/sum(weight_s)
-}  # end object_ive
-# object_ive() for equal weight portfolio
-object_ive(weight_s)
-object_ive(2*weight_s)
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# Rescale the optimal weights
-weight_s <- optim_run$par/sum(optim_run$par)
-# minimum variance portfolio returns
-library(quantmod)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
-# Add red point for minimum variance portfolio
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, col="red", lwd=3)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-# objective function equal to minus Sharpe ratio
-risk_free <- 0.01
-object_ive <- function(weight_s) {
-  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
-  -mean(portf_rets-risk_free)/sd(portf_rets)
-}  # end object_ive
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# maximum Sharpe ratio portfolio returns
-weight_s <- optim_run$par/sum(optim_run$par)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, 
-       col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-max_Sharpe <- (optim_ret-risk_free)/optim_sd
-# Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
-range_s <- par("usr")
-text(optim_sd/3, (optim_ret+risk_free)/2.5, 
-     labels="Capital Market Line", cex=0.8, , pos=3, 
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
-                   hei_ght/wid_th)/(0.25*pi))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Efficient Frontier and Capital Market Line}
+\subsection{draft: The Efficient Frontier and Capital Market Line}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -485,7 +485,7 @@ library(PortfolioAnalytics)
 # create list of symbols for optimized portfolio
 sym_bols <- c("VTI", "VNQ", "DBC")
 # create initial vector of portfolio weights
-weight_s <- rep(1, length(sym_bols))
+weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
 # objective equal to minus Sharpe ratio
 object_ive <- function(weight_s) {
@@ -575,16 +575,24 @@ persp3d(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
       \vskip1ex
-      The argument \texttt{"par"} are the initial parameter values,
+      The argument \texttt{par} are the initial parameter values,
       \vskip1ex
-      The argument \texttt{"fn"} is the objective function to be minimized,
+      The argument \texttt{fn} is the objective function to be minimized,
       \vskip1ex
-      The argument \texttt{method="L-BFGS-B"} specifies the a quasi-Newton optimization method,
+      The argument of the objective function which is to be optimized, must be a vector argument,
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<>>=
+      <<eval=FALSE,echo=TRUE>>=
 # optimization to find weights with maximum Sharpe ratio
 optim_run <- optim(par=weight_s,
                    fn=object_ive,
@@ -793,8 +801,8 @@ library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names),
-                  length(portf_names))
+portf_init <- rep(1/NROW(portf_names),
+                  NROW(portf_names))
 # named vector
 names(portf_init) <- portf_names
 # create portfolio object
@@ -1595,6 +1603,586 @@ plot(x=disc_curves$zerorates, t="l", main="zerorates")
 
 \end{frame}
 
+
+
+%%%%%%%%%%%%%%%
+\section{Credit Portfolios}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Single-period Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a portfolio of credit assets (bonds or loans) over a single period of time,
+      \vskip1ex
+      At the end of the period, some of the assets default, while the rest don't,
+      \vskip1ex
+      The default probabilities are equal to $p_i$, 
+      \vskip1ex
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$, 
+      \vskip1ex
+      Default occurs if $u_i$ is less than the default probability $p_i$,
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.05)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# simulate average number of defaults
+num_simu <- 1000
+de_faults <- numeric(num_simu)
+for (i in 1:num_simu) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+mean(de_faults)
+# average defaults using vectorized functions
+uni_form <- matrix(runif(num_simu*num_assets), 
+                   ncol=num_simu)
+sum(uni_form < default_probs)/num_simu
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Values and Default Thresholds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables,
+      \vskip1ex
+      Default occurs if the \emph{asset value} is less than the \emph{default threshold}  $t_i$: $a_i < t_i$, 
+      \vskip1ex
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative Standard Normal distribution, 
+      \vskip1ex
+      The asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, 
+      <<echo=TRUE,eval=FALSE>>=
+# plot Standard Normal distribution
+x11(width=6, height=5)
+curve(expr=dnorm(x),
+      type="l", xlim=c(-4, 4),
+      xlab="asset value", ylab="", lwd=2,
+      col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+       labels="default threshold",
+       lwd=2, srt=90, pos=3)
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_threshold.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} single factor model, the asset value is equal to the sum of a systematic factor $s$, plus an idiosyncratic factor $z_i$: 
+      \begin{displaymath}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
+      \end{displaymath}
+      Where $\rho$ is the correlation between asset values, 
+      \vskip1ex
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$, 
+      \vskip1ex
+      The systematic factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession, 
+      \vskip1ex
+      When the value of the systematic factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults, 
+      \vskip1ex
+      But when the systematic factor is negative, then the asset values will tend to be smaller, which will produce more defaults, 
+      \vskip1ex
+      This way the \emph{Vasicek} model introduces a correlation among defaults,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define correlation parameters
+rh_o <- 0.05
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default thresholds
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# allocate vector of defaults
+de_faults <- numeric(num_simu)
+# perform loop to calculate de_faults
+for (i in 1:num_simu) {
+  asset_values <- 
+    rho_sqrt*system_atic[i] + 
+    rho_sqrtm*rnorm(num_assets)
+  de_faults[i] <- 
+    sum(asset_values < default_thresh)
+}  # end for
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Portfolio Defaults Under Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=N^{-1}(p)$, and the conditional default probability $p(s)$, given $s$, is equal to:
+      \begin{displaymath}
+        p(s) = N(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
+      \end{displaymath}
+      The cumulative probability $P(x)$ for the percentage $x$ of portfolio defaults (the portfolio cumulative default distribution) is equal to:
+      \begin{displaymath}
+        P(x) = N(\frac{\sqrt{1-\rho} N^{-1}(x) - t}{\sqrt{\rho}})
+      \end{displaymath}
+      The associated probability density f(x) of portfolio defaults is equal to:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} (\sqrt{1-\rho} N^{-1}(x) - t)^2 + \\ \frac{1}{2} (N^{-1}(x))^2)
+      \end{multline*}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_distr.png}\\
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# define default probability density function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.08)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) - def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+      type="l", xlim=c(0, 0.1), lwd=3,
+      xlab="fraction of defaults", ylab="density", 
+      col="green", main="Distribution of defaults")
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
+      type="l", xlim=c(0, 0.1), add=TRUE,
+      xlab="default fraction", ylab="", lwd=3,
+      col="blue", main="")
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=3)
+text(x=0.023, y=8,
+       labels="default probability",
+       lwd=2, srt=90, pos=3)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Loss Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Expected Loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity): 
+      \begin{displaymath}
+        EL = \sum_{i=1}^{n} p_i LGD_i
+      \end{displaymath}
+      If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} (\sqrt{1-\rho} N^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} (N^{-1}(\frac{x}{LGD}))^2)
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+# define Vasicek loss distribution density function
+portf_loss <- function(x, def_thresh=-2, rh_o=0.08, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(portf_loss, low=0, up=0.3, def_thresh=-2, rh_o=0.08, l_gd=0.4)
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
+      type="l", xlim=c(0, 0.06), 
+      xlab="loss fraction", ylab="density", lwd=3,
+      col="orange", main="Distribution of Losses")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution}, 
+      \vskip1ex
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the quantile of the loss distribution, corresponding to a given confidence level $\alpha$, 
+      <<echo=TRUE,eval=FALSE>>=
+# add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35, 
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss", 
+     lwd=2, pos=3)
+# add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25, 
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$: 
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^\alpha \mathrm{VaR}(p) \, \mathrm{d}p
+      \end{displaymath}
+      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}), 
+      <<echo=TRUE,eval=FALSE>>=
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
+      type="l", xlim=c(0, 0.06), 
+      xlab="loss fraction", ylab="density", lwd=3,
+      col="orange", main="Conditional Value at Risk")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+# add lines for VaR
+abline(v=0.04, col="red", lwd=3)
+text(x=0.04-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_cvar.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# add shading for CVaR
+v_ar <- 0.04; var_max <- 0.07
+var_s <- seq(v_ar, var_max, length=100)
+dens_ity <- sapply(var_s, 
+  portf_loss, def_thresh=qnorm(0.05), rh_o=0.08)
+# draw shaded polygon
+polygon(c(v_ar, var_s, var_max),
+        c(-1, dens_ity, -1), col="red", border=NA)
+text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confidence levels of \emph{VaR} values can be calculated by integrating over the tail of the loss density function, 
+      <<echo=TRUE,eval=FALSE>>=
+# integrate portf_loss() over full range
+integrate(portf_loss, low=0.0, up=0.3, 
+          def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
+# calculate expected losses using portf_loss()
+integrate(function(x, ...) x*portf_loss(x, ...), 
+          low=0.0, up=0.3, 
+          def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
+# calculate confidence levels corresponding to VaR values
+var_s <- seq(0.04, 0.06, 0.001)
+conf_levels <- sapply(var_s, function(v_ar, ...) {
+  integrate(portf_loss, low=v_ar, up=0.3, ...)
+}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
+conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
+colnames(conf_levels) <- c("conf_levels", "VaRs")
+# calculate 95% confidence level VaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05), 
+  "VaRs"]
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "VaRs"], 
+     xlab="conf_levels", ylab="VaRs",
+     t="l", main="VaR values and confidence levels")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_conf_levels.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate CVaR values
+cvar_s <- sapply(var_s, function(v_ar, ...) {
+  integrate(function(x, ...) x*portf_loss(x, ...), 
+            low=v_ar, up=0.3, ...)
+}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
+conf_levels <- cbind(conf_levels, as.numeric(t(cvar_s)[, 1]))
+colnames(conf_levels)[3] <- "CVaRs"
+# divide CVaR by confidence level
+conf_levels[, "CVaRs"] <- conf_levels[, "CVaRs"]/conf_levels[, "conf_levels"]
+# calculate 95% confidence level CVaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05), 
+  "CVaRs"]
+# plot CVaRs
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "CVaRs"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(conf_levels[, c("VaRs", "CVaRs")]), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="CVaR values and confidence levels")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_conf_levels.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# add VaRs
+lines(x=1-conf_levels[, "conf_levels"],
+      y=conf_levels[, "VaRs"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model, 
+      \vskip1ex
+      In that case the portfolio losses and \emph{VaR} must be simulated,
+      <<echo=TRUE,eval=FALSE>>=
+# Define model parameters
+num_assets <- 300
+num_simu <- 1000
+l_gd <- 0.4
+# define correlation parameters
+rh_o <- 0.08
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default probabilities and thresholds
+set.seed(1121)
+default_probs <- runif(num_assets, max=0.1)
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate losses under Vasicek model
+asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+loss_es <- 
+  l_gd*colSums(asset_values < default_thresh)/num_assets
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_simu.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate VaRs
+conf_levels <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=conf_levels)
+names(var_s) <- round(conf_levels, 3)
+plot(x=conf_levels, y=var_s, t="l",
+     main="Simulated VaR and confidence levels")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}, 
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
+      <<echo=TRUE,eval=FALSE>>=
+# calculate frequency table of loss_es
+table_losses <- table(loss_es)/num_simu
+# calculate CVaRs
+cvar_s <- sapply(var_s, function(v_ar) {
+  tai_l <- table_losses[v_ar < names(table_losses)]
+  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# plot CVaRs
+plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(cvar_s), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="Simulated CVaR and confidence levels")
+# add VaRs
+lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_simu.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{calc\_var()} simulates default losses under the \emph{Vasicek} model, and calculates a vector of \emph{VaR} and \emph{CVaR} values, 
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+calc_var <- function(default_probs, 
+                     l_gd=0.6, 
+                     rh_o=0.08, 
+                     num_simu=1000,
+                     conf_levels=seq(0.93, 0.99, 0.01)) {
+  # Define model parameters
+  num_assets <- NROW(default_probs)
+  default_thresh <- qnorm(default_probs)
+  # Define correlation parameters
+  rho_sqrt <- sqrt(rh_o)
+  rho_sqrtm <- sqrt(1-rh_o)
+  # Simulate losses under Vasicek model
+  system_atic <- rnorm(num_simu)
+  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+  asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
+  # Calculate VaRs
+  var_s <- quantile(loss_es, probs=conf_levels)
+  names(var_s) <- round(conf_levels, 3)
+  # Calculate CVaRs from the frequency table 
+  table_losses <- table(loss_es)/num_simu
+  cvar_s <- sapply(var_s, function(v_ar) {
+    tai_l <- table_losses[v_ar < names(table_losses)]
+    tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+  })  # end sapply
+  names(cvar_s) <- round(conf_levels, 3)
+  c(var_s, cvar_s)
+}  # end calc_var
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of \protect\emph{VaR} Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors \emph{VaR} and \emph{CVaR} can be calculated by performing an \texttt{sapply()} loop, selecting random samples from \texttt{default\_probs}, and passing them into \texttt{calc\_var()},
+      <<echo=TRUE,eval=FALSE>>=
+# define number of bootstrap simulations
+num_boot <- 500
+len_gth <- NROW(default_probs)
+# perform bootstrap of calc_var
+set.seed(1121)
+boot_strap <- sapply(rep(l_gd, num_boot), 
+  calc_var, 
+  default_probs=
+    default_probs[sample.int(len_gth, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end sapply
+boot_strap <- t(boot_strap)
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, sd)
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, sd)
+# plot the standard errors of VaRs and CVaRs
+plot(x=names(std_error_cvar),
+  y=std_error_cvar/cvar_s[, 1], 
+  t="l", col="red", lwd=2, 
+  ylim=range(c(std_error_cvar/cvar_s[, 1], 
+    std_error_var/cvar_s[, 2])), 
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+@
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_std_error.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+lines(x=names(std_error_var), y=std_error_var/cvar_s[, 2])
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 \end{document}

@@ -5,7 +5,7 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(xtable)
-binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "-a"))
+binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "a"))
 rownames(binbet_table) <- c("probability", "payout")
 # print(xtable(binbet_table), comment=FALSE, size="tiny")
 print(xtable(binbet_table), comment=FALSE)
@@ -50,6 +50,26 @@ wealth_path <- cumprod(1+runif(1000,
 plot(wealth_path, type="l",
      lty="solid", xlab="", ylab="")
 title(main="wealth path", line=-1)
+len_gth <- 1000  # number of simulation steps
+n_simu <- 100  # number of simulation paths
+# parameters for stock returns
+prob_ab <- 0.51
+pro_fit <- 0.001
+lo_ss <- 0.001
+# parameters for lottery ticket returns
+prob_ab <- 0.01
+pro_fit <- 0.001*51
+lo_ss <- 0.001/(99/49)
+# simulate random binary wealth paths
+set.seed(1121)  # reset random number generator
+path_s <- matrix(
+  rbinom(n=n_simu*len_gth, size=1, prob=prob_ab),
+  ncol=n_simu)
+path_s <- (pro_fit + lo_ss)*path_s - lo_ss
+path_s <- matrixStats::colCumsums(path_s)
+x11()
+ts.plot(path_s, xlab="number of steps", ylab="wealth")
+title(main="wealth paths for stocks", line=-1)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # wealth of multiperiod binary betting
 wealth <- function(f, b=2, a=1, n=100, i=51) {
@@ -168,8 +188,7 @@ re_turns <-sapply(2:len_gth,
 sym_bols], sum)
   })  # end sapply
 re_turns <- t(re_turns)
-# calculate list of portfolio weights
-# perform lapply() loop over risk_stats
+# calculate weights by performing sapply() loop over risk_stats
 weight_s <- sapply(risk_stats,
     function(risk_stat) {
 weight_s <- risk_stat[, 1]/risk_stat[, 2]
@@ -177,10 +196,8 @@ weight_s <- weight_s - mean(weight_s)
 weight_s <- weight_s/sum(abs(weight_s))
     })  # end sapply
 weight_s <- t(weight_s)
-weights_xts <- xts(weight_s,
-  order.by=index(rutils::env_etf$re_turns[end_points]))
-# plot weights
-x11()
+weights_xts <- xts(weight_s, order.by=index(rutils::env_etf$re_turns[end_points]))
+x11()  # plot weights
 zoo::plot.zoo(weights_xts, xlab=NULL)
 # calculate pnls over all windows
 pn_l <- rowSums(weight_s[-NROW(weight_s), ] *

@@ -90,97 +90,6 @@ options(warn=2)
 op_tions <- options()
 # restore all options from variable
 options(op_tions)
-# single numbers are vectors of length 1
-1
-# character strings are vectors of length 1
-"a"
-# strings without quotes are variable names
-a  # variable "a" doesn't exist
-# list elements can have different mode
-list(aa=c('a', 'b'), bb=1:5)
-data.frame(aa=c('a', 'b'), bb=1:2)
-is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
-is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
-my_var <- "hello"
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- runif(5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(1:10, 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- matrix(runif(10), 2, 5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- list(aa=c('a', 'b'), bb=1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-# a simple vector has no attributes
-attributes(5:10)
-my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# named vector has "names" attribute
-attributes(my_var)
-my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
-attributes(my_var) <- list(my_attr="foo")
-my_var
-is.vector(my_var)  # is the object a vector?
-my_var <- 0
-attributes(my_var) <- list(class="Date")
-my_var  # "Date" object
-structure(0, class="Date")  # "Date" object
-my_var <- matrix(runif(10), 2, 5)
-class(my_var)  # has implicit class
-# but no explicit "class" attribute
-attributes(my_var)
-c(typeof(my_var), mode(my_var), class(my_var))
-# assign explicit "class" attribute
-class(my_var) <- "my_class"
-class(my_var)  # has explicit "class"
-# has explicit "class" attribute
-attributes(my_var)
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
-attributes(unclass(my_var))
-# integer implicit class derived from type
-my_var <- vector(mode="integer", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-# numeric implicit class derived from mode
-my_var <- vector(mode="numeric", length=10)
-c(typeof(my_var), mode(my_var), class(my_var))
-# adding dim attribute changes implicit class to matrix
-dim(my_var) <- c(5, 2)
-c(typeof(my_var), mode(my_var), class(my_var))
-# data frames have implicit dim attribute
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
-c(typeof(my_var), mode(my_var), class(my_var))
-attributes(my_var)
-dim(my_var)
-my_var <- 1:5
-c(typeof(my_var), mode(my_var), class(my_var))
-mode(my_var) <- "character"  # coerce to "character"
-my_var
-c(typeof(my_var), mode(my_var), class(my_var))
-# explicitly coerce to "character"
-my_var <- as.character(1:5)
-c(typeof(my_var), mode(my_var), class(my_var))
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
-# explicitly coerce to "character"
-mat_rix <- as.character(mat_rix)
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
-as.logical(0:3)  # explicit coercion to "logical"
-as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, 'a')  # implicit coercion to "character"
-# explicit coercion to "numeric"
-as.numeric(c(1:3, 'a'))
 "Hello World!"  # type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name
@@ -234,7 +143,7 @@ vec_tor
 vec_tor[2]  # extract second element
 # extract all elements, except the second element
 vec_tor[-2]
-# create boolean vector
+# create Boolean vector
 c(FALSE, TRUE, TRUE)
 # extract second and third elements
 vec_tor[c(FALSE, TRUE, TRUE)]
@@ -259,9 +168,9 @@ numeric(0)  # create zero length vector
 (0:10)/10  # divide vector - decimals from 0 to 1.0
 vec_tor <- c(8, 6, 5, 7)  # create vector
 vec_tor
-# boolean vector TRUE if element is equal to second one
+# Boolean vector TRUE if element is equal to second one
 vec_tor == vec_tor[2]
-# boolean vector TRUE for elements greater than six
+# Boolean vector TRUE for elements greater than six
 vec_tor > 6
 2*vec_tor  # multiply all elements by 2
 vec_tor^2  # square all elements
@@ -294,81 +203,16 @@ vec_tor["eulery"]
 vec_tor[c("pie", "gammy")]
 vec_tor <- runif(5)
 vec_tor
-vec_tor > 0.5  # boolean vector
-# boolean vector of elements equal to the second one
+vec_tor > 0.5  # Boolean vector
+# Boolean vector of elements equal to the second one
 vec_tor == vec_tor[2]
 # extract all elements equal to the second one
 vec_tor[vec_tor == vec_tor[2]]
-vec_tor < 1  # boolean vector of elements less than one
+vec_tor < 1  # Boolean vector of elements less than one
 # extract all elements greater than one
 vec_tor[vec_tor > 1]
 vec_tor[vec_tor > 0.5]  # filter elements > 0.5
 which(vec_tor > 0.5)  # index of elements > 0.5
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor), 
- function(le_vel) {
-   sum(fac_tor==le_vel)
- })  # end sapply
-library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-       cold=50, pleasant=60,
-       warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
 mat_rix  # by default matrices are constructed column-wise
 # create a matrix row-wise
@@ -396,103 +240,140 @@ attributes(mat_rix)  # get matrix attributes
 mat_rix  # matrix with column names
 mat_rix[1, ]  # subset rows by index
 mat_rix[, "col1"]  # subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns boolean vector
+mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
 mat_rix[1, ]  # subsetting can produce a vector!
 class(mat_rix); class(mat_rix[1, ])
 is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
 mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
 class(mat_rix[1, , drop=FALSE])
 is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
-set.seed(1121)  # reset random number generator
-runif(3)  # three random numbers from the uniform distribution
-runif(3)  # produce another three numbers
-set.seed(1121)  # reset random number generator
-runif(3)  # produce another three numbers
-
-# produce random number from standard normal distribution
-rnorm(1)
-# produce five random numbers from standard normal distribution
-rnorm(5)
-# produce five random numbers from the normal distribution
-rnorm(n=5, mean=1, sd=2)  # match arguments by name
-# calculate cumulative standard normal distribution
-c(pnorm(-2), pnorm(2))
-# calculate inverse cumulative standard normal distribution
-c(qnorm(0.75), qnorm(0.25))
-set.seed(1121)  # reset random number generator
-# flip unbiased coin once, 20 times
-rbinom(n=20, size=1, 0.5)
-# number of heads after flipping twice, 20 times
-rbinom(n=20, size=2, 0.5)
-# number of heads after flipping thrice, 20 times
-rbinom(n=20, size=3, 0.5)
-# number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.8)
-# number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.2)
-# flip unbiased coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)  # fast
-as.numeric(runif(20) < 0.5)  # slower
-# permutation of five numbers
-sample(x=5)
-# permutation of four strings
-sample(x=c("apple", "grape", "orange", "peach"))
-# sample of size three
-sample(x=5, size=3)
-# sample with replacement
-sample(x=5, replace=TRUE)
-sample(  # sample of strings
-  x=c("apple", "grape", "orange", "peach"),
-  size=12,
-  replace=TRUE)
-# binomial sample: flip coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)
-# flip unbiased coin once, 20 times
-as.numeric(runif(20) > 0.5)  # slower
 rm(list=ls())
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sam_ple <- rnorm(1000)
-
-mean(sam_ple)  # sample mean
-
-median(sam_ple)  # sample median
-
-sd(sam_ple)  # sample standard deviation
+TRUE | FALSE
+TRUE | NA
+vec_tor1 <- c(2, 4, 6)
+vec_tor1 < 5  # element-wise comparison
+(vec_tor1 < 5) & (vec_tor1 > 3)
+vec_tor1[(vec_tor1 < 5) & (vec_tor1 > 3)]
+vec_tor2 <- c(-10, 0, 10)
+vec_tor1 < vec_tor2
+c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
 rm(list=ls())
-# DAX returns
-ts_rets <- diff(log(EuStockMarkets[, 1]))
-# number of observations
-len_rets <- length(ts_rets)
-# mean of DAX returns
-mean_rets <- mean(ts_rets)
-# standard deviation of DAX returns
-sd_rets <- sd(ts_rets)
-# skew of DAX returns
-len_rets/((len_rets-1)*(len_rets-2))*
-  sum(((ts_rets - mean_rets)/sd_rets)^3)
-# kurtosis of DAX returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
-  sum(((ts_rets - mean_rets)/sd_rets)^4)
-# random normal returns
-ts_rets <- rnorm(len_rets, sd=2)
-# mean and standard deviation of random normal returns
-mean_rets <- mean(ts_rets)
-sd_rets <- sd(ts_rets)
-# skew of random normal returns
-len_rets/((len_rets-1)*(len_rets-2))*
-  sum(((ts_rets - mean_rets)/sd_rets)^3)
-# kurtosis of random normal returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
-  sum(((ts_rets - mean_rets)/sd_rets)^4)
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
+c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
+c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
+echo_true <- function() {cat("echo_true\t"); TRUE}
+echo_false <- function() {cat("echo_false\t"); FALSE}
+echo_true() | echo_false()
+echo_true() || echo_false()  # echo_false() isn't evaluated at all!
+vec_tor <- c(2, 4, 6)
+# works (does nothing) using '&&'
+if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
+}
+# no short-circuit so fails (produces an error)
+if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
+  vec_tor[2, 3] <- 1
+}
+4.7 * 0.5  # multiplication
+4.7 / 0.5  # division
+# exponentiation
+2**3
+2^3
+rm(list=ls())
+num_var1 <- 1
+
+if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+  num_var2 <- 4
+} else if (num_var1 == 0) {  # 'else if' together on same line
+  num_var2 <- 0
+} else {  # 'else' together with curly braces
+  num_var2 <- -4
+}  # end if
+
+num_var2
+switch("a", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch("c", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch(3, a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+switch("cc", a="aaahh", b="bee", c="see", d=2, 
+       "else this")
+# measure of central tendency
+centra_lity <- function(in_put,
+    meth_od=c("mean", "mean_narm", "median")) {
+# validate "meth_od" argument
+  meth_od <- match.arg(meth_od)
+  switch(meth_od,
+ mean=mean(in_put),
+ mean_narm=mean(in_put, na.rm=TRUE),
+ median=median(in_put))
+}  # end centra_lity
+my_var <- rnorm(100, mean=2)
+centra_lity(my_var, "mean")
+centra_lity(my_var, "mean_narm")
+centra_lity(my_var, "median")
+rm(list=ls())
+color_list <- list("red", "white", "blue")
+for (some_color in color_list) {  # loop over list
+  print(some_color)
+}
+for (in_dex in 1:3) {  # loop over vector
+  print(color_list[[in_dex]])
+}
+
+in_dex <- 1  # while loops need initialization
+while (in_dex < 4) {  # while loop
+  print(color_list[[in_dex]])
+  in_dex <- in_dex + 1
+}
+rm(list=ls())
+# fib_seq <- numeric()  # zero length numeric vector
+# pre-allocate vector instead of "growing" it
+fib_seq <- numeric(10)
+fib_seq[1] <- 0  # initialize
+fib_seq[2] <- 1  # initialize
+for (i in 3:10) {  # perform recurrence loop
+  fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
+}  # end for
+fib_seq
+vec_tor <- sample(1:9)
+vec_tor
+vec_tor < 5  # element-wise comparison
+vec_tor == 5  # element-wise comparison
+mat_rix <- matrix(vec_tor, ncol=3)
+mat_rix
+mat_rix < 5  # element-wise comparison
+mat_rix == 5  # element-wise comparison
+mat_rix <- 1:6  # create a vector
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+structure(mat_rix, dim=c(2, 3))  # matrix object
+# adding dimension attribute coerces into matrix
+dim(mat_rix) <- c(2, 3)
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+# assign dimnames attribute
+dimnames(mat_rix) <- list(rows=c("row1", "row2"),
+                  columns=c("col1", "col2", "col3"))
+mat_rix
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+mat_rix
+# as.numeric strips dim attribute from matrix
+as.numeric(mat_rix)
+mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+vec_tor1 <- 1:3  # define vector
+vec_tor2 <- 6:4  # define vector
+cbind(vec_tor1, vec_tor2)  # bind into columns
+rbind(vec_tor1, vec_tor2)  # bind into rows
+vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
+cbind(vec_tor1, vec_tor2)  # recycling rule applied
+1:6 + c(10, 20)  # another example of recycling rule
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -546,19 +427,191 @@ test_func <- function(in_put) {
 
 test_func(2)
 test_func("hello")
-setwd("C:/Develop/data")
-# define a function that returns invisibly
-return_invisible <- function(in_put) {
-  invisible(in_put)
-}  # end return_invisible
+library(quantmod)
+some_cars <- mtcars[sample(NROW(mtcars), 10), ]
+# plot scatterplot horsepower vs miles per gallon
+plot(some_cars[, "hp"], some_cars[, "mpg"],
+     xlab="horsepower", ylab="miles per gallon",
+     main="miles per gallon vs horsepower")
+# add a solid red point (pch=16) for the last car
+points(x=some_cars[NROW(some_cars), "hp"],
+ y=some_cars[NROW(some_cars), "mpg"],
+ col="red", pch=16)
+# add labels with the car names
+text(x=some_cars[, "hp"], y=some_cars[, "mpg"],
+     labels=rownames(some_cars[, ]),
+     pos=1, cex=0.8)
+# or add labels using wordcloud, to prevent overlaps
+library(wordcloud)
+textplot(x=some_cars[, "hp"], y=some_cars[, "mpg"],
+   words=rownames(some_cars))
+# plot the tree Height
+plot(trees[, "Height"],
+     type="l",
+     lwd=2,
+     col="blue",
+     main="Tree heights and volumes",
+     xlab="tree number", ylab="",
+     ylim=c(min(trees[, c("Height", "Volume")]),
+      max(trees[, c("Height", "Volume")])))
+# plot the tree Volume
+lines(trees[, "Volume"], lwd=2, col="green")
+# add legend
+legend(x="left", legend=c("Height", "Volume"),
+ inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+x_var <- seq(-2*pi, 2*pi, len=100)  # x values
 
-return_invisible(2)
+# open Windows graphics device
+x11(width=11, height=7, title="simple plot")
 
-glob_var <- return_invisible(2)
-glob_var
+# plot a sine function using basic line plot
+plot(x=x_var, y=sin(x_var), xlab="x-val",
+     ylab="y-val", type="l", lwd=2, col="red")
+# add a cosine function
+lines(x=x_var, y=cos(x_var), lwd=2, col="blue")
+# add title
+title(main="sine and cosine functions", line=0.1)
+# add legend
+legend(x="topright", legend=c("sine", "cosine"),
+ title="legend", inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("red", "blue"))
+graphics.off()  # close all graphics devices
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-3, 3),
+xlab="", ylab="", lwd=2, col="blue")
+# add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE,
+type="l", lwd=2, col="red")
 
-rm(list=ls())  # remove all objects
-# load objects from file
-loaded <- load(file="my_data.RData")
-loaded  # vector of loaded objects
-ls()  # list objects
+# add title
+title(main="Normal probability distribution functions",
+line=0.1)
+# add legend
+legend(x="topright", legend=c("Normal", "shifted"),
+ title="legend", inset=0.05, cex=0.8, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "red"))
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(-5, 7, length=100)
+y_var <- dnorm(x_var, mean=1.0, sd=2.0)
+plot(x_var, y_var, type="l", lty="solid",
+     xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+star_t <- 3; fin_ish <- 5  # set lower and upper bounds
+# set polygon base
+are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
+polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
+  c(-1, y_var[are_a], -1), col="red")
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dnorm(x, sd=sig_mas[in_dex]),
+type="l", xlim=c(-4, 4),
+xlab="", ylab="", lwd=2,
+col=col_ors[in_dex],
+add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+ lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+ col=col_ors)
+set.seed(1121)  # reset random number generator
+runif(3)  # three numbers from uniform distribution
+runif(3)  # produce another three numbers
+set.seed(1121)  # reset random number generator
+runif(3)  # produce another three numbers
+
+# produce random number from standard normal distribution
+rnorm(1)
+# produce five random numbers from standard normal distribution
+rnorm(5)
+# produce five random numbers from the normal distribution
+rnorm(n=5, mean=1, sd=2)  # match arguments by name
+# calculate cumulative standard normal distribution
+c(pnorm(-2), pnorm(2))
+# calculate inverse cumulative standard normal distribution
+c(qnorm(0.75), qnorm(0.25))
+# define logistic map function
+log_map <- function(x, r=4) r*x*(1-x)
+log_map(0.25, 4)
+# plot logistic map
+x11(width=6, height=5)
+curve(expr=log_map, type="l", xlim=c(0, 1),
+xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
+main="logistic map")
+# calculate uniformly distributed pseudo-random
+# sequence using logistic map function
+uni_form <- function(see_d, len_gth=10) {
+  # pre-allocate vector instead of "growing" it
+  out_put <- numeric(len_gth)
+  # initialize
+  out_put[1] <- see_d
+  # perform loop
+  for (i in 2:len_gth) {
+    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+  }  # end for
+  acos(1-2*out_put)/pi
+}  # end uni_form
+uni_form(see_d=0.1, len_gth=15)
+plot(
+  density(uni_form(see_d=runif(1), len_gth=1e5)),
+  xlab="", ylab="", lwd=2, col="blue",
+  main="uniform pseudo-random number density")
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.05)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# calculate average number of defaults
+de_faults <- numeric(200)
+for (i in 1:200) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+mean(de_faults)
+# average defaults using vectorized functions
+uni_form <- matrix(runif(200*num_assets),
+             ncol=200)
+sum(uni_form < default_probs)/200
+# plot Standard Normal distribution
+x11(width=6, height=5)
+curve(expr=dnorm(x),
+type="l", xlim=c(-4, 4),
+xlab="asset value", ylab="", lwd=2,
+col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+ labels="default threshold",
+ lwd=2, srt=90, pos=3)
+# define default probability function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.01)
+  sqrt(1-rh_o)*dnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))/sqrt(rh_o)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+type="l", xlim=c(0, 0.1),
+xlab="fraction of defaults", ylab="", lwd=2,
+col="green", main="Distribution of defaults")
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
+type="l", xlim=c(0, 0.1), add=TRUE,
+xlab="default fraction", ylab="", lwd=2,
+col="blue", main="")
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+ title="", inset=0.05, cex=0.8, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=2)
+text(x=0.023, y=1,
+ labels="default probability",
+ lwd=2, srt=90, pos=3)

@@ -52,13 +52,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#5]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#5, Fall 2016}
+\subtitle{Lecture\#5, Spring 2017}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{October 4, 2016}
+\date{February 21, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,125 +72,48 @@ knit_theme$set(thm)
 \maketitle
 
 
-%%%%%%%%%%%%%%%
-\section{Factor Analysis}
-
 
 %%%%%%%%%%%%%%%
-\subsection{Package \texttt{factorAnalytics}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \texttt{factorAnalytics} performs estimation and risk analysis of linear factor models for portfolio asset returns,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(factorAnalytics)  # load package "factorAnalytics"
-# get documentation for package "factorAnalytics"
-packageDescription("factorAnalytics")  # get short description
-help(package="factorAnalytics")  # load help page
-      @
-      \vspace{-1em}
-      <<eval=FALSE,echo=(-(1:2)),tidy=TRUE>>=
-options(width=50)
-library(factorAnalytics)  # load package "factorAnalytics"
-# list all objects in "factorAnalytics"
-ls("package:factorAnalytics")
-
-# list all datasets in "factorAnalytics"
-# data(package="factorAnalytics")
-
-# remove factorAnalytics from search path
-detach("package:factorAnalytics")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
+\section{Asset Pricing Models}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fitting Factor Models Using PCA}
+\subsection{Linear Regression of Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(factorAnalytics)
-# load ETF returns
-# load(file="C:/Develop/data/etf_data.RData")
-# fit a three-factor model using PCA
-factor_pca <- fitSfm(re_turns, k=3)
-head(factor_pca$loadings, 3)  # factor loadings
-# factor realizations (time series)
-head(factor_pca$factors)
-# residuals from regression
-factor_pca$residuals[1:3, 1:3]
+      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns, 
+      \vskip1ex
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
+      \vskip1ex
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or more extreme values,
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(HighFreq)
+# specify formula and perform regression
+reg_formula <- XLP ~ VTI
+reg_model <- lm(reg_formula, 
+                data=rutils::env_etf$re_turns)
+# get regression coefficients
+coef(summary(reg_model))
+# Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(reg_model)
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(factorAnalytics)
-factor_pca$alpha  # estimated alphas
-factor_pca$r2  # R-squared regression
-# covariance matrix estimated by factor model
-factor_pca$Omega[1:3, 4:6]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Factor Loadings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      <<fact_load,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=10,fig.show='hide'>>=
-library(factorAnalytics)
-# load(file="C:/Develop/data/portf_optim.RData")
-plot(factor_pca, which.plot.group=3, 
-     n.max=30, loop=FALSE)
-# ?plot.sfm
-      @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_load-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Series of Factors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_tsplot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot factor cumulative returns
-chart.CumReturns(factor_pca$factors, 
-    lwd=2, ylab="", legend.loc="topleft", 
-    main="")
-
-# plot time series of factor returns
-# plot(factor_pca, which.plot.group=2, 
-#   loop=FALSE)
-      @
-    \column{0.6\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_tsplot-1}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_rets.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot scatterplot of returns
+plot(reg_formula, data=rutils::env_etf$re_turns,
+     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
+     asp=1, main="Regression XLP ~ VTI")
+# add regression line and perpendicular line
+abline(reg_model, lwd=2, col="red")
+abline(a=0, b=-1/coef(summary(reg_model))[2, 1], 
+       lwd=2, col="blue")
+      @
   \end{columns}
 \end{block}
 
@@ -198,22 +121,46 @@ chart.CumReturns(factor_pca$factors,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Asset Correlations}
+\subsection{Linear Regression Summary Statistics}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.55\textwidth}
       \vspace{-1em}
-      <<fact_corr_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=7,fig.show='hide'>>=
-# asset correlations "hclust" hierarchical clustering order
-plot(factor_pca, which.plot.group=7, 
-     loop=FALSE, order="hclust", 
-     method="ellipse")
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+re_turns <- na.omit(rutils::env_etf$re_turns)
+# perform regressions and collect statistics
+etf_reg_stats <- sapply(colnames(re_turns)[-1], 
+                        function(etf_name) {
+# specify regression formula
+  reg_formula <- as.formula(
+    paste(etf_name, "~ VTI"))
+# perform regression
+  reg_model <- lm(reg_formula, data=re_turns)
+# get regression summary
+  reg_model_sum <- summary(reg_model)
+# collect regression statistics
+  etf_reg_stats <- with(reg_model_sum, 
+    c(alpha=coefficients[1, 1], 
+      p_alpha=coefficients[1, 4], 
+      beta=coefficients[2, 1], 
+      p_beta=coefficients[2, 4]))
+  etf_reg_stats <- c(etf_reg_stats, 
+               p_dw=lmtest::dwtest(reg_model)$p.value)
+  etf_reg_stats
+})  # end sapply
+etf_reg_stats <- t(etf_reg_stats)
+# sort by p_alpha
+etf_reg_stats <- etf_reg_stats[
+  order(etf_reg_stats[, "p_alpha"]), ]
       @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_corr_plot-1}
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+etf_reg_stats[, 1:3]
+      @
   \end{columns}
 \end{block}
 
@@ -221,25 +168,52 @@ plot(factor_pca, which.plot.group=7,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Series of Residuals}
+\subsection{Rolling Beta Regressions Over Time}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_plot,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot residual cumulative returns
-chart.CumReturns(
-  factor_pca$residuals[, c("IEF", 
-                  "DBC", "XLF")], 
-  lwd=2, ylab="", legend.loc="topleft", 
-  main="")
+    \column{0.5\textwidth}
+      The function \texttt{rollapply()} allows performing regressions over a rolling window, 
+      \vskip1ex
+      The function \texttt{roll\_lm()} from package \emph{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}, 
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)
+# specify regression formula
+reg_formula <- XLP ~ VTI
+# perform rolling beta regressions every month
+beta_s <- rollapply(rutils::env_etf$re_turns, width=252, 
+  FUN=function(de_sign) 
+  coef(lm(reg_formula, data=de_sign))[2],
+  by=22, by.column=FALSE, align="right")
+beta_s <- na.omit(beta_s)
+# plot beta_s in x11() window
+x11(width=(wid_th <- 6), height=(hei_ght <- 4))
+chart_Series(x=beta_s, 
+  name=paste("rolling betas", format(reg_formula)))
+# perform daily rolling beta regressions in parallel
+library(roll)
+beta_s <- roll_lm(x=rutils::env_etf$re_turns[, "VTI"], 
+                  y=rutils::env_etf$re_turns[, "XLP"],
+                  width=252)$coefficients
       @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_plot-1}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rolling_betas.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# compare speed of rollapply() versus roll_lm()
+library(microbenchmark)
+da_ta <- rutils::env_etf$re_turns["2012", c("VTI", "XLP")]
+summary(microbenchmark(
+  rollapply=rollapply(da_ta, width=22, 
+      FUN=function(de_sign) 
+      coef(lm(reg_formula, data=de_sign))[2],
+        by.column=FALSE, align="right"), 
+  roll_lm=roll_lm(x=da_ta[, "VTI"], 
+                  y=da_ta[, "XLP"],
+                  width=22)$coefficients, 
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
   \end{columns}
 \end{block}
 
@@ -247,24 +221,41 @@ chart.CumReturns(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Residual Returns Histogram}
+\subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
+      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
+      \end{displaymath}
+      The \emph{systematic} risk and returns are proportional to $\beta$, 
+      \vskip1ex
+      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and the market:
+      \begin{displaymath}
+        \beta = \frac{\sum_{i=1}^k (R_i-\bar{R}) (R_{i,m}-\bar{R_m})} {\sum_{i=1}^k (R_{i,m}-\bar{R_m})^2}
+      \end{displaymath}
+      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns,
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<fact_resid_hist,eval=FALSE,echo=TRUE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot residual histogram with normal curve
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=8, 
-     plot.single=TRUE, loop=FALSE, 
-     xlim=c(-0.007, 0.007))
+      <<echo=TRUE,eval=FALSE>>=
+library(PerformanceAnalytics)
+CAPM.beta(Ra=re_turns[, "XLP"], 
+          Rb=re_turns[, "VTI"])
+CAPM.beta.bull(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.beta.bear(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.alpha(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
       @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_hist-1}
+      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$,
+      \vskip1ex
+      \emph{Alpha} ($\alpha$) are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active manager performance,
+      \vskip1ex
+      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification,
   \end{columns}
 \end{block}
 
@@ -272,23 +263,46 @@ plot(factor_pca, asset.name="VTI",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Residual Returns \texttt{Q-Q} Plot}
+\subsection{The Security Market Line}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vspace{-1em}
-      <<fact_resid_qq,eval=FALSE,echo=(-1),fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# residual Q-Q plot
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=9, 
-     plot.single=TRUE, loop=FALSE)
+    \column{0.5\textwidth}
+      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk ($\beta$),
+      \vskip1ex
+      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk ($\beta$) and return, for different stocks, 
+      <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+etf_betas <- sapply(
+  re_turns[, colnames(re_turns)!="VXX"], 
+  CAPM.beta, Rb=re_turns[, "VTI"])
+etf_annrets <- sapply(
+  re_turns[, colnames(re_turns)!="VXX"], 
+  Return.annualized)
+# plot scatterplot
+plot(etf_annrets ~ etf_betas, xlab="betas", 
+            ylab="ann. rets", xlim=c(-0.25, 1.6))
+points(x=1, y=etf_annrets["VTI"], col="red", 
+       lwd=3, pch=21)
+abline(a=0, b=etf_annrets["VTI"])
+label_names <- rownames(etf_reg_stats)[1:13]
+# add labels
+text(x=1, y=etf_annrets["VTI"], labels="VTI", 
+     pos=2)
+text(x=etf_betas[label_names], 
+     y=etf_annrets[label_names], 
+     labels=label_names, pos=2, cex=0.8)
       @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_qq-1}
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}\\
+    \vspace{-2em}
+      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't,
+      \vskip1ex
+      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero,
+      \vskip1ex
+      Assets above the \emph{SML} have a positive $\alpha$), and those below have a negative $\alpha$),
   \end{columns}
 \end{block}
 
@@ -296,22 +310,75 @@ plot(factor_pca, asset.name="VTI",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Residuals}
+\subsection{Risk-adjusted Performance Measurement}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
+      The \emph{Treynor} ratio measures the excess returns per unit of \emph{systematic} risk ($\beta$), and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
+      \begin{displaymath}
+        T_r=\frac{E[R-R_f]}{\beta}
+      \end{displaymath}
+      The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk,
+      \vskip1ex
+      The \emph{Information} ratio is equal to the excess returns (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
+      \begin{displaymath}
+        I_r = \frac{E[R-R_b]} {\sqrt{\sum_{i=1}^k (R_i-R_{i,b})^2}}
+      \end{displaymath}
+      The \emph{Information} ratio measures the amount of outperformance versus the benchmark, and the consistency of outperformance,
+      \vskip1ex
+    \column{0.5\textwidth}
       \vspace{-1em}
-      <<fact_resid_autocorr,eval=FALSE,echo=TRUE,fig.width=7,fig.height=9,fig.show='hide'>>=
-# SACF and PACF of residuals
-plot(factor_pca, asset.name="VTI", 
-     which.plot.single=5, 
-     plot.single=TRUE, loop=FALSE)
+      <<echo=TRUE,eval=FALSE>>=
+library(PerformanceAnalytics)
+TreynorRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
+
+InformationRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
       @
-    \column{0.6\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fact_resid_autocorr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CAPM} Summary Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+           Rb=re_turns[, "VTI"], scale=252)
+      @
+      \vspace{-2em}
+      <<eval=FALSE,echo=(-1)>>=
+library(PerformanceAnalytics)
+capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"], 
+              Rb=re_turns[, "VTI"], scale=252)
+colnames(capm_stats) <- 
+  sapply(colnames(capm_stats), 
+  function (str) {strsplit(str, split=" ")[[1]][1]})
+capm_stats <- as.matrix(capm_stats)
+capm_stats <- t(capm_stats)
+capm_stats <- capm_stats[
+  order(capm_stats[, "Annualized Alpha"], 
+        decreasing=TRUE), ]
+# copy capm_stats into env_etf and save to .RData file
+assign("capm_stats", capm_stats, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE,echo=TRUE>>=
+capm_stats[, c("Information Ratio", "Annualized Alpha")]
+      @
   \end{columns}
 \end{block}
 
@@ -330,7 +397,7 @@ plot(factor_pca, asset.name="VTI",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
       \vskip1ex
@@ -367,6 +434,94 @@ title(main="Objective Function", line=-1)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Interactive 3d Surface Plots Using Package \protect\emph{rgl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
+      \vskip1ex
+      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
+      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(rgl)  # load rgl
+# define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE)
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+        xlab="x", ylab="y", zlab="sur_face",
+        col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*x)*sin(lambda_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE, 
+        lambda_1=1, lambda_2=2)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      \vskip1ex
+      The argument \texttt{par} are the initial parameter values,
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized,
+      \vskip1ex
+      The argument of the objective function which is to be optimized, must be a vector argument,
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
+    \column{0.5\textwidth}
+        <<eval=FALSE,echo=TRUE>>=
+# define object_ive function of one vector argument and two parameters
+object_ive <- function(vec_tor, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
+# optimization to find weights with maximum Sharpe ratio
+weight_s <- c(pi/6, pi/6)
+object_ive(weight_s)
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=c(4*pi, 4*pi),
+                   lower=c(pi/2, pi/2),
+                   lambda_1=1, lambda_2=1)
+# optimal parameters and value
+optim_run$par
+optim_run$value
+-object_ive(optim_run$par)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The Log-likelihood Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -375,7 +530,7 @@ title(main="Objective Function", line=-1)
     \column{0.5\textwidth}
       The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
       \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_{i}|\theta)
+        \mathcal{L}(\theta|x) = \prod_{i=1}^n P(x_i|\theta)
       \end{displaymath}
       The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
       \vskip1ex
@@ -469,7 +624,7 @@ persp3d(z=-objective_grid, zlab="objective",
     \column{0.5\textwidth}
       The function \texttt{optim()} performs optimization of an objective function, 
       \vskip1ex
-      The function \texttt{fitdistr()} from package \texttt{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization, 
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization, 
 \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # initial parameters
@@ -518,8 +673,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
+      <<echo=TRUE,eval=FALSE>>=
 # sample from mixture of normal distributions
 sam_ple <- c(rnorm(100, sd=1.0),
                    rnorm(100, mean=4, sd=1.0))
@@ -579,8 +733,7 @@ persp(par_mean, par_sd, -objective_grid,
   \begin{columns}[T]
     \column{0.5\textwidth}
 \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/data/etf_data.RData")
+      <<echo=TRUE,eval=FALSE>>=
 # initial parameters
 par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
@@ -621,7 +774,111 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
 
 
 %%%%%%%%%%%%%%%
-\section{Portfolio Optimization}
+\section{Equity Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# vector of symbol names
+sym_bols <- c("VTI", "IEF", "XLP")
+n_weights <- NROW(sym_bols)
+# calculate random portfolios
+n_portf <- 1000
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights, min=0, max=10)
+  weight_s <- weight_s/sum(weight_s)
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
+})  # end sapply
+# plot scatterplot of random portfolios
+x11(width=(wid_th <- 6), height=(hei_ght <- 5))
+plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
+     main="Random portfolios", 
+     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
+     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+# vector of initial portfolio weights equal to 1
+weight_s <- rep(1, n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to standard deviation of returns
+object_ive <- function(weight_s) {
+  portf_rets <- na.omit(rutils::env_etf$re_turns[, sym_bols]) %*% weight_s
+  sd(portf_rets)/sum(weight_s)
+}  # end object_ive
+# object_ive() for equal weight portfolio
+object_ive(weight_s)
+object_ive(2*weight_s)
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# Rescale the optimal weights
+weight_s <- optim_run$par/sum(optim_run$par)
+# minimum variance portfolio returns
+library(quantmod)
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
+# Add red point for minimum variance portfolio
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, col="red", lwd=3)
+text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
+# objective function equal to minus Sharpe ratio
+risk_free <- 0.01
+object_ive <- function(weight_s) {
+  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
+  -mean(portf_rets-risk_free)/sd(portf_rets)
+}  # end object_ive
+# perform portfolio optimization
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# maximum Sharpe ratio portfolio returns
+weight_s <- optim_run$par/sum(optim_run$par)
+optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
+                  order.by=index(env_etf$re_turns))
+chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, 
+       col="blue", lwd=3)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=2, cex=0.8)
+max_Sharpe <- (optim_ret-risk_free)/optim_sd
+# Add points for individual assets
+re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
+std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
+points(std_devs, re_turns, col="green", lwd=3)
+text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
+# Add point at risk_free rate and draw Capital Market Line
+points(x=0, y=risk_free)
+text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
+abline(a=risk_free, b=max_Sharpe, col="blue")
+range_s <- par("usr")
+text(optim_sd/3, (optim_ret+risk_free)/2.5, 
+     labels="Capital Market Line", cex=0.8, , pos=3, 
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
+                   (range_s[4]-range_s[3])*
+                   hei_ght/wid_th)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -700,37 +957,39 @@ text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
       <<eff_front_two_assets,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 # vector of symbol names
 sym_bols <- c("VTI", "IEF")
-# vector of portfolio weights
+# matrix of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
+weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
-ret_sd <- sapply(weight_s, function(wei_ght) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% c(wei_ght, 1-wei_ght)
-  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
-})  # end sapply
-risk_free <- 0.01
-ret_sd <- rbind(ret_sd, (ret_sd[1, ]-risk_free)/ret_sd[2, ])
-rownames(ret_sd)[3] <- "Sharpe"
-in_dex <- which.max(ret_sd["Sharpe", ])
-max_Sharpe <- ret_sd["Sharpe", in_dex]
+portf_rets <- env_etf$re_turns[, sym_bols]
+ret_sd <- portf_rets %*% t(weight_s)
+ret_sd <- 100*cbind(colMeans(ret_sd), 
+  matrixStats::colSds(ret_sd))
+colnames(ret_sd) <- c("returns", "StdDev")
+risk_free <- 5.0/260
+ret_sd <- cbind(ret_sd, (ret_sd[, 1]-risk_free)/ret_sd[, 2])
+colnames(ret_sd)[3] <- "Sharpe"
+in_dex <- which.max(ret_sd[, "Sharpe"])
+max_Sharpe <- ret_sd[in_dex, "Sharpe"]
 # plot scatterplot of portfolios in x11() window
 x11(width=(wid_th <- 6), height=(hei_ght <- 4))
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=ret_sd[2, ], y=ret_sd[1, ], t="l", 
-     xlim=c(0, max(ret_sd[2, ]/2)), 
-     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
-     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
+plot(x=ret_sd[, 2], y=ret_sd[, 1], t="l", 
+     xlim=c(0, max(ret_sd[, 2]/2)), 
+     ylim=c(min(0, min(ret_sd[, 1])), max(ret_sd[, 1])), 
+     xlab=colnames(ret_sd)[2], ylab=colnames(ret_sd)[1])
 title(main="Stock and bond portfolios", line=-1)
 # Add red point for maximum Sharpe ratio portfolio
-points(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex], 
+points(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
        col="red", lwd=3)
-text(x=ret_sd[2, in_dex], y=ret_sd[1, in_dex], 
+text(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
      labels=paste(c("maxSR\n", 
-       structure(c(weight_s[in_dex], 1-weight_s[in_dex]), 
+       structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), 
                names=sym_bols)), collapse=" "), 
      pos=3, cex=0.8)
 # Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
+re_turns <- 100*sapply(portf_rets, mean)
+std_devs <- 100*sapply(portf_rets, sd)
 points(std_devs, re_turns, col="green", lwd=3)
 text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
 # Add point at risk_free rate and draw Capital Market Line
@@ -738,7 +997,7 @@ points(x=0, y=risk_free)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
 abline(a=risk_free, b=max_Sharpe, col="blue")
 range_s <- par("usr")
-text(ret_sd[2, in_dex]/3, (ret_sd[1, in_dex]+risk_free)/2, 
+text(ret_sd[in_dex, 2]/3, (ret_sd[in_dex, 1]+risk_free)/2, 
      labels="Capital Market Line", cex=0.8, , pos=3, 
      srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
                    (range_s[4]-range_s[3])*
@@ -764,137 +1023,6 @@ chart_Series(x=cumsum(optim_rets),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Random Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# vector of symbol names
-sym_bols <- c("VTI", "IEF", "XLP")
-n_weights <- length(sym_bols)
-# calculate random portfolios
-n_portf <- 1000
-ret_sd <- sapply(1:n_portf, function(in_dex) {
-  weight_s <- runif(n_weights, min=0, max=10)
-  weight_s <- weight_s/sum(weight_s)
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
-  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
-})  # end sapply
-# plot scatterplot of random portfolios
-x11(width=(wid_th <- 6), height=(hei_ght <- 5))
-plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
-     main="Random portfolios", 
-     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
-     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
-# vector of initial portfolio weights equal to 1
-weight_s <- rep(1, n_weights)
-names(weight_s) <- sym_bols
-# objective function equal to standard deviation of returns
-object_ive <- function(weight_s) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
-  sd(portf_rets)/sum(weight_s)
-}  # end object_ive
-# object_ive() for equal weight portfolio
-object_ive(weight_s)
-object_ive(2*weight_s)
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# Rescale the optimal weights
-weight_s <- optim_run$par/sum(optim_run$par)
-# minimum variance portfolio returns
-library(quantmod)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
-# Add red point for minimum variance portfolio
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, col="red", lwd=3)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-# objective function equal to minus Sharpe ratio
-risk_free <- 0.01
-object_ive <- function(weight_s) {
-  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
-  -mean(portf_rets-risk_free)/sd(portf_rets)
-}  # end object_ive
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# maximum Sharpe ratio portfolio returns
-weight_s <- optim_run$par/sum(optim_run$par)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, 
-       col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-max_Sharpe <- (optim_ret-risk_free)/optim_sd
-# Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
-range_s <- par("usr")
-text(optim_sd/3, (optim_ret+risk_free)/2.5, 
-     labels="Capital Market Line", cex=0.8, , pos=3, 
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
-                   hei_ght/wid_th)/(0.25*pi))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Efficient Frontier and Capital Market Line}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
-      \vskip1ex
-      The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
-      \vskip1ex
-      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
-      <<optim_random,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot the efficient frontier
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eff_front_two_assets.png}\\
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/maxsr_two_assets.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Portfolio Objective Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -904,12 +1032,11 @@ library(PortfolioAnalytics)
       The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-        <<eval=FALSE,echo=(-(1:1))>>=
-load(file="C:/Develop/data/etf_data.RData")
+        <<eval=FALSE,echo=TRUE>>=
 # create list of symbols for optimized portfolio
 sym_bols <- c("VTI", "VNQ", "DBC")
 # create initial vector of portfolio weights
-weight_s <- rep(1, length(sym_bols))
+weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
 # objective equal to minus Sharpe ratio
 object_ive <- function(weight_s) {
@@ -999,16 +1126,24 @@ persp3d(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
       \vskip1ex
-      The argument \texttt{"par"} are the initial parameter values,
+      The argument \texttt{par} are the initial parameter values,
       \vskip1ex
-      The argument \texttt{"fn"} is the objective function to be minimized,
+      The argument \texttt{fn} is the objective function to be minimized,
       \vskip1ex
-      The argument \texttt{method="L-BFGS-B"} specifies the a quasi-Newton optimization method,
+      The argument of the objective function which is to be optimized, must be a vector argument,
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<>>=
+      <<eval=FALSE,echo=TRUE>>=
 # optimization to find weights with maximum Sharpe ratio
 optim_run <- optim(par=weight_s,
                    fn=object_ive,
@@ -1067,17 +1202,17 @@ chart.CumReturns(
 
 
 %%%%%%%%%%%%%%%
-\section{Package \texttt{PortfolioAnalytics} for Portfolio Optimization}
+\section{Package \protect\emph{PortfolioAnalytics} for Portfolio Optimization}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \texttt{PortfolioAnalytics}}
+\subsection{Package \protect\emph{PortfolioAnalytics}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The package \texttt{PortfolioAnalytics} contains functions and data sets for portfolio optimization,
+      The package \emph{PortfolioAnalytics} contains functions and data sets for portfolio optimization,
       \vskip1ex
       The function \texttt{data()} loads external data or lists data sets in a package,
       \vskip1ex
@@ -1118,13 +1253,13 @@ detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search pa
       \texttt{add.objective} adds or updates risk/return objectives of the portfolio object,
       <<echo=TRUE,eval=FALSE>>=
 library(PortfolioAnalytics)
-# load ETF returns
-load(file="C:/Develop/data/etf_data.RData")
+# use ETF returns from package HighFreq
+library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
         "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # initial portfolio to equal weights
-portf_init <- rep(1/length(portf_names),
-                  length(portf_names))
+portf_init <- rep(1/NROW(portf_names),
+                  NROW(portf_names))
 # named vector
 names(portf_init) <- portf_names
 # create portfolio object

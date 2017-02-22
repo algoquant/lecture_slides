@@ -5,7 +5,7 @@ options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 set.seed(1121)  # reset random number generator
-runif(3)  # three random numbers from the uniform distribution
+runif(3)  # three numbers from uniform distribution
 runif(3)  # produce another three numbers
 set.seed(1121)  # reset random number generator
 runif(3)  # produce another three numbers
@@ -20,6 +20,32 @@ rnorm(n=5, mean=1, sd=2)  # match arguments by name
 c(pnorm(-2), pnorm(2))
 # calculate inverse cumulative standard normal distribution
 c(qnorm(0.75), qnorm(0.25))
+# define logistic map function
+log_map <- function(x, r=4) r*x*(1-x)
+log_map(0.25, 4)
+# plot logistic map
+x11(width=6, height=5)
+curve(expr=log_map, type="l", xlim=c(0, 1),
+xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
+main="logistic map")
+# calculate uniformly distributed pseudo-random
+# sequence using logistic map function
+uni_form <- function(see_d, len_gth=10) {
+  # pre-allocate vector instead of "growing" it
+  out_put <- numeric(len_gth)
+  # initialize
+  out_put[1] <- see_d
+  # perform loop
+  for (i in 2:len_gth) {
+    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+  }  # end for
+  acos(1-2*out_put)/pi
+}  # end uni_form
+uni_form(see_d=0.1, len_gth=15)
+plot(
+  density(uni_form(see_d=runif(1), len_gth=1e5)),
+  xlab="", ylab="", lwd=2, col="blue",
+  main="uniform pseudo-random number density")
 set.seed(1121)  # reset random number generator
 # flip unbiased coin once, 20 times
 rbinom(n=20, size=1, 0.5)

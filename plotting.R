@@ -150,23 +150,6 @@ legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
 # title(main="EUR and MSFT", line=-1)  # add title
 # legend("bottomright", legend=colnames(zoo_stxeur),
 #        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-# generate Poisson variables
-pois_counts <- rpois(1000, lambda=4)
-# calculate contingency table
-pois_table <- table(pois_counts)
-pois_table <- pois_table/sum(pois_table)
-# create histogram of Poisson variables
-histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
-     ylab="frequency", freq=FALSE, main="Poisson histogram")
-lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
-# Poisson probability distribution function
-poisson_func <- function(x, lambda)
-  {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, title="Poisson histogram",
- c("histogram density", "probability"), cex=0.8, lwd=2, lty=c(1, 1),
- col=c("blue", "red"))
 graph_params <- par()  # get existing parameters
 par("mar")  # get plot margins
 par(mar=c(2, 1, 2, 1))  # set plot margins
@@ -334,6 +317,35 @@ curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution"
 xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
 legend(x="topright", legend="Poisson density", title="",
  inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
+# generate Poisson variables
+pois_counts <- rpois(1000, lambda=4)
+head(pois_counts)
+# calculate contingency table
+pois_table <- table(pois_counts)
+pois_table
+# create barplot of table data
+barplot(pois_table, col="lightgrey",
+  xlab="counts", ylab="number of observations",
+  main="barplot of Poisson count data")
+# create histogram of Poisson variables
+histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
+     ylab="frequency", freq=FALSE, main="Poisson histogram")
+lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
+# Poisson probability distribution function
+poisson_func <- function(x, lambda)
+  {exp(-lambda)*lambda^x/factorial(x)}
+curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, title="Poisson histogram",
+ c("histogram density", "probability"), cex=0.8, lwd=2, lty=c(1, 1),
+ col=c("blue", "red"))
+# boxplot of Poisson count data
+boxplot(x=pois_counts, ylab="counts",
+  main="Poisson box plot")
+# boxplot method for formula
+boxplot(formula=mpg ~ cyl, data=mtcars,
+  main="Mileage by number of cylinders",
+  xlab="Cylinders", ylab="Miles per gallon")
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 library(scales)  # load scales

@@ -52,7 +52,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Fall 2016}
+\subtitle{FRE6871 \& FRE7241, Spring 2017}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -444,7 +444,7 @@ mat_rix <- matrix(1:9, ncol=3, # create matrix
 matrix_to_dframe <- function(mat_rix) {
   n_col <- ncol(mat_rix)
   dframe <- vector("list", n_col)  # empty vector
-  for(in_dex in 1:n_col)  # populate vector
+  for (in_dex in 1:n_col)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
     .set_row_names(NROW(mat_rix))
@@ -492,7 +492,7 @@ summary(microbenchmark(
     FUN.VALUE=c(sum=0)),  # end vapply
   s_apply=sapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:NROW(big_matrix)) {
+  for_loop=for (i in 1:NROW(big_matrix)) {
     row_sums[i] <- sum(big_matrix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
@@ -531,22 +531,22 @@ summary(microbenchmark(
 big_vector <- rnorm(5000)
 summary(microbenchmark(
 # allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(length(big_vector))
+  for_loop={cum_sum <- numeric(NROW(big_vector))
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
       cum_sum[i] <- cum_sum[i-1] + big_vector[i]
     }},  # end for
 # allocate zero memory for cumulative sum
   grow_vec={cum_sum <- numeric(0)
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
 # add new element to "cum_sum" ("grow" it)
       cum_sum[i] <- cum_sum[i-1] + big_vector[i]
     }},  # end for
 # allocate zero memory for cumulative sum
   com_bine={cum_sum <- numeric(0)
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
 # add new element to "cum_sum" ("grow" it)
       cum_sum <- c(cum_sum, big_vector[i])
     }},  # end for
@@ -591,7 +591,6 @@ summary(
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
 \section{Writing Fast \texttt{R} Code Using Vectorized Operations}
 
@@ -620,24 +619,23 @@ summary(
       \vskip1ex
       But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
     \column{0.5\textwidth}
-      \vspace{-2em}
         <<eval=FALSE>>=
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
 system.time(  # sum vectors using "for" loop
-  for(i in 1:length(vec_tor1)) {
+  for (i in 1:NROW(vec_tor1)) {
     big_vector[i] <- vec_tor1[i] + vec_tor2[i]
   }  # end for
 )  # end system.time
 # sum vectors using vectorized "+"
 system.time(big_vector <- vec_tor1 + vec_tor2)
 # allocate memory for cumulative sum
-cum_sum <- numeric(length(big_vector))
+cum_sum <- numeric(NROW(big_vector))
 # cumulative sum using "for" loop
 cum_sum[1] <- big_vector[1]
 system.time(
-  for(i in 2:length(big_vector)) {
+  for (i in 2:NROW(big_vector)) {
     cum_sum[i] <- cum_sum[i-1] + big_vector[i]
   }  # end for
 )  # end system.time
@@ -905,7 +903,7 @@ sapply(me_ans, rnorm, n=2)
       <<echo=TRUE,eval=FALSE>>=
 # rnorm() vectorized with respect to "std_dev"
 vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
+  if (NROW(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
   else
     sapply(sd, rnorm, n=n, mean=mean)
@@ -940,7 +938,7 @@ vec_rnorm(n=2, mean=me_ans)
       \vskip1ex
       \texttt{mapply()} calls \texttt{"FUN"} on the vectors passed to the dots \texttt{"..."}, one element at a time:
       \begin{multline*}
-        mapply(FUN=fun, vec_{1}, vec_{2}, \ldots) = \\
+        mapply(FUN=fun, vec_1, vec_2, \ldots) = \\
         [ fun(vec_{1,1}, vec_{2,1}, \ldots), \ldots, \\
         fun(vec_{1,i}, vec_{2,i}, \ldots), \ldots ]
       \end{multline*}
@@ -981,7 +979,7 @@ mapply(function(in_put, e_xp) in_put^e_xp,
       <<echo=TRUE,eval=FALSE>>=
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(mean)==1 && length(sd)==1)
+  if (NROW(mean)==1 && NROW(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
   else
     mapply(rnorm, n=n, mean=mean, sd=sd)
@@ -1058,8 +1056,8 @@ legend(x="bottomright", legend=colnames(vec_tor4),
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
 # sample mean - MC estimate
 mean(sam_ple)
 # sample standard deviation - MC estimate
@@ -1067,10 +1065,10 @@ sd(sam_ple)
 # MC estimate of cumulative probability
 sam_ple <- sort(sam_ple)
 pnorm(1)
-sum(sam_ple<1)/sample_length
+sum(sam_ple<1)/len_gth
 # MC estimate of quantile
 qnorm(0.75)
-sam_ple[0.75*sample_length]
+sam_ple[0.75*len_gth]
       @
   \end{columns}
 \end{block}
@@ -1144,7 +1142,7 @@ pa_th <- cumsum(rnorm(len_gth))
 # find index when pa_th crosses lev_el
 cro_ss <- which(pa_th > lev_el)
 # fill remaining pa_th after it crosses lev_el
-if (length(cro_ss)>0) {
+if (NROW(cro_ss)>0) {
   pa_th[(cro_ss[1]+1):len_gth] <- 
     pa_th[cro_ss[1]]
 }  # end if
@@ -1186,33 +1184,130 @@ title(main="Brownian motion crossing
       \vskip1ex
       The \emph{bootstrapped} estimator values can then be used to calculate the probability distribution of the estimator and its standard error,
       \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators that are sensitive to the ordering and correlations in the data, 
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data, 
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
 # sample mean
 mean(sam_ple)
 # sample standard deviation
 sd(sam_ple)
 # bootstrap of sample mean and median
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                       replace=TRUE)]
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
   c(mean=mean(boot_sample),
     median=median(boot_sample))
 })  # end sapply
 boot_strap[, 1:3]
 # standard error from formula
-sd(sam_ple)/sqrt(sample_length)
+sd(sam_ple)/sqrt(len_gth)
 # standard error of mean from bootstrap
 sd(boot_strap["mean", ])
 # standard error of median from bootstrap
 sd(boot_strap["median", ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping Standard Errors Using Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing, 
+      \vskip1ex
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
+      \vskip1ex
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process, 
+      \vskip1ex
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, 
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000, 
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000, 
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Variance Reduction Using Antithetic Sampling}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Antithetic Sampling} is a \emph{Variance Reduction} technique, in which a new random sample is computed by simply reversing the sign of a Normal random sample ($\phi \to -\phi$), or by complementing a Uniform random sample ($\phi \to 1-\phi$),
+      \vskip1ex
+      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# estimate the 95% quantile
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, 
+                                    replace=TRUE)]
+  quantile(boot_sample, 0.95)
+})  # end sapply
+sd(boot_strap)
+# estimate the 95% quantile using antithetic sampling
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, 
+                                    replace=TRUE)]
+  quantile(c(boot_sample, -boot_sample), 0.95)
+})  # end sapply
+# standard error of mean from bootstrap
+sd(boot_strap)
+sqrt(2)*sd(boot_strap)
       @
   \end{columns}
 \end{block}
@@ -1241,16 +1336,16 @@ explana_tory <- rnorm(100, mean=2)
 noise <- rnorm(100)
 res_ponse <- -3 + explana_tory + noise
 # define design matrix and regression formula
-design_matrix <- data.frame(res_ponse, explana_tory)
-reg_formula <- paste(colnames(design_matrix)[1], 
-  paste(colnames(design_matrix)[-1], collapse="+"), 
+de_sign <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(de_sign)[1], 
+  paste(colnames(de_sign)[-1], collapse="+"), 
   sep=" ~ ")
 # bootstrap the regression
 boot_strap <- sapply(1:100, function(x) {
-  boot_sample <- 
-    sample.int(dim(design_matrix)[1], replace=TRUE)
+  boot_sample <- sample.int(dim(de_sign)[1], 
+                            replace=TRUE)
   reg_model <- lm(reg_formula,
-                data=design_matrix[boot_sample, ])
+                data=de_sign[boot_sample, ])
   reg_model$coefficients
 })  # end sapply
       @
@@ -1275,7 +1370,7 @@ x11(width=6, height=6)
 apply(boot_strap, MARGIN=1, 
       function(x) c(mean=mean(x), sd=sd(x)))
 # means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=design_matrix)
+reg_model <- lm(reg_formula, data=de_sign)
 reg_model$coefficients
 summary(reg_model)$coefficients[, "Std. Error"]
 plot(density(boot_strap["explana_tory", ]),
@@ -1323,22 +1418,22 @@ num_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(num_cores)  # initialize compute cluster
 # bootstrap the regression under Windows
 boot_strap <- parLapply(clus_ter, 1:1000, 
-  function(x, reg_formula, design_matrix) {
+  function(x, reg_formula, de_sign) {
     boot_sample <- 
-      sample.int(dim(design_matrix)[1], replace=TRUE)
+      sample.int(dim(de_sign)[1], replace=TRUE)
     reg_model <- lm(reg_formula,
-      data=design_matrix[boot_sample, ])
+      data=de_sign[boot_sample, ])
     reg_model$coefficients
   }, 
   reg_formula=reg_formula, 
-  design_matrix=design_matrix)  # end parLapply
+  de_sign=de_sign)  # end parLapply
 # bootstrap the regression under Mac-OSX or Linux
 boot_strap <- mclapply(1:1000, 
   function(x) {
     boot_sample <- 
-      sample.int(dim(design_matrix)[1], replace=TRUE)
+      sample.int(dim(de_sign)[1], replace=TRUE)
     lm(reg_formula,
-      data=design_matrix[boot_sample, ])$coefficients
+      data=de_sign[boot_sample, ])$coefficients
   }, mc.cores=num_cores)  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster
 boot_strap <- do.call(rbind, boot_strap)
@@ -1561,7 +1656,7 @@ mat_rix <- matrix(rnorm(7*10^5), ncol=7)
 # define aggregation function over column of matrix
 agg_regate <- function(col_umn) {
   out_put <- 0
-  for (in_dex in 1:length(col_umn))
+  for (in_dex in 1:NROW(col_umn))
     out_put <- out_put + col_umn[in_dex]
   out_put
 }  # end agg_regate
@@ -1596,7 +1691,7 @@ stopCluster(clus_ter)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
       \vskip1ex
@@ -1633,6 +1728,94 @@ title(main="Objective Function", line=-1)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Interactive 3d Surface Plots Using Package \protect\emph{rgl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
+      \vskip1ex
+      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
+      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(rgl)  # load rgl
+# define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE)
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+        xlab="x", ylab="y", zlab="sur_face",
+        col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*x)*sin(lambda_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE, 
+        lambda_1=1, lambda_2=2)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multi-dimensional Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
+      \vskip1ex
+      The argument \texttt{par} are the initial parameter values,
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized,
+      \vskip1ex
+      The argument of the objective function which is to be optimized, must be a vector argument,
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
+    \column{0.5\textwidth}
+        <<eval=FALSE,echo=TRUE>>=
+# define object_ive function of one vector argument and two parameters
+object_ive <- function(vec_tor, lambda_1=1, lambda_2=1) 
+  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
+# optimization to find weights with maximum Sharpe ratio
+weight_s <- c(pi/6, pi/6)
+object_ive(weight_s)
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=c(4*pi, 4*pi),
+                   lower=c(pi/2, pi/2),
+                   lambda_1=1, lambda_2=1)
+# optimal parameters and value
+optim_run$par
+optim_run$value
+-object_ive(optim_run$par)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The Log-likelihood Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1641,7 +1824,7 @@ title(main="Objective Function", line=-1)
     \column{0.5\textwidth}
       The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
       \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_{i}|\theta)
+        \mathcal{L}(\theta|x) = \prod_{i=1}^n P(x_i|\theta)
       \end{displaymath}
       The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
       \vskip1ex

@@ -103,7 +103,7 @@ trunc(date_time, units="days")  # truncate to closest day
 methods(trunc)  # trunc methods
 trunc.POSIXt
 Sys.timezone()  # get time-zone
-Sys.setenv(tz="UTC")  # set time-zone to UTC
+Sys.setenv(TZ="UTC")  # set time-zone to UTC
 Sys.timezone()  # get time-zone
 # Standard Time in effect
 as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
@@ -115,11 +115,11 @@ format(date_time, tz="America/New_York")
 format(date_time, tz="UTC")
 # parse back to POSIXct
 as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between local time and UTC
+# difference between New_York time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
 # set time-zone to New York
-Sys.setenv(tz="America/New_York")
+Sys.setenv(TZ="America/New_York")
 library(lubridate)  # load lubridate
 # parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
@@ -199,7 +199,7 @@ library(RQuantLib)  # load RQuantLib
 in_dex <- Sys.Date() + -5:2
 in_dex
 
-# create boolean vector of business days
+# create Boolean vector of business days
 is_busday <- isBusinessDay(  # RQuantLib calendar
   calendar="UnitedStates/GovernmentBond", in_dex)
 
@@ -222,24 +222,25 @@ head(monthly_index, 4)  # print first few dates
 qrtly_index <- yearqtr(2010+0:16/4)
 head(qrtly_index, 4)  # print first few dates
 # parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(tz="UTC")
+Sys.setenv(TZ="UTC")
 as.POSIXct(head(qrtly_index, 4))
 library(lubridate)  # load lubridate
 set.seed(1121)  # reset random number generator
 # create daily time series ending today
 start_date <- decimal_date(Sys.Date()-6)
 end_date <- decimal_date(Sys.Date())
-da_ta <- cumsum(rnorm(6))
+# create vector of geometric Brownian motion
+da_ta <- exp(cumsum(rnorm(6)/100))
 fre_quency <- length(da_ta)/(end_date-start_date)
 ts_series <- ts(data=da_ta,
-        start=start_date,
-        frequency=fre_quency)
+          start=start_date,
+          frequency=fre_quency)
 ts_series  # display time series
 # display index dates
 as.Date(date_decimal(coredata(time(ts_series))))
-# create bi-monthly series starting mid-1990
-ts_series <- ts(data=cumsum(rnorm(96)),
-     frequency=6, start=1990.5)
+# bi-monthly geometric Brownian motion starting mid-1990
+ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
+       frequency=6, start=1990.5)
 # show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
@@ -254,12 +255,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 plot(ts_series, type="l",  # create plot
      col="red", lty="solid", xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # get first three rows
 # EuStockMarkets index is equally spaced
 diff(tail(time(EuStockMarkets), 4))
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot all the columns
 plot(EuStockMarkets, main="", xlab="")
 # add title
@@ -271,9 +272,9 @@ plot(EuStockMarkets, main="EuStockMarkets",
      col=c("black", "red", "blue", "green"))
 # add legend
 legend(x=1992, y=8000,
-       legend=colnames(EuStockMarkets),
-       col=c("black", "red", "blue", "green"),
-       lty=1)
+ legend=colnames(EuStockMarkets),
+ col=c("black", "red", "blue", "green"),
+ lty=1)
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 # mean and standard deviation of returns
@@ -282,43 +283,39 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 # plot histogram
 hist(dax_rets, breaks=30, main="",
      xlim=c(-0.04, 0.04), ylim=c(0, 60),
-     xlab="", ylab="", freq = FALSE)
+     xlab="", ylab="", freq=FALSE)
 # draw kernel density of histogram
 lines(density(dax_rets), col='red', lwd=2)
 # add density of normal distribution
 curve(expr=dnorm(x, mean=mean(dax_rets), sd=sd(dax_rets)),
-      add=TRUE, type="l", lwd=2, col="blue")
+add=TRUE, type="l", lwd=2, col="blue")
 title(main="Return distributions", line=0)  # add title
 # add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
-       leg=c(colnames(EuStockMarkets)[1], "Normal"),
-       lwd=2, bg="white", col=c("red", "blue"))
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+ leg=c(colnames(EuStockMarkets)[1], "Normal"),
+ lwd=2, bg="white", col=c("red", "blue"))
 # calculate percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
+# perform Shapiro-Wilk test
+shapiro.test(dax_rets)
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # create normal Q-Q plot
 qqnorm(dax_rets, ylim=c(-0.04, 0.04),
-       xlab='Normal Quantiles', main='')
+ xlab='Normal Quantiles', main='')
 # fit a line to the normal quantiles
 qqline(dax_rets, col='red', lwd=2)
 plot_title <- paste(colnames(EuStockMarkets)[1],
-          'Q-Q Plot')
+            'Q-Q Plot')
 title(main=plot_title, line=-1)  # add title
-shapiro.test(dax_rets)  # Shapiro-Wilk test
-par(oma=c(15, 1, 1, 1), mgp=c(1.5, 0.5, 0), mar=c(2.5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
 # boxplot method for formula
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
-
-# calculate EuStockMarkets percentage returns
-eu_rets <- diff(log(EuStockMarkets))
-# boxplot method for data frame
-boxplot(x=eu_rets)
+# boxplot method for data frame of EuStockMarkets percentage returns
+boxplot(x=diff(log(EuStockMarkets)))
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
-# create zoo time series
+# create zoo time series of random returns
 in_dex <- Sys.Date() + 0:3
 zoo_series <- zoo(rnorm(length(in_dex)),
          order.by=in_dex)
@@ -351,11 +348,11 @@ library(zoo)  # load package zoo
 # create index of daily dates
 in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
-# create vector of data
-zoo_data <- cumsum(rnorm(length(in_dex)))
-# create zoo time series
-zoo_series <- zoo(x=zoo_data,
-            order.by=in_dex)
+# create vector of geometric Brownian motion
+zoo_data <- 
+  exp(cumsum(rnorm(length(in_dex))/100))
+# create zoo series of geometric Brownian motion
+zoo_series <- zoo(x=zoo_data, order.by=in_dex)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.zoo method
 plot(zoo_series, xlab="", ylab="")
@@ -375,10 +372,10 @@ library(zoo)  # load package zoo
 # create daily date series of class 'Date'
 in_dex1 <- seq(Sys.Date(), by="days",
              length.out=365)
-# create zoo time series
+# create zoo time series of random returns
 zoo_series1 <- zoo(rnorm(length(in_dex1)),
            order.by=in_dex1)
-# create another zoo time series
+# create another zoo time series of random returns
 in_dex2 <- seq(Sys.Date()+350, by="days",
              length.out=365)
 zoo_series2 <- zoo(rnorm(length(in_dex2)),
@@ -386,17 +383,18 @@ zoo_series2 <- zoo(rnorm(length(in_dex2)),
 # rbind the two time series - ts1 supersedes ts2
 zoo_series3 <- rbind(zoo_series1,
            zoo_series2[index(zoo_series2) > end(zoo_series1)])
-plot(cumsum(zoo_series3), xlab="", ylab="")
+# plot zoo time series of geometric Brownian motion
+plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
 # add vertical lines at stitch point
 abline(v=end(zoo_series1), col="blue", lty="dashed")
 abline(v=start(zoo_series2), col="red", lty="dashed")
 title(main="Random Prices", line=-1)  # add title
 # create daily date series of class 'Date'
 in_dex1 <- Sys.Date() + -3:1
-# create zoo time series
+# create zoo time series of random returns
 zoo_series1 <- zoo(rnorm(length(in_dex1)),
          order.by=in_dex1)
-# create another zoo time series
+# create another zoo time series of random returns
 in_dex2 <- Sys.Date() + -1:3
 zoo_series2 <- zoo(rnorm(length(in_dex2)),
          order.by=in_dex2)
@@ -436,9 +434,9 @@ set.seed(1121)  # reset random number generator
 # create index of daily dates
 in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
-# create vector of data
-zoo_data <- cumsum(rnorm(length(in_dex)))
-# create zoo time series
+# create vector of geometric Brownian motion
+zoo_data <- exp(cumsum(rnorm(length(in_dex))/100))
+# create zoo time series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data,
             order.by=in_dex)
 head(zoo_series, 3)  # zoo object
@@ -461,7 +459,7 @@ head(time(ts_series))  # display index dates
 head(as.Date(date_decimal(coredata(time(ts_series)))))
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
-# create weekday boolean vector
+# create weekday Boolean vector
 week_days <- weekdays(index(zoo_series))
 is_weekday <- !((week_days == "Saturday") |
   (week_days == "Sunday"))
@@ -480,7 +478,7 @@ ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
 set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
-# create xts time series
+# create xts time series of random returns
 in_dex <- Sys.Date() + 0:3
 x_ts <- xts(rnorm(length(in_dex)),
          order.by=in_dex)
@@ -530,7 +528,7 @@ chart_Series(x=x_ts, theme=plot_theme,
 legend("topleft", legend=colnames(EuStockMarkets),
  inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
  lwd=3, col=col_ors, bg="white")
-load(file="C:/Develop/data/etf_data.RData")
+library(rutils)
 library(ggplot2)
 # create ggplot object
 etf_gg <- qplot(x=index(env_etf$price_s[, 1]),
@@ -583,17 +581,17 @@ data_frame <-
     coredata(env_etf$price_s[, c("VTI", "IEF")]))
 # plotly syntax using pipes
 data_frame %>%
-  plot_ly(x=dates, y=VTI, fill="tozeroy", name="VTI") %>%
-  add_trace(x=dates, y=IEF, fill="tonexty", name="IEF") %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
-# standard plotly syntax - for reference
-# p_lot <- plot_ly(data=data_frame, x=dates, y=VTI, fill="tozeroy", name="VTI")
-# p_lot <- add_trace(p=p_lot, x=dates, y=IEF, fill="tonexty", name="IEF")
-# p_lot <-   layout(title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
-# p_lot
+# or use standard plotly syntax
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF")
+p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
+p_lot
 library(xts)  # load package xts
 # subset xts using a date range string
 stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
@@ -612,12 +610,10 @@ identical(st_ox["2014-11", ], st_ox["2014-11"])
 # benchmark the speed of subsetting
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=sapply(10*(10:1000),
-  function(in_dex)
-    max(SPY[in_dex:(in_dex+10), ])),
-  subset=sapply(10*(10:1000),
-  function(in_dex)
-    max(.subset_xts(SPY, in_dex:(in_dex+10)))),
+  bracket=sapply(500,
+  function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
+  subset=sapply(500,
+  function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
   times=10))[, c(1, 4, 5)]
 library(xts)  # load package xts
 # vector of 1-minute times (ticks)
@@ -625,7 +621,7 @@ min_ticks <- seq.POSIXt(
   from=as.POSIXct("2015-04-14", tz="America/New_York"),
   to=as.POSIXct("2015-04-16"),
   by="min")
-# xts of 1-minute times (ticks)
+# xts of 1-minute times (ticks) of random returns
 x_ts <- xts(rnorm(length(min_ticks)),
                order.by=min_ticks)
 # subset recurring time interval using "T notation",
@@ -633,7 +629,7 @@ x_ts <- x_ts["T09:30:00/T16:00:00"]
 first(x_ts["2015-04-15"])  # first element of day
 last(x_ts["2015-04-15"])  # last element of day
 # suppress timezone warning messages
-options(xts_check_TZ=FALSE)
+options(xts_check_tz=FALSE)
 library(xts)  # load package xts
 str(st_ox)  # display structure of xts
 # subsetting zoo to single column drops dim attribute

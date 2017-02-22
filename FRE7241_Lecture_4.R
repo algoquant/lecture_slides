@@ -4,370 +4,582 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
-# load package HighFreq
 library(HighFreq)
-head(SPY_TAQ)
-# load package HighFreq
-library(HighFreq)
-head(SPY)
-# install package HighFreq from github
-devtools::install_github(repo="algoquant/HighFreq")
-# load package HighFreq
-library(HighFreq)
-# get documentation for package HighFreq
-# get short description
-packageDescription("HighFreq")
-# load help page
-help(package="HighFreq")
-# list all datasets in "HighFreq"
-data(package="HighFreq")
-# list all objects in "HighFreq"
-ls("package:HighFreq")
-# remove HighFreq from search path
-detach("package:HighFreq")
-# load package HighFreq
-library(HighFreq)
-# you can see SPY when listing objects in HighFreq
-ls("package:HighFreq")
-# you can see SPY when listing datasets in HighFreq
-data(package="HighFreq")
-# but the SPY dataset isn't listed in the workspace
+# define oh_lc series and look-back interval
+oh_lc <- rutils::env_etf$VTI["/2011"]
+look_back <- 12
+# calculate end of month end_points
+end_points <- xts::endpoints(oh_lc, on="months")
+# start_points are end_points lagged by look_back
+len_gth <- NROW(end_points)
+start_points <-
+  end_points[c(rep_len(1, look_back-1),
+         1:(len_gth-look_back+1))]
+# create list of look-back intervals
+look_backs <- lapply(seq_along(end_points)[-1],
+  function(in_dex) start_points[in_dex]:end_points[in_dex])
+# second warmup interval spans only two months
+warm_up <- oh_lc[look_backs[[3]]]
+dim(warm_up)
+head(warm_up)
+tail(warm_up)
+# source EWMA model simu_ewma() from file
+source("C:/Develop/R/scripts/ewma_model.R")
+# define aggregation function
+agg_regate <- function(oh_lc, lamb_das, ...) {
+  sapply(lamb_das, function(lamb_da) {
+    # simulate EWMA strategy and calculate Sharpe ratio
+    re_turns <-
+simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, ...)[, "re_turns"]
+    sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  })  # end sapply
+}  # end agg_regate
+# define EWMA parameters
+win_dow <- 51
+lamb_das <- seq(0.001, 0.01, 0.001)
+# perform aggregation
+agg_regate(oh_lc, lamb_das, win_dow)
+# adjust end_points so they are greater than EWMA win_dow
+end_points[(end_points > 0) &
+  (end_points <= win_dow)] <- win_dow+1
+# start_points are end_points lagged by look_back
+len_gth <- NROW(end_points)
+start_points <- end_points[c(rep_len(1, look_back-1),
+         1:(len_gth-look_back+1))]
+# create list of look-back intervals
+look_backs <- lapply(seq_along(end_points)[-1],
+  function(in_dex) start_points[in_dex]:end_points[in_dex])
+# perform lapply() loop over look_backs
+agg_s <- lapply(look_backs,
+  function(look_back, ...) {
+    agg_regate(oh_lc[look_back], ...)
+    }, lamb_das=lamb_das, win_dow=win_dow)  # end lapply
+# rbind list into single xts or matrix
+agg_s <- rutils::do_call_rbind(agg_s)
+if (!is.xts(agg_s))
+  agg_s <- xts(agg_s, order.by=index(oh_lc[end_points]))
+roll_agg <- function(x_ts, look_backs, FUN, ...) {
+  # perform lapply() loop over look_backs
+  agg_s <- lapply(look_backs,
+            function(look_back) {
+              FUN(x_ts[look_back], ...)
+            })  # end lapply
+  # rbind list into single xts or matrix
+  agg_s <- rutils::do_call_rbind(agg_s)
+  if (!is.xts(agg_s))
+    agg_s <- xts(agg_s, order.by=
+             index(x_ts[unlist(lapply(look_backs, last))]))
+  agg_s
+}  # end roll_agg
+sharpe_ratios <- roll_agg(x_ts=oh_lc,
+                    look_backs=look_backs,
+                    FUN=agg_regate,
+                    lamb_das=lamb_das)
+my_var <- 1  # create new object
+assign(x="my_var", value=2)  # assign value to existing object
+my_var
+rm(my_var)  # remove my_var
+assign(x="my_var", value=3)  # create new object from name
+my_var
+# create new object in new environment
+new_env <- new.env()  # create new environment
+assign("my_var", 3, envir=new_env)  # assign value to name
+ls(new_env)  # list objects in "new_env"
+new_env$my_var
+rm(list=ls())  # delete all objects
+sym_bol <- "my_var"  # define symbol containing string "my_var"
+assign(sym_bol, 1)  # assign value to "my_var"
 ls()
-# HighFreq datasets are lazy loaded and available when needed
-head(SPY)
-# load all the datasets in package HighFreq
-data(hf_data)
-# HighFreq datasets are now loaded and in the workspace
-head(SPY)
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# get documentation for package "PerformanceAnalytics"
-packageDescription("PerformanceAnalytics")  # get short description
-help(package="PerformanceAnalytics")  # load help page
-data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
-ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
-detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-perf_data <- 
-  unclass(data(
-    package="PerformanceAnalytics"))$results[, -(1:2)]
-apply(perf_data, 1, paste, collapse=" - ")
-data(managers)  # load "managers" data set
-class(managers)
-dim(managers)
-head(managers, 3)
-# load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-data(managers)  # load "managers" data set
-ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
-                "SP500 TR")]
-
-chart.CumReturns(ham_1, lwd=2, ylab="",
-  legend.loc="topleft", main="")
-# add title
-title(main="Managers cumulative returns",
-line=-1)
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-data(managers)  # load "managers" data set
-charts.PerformanceSummary(ham_1,
-  main="", lwd=2, ylog=TRUE)
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-chart.CumReturns(
-  env_etf$re_turns[, c("XLF", "XLP", "IEF")], lwd=2,
-  ylab="", legend.loc="topleft", main="")
-# add title
-title(main="ETF cumulative returns", line=-1)
-load(file="C:/Develop/data/etf_data.RData")
-options(width=200)
-library(PerformanceAnalytics)
-chart.Drawdown(env_etf$re_turns[, "VTI"], ylab="",
-         main="VTI drawdowns")
-load(file="C:/Develop/data/etf_data.RData")
-options(width=200)
-library(PerformanceAnalytics)
-table.Drawdowns(env_etf$re_turns[, "VTI"])
-library(PerformanceAnalytics)
-chart.Histogram(env_etf$re_turns[, 1], main="",
-  xlim=c(-0.06, 0.06),
-  methods = c("add.density", "add.normal"))
-# add title
-title(main=paste(colnames(env_etf$re_turns[, 1]),
-           "density"), line=-1)
-library(PerformanceAnalytics)
-chart.Boxplot(env_etf$re_turns[,
-  c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")])
-library(PerformanceAnalytics)
-tail(table.Stats(env_etf$re_turns[,
-  c("VTI", "IEF", "DBC", "VXX")]), 4)
-risk_return <- table.Stats(env_etf$re_turns)
-class(risk_return)
-# Transpose the data frame
-risk_return <- as.data.frame(t(risk_return))
-# plot scatterplot
-plot(Kurtosis ~ Skewness, data=risk_return,
-     main="Kurtosis vs Skewness")
-# add labels
-text(x=risk_return$Skewness, y=risk_return$Kurtosis,
-    labels=rownames(risk_return),
-    pos=1, cex=0.8)
-load(file="C:/Develop/data/etf_data.RData")
-# add skew_kurt column
-risk_return$skew_kurt <-
-  risk_return$Skewness/risk_return$Kurtosis
-# sort on skew_kurt
-risk_return <- risk_return[
-  order(risk_return$skew_kurt,
-  decreasing=TRUE), ]
-# add names column
-risk_return$Name <-
-  etf_list[rownames(risk_return), ]$Name
-risk_return[, c("Name", "Skewness", "Kurtosis")]
-library(PerformanceAnalytics)
-chart.RiskReturnScatter(
-  env_etf$re_turns[, colnames(env_etf$re_turns)!="VXX"],
-  Rf=0.01/12)
-library(PerformanceAnalytics)
-vti_ief <- env_etf$re_turns[, c("VTI", "IEF")]
-SharpeRatio(vti_ief)
-
-SortinoRatio(vti_ief)
-
-CalmarRatio(vti_ief)
-tail(table.Stats(vti_ief), 4)
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapsing a character vector into a text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-        paste("z ~ ",
-          paste(paste0("x", 1:5), collapse="+")
-          )  # end paste
-      )  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-# response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-x11(width=6, height=6)
-plot(reg_formula)  # plot scatterplot using formula
-title(main="Simple Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-# plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
-       pch=16, col="blue")
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
-  set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(30, sd=std_dev)
-# specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
-# perform regression and get summary
-  reg_model_sum <- summary(lm(reg_formula))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-   adj_rsquared=adj.r.squared,
-   fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
- xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
- labels=rownames(mat_stats))
+my_var
+assign("sym_bol", "new_var")
+assign(sym_bol, 1)  # assign value to "new_var"
+ls()
+sym_bol <- 10
+assign(sym_bol, 1)  # can't assign to non-string
+rm(list=ls())  # delete all objects
+# create individual vectors from column names of EuStockMarkets
+for (col_name in colnames(EuStockMarkets)) {
+# assign column values to column names
+  assign(col_name, EuStockMarkets[, col_name])
 }  # end for
-reg_stats <- function(da_ta) {  # get regression
-# perform regression and get summary
-  col_names <- colnames(da_ta)
-  reg_formula <-
-    paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula,
-                        data=da_ta))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-   adj_rsquared=adj.r.squared,
-   fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function (std_dev) {
-    set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-    res_ponse <- 3 + 0.2*explana_tory +
-rnorm(30, sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
-    }))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
- xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
- labels=rownames(mat_stats))
-}  # end for
-# set plot paramaters - margins and font scale
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2, 2))  # plot 2x2 panels
-plot(reg_model)  # plot diagnostic scatterplots
-plot(reg_model, which=2)  # plot just Q-Q
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
-foo <- env_etf$re_turns[, c("VTI", "VEU")]
-end_points <- endpoints(foo, on="months")
-head(foo)
-tail(foo)
-class(foo)
-dim(foo)
-reg_model <- lm(paste(names(foo), collapse=" ~ "), data=foo)
-reg_model_sum <- summary(reg_model)
-reg_model_sum
-dwtest(reg_model)
-
-# filter over non-overlapping periods
-bar <- names(foo)
-foo <- merge(period.sum(foo[, 1], INDEX=end_points), period.sum(foo[, 2], INDEX=end_points))
-foo <- foo[complete.cases(foo), ]
-names(foo) <- bar
-
-# filter over overlapping periods
-foo <- rollsum(foo, k=11)
-
-
-set.seed(1121)
-library(lmtest)
-# spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-# summary indicates statistically significant regression
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(reg_model)
-c(dw_test$statistic[[1]], dw_test$p.value)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-library(lmtest)  # load lmtest
-design_matrix <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
-# response depends on both explanatory variables
-res_ponse <- with(design_matrix,
-  0.2*explana_tory + omit_var + 0.2*rnorm(30))
-# mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
-        data=design_matrix)
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dwtest(reg_model)$p.value
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, data=design_matrix)
-abline(reg_model, lwd=2, col="red")
-title(main="OVB Regression", line=-1)
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-set.seed(1121)
-library(lmtest)
-# spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-# summary indicates statistically significant regression
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(reg_model)
-c(dw_test$statistic[[1]], dw_test$p.value)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model,
-              newdata=new_data, level=0.95,
-              interval="confidence")
-predict_lm <- as.data.frame(predict_lm)
-head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0),
-     ylim=range(res_ponse, predict_lm),
-     main="Regression predictions")
-abline(reg_model, col="red")
-with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
-})  # end with
+ls()
+head(DAX)
+head(EuStockMarkets[, "DAX"])
+identical(DAX, EuStockMarkets[, "DAX"])
+# create new environment
+test_env <- new.env()
+# pass string as name to create new object
+assign("my_var1", 2, envir=test_env)
+# create new object using $ string referencing
+test_env$my_var2 <- 1
+# list objects in new environment
+ls(test_env)
+# reference an object by name
+test_env$my_var1
+# reference an object by string name using get
+get("my_var1", envir=test_env)
+# retrieve and assign value to object
+assign("my_var1",
+ 2*get("my_var1", envir=test_env),
+ envir=test_env)
+get("my_var1", envir=test_env)
+# return all objects in an environment
+mget(ls(test_env), envir=test_env)
+# delete environment
+rm(test_env)
+# load package quantmod
 library(quantmod)
-load(file="C:/Develop/data/etf_data.RData")
+# get documentation for package quantmod
+# get short description
+packageDescription("quantmod")
+# load help page
+help(package="quantmod")
+# list all datasets in "quantmod"
+data(package="quantmod")
+# list all objects in "quantmod"
+ls("package:quantmod")
+# remove quantmod from search path
+detach("package:quantmod")
+library(xtable)
+# ETF symbols for asset allocation
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
+  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF", 
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", 
+  "IVW", "IWB", "IWD", "IWF")
+# read etf database into data frame
+etf_list <- 
+  read.csv(file='C:/Develop/data/etf_list.csv', 
+               stringsAsFactors=FALSE)
+rownames(etf_list) <- etf_list$Symbol
+# subset etf_list only those ETF's in sym_bols
+etf_list <- etf_list[sym_bols, ]
+# shorten names
+etf_names <- sapply(etf_list$Name, 
+              function(name) {
+  name_split <- strsplit(name, split=" ")[[1]]
+  name_split <- 
+    name_split[c(-1, -length(name_split))]
+  name_match <- match("Select", name_split)
+  if (!is.na(name_match))
+    name_split <- name_split[-name_match]
+  paste(name_split, collapse=" ")
+})  # end sapply
+etf_list$Name <- etf_names
+etf_list["IEF", "Name"] <- "Treasury Bond Fund"
+etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etf_list[c(1, 2)]
+print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+library(quantmod)  # load package quantmod
+env_etf <- new.env()  # new environment for data
+# download data for sym_bols into env_etf
+getSymbols(sym_bols, env=env_etf, adjust=TRUE,
+    from="2007-01-03")
+library(quantmod)  # load package quantmod
+ls(env_etf)  # list files in env_etf
+# get class of object in env_etf
+class(get(x=sym_bols[1], envir=env_etf))
+# another way
+class(env_etf$VTI)
+colnames(env_etf$VTI)
+head(env_etf$VTI, 3)
+# get class of all objects in env_etf
+eapply(env_etf, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+library(quantmod)  # load package quantmod
+# check of object is an OHLC time series
+is.OHLC(env_etf$VTI)
+# adjust single OHLC object using its name
+env_etf$VTI <- adjustOHLC(env_etf$VTI,
+                     use.Adjusted=TRUE)
+
+# adjust OHLC object using string as name
+assign(sym_bols[1], adjustOHLC(
+    get(x=sym_bols[1], envir=env_etf),
+    use.Adjusted=TRUE),
+  envir=env_etf)
+
+# adjust objects in environment using vector of strings
+for (sym_bol in sym_bols) {
+  assign(sym_bol,
+   adjustOHLC(get(sym_bol, envir=env_etf),
+              use.Adjusted=TRUE),
+   envir=env_etf)
+}  # end for
+library(quantmod)  # load package quantmod
+# extract and merge all data, subset by symbols
+etf_series <- do.call(merge,
+            as.list(env_etf)[sym_bols])
+
+# extract and merge adjusted prices, subset by symbols
+price_s <- do.call(merge,
+         lapply(as.list(env_etf)[sym_bols], Ad))
+
+# same, but works only for OHLC series
+price_s <- do.call(merge, eapply(env_etf, Ad)[sym_bols])
+
+# drop ".Adjusted" from colnames
+colnames(price_s) <-
+  sapply(colnames(price_s),
+    function(col_name)
+strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(etf_series,
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+library(quantmod)
+# remove rows with NA values
+# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
+# colnames(price_s)
+# calculate returns from adjusted prices
+re_turns <- lapply(env_etf$price_s, function(x_ts) {
+# dailyReturn returns single xts with bad colname
+  daily_return <- dailyReturn(x_ts)
+  colnames(daily_return) <- names(x_ts)
+  daily_return
+})  # end lapply
+
+# "re_turns" is a list of xts
+class(re_turns)
+class(re_turns[[1]])
+
+# flatten list of xts into a single xts
+re_turns <- do.call(merge, re_turns)
+class(re_turns)
+dim(re_turns)
+head(re_turns[, 1:3])
+# copy re_turns into env_etf and save to .RData file
+assign("re_turns", re_turns, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+library(quantmod)
+start_date <- "2012-05-10"; end_date <- "2013-11-20"
+# subset all objects in environment and return as environment
+new_env <- as.environment(eapply(env_etf, "[",
+            paste(start_date, end_date, sep="/")))
+# subset only sym_bols in environment and return as environment
+new_env <- as.environment(
+  lapply(as.list(env_etf)[sym_bols], "[",
+   paste(start_date, end_date, sep="/")))
+# extract and merge adjusted prices and return to environment
+assign("price_s", do.call(merge,
+         lapply(ls(env_etf), function(sym_bol) {
+           x_ts <- Ad(get(sym_bol, env_etf))
+           colnames(x_ts) <- sym_bol
+           x_ts
+         })), envir=new_env)
+# get sizes of OHLC xts series in env_etf
+sapply(mget(env_etf$sym_bols, envir=env_etf),
+ object.size)
+# extract and merge adjusted prices and return to environment
+col_name <- function(x_ts)
+  strsplit(colnames(x_ts), split="[.]")[[1]][1]
+assign("price_s", do.call(merge,
+         lapply(mget(env_etf$sym_bols, envir=env_etf),
+                function(x_ts) {
+                  x_ts <- Ad(x_ts)
+                  colnames(x_ts) <- col_name(x_ts)
+                  x_ts
+         })), envir=new_env)
+library(quantmod)
+# plot OHLC candlechart with volume
+chartSeries(env_etf$VTI["2014-11"],
+      name="VTI",
+      theme=chartTheme("white"))
+# plot OHLC bar chart with volume
+chartSeries(env_etf$VTI["2014-11"],
+      type="bars",
+      name="VTI",
+      theme=chartTheme("white"))
+library(quantmod)
+# plot OHLC candlechart with volume
+chartSeries(env_etf$VTI["2008-11/2009-04"],
+      name="VTI")
+# redraw plot only for Feb-2009, with white theme
+reChart(subset="2009-02",
+  theme=chartTheme("white"))
+library(quantmod)
+# candlechart with Bollinger Bands
+chartSeries(env_etf$VTI["2014"],
+      TA="addBBands(): addBBands(draw='percent'): addVo()",
+      name="VTI with Bollinger Bands",
+      theme=chartTheme("white"))
+# candlechart with two Moving Averages
+chartSeries(env_etf$VTI["2014"],
+      TA="addVo(): addEMA(10): addEMA(30)",
+      name="VTI with Moving Averages",
+      theme=chartTheme("white"))
+# candlechart with Commodity Channel Index
+chartSeries(env_etf$VTI["2014"],
+      TA="addVo(): addBBands(): addCCI()",
+      name="VTI with Technical Indicators",
+      theme=chartTheme("white"))
+library(quantmod)
+library(TTR)
+oh_lc <- env_etf$VTI["2009-02/2009-03"]
+VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
+# calculate volume-weighted average price
+VTI_vwap <- TTR::VWAP(price=VTI_adj,
+volume=VTI_vol, n=10)
+# plot OHLC candlechart with volume
+chartSeries(oh_lc, name="VTI plus VWAP",
+      theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=VTI_vwap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
+library(quantmod)
+library(TTR)
+oh_lc <- env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+# plot OHLC candlechart with volume
+chartSeries(oh_lc, name="VTI plus VWAP shaded",
+      theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=VTI_vwap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
+# add background shading of areas
+addTA((VTI_adj-VTI_vwap) > 0, on=-1,
+col="lightgreen", border="lightgreen")
+addTA((VTI_adj-VTI_vwap) < 0, on=-1,
+col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines at VTI_vwap minimum
+addLines(v=which.min(VTI_vwap), col='red')
+addLines(h=min(VTI_vwap), col='red')
+library(quantmod)
+library(TTR)
+oh_lc <- env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+# OHLC candlechart VWAP in main plot,
+chart_Series(x=oh_lc, # volume in extra panel
+       TA="add_Vo(); add_TA(VTI_vwap, on=1)",
+       name="VTI plus VWAP shaded")
+# add price minus VWAP in extra panel
+add_TA(VTI_adj-VTI_vwap, col='red')
+# add background shading of areas
+add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
+col="lightgreen", border="lightgreen")
+add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
+col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines
+abline(v=which.min(VTI_vwap), col='red')
+abline(h=min(VTI_vwap), col='red')
+library(quantmod)
+oh_lc <- env_etf$VTI["2009-02/2009-03"]
+# extract plot object
+ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
+class(ch_ob)
+ls(ch_ob)
+class(ch_ob$get_ylim)
+class(ch_ob$set_ylim)
+# ls(ch_ob$Env)
+class(ch_ob$Env$actions)
+plot_theme <- chart_theme()
+class(plot_theme)
+ls(plot_theme)
+library(quantmod)
+oh_lc <- env_etf$VTI["2010-04/2010-05"]
+# extract, modify theme, format tick marks "%b %d"
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%b %d"
+# create plot object
+ch_ob <- chart_Series(x=oh_lc,
+                theme=plot_theme, plot=FALSE)
+# extract ylim using accessor function
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(
+  range(Ad(oh_lc)) + c(-1, 1),
+  fixed=TRUE)
+# modify plot object to reduce y-axis range
+ch_ob$set_ylim(y_lim)  # use setter function
+# render the plot
+plot(ch_ob)
+library(quantmod)
+# calculate VTI volume-weighted average price
+VTI_vwap <- TTR::VWAP(price=Ad(env_etf$VTI),
+    volume=Vo(env_etf$VTI), n=10)
+# calculate XLF volume-weighted average price
+XLF_vwap <- TTR::VWAP(price=Ad(env_etf$XLF),
+    volume=Vo(env_etf$XLF), n=10)
+# open plot graphics device
+x11()
+# define plot area with two horizontal panels
+par(mfrow=c(2, 1))
+# plot in top panel
+invisible(chart_Series(
+  x=env_etf$VTI["2009-02/2009-04"], name="VTI"))
+add_TA(VTI_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+# plot in bottom panel
+invisible(chart_Series(
+  x=env_etf$XLF["2009-02/2009-04"], name="XLF"))
+add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+library(quantmod)  # load package quantmod
+# assign name SP500 to ^GSPC symbol
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# download S&P500 prices into env_etf
+getSymbols("SP500", env=env_etf,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=env_etf$SP500["2016/"],
+       TA="add_Vo()",
+       name="S&P500 index")
+library(quantmod)  # load package quantmod
+# assign name DJIA to ^DJI symbol
+setSymbolLookup(
+  DJIA=list(name="^DJI", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# download DJIA prices into env_etf
+getSymbols("DJIA", env=env_etf,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=env_etf$DJIA["2016/"],
+       TA="add_Vo()",
+       name="DJIA index")
+library(quantmod)  # load package quantmod
+library(RCurl)  # load package RCurl
+library(XML)  # load package XML
+# download text data from URL
+sp_500 <- getURL(
+  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+# extract tables from the text data
+sp_500 <- readHTMLTable(sp_500,
+              stringsAsFactors=FALSE)
+str(sp_500)
+# extract colnames of data frames
+lapply(sp_500, colnames)
+# extract S&P500 constituents
+sp_500 <- sp_500[[1]]
+head(sp_500)
+# create valid R names from symbols containing "-" or "."characters
+sp_500$names <- gsub("-", "_", sp_500$Ticker)
+sp_500$names <- gsub("[.]", "_", sp_500$names)
+# write data frame of S&P500 constituents to CSV file
+write.csv(sp_500,
+  file="C:/Develop/data/sp500_Yahoo.csv",
+  row.names=FALSE)
+library(HighFreq)  # load package HighFreq
+# load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
+     stringsAsFactors=FALSE)
+# register symbols corresponding to R names
+for (in_dex in 1:NROW(sp_500)) {
+  cat("processing: ", sp_500$Ticker[in_dex], "\n")
+  setSymbolLookup(structure(
+    list(list(name=sp_500$Ticker[in_dex])),
+    names=sp_500$names[in_dex]))
+}  # end for
+env_sp500 <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# download data and copy it into environment
+rutils::get_symbols(sp_500$names,
+   env_out=env_sp500, start_date="1990-01-01")
+# or download in loop
+for (na_me in sp_500$names) {
+  cat("processing: ", na_me, "\n")
+  rutils::get_symbols(na_me,
+   env_out=env_sp500, start_date="1990-01-01")
+}  # end for
+save(env_sp500, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
+       name="BRK-B stock")
+library(quantmod)  # load package quantmod
+install.packages("devtools")
+library(devtools)
+# install package Quandl from github
+install_github("quandl/R-package")
+library(Quandl)  # load package Quandl
+# register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# get short description
+packageDescription("Quandl")
+# load help page
+help(package="Quandl")
+# remove Quandl from search path
+detach("package:Quandl")
+library(quantmod)  # load package quantmod
+# download EOD AAPL prices from WIKI free database
+price_s <- Quandl(code="WIKI/AAPL", type="xts")
+chart_Series(price_s["2016", 1:4], name="AAPL OHLC prices")
+# add trade volume in extra panel
+add_TA(price_s["2016", 5])
+# download euro currency rates
+price_s <-
+  Quandl(code="BNP/USDEUR", start_date="2013-01-01",
+   end_date="2013-12-01", type="xts")
+# download multiple time series
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+   start_date="2013-01-01", type="xts")
+# download AAPL gross profits
+prof_it <-
+  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
+chart_Series(prof_it, name="AAPL gross profits")
+# download Hurst time series
+price_s <- Quandl(code="PE/AAPL_HURST",
+       start_date="2013-01-01", type="xts")
+chart_Series(price_s["2016/", 1],
+       name="AAPL Hurst")
+library(quantmod)  # load package quantmod
+# load S&P500 stock Quandl codes
+sp_500 <- read.csv(
+  file="C:/Develop/data/sp500_quandl.csv",
+  stringsAsFactors=FALSE)
+# replace "-" with "_" in symbols
+sp_500$free_code <-
+  gsub("-", "_", sp_500$free_code)
+head(sp_500)
+# vector of symbols in sp_500 frame
+tick_ers <- gsub("-", "_", sp_500$ticker)
+# or
+tick_ers <- matrix(unlist(
+  strsplit(sp_500$free_code, split="/"),
+  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
+# or
+tick_ers <- do_call_rbind(
+  strsplit(sp_500$free_code, split="/"))[, 2]
+library(quantmod)  # load package quantmod
+env_sp500 <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Boolean vector of symbols already downloaded
+down_loaded <- tick_ers %in% ls(env_sp500)
+# download data and copy it into environment
+for (tick_er in tick_ers[!down_loaded]) {
+  cat("processing: ", tick_er, "\n")
+  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
+            start_date="1990-01-01",
+            type="xts")[, -(1:7)]
+  colnames(da_ta) <- paste(tick_er,
+    c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  assign(tick_er, da_ta, envir=env_sp500)
+}  # end for
+save(env_sp500, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
+       name="XOM stock")
+library(HighFreq)
 re_turns <- na.omit(env_etf$re_turns)
 # specify regression formula
 reg_formula <- XLP ~ VTI
@@ -492,7 +704,6 @@ capm_stats <- capm_stats[
 # copy capm_stats into env_etf and save to .RData file
 assign("capm_stats", capm_stats, envir=env_etf)
 save(env_etf, file='etf_data.RData')
-# load(file="C:/Develop/data/etf_data.RData")
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
 library(quantmod)
 #Perform pair-wise correlation analysis
@@ -528,10 +739,8 @@ title("Dissimilarity = 1-Correlation",
 line=-0.5)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
-# load ETF returns
-# load(file="C:/Develop/data/etf_data.RData")
-re_turns <- na.omit(env_etf$re_turns)
 #Perform principal component analysis PCA
+re_turns <- na.omit(env_etf$re_turns)
 etf_pca <- prcomp(re_turns, center=TRUE, scale=TRUE)
 barplot(etf_pca$sdev[1:10],
   names.arg=colnames(etf_pca$rotation)[1:10],

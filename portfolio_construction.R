@@ -4,6 +4,72 @@ options(digits=3)
 options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+library(PortfolioAnalytics)
+# use ETF returns from package HighFreq
+library(HighFreq)
+portf_names <- c("VTI", "IEF", "DBC", "XLF",
+  "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
+# initial portfolio to equal weights
+portf_init <- rep(1/length(portf_names),
+            length(portf_names))
+# named vector
+names(portf_init) <- portf_names
+# create portfolio object
+portf_init <- portfolio.spec(
+  assets=portf_init)
+library(PortfolioAnalytics)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_maxSR,
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="return",  # maximize mean return
+  name="mean")
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="risk",  # minimize StdDev
+  name="StdDev")
+library(PortfolioAnalytics)
+# use ETF returns from package HighFreq
+library(HighFreq)
+portf_names <- c("VTI", "IEF", "DBC", "XLF",
+  "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
+# initial portfolio to equal weights
+portf_init <- rep(1/length(portf_names),
+            length(portf_names))
+# named vector
+names(portf_init) <- portf_names
+# create portfolio object
+portf_init <- portfolio.spec(
+  assets=portf_init)
+library(PortfolioAnalytics)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_maxSR,
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="return",  # maximize mean return
+  name="mean")
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="risk",  # minimize StdDev
+  name="StdDev")
 risk_free <- 0.01
 re_turns <- c(asset1=0.02, asset2=0.04)
 std_devs <- c(asset1=0.8, asset2=1.6)
@@ -627,3 +693,81 @@ barplot(weights_2h,
   names.arg=names(weights_2h),
   las=3, ylab="", xlab="",
   main="Portfolio Weights Second Half")
+library(quantmod)  # load quantmod
+library(RQuantLib)  # load RQuantLib
+# specify curve parameters
+curve_params <- list(tradeDate=as.Date("2017-01-17"),
+               settleDate=as.Date("2017-01-19"),
+               dt=0.25,
+               interpWhat="discount",
+               interpHow="loglinear")
+# specify market data: prices of FI instruments
+market_data <- list(d3m = 0.0363,
+              fut1=96.2875,
+              fut2=96.7875,
+              fut3=96.9875,
+              fut4=96.6875,
+              s5y=0.0443,
+              s10y=0.05165,
+              s15y=0.055175)
+# specify dates for calculating the zero rates
+disc_dates <- seq(0, 10, 0.25)
+# specify the evaluation (as of) date
+setEvaluationDate(as.Date("2017-01-17"))
+# calculate the zero rates
+disc_curves <- DiscountCurve(params=curve_params,
+                       tsQuotes=market_data,
+                       times=disc_dates)
+# plot the zero rates
+x11()
+plot(x=disc_curves$zerorates, t="l", main="zerorates")
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.05)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# calculate average number of defaults
+de_faults <- numeric(200)
+for (i in 1:200) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+mean(de_faults)
+# average defaults using vectorized functions
+uni_form <- matrix(runif(200*num_assets),
+             ncol=200)
+sum(uni_form < default_probs)/200
+# plot Standard Normal distribution
+x11(width=6, height=5)
+curve(expr=dnorm(x),
+type="l", xlim=c(-4, 4),
+xlab="asset value", ylab="", lwd=2,
+col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+ labels="default threshold",
+ lwd=2, srt=90, pos=3)
+# define default probability function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.01)
+  sqrt(1-rh_o)*dnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))/sqrt(rh_o)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+type="l", xlim=c(0, 0.1),
+xlab="fraction of defaults", ylab="", lwd=2,
+col="green", main="Distribution of defaults")
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
+type="l", xlim=c(0, 0.1), add=TRUE,
+xlab="default fraction", ylab="", lwd=2,
+col="blue", main="")
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+ title="", inset=0.05, cex=0.8, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=2)
+text(x=0.023, y=1,
+ labels="default probability",
+ lwd=2, srt=90, pos=3)

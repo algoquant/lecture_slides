@@ -453,6 +453,66 @@ cat("\nEnd data\nbye\n")
 
 dev.off()  # turn png output off
 }
+# install latest version of googlesheets
+devtools::install_github("jennybc/googlesheets")
+# load package googlesheets
+library(googlesheets)
+library(dplyr)
+# authenticate authorize R to view and manage your files
+gs_auth(new_user=TRUE)
+# list the files in Google Sheets
+googlesheets::gs_ls()
+# register a sheet
+google_sheet <- gs_title("my_data")
+# view sheet summary
+google_sheet
+# list tab names in sheet
+gs_ws_ls(google_sheet)
+# set curl options
+library(httr)
+httr::set_config(config(ssl_verifypeer=0L))
+# read data from sheet
+gs_read(google_sheet)
+# read data from single tab of sheet
+gs_read(google_sheet, ws="Sheet1")
+gs_read_csv(google_sheet, ws="Sheet1")
+# or using dplyr pipes
+google_sheet %>% gs_read(ws="Sheet1")
+# download data from sheet into file
+gs_download(google_sheet, ws="Sheet1",
+      to="C:/Develop/data/google_sheet.csv")
+# open sheet in internet browser
+gs_browse(google_sheet)
+# install latest version of googlesheets
+devtools::install_github("jennybc/googlesheets")
+# load package googlesheets
+library(googlesheets)
+library(dplyr)
+# authenticate authorize R to view and manage your files
+gs_auth(new_user=TRUE)
+# list the files in Google Sheets
+googlesheets::gs_ls()
+# register a sheet
+google_sheet <- gs_title("my_data")
+# view sheet summary
+google_sheet
+# list tab names in sheet
+gs_ws_ls(google_sheet)
+# set curl options
+library(httr)
+httr::set_config(config(ssl_verifypeer=0L))
+# read data from sheet
+gs_read(google_sheet)
+# read data from single tab of sheet
+gs_read(google_sheet, ws="Sheet1")
+gs_read_csv(google_sheet, ws="Sheet1")
+# or using dplyr pipes
+google_sheet %>% gs_read(ws="Sheet1")
+# download data from sheet into file
+gs_download(google_sheet, ws="Sheet1",
+      to="C:/Develop/data/google_sheet.csv")
+# open sheet in internet browser
+gs_browse(google_sheet)
 # display documentation on function "getwd"
 help(getwd)
 ?getwd  # equivalent to "help(getwd)"

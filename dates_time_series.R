@@ -229,14 +229,14 @@ end_date <- decimal_date(Sys.Date())
 da_ta <- exp(cumsum(rnorm(6)/100))
 fre_quency <- length(da_ta)/(end_date-start_date)
 ts_series <- ts(data=da_ta,
-        start=start_date,
-        frequency=fre_quency)
+          start=start_date,
+          frequency=fre_quency)
 ts_series  # display time series
 # display index dates
 as.Date(date_decimal(coredata(time(ts_series))))
 # bi-monthly geometric Brownian motion starting mid-1990
 ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
-     frequency=6, start=1990.5)
+       frequency=6, start=1990.5)
 # show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
@@ -251,12 +251,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 plot(ts_series, type="l",  # create plot
      col="red", lty="solid", xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # get first three rows
 # EuStockMarkets index is equally spaced
 diff(tail(time(EuStockMarkets), 4))
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot all the columns
 plot(EuStockMarkets, main="", xlab="")
 # add title
@@ -268,9 +268,9 @@ plot(EuStockMarkets, main="EuStockMarkets",
      col=c("black", "red", "blue", "green"))
 # add legend
 legend(x=1992, y=8000,
-       legend=colnames(EuStockMarkets),
-       col=c("black", "red", "blue", "green"),
-       lty=1)
+ legend=colnames(EuStockMarkets),
+ col=c("black", "red", "blue", "green"),
+ lty=1)
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 # mean and standard deviation of returns
@@ -284,35 +284,31 @@ hist(dax_rets, breaks=30, main="",
 lines(density(dax_rets), col='red', lwd=2)
 # add density of normal distribution
 curve(expr=dnorm(x, mean=mean(dax_rets), sd=sd(dax_rets)),
-      add=TRUE, type="l", lwd=2, col="blue")
+add=TRUE, type="l", lwd=2, col="blue")
 title(main="Return distributions", line=0)  # add title
 # add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
-       leg=c(colnames(EuStockMarkets)[1], "Normal"),
-       lwd=2, bg="white", col=c("red", "blue"))
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+ leg=c(colnames(EuStockMarkets)[1], "Normal"),
+ lwd=2, bg="white", col=c("red", "blue"))
 # calculate percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
+# perform Shapiro-Wilk test
+shapiro.test(dax_rets)
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # create normal Q-Q plot
 qqnorm(dax_rets, ylim=c(-0.04, 0.04),
-       xlab='Normal Quantiles', main='')
+ xlab='Normal Quantiles', main='')
 # fit a line to the normal quantiles
 qqline(dax_rets, col='red', lwd=2)
 plot_title <- paste(colnames(EuStockMarkets)[1],
-          'Q-Q Plot')
+            'Q-Q Plot')
 title(main=plot_title, line=-1)  # add title
-shapiro.test(dax_rets)  # Shapiro-Wilk test
-par(oma=c(15, 1, 1, 1), mgp=c(1.5, 0.5, 0), mar=c(2.5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
 # boxplot method for formula
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
-
-# calculate EuStockMarkets percentage returns
-eu_rets <- diff(log(EuStockMarkets))
-# boxplot method for data frame
-boxplot(x=eu_rets)
+# boxplot method for data frame of EuStockMarkets percentage returns
+boxplot(x=diff(log(EuStockMarkets)))
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo time series of random returns
@@ -581,17 +577,17 @@ data_frame <-
     coredata(env_etf$price_s[, c("VTI", "IEF")]))
 # plotly syntax using pipes
 data_frame %>%
-  plot_ly(x=dates, y=VTI, fill="tozeroy", name="VTI") %>%
-  add_trace(x=dates, y=IEF, fill="tonexty", name="IEF") %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
-# standard plotly syntax - for reference
-# p_lot <- plot_ly(data=data_frame, x=dates, y=VTI, fill="tozeroy", name="VTI")
-# p_lot <- add_trace(p=p_lot, x=dates, y=IEF, fill="tonexty", name="IEF")
-# p_lot <-   layout(title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
-# p_lot
+# or use standard plotly syntax
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF")
+p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
+p_lot
 library(xts)  # load package xts
 # subset xts using a date range string
 stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
@@ -610,12 +606,10 @@ identical(st_ox["2014-11", ], st_ox["2014-11"])
 # benchmark the speed of subsetting
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=sapply(10*(10:1000),
-  function(in_dex)
-    max(SPY[in_dex:(in_dex+10), ])),
-  subset=sapply(10*(10:1000),
-  function(in_dex)
-    max(.subset_xts(SPY, in_dex:(in_dex+10)))),
+  bracket=sapply(500,
+  function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
+  subset=sapply(500,
+  function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
   times=10))[, c(1, 4, 5)]
 library(xts)  # load package xts
 # vector of 1-minute times (ticks)

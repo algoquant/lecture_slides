@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Fall 2016}
+\subtitle{FRE6871 \& FRE7241, Spring 2017}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -569,11 +569,901 @@ title(main="MSFT Close Prices", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{quantmod} for Quantitative Financial Modelling}
+\section{Time Series Modeling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modelling}
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_k = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \emph{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
+        <<acf_func,eval=FALSE,echo=(-(1:1)),fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# autocorrelation from "stats"
+acf(coredata(dax_rets), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      \texttt{coredata} extracts the core underlying data from a complex object,
+    \column{0.5\textwidth}
+      \vspace{-1.0em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/acf_func-1}
+      \vspace{-3.0em}
+      The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
+      \vskip1ex
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=(-(1:1))>>=
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(dax_rets), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      <<eval=FALSE>>=
+acf_plus <- function (ts_data, plot=TRUE,
+                      xlab="Lag", ylab="",
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+              max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(dax_rets), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Squared DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Squared DAX returns do have statistically significant autocorrelations,
+      \vskip1ex
+      But squared random returns are not autocorrelated,
+      <<dax_squared_acf,eval=FALSE,echo=(-(1:2)),fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(dax_rets)^2,
+         lag=10, main="")
+title(main="acf of squared DAX returns",
+      line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(dax_rets))^2,
+         lag=10, main="")
+title(main="acf of squared random returns",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_squared_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{U.S. Macroeconomic Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data,
+      \vskip1ex
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter),
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+          Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/macro_data-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Econometric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most econometric data displays a high degree of autocorrelation,
+      \vskip1ex
+      But time series of tradeable prices display very low autocorrelation,
+      <<macro_corr,eval=FALSE,echo=(-(1:2)),fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+         lag=10)
+title(main="quarterly unemployment rate",
+      line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+         lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/macro_corr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test of Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where $n$ is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX data
+# 'lag' is the number of autocorrelation coefficients
+Box.test(dax_rets, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+                   filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- merge(as.zoo(dax_ts),
+                  as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+                   start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Filtered Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering a time series creates autocorrelations,
+      <<dax_filter_acf,eval=FALSE,echo=(-(1:1)),fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+dax_rets <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(dax_rets[, 1]), lag=10,
+         xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(dax_rets[, 2]), lag=10,
+         xlab="")
+title(main="DAX filtered", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/dax_filter_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Partial Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3,...}, which may obscure higher order autocorrelations, 
+      \vskip1ex
+      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
+      \vskip1ex
+      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation, 
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1,..., k-1} have been removed,
+        <<eustx_pacf,eval=FALSE,echo=(-(1:1)),fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under \emph{Geometric Brownian motion}, the percentage returns $\mathrm{d} \ln{S}$ follow \emph{Brownian motion}:
+      \begin{displaymath}
+        \mathrm{d} \ln{S} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility, and $\mathrm{d} W_t$ follows the standard normal distribution $N(0, \sqrt{\mathrm{d}t})$, 
+      \vskip1ex
+      The convexity correction $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma), 
+      <<echo=TRUE,eval=FALSE>>=
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# simulate geometric Brownian motion
+re_turns <- vol_at*rnorm(len_gth) + 
+  dri_ft - vol_at^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l", 
+     xlab="periods", ylab="prices", 
+     main="geometric Brownian motion")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brownian.png}\\
+      \vspace{-1em}
+      Prices at any point in time follow the \emph{Log-normal} distribution, which is the exponential of the normal (\emph{Gaussian}) distribution, 
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \ln{S}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $S_t$:
+      \begin{displaymath}
+        \mathrm{d} \ln{S_t} = \theta ( \mu - S_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility, 
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_proc.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l", 
+     xlab="periods", ylab="prices", 
+     main="Ornstein-Uhlenbeck process")
+legend("topright", 
+       title=paste(c(paste0("vol_at = ", vol_at), 
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8, 
+       inset=0.1, bg="white", bty="n")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful testing financial models,
+      <<echo=TRUE,eval=FALSE>>=
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")), 
+              length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)), 
+               order.by=in_dex)
+price_s <- merge(price_s, 
+                 volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+price_s <- to.daily(price_s)
+chart_Series(price_s, name="random prices")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_ohlc.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} time series process \emph{AR(p)} of order \emph{p} is defined as:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      Where the $\varepsilon_i$ are independent random variables with zero mean and constant variance,
+      \vskip1ex
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process,
+      \vskip1ex
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes,
+      \vspace{-1em}
+    <<ar_process,eval=FALSE,echo=(-(1:3)),fig.height=5,fig.show='hide'>>=
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ar_process-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$,
+      \vskip1ex
+      Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
+      <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
+ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=729, model=list(ar=phi))
+  } )
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+# convert returns to prices
+zoo_arima <- cumsum(zoo_arima)
+colnames(zoo_arima) <-
+  paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices",
+         facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ar_param-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} process of order \emph{one} \emph{AR(1)} is defined by the formula: $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      \vskip1ex
+      An \emph{AR(1)} process can be simulated recursively as follows:\\
+      \hskip1em$r_1 = \varepsilon_1$\\
+      \hskip1em$r_2 = \varphi_1 r_1 + \varepsilon_2=\varepsilon_2 + \varphi_1 \varepsilon_1$\\
+      \hskip1em$r_3 = \varepsilon_3 + \varphi_1 \varepsilon_2 + \varphi_1^2 \varepsilon_1$\\
+      \hskip1em$r_4 = \varepsilon_4 + \varphi_1 \varepsilon_3 + \varphi_1^2 \varepsilon_2 + \varphi_1^3 \varepsilon_1$
+      \vskip1ex
+      If $\varphi_1 < 1.0$ then the influence of any single shock $\varepsilon_i$ decays exponentially,
+      \vskip1ex
+      If $\varphi_1 = 1.0$ then the influence of any single shock $\varepsilon_i$ persists forever, and the variance of $r_i$ increases linearly with time,
+      \vskip1ex
+      An \emph{AR(1)} process has an exponentially declining ACF and a non-zero PACF at lag one,
+      \vspace{-1em}
+      <<ar_acf,eval=FALSE,echo=(-(1:2)),fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+         main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ar_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stationary Processes and Their Characteristic Equations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autoregressive process is \emph{stationary} if its probability distribution does not change with time,
+      \vskip1ex
+      \emph{Stationary} processes have a constant mean and variance,
+      \vskip1ex
+      The \emph{autoregressive} process \emph{AR(p)}:
+      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i$
+      \vskip1ex
+      Has the following characteristic equation:
+      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
+      \vskip1ex
+      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than $1$,
+      \vskip1ex
+      An \emph{AR(1)} process:
+      $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi_1 z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi_1$,
+      \vskip1ex
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}:
+      $z = 1 / \varphi_1$, and therefore isn't stationary,
+      \vskip1ex
+      The process follows:
+      $r_i = r_{i-1} + \varepsilon_i$,
+      \vskip1ex
+      The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
+      \vskip1ex
+      The variance of a \emph{Wiener} process is proportional to time,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<eval=FALSE,echo=(-(1:3)),fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Integrated and Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset prices are the sum of simple asset returns, hence they follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        x_i={\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        x_i = (1+\varphi_1) x_{i-1} - \varphi_1 x_{i-2} + \varepsilon_i
+      \end{displaymath}
+      If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
+      \vskip1ex
+      A \emph{Wiener} process is a special case of a \emph{unit-root} process,
+      \vskip1ex
+      \emph{Unit-root} processes are not stationary, since their \emph{variance} isn't constant,
+      \vskip1ex
+      If $\varphi_1=0$ (no autocorrelation of returns) then asset prices follow a \emph{Wiener} process (random walk),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<stat_unit_root,eval=FALSE,echo=(-(1:3)),fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dickey-Fuller Test for Unit-roots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
+      \vskip1ex
+      The \emph{Augmented Dickey-Fuller} test fits the following regression model:
+      \begin{displaymath}
+        r_i = {\gamma}_1 x_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      where $r_i = x_i - x_{i-1}$,
+      \vskip1ex
+      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$), while the alternative hypothesis is that the process is stationary ($\gamma < 0$),
+      \vskip1ex
+      The \emph{ADF} test is weak in the sense that it needs a lot of data to identify a \emph{unit root} process,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE,echo=(-(1:1))>>=
+library(tseries)  # load tseries
+# simulate AR(1) process
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(729))
+adf.test(rand_walk)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(10000))
+adf.test(rand_walk)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Identification of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR}(3) process of order \emph{three} is defined by the formula:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \varepsilon_i
+      \end{displaymath}
+      Autoregressive processes \emph{AR(p)} of order \emph{p} have an exponentially declining ACF and a non-zero PACF up to lag \emph{p},
+      <<ar_pacf,eval=FALSE,echo=(-(1:2)),fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+          model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+       xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ar_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Autoregressive Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{arima()} from the base package \emph{stats} fits a specified ARIMA model to a univariate time series,
+      \vskip1ex
+      The function \texttt{auto.arima()} from the package \emph{forecast} automatically fits an ARIMA model to a univariate time series,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+ar3_zoo <- arima.sim(n=1000,
+            model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -722,7 +1612,7 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Adjusting Prices Using Package \protect\emph{quantmod}}
+\subsection{Adjusting Stock Prices Using Package \protect\emph{quantmod}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1045,7 +1935,7 @@ chartSeries(env_etf$VTI["2014"],
       <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
 VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
 # calculate volume-weighted average price
 VTI_vwap <- TTR::VWAP(price=VTI_adj, 
@@ -1083,7 +1973,7 @@ addTA(ta=(VTI_adj-VTI_vwap), col='red')
       <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI
+oh_lc <- rutils::env_etf$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
 VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
@@ -1128,7 +2018,7 @@ addLines(h=min(VTI_vwap), col='red')
       <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI
+oh_lc <- rutils::env_etf$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
 VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
@@ -1182,11 +2072,13 @@ abline(h=min(VTI_vwap), col='red')
       \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
       \vskip1ex
       Plot and theme objects can be modified directly, or by using accessor and setter functions, 
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
 library(quantmod)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
 # extract plot object
 ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
 class(ch_ob)
@@ -1217,9 +2109,11 @@ ls(plot_theme)
       Plot and theme objects can be modified directly, or by using accessor and setter functions, 
       \vskip1ex
       A plot is rendered by calling, plotting, or printing the plot object, 
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
       <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
 library(quantmod)
-oh_lc <- env_etf$VTI["2010-04/2010-05"]
+oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
 # extract, modify theme, format tick marks "%b %d"
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%b %d"
@@ -1253,27 +2147,29 @@ plot(ch_ob)
     \column{0.5\textwidth}
       \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels, 
       \vskip1ex
-      Wrapping plot commands in \texttt{invisible()} suspends plotting and allows adding extra plot elements,
-      <<chart_Series_panels,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(quantmod)
-# calculate VTI volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=Ad(env_etf$VTI), 
-          volume=Vo(env_etf$VTI), n=10)
-# calculate XLF volume-weighted average price
-XLF_vwap <- TTR::VWAP(price=Ad(env_etf$XLF), 
-          volume=Vo(env_etf$XLF), n=10)
-# open plot graphics device
-x11()
-# define plot area with two horizontal panels
-par(mfrow=c(2, 1))
-# plot in top panel
-invisible(chart_Series(
-  x=env_etf$VTI["2009-02/2009-04"], name="VTI"))
-add_TA(VTI_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
-# plot in bottom panel
-invisible(chart_Series(
-  x=env_etf$XLF["2009-02/2009-04"], name="XLF"))
-add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements,
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+# calculate VTI and XLF volume-weighted average price
+VTI_vwap <- 
+  TTR::VWAP(price=Ad(rutils::env_etf$VTI), 
+            volume=Vo(rutils::env_etf$VTI), n=10)
+XLF_vwap <- 
+  TTR::VWAP(price=Ad(rutils::env_etf$XLF), 
+            volume=Vo(rutils::env_etf$XLF), n=10)
+# open graphics device, and define 
+# plot area with two horizontal panels
+x11(); par(mfrow=c(2, 1))
+ch_ob <- chart_Series(  # plot in top panel
+  x=env_etf$VTI["2009-02/2009-04"], 
+  name="VTI", plot=FALSE)
+add_TA(VTI_vwap["2009-02/2009-04"], 
+       lwd=2, on=1, col='blue')
+ch_ob <- chart_Series(  # plot in bottom panel
+  x=env_etf$XLF["2009-02/2009-04"], 
+  name="XLF", plot=FALSE)
+add_TA(XLF_vwap["2009-02/2009-04"], 
+       lwd=2, on=1, col='blue')
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -1427,9 +2323,9 @@ chart_Series(x=env_etf$SP500["2016/"],
       \vskip1ex
       The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages, 
       \vskip1ex
-      The function \texttt{getURL()} from package \emph{RCurl} downloads the \texttt{HTML} text data from a \texttt{URL}, 
+      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{HTML} text data from a \texttt{URL}, 
       \vskip1ex
-      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \texttt{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices, 
+      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices, 
       \vskip1ex
       \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()}, 
     \column{0.5\textwidth}
@@ -1490,21 +2386,105 @@ for (in_dex in 1:NROW(sp_500)) {
     list(list(name=sp_500$Ticker[in_dex])), 
     names=sp_500$names[in_dex]))
 }  # end for
-env_etf <- new.env()  # new environment for data
+env_sp500 <- new.env()  # new environment for data
 # remove all files (if necessary)
-rm(list=ls(env_etf), envir=env_etf)
+rm(list=ls(env_sp500), envir=env_sp500)
 # download data and copy it into environment
 rutils::get_symbols(sp_500$names, 
-   env_out=env_etf, start_date="1990-01-01")
+   env_out=env_sp500, start_date="1990-01-01")
 # or download in loop
 for (na_me in sp_500$names) {
   cat("processing: ", na_me, "\n")
   rutils::get_symbols(na_me, 
-   env_out=env_etf, start_date="1990-01-01")
+   env_out=env_sp500, start_date="1990-01-01")
 }  # end for
-save(env_etf, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_etf$BRK_B["2016/"], TA="add_Vo()", 
+save(env_sp500, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()", 
              name="BRK-B stock")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{FRED} Time Series Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
+      \hskip1em\url{http://research.stlouisfed.org/fred2/}
+      \vskip1ex
+      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      \vskip1ex
+      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
+      \vskip1ex
+      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fred_unemp_rate.png}\\
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+# download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE", 
+                  auto.assign=FALSE, 
+                  src="FRED")
+# plot U.S. unemployment rate data
+chart_Series(unemp_rate["1990/"], 
+            name="U.S. unemployment rate")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Treasury Bond Rates from \protect\emph{FRED}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The constant maturity Treasury rates are yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds, 
+      \vskip1ex
+      The \emph{FRED} database contains current and historical constant maturity Treasury rates, \\
+      \hskip1em\url{https://fred.stlouisfed.org/series/DGS5}
+      \vskip1ex
+      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
+      \vskip1ex
+      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
+      <<echo=TRUE,eval=FALSE>>=
+# symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS30")
+library(quantmod)  # load package quantmod
+env_rates <- new.env()  # new environment for data
+# download data for sym_bols into env_rates
+getSymbols(sym_bols, env=env_rates, src="FRED")
+ls(env_rates)  # list files in env_rates
+# get class of object in env_rates
+class(get(x=sym_bols[1], envir=env_rates))
+# another way
+class(env_rates$DGS10)
+colnames(env_rates$DGS10)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/treas_10y_rate.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+head(env_rates$DGS10, 3)
+# get class of all objects in env_rates
+eapply(env_rates, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+# plot 10-year constant maturity Treasury rate
+chart_Series(env_rates$DGS10["1990/"], 
+            name="10-year constant maturity Treasury rate")
       @
   \end{columns}
 \end{block}
@@ -1668,11 +2648,11 @@ tick_ers <- do_call_rbind(
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
+env_sp500 <- new.env()  # new environment for data
 # remove all files (if necessary)
-rm(list=ls(env_etf), envir=env_etf)
+rm(list=ls(env_sp500), envir=env_sp500)
 # Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_etf)
+down_loaded <- tick_ers %in% ls(env_sp500)
 # download data and copy it into environment
 for (tick_er in tick_ers[!down_loaded]) {
   cat("processing: ", tick_er, "\n")
@@ -1681,10 +2661,10 @@ for (tick_er in tick_ers[!down_loaded]) {
                   type="xts")[, -(1:7)]
   colnames(da_ta) <- paste(tick_er, 
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_etf)
+  assign(tick_er, da_ta, envir=env_sp500)
 }  # end for
-save(env_etf, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_etf$XOM["2016/"], TA="add_Vo()", 
+save(env_sp500, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()", 
              name="XOM stock")
       @
   \end{columns}
@@ -1928,11 +2908,11 @@ detach("package:WRDS")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
+env_sp500 <- new.env()  # new environment for data
 # remove all files (if necessary)
-rm(list=ls(env_etf), envir=env_etf)
+rm(list=ls(env_sp500), envir=env_sp500)
 # Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_etf)
+down_loaded <- tick_ers %in% ls(env_sp500)
 # download data and copy it into environment
 for (tick_er in tick_ers[!down_loaded]) {
   cat("processing: ", tick_er, "\n")
@@ -1941,10 +2921,10 @@ for (tick_er in tick_ers[!down_loaded]) {
                   type="xts")[, -(1:7)]
   colnames(da_ta) <- paste(tick_er, 
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_etf)
+  assign(tick_er, da_ta, envir=env_sp500)
 }  # end for
-save(env_etf, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_etf$XOM["2016/"], TA="add_Vo()", 
+save(env_sp500, file="C:/Develop/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()", 
              name="XOM stock")
       @
   \end{columns}
@@ -2167,41 +3147,6 @@ title(main="Managers cumulative returns",
     \column{0.5\textwidth}
     \vspace{-2em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{FRED} Time Series Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
-      \hskip1em\url{http://research.stlouisfed.org/fred2/}
-      \vskip1ex
-      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
-      <<chartSeries_fred,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE", 
-                  auto.assign=FALSE, 
-                  src="FRED")
-# plot U.S. unemployment rate data
-chartSeries(unemp_rate["1990/"], 
-            name="U.S. unemployment rate",
-            theme=chartTheme("white"))
-# download 10-Year Treasury constant maturity rate
-trs_10yr <- getSymbols("DGS10", 
-                  auto.assign=FALSE, 
-                  src="FRED")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_fred-1}\\
   \end{columns}
 \end{block}
 
