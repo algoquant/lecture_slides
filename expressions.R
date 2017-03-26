@@ -196,13 +196,13 @@ if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
 }  # end if
 
 num_var2
-switch("a", a="aaahh", b="bee", c="see", d=2, 
+switch("a", a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch("c", a="aaahh", b="bee", c="see", d=2, 
+switch("c", a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch(3, a="aaahh", b="bee", c="see", d=2, 
+switch(3, a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch("cc", a="aaahh", b="bee", c="see", d=2, 
+switch("cc", a="aaahh", b="bee", c="see", d=2,
        "else this")
 # measure of central tendency
 centra_lity <- function(in_put,
@@ -293,9 +293,9 @@ vec_tor1 <- c(2, 4, 3)
 mat_rix <- matrix(sample(1:12), ncol=3)
 # multiply matrix by vector column-wise
 vec_tor1 * mat_rix
+mat_rix * vec_tor1
 # multiply matrix by vector row-wise
 t(vec_tor1 * t(mat_rix))
-mat_rix <- matrix(1:6, ncol=3)  # create matrix
 vec_tor1
 vec_tor2 <- 6:4  # define vector
 # multiply two vectors element-by-element
@@ -304,10 +304,16 @@ vec_tor1 * vec_tor2
 vec_tor1 %*% vec_tor2
 # calculate inner product and drop dimensions
 drop(vec_tor1 %*% vec_tor2)
-mat_rix
-# multiply vector by matrix
+# multiply columns of matrix by vector
 mat_rix %*% vec_tor1  # single column matrix
 drop(mat_rix %*% vec_tor1)  # vector
+rowSums(t(vec_tor1 * t(mat_rix)))
+# using rowSums() and t() is 10 times slower than %*%
+library(microbenchmark)
+summary(microbenchmark(
+  in_ner=drop(mat_rix %*% vec_tor1),
+  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
 # multiply matrix by vector fails because dimensions aren't conformable
 vec_tor1 %*% mat_rix
@@ -491,7 +497,7 @@ dim(models) <- c(24, 24)
 deseas <- array(NA, c(24, 24, 72))
 dimnames(deseas) <- dimnames(ozone)
 for (i in seq_len(24)) {
-for(j in seq_len(24)) {
+for (j in seq_len(24)) {
 mod <- deseasf(ozone[i, j, ])
 models[[i, j]] <- mod
 deseas[i, j, ] <- resid(mod)

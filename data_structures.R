@@ -166,7 +166,7 @@ seq(-2,2, len=11)  # 10 numbers from -2 to 2
 rep(100, times=5)  # replicate a number
 character(5)  # create empty character vector
 numeric(5)  # create empty numeric vector
-numeric(0)  # create zero length vector
+numeric(0)  # create zero-length vector
 2*4:8  # multiply a vector
 2*(4:8)  # multiply a vector
 4:8/2  # divide a vector
@@ -235,7 +235,7 @@ unique(fac_tor)  # get unique elements
 # get contingency (frequency) table
 table(fac_tor)
 # get contingency table using sapply
-sapply(levels(fac_tor), 
+sapply(levels(fac_tor),
  function(le_vel) {
    sum(fac_tor==le_vel)
  })  # end sapply
@@ -423,7 +423,7 @@ summary(microbenchmark(
   as_data_frame_matrix=
     as.data.frame.matrix(mat_rix),
   as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix), 
+  data_frame=data.frame(mat_rix),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
 # lapply is faster than coercion function
@@ -464,7 +464,7 @@ head(colnames(Cars93))
 unique(Cars93$Type)  # extract list of car types
 # sapply(Cars93, mean)  # calculate means of Cars93 columns
 # plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1", 
+hist(Cars93$MPG.highway, col="lightblue1",
      main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
 rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
@@ -473,16 +473,19 @@ as.numeric(c(1:3, "a"))  # NA from coercion
 is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
 is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
 NA*1:4  # create vector of Nas
-da_ta <- c(1, 2, NA, 4, NA, 5)  # create vector with some NA values
+# create vector with some NA values
+da_ta <- c(1, 2, NA, 4, NA, 5)
 da_ta
 mean(da_ta)  # returns NA, when NAs are input
 mean(da_ta, na.rm=TRUE)  # remove NAs from input data
 da_ta[!is.na(da_ta)]  # delete the NA values
 sum(!is.na(da_ta))  # count non-NA values
 rm(list=ls())
-head(airquality)  # airquality data has some NAs
+# airquality data has some NAs
+head(airquality)
 dim(airquality)
-sum(!complete.cases(airquality))  # number of NAs
+# number of NAs
+sum(!complete.cases(airquality))
 # display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
 rm(list=ls())
@@ -491,9 +494,15 @@ good_air <- airquality[complete.cases(airquality), ]
 dim(good_air)
 head(good_air)  # NAs removed
 library(zoo)  # load package zoo
-good_air <- na.locf(airquality)  # replace NAs
+# replace NAs
+good_air <- zoo::na.locf(airquality)
 dim(good_air)
 head(good_air)  # NAs replaced
+# create vector containing NA values
+vec_tor <- sample(22)
+vec_tor[sample(NROW(vec_tor), 4)] <- NA
+# replace NA values with the most recent non-NA values
+zoo::na.locf(vec_tor)
 # NULL values have no mode or type
 c(mode(NULL), mode(NA))
 c(typeof(NULL), typeof(NA))
@@ -501,14 +510,22 @@ c(length(NULL), length(NA))
 # check for NULL values
 is.null(NULL)
 # NULL values are ignored when combined into a vector
-c(1, 2, NULL, 4, 5)  
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
 # vectors can be initialized to NULL
-da_ta <- NULL
+vec_tor <- NULL
+is.null(vec_tor)
+# grow the vector in a loop - very bad code!!!
 for (in_dex in 1:5)
-  da_ta <- c(da_ta, in_dex)
-da_ta
-# NA value isn't ignored
-da_ta <- NA
+  vec_tor <- c(vec_tor, in_dex)
+# initialize empty vector
+vec_tor <- numeric()
+# grow the vector in a loop - very bad code!!!
 for (in_dex in 1:5)
-  da_ta <- c(da_ta, in_dex)
-da_ta
+  vec_tor <- c(vec_tor, in_dex)
+# allocate vector
+vec_tor <- numeric(5)
+# assign to vector in a loop - good code
+for (in_dex in 1:5)
+  vec_tor[in_dex] <- runif(1)

@@ -58,7 +58,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{February 11, 2017}
+\date{March 7, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,165 +72,101 @@ knit_theme$set(thm)
 \maketitle
 
 
+
 %%%%%%%%%%%%%%%
-\section{Active Investment Strategies}
+\section{Backtesting Active Investment Strategies}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Aggregations Over Look-back Windows}
+\subsection{Performance of \protect\emph{EWMA} Strategies}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A time \emph{period} is defined as the time between two neighboring points in time, 
+      The performance of \emph{EWMA} strategies depends on the $\lambda$ parameter, 
       \vskip1ex
-      A time \emph{interval} is defined as the time spanned by one or more neighboring time \emph{periods}, 
-      \vskip1ex
-      A look-back \emph{window} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
-      \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the window width (number of periods in the window), 
-      \vskip1ex
-      The look-back \emph{windows} may or may not \emph{overlap} with their neighboring windows, 
-    \column{0.5\textwidth}
-      A rolling aggregation is specified by a vector of look-back \emph{windows} at each point in time, 
-      \vskip1ex
-      An example of a rolling aggregation are moving average prices, 
-      \vskip1ex
-      An interval aggregation is specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
-      \vskip1ex
-      An example of a non-overlapping interval aggregation are monthly asset returns, 
-      \vskip1ex
-      An example of an overlapping interval aggregation are 12-month asset returns calculated monthly, 
-  \end{columns}
-    \vspace{-2em}
-    \includegraphics[width=0.9\paperwidth,valign=t]{figure/data_models_rolling_windows.png}\\
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Framework with Overlapping Aggregations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
-      \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
-      \vskip1ex
-      The variable \texttt{win\_dow} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in that window, 
-      \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
-# define time interval for end points
-re_balance <- "weeks"
-# look-back window is multiple of re_balance
-win_dow <- 41
-# create index of rebalancing period end points
-end_points <- xts::endpoints(env_etf$re_turns, 
-                             on=re_balance)
-# start_points are multi-period lag of end_points
-len_gth <- length(end_points)
-start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 
-    1:(len_gth-win_dow+1))]
-# create list of look-back intervals
-inter_vals <- lapply(2:len_gth, 
-    function(in_dex) {
-      start_points[in_dex]:end_points[in_dex]
-  })  # end lapply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Overlapping Aggregations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
-      \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
-      \vskip1ex
-      The variable \texttt{win\_dow} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in that window, 
-      \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
-# create list of symbols for model
-sym_bols <- c("VTI", "IEF", "DBC")
-
-# calculate risk&ret stats for some symbols, over a range of dates
-# perform lapply() loop over inter_vals
-risk_stats <- lapply(inter_vals, 
-  function(inter_val) {
-    x_ts <- 
-      env_etf$re_turns[inter_val, sym_bols]
-    t(sapply(x_ts, 
-      function(col_umn)
-        c(return=mean(col_umn), risk=mad(col_umn))
-      ))  # end sapply
-    })  # end lapply
-# rbind list into single xts or matrix
-# risk_stats <- rutils::do_call_rbind(risk_stats)
-# head(risk_stats)
-# calculate non-overlapping returns in interval
-re_turns <-sapply(2:len_gth, 
-    function(in_dex) {
-    sapply(env_etf$re_turns[
-      (end_points[in_dex-1]+1):end_points[in_dex], 
-      sym_bols], sum)
-  })  # end sapply
-re_turns <- t(re_turns)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Rolling Model Calibrations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
-      \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the number of window intervals (number of intervals in the window), 
+      The performance of different \emph{EWMA} strategies can be aggregated over \emph{look-back} intervals, 
       <<echo=TRUE,eval=FALSE>>=
-# calculate list of portfolio weights
-# perform lapply() loop over risk_stats
-weight_s <- sapply(risk_stats, 
-    function(risk_stat) {
-      weight_s <- risk_stat[, 1]/risk_stat[, 2]
-      weight_s <- weight_s - mean(weight_s)
-      weight_s <- weight_s/sum(abs(weight_s))
-    })  # end sapply
-weight_s <- t(weight_s)
-weights_xts <- xts(weight_s, 
-  order.by=index(env_etf$re_turns[end_points]))
-# plot weights
-x11()
-zoo::plot.zoo(weights_xts, xlab=NULL)
+lamb_das <- seq(0.01, 1.0, 0.1)
+# perform lapply() loop over lamb_das
+re_turns <- lapply(lamb_das, function(lamb_da) {
+  # simulate EWMA strategy and calculate re_turns
+  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+})  # end lapply
+re_turns <- do.call(merge, re_turns)
+colnames(re_turns) <- paste0("lambda=", lamb_das)
+# calculate performance over look_backs
+cum_rets <- sapply(look_backs, 
+  function(look_back) {
+    sapply(re_turns[look_back], sum)  # end sapply
+  })  # end sapply
+cum_rets <- t(cum_rets)
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_weights.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_returns.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- colorRampPalette(c("red", "blue"))(NCOL(re_turns))
+chart_Series(cumsum(re_turns), theme=plot_theme, name="Cumulative Returns of EWMA Strategies")
+legend("bottomleft", legend=colnames(re_turns), 
+       inset=0.02, bg="white", cex=0.8, lwd=rep(6, NCOL(re_turns)), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \protect\emph{EWMA} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Overlapping aggregations can be calculated by performing an \texttt{lapply()} loop over the list of \emph{look-back} intervals (\texttt{look\_backs}),
+      \vskip1ex
+      The resulting list of aggregations can then be collapsed into an \emph{xts} series using the function \texttt{do\_call\_rbind()}, 
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+look_back <- 12
+# calculate end of month end_points
+end_points <- xts::endpoints(re_turns, on="months")
+# end_points[(end_points > 0) & (end_points <= win_dow)] <- win_dow+1
+# start_points are end_points lagged by look_back
+len_gth <- NROW(end_points)
+start_points <- end_points[c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
+# Create a named list of look-back intervals.
+look_backs <- lapply(2:len_gth, 
+                     function(in_dex) start_points[in_dex]:end_points[in_dex])
+names(look_backs) <- index(re_turns)[end_points[2:len_gth]]
+# Perform loop over look_back intervals and calculate cum_rets. 
+cum_rets <- sapply(look_backs, 
+                   function(look_back) {
+                     sapply(re_turns[look_back], sum)  # end sapply
+                   })  # end sapply
+cum_rets <- t(cum_rets)
+cum_rets <- xts::as.xts(cum_rets)
+# define forward (future) endpoints
+fwd_points <- end_points[c(2:len_gth, len_gth)]
+# create named list of forward-looking intervals
+look_fwds <- lapply(2:(len_gth-1), 
+                    function(in_dex) (end_points[in_dex]+1):fwd_points[in_dex])
+names(look_fwds) <- index(re_turns)[end_points[2:(len_gth-1)]]
+# calculate cumulative forward returns
+fwd_rets <- sapply(look_fwds, 
+              function(look_fwd) {
+                sapply(re_turns[look_fwd], sum)  # end sapply
+              })  # end sapply
+fwd_rets <- t(fwd_rets)
+fwd_rets <- xts::as.xts(fwd_rets)
+      @
   \end{columns}
 \end{block}
 
@@ -244,28 +180,73 @@ zoo::plot.zoo(weights_xts, xlab=NULL)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning fixed time \emph{intervals}, 
+      \emph{Backtesting} is the testing of a forecasting model using historical data, 
       \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{endpoints}, over overlapping 40-week look-back \emph{windows}, 
+      \emph{Backtesting} is a type of \emph{cross-validation} applied to time series data,
       <<echo=TRUE,eval=FALSE>>=
-# calculate pnls over all windows
-pn_l <- rowSums(weight_s[-NROW(weight_s), ] * 
-                  re_turns[-1, ])
-# calculate transaction costs
-bid_offer <- 0.001  # 10 bps for liquid ETFs
-cost_s <- bid_offer*abs(diff(weight_s))
-cost_s <- rowSums(cost_s)
-pn_l <- pn_l - cost_s
-pn_l <- xts(cumsum(pn_l), 
-  order.by=index(env_etf$re_turns[end_points[-(1:2)]]))
-colnames(pn_l)[1] <- "pnl"
-# plot strategy pnl
-x11()
-chart_Series(x=pn_l, name="Strategy PnL")
+# calculate weight_s proportional to cum_rets
+weight_s <- coredata(cum_rets[index(fwd_rets)])
+weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+# select best and worst models in each period
+bes_t <- apply(weight_s, 1, which.max)
+wors_t <- apply(weight_s, 1, which.min)
+back_test <- rowSums(weight_s * coredata(fwd_rets))
+back_test <- xts(back_test, order.by=index(fwd_rets))
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
+      \vspace{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/backtest_pnl.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+chart_Series(x=cumsum(back_test), 
+             name="Back-test of EWMA strategies")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{PerformanceAnalytics} for Risk and Return Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{PerformanceAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \emph{PerformanceAnalytics} contains functions and data sets for performance and risk analysis,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+      \texttt{managers} is an \emph{xts} time series containing monthly percentage returns of six asset managers (HAM1 through HAM6), the EDHEC Long-Short Equity hedge fund index, the \texttt{S\&P 500}, and US Treasury 10-year bond and 3-month bill total returns,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# get documentation for package "PerformanceAnalytics"
+packageDescription("PerformanceAnalytics")  # get short description
+help(package="PerformanceAnalytics")  # load help page
+data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
+ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
+detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+      @
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+perf_data <- 
+  unclass(data(
+    package="PerformanceAnalytics"))$results[, -(1:2)]
+apply(perf_data, 1, paste, collapse=" - ")
+data(managers)  # load "managers" data set
+class(managers)
+dim(managers)
+head(managers, 3)
+      @
   \end{columns}
 \end{block}
 
@@ -273,34 +254,29 @@ chart_Series(x=pn_l, name="Strategy PnL")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Strategy Market Beta}
+\subsection{\texttt{CumReturns} Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# calculate betas
-beta_s <- c(1, env_etf$capm_stats[
-  match(sym_bols[-1], 
-        rownames(env_etf$capm_stats)), 
-  "Beta"])
-names(beta_s)[1] <- sym_bols[1]
-# weights times betas
-beta_s <- weight_s %*% beta_s
-beta_s <- xts(beta_s, 
-  order.by=index(
-    env_etf$re_turns[end_points[-1]]))
-colnames(beta_s) <- "portf_beta"
-x11()
-plot.zoo(cbind(beta_s, 
-  env_etf$VTI[, 4])[index(beta_s)],
-  main="betas & VTI", xlab="")
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<cum_returns,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show="hide">>=
+# load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ", 
+                      "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="", 
+        legend.loc="topleft", main="")
+# add title
+title(main="Managers cumulative returns", 
+      line=-1)
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/backtest_betas.png}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cum_returns-1}
   \end{columns}
 \end{block}
 
@@ -308,56 +284,1360 @@ plot.zoo(cbind(beta_s,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Strategy Optimization}
+\subsection{\texttt{PerformanceSummary} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{charts.PerformanceSummary()} plots three charts: cumulative returns, return bars, and drawdowns,
+      <<performance_summary,echo=(-(1:2)),eval=FALSE,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+data(managers)  # load "managers" data set
+charts.PerformanceSummary(ham_1, 
+  main="", lwd=2, ylog=TRUE)
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/performance_summary-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{ETF \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  env_etf$re_turns[, c("XLF", "DBC", "IEF")], lwd=2, 
+  ylab="", legend.loc="topleft", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/etf_cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Drawdown Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<drawdown_plot,eval=FALSE,echo=(-(1:1)),fig.width=7,fig.height=6,fig.show="hide">>=
+options(width=200)
+library(PerformanceAnalytics)
+chart.Drawdown(env_etf$re_turns[, "VTI"], ylab="", 
+               main="VTI drawdowns")
+      @
+      \vskip27ex
+      <<eval=FALSE,echo=(-(1:2))>>=
+options(width=200)
+library(PerformanceAnalytics)
+table.Drawdowns(env_etf$re_turns[, "VTI"])
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/drawdown_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Histogram}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create trading function
-run_strat <- function(win_dow) {
-  start_points <-  end_points[
-    c(rep_len(1, win_dow-1), 
-      1:(len_gth-win_dow+1))]
-  inter_vals <- lapply(2:len_gth, 
-                       function(in_dex) {
-                         start_points[in_dex]:end_points[in_dex]
-                       })  # end lapply
-  risk_stats <- lapply(inter_vals, 
-                       function(inter_val) {
-                         x_ts <- env_etf$re_turns[inter_val, sym_bols]
-                         t(sapply(x_ts, 
-                                  function(col_umn)
-                                    c(return=mean(col_umn), risk=mad(col_umn))
-                         ))  # end sapply
-                       })  # end lapply
-  weight_s <- sapply(risk_stats, 
-                     function(risk_stat) {
-                       weight_s <- risk_stat[, 1]/risk_stat[, 2]
-                       weight_s <- weight_s - mean(weight_s)
-                       weight_s <- weight_s/sum(abs(weight_s))
-                     })  # end sapply
-  weight_s <- t(weight_s)
-  pn_l <- rowSums(weight_s[-NROW(weight_s), ] * re_turns[-1, ])
-  cost_s <- bid_offer*abs(diff(weight_s))
-  cost_s <- rowSums(cost_s)
-  pn_l <- pn_l - cost_s
-  sum(pn_l)
-}  # end run_strat
+      <<returns_hist,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.Histogram(env_etf$re_turns[, 1], main="", 
+  xlim=c(-0.06, 0.06), 
+  methods = c("add.density", "add.normal"))
+# add title
+title(main=paste(colnames(env_etf$re_turns[, 1]), 
+                 "density"), line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Boxplots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<returns_box,echo=(-1),eval=FALSE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.Boxplot(env_etf$re_turns[, 
+  c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")])
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/strat_profile}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-window_s <- 8*(1:7)
-strat_profile <- sapply(window_s, run_strat)
-plot(cbind(window_s, strat_profile), t="l", 
-     main="Strategy PnL as function of window size", 
-     xlab="window", ylab="pnl")
+      \hspace*{-8em}\includegraphics[width=0.65\paperwidth,valign=t]{figure/returns_box-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Distribution Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+tail(table.Stats(env_etf$re_turns[, 
+  c("VTI", "IEF", "DBC", "VXX")]), 4)
+risk_return <- table.Stats(env_etf$re_turns)
+class(risk_return)
+# Transpose the data frame
+risk_return <- as.data.frame(t(risk_return))
       @
+      \vspace{-1em}
+      <<returns_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+# plot scatterplot
+plot(Kurtosis ~ Skewness, data=risk_return,
+     main="Kurtosis vs Skewness")
+# add labels
+text(x=risk_return$Skewness, y=risk_return$Kurtosis, 
+          labels=rownames(risk_return), 
+          pos=1, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/returns_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Statistics Ranking}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# add skew_kurt column
+risk_return$skew_kurt <- 
+  risk_return$Skewness/risk_return$Kurtosis
+# sort on skew_kurt
+risk_return <- risk_return[
+  order(risk_return$skew_kurt, 
+        decreasing=TRUE), ]
+# add names column
+risk_return$Name <- 
+  etf_list[rownames(risk_return), ]$Name
+      @
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+risk_return[, c("Name", "Skewness", "Kurtosis")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk vs. Return Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<risk_return_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+library(PerformanceAnalytics)
+chart.RiskReturnScatter(
+  env_etf$re_turns[, colnames(env_etf$re_turns)!="VXX"], 
+  Rf=0.01/12)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/risk_return_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk-adjusted Returns Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe} ratio measures the excess returns per unit of risk, and is equal to the excess returns (over a risk-free return) divided by the standard deviation of the returns:
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_f]}{\sigma}
+      \end{displaymath}
+      The \emph{Sortino} ratio is equal to the excess returns divided by the \emph{downside deviation} (standard deviation of returns below a target rate of return),
+      \begin{displaymath}
+        S_{r}=\frac{E[R-R_t]}{\sqrt{\sum_{i=1}^{k} ([R_i-R_t]_{-})^2}}
+      \end{displaymath}
+      The \emph{Calmar} ratio is equal to the excess returns divided by the maximum drawdown of the returns:
+      \begin{displaymath}
+        C_{r}=\frac{E[R-R_f]}{DD}
+      \end{displaymath}
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(PerformanceAnalytics)
+vti_ief <- env_etf$re_turns[, c("VTI", "IEF")]
+SharpeRatio(vti_ief)
+
+SortinoRatio(vti_ief)
+
+CalmarRatio(vti_ief)
+tail(table.Stats(vti_ief), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Parallel Computing}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing in \texttt{R}}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+
+\begin{block}{Parallel Computing in \texttt{R}}
+      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
+      \vskip1ex
+      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \emph{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
+      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
+      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
+      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
+\end{block}
+
+\begin{block}{\texttt{R} Base Package \emph{parallel}}
+  The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs,
+  \vskip1ex
+  The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
+  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
+  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
+\end{block}
+
+\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
+      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Using Package \protect\emph{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs,
+      \vskip1ex
+      The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
+      \vskip1ex
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Parallel Loops Using Package \protect\emph{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops, 
+      \vskip1ex
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}), 
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops (similar to \texttt{lapply()}) using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}, 
+      \vskip1ex
+      Under \emph{Windows}, a cluster of \texttt{R} processes (one per each CPU core) need to be started first, by calling the function \texttt{makeCluster()},
+      \vskip1ex
+      \emph{Mac-OSX} and \emph{Linux} don't require calling the function \texttt{makeCluster()},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# perform parallel loop under Mac-OSX or Linux
+paw_s <- mclapply(1:10, paws, mc.cores=num_cores, 
+                sleep_time=0.01)
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+paw_s <- parLapply(clus_ter, 1:10, paws, 
+                 sleep_time=0.01)
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Computing Overhead of Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
+      \vskip1ex
+      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
+      <<echo=(-(1:10)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+      lapply=lapply(1:max_iterations, paws,
+                    sleep_time=sleep_time),
+      parallel=parLapply(clus_ter, 1:max_iterations,
+              paws, sleep_time=sleep_time),
+      times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+              names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/parallel_plot.png}\\
+      \vspace{-1em}
+      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+      y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+       inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Over Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often we need to perform time consuming calculations over columns of matrices,
+      \vskip1ex
+      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:NROW(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ter, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ter, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Initializing Parallel Clusters Under \protect\emph{Windows}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under \emph{Windows} the child processes in the parallel compute cluster don't inherit data and objects from their parent process, 
+      \vskip1ex
+      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+ba_se <- 2
+# fails because child processes don't know ba_se:
+parLapply(clus_ter, 2:4, 
+          function(exponent) ba_se^exponent)
+# ba_se passed to child via dots ... argument:
+parLapply(clus_ter, 2:4, 
+          function(exponent, ba_se) ba_se^exponent, 
+          ba_se=ba_se)
+# ba_se passed to child via clusterExport:
+clusterExport(clus_ter, "ba_se")
+parLapply(clus_ter, 2:4, 
+          function(exponent) ba_se^exponent)
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reproducible Parallel Simulations Under \protect\emph{Windows}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations use pseudo-random number generators, and in order to perform reproducible results, they must set the \emph{seed} value, so that the number generators produce the same sequence of pseudo-random numbers, 
+      \vskip1ex
+      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value, so that the number generator produces the same sequence of numbers for a given \emph{seed} value, 
+      \vskip1ex
+      But under \emph{Windows} \texttt{set.seed()} doesn't initialize the random number generators of child processes, and they don't produce the same sequence of numbers, 
+      \vskip1ex
+      The function \texttt{clusterSetRNGStream()} initializes the random number generators of child processes under \emph{Windows}, 
+      \vskip1ex
+      The function \texttt{set.seed()} does initialize the random number generators of child processes under \emph{Mac-OSX} and \emph{Linux}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# set seed for cluster under Windows
+# doesn't work: set.seed(1121)
+clusterSetRNGStream(clus_ter, 1121)
+# perform parallel loop under Windows
+out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
+sum(unlist(out_put))
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# perform parallel loop under Mac-OSX or Linux
+out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{PortfolioAnalytics} for Portfolio Optimization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{PortfolioAnalytics}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package \emph{PortfolioAnalytics} contains functions and data sets for portfolio optimization,
+      \vskip1ex
+      The function \texttt{data()} loads external data or lists data sets in a package,
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
+# get documentation for package "PortfolioAnalytics"
+packageDescription("PortfolioAnalytics")  # get short description
+
+help(package="PortfolioAnalytics")  # load help page
+
+data(package="PortfolioAnalytics")  # list all datasets in "PortfolioAnalytics"
+
+ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
+
+detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Definition}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Portfolios are defined by a named vector of asset weights, and portfolio constraints and objectives,
+      \vskip1ex
+      \texttt{portfolio.spec} creates a portfolio object that contains asset weights, constraints, and objectives,
+      \vskip1ex
+      \texttt{add.constraint} adds or updates constraints on of the portfolio object,
+      \vskip1ex
+      \texttt{add.objective} adds or updates risk/return objectives of the portfolio object,
+      <<echo=TRUE,eval=FALSE>>=
+library(PortfolioAnalytics)
+# use ETF returns from package HighFreq
+library(HighFreq)
+portf_names <- c("VTI", "IEF", "DBC", "XLF",
+        "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
+# initial portfolio to equal weights
+portf_init <- rep(1/NROW(portf_names),
+                  NROW(portf_names))
+# named vector
+names(portf_init) <- portf_names
+# create portfolio object
+portf_init <- portfolio.spec(
+  assets=portf_init)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(PortfolioAnalytics)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_maxSR <- add.constraint(
+  portfolio=portf_maxSR,
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="return",  # maximize mean return
+  name="mean")
+# add objectives
+portf_maxSR <- add.objective(
+  portfolio=portf_maxSR,
+  type="risk",  # minimize StdDev
+  name="StdDev")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+maxSR_DEOpt <- optimize.portfolio(
+  R=env_etf$re_turns[, portf_names],  # specify returns
+  portfolio=portf_maxSR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+# plot optimization
+chart.RiskReward(maxSR_DEOpt,
+  risk.col="StdDev",
+  return.col="mean")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
+options(width=50)
+library(PortfolioAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+maxSR_DEOpt$weights
+maxSR_DEOpt$objective_measures$mean[1]
+maxSR_DEOpt$objective_measures$StdDev[[1]]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_basic-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Scatterplot}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_scatter,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot optimization
+chart.RiskReward(maxSR_DEOpt,
+  risk.col="StdDev",
+  return.col="mean")
+
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points <- function(rets=env_etf$re_turns,
+        risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
+  risk <- match.arg(risk)  # match to arg list
+  if (risk=="ETL") {
+    stopifnot(
+      "package:PerformanceAnalytics" %in% search() ||
+      require("PerformanceAnalytics", quietly=TRUE))
+  }  # end if
+  risk <- match.fun(risk)  # match to function
+  risk_ret <- t(sapply(rets[, sym_bols],
+     function(x_ts)
+       c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
+  points(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
+         col="red", lwd=3)
+  text(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
+       labels=rownames(risk_ret), col="red",
+       lwd=2, pos=4)
+}  # end risk_ret_points
+
+risk_ret_points()
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_scatter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized Sharpe Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<optim_portf_SR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(PortfolioAnalytics)
+plot_portf <- function(portfolio,
+            rets_data=env_etf$re_turns) {
+  weight_s <- portfolio$weights
+  portf_names <- names(weight_s)
+  # calculate xts of portfolio
+  portf_max <- xts(
+    rets_data[, portf_names] %*% weight_s,
+    order.by=index(rets_data))
+  colnames(portf_max) <-
+    deparse(substitute(portfolio))
+  graph_params <- par(oma=c(1, 0, 1, 0),
+    mgp=c(2, 1, 0), mar=c(2, 1, 2, 1),
+    cex.lab=0.8, cex.axis=1.0,
+    cex.main=0.8, cex.sub=0.5)
+  layout(matrix(c(1,2), 2),
+    widths=c(1,1), heights=c(1,3))
+  barplot(weight_s, names.arg=portf_names,
+          las=3, ylab="", xlab="Symbol", main="")
+  title(main=paste("Loadings",
+                colnames(portf_max)), line=-1)
+  chart.CumReturns(
+    cbind(portf_max, rets_data[, c("IEF", "VTI")]),
+    lwd=2, ylab="", legend.loc="topleft", main="")
+  title(main=paste0(colnames(portf_max),
+                    ", IEF, VTI"), line=-1)
+  par(graph_params)  # restore original parameters
+  invisible(portf_max)
+}  # end plot_portf
+maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SR_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Leverage Constraints}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The leverage constraint applies to the sum of absolute weights,
+      \vspace{-1em}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(PortfolioAnalytics)
+# add leverage constraint abs(weight_sum)
+portf_maxSRN <- add.constraint(
+  portfolio=portf_init, type="leverage",
+  min_sum=0.9, max_sum=1.1)
+# add box constraint long/short
+portf_maxSRN <- add.constraint(
+  portfolio=portf_maxSRN,
+  type="box", min=-0.2, max=0.2)
+
+# add objectives
+portf_maxSRN <- add.objective(
+  portfolio=portf_maxSRN,
+  type="return",  # maximize mean return
+  name="mean")
+# add objectives
+portf_maxSRN <- add.objective(
+  portfolio=portf_maxSRN,
+  type="risk",  # minimize StdDev
+  name="StdDev")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Leverage Constraint Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_leverage,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+maxSRN_DEOpt <- optimize.portfolio(
+  R=env_etf$re_turns[, portf_names],  # specify returns
+  portfolio=portf_maxSRN,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+# plot optimization
+chart.RiskReward(maxSRN_DEOpt,
+  risk.col="StdDev",
+  return.col="mean",
+  xlim=c(
+    maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001,
+    0.016))
+  points(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSR_DEOpt$objective_measures$mean[1],
+         col="green", lwd=3)
+  text(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSR_DEOpt$objective_measures$mean[1],
+       labels="maxSR", col="green",
+       lwd=2, pos=4)
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points()
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
+    \vspace{-2em}
+      <<echo=(-(1:2)),eval=FALSE,tidy=TRUE>>=
+library(PortfolioAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+maxSRN_DEOpt$weights
+maxSRN_DEOpt$objective_measures$mean[1]
+maxSRN_DEOpt$objective_measures$StdDev[[1]]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized Leverage Constraint Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_portf_SRN_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(PortfolioAnalytics)
+maxSRN_DEOpt_xts <-
+  plot_portf(portfolio=maxSRN_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SRN_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sharpe Portfolios \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_SRN_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+chart.CumReturns(
+  cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts),
+  lwd=2, ylab="",
+  legend.loc="topleft", main="")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+options(width=50)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
+c(maxSR_DEOpt$objective_measures$mean,
+maxSRN_DEOpt$objective_measures$mean)
+c(maxSR_DEOpt$objective_measures$StdDev[[1]],
+maxSRN_DEOpt$objective_measures$StdDev[[1]])
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_SRN_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{STARR Portfolio Constraints}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective constraint applies to risk or return,
+      \vspace{-1em}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(PortfolioAnalytics)
+# add constraints
+portf_maxSTARR <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_maxSTARR <- add.constraint(
+  portfolio=portf_maxSTARR,
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_maxSTARR <- add.objective(
+  portfolio=portf_maxSTARR,
+  type="return",  # maximize mean return
+  name="mean")
+# add objectives
+portf_maxSTARR <- add.objective(
+  portfolio=portf_maxSTARR,
+  type="risk",  # minimize Expected Shortfall
+  name="ES")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{STARR Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_STARR,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+maxSTARR_DEOpt <- optimize.portfolio(
+  R=env_etf$re_turns[, portf_names],  # specify returns
+  portfolio=portf_maxSTARR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSTARR=TRUE,  # maximize STARR
+  trace=TRUE, traceDE=0)
+
+# plot optimization
+chart.RiskReward(maxSTARR_DEOpt,
+  risk.col="ES",
+  return.col="mean")
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points(risk="ETL")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
+options(width=50)
+library(PortfolioAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+maxSTARR_DEOpt$weights
+maxSTARR_DEOpt$objective_measures$mean[1]
+maxSTARR_DEOpt$objective_measures$ES[[1]]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized STARR Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_STARR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(PortfolioAnalytics)
+maxSTARR_DEOpt_xts <-
+  plot_portf(portfolio=maxSTARR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sharpe STARR \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_STARR_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+chart.CumReturns(
+  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts),
+  lwd=2, ylab="",
+  legend.loc="topleft", main="")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+options(width=50)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
+c(maxSR_DEOpt$objective_measures$mean,
+maxSTARR_DEOpt$objective_measures$mean)
+c(maxSR_DEOpt$objective_measures$StdDev[[1]],
+maxSTARR_DEOpt$objective_measures$ES[[1]])
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_STARR_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Efficient Frontier and Capital Market Line}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
+      \vskip1ex
+      The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
+      \vskip1ex
+      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
+      <<optim_eff_front,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PortfolioAnalytics)
+# plot the efficient frontier
+chart.EfficientFrontier(maxSR_DEOpt,
+                match.col="StdDev",
+                n.portfolios=15, type="l")
+points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSRN_DEOpt$objective_measures$mean[1],
+         col="green", lwd=3)
+text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
+         y=maxSRN_DEOpt$objective_measures$mean[1],
+       labels="maxSRN", col="green",
+       lwd=2, pos=4)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_eff_front-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{minES Portfolio Constraints}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective constraint applies to risk or return,
+      \vspace{-1em}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(PortfolioAnalytics)
+# add constraints
+portf_minES <- add.constraint(
+  portfolio=portf_init,  # initial portfolio
+  type="weight_sum",  # constraint sum weights
+  min_sum=0.9, max_sum=1.1)
+# add constraints
+portf_minES <- add.constraint(
+  portfolio=portf_minES,
+  type="long_only")  # box constraint min=0, max=1
+# add objectives
+portf_minES <- add.objective(
+  portfolio=portf_minES,
+  type="risk",  # minimize ES
+  name="ES")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{minES Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_minES,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+# perform optimization of weights
+minES_ROI <- optimize.portfolio(
+  R=env_etf$re_turns[, portf_names],  # specify returns
+  portfolio=portf_minES,  # specify portfolio
+  optimize_method="ROI", # use ROI
+  trace=TRUE, traceDE=0)
+
+# plot optimization
+chart.RiskReward(maxSTARR_DEOpt,
+  risk.col="ES",
+  return.col="mean")
+  points(x=minES_ROI$objective_measures$ES[[1]],
+         y=mean(minES_ROI_xts),
+         col="green", lwd=3)
+  text(x=minES_ROI$objective_measures$ES[[1]],
+         y=mean(minES_ROI_xts),
+       labels="minES", col="green",
+       lwd=2, pos=4)
+# plot risk/ret points in portfolio scatterplot
+risk_ret_points(risk="ETL")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
+options(width=50)
+library(PortfolioAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+minES_ROI$weights
+minES_ROI$objective_measures$ES[[1]]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimized minES Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_minES_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(PortfolioAnalytics)
+minES_ROI_xts <-
+  plot_portf(portfolio=minES_ROI)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sharpe minES \texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<optim_SR_minES_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+chart.CumReturns(
+  cbind(maxSR_DEOpt_xts, minES_ROI_xts),
+  lwd=2, ylab="",
+  legend.loc="topleft", main="")
+      @
+    \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+options(width=50)
+library(PerformanceAnalytics)
+load(file="C:/Develop/data/portf_optim.RData")
+rbind(maxSR_DEOpt$weights, minES_ROI$weights)
+c(maxSR_DEOpt$objective_measures$mean,
+minES_ROI$objective_measures$mean)
+c(maxSR_DEOpt$objective_measures$StdDev[[1]],
+minES_ROI$objective_measures$ES[[1]])
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_minES_vis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+options(width=50)
+# perform optimization of weights
+maxSR_DEOpt <- optimize.portfolio(
+  R=env_etf$re_turns["/2011", portf_names],
+  portfolio=portf_maxSR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+weights_1h <- maxSR_DEOpt$weights
+
+# plot optimization
+maxSR_DEOpt_xts <-
+  plot_portf(portfolio=maxSR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_1h-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolios (cont.)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<optim_SR_2h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+load(file="C:/Develop/data/portf_optim.RData")
+library(PortfolioAnalytics)
+options(width=50)
+# perform optimization of weights
+maxSR_DEOpt <- optimize.portfolio(
+  R=env_etf$re_turns["2011/", portf_names],
+  portfolio=portf_maxSR,  # specify portfolio
+  optimize_method="DEoptim", # use DEoptim
+  maxSR=TRUE,  # maximize Sharpe
+  trace=TRUE, traceDE=0)
+weights_2h <- maxSR_DEOpt$weights
+
+# plot optimization
+maxSR_DEOpt_xts <-
+  plot_portf(portfolio=maxSR_DEOpt)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_2h-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+options(width=50)
+weights_1h
+weights_2h
+weights_1h - weights_2h
+      @
+    \vspace{-2em}
+      <<optim_weights,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+barplot(weights_1h,
+        names.arg=names(weights_1h),
+        las=3, ylab="", xlab="",
+        main="Portfolio Weights First Half")
+barplot(weights_2h,
+        names.arg=names(weights_2h),
+        las=3, ylab="", xlab="",
+        main="Portfolio Weights Second Half")
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_weights-1}
   \end{columns}
 \end{block}
 

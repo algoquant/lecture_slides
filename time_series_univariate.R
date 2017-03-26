@@ -208,6 +208,322 @@ sharpe(zoo_stx[, "Close"], r=0.01)
 # add title
 plot(zoo_stx[, "Close"], xlab="", ylab="")
 title(main="MSFT Close Prices", line=-1)
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# autocorrelation from "stats"
+acf(coredata(dax_rets), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(dax_rets), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+acf_plus <- function (ts_data, plot=TRUE,
+                xlab="Lag", ylab="",
+                main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+        max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+   ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(dax_rets), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(dax_rets)^2,
+   lag=10, main="")
+title(main="acf of squared DAX returns",
+line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(dax_rets))^2,
+   lag=10, main="")
+title(main="acf of squared random returns",
+line=-1)
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+    Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+   lag=10)
+title(main="quarterly unemployment rate",
+line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+   lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX data
+# 'lag' is the number of autocorrelation coefficients
+Box.test(dax_rets, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+   lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+   lag=10, type="Ljung")
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+             filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- merge(as.zoo(dax_ts),
+            as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+             start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+dax_rets <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(dax_rets[, 1]), lag=10,
+   xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(dax_rets[, 2]), lag=10,
+   xlab="")
+title(main="DAX filtered", line=-1)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# simulate geometric Brownian motion
+re_turns <- vol_at*rnorm(len_gth) +
+  dri_ft - vol_at^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="geometric Brownian motion")
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+ title=paste(c(paste0("vol_at = ", vol_at),
+               paste0("eq_price = ", eq_price),
+               paste0("the_ta = ", the_ta)),
+             collapse="\n"),
+ legend="", cex=0.8,
+ inset=0.1, bg="white", bty="n")
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+        length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
+         order.by=in_dex)
+price_s <- merge(price_s,
+           volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+price_s <- to.daily(price_s)
+chart_Series(price_s, name="random prices")
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+ facets="Series ~ .",
+ main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=729, model=list(ar=phi))
+  } )
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+# convert returns to prices
+zoo_arima <- cumsum(zoo_arima)
+colnames(zoo_arima) <-
+  paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices",
+   facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+   main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+            order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+ legend=colnames(rand_walk),
+ col=c("black", "red", "blue"), lty=1)
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+            order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+ legend=colnames(rand_walk),
+ col=c("black", "red", "blue"), lty=1)
+library(tseries)  # load tseries
+# simulate AR(1) process
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(729))
+adf.test(rand_walk)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(10000))
+adf.test(rand_walk)
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+    model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+ xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+ar3_zoo <- arima.sim(n=1000,
+      model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
 # load package quantmod
 library(quantmod)
 # get documentation for package quantmod
@@ -289,7 +605,7 @@ for (sym_bol in sym_bols) {
 }  # end for
 library(quantmod)  # load package quantmod
 # extract and merge all data, subset by symbols
-etf_series <- do.call(merge,
+price_s <- do.call(merge,
             as.list(env_etf)[sym_bols])
 
 # extract and merge adjusted prices, subset by symbols
@@ -310,7 +626,7 @@ tail(price_s[, 1:2], 3)
 unlist(eapply(globalenv(), is.xts))
 
 # save xts to csv file
-write.zoo(etf_series,
+write.zoo(price_s,
      file='etf_series.csv', sep=",")
 # copy price_s into env_etf and save to .RData file
 assign("price_s", price_s, envir=env_etf)
@@ -403,7 +719,7 @@ chartSeries(env_etf$VTI["2014"],
       theme=chartTheme("white"))
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
 VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
 # calculate volume-weighted average price
 VTI_vwap <- TTR::VWAP(price=VTI_adj,
@@ -417,7 +733,7 @@ addTA(ta=VTI_vwap, on=1, col='red')
 addTA(ta=(VTI_adj-VTI_vwap), col='red')
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI
+oh_lc <- rutils::env_etf$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
 VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
@@ -441,7 +757,7 @@ addLines(v=which.min(VTI_vwap), col='red')
 addLines(h=min(VTI_vwap), col='red')
 library(quantmod)
 library(TTR)
-oh_lc <- env_etf$VTI
+oh_lc <- rutils::env_etf$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
 VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
@@ -463,7 +779,7 @@ col="lightgrey", border="lightgrey")
 abline(v=which.min(VTI_vwap), col='red')
 abline(h=min(VTI_vwap), col='red')
 library(quantmod)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
 # extract plot object
 ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
 class(ch_ob)
@@ -476,7 +792,7 @@ plot_theme <- chart_theme()
 class(plot_theme)
 ls(plot_theme)
 library(quantmod)
-oh_lc <- env_etf$VTI["2010-04/2010-05"]
+oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
 # extract, modify theme, format tick marks "%b %d"
 plot_theme <- chart_theme()
 plot_theme$format.labels <- "%b %d"
@@ -492,25 +808,27 @@ y_lim[[2]] <- structure(
 ch_ob$set_ylim(y_lim)  # use setter function
 # render the plot
 plot(ch_ob)
-library(quantmod)
-# calculate VTI volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=Ad(env_etf$VTI),
-    volume=Vo(env_etf$VTI), n=10)
-# calculate XLF volume-weighted average price
-XLF_vwap <- TTR::VWAP(price=Ad(env_etf$XLF),
-    volume=Vo(env_etf$XLF), n=10)
-# open plot graphics device
-x11()
-# define plot area with two horizontal panels
-par(mfrow=c(2, 1))
-# plot in top panel
-invisible(chart_Series(
-  x=env_etf$VTI["2009-02/2009-04"], name="VTI"))
-add_TA(VTI_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
-# plot in bottom panel
-invisible(chart_Series(
-  x=env_etf$XLF["2009-02/2009-04"], name="XLF"))
-add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+library(HighFreq)
+# calculate VTI and XLF volume-weighted average price
+VTI_vwap <-
+  TTR::VWAP(price=Ad(rutils::env_etf$VTI),
+      volume=Vo(rutils::env_etf$VTI), n=10)
+XLF_vwap <-
+  TTR::VWAP(price=Ad(rutils::env_etf$XLF),
+      volume=Vo(rutils::env_etf$XLF), n=10)
+# open graphics device, and define
+# plot area with two horizontal panels
+x11(); par(mfrow=c(2, 1))
+ch_ob <- chart_Series(  # plot in top panel
+  x=env_etf$VTI["2009-02/2009-04"],
+  name="VTI", plot=FALSE)
+add_TA(VTI_vwap["2009-02/2009-04"],
+ lwd=2, on=1, col='blue')
+ch_ob <- chart_Series(  # plot in bottom panel
+  x=env_etf$XLF["2009-02/2009-04"],
+  name="XLF", plot=FALSE)
+add_TA(XLF_vwap["2009-02/2009-04"],
+ lwd=2, on=1, col='blue')
 library(quantmod)  # load package quantmod
 # assign name SP500 to ^GSPC symbol
 setSymbolLookup(
@@ -601,6 +919,14 @@ for (na_me in sp_500$names) {
 save(env_sp500, file="C:/Develop/data/sp500.RData")
 chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
+library(quantmod)
+# download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE",
+            auto.assign=FALSE,
+            src="FRED")
+# plot U.S. unemployment rate data
+chart_Series(unemp_rate["1990/"],
+      name="U.S. unemployment rate")
 library(quantmod)  # load package quantmod
 install.packages("devtools")
 library(devtools)
@@ -826,16 +1152,3 @@ chart.CumReturns(ham_1, lwd=2, ylab="",
 # add title
 title(main="Managers cumulative returns",
 line=-1)
-library(quantmod)
-# download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-            auto.assign=FALSE,
-            src="FRED")
-# plot U.S. unemployment rate data
-chartSeries(unemp_rate["1990/"],
-      name="U.S. unemployment rate",
-      theme=chartTheme("white"))
-# download 10-Year Treasury constant maturity rate
-trs_10yr <- getSymbols("DGS10",
-            auto.assign=FALSE,
-            src="FRED")

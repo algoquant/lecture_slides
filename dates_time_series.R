@@ -1,5 +1,5 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -345,7 +345,7 @@ library(zoo)  # load package zoo
 in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
 # create vector of geometric Brownian motion
-zoo_data <- 
+zoo_data <-
   exp(cumsum(rnorm(length(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
@@ -404,10 +404,20 @@ zoo_series <- zoo(sample(4),
 # add NA
 zoo_series[3] <- NA
 zoo_series
-
-na.locf(zoo_series)  # replace NA's using locf
-
-na.omit(zoo_series)  # remove NA's using omit
+zoo::na.locf(zoo_series)  # replace NA's using locf
+zoo::na.omit(zoo_series)  # remove NA's using omit
+# create matrix containing NA values
+mat_rix <- sample(44)
+mat_rix[sample(NROW(mat_rix), 8)] <- NA
+mat_rix <- matrix(mat_rix, nc=2)
+# replace NA values with the most recent non-NA values
+zoo::na.locf(mat_rix)
+rutils::na_locf(mat_rix)
+# create xts series containing NA values
+x_ts <- xts::xts(mat_rix, order.by=seq.Date(from=Sys.Date(),
+  by=1, length.out=NROW(mat_rix)))
+# replace NA values with the most recent non-NA values
+rutils::na_locf(x_ts)
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # methods(as.zoo)  # many methods of coercing into zoo
@@ -513,7 +523,7 @@ plot(x_ts[, 1], main="EuStockMarkets using xts",
      col=col_ors[1], major.ticks="years",
      minor.ticks=FALSE)
 # plot remaining columns
-for(col_umn in 2:NCOL(x_ts))
+for (col_umn in 2:NCOL(x_ts))
   lines(x_ts[, col_umn], col=col_ors[col_umn])
 # plot using quantmod
 library(quantmod)
@@ -644,6 +654,12 @@ rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_stx_adj), 4)
 head(lag(st_ox), 4)
+# library(HighFreq)  # load package HighFreq
+# indices of last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+head(end_points)
+# extract the last observations in each hour
+head(price_s[end_points, ])
 library(xts)  # load package xts
 # lower the periodicity to months
 xts_monthly <- to.period(x=st_ox,

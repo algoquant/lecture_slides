@@ -9,18 +9,17 @@ library(HighFreq)  # load package HighFreq
 price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
 len_gth <- length(end_points)
-win_dow <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
 # define aggregation function
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
 # perform aggregations over length of end_points
 agg_regations <- sapply(2:len_gth,
     function(in_dex) {
-agg_regate(.subset_xts(price_s,
-  start_points[in_dex]:end_points[in_dex]))
+agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
   })  # end sapply
 # coerce agg_regations into matrix and transpose it
 if (is.vector(agg_regations))
@@ -33,10 +32,10 @@ library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
 len_gth <- length(end_points)
-win_dow <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back window
 # define starting points as lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
 # define aggregation function
 agg_regate <- function(x_ts)
   xts(t(c(max=max(x_ts), min=min(x_ts))),
@@ -44,8 +43,7 @@ order.by=end(x_ts))
 # perform aggregations over length of end_points
 agg_regations <- lapply(2:len_gth,
     function(in_dex) {
-agg_regate(.subset_xts(price_s,
-  start_points[in_dex]:end_points[in_dex]))
+agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
   })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
@@ -60,19 +58,18 @@ bg="white", lty=c(1, 1), lwd=c(2, 2),
 col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations
-roll_agg <- function(x_ts, win_dow, FUN, ...) {
-# define end points at every point
+roll_agg <- function(x_ts, look_back, FUN, ...) {
+# define end points at every period
   end_points <- 0:NROW(x_ts)
   len_gth <- length(end_points)
 # define starting points as lag of end_points
   start_points <-  end_points[
-    c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+    c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
 # perform aggregations over length of end_points
   agg_regations <- lapply(2:len_gth,
-        function(in_dex) {
-          FUN(.subset_xts(x_ts,
-              start_points[in_dex]:end_points[in_dex]), ...)
-        })  # end lapply
+    function(in_dex) {
+FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...)
+    })  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
 # coerce agg_regations into xts series
@@ -85,7 +82,7 @@ xts(agg_regations, order.by=index(x_ts[end_points]))
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
 # perform aggregations over rolling window
-agg_regations <- roll_agg(price_s, win_dow=win_dow,
+agg_regations <- roll_agg(price_s, look_back=look_back,
               FUN=agg_regate)
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a vector
@@ -98,57 +95,55 @@ order.by=end(x_ts))
 # benchmark the speed of aggregation functions
 library(microbenchmark)
 summary(microbenchmark(
-  agg_vector=roll_agg(price_s, win_dow=win_dow,
+  agg_vector=roll_agg(price_s, look_back=look_back,
               FUN=agg_vector),
-  agg_xts=roll_agg(price_s, win_dow=win_dow,
+  agg_xts=roll_agg(price_s, look_back=look_back,
               FUN=agg_xts),
   times=10))[, c(1, 4, 5)]
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
 # perform aggregations over a rolling window
-agg_regations <- xts:::rollapply.xts(price_s, width=win_dow,
+agg_regations <- xts:::rollapply.xts(price_s, width=look_back,
               FUN=agg_regate, align="right")
 # perform aggregations over a rolling window
 library(PerformanceAnalytics)  # load package PerformanceAnalytics
 agg_regations <- apply.rolling(price_s,
-              width=win_dow, FUN=agg_regate)
+              width=look_back, FUN=agg_regate)
 # benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
-  roll_agg=roll_agg(price_s, win_dow=win_dow,
+  roll_agg=roll_agg(price_s, look_back=look_back,
               FUN=max),
-  roll_xts=xts:::rollapply.xts(price_s, width=win_dow,
+  roll_xts=xts:::rollapply.xts(price_s, width=look_back,
                  FUN=max, align="right"),
   apply_rolling=apply.rolling(price_s,
-                        width=win_dow, FUN=max),
+                        width=look_back, FUN=max),
   times=10))[, c(1, 4, 5)]
 # library(HighFreq)  # load package HighFreq
 # rolling sum using cumsum()
-roll_sum <- function(x_ts, win_dow) {
+roll_sum <- function(x_ts, look_back) {
   cum_sum <- cumsum(na.omit(x_ts))
-  out_put <- cum_sum - lag(x=cum_sum, k=win_dow)
-  out_put[1:win_dow, ] <- cum_sum[1:win_dow, ]
+  out_put <- cum_sum - lag(x=cum_sum, k=look_back)
+  out_put[1:look_back, ] <- cum_sum[1:look_back, ]
   colnames(out_put) <- paste0(colnames(x_ts), "_stdev")
   out_put
 }  # end roll_sum
-agg_regations <- roll_sum(price_s, win_dow=win_dow)
+agg_regations <- roll_sum(price_s, look_back=look_back)
 # perform rolling aggregations using apply loop
 agg_regations <- sapply(2:len_gth,
     function(in_dex) {
-sum(.subset_xts(price_s,
-  start_points[in_dex]:end_points[in_dex]))
+sum(price_s[start_points[in_dex]:end_points[in_dex]])
   })  # end sapply
 head(agg_regations)
 tail(agg_regations)
 # benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
-  roll_sum=roll_sum(price_s, win_dow=win_dow),
+  roll_sum=roll_sum(price_s, look_back=look_back),
   s_apply=sapply(2:len_gth,
     function(in_dex) {
-sum(.subset_xts(price_s,
-  start_points[in_dex]:end_points[in_dex]))
+sum(price_s[start_points[in_dex]:end_points[in_dex]])
   }),
   times=10))[, c(1, 4, 5)]
 # library(TTR)  # load package TTR
@@ -156,30 +151,30 @@ sum(.subset_xts(price_s,
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)),
-  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
-  run_sum=TTR::runSum(price_s, n=win_dow),
+  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
+  run_sum=TTR::runSum(price_s, n=look_back),
   times=10))[, c(1, 4, 5)]
 library(RcppRoll)  # load package RcppRoll
-win_dow <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back window
 # calculate rolling sum using rutils
 prices_mean <-
-  rutils::roll_sum(price_s, win_dow=win_dow)
+  rutils::roll_sum(price_s, win_dow=look_back)
 # calculate rolling sum using RcppRoll
 prices_mean <- RcppRoll::roll_sum(price_s,
-              align="left", n=win_dow)
+              align="right", n=look_back)
 # benchmark the speed of RcppRoll::roll_sum
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)),
-  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=win_dow),
-  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
+  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=look_back),
+  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
   times=10))[, c(1, 4, 5)]
 # calculate EWMA sum using RcppRoll
-weight_s <- exp(0.1*1:win_dow)
+weight_s <- exp(0.1*1:look_back)
 prices_mean <- RcppRoll::roll_mean(price_s,
-align="left", n=win_dow, weights=weight_s)
+align="right", n=look_back, weights=weight_s)
 prices_mean <- merge(price_s,
-  rbind(coredata(price_s[1:(win_dow-1), ]), prices_mean))
+  rbind(coredata(price_s[1:(look_back-1), ]), prices_mean))
 colnames(prices_mean) <- c("SPY", "SPY EWMA")
 # plot EWMA prices with custom line colors
 plot_theme <- chart_theme()
@@ -188,8 +183,8 @@ x11()
 chart_Series(prices_mean, theme=plot_theme,
        name="EWMA prices")
 legend("top", legend=colnames(prices_mean),
-bg="white", lty=c(1, 1), lwd=c(2, 2),
-col=plot_theme$col$line.col, bty="n")
+ bg="white", lty=c(1, 1), lwd=c(2, 2),
+ col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 library(caTools)  # load package "caTools"
 # get documentation for package "caTools"
@@ -199,34 +194,34 @@ data(package="caTools")  # list all datasets in "caTools"
 ls("package:caTools")  # list all objects in "caTools"
 detach("package:caTools")  # remove caTools from search path
 # median filter
-win_dow <- 11
+look_back <- 11
 price_s <- Cl(SPY["2012-02-01/2012-04-01"])
-med_ian <- runmed(x=price_s, k=win_dow)
+med_ian <- runmed(x=price_s, k=look_back)
 # vector of rolling volatility
-vol_at <- runsd(x=price_s, k=win_dow,
+vol_at <- runsd(x=price_s, k=look_back,
           endrule="constant", align="center")
 # vector of rolling quantiles
 quan_tiles <- runquantile(x=price_s,
-            k=win_dow, probs=0.9,
+            k=look_back, probs=0.9,
             endrule="constant",
             align="center")
 library(HighFreq)  # load package HighFreq
 # extract a single day of minutely price data
 price_s <- Cl(SPY["2012-02-13"])
 # define number of data points per interval
-win_dow <- 11
-# number of win_dows that fit over price_s
+look_back <- 11
+# number of look_backs that fit over price_s
 n_row <- NROW(price_s)
-num_agg <- n_row %/% win_dow
-# if n_row==win_dow*num_agg then whole number
-# of win_dows fit over price_s
-end_points <- win_dow*(0:num_agg)
-# if (n_row > win_dow*num_agg)
+num_agg <- n_row %/% look_back
+# if n_row==look_back*num_agg then whole number
+# of look_backs fit over price_s
+end_points <- look_back*(0:num_agg)
+# if (n_row > look_back*num_agg)
 # then stub interval at beginning
 end_points <-
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 # stub interval at end
-end_points <- c(win_dow*(0:num_agg), n_row)
+end_points <- c(look_back*(0:num_agg), n_row)
 # plot data and endpoints as vertical lines
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
@@ -241,7 +236,7 @@ head(end_points)
 head(price_s[end_points, ])
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- length(end_points)
 # start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
@@ -270,7 +265,7 @@ bg="white", lty=c(1, 1), lwd=c(2, 2),
 col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- length(end_points)
 # start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
@@ -301,8 +296,7 @@ roll_agg <- function(x_ts, end_points, FUN, ...) {
   start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform aggregations over length of end_points
   agg_regations <- lapply(2:len_gth,
-    function(in_dex) FUN(.subset_xts(x_ts,
-start_points[in_dex]:end_points[in_dex]), ...))  # end lapply
+    function(in_dex) FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...))  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
   if (!is.xts(agg_regations))
@@ -332,12 +326,12 @@ agg_regations <- apply.daily(price_s, FUN=sum)
 head(agg_regations)
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- length(end_points)
-win_dow <- 4  # number of end points per look-back window
+look_back <- 4  # number of end points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
 # perform lapply() loop over length of end_points
 agg_regations <- lapply(2:len_gth,
     function(in_dex) {
@@ -359,16 +353,15 @@ col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- length(end_points)
-win_dow <- 4  # number of end points per look-back window
+look_back <- 4  # number of end points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
 # perform lapply() loop over length of end_points
 agg_regations <- lapply(2:len_gth,
-          function(in_dex) {mean(
-price_s[start_points[in_dex]:end_points[in_dex]])
+  function(in_dex) {mean(price_s[start_points[in_dex]:end_points[in_dex]])
 })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
@@ -446,16 +439,6 @@ lines(cumsum(zoo_mean), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
  leg=c("orig prices", "mean prices"), lwd=2, bg="white",
  col=c("black", "red"))
-# define daily volatility and drift rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# simulate geometric Brownian motion
-set.seed(1121)  # reset random number generator
-re_turns <- vol_at*rnorm(len_gth) +
-  dri_ft - vol_at^2/2
-price_s <- exp(cumsum(re_turns))
-x11()
-plot(price_s, type="l", xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 d_free <- c(3, 6, 9)  # df values
 # create plot colors
@@ -754,7 +737,7 @@ var_avg <- rutils::roll_sum(var_running,
 library(RcppRoll)  # load RcppRoll
 weight_s <- exp(0.1*1:win_dow)
 var_ewma <- RcppRoll::roll_mean(var_running,
-    align="left", n=win_dow, weights=weight_s)
+    align="right", n=win_dow, weights=weight_s)
 var_ewma <- xts(var_ewma,
     order.by=index(env_etf$VTI[-(1:(win_dow-1)), ]))
 colnames(var_ewma) <- "VTI.var_ewma"
@@ -783,7 +766,7 @@ library(RcppRoll)  # load RcppRoll
 win_dow <- 31
 weight_s <- exp(0.1*1:win_dow)
 var_ewma <- RcppRoll::roll_mean(var_running,
-    align="left", n=win_dow, weights=weight_s)
+    align="right", n=win_dow, weights=weight_s)
 var_ewma <- xts(var_ewma,
     order.by=index(env_etf$VTI[-(1:(win_dow-1)), ]))
 colnames(var_ewma) <- "VTI variance"

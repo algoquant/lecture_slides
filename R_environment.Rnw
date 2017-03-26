@@ -926,6 +926,61 @@ head(trees)  # "trees" is in datasets base package
 
 
 %%%%%%%%%%%%%%%
+\subsection{Extracting Time Series from Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- do.call(merge, 
+  as.list(rutils::env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- do.call(merge, 
+  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- do.call(merge, 
+  eapply(rutils::env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <- 
+  sapply(colnames(price_s), 
+    function(col_name) 
+      strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s, 
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Referencing Object Components Using \texttt{with()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}

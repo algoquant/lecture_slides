@@ -378,6 +378,201 @@ do.call(cbind, data_cars)
 
 
 %%%%%%%%%%%%%%%
+\section{Environments in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
+      \vskip1ex
+      There are three system environments:
+      \begin{itemize}
+        \item \texttt{globalenv()} the user's workspace,
+        \item \texttt{baseenv()} the environment of the base package,
+        \item \texttt{emptyenv()} the only environment without an enclosure,
+      \end{itemize}
+      Environments form a tree structure of successive enclosures, with the empty environment at its root,
+      \vskip1ex
+      Packages have their own environments,
+      \vskip1ex
+      The enclosure of the base package is the empty environment,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+# get base environment
+baseenv()
+# get global environment
+globalenv()
+# get current environment
+environment()
+# get environment class
+class(environment())
+# define variable in current environment
+glob_var <- 1
+# get objects in current environment
+ls(environment())
+# create new environment
+new_env <- new.env()
+# get calling environment of new environment
+parent.env(new_env)
+# assign Value to Name
+assign("new_var1", 3, envir=new_env)
+# create object in new environment
+new_env$new_var2 <- 11
+# get objects in new environment
+ls(new_env)
+# get objects in current environment
+ls(environment())
+# environments are subset like lists
+new_env$new_var1
+# environments are subset like lists
+new_env[["new_var1"]]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} evaluates variables using the search path, a series of environments:
+      \begin{itemize}
+        \item global environment,
+        \item package environments,
+        \item base environment,
+      \end{itemize}
+      The function \texttt{search()} returns the search path for \texttt{R} objects,
+      \vskip1ex
+      The function \texttt{attach()} attaches objects to the search path,
+      \vskip1ex
+      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
+      \vskip1ex
+      The function \texttt{detach()} detaches objects from the search path,
+      \vskip1ex
+      The function \texttt{find()} finds where objects are located on the search path,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=TRUE>>=
+search()  # get search path for R objects
+my_list <- 
+  list(flowers=c("rose", "daisy", "tulip"), 
+       trees=c("pine", "oak", "maple"))
+my_list$trees
+attach(my_list)
+trees
+search()  # get search path for R objects
+detach(my_list)
+head(trees)  # "trees" is in datasets base package
+      @
+      \begin{block}{\color{red}{Rule of Thumb}}
+        Be very careful with using \texttt{attach()},
+        \vskip1ex
+        Make sure to \texttt{detach()} objects once they're not needed,
+      \end{block}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Extracting Time Series from Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- do.call(merge, 
+  as.list(rutils::env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- do.call(merge, 
+  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- do.call(merge, 
+  eapply(rutils::env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <- 
+  sapply(colnames(price_s), 
+    function(col_name) 
+      strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s, 
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Referencing Object Components Using \texttt{with()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{with()} evaluates an expression in an environment constructed from the data, 
+      \vskip1ex
+      \texttt{with()} allows referencing object components by their names alone,
+      \vskip1ex
+      It's often better to use \texttt{with()} instead of \texttt{attach()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=TRUE>>=
+# "trees" is in datasets base package
+head(trees, 3)
+colnames(trees)
+mean(Girth)
+mean(trees$Girth)
+with(trees, 
+     c(mean(Girth), mean(Height), mean(Volume)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Time Series Objects}
 
 
@@ -2171,12 +2366,13 @@ for (or_der in 1:n_weights) {
 \end{block}
 \begin{block}{Recommended}
   \begin{itemize}[]
-    \item Read about why \emph{CVAR} is a coherent risk measure:\\
-    \url{https://en.wikipedia.org/wiki/Expected_shortfall}\\
-    \url{https://en.wikipedia.org/wiki/Coherent_risk_measure\#Value_at_risk}
-    \item Read about why \emph{CVAR} has very large standard errors:\\
-    \emph{Danielsson CVAR Estimation Standard Error.pdf}\\
-    \url{http://www.bloomberg.com/view/articles/2016-05-23/big-banks-risk-does-not-compute}
+    \item Read about \emph{PCA} in:\\
+    \emph{pca-handout.pdf}\\
+    \emph{pcaTutorial.pdf}\\
+    \item Read about \emph{optimization methods}:\\
+    \emph{Bolker Optimization Methods.pdf}\\
+    \emph{Yollin Optimization.pdf}\\
+    \emph{Boudt DEoptim Large Portfolio Optimization.pdf}\\
   \end{itemize}
 \end{block}
 

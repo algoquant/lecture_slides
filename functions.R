@@ -73,9 +73,9 @@ rm(list=ls())  # remove all objects
 loaded <- load(file="my_data.RData")
 loaded  # vector of loaded objects
 ls()  # list objects
-fibo_nacci <- function(seq_length) {
-  if (seq_length > 2) {
-    fib_seq <- fibo_nacci(seq_length-1)  # recursion
+fibo_nacci <- function(len_gth) {
+  if (len_gth > 2) {
+    fib_seq <- fibo_nacci(len_gth-1)  # recursion
     c(fib_seq, sum(tail(fib_seq, 2)))  # return this
   } else {
     c(0, 1)  # initialize and return

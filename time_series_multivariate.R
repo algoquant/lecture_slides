@@ -5,23 +5,24 @@ options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(HighFreq)
-re_turns <- na.omit(env_etf$re_turns)
-# specify regression formula
+# specify formula and perform regression
 reg_formula <- XLP ~ VTI
-# perform regression
-reg_model <- lm(reg_formula, data=re_turns)
-# plot scatterplot of returns
-plot(reg_formula, data=re_turns)
-title(main="Regression XLP ~ VTI", line=-1)
-# add regression line
+reg_model <- lm(reg_formula, 
+          data=rutils::env_etf$re_turns)
+# get regression coefficients
+coef(summary(reg_model))
+# Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(reg_model)
+# plot scatterplot of returns with aspect ratio 1
+plot(reg_formula, data=rutils::env_etf$re_turns,
+     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1),
+     asp=1, main="Regression XLP ~ VTI")
+# add regression line and perpendicular line
 abline(reg_model, lwd=2, col="red")
-reg_model_sum <- summary(reg_model)
-coef(reg_model_sum)
-# Durbin-Watson test autocorrelation residuals
-library(lmtest)
-dwtest(reg_model)
-library(quantmod)  # load quantmod
-library(lmtest)  # load lmtest
+abline(a=0, b=-1/coef(summary(reg_model))[2, 1],
+ lwd=2, col="blue")
+library(HighFreq)  # load HighFreq
+re_turns <- na.omit(rutils::env_etf$re_turns)
 # perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(re_turns)[-1],
                   function(etf_name) {
@@ -39,7 +40,7 @@ p_alpha=coefficients[1, 4],
 beta=coefficients[2, 1],
 p_beta=coefficients[2, 4]))
   etf_reg_stats <- c(etf_reg_stats,
-         p_dw=dwtest(reg_model)$p.value)
+         p_dw=lmtest::dwtest(reg_model)$p.value)
   etf_reg_stats
 })  # end sapply
 etf_reg_stats <- t(etf_reg_stats)
@@ -51,9 +52,9 @@ library(HighFreq)
 # specify regression formula
 reg_formula <- XLP ~ VTI
 # perform rolling beta regressions every month
-beta_s <- rollapply(env_etf$re_turns, width=252,
-  FUN=function(design_matrix)
-  coef(lm(reg_formula, data=design_matrix))[2],
+beta_s <- rollapply(rutils::env_etf$re_turns, width=252,
+  FUN=function(de_sign)
+  coef(lm(reg_formula, data=de_sign))[2],
   by=22, by.column=FALSE, align="right")
 beta_s <- na.omit(beta_s)
 # plot beta_s in x11() window
@@ -62,16 +63,16 @@ chart_Series(x=beta_s,
   name=paste("rolling betas", format(reg_formula)))
 # perform daily rolling beta regressions in parallel
 library(roll)
-beta_s <- roll_lm(x=env_etf$re_turns[, "VTI"],
-            y=env_etf$re_turns[, "XLP"],
+beta_s <- roll_lm(x=rutils::env_etf$re_turns[, "VTI"],
+            y=rutils::env_etf$re_turns[, "XLP"],
             width=252)$coefficients
 # compare speed of rollapply() versus roll_lm()
 library(microbenchmark)
-da_ta <- env_etf$re_turns["2012", c("VTI", "XLP")]
+da_ta <- rutils::env_etf$re_turns["2012", c("VTI", "XLP")]
 summary(microbenchmark(
   rollapply=rollapply(da_ta, width=22,
-FUN=function(design_matrix)
-coef(lm(reg_formula, data=design_matrix))[2],
+FUN=function(de_sign)
+coef(lm(reg_formula, data=de_sign))[2],
   by.column=FALSE, align="right"),
   roll_lm=roll_lm(x=da_ta[, "VTI"],
             y=da_ta[, "XLP"],
@@ -130,52 +131,281 @@ capm_stats <- capm_stats[
 assign("capm_stats", capm_stats, envir=env_etf)
 save(env_etf, file='etf_data.RData')
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
-library(quantmod)
-#Perform pair-wise correlation analysis
-# Calculate correlation matrix
-corr_matrix <- cor(re_turns)
-colnames(corr_matrix) <- colnames(re_turns)
-rownames(corr_matrix) <- colnames(re_turns)
-# Reorder the correlation matrix based on clusters
-# Calculate permutation vector
+re_turns <-
+  scale(na.omit(rutils::env_etf$re_turns
+          [, as.character(reg_formula)[-1]]))
+(t(re_turns) %*% re_turns) / NROW(re_turns)
+w_1 <- sqrt(0.5); w_2 <- w_1
+foo <- matrix(c(w_1, w_2, -w_2, w_1), nc=2)
+t(foo) %*% foo
+# bar <- re_turns %*% t(solve(foo))
+(t(bar) %*% bar) / NROW(bar)
+
+cov_mat <- function(re_turns, an_gle=0) {
+  w_1 <- cos(an_gle)
+  w_2 <- sin(an_gle)
+  mat_rix <- matrix(c(w_1, -w_2, w_2, w_1), nc=2)
+  compo_nents <- re_turns %*% t(mat_rix)
+  (t(compo_nents) %*% compo_nents) / NROW(compo_nents)
+}  # end cov_mat
+
+bar <- cov_mat(re_turns, an_gle=pi/4)
+(t(re_turns) %*% re_turns) / NROW(re_turns)
+(t(bar) %*% bar) / NROW(bar)
+
+angle_s <- seq(0, pi/2, by=pi/24)
+co_var <- sapply(angle_s, function(an_gle)
+  cov_mat(re_turns, an_gle=an_gle)[1, 1])
+plot(x=angle_s, y=co_var, t="l")
+
+op_tim <- optimize(
+  f=function(an_gle)
+    -cov_mat(re_turns, an_gle=an_gle)[1, 1],
+  interval=range(angle_s))
+an_gle <- op_tim$minimum
+bar <- cov_mat(re_turns, an_gle=an_gle)
+tan(an_gle)
+
+w_1 <- cos(an_gle)
+w_2 <- sin(an_gle)
+mat_rix <- matrix(c(w_1, -w_2, w_2, w_1), nc=2)
+compo_nents <- re_turns %*% t(mat_rix)
+(t(compo_nents) %*% compo_nents) / NROW(compo_nents)
+
+plot(x=compo_nents[, 1], y=compo_nents[, 2],
+     xlim=c(-10, 10), ylim=c(-10, 10))
+
+reg_model <- lm(reg_formula, data=re_turns)
+# get regression coefficients
+coef(summary(reg_model))
+
+foo <- cbind(rnorm(1000, sd=0.2), rnorm(1000)) %*% t(mat_rix)
+(t(foo) %*% foo) / NROW(foo)
+plot(x=foo[, 1], y=foo[, 2])
+summary(lm(foo[, 1] ~ foo[, 2]))
+
+op_tim <- optimize(
+  f=function(an_gle)
+    -cov_mat(foo, an_gle=an_gle)[1, 1],
+  interval=range(angle_s))
+an_gle <- op_tim$minimum
+tan(an_gle)
+
+###
+
+w_1 <- cos(0.5)
+s_1 <- 1
+s_2 <- 2
+foo <- matrix(c(s_1^2, s_1*s_2*w_1, s_1*s_2*w_1, s_2^2), nc=2)
+eigen(foo)
+
+# Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(reg_model)
+# plot scatterplot of returns
+plot(reg_formula, data=rutils::env_etf$re_turns,
+     main="Regression XLP ~ VTI")
+# add regression line
+abline(reg_model, lwd=2, col="red")
+# select ETF symbols
+sym_bols <- c("IEF", "DBC", "XLF", "XLP", "XLI", "VXX")
+# select and de-mean the returns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+in_dex <- index(re_turns)
+re_turns <- t(t(re_turns) - sapply(re_turns, sum)/NROW(re_turns))
+# re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
+# re_turns <- do.call(cbind, re_turns)
+# re_turns <- scale(re_turns, scale=FALSE)
+# covariance matrix and variance vector of the data
+cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
+vari_ance <- diag(cov_mat)
+cor_mat <- cov_mat / sqrt(vari_ance)
+cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
+# cor_mat <- cor(re_turns)
+# reorder correlation matrix based on clusters
 library(corrplot)
-corr_order <- corrMatOrder(corr_matrix,
+or_der <- corrMatOrder(cor_mat,
         order="hclust",
         hclust.method="complete")
-# Apply permutation vector
-corr_matrix_ordered <-
-  corr_matrix[corr_order, corr_order]
-# Plot the correlation matrix
-col3 <- colorRampPalette(c("red", "white", "blue"))
-corrplot(corr_matrix_ordered,
-    tl.col="black", tl.cex=0.8,
-    method="square", col=col3(8),
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix",
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0),
+    method="square", col=color_ramp(8),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
-# Draw rectangles on the correlation matrix plot
-corrRect.hclust(corr_matrix_ordered,
-k=13, method="complete", col="red")
-# convert correlation matrix into distance object
-data_dist <- as.dist(1-corr_matrix_ordered)
-# Perform hierarchical clustering analysis
-data_cluster <- hclust(data_dist)
-plot(data_cluster, ann=FALSE, xlab="", ylab="")
-title("Dissimilarity = 1-Correlation",
-line=-0.5)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+          method="complete", col="red")
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix",
+    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
+    method="square", col=color_ramp(8),
+    cl.offset=0.75, cl.cex=0.7,
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+    method="complete", col="red")
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1000*(1 - sum(weight_s*weight_s))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# compare speed of two methods
+summary(microbenchmark(
+  trans_pose=t(portf_rets) %*% portf_rets,
+  s_um=sum(portf_rets*portf_rets),
+  times=10))[, c(1, 4, 5)]
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+             fn=object_ive,
+             re_turns=re_turns,
+             method="L-BFGS-B",
+             upper=rep(1.0, n_weights),
+             lower=rep(-1.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# plot first principal component loadings
+barplot(weight_s, names.arg=names(weight_s),
+  xlab="", ylab="",
+  main="first principal component loadings")
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1000*(1 - sum(weight_s*weight_s))^2 +
+    1000*sum(pc_1*portf_rets)^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+             fn=object_ive,
+             re_turns=re_turns,
+             method="L-BFGS-B",
+             upper=rep(1.0, n_weights),
+             lower=rep(-1.0, n_weights))
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2),
+  xlab="", ylab="",
+  main="second principal component loadings")
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # plot eigenvalues
+  names.arg=paste0("PC", 1:n_weights),
+  las=3, xlab="", ylab="", main="PC eigenvalues (variances)")
+# perform principal component analysis PCA
+p_ca <- prcomp(re_turns,
+         center=TRUE, scale=FALSE)
+# plot standard deviations
+barplot(p_ca$sdev,
+  names.arg=colnames(p_ca$rotation),
+  las=3, xlab="", ylab="",
+  main="PC volatilities")
+# principal component loadings (weights)
+p_ca$rotation
+# plot loading barplots in multiple panels
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:n_weights) {
+  barplot(p_ca$rotation[, or_der],
+  las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0,
+  col.main="red")
+}  # end for
+# principal component time series
+pca_ts <- xts(re_turns %*% p_ca$rotation,
+          order.by=in_dex)
+pca_ts <- cumsum(pca_ts)
+# plot principal component time series in multiple panels
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:n_weights) {
+  plot.zoo(pca_ts[, or_der],
+     ylim=ra_nge,
+     xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+# invert principal component time series
+pca_rets <- re_turns %*% p_ca$rotation
+sol_ved <- pca_rets %*% solve(p_ca$rotation)
+all.equal(re_turns, sol_ved)
+sol_ved <- pca_rets[, 1:3] %*% solve(p_ca$rotation)[1:3, ]
+# plot the solved returns
+par(mfrow=c(n_weights/2,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+col_names <- colnames(re_turns)
+for (or_der in 1:n_weights) {
+  plot.zoo(
+    cumsum(as.xts(cbind(re_turns[, or_der], sol_ved[, or_der]))),
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topright",
+   legend=paste0(col_names[or_der], c("", " solved")),
+   title="", inset=0.05, cex=1.0, lwd=c(6, 6),
+   lty=c(1, 1), col=c("black", "blue"))
+}  # end for
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# PC returns from rotation and scaled re_turns
+re_turns_scaled <- apply(re_turns, 2, scale)
+pca_rets <- re_turns_scaled %*% p_ca$rotation
+# "x" matrix contains time series of PC returns
+dim(p_ca$x)
+class(p_ca$x)
+head(p_ca$x[, 1:3], 3)
+# convert PC matrix to xts and rescale to decimals
+pca_rets <- xts(p_ca$x/100,
+    order.by=index(re_turns))
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  pca_rets[, 1:3], lwd=2, ylab="",
+  legend.loc="topright", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+library(PerformanceAnalytics)
+# Calculate PC correlation matrix
+cor_mat <- cor(pca_rets)
+colnames(cor_mat) <- colnames(pca_rets)
+rownames(cor_mat) <- colnames(pca_rets)
+cor_mat[1:3, 1:3]
+table.CAPM(Ra=pca_rets[, 1:3],
+    Rb=re_turns[, "VTI"], scale=252)
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 #Perform principal component analysis PCA
-re_turns <- na.omit(env_etf$re_turns)
-etf_pca <- prcomp(re_turns, center=TRUE, scale=TRUE)
-barplot(etf_pca$sdev[1:10],
-  names.arg=colnames(etf_pca$rotation)[1:10],
+re_turns <- na.omit(rutils::env_etf$re_turns)
+p_ca <- prcomp(re_turns, center=TRUE, scale=TRUE)
+barplot(p_ca$sdev[1:10],
+  names.arg=colnames(p_ca$rotation)[1:10],
   las=3, ylab="STDEV", xlab="PCVec",
   main="PCA Explain VAR")
 # Show first three principal component loadings
-head(etf_pca$rotation[,1:3], 3)
+head(p_ca$rotation[,1:3], 3)
 # Permute second principal component loadings by size
 pca_vec2 <- as.matrix(
-  etf_pca$rotation[order(etf_pca$rotation[, 2],
+  p_ca$rotation[order(p_ca$rotation[, 2],
   decreasing=TRUE), 2])
 colnames(pca_vec2) <- "pca2"
 head(pca_vec2, 3)
@@ -187,48 +417,54 @@ barplot(as.vector(pca_vec2),
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(3,1))  # set plot panels
 # get list of principal component vectors
-pca_vecs <- lapply(1:3, function(in_dex) {
+pca_vecs <- lapply(1:3, function(or_der) {
   pca_vec <- as.matrix(
-    etf_pca$rotation[
-    order(etf_pca$rotation[, in_dex],
-    decreasing=TRUE), in_dex])
-  colnames(pca_vec) <- paste0("pca", in_dex)
+    p_ca$rotation[
+    order(p_ca$rotation[, or_der],
+    decreasing=TRUE), or_der])
+  colnames(pca_vec) <- paste0("pca", or_der)
   pca_vec
-})  # end sapply
+})  # end lapply
 names(pca_vecs) <- c("pca1", "pca2", "pca3")
 # The option las=3 rotates the names.arg labels
-for (in_dex in 1:3) {
-  barplot(as.vector(pca_vecs[[in_dex]]),
-  names.arg=rownames(pca_vecs[[in_dex]]),
-  las=3, ylab="", xlab="",
+for (or_der in 1:3) {
+  barplot(as.vector(pca_vecs[[or_der]]),
+  names.arg=rownames(pca_vecs[[or_der]]),
+  las=3, xlab="", ylab="",
   main=paste("Loadings",
-    colnames(pca_vecs[[in_dex]])))
+    colnames(pca_vecs[[or_der]])))
 }  # end for
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# PC returns from rotation and scaled re_turns
-re_turns_scaled <- apply(re_turns, 2, scale)
-pca_rets <- re_turns_scaled %*% etf_pca$rotation
-# "x" matrix contains time series of PC returns
-dim(etf_pca$x)
-class(etf_pca$x)
-head(etf_pca$x[, 1:3], 3)
-# convert PC matrix to xts and rescale to decimals
-pca_rets <- xts(etf_pca$x/100,
-    order.by=index(re_turns))
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-chart.CumReturns(
-  pca_rets[, 1:3], lwd=2, ylab="",
-  legend.loc="topright", main="")
-# add title
-title(main="ETF cumulative returns", line=-1)
-library(PerformanceAnalytics)
-# Calculate PC correlation matrix
-corr_matrix <- cor(pca_rets)
-colnames(corr_matrix) <- colnames(pca_rets)
-rownames(corr_matrix) <- colnames(pca_rets)
-corr_matrix[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3],
-    Rb=re_turns[, "VTI"], scale=252)
+library(quantmod)
+#perform pair-wise correlation analysis
+# calculate correlation matrix
+cor_mat <- cor(re_turns)
+colnames(cor_mat) <- colnames(re_turns)
+rownames(cor_mat) <- colnames(re_turns)
+# reorder correlation matrix based on clusters
+# calculate permutation vector
+library(corrplot)
+or_der <- corrMatOrder(cor_mat,
+        order="hclust",
+        hclust.method="complete")
+# apply permutation vector
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat,
+    tl.col="black", tl.cex=0.8,
+    method="square", col=color_ramp(8),
+    cl.offset=0.75, cl.cex=0.7,
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+          method="complete", col="red")
+# convert correlation matrix into distance object
+dis_tance <- as.dist(1-cor_mat)
+# Perform hierarchical clustering analysis
+clus_ter <- hclust(dis_tance)
+plot(clus_ter, ann=FALSE, xlab="", ylab="")
+title("Dissimilarity = 1-Correlation",
+line=-0.5)
 library(factorAnalytics)  # load package "factorAnalytics"
 # get documentation for package "factorAnalytics"
 packageDescription("factorAnalytics")  # get short description
@@ -245,7 +481,7 @@ ls("package:factorAnalytics")
 detach("package:factorAnalytics")
 library(factorAnalytics)
 # fit a three-factor model using PCA
-factor_pca <- fitSfm(env_etf$re_turns, k=3)
+factor_pca <- fitSfm(rutils::env_etf$re_turns, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
 # factor realizations (time series)
 head(factor_pca$factors)

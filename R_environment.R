@@ -180,6 +180,33 @@ trees
 search()  # get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- do.call(merge,
+  as.list(rutils::env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- do.call(merge,
+  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- do.call(merge,
+  eapply(rutils::env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <-
+  sapply(colnames(price_s),
+    function(col_name)
+strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s,
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
 # "trees" is in datasets base package
 head(trees, 3)
 colnames(trees)

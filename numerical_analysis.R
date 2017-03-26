@@ -121,7 +121,7 @@ mat_rix <- matrix(1:9, ncol=3, # create matrix
 matrix_to_dframe <- function(mat_rix) {
   n_col <- ncol(mat_rix)
   dframe <- vector("list", n_col)  # empty vector
-  for(in_dex in 1:n_col)  # populate vector
+  for (in_dex in 1:n_col)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
     .set_row_names(NROW(mat_rix))
@@ -147,29 +147,29 @@ summary(microbenchmark(
     FUN.VALUE=c(sum=0)),  # end vapply
   s_apply=sapply(1:NROW(big_matrix), function(in_dex)
     sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:NROW(big_matrix)) {
+  for_loop=for (i in 1:NROW(big_matrix)) {
     row_sums[i] <- sum(big_matrix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 big_vector <- rnorm(5000)
 summary(microbenchmark(
 # allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(length(big_vector))
+  for_loop={cum_sum <- numeric(NROW(big_vector))
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
       cum_sum[i] <- cum_sum[i-1] + big_vector[i]
     }},  # end for
 # allocate zero memory for cumulative sum
   grow_vec={cum_sum <- numeric(0)
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
 # add new element to "cum_sum" ("grow" it)
       cum_sum[i] <- cum_sum[i-1] + big_vector[i]
     }},  # end for
 # allocate zero memory for cumulative sum
   com_bine={cum_sum <- numeric(0)
     cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
+    for (i in 2:NROW(big_vector)) {
 # add new element to "cum_sum" ("grow" it)
       cum_sum <- c(cum_sum, big_vector[i])
     }},  # end for
@@ -184,18 +184,18 @@ vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
 system.time(  # sum vectors using "for" loop
-  for(i in 1:length(vec_tor1)) {
+  for (i in 1:NROW(vec_tor1)) {
     big_vector[i] <- vec_tor1[i] + vec_tor2[i]
   }  # end for
 )  # end system.time
 # sum vectors using vectorized "+"
 system.time(big_vector <- vec_tor1 + vec_tor2)
 # allocate memory for cumulative sum
-cum_sum <- numeric(length(big_vector))
+cum_sum <- numeric(NROW(big_vector))
 # cumulative sum using "for" loop
 cum_sum[1] <- big_vector[1]
 system.time(
-  for(i in 2:length(big_vector)) {
+  for (i in 2:NROW(big_vector)) {
     cum_sum[i] <- cum_sum[i-1] + big_vector[i]
   }  # end for
 )  # end system.time
@@ -284,7 +284,7 @@ set.seed(1121)
 sapply(me_ans, rnorm, n=2)
 # rnorm() vectorized with respect to "std_dev"
 vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(sd)==1)
+  if (NROW(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
   else
     sapply(sd, rnorm, n=n, mean=mean)
@@ -309,7 +309,7 @@ mapply(function(in_put, e_xp) in_put^e_xp,
  1:5, seq(from=1, by=0.2, length.out=5))
 # rnorm() vectorized with respect to "mean" and "sd"
 vec_rnorm <- function(n, mean=0, sd=1) {
-  if (length(mean)==1 && length(sd)==1)
+  if (NROW(mean)==1 && NROW(sd)==1)
     rnorm(n=n, mean=mean, sd=sd)
   else
     mapply(rnorm, n=n, mean=mean, sd=sd)
@@ -341,8 +341,8 @@ legend(x="bottomright", legend=colnames(vec_tor4),
        lty=c(1, 1, 1), col=c("green", "blue", "red"))
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
 # sample mean - MC estimate
 mean(sam_ple)
 # sample standard deviation - MC estimate
@@ -350,10 +350,10 @@ sd(sam_ple)
 # MC estimate of cumulative probability
 sam_ple <- sort(sam_ple)
 pnorm(1)
-sum(sam_ple<1)/sample_length
+sum(sam_ple<1)/len_gth
 # MC estimate of quantile
 qnorm(0.75)
-sam_ple[0.75*sample_length]
+sam_ple[0.75*len_gth]
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 lev_el <- 20  # barrier level
@@ -387,7 +387,7 @@ pa_th <- cumsum(rnorm(len_gth))
 # find index when pa_th crosses lev_el
 cro_ss <- which(pa_th > lev_el)
 # fill remaining pa_th after it crosses lev_el
-if (length(cro_ss)>0) {
+if (NROW(cro_ss)>0) {
   pa_th[(cro_ss[1]+1):len_gth] <-
     pa_th[cro_ss[1]]
 }  # end if
@@ -402,43 +402,88 @@ title(main="Brownian motion crossing
   a barrier level", line=0.5)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
 # sample mean
 mean(sam_ple)
 # sample standard deviation
 sd(sam_ple)
 # bootstrap of sample mean and median
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                 replace=TRUE)]
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
   c(mean=mean(boot_sample),
     median=median(boot_sample))
 })  # end sapply
 boot_strap[, 1:3]
 # standard error from formula
-sd(sam_ple)/sqrt(sample_length)
+sd(sam_ple)/sqrt(len_gth)
 # standard error of mean from bootstrap
 sd(boot_strap["mean", ])
 # standard error of median from bootstrap
 sd(boot_strap["median", ])
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# estimate the 95% quantile
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
+  quantile(boot_sample, 0.95)
+})  # end sapply
+sd(boot_strap)
+# estimate the 95% quantile using antithetic sampling
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
+  quantile(c(boot_sample, -boot_sample), 0.95)
+})  # end sapply
+# standard error of mean from bootstrap
+sd(boot_strap)
+sqrt(2)*sd(boot_strap)
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
 explana_tory <- rnorm(100, mean=2)
 noise <- rnorm(100)
 res_ponse <- -3 + explana_tory + noise
 # define design matrix and regression formula
-design_matrix <- data.frame(res_ponse, explana_tory)
-reg_formula <- paste(colnames(design_matrix)[1],
-  paste(colnames(design_matrix)[-1], collapse="+"),
+de_sign <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(de_sign)[1],
+  paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
 # bootstrap the regression
 boot_strap <- sapply(1:100, function(x) {
-  boot_sample <-
-    sample.int(dim(design_matrix)[1], replace=TRUE)
+  boot_sample <- sample.int(dim(de_sign)[1],
+                      replace=TRUE)
   reg_model <- lm(reg_formula,
-          data=design_matrix[boot_sample, ])
+          data=de_sign[boot_sample, ])
   reg_model$coefficients
 })  # end sapply
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
@@ -447,7 +492,7 @@ x11(width=6, height=6)
 apply(boot_strap, MARGIN=1,
       function(x) c(mean=mean(x), sd=sd(x)))
 # means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=design_matrix)
+reg_model <- lm(reg_formula, data=de_sign)
 reg_model$coefficients
 summary(reg_model)$coefficients[, "Std. Error"]
 plot(density(boot_strap["explana_tory", ]),
@@ -457,27 +502,27 @@ abline(v=mean(boot_strap["explana_tory", ]),
        lwd=2, col="red")
 library(parallel)  # load package parallel
 num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
 # bootstrap the regression under Windows
 boot_strap <- parLapply(clus_ter, 1:1000,
-  function(x, reg_formula, design_matrix) {
+  function(x, reg_formula, de_sign) {
     boot_sample <-
-sample.int(dim(design_matrix)[1], replace=TRUE)
+sample.int(dim(de_sign)[1], replace=TRUE)
     reg_model <- lm(reg_formula,
-data=design_matrix[boot_sample, ])
+data=de_sign[boot_sample, ])
     reg_model$coefficients
   },
   reg_formula=reg_formula,
-  design_matrix=design_matrix)  # end parLapply
+  de_sign=de_sign)  # end parLapply
 # bootstrap the regression under Mac-OSX or Linux
 boot_strap <- mclapply(1:1000,
   function(x) {
     boot_sample <-
-sample.int(dim(design_matrix)[1], replace=TRUE)
+sample.int(dim(de_sign)[1], replace=TRUE)
     lm(reg_formula,
-data=design_matrix[boot_sample, ])$coefficients
+data=de_sign[boot_sample, ])$coefficients
   }, mc.cores=num_cores)  # end mclapply
-stopCluster(clus_ter)  # stop R processes over cluster
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
 boot_strap <- do.call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
@@ -504,12 +549,12 @@ paws <- function(x, sleep_time) {
   x
 }  # end paws
 # perform parallel loop under Mac-OSX or Linux
-foo <- mclapply(1:10, paws, mc.cores=num_cores,
+paw_s <- mclapply(1:10, paws, mc.cores=num_cores,
           sleep_time=0.01)
-# initialize compute cluster
+# initialize compute cluster under Windows
 clus_ter <- makeCluster(num_cores)
 # perform parallel loop under Windows
-foo <- parLapply(clus_ter, 1:10, paws,
+paw_s <- parLapply(clus_ter, 1:10, paws,
            sleep_time=0.01)
 library(microbenchmark)  # load package microbenchmark
 # compare speed of lapply versus parallel computing
@@ -519,12 +564,12 @@ summary(microbenchmark(
     parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
   times=10)
 )[, c(1, 4, 5)]
-# stop R processes over cluster
+# stop R processes over cluster under Windows
 stopCluster(clus_ter)
 library(parallel)  # load package parallel
 # calculate number of available cores
 num_cores <- detectCores() - 1
-# initialize compute cluster
+# initialize compute cluster under Windows
 clus_ter <- makeCluster(num_cores)
 # define function that pauses execution
 paws <- function(x, sleep_time) {
@@ -561,14 +606,14 @@ legend(x="topleft", legend=colnames(compute_times),
 library(parallel)  # load package parallel
 # calculate number of available cores
 num_cores <- detectCores() - 1
-# initialize compute cluster
+# initialize compute cluster under Windows
 clus_ter <- makeCluster(num_cores)
 # define large matrix
 mat_rix <- matrix(rnorm(7*10^5), ncol=7)
 # define aggregation function over column of matrix
 agg_regate <- function(col_umn) {
   out_put <- 0
-  for (in_dex in 1:length(col_umn))
+  for (in_dex in 1:NROW(col_umn))
     out_put <- out_put + col_umn[in_dex]
   out_put
 }  # end agg_regate
@@ -582,8 +627,56 @@ summary(microbenchmark(
     parCapply(clus_ter, mat_rix, agg_regate),
   times=10)
 )[, c(1, 4, 5)]
-# stop R processes over cluster
+# stop R processes over cluster under Windows
 stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+ba_se <- 2
+# fails because child processes don't know ba_se:
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# ba_se passed to child via dots ... argument:
+parLapply(clus_ter, 2:4,
+    function(exponent, ba_se) ba_se^exponent,
+    ba_se=ba_se)
+# ba_se passed to child via clusterExport:
+clusterExport(clus_ter, "ba_se")
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# fails because child processes don't know zoo::index():
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol)
+      NROW(index(get(sym_bol, envir=rutils::env_etf))))
+# zoo function referenced using "::" in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol)
+      NROW(zoo::index(get(sym_bol, envir=rutils::env_etf))))
+# package zoo loaded in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol) {
+      stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
+      NROW(index(get(sym_bol, envir=rutils::env_etf)))
+    })  # end parSapply
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# set seed for cluster under Windows
+# doesn't work: set.seed(1121)
+clusterSetRNGStream(clus_ter, 1121)
+# perform parallel loop under Windows
+out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
+sum(unlist(out_put))
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# perform parallel loop under Mac-OSX or Linux
+out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
 options(width=50, dev='pdf')
 str(optimize)
 # objective function with multiple minima
@@ -599,6 +692,43 @@ curve(expr=object_ive, type="l", xlim=c(-8, 9),
 xlab="", ylab="", lwd=2)
 # add title
 title(main="Objective Function", line=-1)
+library(rgl)  # load rgl
+# define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+  xlab="x", ylab="y", zlab="sur_face",
+  col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, lambda_1=1, lambda_2=1)
+  sin(lambda_1*x)*sin(lambda_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE,
+  lambda_1=1, lambda_2=2)
+# define object_ive function of one vector argument and two parameters
+object_ive <- function(vec_tor, lambda_1=1, lambda_2=1)
+  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
+# optimization to find weights with maximum Sharpe ratio
+weight_s <- c(pi/6, pi/6)
+object_ive(weight_s)
+optim_run <- optim(par=weight_s,
+           fn=object_ive,
+           method="L-BFGS-B",
+           upper=c(4*pi, 4*pi),
+           lower=c(pi/2, pi/2),
+           lambda_1=1, lambda_2=1)
+# optimal parameters and value
+optim_run$par
+optim_run$value
+-object_ive(optim_run$par)
 # sample of normal variables
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
@@ -725,3 +855,117 @@ type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
+# verify that rtools are working properly:
+devtools::find_rtools()
+devtools::has_devel()
+
+# load package Rcpp
+library(Rcpp)
+# get documentation for package Rcpp
+# get short description
+packageDescription("Rcpp")
+# load help page
+help(package="Rcpp")
+# list all datasets in "Rcpp"
+data(package="Rcpp")
+# list all objects in "Rcpp"
+ls("package:Rcpp")
+# remove Rcpp from search path
+detach("package:Rcpp")
+# define Rcpp function
+Rcpp::cppFunction("
+  int times_two(int x)
+    { return 2 * x;}
+  ")  # end cppFunction
+# run Rcpp function
+times_two(3)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/scripts/rcpp_mult.cpp")
+# multiply two numbers
+rcpp_mult(2, 3)
+rcpp_mult(1:3, 6:4)
+# multiply two vectors
+rcpp_mult_vec(2, 3)
+rcpp_mult_vec(1:3, 6:4)
+# define Rcpp function with loop
+Rcpp::cppFunction("
+double inner_mult(NumericVector x, NumericVector y) {
+int x_size = x.size();
+int y_size = y.size();
+if (x_size != y_size) {
+    return 0;
+  } else {
+    double total = 0;
+    for(int i = 0; i < x_size; ++i) {
+total += x[i] * y[i];
+  }
+  return total;
+  }
+}")  # end cppFunction
+# run Rcpp function
+inner_mult(1:3, 6:4)
+inner_mult(1:3, 6:3)
+# define Rcpp Sugar function with loop
+Rcpp::cppFunction("
+double inner_mult_sugar(NumericVector x, NumericVector y) {
+  return sum(x * y);
+}")  # end cppFunction
+# run Rcpp Sugar function
+inner_mult_sugar(1:3, 6:4)
+inner_mult_sugar(1:3, 6:3)
+# define R function with loop
+inner_mult_r <- function(x, y) {
+    to_tal <- 0
+    for(i in 1:NROW(x)) {
+to_tal <- to_tal + x[i] * y[i]
+    }
+    to_tal
+}  # end inner_mult_r
+# run R function
+inner_mult_r(1:3, 6:4)
+inner_mult_r(1:3, 6:3)
+# compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=inner_mult_r(1:10000, 1:10000),
+  inner_r=1:10000 %*% 1:10000,
+  r_cpp=inner_mult(1:10000, 1:10000),
+  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
+  times=10))[, c(1, 4, 5)]
+# define Ornstein-Uhlenbeck function in R
+ou_proc <- function(len_gth=1000, eq_price=5.0,
+              vol_at=0.01, the_ta=0.01) {
+  re_turns <- numeric(len_gth)
+  price_s <- numeric(len_gth)
+  price_s[1] <- eq_price
+  for (i in 2:len_gth) {
+    re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
+    price_s[i] <- price_s[i-1] * exp(re_turns[i])
+  }  # end for
+  price_s
+}  # end ou_proc
+# simulate Ornstein-Uhlenbeck process
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+set.seed(1121)  # reset random numbers
+price_s <- ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
+# define Ornstein-Uhlenbeck function in Rcpp
+Rcpp::cppFunction("
+NumericVector rcpp_ou_proc(int len_gth, double eq_price, double vol_at, double the_ta, NumericVector r_norm) {
+  NumericVector price_s(len_gth);
+  NumericVector re_turns(len_gth);
+  price_s[0] = eq_price;
+  for (int i = 1; i < len_gth; ++i) {
+    re_turns[i] = the_ta*(eq_price - price_s[i-1]) + vol_at*r_norm[i-1];
+    price_s[i] = price_s[i-1] * exp(re_turns[i]);
+  }
+  return price_s;
+}")  # end cppFunction
+set.seed(1121)  # reset random numbers
+price_s <- rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth))
+# compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
+  r_cpp=rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth)),
+  times=10))[, c(1, 4, 5)]

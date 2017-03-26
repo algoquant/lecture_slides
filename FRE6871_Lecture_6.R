@@ -4,6 +4,387 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+ba_se <- 2
+# fails because child processes don't know ba_se:
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# ba_se passed to child via dots ... argument:
+parLapply(clus_ter, 2:4,
+    function(exponent, ba_se) ba_se^exponent,
+    ba_se=ba_se)
+# ba_se passed to child via clusterExport:
+clusterExport(clus_ter, "ba_se")
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# set seed for cluster under Windows
+# doesn't work: set.seed(1121)
+clusterSetRNGStream(clus_ter, 1121)
+# perform parallel loop under Windows
+out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
+sum(unlist(out_put))
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# perform parallel loop under Mac-OSX or Linux
+out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+# define number of bootstrap simulations
+num_boot <- 500
+num_assets <- NROW(default_probs)
+# perform bootstrap of calc_var
+set.seed(1121)
+boot_strap <- sapply(rep(l_gd, num_boot),
+  calc_var,
+  default_probs=
+    default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end sapply
+boot_strap <- t(boot_strap)
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# perform bootstrap of calc_var for Windows
+set.seed(1121)
+boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot),
+  fun=calc_var,
+  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end parLapply
+# bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(rep(l_gd, num_boot),
+  fun=calc_var,
+  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end mclapply
+boot_strap <- do.call(rbind, boot_strap)
+stopCluster(clus_ter)  # stop R processes over cluster
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+        min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
+
+renderPlot({
+  lamb_da <- input$lamb_da
+  # calculate EWMA prices
+  weight_s <- exp(-lamb_da*1:win_dow)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(oh_lc))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+   inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+   col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot
+# symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
+library(quantmod)  # load package quantmod
+env_rates <- new.env()  # new environment for data
+# download data for sym_bols into env_rates
+getSymbols(sym_bols, env=env_rates, src="FRED")
+ls(env_rates)  # list files in env_rates
+# get class of object in env_rates
+class(get(x=sym_bols[1], envir=env_rates))
+# another way
+class(env_rates$DGS10)
+colnames(env_rates$DGS10)
+head(env_rates$DGS10, 3)
+# get class of all objects in env_rates
+eapply(env_rates, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+# plot 10-year constant maturity Treasury rate
+chart_Series(env_rates$DGS10["1990/"],
+      name="10-year constant maturity Treasury rate")
+# load constant maturity Treasury rates
+load(file="C:/Develop/data/rates_data.RData")
+# get end-of-year dates since 2006
+date_s <- endpoints(env_rates$DGS1["2006/"], on="years")
+date_s <- index(env_rates$DGS1["2006/"])[date_s]
+# create time series of end-of-year rates
+rate_s <- eapply(env_rates, function(ra_te) ra_te[date_s])
+rate_s <- do.call(merge, rate_s)
+# rename columns and rows, sort columns, and transpose into matrix
+colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
+rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
+colnames(rate_s) <- paste0(colnames(rate_s), "yr")
+rate_s <- t(rate_s)
+colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+# plot matrix using plot.zoo()
+color_ramp <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
+plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
+   plot.type="single", xlab="maturity", ylab="yield", col=color_ramp)
+# add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# add legend
+legend("bottomright", legend=colnames(rate_s),
+ col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+# alternative plot using matplot()
+matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
+  type="l", xlab="maturity", ylab="yield", col=color_ramp)
+# add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# add legend
+legend("bottomright", legend=colnames(rate_s),
+ col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+# symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+# load constant maturity Treasury rates
+load(file="C:/Develop/data/rates_data.RData")
+# calculate daily percentage changes
+rate_s <- na.omit(do.call(merge,
+    as.list(env_rates)[sym_bols]))
+re_turns <- na.omit(diff(log(rate_s)))
+# correlation matrix of Treasury rates
+cor_mat <- cor(re_turns)
+# reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat,
+        order="hclust",
+        hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation of Treasury rates",
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0),
+    method="square", col=color_ramp(8),
+    cl.offset=0.75, cl.cex=0.7,
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+          method="complete", col="red")
+# plot the correlation matrix
+color_ramp <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation of Treasury rates",
+    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
+    method="square", col=color_ramp(8),
+    cl.offset=0.75, cl.cex=0.7,
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+    method="complete", col="red")
+# perform principal component analysis PCA
+p_ca <- prcomp(re_turns,
+         center=TRUE, scale=TRUE)
+# plot standard deviations
+barplot(p_ca$sdev,
+  names.arg=colnames(p_ca$rotation),
+  las=3, xlab="", ylab="",
+  main="Volatilities of principal components
+  of Treasury rates")
+# principal component loadings (weights)
+p_ca$rotation
+# plot loading barplots in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:NCOL(p_ca$rotation)) {
+  barplot(p_ca$rotation[, or_der],
+  las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0,
+  col.main="red")
+}  # end for
+# principal component time series
+pca_ts <- xts(re_turns %*% p_ca$rotation,
+          order.by=index(re_turns))
+pca_ts <- cumsum(pca_ts)
+# plot principal component time series in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:NCOL(p_ca$rotation)) {
+  plot.zoo(pca_ts[, or_der],
+     ylim=ra_nge,
+     xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+# formula of linear model with zero intercept
+lin_formula <- z ~ x + y - 1
+lin_formula
+
+# collapsing a character vector into a text string
+paste0("x", 1:5)
+paste(paste0("x", 1:5), collapse="+")
+
+# creating formula from text string
+lin_formula <- as.formula(  # coerce text strings to formula
+        paste("z ~ ",
+          paste(paste0("x", 1:5), collapse="+")
+          )  # end paste
+      )  # end as.formula
+class(lin_formula)
+lin_formula
+# modify the formula using "update"
+update(lin_formula, log(.) ~ . + beta)
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+# response equals linear form plus error terms
+res_ponse <- -3 + explana_tory + noise
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=6)
+plot(reg_formula)  # plot scatterplot using formula
+title(main="Simple Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+# plot fitted (predicted) response values
+points(x=explana_tory, y=reg_model$fitted.values,
+       pch=16, col="blue")
+reg_model_sum <- summary(reg_model)  # copy regression summary
+reg_model_sum  # print the summary to console
+attributes(reg_model_sum)$names  # get summary elements
+reg_model_sum$coefficients
+reg_model_sum$r.squared
+reg_model_sum$adj.r.squared
+reg_model_sum$fstatistic
+# standard error of beta
+reg_model_sum$
+  coefficients["explana_tory", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(explana_tory)/
+  sqrt(unname(reg_model_sum$fstatistic[3]))
+anova(reg_model)
+set.seed(1121)  # initialize random number generator
+# high noise compared to coefficient
+res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
+reg_model <- lm(reg_formula)  # perform regression
+# estimate of regression coefficient is not
+# statistically significant
+summary(reg_model)
+par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
+reg_stats <- function(std_dev) {  # noisy regression
+  set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+  res_ponse <- 3 + 0.2*explana_tory +
+    rnorm(30, sd=std_dev)
+# specify regression formula
+  reg_formula <- res_ponse ~ explana_tory
+# perform regression and get summary
+  reg_model_sum <- summary(lm(reg_formula))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+   adj_rsquared=adj.r.squared,
+   fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <- t(sapply(vec_sd, reg_stats))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+ xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+ labels=rownames(mat_stats))
+}  # end for
+reg_stats <- function(da_ta) {  # get regression
+# perform regression and get summary
+  col_names <- colnames(da_ta)
+  reg_formula <-
+    paste(col_names[2], col_names[1], sep="~")
+  reg_model_sum <- summary(lm(reg_formula,
+                        data=da_ta))
+# extract regression statistics
+  with(reg_model_sum, c(pval=coefficients[2, 4],
+   adj_rsquared=adj.r.squared,
+   fstat=fstatistic[1]))
+}  # end reg_stats
+# apply reg_stats() to vector of std dev values
+vec_sd <- seq(from=0.1, to=0.5, by=0.1)
+names(vec_sd) <- paste0("sd=", vec_sd)
+mat_stats <-
+  t(sapply(vec_sd, function (std_dev) {
+    set.seed(1121)  # initialize number generator
+# create explanatory and response variables
+    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
+    res_ponse <- 3 + 0.2*explana_tory +
+rnorm(30, sd=std_dev)
+    reg_stats(data.frame(explana_tory, res_ponse))
+    }))
+# plot in loop
+par(mfrow=c(NCOL(mat_stats), 1))
+for (in_dex in 1:NCOL(mat_stats)) {
+  plot(mat_stats[, in_dex], type="l",
+ xaxt="n", xlab="", ylab="", main="")
+  title(main=colnames(mat_stats)[in_dex], line=-1.0)
+  axis(1, at=1:(NROW(mat_stats)),
+ labels=rownames(mat_stats))
+}  # end for
+# set plot paramaters - margins and font scale
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2, 2))  # plot 2x2 panels
+plot(reg_model)  # plot diagnostic scatterplots
+plot(reg_model, which=2)  # plot just Q-Q
+library(lmtest)  # load lmtest
+# perform Durbin-Watson test
+dwtest(reg_model)
+# Wilcoxon test for normal distribution
+wilcox.test(rnorm(100))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=0.1))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=1.0))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100), rnorm(100))
 par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 lamb_da <- c(0.5, 1, 1.5)
 col_ors <- c("red", "black", "blue")

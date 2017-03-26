@@ -317,7 +317,7 @@ n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights, min=0, max=10)
   weight_s <- weight_s/sum(weight_s)
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  portf_rets <- na.omit(env_etf$re_turns[, sym_bols]) %*% weight_s
   100*c(ret=mean(portf_rets), sd=sd(portf_rets))
 })  # end sapply
 # plot scatterplot of random portfolios

@@ -168,8 +168,6 @@ for (i in 1:4) {  # plot 4 panels
 par(ask=FALSE)  # restore automatic plotting
 par(new=TRUE)  # allow new plot on same chart
 par(graph_params)  # restore original parameters
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)
 plot(x_var, y_var, type="l", lty="solid",
@@ -337,8 +335,10 @@ poisson_func <- function(x, lambda)
 curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
 # add legend
 legend("topright", inset=0.05, title="Poisson histogram",
- c("histogram density", "probability"), cex=0.8, lwd=2, lty=c(1, 1),
- col=c("blue", "red"))
+ c("histogram density", "probability"), cex=0.8, lwd=2,
+ lty=c(1, 1), col=c("blue", "red"))
+# total area under histogram
+diff(histo_gram$breaks) %*% histo_gram$density
 # boxplot of Poisson count data
 boxplot(x=pois_counts, ylab="counts",
   main="Poisson box plot")
@@ -346,6 +346,26 @@ boxplot(x=pois_counts, ylab="counts",
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+        min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
+renderPlot({
+  lamb_da <- input$lamb_da
+  # calculate EWMA prices
+  weight_s <- exp(-lamb_da*1:win_dow)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(oh_lc))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+   inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+   col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 library(scales)  # load scales
@@ -454,12 +474,12 @@ ggp.zoo2 <- autoplot(zoo_series, main="Eu Stox",
 # create plot ggplot2 in multiple panes
 grid.arrange(ggp.zoo1, ggp.zoo2, ncol=1)
 # define function of two variables
-foo <- function(x, y) sin(sqrt(x^2+y^2))
+sur_face <- function(x, y) sin(sqrt(x^2+y^2))
 # calculate function over matrix grid
 x_lim <- seq(from=-10, to=10, by=0.2)
 y_lim <- seq(from=-10, to=10, by=0.2)
 # draw 3d surface plot of function
-persp(z=outer(x_lim, y_lim, FUN=foo),
+persp(z=outer(x_lim, y_lim, FUN=sur_face),
 theta=45, phi=30, zlab="sine",
 shade=0.1, col="green",
 main="radial sine function")
@@ -469,16 +489,22 @@ with(iris,
       type="s", col=as.numeric(Species)))
 library(rgl)  # load rgl
 # define function of two variables
-foo <- function(x, y) y*sin(x)
+sur_face <- function(x, y) y*sin(x)
 # draw 3d surface plot of function
-persp3d(x=foo, xlim=c(-5, 5), ylim=c(-5, 5),
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
   col="green", axes=FALSE)
-# save current view to png file
-rgl.snapshot("snap.png")
-
 # draw 3d surface plot of matrix
 x_lim <- seq(from=-5, to=5, by=0.1)
 y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=foo),
-  xlab="x", ylab="y", zlab="foo",
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+  xlab="x", ylab="y", zlab="sur_face",
   col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, lambda_1=1, lambda_2=1)
+  sin(lambda_1*x)*sin(lambda_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE,
+  lambda_1=1, lambda_2=2)

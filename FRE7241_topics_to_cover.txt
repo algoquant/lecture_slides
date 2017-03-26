@@ -34,7 +34,7 @@ I'm an adjunct at NYU Tandon, where I teach graduate courses in applications of 
 # find out more about the Student Response System - for live in-class polling
 http://engineering.nyu.edu/academics/support/fitl/srs
 
-# below is a link to the lecture materials. 
+# This is a link to the lecture files: 
 https://drive.google.com/drive/u/0/folders/0Bxzva1I0t63vVGEtaXNIY1JMa00
 
 ###############
@@ -87,6 +87,8 @@ purl('C:/Develop/R/lecture_slides/time_series_univariate.Rnw', documentation=0)
 ##############
 ### order of topics
 
+R packages
+
 Date and Time Objects
 Time Series Objects
 Package tseries
@@ -96,20 +98,28 @@ Performing Aggregations Over Time Series
 in: investment_strategies.pdf
 EWMA strategy heatmaps
 
-simulate geometric Brownian Motion
-simulate Ornstein-Uhlenbeck OU process
+simulating geometric Brownian Motion
+simulating Ornstein-Uhlenbeck OU process
 Regression
+
+plotly
+R Markdown documents
+shiny apps
 
 Optimization
 Principal Component Analysis PCA
 
-Cross-validation
+time series of investments: time series of returns, chart_Series plot
+Cross-validation backtesting
 Out-of-sample performance and strategy optimization
 Model overfitting
 Parameter regularization
 Test for data snooping using random data
 Optimize strategy that trades on random data to demonstrate that in-sample optimization is misleading
 simulate ARIMA and trade it using shiny
+
+parallel computing
+parallel backtesting
 
 high frequency data
 
@@ -118,6 +128,10 @@ Factor models
 Risk-adjusted performance measures
 
 Optimization techniques
+Bolker Optimization Methods.pdf
+Yollin Optimization.pdf
+Boudt DEoptim Large Portfolio Optimization.pdf
+
 In-sample strategy optimization
 
 Bootstrap standard errors of strategy parameters
@@ -134,47 +148,63 @@ scrubbing high freq data
 
 
 ###############
-### homework topics
-
-## data munging
-
-# Summary: Create a data frame of value ETFs.
-
-# Summary: Perform aggregations on a data frame of panel 
-# data using the split-apply-combine procedure. 
-
-
-## high frequency data
-
-# Summary: Calculate the total yearly trading volumes 
-# of SPY, and plot it with custom axis.
-
-# Summary: calculate intraday seasonality of trading 
-# volumes in high frequency data.
-
-# Summary: Perform interval aggregations on an OHLC time 
-# series, to obtain an OHLC series with lower periodicity, 
-# similar to function to.period() from package xts, or 
-# function to_period() from package rutils.
-
-## rolling models
-
-# Summary: Identify bad data in a time series using 
-# a Hampel median filter.  Optimize the filter parameters 
-
-
-###############
 ### to-do list
 
-+ [ ] replace "look-back window" with "look-back" in risk_models.Rnw
++ [ ] replace "look_back" with "inter_val" ?
+look_back <- 12
+replace "look-back window" with "look-back" in risk_models.Rnw
 replace "look-back window" with "look-back interval" in risk_models.Rnw ?
 
-+ [ ] rework backtesting: in roll_agg() call FUN() outside lapply() and inside lapply() aggregate the output time series from FUN(), don't do_call_rbind(), 
-roll_agg() needs two loops over two functions: a model function loop, to run it with multiple parameters, 
-and an agg_regate() function loop, to aggregate the output time series from model function.
-better solution: model function should be vectorized with respect to its parameters,
++ [ ] explain difference between trend-following and momentum strategies: 
+trend-following is trading single asset using many predictors.
+momentum is trading several assets by sorting them using many predictors.
 
-+ [x] replace xts::.subset_xts() with brackets operator []
++ [ ] demonstrate that momentum strategy is able to time the market: the beta changes ahead of market moves
+Market timing is the act of moving in and out of the market or switching between asset classes based on using predictive methods such as technical indicators or economic data. 
+MarketTiming from PerformanceAnalytics.pdf
+CAPM.beta p.30 in PerformanceAnalytics.pdf:
+The TimingRatio may help assess whether the manager is a good timer of asset allocation deci-
+sions. 
+https://www.rdocumentation.org/packages/PerformanceAnalytics/versions/1.4.3541/topics/MarketTiming
+http://www.quantsportal.com/introduction-to-market-timing-models/
+Wermers Market Timing.pdfWermers Market Timing.pdf
+Hallerbach Market Timing Strategies.pdf
+Henriksson Market Timing.pdf
+
++ [ ] explain why momentum strategy works, even when trend-following doesn't work
+create model of several time series, where each time series is random, but differences between them are autocorrelated
+There's no autocorrelation of returns, but there's autocorrelation of rank statistics.
+study Lewellen: momentum is cross-sectional ranking, meaning winners outperform losers
+Autocorrelation is longitudinal ranking, meaning past performance will continue
+How is it possible to have zero autocorrelation, but non-zero momentum?
+
++ [ ] can a momentum strategy based on ranking work even if trend-following doesn't work?
+
++ [ ] always use expanding look-backs, otherwise model may not have enough data  
+
++ [ ] create slide with bullet points of backtesting: collect historical data (returns, etc.), aggregate data into performance statistics (Sharpe ratio, etc.), apply trading rule and form portfolio, test portfolio performance out-of-sample
+adapt language from Arman Arkilic capstone project.md
+
++ [ ] create backtesting: at each endpoint rebalance, run models over expanding window, select optimal lamb_da, don't loop over lamb_das 
+
++ [ ] rework backtesting: in roll_agg() call FUN() and then perform a look_backs loop over the output of FUN(), instead of a look_backs loop over the oh_lc input of FUN(). 
+Get rid of the agg_regate() function. 
+roll_agg() should perform two loops: 
+first, a loop over lamb_das, to run the model function with multiple lamb_da parameters, output is time series of returns, 
+second, a look_backs loop over the time series of returns, output is matrix of performance statistics (Sharpe ratios), 
+roll_agg() should accept the arguments: x_ts, look_backs, FUN, lamb_das, ...
+further improvement: instead of performing sapply() loop over the time series of returns, perform vectorized operation.
+roll_agg() should return an time series of performance statistics (Sharpe ratios).
+
++ [ ] vectorize simu_ewma() with respect to its lamb_da parameter ?
+
++ [ ] rewrite the Backtesting Framework using exclusively vectorized functions:
+introduce improved out-of-sample data notation using period_s
+is "periods" needed?
+risk_ret_stats() should perform lapply() and return list
+split and rename pnl_period()
+etf_reg_stats is not defined anywhere in "investment_strategies"
+	load it from "time_series_multivariate"
 
 + [ ] modify slide "Rolling Weighted Aggregations Using Package RcppRoll" in risk_models, and add function filter()
 
@@ -185,6 +215,7 @@ Is this a manifestation of conservation of entropy: the information in the param
 Is this a manifestation of the Cramer-Rao bound and Fisher information?
 Demonstrate that calibrating a model with more parameters requires more data, to achieve the same parameter standard errors. 
 Demonstrate that parameter shrinkage reduces the standard errors, but increases the model bias (bias-variance tradeoff).
+DeMiguel Shrinkage Estimators Portfolio Optimization draft.pdf
 
 + [ ] adapt backtest code from package cv.ts
 http://moderntoolmaking.blogspot.com/2011/11/functional-and-parallel-time-series.html
@@ -195,14 +226,6 @@ http://robjhyndman.com/researchtips/tscvexample
 http://blog.revolutionanalytics.com/2009/05/parallelized-backtesting-with-foreach.html
 # backtesting with elastic net, LASSO, glmnet and caret
 https://quantmacro.wordpress.com/2016/04/26/fitting-elastic-net-model-in-r/
-
-+ [ ] rewrite the Backtesting Framework using exclusively vectorized functions:
-introduce improved out-of-sample data notation using period_s
-is "periods" needed?
-risk_ret_stats() should perform lapply() and return list
-split and rename pnl_period()
-etf_reg_stats is not defined anywhere in "investment_strategies"
-	load it from "time_series_multivariate"
 
 + [ ] analyze package caret to see if it performs loops in R or in C++
 https://github.com/topepo/caret
@@ -233,6 +256,8 @@ https://www.coursera.org/specialization/jhudatascience/1?utm_medium=sem&utm_sour
 
 + [x] rename the look-back window for rolling aggregations from win_dow to look_back.
 
++ [x] replace xts::.subset_xts() with brackets operator []
+
 + [x] replace function RcppRoll::roll_mean() with filter()
 
 + [x] move the section "Performing Aggregations Over Time Series" from time_series_multivariate to risk_models
@@ -242,15 +267,34 @@ https://www.coursera.org/specialization/jhudatascience/1?utm_medium=sem&utm_sour
 ###############
 ### topics to add
 
-+ [ ] Perform Principal Component Analysis PCA by hand using optimization
-update time_series_multivariate.Rnw
-illustrate on example of two stock returns with scatterplot
++ [ ] calculate the standard errors of VaR and CVaR  
+demonstrate that the standard error increases with the confidence level, because the number of observations decreases
+demonstrate that the standard error decreases as the size of the lookback window increases, because the number of observations increases
+show that VaR has a huge standard error and is therefore useless
+show that CVaR has a bigger standard error than VaR
+CVaR has an even bigger standard error than VaR, and is therefore useless for very large number of risk factors estimated using short span of data. 
+Jon Danielsson and Chen Zhou have demonstrated that to accurately estimate CVAR at 5% confidence would require decades of price history, something that simply doesn't exist for many assets.
+Danielsson CVAR Estimation Standard Error.pdf
+http://www.bloomberg.com/view/articles/2016-05-23/big-banks-risk-does-not-compute
+# reproduce these plots
+http://www.modelsandrisk.org/VaR-and-ES/
+
++ [ ] create slides about creating R packages and rcpp packages
+
++ [ ] Create an R package from cpp code and compile it using Rcpp
+
++ [ ] adapt from: bootstrapPortfoliosPowerpoint.pdf
+
++ [ ] adapt from Pav code for Cochrane Asset Pricing  
+https://github.com/shabbychef/coursera_ap2013  
 
 + [ ] Perform singular value decomposition SVD
 
 + [ ] Perform portfolio optimization by hand using matrix algebra, SVD, Cholesky
 Pav Markowitz Portfolio Distribution
 http://www.win-vector.com/blog/2010/01/easy-portfolio-allocation/
+
++ [ ] estimate correlation matrix for synthetic, colinear time series: study how correlation matrix becomes singular as one column of time series becomes colinear with the others
 
 + [ ] create slides for categorizing S&P500 constituents using equity sector data.
 create cap-weighted sub-portfolios: plot their performance, calculate rolling betas, etc.
@@ -260,8 +304,6 @@ Calculate sector correlations and heatmaps.
 Calculate autocorrelations and partial autocorrelations by hand.
 
 + [ ] create random OHLC data and pass it through EWMA strategy to test for data snooping
-
-+ [ ] simulate Ornstein-Uhlenbeck OU process using Rcpp
 
 + [ ] fit calibrate Ornstein-Uhlenbeck OU process
 http://r.789695.n4.nabble.com/Ornstein-Uhlenbeck-td2991060.html
@@ -296,6 +338,8 @@ demonstrate that the Sharpe of returns optimized in-sample decrease with the len
 fine optimal parameters over rolling window, and demonstrate that optimal parameters have zero autocorrelation
 create EWMA strategy using range of parameters and demonstrate that it outperforms any EWMA strategy with optimized parameters
 
++ [ ] create EWMA mean-reverting strategy with large tail risk: demonstrate that it's like selling far out-of-money options, and that it has very high Sharpe, but that it infrequently blows up
+
 + [ ] simulate stop loss trading rule, and demonstrate that it only works in trending markets, but loses money in mean-reverting markets
 
 + [ ] simulate wealth paths for stocks and for lottery tickets, and plot the probability distributions of terminal wealth
@@ -314,13 +358,16 @@ Granger Portfolio Rebalancing Momentum Trend Following.pdf
 Qian Asset Allocation Portfolio Rebalancing Alpha.pdf  
 Qian Asset Allocation Portfolio Rebalancing.pdf  
 
-+ [ ] create interactive dygraphs by first pre-calculating model output time series and saving to file, and passing the data through plotting function
++ [ ] create interactive dygraphs or plotly by first pre-calculating model output time series and saving to file, and passing the data through plotting function
 
 + [ ] calculate confidence interval of strategy parameters as function of length of data used for calibration and total number of trades
 Show that confidence interval increases with total number of trades, so strategy which trades infrequently requires very long backtest which may exceed available data.
 SharpeR Vignette.pdf
 Lo Sharpe Ratio Statistics.pdf
 http://robotwealth.com/optimal-data-windows-for-training-a-machine-learning-model-for-financial-prediction/
+
++ [ ] create Rcpp function for range volatility estimator  
+http://quant.stackexchange.com/questions/2589/how-to-calculate-historical-intraday-volatility/3264#3264
 
 + [ ] create slides for Rcpp using Rcpp RFinance_2015.pdf, Rcpp Getting Started.pdf, and RcppExamples.pdf
 http://gallery.rcpp.org/articles/first-steps-with-C++11/
@@ -363,17 +410,12 @@ http://unstarched.net/r-examples/rmgarch/fast-ewma-filtering-of-time-vayring-cor
 
 + [ ] create functions that call ML C++ libraries based on packages RcppShark and RcppMLPACK
 
-+ [ ] calculate the standard errors of VaR and CVaR  
-demonstrate that the standard error increases with the confidence level, because the number of observations decreases
-demonstrate that the standard error decreases as the size of the lookback window increases, because the number of observations increases
-show that VaR has a huge standard error and is therefore useless
-show that CVaR has a bigger standard error than VaR
-CVaR has an even bigger standard error than VaR, and is therefore useless for very large number of risk factors estimated using short span of data. 
-Jon Danielsson and Chen Zhou have demonstrated that to accurately estimate CVAR at 5% confidence would require decades of price history, something that simply doesn't exist for many assets.
-Danielsson CVAR Estimation Standard Error.pdf
-http://www.bloomberg.com/view/articles/2016-05-23/big-banks-risk-does-not-compute
-# reproduce these plots
-http://www.modelsandrisk.org/VaR-and-ES/
++ [x] Perform Principal Component Analysis PCA by hand using optimization
+update time_series_multivariate.Rnw
+
++ [x] simulate Ornstein-Uhlenbeck OU process using Rcpp
+
++ [x] demonstrate that a combination of momentum and static buy-and-hold strategies produces a better Sharpe ratio than the individual strategies alone
 
 + [x] create slides for improved version of Performing Overlapping Aggregations in investment_strategies.Rnw
 
@@ -381,8 +423,6 @@ http://www.modelsandrisk.org/VaR-and-ES/
 
 + [x] demonstrate that returns of trend-following and mean-reverting strategies are negatively correlated
 demonstrate that a combination of trend-following and mean-reverting strategies has better Sharpe ratio than the individual strategies
-
-+ [ ] create EWMA mean-reverting strategy with large tail risk: demonstrate that it's like selling far out-of-money options, and that it has very high Sharpe, but that it infrequently blows up
 
 + [ ] create EWMA and GARCH examples from package GARPFRM  
 
@@ -413,9 +453,6 @@ Sharadar discount
 INPAV-100P-HWNT_SF0
 
 ###
-
-+ [ ] adapt from Pav code for Cochrane Asset Pricing  
-https://github.com/shabbychef/coursera_ap2013  
 
 + [ ] specify sources of historical point-in-time fundamental data
 
@@ -511,7 +548,7 @@ https://wrds-web.wharton.upenn.edu/wrds/classroom/investments.cfm
 + [ ] calculate confidence interval of Sharpe ratio using bootstrap
 Demonstrate that the Sharpe ratio confidence intervals are so wide, that it's hard to distinguish between assets with large Sharpe ratios from those with small Sharpe ratios.
 Demonstrate that a very long time series is needed in order determine if the Sharpe ratios of two assets are different from each other.
-So ranking assets on their trailing Sharpe ratios makes little sense. 
+So ranking assets on their trailing Sharpe ratios makes little sense ?
 Use SharpeR package by Steven Pav, and also bootstrap. 
 Sharpe ratio as Hotelling's t-squared distribution.  
 https://github.com/shabbychef  
@@ -551,11 +588,8 @@ https://cran.r-project.org/web/packages/BLCOP/
 adapt from: C:/Develop/R/scripts/Torgo_stock_trading.R  
 http://www.dcc.fc.up.pt/~ltorgo/DataMiningWithR/code3.html
 
-+ [ ] XIV VXX ZIV strategies
++ [ ] create XIV VXX ZIV strategies
 http://www.wikinvest.com/index/Volatility_Index_(VIX)
-
-+ [ ] create Rcpp function for range volatility estimator  
-http://quant.stackexchange.com/questions/2589/how-to-calculate-historical-intraday-volatility/3264#3264
 
 + [ ] Show that any convex combination of efficient frontier portfolios is also an efficient frontier portfolio  
 The efficient frontier consists of convex combinations of any two efficient frontier portfolios.  
@@ -568,7 +602,7 @@ finish slide The Efficient Frontier and Capital Market Line in portfolio_constru
 Select the market portfolio as one portfolio and a portfolio with the maximum expected return as the other portfolio. 
 Alternatively, select the minimum variance portfolio as one portfolio and a portfolio with the maximum expected return as the other portfolio. 
 
-+ [ ] create function similar to PerformanceAnalytics function create.Efficient.Frontier
++ [ ] create function similar to PerformanceAnalytics function create.Efficient.Frontier()
 
 + [ ] create portfolio functions:  
 Compute global minimum variance portfolio
@@ -1094,6 +1128,7 @@ using fPortfolio package:
 http://www.bearcave.com/finance/portfolio_equations/  
 Shaw Portfolio Optimization CVaR Omega Utility.pdf  
 Yollin Optimization.pdf
+Yollin Portfolio Optimization.pdf
 
 + [ ] add package tseries portfolio.optim() for calculating mean-variance efficient portfolios  
 
@@ -1252,13 +1287,75 @@ risk_models
 
 
 ###############
+### homework topics existing best
+
+## data munging
+
+# Summary: Create a data frame of value ETFs.
+
+# Summary: Perform aggregations on a data frame of panel 
+# data using the split-apply-combine procedure. 
+
+
+## high frequency data
+
+# Summary: Calculate the total yearly trading volumes 
+# of SPY, and plot it with custom axis.
+
+# Summary: calculate intraday seasonality of trading 
+# volumes in high frequency data.
+
+# Summary: Perform interval aggregations on an OHLC time 
+# series, to obtain an OHLC series with lower periodicity, 
+# similar to function to.period() from package xts, or 
+# function to_period() from package rutils.
+
+## backtesting models
+
+# Optimize the weights and find the maximum Sharpe 
+# for a portfolio with and without the VWAP strategy. 
+
+# Summary: Perform a rolling portfolio optimization 
+# over annual intervals, calculate optimized portfolio 
+
+# Summary: calculate a matrix of the best performing ETFs
+# in each year.  Create a scatterplot of alphas for the
+# years 2008 and 2009.
+
+# Summary: Identify bad data in a time series using 
+# a Hampel median filter.  Optimize the filter parameters 
+
+# Summary: Simulate multiple EWMA strategies with 
+
+
+###############
 ### homework and test ideas
 
-+ [ ] perform non-overlapping aggregations using roll_agg(): volume, volatility, regress
++ [ ] provide trading strategy code with data snooping, and ask students to fix it
+
++ [ ] add transaction costs to simu_ewma()
+
++ [ ] create random OHLC data and pass it through EWMA strategy to test for data snooping
+
++ [ ] perform backtest of strategy which rebalances at every point (without endpoints), using only vectorized functions
+
++ [ ] perform backtest of strategy which chooses best and worst performing ETFs based on their Sharpe ratios 
+scale weights so that strategy volatility is constant
+
++ [x] calculate backtest performance as function of meta-parameters: look-back interval
+optimize meta-parameters
+
++ [x] create functional which performs backtest 
+arguments: time series of past_rets and fwd_rets, 
+output: time series of backtest returns
+
++ [x] create functional which performs look-back and look-forward aggregations using single lapply() loop
+arguments: agg_fun=sum, re_turns, end_points?, look_back, re_balance,
+output: time series of past_rets and fwd_rets
+
++ [x] calculate time series of model returns using parallel parLapply()
 
 + [ ] calculate correlation matrix of returns from ensemble of EWMA strategies
-
-+ [ ] provide trading strategy code with data snooping, and ask students to fix it
 
 + [ ] create data frame with latest fundamental data for S&P500 companies from usfundamentals data
 
@@ -1268,6 +1365,8 @@ risk_models
 C:\Develop\data\usfundamentals
 
 + [ ] create R Markdown document containing dygraphs and plotly plots
+
++ [ ] perform non-overlapping aggregations using roll_agg(): volume, volatility, regress - already assigned ?
 
 + [x] download U.S. stock fundamental data from Linelane, based on reports submitted to EDGAR SEC
 http://usfundamentals.com/

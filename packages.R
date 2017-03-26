@@ -56,6 +56,10 @@ suppressMessages(library(MASS))
 detach(MASS)
 # install package if it can't be loaded successfully
 if (!require("xts")) install.packages("xts")
+# calculate VTI volume-weighted average price
+v_wap <- TTR::VWAP(
+  price=quantmod::Ad(rutils::env_etf$VTI),
+  volume=quantmod::Vo(rutils::env_etf$VTI), n=10)
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 

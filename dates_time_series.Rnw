@@ -3,7 +3,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -343,7 +343,7 @@ trunc.POSIXt
       \vskip1ex
       \texttt{EDT} stands for "Eastern Daylight Time", and is \texttt{UTC} - 4 hours,
       \vskip1ex
-      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone}, but the environment variable \texttt{"TZ"} must be capitalized, 
+      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone}, but the environment variable \texttt{"TZ"} must be capitalized,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<>>=
@@ -569,13 +569,13 @@ date_time %m-% months(13:1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}} 
-      is an interface to the 
+      The package
+      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
+      is an interface to the
       \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
-      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options, 
+      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options,
       \vskip1ex
-      The 
+      The
       \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
       library also contains calendar functions for determining holidays and business days in many different jurisdictions,
     \column{0.6\textwidth}
@@ -829,7 +829,7 @@ legend(x=1992, y=8000,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly, 
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
       \vskip1ex
       The parameter \texttt{breaks} is the number of cells of the histogram,
       \vskip1ex
@@ -889,7 +889,7 @@ dax_rets <- diff(log(EuStockMarkets[, 1]))
 shapiro.test(dax_rets)
       @
     \column{0.5\textwidth}
-      The \texttt{DAX} Q-Q plot shows that the \texttt{DAX} return distribution has fat tails, 
+      The \texttt{DAX} Q-Q plot shows that the \texttt{DAX} return distribution has fat tails,
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_qq-1}
         \vspace{-7em}
       <<eustx_qq,eval=FALSE,echo=(-1),fig.show='hide'>>=
@@ -916,13 +916,13 @@ title(main=plot_title, line=-1)  # add title
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values, 
+      Box-and-whisker plots (\emph{boxplots}) are graphical representations of a distribution of values,
       \vskip1ex
-      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}), 
+      The bottom and top box edges (\emph{hinges}) are equal to the first and third quartiles, and the \emph{box} width is equal to the interquartile range (\emph{IQR}),
       \vskip1ex
-      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges}, 
+      The nominal range is equal to 1.5 times the \emph{IQR} above and below the box \emph{hinges},
       \vskip1ex
-      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range, 
+      The \emph{whiskers} are dashed vertical lines representing values beyond the first and third quartiles, but within the nominal range,
       \vskip1ex
       The \emph{whiskers} end at the last values within the nominal range, while the open circles represent outlier values beyond the nominal range,
       \vskip1ex
@@ -1069,7 +1069,7 @@ library(zoo)  # load package zoo
 in_dex <- seq(from=as.Date("2014-07-14"),
                   by="day", length.out=1000)
 # create vector of geometric Brownian motion
-zoo_data <- 
+zoo_data <-
   exp(cumsum(rnorm(length(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
@@ -1221,10 +1221,20 @@ zoo_series <- zoo(sample(4),
 # add NA
 zoo_series[3] <- NA
 zoo_series
-
-na.locf(zoo_series)  # replace NA's using locf
-
-na.omit(zoo_series)  # remove NA's using omit
+zoo::na.locf(zoo_series)  # replace NA's using locf
+zoo::na.omit(zoo_series)  # remove NA's using omit
+# create matrix containing NA values
+mat_rix <- sample(44)
+mat_rix[sample(NROW(mat_rix), 8)] <- NA
+mat_rix <- matrix(mat_rix, nc=2)
+# replace NA values with the most recent non-NA values
+zoo::na.locf(mat_rix)
+rutils::na_locf(mat_rix)
+# create xts series containing NA values
+x_ts <- xts::xts(mat_rix, order.by=seq.Date(from=Sys.Date(),
+  by=1, length.out=NROW(mat_rix)))
+# replace NA values with the most recent non-NA values
+rutils::na_locf(x_ts)
       @
   \end{columns}
 \end{block}
@@ -1803,6 +1813,37 @@ rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_stx_adj), 4)
 head(lag(st_ox), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining Calendar \protect\emph{Endpoints} of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{endpoints()} from package \emph{xts} extracts the indices of the last observations in each calendar period of time of an \emph{xts} series,
+      \vskip1ex
+      For example:\\ \-\ \texttt{endpoints(x, on="hours")}\\
+      extracts the indices of the last observations in each hour,
+      \vskip1ex
+      The \emph{endpoints} calculated by \texttt{endpoints()} aren't always equally spaced, and aren't the same as those calculated from fixed intervals,
+      \vskip1ex
+      For example, the last observations in each day aren't equally spaced due to weekends and holidays,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(HighFreq)  # load package HighFreq
+# indices of last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+head(end_points)
+# extract the last observations in each hour
+head(price_s[end_points, ])
       @
   \end{columns}
 \end{block}
