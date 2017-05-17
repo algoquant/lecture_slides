@@ -19,7 +19,9 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{mathtools}
+% bbold package for unitary vector or matrix symbol
+\usepackage{bbold}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -569,6 +571,396 @@ title(main="MSFT Close Prices", line=-1)
 
 
 %%%%%%%%%%%%%%%
+\section{Time Series of Asset Prices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ be a random variable which follows the \emph{Normal} distribution $N(x, \mu, \sigma)$,
+      \vskip1ex
+      Then the exponential of $x$: $y = e^x$ follows the \emph{Log-normal} distribution:,
+      \begin{displaymath}
+        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      The mean of the \emph{Log-normal} distribution is equal to: $\mathbb{E}[x] = \exp(\mu + \sigma^2/2)$
+      \vskip1ex
+      The \emph{Log-normal} distribution has a positive skewness (third moment) equal to: $\mathbb{E}[(x - \mathbb{E}[x])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      If asset returns follow the \emph{Normal} probability distribution, then asset prices follow the \emph{Log-normal} distribution,
+      <<echo=TRUE,eval=FALSE>>=
+# sigma values
+sig_mas <- c(0.5, 1, 1.5)
+# create plot colors
+col_ors <- c("black", "red", "blue")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/log_norm_dist.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+        type="l", xlim=c(0, 3), 
+        xlab="", ylab="", lwd=2,
+        col=col_ors[in_dex], 
+        add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Log-normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+       lab_els, cex=0.8, lwd=2, 
+       lty=rep(1, NROW(sig_mas)),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the percentage asset returns $\mathrm{d} \log{P}$ follow \emph{Brownian motion} (GBM): 
+      \begin{displaymath}
+        \mathrm{d} \log{P_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Then asset prices follow \emph{Geometric Brownian motion}:
+      \begin{displaymath}
+        \mathrm{d} P_t = \mu P_t \mathrm{d}t + \sigma P_t \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility, and $\mathrm{d} W_t$ follows the standard normal distribution $N(0, \sqrt{\mathrm{d}t})$, 
+      \vskip1ex
+      The solution of \emph{Geometric Brownian motion} is equal to:
+      \begin{displaymath}
+        P_t = P_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma W_t]
+      \end{displaymath}
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brown_geom.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# simulate geometric Brownian motion
+re_turns <- vol_at*rnorm(len_gth) + 
+  dri_ft - vol_at^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l", 
+     xlab="periods", ylab="prices", 
+     main="geometric Brownian motion")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If asset prices follow \emph{Geometric Brownian motion}, then at any point in time, they are distributed according to the \emph{Log-normal} distribution, 
+      \vskip1ex
+      The volatility increases with time as the square root of time: $\sigma \propto \sqrt{t}$
+      \vskip1ex
+      The skewness of the price distribution increases exponentially with the volatility and time: $\mathbb{E}[(x - \mathbb{E}[x])^3] \propto e^{1.5 \sigma^2} \propto e^{1.5 t}$
+      <<echo=TRUE,eval=FALSE>>=
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+path_s <- 10
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) + 
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# create zoo time series
+price_s <- zoo(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# plot zoo time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion", 
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brown_geom_paths.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value,
+      \vskip1ex
+      The skewness of the price distribution increases exponentially with the volatility and time: $\mathbb{E}[(x - \mathbb{E}[x])^3] \propto e^{1.5 \sigma^2} \propto e^{1.5 t}$
+      <<echo=TRUE,eval=FALSE>>=
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+path_s <- 100
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) + 
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# create zoo time series of percentage of paths below the expected value
+per_centage <- zoo(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# plot zoo time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean", 
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brown_geom_percent.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Evolution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices,
+      <<echo=TRUE,eval=FALSE>>=
+# load S&P500 stock prices
+load("C:/Develop/data/sp500.RData")
+ls(env_sp500)
+# extract closing prices
+price_s <- eapply(env_sp500, quantmod::Cl)
+# flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# remove NA values
+price_s <- na.locf(price_s)
+price_s <- na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])), 
+               order.by = index(price_s))
+# calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/stock_index_paths.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)", 
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8, 
+       legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In most stock indices, a small number of stocks reach very high prices, while the prices of the majority of the other stocks remain below the average index price,
+      \vskip1ex
+      For example, for a recent cohort of S\&P500 stocks (but with prices starting from 1990), the current prices of almost 80\% of the stocks are now below the average price of the cohort,
+      <<echo=TRUE,eval=FALSE>>=
+# calculate average of stock prices
+num_stocks <- rowSums(price_s != 1)
+num_stocks[1] <- NCOL(price_s)
+in_deks <- rowSums(price_s * (price_s != 1)) / num_stocks
+# calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_deks) & (price_s != 1)) / num_stocks
+# create zoo time series of average stock prices
+in_deks <- zoo(in_deks, order.by=index(price_s))
+# plot zoo time series of average stock prices
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(in_deks, main="Average S&P500 stock prices (normalized from 1990)", 
+         xlab=NA, ylab=NA, col="blue")
+# create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),], 
+         main="Percentage of S&P500 stock prices below the average price", 
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/stock_index_prices.png}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/stock_index_prices_percent.png}
+      <<echo=TRUE,eval=FALSE>>=
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
+      \begin{displaymath}
+        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility, 
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_proc.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l", 
+     xlab="periods", ylab="prices", 
+     main="Ornstein-Uhlenbeck process")
+legend("topright", 
+       title=paste(c(paste0("vol_at = ", vol_at), 
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8, 
+       inset=0.1, bg="white", bty="n")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful testing financial models,
+      <<echo=TRUE,eval=FALSE>>=
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")), 
+              length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)), 
+               order.by=in_dex)
+price_s <- merge(price_s, 
+                 volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+price_s <- to.daily(price_s)
+chart_Series(price_s, name="random prices")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_ohlc.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Time Series Modeling}
 
 
@@ -943,163 +1335,6 @@ title(main="DAX filtered partial autocorrelations",
     \column{0.5\textwidth}
       \vspace{-2em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/eustx_pacf-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Geometric Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under \emph{Geometric Brownian motion}, the percentage returns $\mathrm{d} \ln{S}$ follow \emph{Brownian motion}:
-      \begin{displaymath}
-        \mathrm{d} \ln{S} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \mathrm{d} W_t
-      \end{displaymath}
-      Where $\sigma$ is the volatility, and $\mathrm{d} W_t$ follows the standard normal distribution $N(0, \sqrt{\mathrm{d}t})$, 
-      \vskip1ex
-      The convexity correction $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma), 
-      <<echo=TRUE,eval=FALSE>>=
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# simulate geometric Brownian motion
-re_turns <- vol_at*rnorm(len_gth) + 
-  dri_ft - vol_at^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l", 
-     xlab="periods", ylab="prices", 
-     main="geometric Brownian motion")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brownian.png}\\
-      \vspace{-1em}
-      Prices at any point in time follow the \emph{Log-normal} distribution, which is the exponential of the normal (\emph{Gaussian}) distribution, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \ln{S}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $S_t$:
-      \begin{displaymath}
-        \mathrm{d} \ln{S_t} = \theta ( \mu - S_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
-      \end{displaymath}
-      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility, 
-      \vskip1ex
-      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
-      <<echo=TRUE,eval=FALSE>>=
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-@
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_proc.png}\\
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(price_s, type="l", 
-     xlab="periods", ylab="prices", 
-     main="Ornstein-Uhlenbeck process")
-legend("topright", 
-       title=paste(c(paste0("vol_at = ", vol_at), 
-                     paste0("eq_price = ", eq_price),
-                     paste0("the_ta = ", the_ta)),
-                   collapse="\n"),
-       legend="", cex=0.8, 
-       inset=0.1, bg="white", bty="n")
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
-      <<echo=TRUE,eval=FALSE>>=
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; the_ta <- 0.05
-len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-re_turns <- rutils::diff_it(log(price_s))
-lag_price <- rutils::lag_it(price_s)
-lag_price[1] <- lag_price[2]
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# plot regression
-plot(for_mula, main="returns versus lagged prices")
-abline(l_m, lwd=2, col="red")
-@
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_scatter.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Random \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Random \emph{OHLC} prices are useful testing financial models,
-      <<echo=TRUE,eval=FALSE>>=
-# simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 10000
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")), 
-              length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)), 
-               order.by=in_dex)
-price_s <- merge(price_s, 
-                 volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# aggregate to daily OHLC data
-price_s <- to.daily(price_s)
-chart_Series(price_s, name="random prices")
-@
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_ohlc.png}\\
   \end{columns}
 \end{block}
 
@@ -2425,7 +2660,7 @@ chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
       If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fred_unemp_rate.png}\\
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/fred_unemp_rate.png}
     \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)

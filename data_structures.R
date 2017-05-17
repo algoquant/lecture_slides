@@ -388,21 +388,24 @@ str(data_frame)  # display the object structure
 dim(cars)  # the cars data frame has 50 rows
 head(cars, n=5)  # get first five rows
 tail(cars, n=5)  # get last five rows
-type <- c('rose', 'daisy', 'tulip')  # character vector
-color <- c('red', 'white', 'yellow')  # character vector
-price <- c(1.5, 0.5, 1.0)  # numeric vector
-# create a data frame
-data_frame <- data.frame(type, color, price)
-# assign rownames
-rownames(data_frame) <- c('flower1', 'flower2', 'flower3')
-sort_data <- sample(1:6)  # permute data
-sort_data
-sort(sort_data)  # sorted data
-order(sort_data)  # permution index
-sort_data[order(sort_data)]  # permution index
-order(data_frame$price)  # permute on price
-data_frame[order(data_frame$price), ]  # sort on price
-data_frame[order(data_frame$color), ]  # sort on color
+# create data sample
+stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
+names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# sort the data
+sort(stu_dents)
+# calculate permution index for sorting the elements
+order(stu_dents)
+# sort the data
+stu_dents[order(stu_dents)]
+# calculate ranks of the elements
+order(order(stu_dents))
+names(stu_dents)[order(order(stu_dents))]
+# permute data_frame on price
+order(data_frame$price)
+# sort data_frame on price
+data_frame[order(data_frame$price), ]
+# sort data_frame on color
+data_frame[order(data_frame$color), ]
 order(c(2, 1:4))  # there's a tie
 order(c(2, 1:4), 1:5)  # there's a tie
 # read sort() Examples

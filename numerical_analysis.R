@@ -707,28 +707,43 @@ persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
 # save current view to png file
 rgl.snapshot("surface_plot.png")
 # define function of two variables and two parameters
-sur_face <- function(x, y, lambda_1=1, lambda_2=1)
-  sin(lambda_1*x)*sin(lambda_2*y)
+sur_face <- function(x, y, par_1=1, par_2=1)
+  sin(par_1*x)*sin(par_2*y)
 # draw 3d surface plot of function
 persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
   col="green", axes=FALSE,
-  lambda_1=1, lambda_2=2)
-# define object_ive function of one vector argument and two parameters
-object_ive <- function(vec_tor, lambda_1=1, lambda_2=1)
-  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
-# optimization to find weights with maximum Sharpe ratio
-weight_s <- c(pi/6, pi/6)
-object_ive(weight_s)
-optim_run <- optim(par=weight_s,
-           fn=object_ive,
-           method="L-BFGS-B",
-           upper=c(4*pi, 4*pi),
-           lower=c(pi/2, pi/2),
-           lambda_1=1, lambda_2=1)
+  par_1=1, par_2=2)
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+# draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastri_gin")
+# optimize with respect to vector argument
+op_tim <- optim(par=vec_tor, fn=rastri_gin,
+        method="L-BFGS-B",
+        upper=c(4*pi, 4*pi),
+        lower=c(pi/2, pi/2),
+        pa_ram=1)
 # optimal parameters and value
-optim_run$par
-optim_run$value
--object_ive(optim_run$par)
+op_tim$par
+op_tim$value
+rastri_gin(op_tim$par, pa_ram=1)
+library(DEoptim)
+optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
 # sample of normal variables
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
@@ -969,3 +984,27 @@ summary(microbenchmark(
   pure_r=ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
   r_cpp=rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth)),
   times=10))[, c(1, 4, 5)]
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+ (pa_th[in_dex - 1] < lev_el)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses lev_el
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=lev_el, lwd=2, col="red")  # add horizontal line
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)

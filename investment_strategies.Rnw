@@ -581,7 +581,7 @@ lamb_da <- 0.05
 # calculate EWMA prices
 weight_s <- exp(-lamb_da*1:win_dow)
 weight_s <- weight_s/sum(weight_s)
-ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1)
 ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
 ew_ma <- xts(cbind(cl_ose, ew_ma), 
              order.by=index(oh_lc))
@@ -731,7 +731,7 @@ simu_ewma <- function(oh_lc, lamb_da=0.05, win_dow=51) {
   weight_s <- exp(-lamb_da*1:win_dow)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- Cl(oh_lc)
-  ew_ma <- filter(as.numeric(cl_ose), filter=weight_s, sides=1)
+  ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
   ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
   # determine dates right after EWMA has crossed prices
   in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
@@ -1355,16 +1355,18 @@ clusterExport(clus_ter,
 # perform parallel loop over lamb_das under Windows
 lamb_das <- seq(0.01, 1.0, 0.1)
 re_turns <- parLapply(clus_ter, lamb_das, function(lamb_da) {
+  library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc, 
             lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
 })  # end parLapply
 # perform parallel loop over lamb_das under Mac-OSX or Linux
 re_turns <- mclapply(lamb_das, function(lamb_da) {
+  library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc, 
             lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
-})  # end parLapply
+})  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 re_turns <- do.call(merge, re_turns)
 colnames(re_turns) <- paste0("lambda=", lamb_das)

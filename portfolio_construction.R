@@ -727,22 +727,22 @@ colnames(rate_s) <- paste0(colnames(rate_s), "yr")
 rate_s <- t(rate_s)
 colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
 # plot matrix using plot.zoo()
-color_ramp <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
 plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
-   plot.type="single", xlab="maturity", ylab="yield", col=color_ramp)
+   plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
 # add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # add legend
 legend("bottomright", legend=colnames(rate_s),
- col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+ col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
 # alternative plot using matplot()
 matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
-  type="l", xlab="maturity", ylab="yield", col=color_ramp)
+  type="l", xlab="maturity", ylab="yield", col=col_ors)
 # add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # add legend
 legend("bottomright", legend=colnames(rate_s),
- col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+ col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
 # symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
 # load constant maturity Treasury rates
@@ -760,20 +760,20 @@ or_der <- corrMatOrder(cor_mat,
         hclust.method="complete")
 cor_mat <- cor_mat[or_der, or_der]
 # plot the correlation matrix
-color_ramp <- colorRampPalette(c("red", "white", "blue"))
+col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title="Correlation of Treasury rates",
     tl.col="black", tl.cex=0.8, mar=c(0,0,1,0),
-    method="square", col=color_ramp(8),
+    method="square", col=col_ors(8),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
 # draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
           method="complete", col="red")
 # plot the correlation matrix
-color_ramp <- colorRampPalette(c("red", "white", "blue"))
+col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title="Correlation of Treasury rates",
     tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
-    method="square", col=color_ramp(8),
+    method="square", col=col_ors(8),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
 # draw rectangles on the correlation matrix plot
@@ -910,6 +910,24 @@ abline(v=0.025, col="red", lwd=3)
 text(x=0.023, y=8,
  labels="default probability",
  lwd=2, srt=90, pos=3)
+# plot default distribution with low correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.01),
+type="l", xlab="default fraction", ylab="",
+lwd=2, col="green", main="Distribution of defaults")
+# plot default distribution with high correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
+type="l", add=TRUE, lwd=2, n=10001,
+xlab="fraction of defaults", ylab="density",
+col="blue", main="")
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+ title=NULL, inset=0.1, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10,
+ labels="default probability",
+ lwd=2, pos=4)
 # define Vasicek loss distribution density function
 portf_loss <- function(x, def_thresh=-2, rh_o=0.08, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd

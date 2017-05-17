@@ -585,6 +585,22 @@ summary(
   microbenchmark(sqrt(foo), foo^0.5, times=10)
   )[, c(1, 4, 5)]
       @
+      \hspace*{-1em}
+      \scriptsize{
+\begin{tabular}{ | c || p{2.1cm} | p{2.1cm} | }
+ \hline
+ \textbf{Task} & \textbf{Low-performance R} & \textbf{High-performance R} \\
+ \hline
+ \textbf{Loops} & for() or apply() loops & C-compiled and vectorized functions \\
+ \hline
+ \textbf{Memory} & Automatic R memory allocation & User memory allocation \\
+ \hline
+ \textbf{Dispatch} & Generic functions & Class methods \\
+ \hline
+ \textbf{Code} & Verbose R code & Rcpp code \\
+ \hline
+\end{tabular}
+      }
   \end{columns}
 \end{block}
 
@@ -1824,7 +1840,7 @@ title(main="Objective Function", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Interactive 3d Surface Plots Using Package \protect\emph{rgl}}
+\subsection{Package \protect\emph{rgl} for Interactive 3d Surface Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1849,12 +1865,12 @@ persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
 # save current view to png file
 rgl.snapshot("surface_plot.png")
 # define function of two variables and two parameters
-sur_face <- function(x, y, lambda_1=1, lambda_2=1)
-  sin(lambda_1*x)*sin(lambda_2*y)
+sur_face <- function(x, y, par_1=1, par_2=1)
+  sin(par_1*x)*sin(par_2*y)
 # draw 3d surface plot of function
 persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
         col="green", axes=FALSE,
-        lambda_1=1, lambda_2=2)
+        par_1=1, par_2=2)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
@@ -1865,7 +1881,7 @@ persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Optimization}
+\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1873,37 +1889,83 @@ persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
     \column{0.5\textwidth}
       The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
       \vskip1ex
-      The argument \texttt{par} are the initial parameter values,
-      \vskip1ex
       The argument \texttt{fn} is the objective function to be minimized,
       \vskip1ex
-      The argument of the objective function which is to be optimized, must be a vector argument,
+      The argument of \texttt{fn} that is to be optimized, must be a vector argument,
+      \vskip1ex
+      The argument \texttt{par} is the initial vector argument value,
       \vskip1ex
       \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
       \vskip1ex
       The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
       \vskip1ex
-      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method,
       \vskip1ex
       \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
+      \vskip1ex
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum, 
     \column{0.5\textwidth}
         <<eval=FALSE,echo=TRUE>>=
-# define object_ive function of one vector argument and two parameters
-object_ive <- function(vec_tor, lambda_1=1, lambda_2=1)
-  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
-# optimization to find weights with maximum Sharpe ratio
-weight_s <- c(pi/6, pi/6)
-object_ive(weight_s)
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=c(4*pi, 4*pi),
-                   lower=c(pi/2, pi/2),
-                   lambda_1=1, lambda_2=1)
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+# draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))), 
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastri_gin")
+# optimize with respect to vector argument
+op_tim <- optim(par=vec_tor, fn=rastri_gin,
+                method="L-BFGS-B",
+                upper=c(4*pi, 4*pi),
+                lower=c(pi/2, pi/2),
+                pa_ram=1)
 # optimal parameters and value
-optim_run$par
-optim_run$value
--object_ive(optim_run$par)
+op_tim$par
+op_tim$value
+rastri_gin(op_tim$par, pa_ram=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm,
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
+      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \vskip1ex
+      The first generation of solutions is selected randomly,
+      \vskip1ex
+      Each new generation is obtained by combining solutions from the previous generation,       \vskip1ex
+      The best solutions are selected for creating the next generation, 
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization, 
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima, 
+    \column{0.5\textwidth}
+        <<eval=FALSE,echo=TRUE>>=
+library(DEoptim)
+## optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin, 
+  upper=c(6, 6), lower=c(-6, -6), 
+  DEoptim.control(trace=FALSE, itermax=50))
+# optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
       @
   \end{columns}
 \end{block}
@@ -2373,5 +2435,58 @@ summary(microbenchmark(
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Machine Learning}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Science}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data Science is very important to quantitative finance,
+      \vskip1ex
+      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level,
+        <<echo=(-(1:2)),eval=FALSE>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+         (pa_th[in_dex - 1] < lev_el)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses lev_el
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",  # create plot
+     lty="solid", xlab="", ylab="")
+abline(h=lev_el, lwd=2, col="red")  # add horizontal line
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth,valign=t]{figure/data_science.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+
 
 \end{document}

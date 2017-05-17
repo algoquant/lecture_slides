@@ -8,7 +8,7 @@ knit_theme$set(thm)
 library(HighFreq)  # load package HighFreq
 price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 look_back <- 11  # number of data points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
@@ -31,7 +31,7 @@ agg_regations <- xts(agg_regations,
 library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 look_back <- 11  # number of data points per look-back window
 # define starting points as lag of end_points
 start_points <-  end_points[
@@ -61,7 +61,7 @@ col=plot_theme$col$line.col, bty="n")
 roll_agg <- function(x_ts, look_back, FUN, ...) {
 # define end points at every period
   end_points <- 0:NROW(x_ts)
-  len_gth <- length(end_points)
+  len_gth <- NROW(end_points)
 # define starting points as lag of end_points
   start_points <-  end_points[
     c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
@@ -237,7 +237,7 @@ head(price_s[end_points, ])
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform sapply() loop over length of end_points
@@ -266,7 +266,7 @@ col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
 start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform lapply() loop over length of end_points
@@ -291,7 +291,7 @@ col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations over end_points
 roll_agg <- function(x_ts, end_points, FUN, ...) {
-  len_gth <- length(end_points)
+  len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
   start_points <- end_points[c(1, 1:(len_gth-1))] + 1
 # perform aggregations over length of end_points
@@ -327,7 +327,7 @@ head(agg_regations)
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 look_back <- 4  # number of end points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
@@ -354,7 +354,7 @@ col=plot_theme$col$line.col, bty="n")
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- length(end_points)
+len_gth <- NROW(end_points)
 look_back <- 4  # number of end points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
@@ -384,7 +384,7 @@ library(zoo)  # load package zoo
 # create zoo time series of random returns
 in_dex <- Sys.Date() + 0:365
 zoo_series <-
-  zoo(rnorm(length(in_dex)), order.by=in_dex)
+  zoo(rnorm(NROW(in_dex)), order.by=in_dex)
 # create monthly dates
 dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 # perform monthly mean aggregation

@@ -55,7 +55,8 @@ which(vec_tor == 5)
 (1:length(vec_tor))[vec_tor == 5]
 which(vec_tor > 5)
 # find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
+which((mat_rix == 5)|(mat_rix == 6), 
+      arr.ind=TRUE)
 # equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
  dim(mat_rix), dimnames(mat_rix))
@@ -84,9 +85,11 @@ num_var1 = 3
 num_var1
 2<-3  # "<" operator confused with "<-"
 2 < -3  # add space or brackets to avoid confusion
-median(x=1:10)  # "=" assignment within argument list
+# "=" assignment within argument list
+median(x=1:10)
 x  # x doesn't exist outside the function
-median(x <- 1:10)  # "<-" assignment within argument list
+# "<-" assignment within argument list
+median(x <- 1:10)
 x  # x exists outside the function
 my_var <- 1  # create new object
 assign(x="my_var", value=2)  # assign value to existing object
@@ -141,28 +144,34 @@ mget(ls(test_env), envir=test_env)
 # delete environment
 rm(test_env)
 rm(list=ls())  # delete all objects
-as.symbol("some_string")  # convert string to symbol
-class(as.symbol("some_string"))  # name is synonymous with symbol
-symbol_name <- 2  # symbols are created during assignments
-eval(symbol_name)  # evaluate symbol (same as typing it)
-eval(as.symbol("symbol_name"))  # convert string to symbol and evaluate it
+# convert string to symbol
+as.symbol("some_string")
+# name is synonymous with symbol
+class(as.symbol("some_string"))
+# symbols are created during assignments
+sym_bol <- 2
+# evaluate symbol (same as typing it)
+eval(sym_bol)
+# convert string to symbol and evaluate it
+eval(as.symbol("sym_bol"))
 
 # convert string to expression
-ex_pression <- parse(text="symbol_new <- symbol_name")
+ex_pression <- parse(text="ne_w <- sym_bol")
 ex_pression
 class(ex_pression)
 ls()
 eval(ex_pression)  # evaluate expression
 ls()  # expression evaluation created new object
-symbol_new
-quote(symbol_name + symbol_new)  # return expression without evaluating it
+ne_w
+# return expression without evaluating it
+quote(sym_bol + ne_w)
 # substitute objects in an expression
-ex_pression <- substitute(symbol_name + symbol_new,
-                env=list(symbol_name=1, symbol_new=2))
+ex_pression <- substitute(sym_bol + ne_w,
+                env=list(sym_bol=1, ne_w=2))
 ex_pression
 eval(ex_pression)  # evaluate expression
 make_expression <- function(in_put) {
-  substitute(symbol_name + in_put)
+  substitute(sym_bol + in_put)
 }  # end make_expression
 make_expression(1)
 my_var <- 2
@@ -174,8 +183,8 @@ deparse(my_var)
 # convert symbol into string without evaluating it
 deparse(quote(my_var))
 # substitute object with value from named list
-deparse(substitute(symbol_name + symbol_new,
-             env=list(symbol_new=2)))
+deparse(substitute(sym_bol + ne_w,
+             env=list(ne_w=2)))
 # capture name of input argument
 deparse_name <- function(in_put) {
   names(in_put) <- deparse(substitute(in_put))
@@ -242,6 +251,35 @@ for (i in 3:10) {  # perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
 fib_seq
+# allocate character vector
+character()
+character(5)
+is.character(character(5))
+# allocate integer vector
+integer()
+integer(5)
+is.integer(integer(5))
+is.numeric(integer(5))
+# allocate numeric vector
+numeric()
+numeric(5)
+is.integer(numeric(5))
+is.numeric(numeric(5))
+# allocate Boolean vector
+vector()
+vector(length=5)
+# allocate numeric vector
+vector(length=5, mode="numeric")
+is.null(vector())
+# allocate Boolean matrix
+matrix()
+is.null(matrix())
+# allocate integer matrix
+matrix(NA_integer_, nrow=3, ncol=2)
+is.integer(matrix(NA_integer_, nrow=3, ncol=2))
+# allocate numeric matrix
+matrix(NA_real_, nrow=3, ncol=2)
+is.numeric(matrix(NA_real_, nrow=3, ncol=2))
 vec_tor <- sample(1:9)
 vec_tor
 vec_tor < 5  # element-wise comparison
@@ -268,17 +306,23 @@ mat_rix <- matrix(1:10, 2, 5)  # create matrix
 mat_rix
 # as.numeric strips dim attribute from matrix
 as.numeric(mat_rix)
-mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
 c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 # coercion converted matrix to vector
 c(is.matrix(mat_rix), is.vector(mat_rix))
 vec_tor1 <- 1:3  # define vector
 vec_tor2 <- 6:4  # define vector
-cbind(vec_tor1, vec_tor2)  # bind into columns
-rbind(vec_tor1, vec_tor2)  # bind into rows
-vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
-cbind(vec_tor1, vec_tor2)  # recycling rule applied
-1:6 + c(10, 20)  # another example of recycling rule
+# bind vectors into columns
+cbind(vec_tor1, vec_tor2)
+# bind vectors into rows
+rbind(vec_tor1, vec_tor2)
+# extend to four elements
+vec_tor2 <- c(vec_tor2, 7)
+# recycling rule applied
+cbind(vec_tor1, vec_tor2)
+# another example of recycling rule
+1:6 + c(10, 20)
 # replicate a single element
 rep("a", 5)
 # replicate the whole vector several times
@@ -332,10 +376,12 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # define named vectors
 vec_tor1 <- sample(1:4)
-names(vec_tor1) <- paste0("row", 1:4, "=", vec_tor1)
+names(vec_tor1) <- 
+  paste0("row", 1:4, "=", vec_tor1)
 vec_tor1
 vec_tor2 <- sample(1:3)
-names(vec_tor2) <- paste0("col", 1:3, "=", vec_tor2)
+names(vec_tor2) <- 
+  paste0("col", 1:3, "=", vec_tor2)
 vec_tor2
 # calculate outer product of two vectors
 mat_rix <- outer(vec_tor1, vec_tor2)

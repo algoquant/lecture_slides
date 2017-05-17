@@ -355,7 +355,7 @@ sd(sam_ple)  # sample standard deviation
       Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\hat\mu)^2$
       \vskip1ex
       With their expected values equal to the population mean and standard deviation:\\
-      $\mathbb{E[\hat\mu]=\mu}$ \hskip0.5em and \hskip0.5em $\mathbb{E[\hat\sigma]=\sigma}$
+      $\mathbb{E}[\hat\mu]=\mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma]=\sigma$
       \vskip1ex
       The sample skewness (third moment) is equal to:
       \begin{displaymath}
@@ -457,15 +457,15 @@ sd(sam_ple)
       A \emph{Hypothesis Test} consists of:
       \begin{itemize}
         \item \emph{null hypothesis},
-        \item test \emph{statistic} (from sample),
-        \item \emph{significance level} $\alpha$, determining whether to accept or reject the \emph{null hypothesis},
-        \item \emph{p}-value (probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE}),
+        \item test \emph{statistic} (from the data sample),
+        \item \emph{p}-value (conditional probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE}),
+        \item \emph{significance level} $\alpha$, to determine whether to accept or reject the \emph{null hypothesis},
       \end{itemize}
-      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected,
+      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected, otherwise it's accepted as \texttt{TRUE},
       \vskip1ex
-      The objective of \emph{Hypothesis Testing} is to invalidate the \emph{null hypothesis},
+      The \emph{p}-value is the probability of erroneously rejecting a \texttt{TRUE} \emph{null hypothesis}, due to the randomness of the data sample,
       \vskip1ex
-      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE}; we can only conclude that it's very unlikely to be \texttt{FALSE} (given the data),
+      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE} or not, but we can attempt to invalidate it, and conclude that it's unlikely to be \texttt{TRUE}, given the test statistic value and its \emph{p}-value,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
@@ -490,6 +490,10 @@ sum(!test_frame$result)
 # show null rejections
 head(test_frame[!test_frame$result, ])
       @
+      \vspace{-1em}
+      The \emph{p}-value is a conditional probability, and is not equal to the un-conditional probability of the hypothesis being \texttt{TRUE},
+      \vskip1ex
+      It's possible for the probability of a hypothesis to be high, but when testing it, to obtain a very small \emph{p}-value, purely by chance,
   \end{columns}
 \end{block}
 
@@ -744,7 +748,7 @@ wilcox.test(runif(100), rnorm(100))
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
       \vskip1ex
       Formulas can be defined as separate objects, manipulated, and passed to functions,
@@ -758,23 +762,24 @@ wilcox.test(runif(100), rnorm(100))
       The function \texttt{update()} modifies existing \texttt{formulas},
       \vskip1ex
       The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
 # formula of linear model with zero intercept
 lin_formula <- z ~ x + y - 1
 lin_formula
 
-# collapsing a character vector into a text string
+# collapse vector of strings into single text string
 paste0("x", 1:5)
 paste(paste0("x", 1:5), collapse="+")
 
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-              paste("z ~ ",
-                paste(paste0("x", 1:5), collapse="+")
-                )  # end paste
-            )  # end as.formula
+# create formula from text string
+lin_formula <- as.formula(
+  # coerce text strings to formula
+  paste("z ~ ",
+        paste(paste0("x", 1:5), collapse="+")
+  )  # end paste
+)  # end as.formula
 class(lin_formula)
 lin_formula
 # modify the formula using "update"
@@ -835,45 +840,49 @@ update(lin_formula, log(.) ~ . + beta)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} with Multiple Explanatory Variables}
+\subsection{draft: Solving \protect\emph{Linear Regression} Using Linear Algebra}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta x + \varepsilon
-      \end{displaymath}
-      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
       \vskip1ex
-      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
+      \begin{itemize}
+        \item call - the model formula,
+        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
+        \item residuals - the model residuals (response minus fitted values),
+      \end{itemize}
+      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
     \column{0.5\textwidth}
-      The OLS estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
-        & x^T z - \beta x^T x = 0\\
-        & \beta = (x^T x)^{-1} x^T z
-      \end{flalign*}
-      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
-      \vskip1ex
-      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
-      \vskip1ex
-      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
-      \vskip1ex
-      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+# response equals linear form plus error terms
+res_ponse <- -3 + explana_tory + noise
+
+be_ta <- (sum(pnl_s * re_turns) - sum(pnl_s) * sum(re_turns)) / (sum(pnl_s * pnl_s) - sum(pnl_s)^2 )
+
+al_pha <- sum(pnl_s) - be_ta * sum(re_turns)
+
+
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+      @
   \end{columns}
 \end{block}
 
@@ -908,7 +917,7 @@ set.seed(1121)  # initialize random number generator
 explana_tory <- rnorm(100, mean=2)
 noise <- rnorm(100)
 # response equals linear form plus error terms
-  res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + explana_tory + noise
 # specify regression formula
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
@@ -974,9 +983,7 @@ points(x=explana_tory, y=reg_model$fitted.values,
       \vskip1ex
       The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
       \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
-      \vskip1ex
-      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic (and even more extreme values), under the \emph{null} hypothesis,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
@@ -984,6 +991,8 @@ reg_model_sum <- summary(reg_model)  # copy regression summary
 reg_model_sum  # print the summary to console
 attributes(reg_model_sum)$names  # get summary elements
       @
+      \vspace{-1em}
+      A small \emph{p}-value is often interpreted as meaning that the regression coefficients are very unlikely to be zero (given the data),
   \end{columns}
 \end{block}
 
@@ -1236,7 +1245,7 @@ dwtest(reg_model)
 
 
 %%%%%%%%%%%%%%%
-\subsection{devel: Autocorrelated Time Series Regression}
+\subsection{draft: Autocorrelated Time Series Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1315,6 +1324,100 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
       \vspace{-1em}
       \hspace*{-1em}
       \includegraphics[width=0.5\paperwidth,valign=t]{figure/autocorr_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Linear Regression} with Multiple Explanatory Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      \vskip1ex
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Solving Multiple \protect\emph{Linear Regression} Using \texttt{solve()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{solve()} solves a system of linear equations, and also inverts a square matrix, 
+      \vskip1ex
+      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
+      \begin{displaymath}
+        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      Or in vector notation:
+      \begin{displaymath}
+        z = \alpha + \beta x + \varepsilon
+      \end{displaymath}
+      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      \vskip1ex
+      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      \vskip1ex
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      \vskip1ex
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
+    \column{0.5\textwidth}
+      The OLS estimate for $\alpha$ is given by:
+      \begin{align*}
+        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+      \end{align*}
+      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
+        & x^T z - \beta x^T x = 0\\
+        & \beta = (x^T x)^{-1} x^T z
+      \end{flalign*}
+      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
+      \vskip1ex
+      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
+      \vskip1ex
+      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
+      \vskip1ex
+      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
   \end{columns}
 \end{block}
 
@@ -1986,7 +2089,7 @@ confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
       @
       <<eval=FALSE,results='asis',echo=FALSE>>=
-# below is an unsuccessful attempt to draw confusion table using xtable
+# below is an unsuccessful attempt to draw confusion matrix using xtable
 confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
 dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
                                    hypothesis=c("FALSE", "TRUE"))
@@ -2032,18 +2135,17 @@ print(xtable::xtable(confusion_matrix,
       The area under the ROC curve (AUC) is a measure of the performance of a binary classification model,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# define confu_sion() function
-confu_sion <-
-  function(res_ponse, fore_casts, thresh_old) {
+# confusion matrix as function of thresh_old
+con_fuse <- function(res_ponse, fore_casts, thresh_old) {
     confu_sion <- table(res_ponse, (fore_casts>thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end confu_sion
-confu_sion(test_data$default=="Yes", fore_casts, thresh_old=thresh_old)
+  }  # end con_fuse
+con_fuse(test_data$default=="Yes", fore_casts, thresh_old=thresh_old)
 # define vector of discrimination thresholds
 threshold_s <- seq(0.01, 0.95, by=0.01)^2
 # calculate error rates
-error_rates <- sapply(threshold_s, confu_sion,
+error_rates <- sapply(threshold_s, con_fuse,
   res_ponse=(test_data$default=="Yes"),
   fore_casts=fore_casts)  # end sapply
 error_rates <- t(error_rates)

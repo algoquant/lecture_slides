@@ -229,16 +229,17 @@ wilcox.test(runif(100), rnorm(100))
 lin_formula <- z ~ x + y - 1
 lin_formula
 
-# collapsing a character vector into a text string
+# collapse vector of strings into single text string
 paste0("x", 1:5)
 paste(paste0("x", 1:5), collapse="+")
 
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-        paste("z ~ ",
-          paste(paste0("x", 1:5), collapse="+")
-          )  # end paste
-      )  # end as.formula
+# create formula from text string
+lin_formula <- as.formula(
+  # coerce text strings to formula
+  paste("z ~ ",
+  paste(paste0("x", 1:5), collapse="+")
+  )  # end paste
+)  # end as.formula
 class(lin_formula)
 lin_formula
 # modify the formula using "update"
@@ -676,7 +677,7 @@ dimnames(confu_sion) <- list(hypothesis=rownames(confu_sion),
 confu_sion
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-# below is an unsuccessful attempt to draw confusion table using xtable
+# below is an unsuccessful attempt to draw confusion matrix using xtable
 confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
 dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
                              hypothesis=c("FALSE", "TRUE"))
@@ -687,18 +688,17 @@ comment=FALSE, size="scriptsize",
 include.rownames=TRUE,
 include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
-# define confu_sion() function
-confu_sion <-
-  function(res_ponse, fore_casts, thresh_old) {
+# confusion matrix as function of thresh_old
+con_fuse <- function(res_ponse, fore_casts, thresh_old) {
     confu_sion <- table(res_ponse, (fore_casts>thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end confu_sion
-confu_sion(test_data$default=="Yes", fore_casts, thresh_old=thresh_old)
+  }  # end con_fuse
+con_fuse(test_data$default=="Yes", fore_casts, thresh_old=thresh_old)
 # define vector of discrimination thresholds
 threshold_s <- seq(0.01, 0.95, by=0.01)^2
 # calculate error rates
-error_rates <- sapply(threshold_s, confu_sion,
+error_rates <- sapply(threshold_s, con_fuse,
   res_ponse=(test_data$default=="Yes"),
   fore_casts=fore_casts)  # end sapply
 error_rates <- t(error_rates)

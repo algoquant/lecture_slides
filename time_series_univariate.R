@@ -208,6 +208,173 @@ sharpe(zoo_stx[, "Close"], r=0.01)
 # add title
 plot(zoo_stx[, "Close"], xlab="", ylab="")
 title(main="MSFT Close Prices", line=-1)
+# sigma values
+sig_mas <- c(0.5, 1, 1.5)
+# create plot colors
+col_ors <- c("black", "red", "blue")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+# plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+  type="l", xlim=c(0, 3),
+  xlab="", ylab="", lwd=2,
+  col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Log-normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+ lab_els, cex=0.8, lwd=2,
+ lty=rep(1, NROW(sig_mas)),
+ col=col_ors)
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# simulate geometric Brownian motion
+re_turns <- vol_at*rnorm(len_gth) +
+  dri_ft - vol_at^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="geometric Brownian motion")
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+path_s <- 10
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# create zoo time series
+price_s <- zoo(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# plot zoo time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+path_s <- 100
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# create zoo time series of percentage of paths below the expected value
+per_centage <- zoo(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# plot zoo time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+   xlab=NA, ylab=NA, col="blue")
+# load S&P500 stock prices
+load("C:/Develop/data/sp500.RData")
+ls(env_sp500)
+# extract closing prices
+price_s <- eapply(env_sp500, quantmod::Cl)
+# flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# remove NA values
+price_s <- na.locf(price_s)
+price_s <- na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
+         order.by = index(price_s))
+# calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+# plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+ legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+# calculate average of stock prices
+num_stocks <- rowSums(price_s != 1)
+num_stocks[1] <- NCOL(price_s)
+in_deks <- rowSums(price_s * (price_s != 1)) / num_stocks
+# calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_deks) & (price_s != 1)) / num_stocks
+# create zoo time series of average stock prices
+in_deks <- zoo(in_deks, order.by=index(price_s))
+# plot zoo time series of average stock prices
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(in_deks, main="Average S&P500 stock prices (normalized from 1990)",
+   xlab=NA, ylab=NA, col="blue")
+# create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+   main="Percentage of S&P500 stock prices below the average price",
+   xlab=NA, ylab=NA, col="blue")
+NA
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+ title=paste(c(paste0("vol_at = ", vol_at),
+               paste0("eq_price = ", eq_price),
+               paste0("the_ta = ", the_ta)),
+             collapse="\n"),
+ legend="", cex=0.8,
+ inset=0.1, bg="white", bty="n")
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+        length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
+         order.by=in_dex)
+price_s <- merge(price_s,
+           volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+price_s <- to.daily(price_s)
+chart_Series(price_s, name="random prices")
 par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # autocorrelation from "stats"
@@ -347,73 +514,6 @@ title(main="DAX filtered autocorrelations", line=-1)
 pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
 title(main="DAX filtered partial autocorrelations",
       line=-1)
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# simulate geometric Brownian motion
-re_turns <- vol_at*rnorm(len_gth) +
-  dri_ft - vol_at^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
- title=paste(c(paste0("vol_at = ", vol_at),
-               paste0("eq_price = ", eq_price),
-               paste0("the_ta = ", the_ta)),
-             collapse="\n"),
- legend="", cex=0.8,
- inset=0.1, bg="white", bty="n")
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; the_ta <- 0.05
-len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-re_turns <- rutils::diff_it(log(price_s))
-lag_price <- rutils::lag_it(price_s)
-lag_price[1] <- lag_price[2]
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# plot regression
-plot(for_mula, main="returns versus lagged prices")
-abline(l_m, lwd=2, col="red")
-# simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 10000
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-        length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
-         order.by=in_dex)
-price_s <- merge(price_s,
-           volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# aggregate to daily OHLC data
-price_s <- to.daily(price_s)
-chart_Series(price_s, name="random prices")
 # ARIMA processes
 library(ggplot2)  # load ggplot2
 library(gridExtra)  # load gridExtra
