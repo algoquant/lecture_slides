@@ -42,7 +42,7 @@ knit_theme$set(thm)
 % Make url text scriptsize
 \renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
-\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{institute}{size=\small,shape=\itshape}
 \setbeamerfont{date}{size=\small}
 \setbeamerfont{block title}{size=\normalsize} % shape=\itshape
 \setbeamerfont{block body}{size=\footnotesize}
@@ -179,6 +179,7 @@ if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+?Arithmetic
 4.7 * 0.5  # multiplication
 4.7 / 0.5  # division
 # exponentiation
@@ -192,7 +193,7 @@ if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Comparing Objects With \texttt{identical()}}
+\subsection{Comparing Objects With \texttt{identical()} and \texttt{all.equal()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -203,6 +204,10 @@ if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
       For atomic arguments \texttt{identical()} often gives the same result as the \texttt{"=="} operator, but it's not synonymous with it in general,
       \vskip1ex
       The \texttt{"=="} operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
+      \vskip1ex
+      The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
+      \vskip1ex
+      The variable \texttt{.Machine} contains information about the numerical characteristics of the computer \texttt{R} is running on, such as the largest \texttt{double} and \texttt{integer} numbers, and the \emph{machine precision},
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
@@ -217,6 +222,15 @@ is.null(num_var)
 vec_tor <- c(2, 4, 6)
 vec_tor==2
 identical(vec_tor, 2)
+
+# num_ber is equal to "1.0" within machine precision
+num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
+all.equal(num_ber, 1.0)
+
+# info machine precision of computer R is running on
+# ?.Machine
+# machine precision
+.Machine$double.eps
       @
   \end{columns}
 \end{block}
@@ -225,7 +239,7 @@ identical(vec_tor, 2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Lookup and Matching}
+\subsection{Lookup and Matching Using \texttt{which()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -264,7 +278,8 @@ which.min(vec_tor)
 
 
 %%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
+\subsection{Lookup and Matching Using \texttt{match()}}
+\begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
@@ -299,6 +314,45 @@ any(vec_tor == 5)
 any(vec_tor == (-5))
 if (any(vec_tor < 0))
   cat("vector contains negative values\n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Finding Closest Match Using \texttt{findInterval()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{match()} returns the index of the first element of its second argument, that \emph{exactly} matches its first argument,
+      \vskip1ex
+      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
+      \vskip1ex
+      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
+      \vskip1ex
+      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+             all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+             rightmost.closed=TRUE)
       @
   \end{columns}
 \end{block}
@@ -1346,7 +1400,7 @@ head(split_iris$setosa, 2)
       \url{http://www.jstatsoft.org/v40/i01/paper}
       \vskip1ex
     \column{0.5\textwidth}
-      \hskip1em\includegraphics[width=0.5\paperwidth,valign=t]{image/splitapply.png}
+      \hskip1em\includegraphics[width=0.5\paperwidth]{image/splitapply.png}
   \end{columns}
 \end{block}
 
@@ -1963,24 +2017,24 @@ options(error=NULL)  # set back to default "error" option
 
 
 %%%%%%%%%%%%%%%
-\subsection{Using the Debugger in \texttt{RStudio}}
+\subsection{Using the Debugger in \protect\emph{RStudio}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
+      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
       \begin{itemize}
         \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
         \item stepping into functions,
         \item environment pane with environment stack, instead of calling \texttt{ls()},
         \item traceback pane, instead of calling \texttt{traceback()},
       \end{itemize}
-      \texttt{RStudio} provides an online debugging tutorial:
+      \emph{RStudio} provides an online debugging tutorial:
       \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{image/rstudio_debug.png}
+      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
   \end{columns}
 \end{block}
 

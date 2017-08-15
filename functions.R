@@ -521,13 +521,16 @@ apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
 # pass da_ta to arg3
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
-sapply(iris[, -5], mean)  # vector of means of numeric columns
-lapply(iris[, -5], mean)  # list of means of numeric columns
-unlist(lapply(iris,  # lapply using anonymous function
+# vector of means of numeric columns
+sapply(iris[, -5], mean)
+# list of means of numeric columns
+lapply(iris[, -5], mean)
+# lapply using anonymous function
+unlist(lapply(iris,
       function(col_umn) {
         if (is.numeric(col_umn)) mean(col_umn)
       }  # end anonymous function
-      )  # end sapply
+      )  # end lapply
        )  # end unlist
 unlist(sapply(iris, function(col_umn) {
   if (is.numeric(col_umn)) mean(col_umn)}))

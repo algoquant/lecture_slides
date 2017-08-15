@@ -596,16 +596,16 @@ library(tseries)  # load tseries
 # simulate AR(1) process
 set.seed(1121)  # initialize random number generator
 ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-adf.test(ari_ma)
+tseries::adf.test(ari_ma)
 set.seed(1121)  # initialize random number generator
 ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
-adf.test(ari_ma)
+tseries::adf.test(ari_ma)
 set.seed(1121)  # initialize random number generator
 rand_walk <- cumsum(rnorm(729))
-adf.test(rand_walk)
+tseries::adf.test(rand_walk)
 set.seed(1121)  # initialize random number generator
 rand_walk <- cumsum(rnorm(10000))
-adf.test(rand_walk)
+tseries::adf.test(rand_walk)
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 ar3_zoo <- zoo(  # AR(3) time series of returns

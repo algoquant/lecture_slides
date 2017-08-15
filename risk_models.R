@@ -439,7 +439,7 @@ lines(cumsum(zoo_mean), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
  leg=c("orig prices", "mean prices"), lwd=2, bg="white",
  col=c("black", "red"))
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 d_free <- c(3, 6, 9)  # df values
 # create plot colors
 col_ors <- c("black", "red", "blue", "green")
@@ -458,7 +458,7 @@ title(main="t-distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
        title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
        col=col_ors)
 # objective function is log-likelihood
 object_ive <- function(pa_r, free_dom, sam_ple) {

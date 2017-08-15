@@ -31,6 +31,7 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
+?Arithmetic
 4.7 * 0.5  # multiplication
 4.7 / 0.5  # division
 # exponentiation
@@ -47,6 +48,15 @@ is.null(num_var)
 vec_tor <- c(2, 4, 6)
 vec_tor==2
 identical(vec_tor, 2)
+
+# num_ber is equal to "1.0" within machine precision
+num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
+all.equal(num_ber, 1.0)
+
+# info machine precision of computer R is running on
+# ?.Machine
+# machine precision
+.Machine$double.eps
 vec_tor <- sample(1:6, 21, replace=TRUE)
 mat_rix <- matrix(vec_tor, ncol=3)
 vec_tor
@@ -79,6 +89,21 @@ any(vec_tor == 5)
 any(vec_tor == (-5))
 if (any(vec_tor < 0))
   cat("vector contains negative values\n")
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+       all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+       rightmost.closed=TRUE)
 num_var1 <- 3  # "<-" and "=" are valid assignment operators
 num_var1
 num_var1 = 3

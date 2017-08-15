@@ -164,7 +164,7 @@ for (i in 1:4) {  # plot 4 panels
   barplot(sample(1:6), main=paste("panel", i),
     col=rainbow(6), border=NA, axes=FALSE)
   box()
-}
+}  # end for
 par(ask=FALSE)  # restore automatic plotting
 par(new=TRUE)  # allow new plot on same chart
 par(graph_params)  # restore original parameters
@@ -213,12 +213,13 @@ plot(x_var, dnorm(x_var, sd=sig_mas[1]),
 for (in_dex in 1:4) {
   lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]),
   lwd=2, col=col_ors[in_dex])
-}
+}  # end for
 # add legend
 legend("topright", inset=0.05, title="Sigmas",
  lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
  col=col_ors)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 d_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
@@ -226,41 +227,43 @@ col_ors <- c("red", "black", "blue", "green")
 lab_els <- paste("df", d_free, sep="=")
 for (in_dex in 1:4) {  # plot four curves
 curve(expr=dchisq(x, df=d_free[in_dex]),
-type="l", xlim=c(0, 20), ylim=c(0, 0.3),
-xlab="", ylab="", lwd=2,
-col=col_ors[in_dex],
-add=as.logical(in_dex-1))
+      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
 }  # end for
 # add title
 title(main="Chi-squared Distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
- title="Degrees of freedom", lab_els,
- cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
- col=col_ors)
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(0, 20, length=100)
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 d_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
 lab_els <- paste("df", d_free, sep="=")
 # plot an empty chart
+x_var <- seq(0, 20, length=100)
 plot(x_var, dchisq(x_var, df=d_free[1]),
-     type="n", xlab="", ylab="", ylim=c(0, 0.3),
-     main="Chi-squared Distributions")
+     type="n", xlab="", ylab="", ylim=c(0, 0.3))
 # add lines to plot
 for (in_dex in 1:4) {
   lines(x_var, dchisq(x_var, df=d_free[in_dex]),
-  lwd=2, col=col_ors[in_dex])
-}
+lwd=2, col=col_ors[in_dex])
+}  # end for
+# add title
+title(main="Chi-squared Distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
- title="Degrees of freedom", lab_els,
- cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
- col=col_ors)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 d_free <- c(3, 6, 9)  # df values
 # create plot colors
 col_ors <- c("black", "red", "blue", "green")
@@ -268,21 +271,21 @@ col_ors <- c("black", "red", "blue", "green")
 lab_els <- c("normal", paste("df", d_free, sep="="))
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-4, 4),
-xlab="", ylab="", lwd=2)
+      xlab="", ylab="", lwd=2)
 for (in_dex in 1:3) {  # plot three curves
 curve(expr=dt(x, df=d_free[in_dex]),
-type="l", xlab="", ylab="", lwd=2,
-col=col_ors[in_dex+1], add=TRUE)
+      type="l", xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex+1], add=TRUE)
 }  # end for
 # add title
 title(main="t-distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
- title="Degrees\n of freedom", lab_els,
- cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
- col=col_ors)
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 x_var <- seq(-4, 4, length=100)
 d_free <- c(3, 6, 9)  # df values
 # create plot colors
@@ -291,18 +294,19 @@ col_ors <- c("black", "red", "blue", "green")
 lab_els <- c("normal", paste("df", d_free, sep="="))
 # plot chart of normal distribution
 plot(x_var, dnorm(x_var), type="l",
-     lwd=2, xlab="", ylab="",
-     main="t-distributions")
+     lwd=2, xlab="", ylab="")
 # add lines to plot
 for (in_dex in 1:3) {
   lines(x_var, dt(x_var, df=d_free[in_dex]),
-  lwd=2, col=col_ors[in_dex+1])
-}
+lwd=2, col=col_ors[in_dex+1])
+}  # end for
+# add title
+title(main="t-distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
- title="Degrees\n of freedom", lab_els,
- cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
- col=col_ors)
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 poisson_events <- 0:11  # Poisson events

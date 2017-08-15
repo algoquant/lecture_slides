@@ -46,6 +46,15 @@ trunc(3.675)  # truncate
 # 0.2 stored as binary number
 # slightly larger than 0.2
 format(0.2, digits=22)
+# define a square matrix
+mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
+vec_tor <- c(2, 1)
+# calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+in_verse %*% mat_rix
+# calculate solution of linear system
+solu_tion <- solve(a=mat_rix, b=vec_tor)
+mat_rix %*% solu_tion
 # get size of an object
 object.size(runif(1e6))
 format(object.size(runif(1e6)), units="MB")
@@ -354,7 +363,8 @@ sum(sam_ple<1)/len_gth
 # MC estimate of quantile
 qnorm(0.75)
 sam_ple[0.75*len_gth]
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 lev_el <- 20  # barrier level
 len_gth <- 1000  # number of simulation steps
@@ -373,12 +383,13 @@ if (in_dex <= len_gth)
   pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
 # create daily time series starting 2011
 ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",  # create plot
-     lty="solid", xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")  # add horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=lev_el, lwd=2, col="red")
 title(main="Brownian motion crossing a barrier level",
       line=0.5)
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 lev_el <- 20  # barrier level
 len_gth <- 1000  # number of simulation steps
@@ -396,10 +407,10 @@ ts_path <- ts(data=pa_th, frequency=365,
      start=c(2011, 1))
 # create plot with horizontal line
 plot(ts_path, type="l", col="black",
-     lty="solid", xlab="", ylab="")
+     lty="solid", lwd=2, xlab="", ylab="")
 abline(h=lev_el, lwd=2, col="red")
-title(main="Brownian motion crossing
-  a barrier level", line=0.5)
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
@@ -734,16 +745,6 @@ op_tim <- optim(par=vec_tor, fn=rastri_gin,
 op_tim$par
 op_tim$value
 rastri_gin(op_tim$par, pa_ram=1)
-library(DEoptim)
-optimize rastri_gin using DEoptim
-op_tim <-  DEoptim(rastri_gin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# optimal parameters and value
-op_tim$optim$bestmem
-rastri_gin(op_tim$optim$bestmem)
-summary(op_tim)
-plot(op_tim)
 # sample of normal variables
 sam_ple <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
@@ -870,6 +871,38 @@ type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+library(DEoptim)
+optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+library(DEoptim)
+optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
 # verify that rtools are working properly:
 devtools::find_rtools()
 devtools::has_devel()

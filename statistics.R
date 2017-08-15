@@ -212,11 +212,13 @@ jarque.bera.test(dax_rets)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(dax_rets)))
 # KS test for normal distribution
-ks.test(rnorm(100), rnorm)
-# KS test for normal distribution
-ks.test(runif(100), rnorm)
-# KS test for two normal distributions
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
 ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
 # Wilcoxon test for normal distribution
 wilcox.test(rnorm(100))
 # Wilcoxon test for two normal distributions
@@ -249,7 +251,27 @@ set.seed(1121)  # initialize random number generator
 explana_tory <- rnorm(100, mean=2)
 noise <- rnorm(100)
 # response equals linear form plus error terms
-  res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + explana_tory + noise
+
+be_ta <- (sum(pnl_s * re_turns) - sum(pnl_s) * sum(re_turns)) / (sum(pnl_s * pnl_s) - sum(pnl_s)^2 )
+
+al_pha <- sum(pnl_s) - be_ta * sum(re_turns)
+
+
+# specify regression formula
+reg_formula <- res_ponse ~ explana_tory
+reg_model <- lm(reg_formula)  # perform regression
+class(reg_model)  # regressions have class lm
+attributes(reg_model)
+eval(reg_model$call$formula)  # regression formula
+reg_model$coefficients  # regression coefficients
+coef(reg_model)
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+explana_tory <- rnorm(100, mean=2)
+noise <- rnorm(100)
+# response equals linear form plus error terms
+res_ponse <- -3 + explana_tory + noise
 # specify regression formula
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression

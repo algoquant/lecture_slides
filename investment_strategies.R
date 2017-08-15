@@ -156,18 +156,18 @@ in_dic <- sign(cl_ose - ew_ma[, 2])
 trade_dates <- (rutils::diff_xts(in_dic) != 0)
 trade_dates <- which(trade_dates) + 1
 # calculate positions, either: -1, 0, or 1
-po_sitions <- rep(NA_integer_, NROW(cl_ose))
-po_sitions[1] <- 0
-po_sitions[trade_dates] <-
+position_s <- rep(NA_integer_, NROW(cl_ose))
+position_s[1] <- 0
+position_s[trade_dates] <-
   rutils::lag_xts(in_dic)[trade_dates]
-po_sitions <- na.locf(po_sitions)
-po_sitions <- xts(po_sitions, order.by=index(oh_lc))
+position_s <- na.locf(position_s)
+position_s <- xts(position_s, order.by=index(oh_lc))
 # plot EWMA prices with position shading
 chart_Series(ew_ma, theme=plot_theme,
        name="EWMA prices")
-add_TA(po_sitions > 0, on=-1,
+add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
+add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(ew_ma),
  inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
@@ -176,13 +176,13 @@ library(HighFreq)  # load package HighFreq
 # calculate open and lagged prices
 op_en <- Op(oh_lc)
 prices_lag <- rutils::lag_xts(cl_ose)
-position_lagged <- rutils::lag_xts(po_sitions)
+position_lagged <- rutils::lag_xts(position_s)
 # calculate daily profits and losses
 re_turns <- position_lagged*(cl_ose - prices_lag)
 re_turns[trade_dates] <-
   position_lagged[trade_dates] *
   (op_en[trade_dates] - prices_lag[trade_dates]) +
-  po_sitions[trade_dates] *
+  position_s[trade_dates] *
   (cl_ose[trade_dates] - op_en[trade_dates])
 # calculate annualized Sharpe ratio of strategy returns
 sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
@@ -193,9 +193,9 @@ library(HighFreq)  # load package HighFreq
 # plot EWMA PnL with position shading
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
+add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
+add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
  inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
@@ -214,22 +214,22 @@ simu_ewma <- function(oh_lc, lamb_da=0.05, win_dow=51) {
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
   # calculate positions, either: -1, 0, or 1
-  po_sitions <- rep(NA_integer_, NROW(cl_ose))
-  po_sitions[1] <- 0
-  po_sitions[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
-  po_sitions <- xts(na.locf(po_sitions), order.by=index(oh_lc))
+  position_s <- rep(NA_integer_, NROW(cl_ose))
+  position_s[1] <- 0
+  position_s[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
+  position_s <- xts(na.locf(position_s), order.by=index(oh_lc))
   op_en <- Op(oh_lc)
   prices_lag <- rutils::lag_xts(cl_ose)
-  position_lagged <- rutils::lag_xts(po_sitions)
+  position_lagged <- rutils::lag_xts(position_s)
   # calculate daily profits and losses
   re_turns <- position_lagged*(cl_ose - prices_lag)
   re_turns[trade_dates] <-
     position_lagged[trade_dates] *
     (op_en[trade_dates] - prices_lag[trade_dates]) +
-    po_sitions[trade_dates] *
+    position_s[trade_dates] *
     (cl_ose[trade_dates] - op_en[trade_dates])
-  out_put <- cbind(po_sitions, re_turns)
-  colnames(out_put) <- c("po_sitions", "re_turns")
+  out_put <- cbind(position_s, re_turns)
+  colnames(out_put) <- c("position_s", "re_turns")
   out_put
 }  # end simu_ewma
 lamb_das <- seq(0.001, 0.03, 0.001)
@@ -245,7 +245,7 @@ plot(x=lamb_das, y=sharpe_ratios, t="l",
 # simulate best performing strategy
 ewma_trend <- simu_ewma(oh_lc=oh_lc,
   lamb_da=lamb_das[which.max(sharpe_ratios)])
-po_sitions <- ewma_trend[, 1]
+position_s <- ewma_trend[, 1]
 pnl_s <- cumsum(ewma_trend[, 2])
 pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]),
         pnl_s)
@@ -253,9 +253,9 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # plot EWMA PnL with position shading
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
+add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
+add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
  inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
@@ -273,7 +273,7 @@ plot(x=lamb_das, y=sharpe_ratios, t="l",
 # simulate best performing strategy
 ewma_revert <- -simu_ewma(oh_lc=oh_lc,
   lamb_da=lamb_das[which.max(sharpe_ratios)])
-po_sitions <- ewma_revert[, 1]
+position_s <- ewma_revert[, 1]
 pnl_s <- cumsum(ewma_revert[, 2])
 pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]),
         pnl_s)
@@ -281,9 +281,9 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # plot EWMA PnL with position shading
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
+add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
+add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
  inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
@@ -355,17 +355,17 @@ bg="white", lty=c(1, 1), lwd=c(2, 2),
 col=c("orange", "blue"), bty="n")
 library(HighFreq)  # load package HighFreq
 # calculate positions, either: -1, 0, or 1
-po_sitions <- NA*numeric(NROW(rutils::env_etf$VTI))
-po_sitions[1] <- 0
-po_sitions[trade_dates] <- vwap_indic[trade_dates]
-po_sitions <- na.locf(po_sitions)
-po_sitions <- xts(po_sitions, order.by=index((rutils::env_etf$VTI)))
-position_lagged <- rutils::lag_xts(po_sitions)
+position_s <- NA*numeric(NROW(rutils::env_etf$VTI))
+position_s[1] <- 0
+position_s[trade_dates] <- in_dic[trade_dates]
+position_s <- na.locf(position_s)
+position_s <- xts(position_s, order.by=index((rutils::env_etf$VTI)))
+position_lagged <- rutils::lag_xts(position_s)
 # calculate daily profits and losses
 pnl_s <- position_lagged*(cl_ose - prices_lag)
 pnl_s[trade_dates] <- position_lagged[trade_dates] *
   (op_en[trade_dates] - prices_lag[trade_dates]) +
-  po_sitions[trade_dates] *
+  position_s[trade_dates] *
   (cl_ose[trade_dates] - op_en[trade_dates])
 # calculate annualized Sharpe ratio of strategy returns
 sqrt(260)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
@@ -373,9 +373,9 @@ sqrt(260)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::env_etf$VTI)))
 chart_Series(x=(cl_ose-as.numeric(cl_ose[1, ])), name="VTI prices", col="orange")
 add_TA(pnl_s, on=1, lwd=2, col="blue")
-add_TA(po_sitions > 0, on=-1,
+add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
+add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=c("VTI", "VWAP strategy"),
  inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),

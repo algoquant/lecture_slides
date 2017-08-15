@@ -215,7 +215,7 @@ re_turns <- t(t(re_turns) - sapply(re_turns, sum)/NROW(re_turns))
 # re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
 # re_turns <- do.call(cbind, re_turns)
 # re_turns <- scale(re_turns, scale=FALSE)
-# covariance matrix and variance vector of the data
+# covariance matrix and variance vector of Returns
 cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
 vari_ance <- diag(cov_mat)
 cor_mat <- cov_mat / sqrt(vari_ance)
@@ -241,11 +241,11 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
 col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title="Correlation Matrix",
     tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
-    method="square", col=col_ors(8),
+    method="square", col=col_ors(NCOL(cor_mat)),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
 # draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2,
     method="complete", col="red")
 # create initial vector of portfolio weights
 n_weights <- NROW(sym_bols)

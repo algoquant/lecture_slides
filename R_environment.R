@@ -29,6 +29,8 @@ var1 <- 3  # define new object
 ls()  # list all objects in workspace
 # list objects starting with "v"
 ls(pattern=glob2rx("v*"))
+# remove all objects starting with "v"
+rm(list=ls(pattern=glob2rx("v*")))
 save.image()  # save workspace to file .RData in cwd
 rm(var1)  # remove object
 ls()  # list objects
@@ -140,7 +142,6 @@ cat("sourcing .Rprofile file\n")
 cat("sourcing .Rprofile file\n")
 
 
-# source("script.R", echo=TRUE)  # source script
 rm(list=ls())
 # get base environment
 baseenv()
@@ -309,7 +310,7 @@ data_read  # the row names are read in as extra column
 rownames(data_read) <- data_read[, 1]
 data_read <- data_read[, -1]  # remove extra column
 data_read
-# read row names from first column
+# read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv", row.names=1)
 data_read
 setwd("C:/Develop/data")
@@ -451,8 +452,6 @@ save(list=load_ed, file="my_data.RData")
 rm(list=load_ed)
 # remove the object "load_ed"
 rm(load_ed)
-setwd("C:/Develop/data")
-{
 sink("sinkdata.txt")# redirect text output to file
 
 cat("Redirect text output from R\n")
@@ -465,21 +464,20 @@ pdf("Rgraph.pdf", width=7, height=4)  # redirect graphics to pdf file
 
 cat("Redirect data from R into pdf file\n")
 my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
+plot(x=my_var, y=sin(my_var), main="Sine wave",
    xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
 
 dev.off()  # turn pdf output off
 
-png("Rgraph.png")  # redirect output to png file
+png("r_plot.png")  # redirect graphics output to png file
 
 cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave", 
+plot(x=my_var, y=sin(my_var), main="Sine wave",
  xlab="", ylab="", type="l", lwd=2, col="red")
 cat("\nEnd data\nbye\n")
 
 dev.off()  # turn png output off
-}
 # install latest version of googlesheets
 devtools::install_github("jennybc/googlesheets")
 # load package googlesheets
@@ -540,6 +538,91 @@ gs_download(google_sheet, ws="Sheet1",
       to="C:/Develop/data/google_sheet.csv")
 # open sheet in internet browser
 gs_browse(google_sheet)
+script_dir <- "C:/Develop/R/scripts"
+# execute script file and print the commands
+source(file.path(script_dir, "script.R"),
+ echo=TRUE)
+
+####################################
+#script.R file contains R script to demonstrate sourcing from script files
+
+# print information about this process
+print(paste0("print: This test script was run at: ", format(Sys.time())))
+cat("cat: This test script was run at:", format(Sys.time()), "\n")
+
+# display first 6 rows of cars data frame
+head(cars)
+
+# define a function
+fun_c <- function(x) x+1
+
+# read a line from console
+readline("Press Return to continue")
+
+# plot sine function in x11 window
+x11()
+curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
+xlab="", ylab="", lwd=2, col="orange",
+main="Sine function")
+# get help about running R scripts and batch processes
+?BATCH
+?Rscript
+#script_args.R contains R script that accepts arguments
+# print information about this process
+cat("cat: This script was run at:", format(Sys.time()), "\n")
+# read arguments supplied on the command line
+arg_s <- commandArgs(TRUE)
+# print the arguments
+cat(paste0("arguments supplied on command line: ", paste(arg_s, collapse=", "), "\n"))
+# return sum of arguments
+sum(as.numeric(arg_s))
+#plot_to_file.R
+#R script to demonstrate plotting to file
+
+# redirect graphics output to png file
+plot_dir <- "C:/Develop/data"
+png(file.path(plot_dir, "r_plot.png"))
+
+# plot sine function
+curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
+xlab="", ylab="", lwd=2, col="orange",
+main="Sine function")
+
+# turn png output off
+dev.off()
+#plot_interactive.R
+#R script to demonstrate interactive plotting
+
+# plot sine function in x11 window
+x11()
+curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
+xlab="", ylab="", lwd=2, col="orange",
+main="Sine function")
+
+# wait until x11 window is closed
+while (!is.null(dev.list())) Sys.sleep(1)
+#perform calculations in R,
+#and export to CSV files
+setwd("C:/Develop/data")
+# read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv",
+              row.names=1)
+# subset data frame
+data_read <-
+  data_read[data_read[, "type"]=="daisy", ]
+# write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
+#perform calculations in R,
+#and export to CSV files
+setwd("C:/Develop/data")
+# read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv",
+              row.names=1)
+# subset data frame
+data_read <-
+  data_read[data_read[, "type"]=="daisy", ]
+# write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
 # display documentation on function "getwd"
 help(getwd)
 ?getwd  # equivalent to "help(getwd)"

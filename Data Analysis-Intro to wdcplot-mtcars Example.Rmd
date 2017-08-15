@@ -1,0 +1,189 @@
+# Intro to wdcplot; mtcars Example
+===
+***
+When in edit mode, run the analysis using the "play" (arrow) button in the navigation bar.
+
+## Let's load the popular mtcars dataset. It comes pre-bundled with R.
+```{r}
+data(mtcars)
+```
+
+## What does the data look like?
+```{r}
+head(mtcars)
+```
+# Looks like mtcars is a data frame:
+```{r}
+class(mtcars)
+```
+## So the structure is ...
+
+```{r}
+str(mtcars)
+```
+## What are the total number of rows?
+```{r}
+nrow(mtcars)
+```
+## How do we access a column?
+```{r}
+head(mtcars$mpg)
+```
+## What's the type/class?
+```{r}
+class(mtcars$mpg)
+
+## OR
+head(mtcars[,1])
+
+## OR
+head(mtcars[, "mpg"])
+```
+## We don't want a numeric vector. We want a data.frame slice.
+
+```{r}
+head(mtcars["mpg"])
+```
+## Did we do it right? What's the type/class?
+
+```{r}
+class(mtcars["mpg"])
+```
+## How do I get more than one column?
+
+```{r}
+head(mtcars[c("mpg","hp")])
+```
+## How do we know the row names?
+
+```{r}
+row.names(mtcars)
+```
+## How do we access a specific value?
+
+```{r}
+mtcars["Mazda RX4", "cyl"] 
+
+# OR
+mtcars[1,2]
+```
+## How do I access a row?
+
+```{r}
+mtcars["Mazda RX4", ] 
+```
+## Also the same as ...
+```{r}
+mtcars[1, ]
+```
+## Vehicles with automatic transmission?
+
+```{r}
+head(mtcars[mtcars$am==0,])
+```
+## Mileage for automatic transmission vehicles?
+
+```{r}
+mtcars[mtcars$am==0,]$mpg
+```
+## Let's know our data better.
+
+```{r}
+summary(mtcars)
+```
+## We don't want to keep typing mtcars$... so we use attach:
+
+```{r}
+attach(mtcars)
+```
+
+## You can now directly refer mtcars$mpg as mpg.
+
+```{r}
+identical(mtcars$mpg, mpg)
+```
+## Let's summarize our data:
+
+```{r}
+table(cyl)
+```
+## Plotting is easy...
+
+## bar plot
+```{r}
+barplot(mpg)
+```
+## OR a histogram
+```{r}
+hist(mpg)
+
+```
+## OR a boxplot
+```{r}
+boxplot(mpg)
+```
+## Looks like mpg are pretty low:
+
+```{r}
+mean(mpg)
+```
+## Mean of mileage for 4 cylinder cars:
+
+```{r}
+mean(mpg[cyl==4])
+```
+## vs 8 cylinder cars:
+
+```{r}
+mean(mpg[cyl==8])
+```
+## Is that because of a higher number of cylinders?
+
+```{r}
+
+plot(cyl, mpg)
+
+```
+## Let's fit a regression line:
+
+```{r}
+lm(mpg~cyl+hp)
+
+
+```
+## Pearson correlation, is that a good fit?
+
+```{r}
+cor(mpg,cyl)^2
+cor(mpg, hp)^2
+```
+## Let's plot based on number of cylinders
+
+```{r}
+plot(hp,mpg,pch=19, col=cyl)
+# add a legend
+legend(250, 30, pch=19, col=c(4,6,8), legend=c("4 cylinders","6 cylinders","8 cylinders"))  
+```
+## Now we do the cool stuff:
+```{r fig.width=11, fig.height=11, tidy=FALSE}
+require(rcloud.dcplot)
+wdcplot(mtcars, 
+dimensions(..index.., mpg, wt, cyl),
+groups(mpgGroup = group(mpg, bin(2)),
+       wtGroup = group(wt, group = bin(0.5)),
+       cylinders = group(cyl)),
+charts(SWvL = bubble('Miles Per Gallon vs. Weight',
+                     dimension = ..index..,
+                     color = cyl,  
+                     x = wt,
+                     y = mpg,
+                     r = ..selected.. * 3,
+                     label = NULL),
+       cyl = pie("Cylinders",group = cylinders),
+       PW = bar('Miles Per Gallon', group = mpgGroup, x.domain = c(10.4,33.9)),
+       PL = bar('Weight', group = wtGroup, x.domain = c(1.5,5.5))
+))
+```
+```{r}
+detach(mtcars)
+```

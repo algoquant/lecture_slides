@@ -20,8 +20,11 @@ knit_theme$set(thm)
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
 \usepackage{mathtools}
-% bbold package for unitary vector or matrix symbol
-\usepackage{bbold}
+% bbm package for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -44,7 +47,7 @@ knit_theme$set(thm)
 % Make url text scriptsize
 \renewcommand\UrlFont{\scriptsize}
 % Make institute text italic and small
-\setbeamerfont{institute}{size=\small,shape=\itshape,bg=red,fg=red}
+\setbeamerfont{institute}{size=\small,shape=\itshape}
 \setbeamerfont{date}{size=\small}
 \setbeamerfont{block title}{size=\normalsize} % shape=\itshape
 \setbeamerfont{block body}{size=\footnotesize}
@@ -196,18 +199,524 @@ portf_maxSR <- add.objective(
 
 
 %%%%%%%%%%%%%%%
-\section{Equity Portfolio Optimization}
+\section{Portfolio Efficient Frontier}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Random Portfolios}
+\subsection{Maximum Return Portfolio and Linear Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
+      \begin{displaymath}
+        w_{min} = \operatorname*{arg\,max}_{w} [ \, r^T w \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
+      \end{displaymath}
+      Where $r$ is the vector of returns, and $w$ is the vector of portfolio weights, constrained by:
+      \begin{align*}
+        w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
+        0 \leq w_i \leq 1
+      \end{align*}
+      The weights of the maximum return portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints, 
+      \vskip1ex
+      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+library(quantmod)
+# vector of symbol names
+sym_bols <- c("VTI", "IEF", "DBC")
+n_weights <- NROW(sym_bols)
+# calculate mean returns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+mean_rets <- sapply(re_turns, mean)
+# specify weight bounds (default is c(0, Inf))
+bound_s <- 
+  list(lower=list(ind=1:n_weights, val=rep(-1, n_weights)),
+       upper=list(ind=1:n_weights, val=rep(1, n_weights)))
+# specify weight constraints
+constraint_s <- matrix(c(rep(1, n_weights), 
+                       1, 1, 0), 
+                       nc=n_weights, byrow=TRUE)
+direction_s <- c("==", "<=")
+limit_s <- c(1, 0)
+# perform optimization
+op_tim <- Rglpk::Rglpk_solve_LP(obj=mean_rets, 
+                      mat=constraint_s, 
+                      dir=direction_s, 
+                      bounds=bound_s,
+                      rhs=limit_s, 
+                      max=TRUE)
+unlist(op_tim[1:2])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Minimum Variance Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If $\mathbb{C}$ is equal to the covariance matrix of returns, then the portfolio variance is equal to:
+      \begin{displaymath}
+        w^T \mathbb{C} \, w
+      \end{displaymath}
+      Where the sum of portfolio weights $w_i$ is constrained to equal $1$: $w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$,
+      \vskip1ex
+      The weights that minimize the portfolio variance can be found by minimizing the \emph{Lagrangian}:
+      \begin{displaymath}
+        \mathcal{L} = w^T \mathbb{C} \, w - \, \lambda \, (w^T \mathbbm{1} - 1)
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier}, 
+      \vskip1ex
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        d_w[w^T \mathbbm{1}] = d_w[\mathbbm{1}^T w] = \mathbbm{1}^T\\
+        d_w[w^T r] = d_w[r^T w] = r^T\\
+        d_w[w^T \mathbb{C} \, w] = w^T \mathbb{C} + w^T \mathbb{C}^T
+      \end{align*}
+      Where $\mathbbm{1}$ is the unit vector, and $w^T \mathbbm{1} = \mathbbm{1}^T w = \sum_{i=1}^n {x_i}$
+    \column{0.5\textwidth}
+      The derivative of the \emph{Lagrangian} $\mathcal{L}$ with respect to $w$ is given by:
+      \begin{displaymath}
+        d_w \mathcal{L} = 2 w^T \mathbb{C} - \lambda \mathbbm{1}^T
+      \end{displaymath}
+      By setting the derivative to zero we find $w$ equal to:
+      \begin{displaymath}
+        w = \frac{1}{2} \lambda \, \mathbb{C}^{-1} \mathbbm{1}
+      \end{displaymath}
+      By multiplying the above from the left by $\mathbbm{1}^T$, and using $w^T \mathbbm{1} = 1$, we find $\lambda$ to be equal to: 
+      \begin{displaymath}
+        \lambda = \frac{2}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      And finally the portfolio weights are then equal to:
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Variance of Minimum Variance Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the minimum variance portfolio under the constraint $w^T \mathbbm{1} = 1$ can be calculated using the inverse of the covariance matrix:
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      The variance of the minimum variance portfolio is equal to:
+      \begin{displaymath}
+        VAR = \frac{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mathbbm{1}}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1})^2} = \frac{1}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define a covariance matrix
+std_devs <- c(asset1=0.3, asset2=0.6)
+cor_rel <- 0.8
+co_var <- matrix(c(1, cor_rel, cor_rel, 1), 
+                 nc=2)
+co_var <- t(t(std_devs*co_var)*std_devs)
+# calculate inverse of covariance mat_rix
+in_verse <- solve(a=co_var)
+u_nit <- rep(1, NCOL(co_var))
+# minimum variance weights with constraint
+# weight_s <- solve(a=co_var, b=u_nit)
+weight_s <- in_verse %*% u_nit
+weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
+# minimum variance
+t(weight_s) %*% co_var %*% weight_s
+1/(t(u_nit) %*% in_verse %*% u_nit)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum \protect\emph{Sharpe} Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe} ratio is defined as the ratio of excess returns divided by the portfolio standard deviation:
+      \begin{displaymath}
+        SR = \frac{w^T \mu}{SD}
+      \end{displaymath}
+      Where $\mu = r - r_{rf}$ is the vector of excess returns (returns in excess of the risk-free rate), $w$ is the vector of portfolio weights, and $SD = \sqrt{w^T \mathbb{C} \, w}$, where $\mathbb{C}$ is the covariance matrix of returns, 
+      \vskip1ex
+      We can calculate the maximum \emph{Sharpe} portfolio weights by setting the derivative of the \emph{Sharpe} ratio with respect to the weights, to zero:
+      \begin{displaymath}
+        d_w {SR} = \frac{1}{SD} (\mu^T - \frac{(w^T \mu) (w^T \mathbb{C})}{{SD}^2}) = 0
+      \end{displaymath}
+      We then get: 
+      \begin{displaymath}
+        (w^T \mathbb{C} \, w) \, \mu = (w^T \mu) \, \mathbb{C} w
+      \end{displaymath}
+      We can multiply the above equation by $\mathbb{C}^{-1}$ to get: 
+      \begin{displaymath}
+        w = \frac{w^T \mathbb{C} \, w}{w^T \mu} \, \mathbb{C}^{-1} \mu
+      \end{displaymath}
+    \column{0.5\textwidth}
+      We can finally rescale the weights so that they satisfy the constraint $w^T \mathbbm{1} = 1$: 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      These are the weights of the maximum \emph{Sharpe} portfolio, with the vector of excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}$, 
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Returns and Variance of Maximum \protect\emph{Sharpe} Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the maximum \emph{Sharpe} portfolio are equal to: 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      Where $\mu$ is the vector of excess returns, and $\mathbb{C}$ is the covariance matrix, 
+      \vskip1ex
+      The excess returns of the maximum \emph{Sharpe} portfolio are equal to:
+      \begin{displaymath}
+        R = w^T \mu = \frac{\mu^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      The variance of the maximum \emph{Sharpe} portfolio is equal to:
+      \begin{displaymath}
+        VAR = \frac{\mu^{T} \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2} = \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2}
+      \end{displaymath}
+      The \emph{Sharpe} ratio is equal to:
+      \begin{displaymath}
+        SR = \sqrt{\mu^T \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate excess re_turns
+risk_free <- 0.03/260
+ex_cess <- re_turns - risk_free
+# calculate covariance and inverse matrix
+co_var <- cov(re_turns)
+u_nit <- rep(1, NCOL(co_var))
+in_verse <- solve(a=co_var)
+# calculate mean excess returns
+ex_cess <- sapply(ex_cess, mean)
+# weights of maximum Sharpe portfolio
+# weight_s <- solve(a=co_var, b=re_turns)
+weight_s <- in_verse %*% ex_cess
+weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
+# Sharpe ratios
+sqrt(260)*drop((t(weight_s) %*% ex_cess) / 
+  sqrt(t(weight_s) %*% co_var %*% weight_s))
+sapply(re_turns - risk_free, 
+  function(x) sqrt(260)*mean(x)/sd(x))
+weights_maxsharpe <- weight_s
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolios Under Zero Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma_{1}^2 & 0 & \cdots & 0 \\
+          0 & \sigma_{2}^2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma_{n}^2
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma_{i}^2$ is the variance of returns of asset $i$, 
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply: 
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma_{1}^{-2} & 0 & \cdots & 0 \\
+          0 & \sigma_{2}^{-2} & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma_{n}^{-2}
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The minimum variance portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma_{i}^2 \sum_{i=1}^n \sigma_{i}^{-2}}
+      \end{displaymath}
+      The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_{i}}{\sigma_{i}^2 \sum_{i=1}^n \mu_{i} \sigma_{i}^{-2}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum \protect\emph{Sharpe} and \protect\emph{Minimum Variance} Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The maximum \emph{Sharpe} and \emph{Minimum Variance} portfolios are both \emph{efficient portfolios}, with the lowest risk (standard deviation) for the given level of return, 
+      <<echo=TRUE,eval=FALSE>>=
+library(quantmod)
+# calculate minimum variance weights
+weight_s <- in_verse %*% u_nit
+weights_minvar <- 
+  weight_s / drop(t(u_nit) %*% weight_s)
+# calculate optimal portfolio returns
+optim_rets <- xts(
+  x=cbind(exp(cumsum(re_turns %*% weights_maxsharpe)), 
+          exp(cumsum(re_turns %*% weights_minvar))),
+  order.by=index(re_turns))
+colnames(optim_rets) <- c("maxsharpe", "minvar")
+# plot optimal portfolio returns, with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "green")
+x11(width=6, height=5)
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Maximum Sharpe and \nMinimum Variance portfolios")
+legend("top", legend=colnames(optim_rets), cex=0.8,
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/maxsharpe_minvar.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Efficient Frontier} and \protect\emph{Capital Market Line}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The maximum \emph{Sharpe} portfolio weights depend on the value of the risk-free rate $r_{rf}$, 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} (r - r_{rf})}{\mathbbm{1}^{T} \mathbb{C}^{-1} (r - r_{rf})}
+      \end{displaymath}
+      The \emph{Efficient Frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return, 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are \emph{efficient portfolios}, and they lie on the \emph{Efficient Frontier}, forming a tangent line from the risk-free rate to the \emph{Efficient Frontier}, known as the \emph{Capital Market Line} (CML), 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are considered to be the \emph{Market} portfolios, corresponding to different values of the risk-free rate $r_{rf}$, 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are also called \emph{tangency} portfolios, since they are the tangency point on the \emph{Efficient Frontier},
+      \vskip1ex
+      The \emph{Capital Market Line} is the line drawn from the \emph{risk-free} rate to the \emph{market} portfolio on the \emph{Efficient Frontier},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{Efficient Frontier} and Maximum \protect\emph{Sharpe} Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(wid_th <- 6, hei_ght <- 6)
+# calculate minimum variance weights
+weight_s <- in_verse %*% u_nit
+weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
+# minimum standard deviation and return
+std_dev <- sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s))
+min_ret <- 260*drop((t(weight_s) %*% mean_rets))
+# calculate maximum Sharpe portfolios
+risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/260
+eff_front <- sapply(risk_free, function(risk_free) {
+  weight_s <- in_verse %*% (mean_rets - risk_free)
+  weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
+  # portfolio return and standard deviation
+  c(return=260*drop((t(weight_s) %*% mean_rets)), 
+    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
+})  # end sapply
+eff_front <- cbind(260*risk_free, t(eff_front))
+colnames(eff_front)[1] <- "risk-free"
+eff_front <- eff_front[is.finite(eff_front[, "stddev"]), ]
+eff_front <- eff_front[order(eff_front[, "return"]), ]
+# plot maximum Sharpe portfolios
+plot(x=eff_front[, "stddev"], 
+     y=eff_front[, "return"], t="l", 
+     xlim=c(0.0*std_dev, 3.0*std_dev), 
+     ylim=c(0.0*min_ret, 2.0*min_ret),
+     main="Efficient Frontier and Capital Market Line", 
+     xlab="standard deviation", ylab="return")
+points(x=eff_front[, "stddev"], y=eff_front[, "return"], 
+       col="red", lwd=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting the \protect\emph{Capital Market Line}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      <<echo=TRUE,eval=FALSE>>=
+# plot minimum variance portfolio
+points(x=std_dev, y=min_ret, col="green", lwd=6)
+text(std_dev, min_ret, labels="minimum \nvariance", 
+     pos=4, cex=0.8)
+# draw Capital Market Line
+sor_ted <- sort(eff_front[, 1])
+risk_free <- 
+  sor_ted[findInterval(x=0.5*min_ret, vec=sor_ted)]
+points(x=0, y=risk_free, col="blue", lwd=6)
+text(x=0, y=risk_free, labels="risk-free", 
+     pos=4, cex=0.8)
+in_dex <- match(risk_free, eff_front[, 1])
+points(x=eff_front[in_dex, "stddev"], 
+       y=eff_front[in_dex, "return"], 
+       col="blue", lwd=6)
+text(x=eff_front[in_dex, "stddev"], 
+     y=eff_front[in_dex, "return"], 
+     labels="market portfolio", 
+     pos=2, cex=0.8)
+sharp_e <- (eff_front[in_dex, "return"]-risk_free)/
+  eff_front[in_dex, "stddev"]
+abline(a=risk_free, b=sharp_e, col="blue", lwd=2)
+text(x=0.7*eff_front[in_dex, "stddev"], 
+     y=0.7*eff_front[in_dex, "return"]+0.01, 
+     labels="Capital Market Line", pos=2, cex=0.8,
+     srt=45*atan(sharp_e*hei_ght/wid_th)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}\\
+      \vspace{-1em}
+      The \emph{Capital Market Line} represents delevered and levered portfolios, consisting of the \emph{market} portfolio combined with the \emph{risk-free} rate,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random portfolios
+n_portf <- 1000
+ret_sd <- sapply(1:n_portf, function(in_dex) {
+  weight_s <- runif(n_weights-1, min=-0.25, max=1.0)
+  weight_s <- c(weight_s, 1-sum(weight_s))
+  # portfolio return and standard deviation
+  c(return=260*drop((t(weight_s) %*% mean_rets)), 
+    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
+})  # end sapply
+# plot scatterplot of random portfolios
+x11(wid_th <- 6, hei_ght <- 6)
+plot(x=ret_sd["stddev", ], y=ret_sd["return", ],
+     main="Efficient Frontier and Random Portfolios", 
+     xlim=c(0.5*std_dev, 0.8*max(ret_sd["stddev", ])), 
+     xlab="standard deviation", ylab="return")
+# plot maximum Sharpe portfolios
+lines(x=eff_front[, "stddev"], 
+     y=eff_front[, "return"], lwd=2)
+points(x=eff_front[, "stddev"], y=eff_front[, "return"], 
+       col="red", lwd=3)
+# plot minimum variance portfolio
+points(x=std_dev, y=min_ret, col="green", lwd=6)
+text(std_dev, min_ret, labels="minimum\nvariance", 
+     pos=2, cex=0.8)
+# plot market portfolio
+points(x=eff_front[in_dex, "stddev"], 
+       y=eff_front[in_dex, "return"], col="green", lwd=6)
+text(x=eff_front[in_dex, "stddev"], 
+     y=eff_front[in_dex, "return"], 
+     labels="market\nportfolio", 
+     pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_random.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot individual assets
+points(x=sqrt(260*diag(co_var)), 
+       y=260*mean_rets, col="blue", lwd=6)
+text(x=sqrt(260*diag(co_var)), y=260*mean_rets, 
+     labels=names(mean_rets), 
+     col="blue", pos=1, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Plotting Random Portfolios Without Using Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
 # vector of symbol names
 sym_bols <- c("VTI", "IEF", "XLP")
 n_weights <- NROW(sym_bols)
@@ -216,7 +725,7 @@ n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights, min=0, max=10)
   weight_s <- weight_s/sum(weight_s)
-  portf_rets <- na.omit(env_etf$re_turns[, sym_bols]) %*% weight_s
+  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
   100*c(ret=mean(portf_rets), sd=sd(portf_rets))
 })  # end sapply
 # plot scatterplot of random portfolios
@@ -225,78 +734,19 @@ plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
      main="Random portfolios", 
      ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
      xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
-# vector of initial portfolio weights equal to 1
-weight_s <- rep(1, n_weights)
-names(weight_s) <- sym_bols
-# objective function equal to standard deviation of returns
-object_ive <- function(weight_s) {
-  portf_rets <- na.omit(rutils::env_etf$re_turns[, sym_bols]) %*% weight_s
-  sd(portf_rets)/sum(weight_s)
-}  # end object_ive
-# object_ive() for equal weight portfolio
-object_ive(weight_s)
-object_ive(2*weight_s)
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# Rescale the optimal weights
-weight_s <- optim_run$par/sum(optim_run$par)
-# minimum variance portfolio returns
-library(quantmod)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
-# Add red point for minimum variance portfolio
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, col="red", lwd=3)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-# objective function equal to minus Sharpe ratio
-risk_free <- 0.01
-object_ive <- function(weight_s) {
-  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
-  -mean(portf_rets-risk_free)/sd(portf_rets)
-}  # end object_ive
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# maximum Sharpe ratio portfolio returns
-weight_s <- optim_run$par/sum(optim_run$par)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, 
-       col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-max_Sharpe <- (optim_ret-risk_free)/optim_sd
-# Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
-range_s <- par("usr")
-text(optim_sd/3, (optim_ret+risk_free)/2.5, 
-     labels="Capital Market Line", cex=0.8, , pos=3, 
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
-                   hei_ght/wid_th)/(0.25*pi))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_random.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot individual assets
+points(x=sqrt(260*diag(co_var)), 
+       y=260*mean_rets, col="blue", lwd=6)
+text(x=sqrt(260*diag(co_var)), y=260*mean_rets, 
+     labels=names(mean_rets), 
+     col="blue", pos=1, cex=0.8)
+      @
   \end{columns}
 \end{block}
 
@@ -304,17 +754,61 @@ text(optim_sd/3, (optim_ret+risk_free)/2.5,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Capital Market Line and Two-asset Portfolios}
+\subsection{draft: Efficient Frontier for Two-asset Portfolios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
+      The covariance matrix for two assets is equal to:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma_{1}^2 & \sigma_{12} \\
+          \sigma_{12} & \sigma_{2}^2
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma_{12}$ is the covariance of returns between the two assets, 
+      The excess returns of a two-asset portfolio are equal to:
+      \begin{displaymath}
+        R = w \mu_1 + (1 - w) \mu_2
+      \end{displaymath}
+      Solving for the weight $w$:
+      \begin{displaymath}
+        w = (R - \mu_2) / (\mu_1 - \mu_2)
+      \end{displaymath}
+      \vskip1ex
+      The variance of the maximum \emph{Sharpe} portfolio is equal to:
+      \begin{displaymath}
+        VAR = \frac{\mu^{T} \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2} = \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then 
+      The minimum variance portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma_{i}^2 \sum_{i=1}^n \sigma_{i}^{-2}}
+      \end{displaymath}
+      The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_{i}}{\sigma_{i}^2 \sum_{i=1}^n \mu_{i} \sigma_{i}^{-2}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Efficient Frontier for Two-asset Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
       <<corr_two_assets,echo=TRUE,eval=FALSE>>=
-risk_free <- 0.01
-re_turns <- c(asset1=0.02, asset2=0.04)
-std_devs <- c(asset1=0.8, asset2=1.6)
+risk_free <- 0.03
+re_turns <- c(asset1=0.05, asset2=0.06)
+std_devs <- c(asset1=0.4, asset2=0.5)
 cor_rel <- 0.6
 co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
 co_var <- t(t(std_devs*co_var)*std_devs)
@@ -327,33 +821,35 @@ sharpe_ratios <- (portf_rets-risk_free)/portf_sd
 in_dex <- which.max(sharpe_ratios)
 max_Sharpe <- max(sharpe_ratios)
 # plot efficient frontier
-x11(width=(wid_th <- 6), height=(hei_ght <- 5))
+x11(wid_th <- 6, hei_ght <- 5)
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(portf_sd, portf_rets, t="l", 
- main=paste0("Two assets correlation = ", 100*cor_rel, "%"), 
+ main=paste0("Efficient frontier and CML for two assets\ncorrelation = ", 100*cor_rel, "%"), 
+ xlab="standard deviation", ylab="return", 
+ lwd=2, col="orange", 
  xlim=c(0, max(portf_sd)), 
- ylim=c(0, max(portf_rets)))
-# Add red point for maximum Sharpe ratio portfolio
+ ylim=c(0.02, max(portf_rets)))
+# add Market Portfolio (maximum Sharpe ratio portfolio)
 points(portf_sd[in_dex], portf_rets[in_dex], 
-       col="red", lwd=3)
+       col="blue", lwd=3)
 text(x=portf_sd[in_dex], y=portf_rets[in_dex], 
-     labels=paste(c("maxSR\n", 
+     labels=paste(c("market portfolio\n", 
        structure(c(weight_s[in_dex], 1-weight_s[in_dex]), 
                names=names(re_turns))), collapse=" "), 
      pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cml_two_assets.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cml_two_assets.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Add points for individual assets
+# plot individual assets
 points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
+text(std_devs, re_turns, labels=names(re_turns), pos=4, cex=0.8)
+# add point at risk-free rate and draw Capital Market Line
+points(x=0, y=risk_free, col="blue", lwd=3)
+text(0, risk_free, labels="risk-free\nrate", pos=4, cex=0.8)
+abline(a=risk_free, b=max_Sharpe, lwd=2, col="blue")
 range_s <- par("usr")
 text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2, 
      labels="Capital Market Line", cex=0.8, , pos=3, 
@@ -368,75 +864,65 @@ text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Efficient Frontier for Stock and Bond Portfolios}
+\subsection{Efficient Frontier of Stock and Bond Portfolios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eff_front_two_assets,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+# plot portfolios in x11() window
+x11(wid_th <- 6, hei_ght <- 5)
+par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 # vector of symbol names
 sym_bols <- c("VTI", "IEF")
 # matrix of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
-portf_rets <- env_etf$re_turns[, sym_bols]
-ret_sd <- portf_rets %*% t(weight_s)
-ret_sd <- 100*cbind(colMeans(ret_sd), 
-  matrixStats::colSds(ret_sd))
-colnames(ret_sd) <- c("returns", "StdDev")
-risk_free <- 5.0/260
-ret_sd <- cbind(ret_sd, (ret_sd[, 1]-risk_free)/ret_sd[, 2])
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+ret_sd <- re_turns %*% t(weight_s)
+ret_sd <- cbind(260*colMeans(ret_sd), 
+  sqrt(260)*matrixStats::colSds(ret_sd))
+colnames(ret_sd) <- c("returns", "stddev")
+risk_free <- 0.06
+ret_sd <- cbind(ret_sd, 
+  (ret_sd[, "returns"]-risk_free)/ret_sd[, "stddev"])
 colnames(ret_sd)[3] <- "Sharpe"
 in_dex <- which.max(ret_sd[, "Sharpe"])
 max_Sharpe <- ret_sd[in_dex, "Sharpe"]
-# plot scatterplot of portfolios in x11() window
-x11(width=(wid_th <- 6), height=(hei_ght <- 4))
-par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=ret_sd[, 2], y=ret_sd[, 1], t="l", 
-     xlim=c(0, max(ret_sd[, 2]/2)), 
-     ylim=c(min(0, min(ret_sd[, 1])), max(ret_sd[, 1])), 
-     xlab=colnames(ret_sd)[2], ylab=colnames(ret_sd)[1])
-title(main="Stock and bond portfolios", line=-1)
-# Add red point for maximum Sharpe ratio portfolio
-points(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
-       col="red", lwd=3)
-text(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
-     labels=paste(c("maxSR\n", 
-       structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), 
-               names=sym_bols)), collapse=" "), 
+plot(x=ret_sd[, "stddev"], y=ret_sd[, "returns"], 
+     main="Stock and Bond portfolios", t="l", 
+     xlim=c(0, 0.7*max(ret_sd[, "stddev"])), ylim=c(0, max(ret_sd[, "returns"])), 
+     xlab="standard deviation", ylab="return")
+# add blue point for market portfolio
+points(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"], col="blue", lwd=6)
+text(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"], 
+     labels=paste(c("market portfolio\n", structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), names=sym_bols)), collapse=" "), 
      pos=3, cex=0.8)
-# Add points for individual assets
-re_turns <- 100*sapply(portf_rets, mean)
-std_devs <- 100*sapply(portf_rets, sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_stocks_bonds.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot individual assets
+mean_rets <- 260*sapply(re_turns, mean)
+std_devs <- sqrt(260)*sapply(re_turns, sd)
+points(std_devs, mean_rets, col="green", lwd=6)
+text(std_devs, mean_rets, labels=names(re_turns), pos=2, cex=0.8)
+# add point at risk-free rate and draw Capital Market Line
+points(x=0, y=risk_free, col="blue", lwd=6)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
+abline(a=risk_free, b=max_Sharpe, col="blue", lwd=2)
 range_s <- par("usr")
-text(ret_sd[in_dex, 2]/3, (ret_sd[in_dex, 1]+risk_free)/2, 
+text(max(ret_sd[, "stddev"])/3, 0.75*max(ret_sd[, "returns"]), 
      labels="Capital Market Line", cex=0.8, , pos=3, 
      srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
                    (range_s[4]-range_s[3])*
                    hei_ght/wid_th)/(0.25*pi))
-# plot max Sharpe ratio portfolio returns
-library(quantmod)
-optim_rets <- 
-  xts(x=env_etf$re_turns[, sym_bols] %*% 
-        c(weight_s[in_dex], 1-weight_s[in_dex]),
-      order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), 
-             name="Max Sharpe two-asset portfolio")
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eff_front_two_assets.png}\\
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/maxsr_two_assets.png}
   \end{columns}
 \end{block}
 
@@ -444,30 +930,47 @@ chart_Series(x=cumsum(optim_rets),
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: The Efficient Frontier and Capital Market Line}
+\subsection{Performance of Market Portfolio for Stocks and Bonds}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
-      \vskip1ex
-      The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
-      \vskip1ex
-      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
-      <<optim_random,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot the efficient frontier
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+# plot portfolios in x11() window
+x11(wid_th <- 6, hei_ght <- 5)
+# calculate cumulative returns of VTI and IEF
+optim_rets <- lapply(re_turns, 
+  function(re_turns) exp(cumsum(re_turns)))
+optim_rets <- rutils::do_call(cbind, optim_rets)
+# calculate market portfolio returns
+optim_rets <- cbind(
+  exp(cumsum(re_turns %*% 
+    c(weight_s[in_dex], 1-weight_s[in_dex]))),
+  optim_rets)
+colnames(optim_rets)[1] <- "market"
+# plot market portfolio with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue", "green")
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Market portfolio for stocks and bonds")
+legend("top", legend=colnames(optim_rets), 
+       cex=0.8, inset=0.1, bg="white", lty=c(1, 1), 
+       lwd=c(6, 6), col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eff_front_two_assets.png}\\
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/maxsr_two_assets.png}
+      \includegraphics[width=0.5\paperwidth]{figure/market_stocks_bonds.png}
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Optimization}
 
 
 %%%%%%%%%%%%%%%
@@ -480,37 +983,59 @@ library(PortfolioAnalytics)
       The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-        <<eval=FALSE,echo=TRUE>>=
-# create vector of symbols for optimized portfolio
-sym_bols <- c("VTI", "VNQ", "DBC")
+        <<echo=TRUE,eval=FALSE>>=
 # create initial vector of portfolio weights
 weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
 # objective equal to minus Sharpe ratio
 object_ive <- function(weight_s) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  portf_rets <- re_turns %*% weight_s
   -mean(portf_rets)/sd(portf_rets)
 }  # end object_ive
 # objective for equal weight portfolio
 object_ive(weight_s)
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_optim_one_dim-1}
-      \vspace{-5em}
-        <<portf_optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+op_tim <- unlist(optimize(
+  f=function(weight) object_ive(c(1, 1, weight)), 
+  interval=c(-4, 1)))
 # vectorize objective function with respect to third weight
+vec_object <- function(weights) sapply(weights, 
+  function(weight) object_ive(c(1, 1, weight)))
+# or
 vec_object <- Vectorize(
   FUN=function(weight) object_ive(c(1, 1, weight)),
   vectorize.args="weight"
 )  # end Vectorize
+vec_object(1)
+vec_object(1:3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_obj_one_dim.png}
+      \vspace{-2em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(3, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot objective function with respect to third weight
 curve(expr=vec_object,
       type="l", xlim=c(-4.0, 1.0),
       xlab=paste("weight of", names(weight_s[3])),
       ylab="", lwd=2)
 title(main="Objective Function", line=-1)  # add title
+points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
+text(x=op_tim[1], y=op_tim[2], 
+     labels="minimum objective", pos=4, cex=0.8)
+
+### below is simplified code for plotting objective function
+# create vector of DBC weights
+weight_s <- seq(from=-4, to=1, by=0.1)
+obj_val <- sapply(weight_s, 
+  function(weight) object_ive(c(1, 1, weight)))
+plot(x=weight_s, y=obj_val, t="l",
+      xlab="weight of DBC", ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
+text(x=op_tim[1], y=op_tim[2], 
+     labels="minimum objective", pos=4, cex=0.8)
       @
   \end{columns}
 \end{block}
@@ -528,6 +1053,9 @@ title(main="Objective Function", line=-1)  # add title
       The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
       \vskip1ex
       The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values,
+      \vskip1ex
+      The package \emph{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots including perspective plots, based on the \emph{OpenGL} framework,
+      \vspace{-1em}
       <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
 # vectorize function with respect to all weights
 vec_object <- Vectorize(
@@ -535,7 +1063,7 @@ vec_object <- Vectorize(
     object_ive(c(w1, w2, w3)),
   vectorize.args=c("w2", "w3"))  # end Vectorize
 # calculate objective on 2-d (w2 x w3) parameter grid
-w2 <- seq(-5, 5, length=50)
+w2 <- seq(-3, 7, length=50)
 w3 <- seq(-5, 5, length=50)
 grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
 rownames(grid_object) <- round(w2, 2)
@@ -548,19 +1076,107 @@ persp(w2, w3, -grid_object,
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_persp-1}
-    \vspace{-5em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_persp.png}
+    \vspace{-3em}
       <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
 # interactive perspective plot of objective function
 library(rgl)
-persp3d(z=-grid_object, zlab="objective",
+rgl::persp3d(z=-grid_object, zlab="objective",
         col="green", main="objective function")
-persp3d(
+rgl::persp3d(
   x=function(w2, w3)
     -vec_object(w1=1, w2, w3),
-  xlim=c(-5, 5), ylim=c(-5, 5),
+  xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Multi-dimensional Portfolio Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# vector of initial portfolio weights equal to 1
+weight_s <- rep(1, n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to standard deviation of returns
+object_ive <- function(weight_s) {
+  portf_rets <- re_turns %*% weight_s
+  sd(portf_rets)/sum(weight_s)
+}  # end object_ive
+# object_ive() for equal weight portfolio
+object_ive(weight_s)
+object_ive(2*weight_s)
+# perform portfolio optimization
+op_tim <- optim(par=weight_s,
+                fn=object_ive,
+                method="L-BFGS-B",
+                upper=rep(10, n_weights),
+                lower=rep(-10, n_weights))
+# Rescale the optimal weights
+weight_s <- op_tim$par/sum(op_tim$par)
+# minimum variance portfolio returns
+optim_rets <- xts(x=re_turns %*% weight_s,
+                  order.by=index(re_turns))
+chart_Series(x=exp(cumsum(optim_rets)), name="minvar portfolio")
+# add green point for minimum variance portfolio
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, col="green", lwd=6)
+text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
+
+
+# objective function equal to minus Sharpe ratio
+risk_free <- 0.03
+object_ive <- function(weight_s) {
+  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
+  -mean(portf_rets-risk_free)/sd(portf_rets)
+}  # end object_ive
+# perform portfolio optimization
+op_tim <- optim(par=weight_s,
+                   fn=object_ive,
+                   method="L-BFGS-B",
+                   upper=rep(10, n_weights),
+                   lower=rep(-10, n_weights))
+# maximum Sharpe ratio portfolio returns
+weight_s <- op_tim$par/sum(op_tim$par)
+optim_rets <- xts(x=re_turns %*% weight_s,
+                  order.by=index(re_turns))
+chart_Series(x=exp(cumsum(optim_rets)), name="maxSR portfolio")
+optim_sd <- 100*sd(optim_rets)
+optim_ret <- 100*mean(optim_rets)
+points(x=optim_sd, y=optim_ret, 
+       col="blue", lwd=3)
+text(x=optim_sd, y=optim_ret,
+     labels="maxSR", pos=2, cex=0.8)
+max_Sharpe <- (optim_ret-risk_free)/optim_sd
+# plot individual assets
+mean_rets <- 100*sapply(re_turns, mean)
+std_devs <- 100*sapply(re_turns, sd)
+points(std_devs, mean_rets, col="green", lwd=3)
+text(std_devs, mean_rets, labels=names(mean_rets), pos=2, cex=0.8)
+# add point at risk-free rate and draw Capital Market Line
+points(x=0, y=risk_free)
+text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
+abline(a=risk_free, b=max_Sharpe, col="blue")
+range_s <- par("usr")
+text(optim_sd/3, (optim_ret+risk_free)/2.5, 
+     labels="Capital Market Line", cex=0.8, , pos=3, 
+     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
+                   (range_s[4]-range_s[3])*
+                   hei_ght/wid_th)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_random.png}
   \end{columns}
 \end{block}
 
@@ -591,17 +1207,18 @@ persp3d(
       \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<eval=FALSE,echo=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # optimization to find weights with maximum Sharpe ratio
-optim_run <- optim(par=weight_s,
+op_tim <- optim(par=weight_s,
                    fn=object_ive,
                    method="L-BFGS-B",
                    upper=c(1.1, 10, 10),
                    lower=c(0.9, -10, -10))
 # optimal parameters
-optim_run$par
+op_tim$par
+op_tim$par <- op_tim$par/sum(op_tim$par)
 # optimal Sharpe ratio
--object_ive(optim_run$par)
+-object_ive(op_tim$par)
       @
   \end{columns}
 \end{block}
@@ -610,7 +1227,7 @@ optim_run$par
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimized Portfolio Plot}
+\subsection{Optimized Portfolio Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -620,28 +1237,38 @@ optim_run$par
       \vskip1ex
       \vspace{-1em}
       <<optim_portf_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(PortfolioAnalytics)
-# returns of optimal portfolio
-optim_rets <- xts(env_etf$re_turns[, sym_bols] %*%
-      optim_run$par, order.by=index(env_etf$re_turns))
-# assign colnames to this xts
-colnames(optim_rets) <- "optim_rets"
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot in two vertical panels
 layout(matrix(c(1,2), 2),
        widths=c(1,1), heights=c(1,3))
 # barplot of optimal portfolio weights
-barplot(optim_run$par,
-        names.arg=names(optim_run$par),
-        las=3, ylab="", xlab="Symbol", main="")
-# plot optimal returns with "VTI", "VNQ" and "DBC"
-chart.CumReturns(
-  cbind(optim_rets, env_etf$re_turns[, names(weight_s)]),
+barplot(op_tim$par, col=c("red", "green", "blue"), 
+        main="Optimized portfolio weights")
+# calculate cumulative returns of VTI, IEF, DBC
+cum_rets <- lapply(re_turns, 
+  function(re_turns) exp(cumsum(re_turns)))
+cum_rets <- rutils::do_call(cbind, cum_rets)
+# calculate optimal portfolio returns with VTI, IEF, DBC
+optim_rets <- cbind(
+  exp(cumsum(re_turns %*% op_tim$par)),
+  cum_rets)
+colnames(optim_rets)[1] <- "optim_rets"
+# plot optimal returns with VTI, IEF, DBC
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green", "blue")
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Optimized portfolio performance")
+legend("top", legend=colnames(optim_rets), cex=0.8,
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+# or plot non-compounded (simple) cumulative returns
+PerformanceAnalytics::chart.CumReturns(
+  cbind(re_turns %*% op_tim$par, re_turns),
   lwd=2, ylab="", legend.loc="topleft", main="")
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_basic-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_portf.png}
   \end{columns}
 \end{block}
 
@@ -649,60 +1276,25 @@ chart.CumReturns(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Mean Variance Portfolio Optimization}
+\subsection{Mean-Variance Portfolio Optimization}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
+      The mean-variance objective function is designed to maximize portfolio returns and minimize their variance:
       \begin{displaymath}
-        z_i = \alpha + \beta x_i + \varepsilon_i
+        O(x) = w^T \mathbb{C} \, w - q \, w^T r
       \end{displaymath}
-      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
+      Where $\mathbb{C}$ is the covariance matrix of returns, $r$ is the vector of returns, $w$ is the vector of  portfolio weights, and $q$ is the risk tolerance factor, 
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients,
+      The mean-variance optimal portfolio is defined as 
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+        w^T \mathbb{C} \, w
+      \end{displaymath}
+      Where the sum of portfolio weights $w_i$ is constrained to equal $1$: $w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$,
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
-      \vskip1ex
-      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
-      \begin{align*}
-        RSS = \sum_{i=1}^{n} {\varepsilon_i^2} = \sum_{i=1}^{n} {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
-      \end{align*}
-      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^{n} {x_i}$
-    \column{0.5\textwidth}
-      The regression coefficients can be found by equating the RSS derivatives to zero:
-      \begin{align*}
-        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
-        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
-      \end{align*}
-      The solution for $\alpha$ is:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      The solution for $\beta$ is:
-      \begin{flalign*}
-        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
-        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
-        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
-        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
-      \end{flalign*}
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
-      \vskip1ex
-      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mean Variance Portfolio Optimization With Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
       A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
       \begin{displaymath}
         z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
@@ -721,7 +1313,7 @@ chart.CumReturns(
     \column{0.5\textwidth}
       The OLS estimate for $\alpha$ is given by:
       \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
+        \alpha = z^T \mathbbm{1} - \beta x^T \mathbbm{1}
       \end{align*}
       If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
       \begin{flalign*}
@@ -736,6 +1328,151 @@ chart.CumReturns(
       The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudo-inverse} of the matrix $x$,
       \vskip1ex
       In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{quadprog} for Quadratic Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Quadratic programming (\emph{QP}) is the optimization of quadratic objective functions subject to linear constraints, 
+      \vskip1ex
+      Let $O(x)$ be an objective function that is quadratic with respect to a vector variable $x$:
+      \begin{displaymath}
+        O(x) = \frac{1}{2} x^T \mathbb{Q} x - d^T x
+      \end{displaymath}
+      Where $\mathbb{Q}$ is a positive definite matrix ($x^T \mathbb{Q} x > 0$), and $d$ is a vector, 
+      \vskip1ex
+      An example of a positive definite matrix is the covariance matrix of linearly independent variables, 
+      \vskip1ex
+      Let the linear constraints on the variable $x$ be specified as:
+      \begin{displaymath}
+        \mathbb{A} x \leq b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, and $b$ is a vector, 
+      \vskip1ex
+      The function \texttt{solve.QP()} from package \emph{quadprog} performs optimization of quadratic objective functions subject to linear constraints,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+library(quadprog)
+# minimum variance weights without constraints
+op_tim <-  solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 2), 
+                    Amat=matrix(0, nr=2, nc=1), 
+                    bvec=0)
+# minimum variance weights sum equal to 1
+op_tim <-  solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 2), 
+                    Amat=matrix(1, nr=2, nc=1), 
+                    bvec=1)
+# optimal value of objective function
+t(op_tim$solution) %*% co_var %*% op_tim$solution
+## perform simple optimization for reference
+# objective function for simple optimization
+object_ive <- function(x) {
+  x <- c(x, 1-x)
+  t(x) %*% co_var %*% x
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-1, 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using Package \protect\emph{quadprog}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective function is designed to minimize portfolio variance and maximize its returns:
+      \begin{displaymath}
+        O(x) = w^T \mathbb{C} \, w - w^T r
+      \end{displaymath}
+      Where $\mathbb{C}$ is the covariance matrix of returns, $r$ is the vector of returns, and $w$ is the vector of  portfolio weights, 
+      \vskip1ex
+      The portfolio weights $w_i$ are constrained as:
+      \begin{align*}
+        w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
+        0 \leq w_i \leq 1
+      \end{align*}
+      The function \texttt{solve.QP()} has the arguments: 
+      \vskip1ex
+      \texttt{Dmat} and \texttt{dvec} are the matrix and vector defining the quadratic objective function,
+      \vskip1ex
+      \texttt{Amat} and \texttt{bvec} are the matrix and vector defining the constraints,
+      \vskip1ex
+      \texttt{meq} specifies the number of equality constraints
+      (the first \texttt{meq} constraints are equalities, and the rest are inequalities),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# calculate daily percentage re_turns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+# calculate the covariance matrix
+co_var <- cov(re_turns)
+# minimum variance weights, with sum equal to 1
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 3), 
+                    Amat=matrix(1, nr=3, nc=1), 
+                    bvec=1)
+# minimum variance, maximum returns
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=sapply(0.1*re_turns, mean), 
+                    Amat=matrix(1, nr=3, nc=1), 
+                    bvec=1)
+# minimum variance positive weights, with sum equal to 1
+a_mat <- cbind(matrix(1, nr=3, nc=1), 
+               diag(3),-diag(3))
+b_vec <- c(1, rep(0, 3), rep(-1, 3))
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 3), 
+                    Amat=a_mat, 
+                    bvec=b_vec, 
+                    meq=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Portfolio Optimization Packages in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The following \texttt{R} packages provide functions for portfolio optimization:
+      \begin{itemize}
+        \item package \emph{PortfolioAnalytics}: relies on packages \emph{xts}, \emph{ROI}, and \emph{DEoptim},
+        \item package \emph{parma}: relies on packages \emph{xts}, \emph{Rglpk}, and \emph{quadprog},
+        \item package \emph{fPortfolio} from the \emph{Rmetrics} suite: relies on packages \emph{tseries}, \emph{Rglpk}, and \emph{quadprog},
+      \end{itemize}
+      These portfolio optimization packages call generic optimization functions written in compiled \texttt{C++} 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+load(file="C:/Develop/data/zoo_data.RData")
+ts_stx <- as.ts(zoo_stx)
+class(ts_stx)
+tail(ts_stx[, 1:4])
+library(xts)
+st_ox <- as.xts(zoo_stx)
+class(st_ox)
+tail(st_ox[, 1:4])
+      @
   \end{columns}
 \end{block}
 
@@ -858,7 +1595,7 @@ maxSR_DEOpt <- optimize.portfolio(
   trace=TRUE, traceDE=0)
 # plot optimization
 chart.RiskReward(maxSR_DEOpt,
-  risk.col="StdDev",
+  risk.col="stddev",
   return.col="mean")
       @
     \vspace{-2em}
@@ -872,7 +1609,7 @@ maxSR_DEOpt$objective_measures$StdDev[[1]]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_basic-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_basic-1}
   \end{columns}
 \end{block}
 
@@ -918,7 +1655,7 @@ risk_ret_points()
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_scatter-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_scatter-1}
   \end{columns}
 \end{block}
 
@@ -967,7 +1704,7 @@ maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SR_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_portf_SR_vis-1}
   \end{columns}
 \end{block}
 
@@ -1050,7 +1787,7 @@ risk_ret_points()
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_leverage-1}
     \vspace{-2em}
       <<echo=(-(1:2)),eval=FALSE,tidy=TRUE>>=
 library(PortfolioAnalytics)
@@ -1080,7 +1817,7 @@ maxSRN_DEOpt_xts <-
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SRN_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_portf_SRN_vis-1}
   \end{columns}
 \end{block}
 
@@ -1116,7 +1853,7 @@ maxSRN_DEOpt$objective_measures$StdDev[[1]])
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_SRN_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_SRN_vis-1}
   \end{columns}
 \end{block}
 
@@ -1199,7 +1936,7 @@ maxSTARR_DEOpt$objective_measures$ES[[1]]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_STARR-1}
   \end{columns}
 \end{block}
 
@@ -1221,7 +1958,7 @@ maxSTARR_DEOpt_xts <-
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_STARR_vis-1}
   \end{columns}
 \end{block}
 
@@ -1257,7 +1994,7 @@ maxSTARR_DEOpt$objective_measures$ES[[1]])
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_STARR_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_STARR_vis-1}
   \end{columns}
 \end{block}
 
@@ -1271,11 +2008,11 @@ maxSTARR_DEOpt$objective_measures$ES[[1]])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
+      The \emph{Efficient Frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return, 
       \vskip1ex
       The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
       \vskip1ex
-      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
+      The tangency point on the \emph{Efficient Frontier} is the \emph{Market Portfolio},
       <<optim_eff_front,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 library(PortfolioAnalytics)
 # plot the efficient frontier
@@ -1292,7 +2029,7 @@ text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_eff_front-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_eff_front-1}
   \end{columns}
 \end{block}
 
@@ -1375,7 +2112,7 @@ minES_ROI$objective_measures$ES[[1]]
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_minES-1}
   \end{columns}
 \end{block}
 
@@ -1397,7 +2134,7 @@ minES_ROI_xts <-
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_minES_vis-1}
   \end{columns}
 \end{block}
 
@@ -1433,7 +2170,7 @@ minES_ROI$objective_measures$ES[[1]])
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_minES_vis-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_minES_vis-1}
   \end{columns}
 \end{block}
 
@@ -1467,7 +2204,7 @@ maxSR_DEOpt_xts <-
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_1h-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_1h-1}
   \end{columns}
 \end{block}
 
@@ -1501,7 +2238,7 @@ maxSR_DEOpt_xts <-
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_2h-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_SR_2h-1}
   \end{columns}
 \end{block}
 
@@ -1537,7 +2274,7 @@ barplot(weights_2h,
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_weights-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_weights-1}
   \end{columns}
 \end{block}
 
@@ -1580,7 +2317,7 @@ colnames(env_rates$DGS10)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/treas_10y_rate.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/treas_10y_rate.png}\\
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 head(env_rates$DGS10, 3)
@@ -1635,7 +2372,7 @@ legend("bottomright", legend=colnames(rate_s),
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/yield_curve.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/yield_curve.png}\\
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # alternative plot using matplot()
@@ -1694,7 +2431,7 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
                 method="complete", col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cor_yield.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cor_yield.png}\\
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
 # plot the correlation matrix
@@ -1737,7 +2474,7 @@ barplot(p_ca$sdev,
         of Treasury rates")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_std_dev_yield.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_std_dev_yield.png}
   \end{columns}
 \end{block}
 
@@ -1774,7 +2511,7 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_loadings_yield.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_loadings_yield.png}
   \end{columns}
 \end{block}
 
@@ -1808,7 +2545,7 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_series_yield.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_series_yield.png}
   \end{columns}
 \end{block}
 
@@ -1944,7 +2681,7 @@ text(x=qnorm(0.025)-0.1, y=0.15,
        lwd=2, srt=90, pos=3)
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_threshold.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/default_threshold.png}\\
   \end{columns}
 \end{block}
 
@@ -2022,7 +2759,7 @@ for (i in 1:num_simu) {
       \end{multline*}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_distr.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/default_distr.png}\\
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # define default probability density function
@@ -2082,7 +2819,7 @@ curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_distr_corr.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/default_distr_corr.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # add legend
@@ -2124,7 +2861,7 @@ integrate(portf_loss, low=0, up=0.3, def_thresh=-2, rh_o=0.08, l_gd=0.4)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # plot probability distribution of losses
@@ -2169,7 +2906,7 @@ text(x=0.055-0.001, y=10, labels="VaR",
        lwd=2, srt=90, pos=3)
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_var.png}
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr_var.png}
   \end{columns}
 \end{block}
 
@@ -2205,7 +2942,7 @@ text(x=0.04-0.001, y=10, labels="VaR",
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_cvar.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr_cvar.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # add shading for CVaR
@@ -2257,7 +2994,7 @@ plot(x=1-conf_levels[, "conf_levels"],
      t="l", main="VaR values and confidence levels")
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_conf_levels.png}
+      \includegraphics[width=0.5\paperwidth]{figure/var_conf_levels.png}
   \end{columns}
 \end{block}
 
@@ -2295,7 +3032,7 @@ plot(x=1-conf_levels[, "conf_levels"],
      main="CVaR values and confidence levels")
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_conf_levels.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_conf_levels.png}\\
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # add VaRs
@@ -2344,7 +3081,7 @@ loss_es <-
   l_gd*colSums(asset_values < default_thresh)/num_assets
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_simu.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/var_simu.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate VaRs
@@ -2393,7 +3130,7 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"),
        lwd=6, lty=c(1, 1), col=c("red", "black"))
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_simu.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_simu.png}\\
   \end{columns}
 \end{block}
 
@@ -2479,7 +3216,7 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_std_error_boot.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_std_error_boot.png}\\
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # plot the standard errors of VaRs and CVaRs
@@ -2537,7 +3274,7 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_std_error_parallel.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_std_error_parallel.png}\\
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # plot the standard errors of VaRs and CVaRs

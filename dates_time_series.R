@@ -495,6 +495,8 @@ first(x_ts)  # get first element
 last(x_ts)  # get last element
 class(x_ts)  # class 'xts'
 attributes(x_ts)
+# get the time zone of an xts object
+indexTZ(x_ts)
 load(file="C:/Develop/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
@@ -537,10 +539,10 @@ legend("topleft", legend=colnames(EuStockMarkets),
 library(rutils)
 library(ggplot2)
 # create ggplot object
-etf_gg <- qplot(x=index(env_etf$price_s[, 1]),
-          y=as.numeric(env_etf$price_s[, 1]),
+etf_gg <- qplot(x=index(rutils::env_etf$price_s[, 1]),
+          y=as.numeric(rutils::env_etf$price_s[, 1]),
           geom="line",
-          main=names(env_etf$price_s[, 1])) +
+          main=names(rutils::env_etf$price_s[, 1])) +
   xlab("") + ylab("") +
   theme(  # add legend and title
     legend.position=c(0.1, 0.5),
@@ -554,8 +556,8 @@ library(reshape2)
 library(ggplot2)
 # create data frame of time series
 data_frame <-
-  data.frame(dates=index(env_etf$price_s),
-    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+  data.frame(dates=index(rutils::env_etf$price_s),
+    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
 # reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -573,7 +575,7 @@ ggplot(data=data_frame,
 # load rutils which contains env_etf dataset
 suppressMessages(suppressWarnings(library(rutils)))
 suppressMessages(suppressWarnings(library(dygraphs)))
-x_ts <- env_etf$price_s[, c("VTI", "IEF")]
+x_ts <- rutils::env_etf$price_s[, c("VTI", "IEF")]
 # plot dygraph with date range selector
 dygraph(x_ts, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
@@ -583,19 +585,19 @@ suppressMessages(suppressWarnings(library(rutils)))
 suppressMessages(suppressWarnings(library(plotly)))
 # create data frame of time series
 data_frame <-
-  data.frame(dates=index(env_etf$price_s),
-    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+  data.frame(dates=index(rutils::env_etf$price_s),
+    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
 # plotly syntax using pipes
 data_frame %>%
-  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI") %>%
-  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF") %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
 # or use standard plotly syntax
-p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI")
-p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF")
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
 library(xts)  # load package xts
