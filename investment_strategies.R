@@ -97,9 +97,9 @@ ts_rets <- rutils::env_etf$re_turns[, "VTI"]
 PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
 library(HighFreq)  # load package HighFreq
 # Get close prices and calculate close-to-close returns
-# price_s <- Cl(rutils::env_etf$VTI)
-price_s <- Cl(HighFreq::SPY)
-colnames(price_s) <- rutils::na_me(price_s)
+# price_s <- quantmod::Cl(rutils::env_etf$VTI)
+price_s <- quantmod::Cl(HighFreq::SPY)
+colnames(price_s) <- rutils::get_name(colnames(price_s))
 re_turns <- TTR::ROC(price_s)
 re_turns[1] <- 0
 # Calculate the RSI indicator

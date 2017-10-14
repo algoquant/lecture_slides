@@ -1403,7 +1403,7 @@ library(zoo)  # load package zoo
 # create zoo with Date index
 in_dex <- seq(from=as.Date("2013-06-15"), 
                   by="day", length.out=100)
-zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
+zoo_series <- zoo(cumsum(rnorm(NROW(in_dex))), 
                   order.by=in_dex)
 tail(zoo_series, 3)
 # write zoo to text file, and then read it back
@@ -1464,6 +1464,12 @@ tail(zoo_series, 3)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      Single column \emph{zoo} time series usually don't have a dimension attribute, and they don't have a column name, unlike multi-column \emph{zoo} time series, and this can cause hard to detect bugs,
+      \vskip1ex
+      It's best to always pass the argument \texttt{"col.names=TRUE"} to the function \texttt{write.zoo()}, to make sure it writes a column name for a single column \emph{zoo}  time series,
+      \vskip1ex
+      Reading a \emph{csv} file containing a single column of data using the function \texttt{read.zoo()} produces a \emph{zoo}  time series with a \texttt{NULL} dimension, unless the argument \texttt{"drop=FALSE"} is passed to \texttt{read.zoo()},
+      \vskip1ex
       Very often \emph{csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting,
       \vskip1ex
       The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing columns of the input data into a \emph{date-time} object suitable for the \emph{zoo} index,
@@ -1473,16 +1479,21 @@ tail(zoo_series, 3)
 setwd("C:/Develop/data")
 library(zoo)  # load package zoo
 # write zoo to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv", sep=",")
+write.zoo(zoo_series, file="zoo_series.csv", 
+          sep=",", col.names=TRUE)
 zoo_series <- read.zoo(file="zoo_series.csv", 
-                  header=TRUE, sep=",", FUN=as.POSIXct,
-                  tz="America/New_York")
+                  header=TRUE, sep=",", 
+                  drop=FALSE, 
+                  FUN=as.POSIXct, tz="America/New_York")
 tail(zoo_series, 3)
 # read zoo from CSV file, with custom date-time format
-zoo_frame <- read.table(file="zoo_series2.csv", sep=",")
+zoo_frame <- read.table(file="zoo_series2.csv", 
+                        sep=",")
 tail(zoo_frame, 3)  # date-time format mm/dd/yyyy hh:mm
 zoo_series <- read.zoo(file="zoo_series2.csv", 
-                  header=TRUE, sep=",", FUN=as.POSIXct, 
+                  header=TRUE, sep=",", 
+                  drop=FALSE, 
+                  FUN=as.POSIXct, 
                   tz="America/New_York",
                   format="%m/%d/%Y %H:%M")
 tail(zoo_series, 3)

@@ -95,7 +95,7 @@ knit_theme$set(thm)
       These operators are applied to vectors element-wise,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-1)>>=
+        <<echo=(-(1:1))>>=
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -137,7 +137,7 @@ c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-1)>>=
+        <<echo=(-(1:1))>>=
 rm(list=ls())
 c(FALSE, TRUE, FALSE) && c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) || c(TRUE, TRUE, FALSE)
@@ -261,7 +261,7 @@ which(vec_tor == 5)
 (1:length(vec_tor))[vec_tor == 5]
 which(vec_tor > 5)
 # find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6), 
+which((mat_rix == 5)|(mat_rix == 6),
       arr.ind=TRUE)
 # equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
@@ -296,6 +296,8 @@ which.min(vec_tor)
       \texttt{any()} returns \texttt{TRUE} if at least one element of a Boolean vector is \texttt{TRUE}, and \texttt{FALSE} otherwise,
       \vskip1ex
       Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
+      \vskip1ex
+      \texttt{pmatch()} performs partial matching of strings,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<>>=
@@ -314,6 +316,8 @@ any(vec_tor == 5)
 any(vec_tor == (-5))
 if (any(vec_tor < 0))
   cat("vector contains negative values\n")
+# partial matching of strings
+pmatch("med", c("mean", "median", "mode"))
       @
   \end{columns}
 \end{block}
@@ -657,6 +661,61 @@ my_var
 
 
 %%%%%%%%%%%%%%%
+\subsection{The Parenthesis \texttt{"()"} and Curly Braces \texttt{"\{\}"} Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The parenthesis \texttt{"()"} and curly braces \texttt{"\{\}"} operators are used to enclose and to group (combine) expressions,
+      \vskip1ex
+      The parenthesis \texttt{"()"} and curly braces \texttt{"\{\}"} operators are functions, and they return values,
+      \vskip1ex
+      An expression enclosed by the parenthesis \texttt{"()"} operator is evaluated separatately from other expressions, and its result is returned,
+      \vskip1ex
+      Enclosing expressions in parenthesis makes them less ambiguous,
+      \vskip1ex
+      The curly braces \texttt{"\{\}"} operator can group several expressions, that can be written either on separate lines, or be separated by the semicolon \texttt{";"} operator, 
+      \vskip1ex
+      The curly braces \texttt{"\{\}"} operator returns the last expression it encloses,
+      \vskip1ex
+      The square braces (brackets) \texttt{"[]"} operator is reserved for subsetting (dereferencing) the elements of vectors, matrices, and lists,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+rm(list=ls())
+# expressions enclosed in parenthesis are less ambiguous
+-2:5
+(-2):5
+-(2:5)
+# expressions enclosed in parenthesis are less ambiguous
+-2*3+5
+-2*(3+5)
+
+# expressions can be separated by semicolons or by lines
+{1+2; 2*3; 1:5}
+# or
+{1+2
+2*3
+1:5}
+
+# parenthesis and braces require a little additional processing time
+library(microbenchmark)
+summary(microbenchmark(
+  ba_se=sqrt(rnorm(10000)^2),
+  pa_ren=sqrt(((((rnorm(10000)^2))))),
+  bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+      @
+      Both the parenthesis \texttt{"()"} and curly braces \texttt{"\{\}"} operators are functions, and executing them requires a little additional processing time,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The \texttt{"if () else"} Control Statement}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -672,7 +731,7 @@ my_var
       \texttt{"if"} statements can be nested using multiple \texttt{"else if"} statements,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-1)>>=
+        <<echo=(-(1:1))>>=
 rm(list=ls())
 num_var1 <- 1
 
@@ -751,11 +810,15 @@ centra_lity(my_var, "median")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{"for() \{...\}"} statement iterates a \emph{bound} variable over elements of a vector or list,
+      The \texttt{for()} loop statement:
+      \vspace{-1em}
+      <<echo=TRUE, eval=FALSE>>=
+for (in_dex in vec_tor) {ex_pressions}
+@
+      \vspace{-1em}
+      iterates the \emph{bound} variable \texttt{in\_dex} over the elements of the vector or list \texttt{vec\_tor}, and evaluates in a loop the \texttt{ex\_pressions} contained in the body of the \texttt{for()} loop, 
       \vskip1ex
-      The \texttt{for()} loop creates the \emph{bound} variable, which then iterates over the elements of the vector, and upon loop exit the \emph{bound} variable is left equal to the last element of the vector,
-      \vskip1ex
-      \texttt{R} also has a \texttt{"while() \{...\}"} loop,
+      Upon loop exit the \emph{bound} variable \texttt{in\_dex} is left equal to the last element of the vector \texttt{vec\_tor},
       \vskip1ex
       \texttt{while()} loops start by testing their logical condition, and they repeat executing the loop body until that condition is \texttt{FALSE},
       \vskip1ex
@@ -763,21 +826,67 @@ centra_lity(my_var, "median")
 properly, so \alert{Use Them With Care!}
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-1)>>=
+        <<echo=(-(1:1))>>=
 rm(list=ls())
 color_list <- list("red", "white", "blue")
-for (some_color in color_list) {  # loop over list
+# loop over list
+for (some_color in color_list) {
   print(some_color)
-}
-for (in_dex in 1:3) {  # loop over vector
+}  # end for
+# loop over vector
+for (in_dex in 1:3) {
   print(color_list[[in_dex]])
-}
+}  # end for
 
-in_dex <- 1  # while loops need initialization
-while (in_dex < 4) {  # while loop
+# while loops require initialization
+in_dex <- 1
+# while loop
+while (in_dex < 4) {
   print(color_list[[in_dex]])
   in_dex <- in_dex + 1
-}
+}  # end while
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Loops Using \texttt{for()} and \texttt{apply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{for()} loop doesn't return a value, so values calculated in the \texttt{for()} loop body must be assigned to variables in the parent environment, or otherwise they are lost, 
+      \vskip1ex
+      The expressions in the \texttt{for()} loop body have access to variables in the parent environment in which the \texttt{for()} loop is executed, and they can modify those variables,
+      \vskip1ex
+      So even though \texttt{for()} loops don't return a value, they can be used to perform calculations on variables in the parent environment, but this is discouraged since it can produce errors that are hard to debug,
+      \vskip1ex
+      {\color{red}{Rule of Thumb:}}\\
+      \begin{itemize}
+        \item \texttt{for()} loops are preferred for producing \emph{side effects}, like plotting or reading and writing data to files,
+        \item \texttt{apply()} loops are preferred for performing calculations which produce vectors or matrices of values,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+rm(list=ls())
+# loop over a vector and overwrite it
+vec_tor <- integer(7)
+for (i in 1:7) {
+  cat("Changing element:", i, "\n")
+  vec_tor[i] <- i^2
+}  # end for
+# equivalent way (without cat side effect)
+for (i in seq_along(vec_tor)) 
+  vec_tor[i] <- i^2
+
+# sapply() loop returns vector of values
+vec_tor <- sapply(seq_along(vec_tor), 
+                  function(x) (x^2))
       @
   \end{columns}
 \end{block}
@@ -813,7 +922,7 @@ while (in_dex < 4) {  # while loop
       The function \texttt{numeric(k)} returns a \texttt{numeric} vector of zeros of length \texttt{k},
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-1)>>=
+        <<echo=(-(1:1))>>=
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
 # pre-allocate vector instead of "growing" it
@@ -1202,11 +1311,11 @@ summary(microbenchmark(
       <<echo=TRUE>>=
 # define named vectors
 vec_tor1 <- sample(1:4)
-names(vec_tor1) <- 
+names(vec_tor1) <-
   paste0("row", 1:4, "=", vec_tor1)
 vec_tor1
 vec_tor2 <- sample(1:3)
-names(vec_tor2) <- 
+names(vec_tor2) <-
   paste0("col", 1:3, "=", vec_tor2)
 vec_tor2
 # calculate outer product of two vectors
@@ -2054,7 +2163,7 @@ options(error=NULL)  # set back to default "error" option
       \vskip1ex
       If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression,
       \vskip1ex
-      If a \texttt{condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{condition},
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition},
       \vskip1ex
       If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console,
       \vskip1ex
@@ -2076,8 +2185,14 @@ tryCatch(  # with error handler
     num_var <- 101  # assign
     stop('my error')  # produce error
   },
-  error=function(error_cond)  # handler captures error condition
-    print(paste("error handler: ", error_cond)),
+  # error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
       @
@@ -2103,13 +2218,15 @@ tryCatch(  # with error handler
       The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition},
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
+      <<echo=(-(1:1))>>=
 rm(list=ls())
 # apply loop without tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     stopifnot(num_var != 3)  # check for error
-    cat("(cat) num_var =", num_var, "\n")  # broadcast
-    paste("(return) num_var =", num_var)  # return value
+    # broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # return a value
+    paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
       @
@@ -2141,10 +2258,13 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     tryCatch(  # with error handler
       {  # body
         stopifnot(num_var != 3)  # check for error
-        cat("(cat) num_var =", num_var, "\t")  # broadcast
-        paste("(return) num_var =", num_var)  # return value
+        # broadcast message to console
+        cat("(cat) num_var =", num_var, "\t")
+        # return a value
+        paste("(return) num_var =", num_var)
       },
-      error=function(error_cond)  # handler captures error condition
+      # error handler captures error condition
+      error=function(error_cond)
         paste("handler: ", error_cond),
       finally=print(paste("(finally) num_var =", num_var))
     )  # end tryCatch

@@ -413,6 +413,8 @@ func_tional <- function(func_name, in_put) {
   func_name(in_put)
 }  # end func_tional
 func_tional(sqrt, 4)
+# string also works because match.fun() converts it to a function
+func_tional("sqrt", 4)
 str(sum)  # sum() accepts multiple arguments
 # func_tional can't accept indefinite number of arguments
 func_tional(sum, 1, 2, 3)

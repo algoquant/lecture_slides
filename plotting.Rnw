@@ -6,7 +6,7 @@ library(knitr)
 library(rgl)
 knit_hooks$set(rgl=hook_rgl)
 knit_hooks$set(webgl=hook_webgl)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="scriptsize", fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="scriptsize", fig.width=4, fig.height=4)
 options(width=60, dev="pdf")
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -324,8 +324,8 @@ legend(x="topright", legend=c("Normal", "shifted"),
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{-2em}
-    <<plot_zoo_axis,eval=FALSE,echo=(-(1:2)),fig.show="hide">>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+    <<eval=FALSE,echo=(-(1:1))>>=
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # load zoo
 load(file="C:/Develop/data/zoo_data.RData")
 zoo_series <- window(zoo_stx[, "AdjClose"],
@@ -336,13 +336,10 @@ in_dex <- index(zoo_series)
 # coerce index to monthly dates
 month_ly <- as.yearmon(in_dex)
 # tick locations at beginning of month
-tick_s <-
-  in_dex[match(unique(month_ly), month_ly)]
-# or
-tick_s <-
-  as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
+tick_s <- in_dex[match(unique(month_ly), month_ly)]
+# tick_s <- as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
 # first plot zoo without "x" axis
-plot(zoo_series, xaxt="n", xlab=NA, ylab=NA)
+plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
 # add "x" axis with monthly ticks
 axis(side=1, at=tick_s,
      labels=format(tick_s, "%b-%y"), tcl=-0.7)
@@ -350,18 +347,19 @@ axis(side=1, at=tick_s,
 abline(v=tick_s, col="grey", lwd=0.5)
 # plot zoo using base plotting functions
 plot(as.vector(zoo_series), xaxt="n",
-     xlab=NA, ylab=NA, t="l")
-a_t <- seq_along(in_dex)[in_dex %in% tick_s]
+     xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
+a_t <- match(tick_s, in_dex)
+# a_t <- seq_along(in_dex)[in_dex %in% tick_s]
 # add "x" axis with monthly ticks
 axis(side=1, at=a_t,
      labels=format(tick_s, "%b-%y"), tcl=-0.7)
 abline(v=a_t, col="grey", lwd=0.5)
       @
     \column{0.5\textwidth}
+    \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth]{figure/zoo_plot_axis_dates.png}
     \vspace{-2em}
-    \includegraphics[width=0.5\paperwidth]{figure/plot_zoo_axis-1}
-    \vspace{-7em}
-    <<eval=TRUE,echo=(-(1:7))>>=
+    <<eval=FALSE,echo=(-(1:7))>>=
 library(zoo)  # load zoo
 load(file="C:/Develop/data/zoo_data.RData")
 # extract time index and monthly dates
@@ -386,7 +384,7 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Two Time Series With Two \texttt{"y"} axes}
+\subsection{Plotting Two Time Series With Two \texttt{"y"} Axes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -394,44 +392,56 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The function \texttt{par()} sets graphical parameters used for plotting, and invisibly returns existing parameters as a named list,
       \vskip1ex
-      The function \texttt{axis()} plots an axis to the current plot,
+      The function \texttt{axis()} plots an axis on the current plot,
       \vskip1ex
-      The function \texttt{lines()} plots a line to the current plot,
-      <<zoo_plot_2y,echo=(-(1:2)),eval=FALSE,fig.show="hide">>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+      The function \texttt{lines()} plots a line on the current plot,
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
 load(file="C:/Develop/data/zoo_data.RData")
-### plot with two "y" axes
-par(las=1)  # set text printing to "horizontal"
-# plot first ts
-plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# set range of "y" coordinates for second axis
-par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
-lines(zoo_stxeur[, 2], col="red")  # second plot
-axis(side=4, col="red")  # second "y" axis on right
-# print axis labels
-mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-title(main="EUR and MSFT")  # add title
-# add legend without box
-legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
-       lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# slightly different method using par(new=TRUE)
-# par(las=1)  # set text printing to "horizontal"
-# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# par(new=TRUE)  # allow new plot on same chart
-# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
-# axis(side=4, col="red")  # second "y" axis on right
-# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-# title(main="EUR and MSFT", line=-1)  # add title
-# legend("bottomright", legend=colnames(zoo_stxeur),
-#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+# set plot margines
+par(mar=c(3, 3, 3, 3), oma=c(0, 0, 0, 0))
+par(las=1)  # set text printing to horizontal
+## plot with two y-axes - plot first time series
+zoo::plot.zoo(zoo_stxeur[, 1], lwd=2, xlab=NA, ylab=NA)
+par(new=TRUE)  # allow new plot on same chart
+# plot second time series without y-axis
+zoo::plot.zoo(zoo_stxeur[, 2], xlab=NA, ylab=NA,
+     lwd=2, yaxt="n", col="red")
+# plot second y-axis on right
+axis(side=4, col="red")
+# add axis labels
+col_names <- colnames(zoo_stxeur)
+mtext(col_names[1], side=2, adj=-0.5)
+mtext(col_names[2], side=4, adj=1.5, col="red")
+# add title and legend
+title(main=paste0(col_names, collapse=" and "),
+      line=0.5)
+legend("top", legend=col_names,
+  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=c("black", "red"), bty="n")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/zoo_plot_2y-1}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/plot_2y.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## slightly different method using par("usr")
+par(las=1)  # set text printing to horizontal
+zoo::plot.zoo(zoo_stxeur[, 1], xlab=NA, ylab=NA, lwd=2)
+# set range of "y" coordinates for second axis
+par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
+lines(zoo_stxeur[, 2], col="red", lwd=2)  # second plot
+axis(side=4, col="red")  # second y-axis on right
+# add axis labels
+mtext(col_names[1], side=2, adj=-0.5)
+mtext(col_names[2], side=4, adj=1.5, col="red")
+# add title and legend
+title(main=paste0(col_names, collapse=" and "),
+      line=0.5)
+legend("top", legend=col_names,
+  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=c("black", "red"), bty="n")
+      @
   \end{columns}
 \end{block}
 

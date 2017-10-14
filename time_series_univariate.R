@@ -929,6 +929,19 @@ ch_ob <- chart_Series(  # plot in bottom panel
   name="XLF", plot=FALSE)
 add_TA(XLF_vwap["2009-02/2009-04"],
  lwd=2, on=1, col='blue')
+library(dygraphs)
+# calculate volume-weighted average price
+oh_lc <- rutils::env_etf$VTI
+VTI_vwap <- TTR::VWAP(price=Ad(oh_lc),
+                volume=Vo(oh_lc), n=10)
+# add VWAP to OHLC  data
+oh_lc <- cbind(oh_lc[, c(1:3, 6)],
+         VTI_vwap)["2009-02/2009-04"]
+# plot OHLC candlestick plot
+dygraphs::dygraph(oh_lc) %>% dyCandlestick()
+# plot without using pipes syntax
+dygraphs::dyCandlestick(
+  dygraphs::dygraph(oh_lc))
 library(quantmod)  # load package quantmod
 # assign name SP500 to ^GSPC symbol
 setSymbolLookup(
@@ -1043,24 +1056,27 @@ help(package="Quandl")
 detach("package:Quandl")
 library(quantmod)  # load package quantmod
 # download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL", type="xts")
-chart_Series(price_s["2016", 1:4], name="AAPL OHLC prices")
+price_s <- Quandl(code="WIKI/AAPL",
+            type="xts", start_date="1990-01-01")
+x11(width=14, height=7)
+chart_Series(price_s["2016", 1:4],
+    name="AAPL OHLC prices")
 # add trade volume in extra panel
 add_TA(price_s["2016", 5])
 # download euro currency rates
-price_s <-
-  Quandl(code="BNP/USDEUR", start_date="2013-01-01",
-   end_date="2013-12-01", type="xts")
+price_s <- Quandl(code="BNP/USDEUR",
+    start_date="2013-01-01",
+    end_date="2013-12-01", type="xts")
 # download multiple time series
 price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-   start_date="2013-01-01", type="xts")
+    start_date="2013-01-01", type="xts")
 # download AAPL gross profits
-prof_it <-
-  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
+prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
+    type="xts")
 chart_Series(prof_it, name="AAPL gross profits")
 # download Hurst time series
 price_s <- Quandl(code="PE/AAPL_HURST",
-       start_date="2013-01-01", type="xts")
+    start_date="2013-01-01", type="xts")
 chart_Series(price_s["2016/", 1],
        name="AAPL Hurst")
 library(quantmod)  # load package quantmod
@@ -1111,7 +1127,8 @@ library(Quandl)  # load package Quandl
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
 
 # Quandl stock market data
-# https://blog.quandl.com/stock-market-data-guide
+# https://blog.quandl.com/stock-market-data-ultimate-guide-part-1
+# https://blog.quandl.com/stock-market-data-the-ultimate-guide-part-2
 
 # download RAYMOND metadata
 # https://www.quandl.com/data/RAYMOND-Raymond/documentation/metadata

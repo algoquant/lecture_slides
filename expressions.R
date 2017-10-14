@@ -65,7 +65,7 @@ which(vec_tor == 5)
 (1:length(vec_tor))[vec_tor == 5]
 which(vec_tor > 5)
 # find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6), 
+which((mat_rix == 5)|(mat_rix == 6),
       arr.ind=TRUE)
 # equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
@@ -89,6 +89,8 @@ any(vec_tor == 5)
 any(vec_tor == (-5))
 if (any(vec_tor < 0))
   cat("vector contains negative values\n")
+# partial matching of strings
+pmatch("med", c("mean", "median", "mode"))
 str(findInterval)
 # get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
@@ -219,6 +221,30 @@ deparse_name(my_var)
 my_var <- deparse_name(my_var)
 my_var
 rm(list=ls())
+# expressions enclosed in parenthesis are less ambiguous
+-2:5
+(-2):5
+-(2:5)
+# expressions enclosed in parenthesis are less ambiguous
+-2*3+5
+-2*(3+5)
+
+# expressions can be separated by semicolons or by lines
+{1+2; 2*3; 1:5}
+# or
+{1+2
+2*3
+1:5}
+
+# parenthesis and braces require a little additional processing time
+library(microbenchmark)
+summary(microbenchmark(
+  ba_se=sqrt(rnorm(10000)^2),
+  pa_ren=sqrt(((((rnorm(10000)^2))))),
+  bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+rm(list=ls())
 num_var1 <- 1
 
 if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
@@ -252,20 +278,39 @@ my_var <- rnorm(100, mean=2)
 centra_lity(my_var, "mean")
 centra_lity(my_var, "mean_narm")
 centra_lity(my_var, "median")
+for (in_dex in vec_tor) {ex_pressions}
 rm(list=ls())
 color_list <- list("red", "white", "blue")
-for (some_color in color_list) {  # loop over list
+# loop over list
+for (some_color in color_list) {
   print(some_color)
-}
-for (in_dex in 1:3) {  # loop over vector
+}  # end for
+# loop over vector
+for (in_dex in 1:3) {
   print(color_list[[in_dex]])
-}
+}  # end for
 
-in_dex <- 1  # while loops need initialization
-while (in_dex < 4) {  # while loop
+# while loops require initialization
+in_dex <- 1
+# while loop
+while (in_dex < 4) {
   print(color_list[[in_dex]])
   in_dex <- in_dex + 1
-}
+}  # end while
+rm(list=ls())
+# loop over a vector and overwrite it
+vec_tor <- integer(7)
+for (i in 1:7) {
+  cat("Changing element:", i, "\n")
+  vec_tor[i] <- i^2
+}  # end for
+# equivalent way (without cat side effect)
+for (i in seq_along(vec_tor)) 
+  vec_tor[i] <- i^2
+
+# sapply() loop returns vector of values
+vec_tor <- sapply(seq_along(vec_tor), 
+          function(x) (x^2))
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
 # pre-allocate vector instead of "growing" it
@@ -401,11 +446,11 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # define named vectors
 vec_tor1 <- sample(1:4)
-names(vec_tor1) <- 
+names(vec_tor1) <-
   paste0("row", 1:4, "=", vec_tor1)
 vec_tor1
 vec_tor2 <- sample(1:3)
-names(vec_tor2) <- 
+names(vec_tor2) <-
   paste0("col", 1:3, "=", vec_tor2)
 vec_tor2
 # calculate outer product of two vectors
