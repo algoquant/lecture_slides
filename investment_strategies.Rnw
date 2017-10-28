@@ -505,7 +505,7 @@ PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Relative Strength Index} (\emph{RSI}) is defined as the weighted average of prices over a rolling window:
+      The \emph{Relative Strength Index} (\emph{RSI}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
         P_i^{RSI} = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) P_{i-j}
       \end{displaymath}
@@ -563,7 +563,7 @@ plot.zoo( cbind(eq_all, eq_up, eq_dn)[in_dex], lwd=c(2, 2, 2),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling window:
+      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
       \begin{displaymath}
         P_i^{EWMA} = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) P_{i-j}
       \end{displaymath}
@@ -575,14 +575,14 @@ library(HighFreq)  # load package HighFreq
 oh_lc <- rutils::env_etf$VTI["/2011"]
 # calculate close prices
 cl_ose <- Cl(oh_lc)
-# define aggregation window and decay parameter
-win_dow <- 51
+# define aggregation interval and decay parameter
+look_back <- 31
 lamb_da <- 0.05
 # calculate EWMA prices
-weight_s <- exp(-lamb_da*1:win_dow)
+weight_s <- exp(-lamb_da*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1)
-ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+ew_ma[1:(look_back-1)] <- ew_ma[look_back]
 ew_ma <- xts(cbind(cl_ose, ew_ma), 
              order.by=index(oh_lc))
 colnames(ew_ma) <- c("VTI", "VTI EWMA")
@@ -726,13 +726,13 @@ legend("top", legend=colnames(pnl_s),
       \vspace{-2em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-simu_ewma <- function(oh_lc, lamb_da=0.05, win_dow=51) {
+simu_ewma <- function(oh_lc, lamb_da=0.05, look_back=31) {
   # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
+  weight_s <- exp(-lamb_da*1:look_back)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- Cl(oh_lc)
   ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+  ew_ma[1:(look_back-1)] <- ew_ma[look_back]
   # determine dates right after EWMA has crossed prices
   in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
   trade_dates <- (rutils::diff_xts(in_dic) != 0)
@@ -997,10 +997,10 @@ library(HighFreq)  # load package HighFreq
 op_en <- Op(rutils::env_etf$VTI)
 cl_ose <- Cl(rutils::env_etf$VTI)
 prices_lag <- rutils::lag_xts(cl_ose)
-# define aggregation window and calculate VWAP
-win_dow <- 150
+# define aggregation interval and calculate VWAP
+look_back <- 150
 VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI, 
-            win_dow=win_dow)
+            win_dow=look_back)
 # calculate VWAP indicator
 in_dic <- sign(cl_ose - VTI_vwap)
 # determine dates right after VWAP has crossed prices
@@ -1148,7 +1148,7 @@ tail(warm_up)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # source EWMA model simu_ewma() from file
-source("C:/Develop/R/scripts/ewma_model.R")
+source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
 # define aggregation function
 agg_regate <- function(oh_lc, lamb_das, ...) {
   sapply(lamb_das, function(lamb_da) {
@@ -1159,10 +1159,10 @@ agg_regate <- function(oh_lc, lamb_das, ...) {
   })  # end sapply
 }  # end agg_regate
 # define EWMA parameters
-win_dow <- 51
+look_back <- 31
 lamb_das <- seq(0.001, 0.01, 0.001)
 # perform aggregation
-agg_regate(oh_lc, lamb_das, win_dow)
+agg_regate(oh_lc, lamb_das, look_back)
       @
   \end{columns}
 \end{block}
@@ -1183,9 +1183,9 @@ agg_regate(oh_lc, lamb_das, win_dow)
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# adjust end_points so they are greater than EWMA win_dow
-end_points[(end_points > 0) & 
-  (end_points <= win_dow)] <- win_dow+1
+# adjust end_points so they are greater than EWMA look_back
+end_points[(end_points > 0) & (end_points <= look_back)] <- 
+  look_back + 1
 # start_points are end_points lagged by look_back
 len_gth <- NROW(end_points)
 start_points <- end_points[c(rep_len(1, look_back-1), 
@@ -1197,7 +1197,7 @@ look_backs <- lapply(2:len_gth,
 agg_s <- lapply(look_backs, 
   function(look_back, ...) {
     agg_regate(oh_lc[look_back], ...)
-    }, lamb_das=lamb_das, win_dow=win_dow)  # end lapply
+    }, lamb_das=lamb_das, look_back=look_back)  # end lapply
 # rbind list into single xts or matrix
 agg_s <- rutils::do_call_rbind(agg_s)
 if (!is.xts(agg_s))
@@ -1242,7 +1242,7 @@ sharpe_ratios <- roll_agg(x_ts=oh_lc,
                           look_back=look_back, 
                           FUN=agg_regate, 
                           lamb_das=lamb_das,
-                          win_dow=win_dow)
+                          look_back=look_back)
       @
   \end{columns}
 \end{block}
@@ -1283,7 +1283,7 @@ sharpe_ratios <- roll_agg(x_ts=oh_lc,
                           look_backs=look_backs, 
                           FUN=agg_regate, 
                           lamb_das=lamb_das,
-                          win_dow=win_dow)
+                          look_back=look_back)
       @
   \end{columns}
 \end{block}
@@ -1307,7 +1307,7 @@ lamb_das <- seq(0.01, 1.0, 0.1)
 # perform lapply() loop over lamb_das
 re_turns <- lapply(lamb_das, function(lamb_da) {
   # simulate EWMA strategy and calculate re_turns
-  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, look_back=look_back)[, "re_turns"]
 })  # end lapply
 re_turns <- do.call(merge, re_turns)
 colnames(re_turns) <- paste0("lambda=", lamb_das)
@@ -1349,23 +1349,23 @@ legend("bottomleft", legend=colnames(re_turns),
 # initialize compute cluster under Windows
 library(parallel)
 clus_ter <- makeCluster(detectCores()-1)
-win_dow <- 51
+look_back <- 31
 clusterExport(clus_ter, 
-              varlist=c("oh_lc", "win_dow", "simu_ewma"))
+              varlist=c("oh_lc", "look_back", "simu_ewma"))
 # perform parallel loop over lamb_das under Windows
 lamb_das <- seq(0.01, 1.0, 0.1)
 re_turns <- parLapply(clus_ter, lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc, 
-            lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+            lamb_da=lamb_da, look_back=look_back)[, "re_turns"]
 })  # end parLapply
 # perform parallel loop over lamb_das under Mac-OSX or Linux
 re_turns <- mclapply(lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc, 
-            lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+            lamb_da=lamb_da, look_back=look_back)[, "re_turns"]
 })  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 re_turns <- do.call(merge, re_turns)
@@ -1824,13 +1824,13 @@ plot(cbind(look_backs, pro_files), t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{end points} spanning fixed time \emph{intervals}, 
+      An interval aggregation can be specified by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}, 
       \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{windows}, 
+      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{intervals}, 
       \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in that window, 
+      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
       \vskip1ex
-      The \emph{startpoints} are the \emph{end points} lagged by the number of window intervals (number of intervals in the window), 
+      The \emph{startpoints} are the \emph{end points} lagged by the number of interval intervals (number of intervals in the interval), 
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -1848,7 +1848,7 @@ start_points <- end_points[
   c(rep_len(1, look_back-1), 
     1:(len_gth-look_back+1))]
 # create list of look-back intervals
-inter_vals <- lapply(2:len_gth, 
+look_backs <- lapply(2:len_gth, 
     function(in_dex) {
       start_points[in_dex]:end_points[in_dex]
   })  # end lapply
@@ -1866,13 +1866,13 @@ inter_vals <- lapply(2:len_gth,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An interval aggregation can be specified by a vector of look-back \emph{windows} attached at \emph{end points} spanning fixed time \emph{intervals}, 
+      An interval aggregation can be specified by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}, 
       \vskip1ex
-      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{windows}, 
+      For example, we may wish to perform aggregations at weekly \emph{end points}, over overlapping 40-week look-back \emph{intervals}, 
       \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{window}, while (\texttt{look\_back-1}) is equal to the number of intervals in that window, 
+      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back-1}) is equal to the number of intervals in that interval, 
       \vskip1ex
-      The \emph{startpoints} are the \emph{end points} lagged by the number of window intervals (number of intervals in the window), 
+      The \emph{startpoints} are the \emph{end points} lagged by the number of interval intervals (number of intervals in the interval), 
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -1881,11 +1881,11 @@ inter_vals <- lapply(2:len_gth,
 sym_bols <- c("VTI", "IEF", "DBC")
 
 # calculate risk&ret stats for some symbols, over a range of dates
-# perform lapply() loop over inter_vals
-risk_stats <- lapply(inter_vals, 
-  function(inter_val) {
+# perform lapply() loop over look_backs
+risk_stats <- lapply(look_backs, 
+  function(look_back) {
     x_ts <- 
-      rutils::env_etf$re_turns[inter_val, sym_bols]
+      rutils::env_etf$re_turns[look_back, sym_bols]
     t(sapply(x_ts, 
       function(col_umn)
         c(return=mean(col_umn), risk=mad(col_umn))

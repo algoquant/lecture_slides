@@ -72,7 +72,7 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Aggregations Over Look-back Windows}
+\subsection{Aggregations Over Look-back Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -82,24 +82,24 @@ knit_theme$set(thm)
       \vskip1ex
       A time \emph{interval} is defined as the time spanned by one or more neighboring time \emph{periods}, 
       \vskip1ex
-      A look-back \emph{window} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
+      A look-back \emph{interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
       \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the window width (number of periods in the window), 
+      The \emph{startpoints} are the \emph{endpoints} lagged by the interval width (number of periods in the interval), 
       \vskip1ex
-      The look-back \emph{windows} may or may not \emph{overlap} with their neighboring windows, 
+      The look-back \emph{intervals} may or may not \emph{overlap} with their neighboring intervals, 
     \column{0.5\textwidth}
-      A rolling aggregation is specified by a vector of look-back \emph{windows} at each point in time, 
+      A rolling aggregation is specified by a vector of look-back \emph{intervals} at each point in time, 
       \vskip1ex
       An example of a rolling aggregation are moving average prices, 
       \vskip1ex
-      An interval aggregation is specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
+      An interval aggregation is specified by a vector of look-back \emph{intervals} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
       \vskip1ex
       An example of a non-overlapping interval aggregation are monthly asset returns, 
       \vskip1ex
-      An example of an overlapping interval aggregation are 12-month asset returns calculated monthly, 
+      An example of an overlapping interval aggregation are trailing 12-month asset returns calculated monthly, 
   \end{columns}
     \vspace{-2em}
-    \includegraphics[width=0.9\paperwidth]{figure/rolling_windows.png}\\
+    \includegraphics[width=0.9\paperwidth]{figure/rolling_intervals.png}\\
 \end{block}
 
 \end{frame}
@@ -114,13 +114,13 @@ knit_theme$set(thm)
     \column{0.4\textwidth}
       Aggregations performed over time series can be extremely slow if done improperly, therefore it's very important to find the fastest methods of performing aggregations, 
       \vskip1ex
-      The \texttt{sapply()} functional allows performing aggregations over the look-back \emph{windows}, 
+      The \texttt{sapply()} functional allows performing aggregations over the look-back \emph{intervals}, 
       \vskip1ex
       The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series,
       \vskip1ex
       The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series,
       \vskip1ex
-      The variable \texttt{look\_back} is the size of the look-back window, equal to the number of data points used for applying the aggregation function (including the current point), 
+      The variable \texttt{look\_back} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point), 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -129,7 +129,7 @@ library(HighFreq)  # load package HighFreq
 price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
 len_gth <- NROW(end_points)
-look_back <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back interval
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
   c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
@@ -162,7 +162,7 @@ agg_regations <- xts(agg_regations,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \texttt{lapply()} functional allows performing aggregations over the look-back \emph{windows}, 
+      The \texttt{lapply()} functional allows performing aggregations over the look-back \emph{intervals}, 
       \vskip1ex
       The \texttt{lapply()} functional by default returns a list, not an \emph{xts} series,
       \vskip1ex
@@ -182,7 +182,7 @@ library(HighFreq)  # load package HighFreq
 price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
 end_points <- 0:NROW(price_s)  # define end points
 len_gth <- NROW(end_points)
-look_back <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back interval
 # define starting points as lag of end_points
 start_points <-  end_points[
   c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
@@ -220,7 +220,7 @@ col=plot_theme$col$line.col, bty="n")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The functional \texttt{roll\_agg()} performs rolling aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back window (\texttt{look\_back}),
+      The functional \texttt{roll\_agg()} performs rolling aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back interval (\texttt{look\_back}),
       \vskip1ex
       The argument \texttt{FUN} is an aggregation function over a subset of \texttt{x\_ts} series, 
       \vskip1ex
@@ -230,11 +230,11 @@ col=plot_theme$col$line.col, bty="n")
       \vskip1ex
       The functional \texttt{roll\_agg()} calls \texttt{lapply()}, which loops over the length of series \texttt{x\_ts}, 
       \vskip1ex
-      Note that two different windows may be used with \texttt{roll\_agg()},
+      Note that two different intervals may be used with \texttt{roll\_agg()},
       \vskip1ex
-      The first window is the argument \texttt{look\_back}, 
+      The first interval is the argument \texttt{look\_back}, 
       \vskip1ex
-      A second window may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EWMA} window), 
+      A second interval may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EWMA} window), 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -263,7 +263,7 @@ roll_agg <- function(x_ts, look_back, FUN, ...) {
 # define aggregation function
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
-# perform aggregations over rolling window
+# perform aggregations over rolling interval
 agg_regations <- roll_agg(price_s, look_back=look_back, 
                     FUN=agg_regate)
       @
@@ -322,11 +322,11 @@ summary(microbenchmark(
         \item \texttt{rollapply.xts()} from package \emph{xts},
         \item \texttt{apply.rolling()} from package \emph{PerformanceAnalytics},
       \end{itemize}
-      These functionals don't require specifying the \emph{endpoints}, and instead calculate the \emph{endpoints} from the rolling window width, 
+      These functionals don't require specifying the \emph{endpoints}, and instead calculate the \emph{endpoints} from the rolling interval width, 
       \vskip1ex
       These functionals can only apply functions that return a single value, not a vector, 
       \vskip1ex
-      These functionals return an \emph{xts} series with leading \texttt{NA} values at points before the rolling window can fit over the data, 
+      These functionals return an \emph{xts} series with leading \texttt{NA} values at points before the rolling interval can fit over the data, 
       \vskip1ex
       The argument \texttt{align="right"} of \texttt{rollapply()} determines that aggregations are taken from the past,
       \vskip1ex
@@ -337,10 +337,10 @@ summary(microbenchmark(
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
-# perform aggregations over a rolling window
+# perform aggregations over a rolling interval
 agg_regations <- xts:::rollapply.xts(price_s, width=look_back, 
                     FUN=agg_regate, align="right")
-# perform aggregations over a rolling window
+# perform aggregations over a rolling interval
 library(PerformanceAnalytics)  # load package PerformanceAnalytics
 agg_regations <- apply.rolling(price_s, 
                     width=look_back, FUN=agg_regate)
@@ -471,7 +471,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # load package RcppRoll
-look_back <- 11  # number of data points per look-back window
+look_back <- 11  # number of data points per look-back interval
 # calculate rolling sum using rutils
 prices_mean <- 
   rutils::roll_sum(price_s, win_dow=look_back)
@@ -515,7 +515,7 @@ legend("top", legend=colnames(prices_mean),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{caTools} contains functions for calculating rolling window aggregations over a \texttt{vector} of data:
+      The package \emph{caTools} contains functions for calculating rolling interval aggregations over a \texttt{vector} of data:
       \begin{itemize}
         \item \texttt{runmin} and \texttt{runmax} for rolling minima and maxima, 
         \item \texttt{runsd()} for rolling standard deviations,
@@ -528,7 +528,7 @@ legend("top", legend=colnames(prices_mean),
       \vskip1ex
       The argument \texttt{"endrule"} determines how the end values of the data are treated,
       \vskip1ex
-      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
+      The argument \texttt{"align"} determines whether the interval is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -843,23 +843,23 @@ head(agg_regations)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} windows, 
+      The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} intervals, 
       \vskip1ex
-      But it's often necessary to perform aggregations over \emph{overlapping} windows, defined by a vector of \emph{endpoints} and a look-back \emph{window}, 
+      But it's often necessary to perform aggregations over \emph{overlapping} intervals, defined by a vector of \emph{endpoints} and a look-back \emph{interval}, 
       \vskip1ex
-      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the window width (number of intervals in the window), 
+      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the interval width (number of periods in the look-back \emph{interval}), 
       \vskip1ex
-      Each point in time has an associated look-back \emph{window}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
+      Each point in time has an associated look-back \emph{interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
       \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{window}, while (\texttt{look\_back-1}) is equal to the number of intervals in the window, 
+      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
+look_back <- 4  # number of end points per look-back interval
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- NROW(end_points)
-look_back <- 4  # number of end points per look-back window
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
   c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
@@ -902,7 +902,7 @@ library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
 len_gth <- NROW(end_points)
-look_back <- 4  # number of end points per look-back window
+look_back <- 4  # number of end points per look-back interval
 # start_points are multi-period lag of end_points
 start_points <-  end_points[
   c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
@@ -1033,7 +1033,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
     \column{0.5\textwidth}
       The package \emph{zoo} has several functions for rolling calculations:
       \begin{itemize}
-        \item \texttt{rollapply()} performing aggregations over a rolling (sliding) window,
+        \item \texttt{rollapply()} performing aggregations over a rolling (sliding) interval,
         \item \texttt{rollmean()} calculating rolling means,
         \item \texttt{rollmedian()} calculating rolling median,
         \item \texttt{rollmax()} calculating rolling max,
@@ -1041,7 +1041,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
       \vspace{-1em}
       <<zoo_roll,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# "mean" aggregation over window with width=11
+# "mean" aggregation over interval with width=11
 zoo_mean <- rollapply(zoo_series, width=11, 
                       FUN=mean, align="right")
 # merge with original zoo - union of dates
@@ -1071,6 +1071,235 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 %%%%%%%%%%%%%%%
 \section{Estimation and Modeling of Volatility and Skew}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using Package \protect\emph{roll}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      It's not possible to vectorize the calculation of rolling realized variance in \texttt{R}, so it must be calculated using an \texttt{apply()} loop,
+      \vskip1ex
+      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      \begin{itemize}
+        \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
+        \item \texttt{roll\_scale()} for rolling scaling and centering of time series, 
+        \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
+      \end{itemize}
+      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops! because they perform calculations in parallel in compiled \texttt{C++} code,
+      \vskip1ex
+      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}, 
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+#  calculate returns
+re_turns <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))
+# define end points
+end_points <- 0:NROW(re_turns)
+len_gth <- NROW(end_points)
+look_back <- 31
+# start_points are multi-period lag of end_points
+start_points <-  end_points[
+  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate realized VTI variance
+var_running <- sapply(2:len_gth, function(in_dex) {
+  ret_s <- re_turns[start_points[in_dex]:end_points[in_dex]]
+  sum((ret_s - mean(ret_s))^2)
+}) / (look_back-1)  # end sapply
+tail(re_turns)
+class(var_running)
+# coerce var_running into xts
+var_running <- xts(var_running, order.by=index(re_turns))
+colnames(var_running) <- "VTI.variance"
+head(var_running)
+# calculate VTI variance using package roll
+library(roll)  # load RcppRoll
+weight_s <- exp(0.1*1:look_back)
+var_running <- roll::roll_var(re_turns, width=look_back)
+colnames(var_running) <- "VTI.variance"
+head(var_running)
+sum(is.na(var_running))
+var_running[1:(look_back-1)] <- 0
+# benchmark calculation of rolling variance
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sapply=sapply(2:len_gth, function(in_dex) {
+    ret_s <- re_turns[start_points[in_dex]:end_points[in_dex]]
+    sum((ret_s - mean(ret_s))^2)
+  }),
+  roll_roll=roll_var(re_turns, width=look_back),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: \protect\emph{EWMA} Realized Variance Estimator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) \emph{realized} variance estimator, 
+      \vskip1ex
+      If the returns have zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      \begin{displaymath}
+        \hspace{-0.5em}\hat\sigma_i^2 = \lambda {\Delta r_i}^2 + (1-\lambda) \hat\sigma_{i-1}^2 = \lambda \sum_{j=0}^{\infty} (1-\lambda)^j {\Delta r_{i-j}}^2
+      \end{displaymath}
+      $\hat\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
+      \vskip1ex
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      \vskip1ex
+      Heteroskedasticity refers to statistical distributions whose parameters vary with time,
+      \vskip1ex
+      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects, 
+      \vskip1ex
+      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+      \vskip1ex
+      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+#  calculate variance for each period
+var_running <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))^2
+# calculate average realized VTI variance using rutils
+look_back <- 31
+var_avg <- rutils::roll_sum(var_running, 
+                  win_dow=look_back)/look_back
+# calculate EWMA VTI variance using filter()
+weight_s <- exp(0.1*1:look_back)
+weight_s <- weight_s/sum(weight_s)
+var_ewma <- filter(var_running, filter=weight_s, sides=1)
+var_ewma[1:(look_back-1)] <- var_ewma[look_back]
+# plot EWMA prices
+# set plot_theme plot line colors
+# plot_theme <- chart_theme()
+# plot_theme$col$line.col <- c("orange", "blue")
+# var_ewma <- xts(cbind(cl_ose, var_ewma), order.by=index(cl_ose))
+# colnames(var_ewma) <- c("VTI", "VTI EWMA")
+# chart_Series(var_ewma, theme=plot_theme, name="EWMA prices")
+
+library(RcppRoll)  # load RcppRoll
+var_ewma <- RcppRoll::roll_var(var_running, 
+    align="right", n=look_back, weights=weight_s)
+var_ewma <- xts(var_ewma, 
+    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
+colnames(var_ewma) <- "VTI.var_ewma"
+# plot average and EWMA variances with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red")
+x11()
+chart_Series(merge(var_avg, var_ewma)["2012"],
+             theme=plot_theme, name="VTI variances")
+legend("top", legend=c(colnames(var_avg), 
+                       colnames(var_ewma)),
+       bg="white", lty=c(1, 1), lwd=c(2, 2),
+       col=plot_theme$col$line.col, bty="n")
+# plot EWMA variance with prices
+x11()
+chart_Series(env_etf$VTI["2010-01/2010-10"], 
+   name="VTI EWMA variance with May 6, 2010 Flash Crash")
+# add variance in extra panel
+add_TA(var_ewma["2010-01/2010-10"], col="black")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: \protect\emph{EWMA} Realized Variance Estimator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In order to better estimate time-varying volatility 
+      \vskip1ex
+      The weighted \emph{realized} variance can be estimated as an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) of the variance estimates at each point in time:
+      \begin{displaymath}
+        \hspace{-0.5em}\hat\sigma_i^2 = \lambda {\Delta r_i}^2 + (1-\lambda) \hat\sigma_{i-1}^2 = \lambda \sum_{j=0}^{\infty} (1-\lambda)^j {\Delta r_{i-j}}^2
+      \end{displaymath}
+      $\hat\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
+      \vskip1ex
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      \vskip1ex
+      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
+      \vskip1ex
+      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
+      \vskip1ex
+      
+      The \emph{EWMA} variance estimator 
+      as an \emph{Exponentially Weighted Moving Average} () of the variance estimates at each point in time:
+      
+      is when the standard deviations of a variable, monitored over a specific amount of time, are nonconstant. 
+      
+      \vskip1ex
+      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects, 
+      \vskip1ex
+      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+      \vskip1ex
+      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+#  calculate variance for each period
+var_running <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))^2
+# calculate average realized VTI variance using rutils
+look_back <- 31
+var_avg <- rutils::roll_sum(var_running, 
+                  win_dow=look_back)/look_back
+# calculate EWMA VTI variance using filter()
+weight_s <- exp(0.1*1:look_back)
+weight_s <- weight_s/sum(weight_s)
+var_ewma <- filter(var_running, filter=weight_s, sides=1)
+var_ewma[1:(look_back-1)] <- var_ewma[look_back]
+# plot EWMA prices
+# set plot_theme plot line colors
+# plot_theme <- chart_theme()
+# plot_theme$col$line.col <- c("orange", "blue")
+# var_ewma <- xts(cbind(cl_ose, var_ewma), order.by=index(cl_ose))
+# colnames(var_ewma) <- c("VTI", "VTI EWMA")
+# chart_Series(var_ewma, theme=plot_theme, name="EWMA prices")
+
+library(RcppRoll)  # load RcppRoll
+var_ewma <- RcppRoll::roll_var(var_running, 
+    align="right", n=look_back, weights=weight_s)
+var_ewma <- xts(var_ewma, 
+    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
+colnames(var_ewma) <- "VTI.var_ewma"
+# plot average and EWMA variances with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red")
+x11()
+chart_Series(merge(var_avg, var_ewma)["2012"],
+             theme=plot_theme, name="VTI variances")
+legend("top", legend=c(colnames(var_avg), 
+                       colnames(var_ewma)),
+       bg="white", lty=c(1, 1), lwd=c(2, 2),
+       col=plot_theme$col$line.col, bty="n")
+# plot EWMA variance with prices
+x11()
+chart_Series(env_etf$VTI["2010-01/2010-10"], 
+   name="VTI EWMA variance with May 6, 2010 Flash Crash")
+# add variance in extra panel
+add_TA(var_ewma["2010-01/2010-10"], col="black")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -1193,7 +1422,7 @@ object_ive(c(1, 0.5), 2, 2:5)
 \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 re_turns <- rutils::diff_xts(
-  log(rutils::env_etf$VTI[,4]))
+  log(rutils::env_etf$VTI[, 4]))
 # initial parameters
 par_init <- c(mean=0, scale=0.01)
 # fit distribution using optim()
@@ -1724,81 +1953,6 @@ title(main="VTI squared range partial autocorrelations")
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Realized Variance Estimator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In order to better estimate time-varying volatility 
-      \vskip1ex
-      The weighted \emph{realized} variance can be estimated as an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) of the variance estimates at each point in time:
-      \begin{displaymath}
-        \hspace{-0.5em}\hat\sigma_i^2 = \lambda {\Delta r_i}^2 + (1-\lambda) \hat\sigma_{i-1}^2 = \lambda \sum_{j=0}^{\infty} (1-\lambda)^j {\Delta r_{i-j}}^2
-      \end{displaymath}
-      $\hat\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
-      \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
-      \vskip1ex
-      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
-      \vskip1ex
-      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
-      \vskip1ex
-      
-      The \emph{EWMA} variance estimator 
-      as an \emph{Exponentially Weighted Moving Average} () of the variance estimates at each point in time:
-      
-      is when the standard deviations of a variable, monitored over a specific amount of time, are nonconstant. 
-      
-      \vskip1ex
-      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects, 
-      \vskip1ex
-      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-      \vskip1ex
-      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-# calculate variance at each point in time
-var_running <- 252*(24*60*60)^2*
-  HighFreq::run_variance(oh_lc=env_etf$VTI)
-# calculate average realized VTI variance using rutils
-win_dow <- 31
-var_avg <- rutils::roll_sum(var_running, 
-                  win_dow=win_dow)/win_dow
-# calculate EWMA VTI variance using RcppRoll
-library(RcppRoll)  # load RcppRoll
-weight_s <- exp(0.1*1:win_dow)
-var_ewma <- RcppRoll::roll_mean(var_running, 
-    align="right", n=win_dow, weights=weight_s)
-var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(win_dow-1)), ]))
-colnames(var_ewma) <- "VTI.var_ewma"
-# plot average and EWMA variances with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red")
-x11()
-chart_Series(merge(var_avg, var_ewma)["2012"],
-             theme=plot_theme, name="VTI variances")
-legend("top", legend=c(colnames(var_avg), 
-                       colnames(var_ewma)),
-       bg="white", lty=c(1, 1), lwd=c(2, 2),
-       col=plot_theme$col$line.col, bty="n")
-# plot EWMA variance with prices
-x11()
-chart_Series(env_etf$VTI["2010-01/2010-10"], 
-   name="VTI EWMA variance with May 6, 2010 Flash Crash")
-# add variance in extra panel
-add_TA(var_ewma["2010-01/2010-10"], col="black")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{\protect\emph{GARCH} Volatility Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1822,17 +1976,17 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # load HighFreq
-# calculate variance at each point in time
+#  calculate variance for each period
 var_running <- 252*(24*60*60)^2*
   HighFreq::run_variance(oh_lc=env_etf$VTI)
 # calculate EWMA VTI variance using RcppRoll
 library(RcppRoll)  # load RcppRoll
-win_dow <- 31
-weight_s <- exp(0.1*1:win_dow)
+look_back <- 31
+weight_s <- exp(0.1*1:look_back)
 var_ewma <- RcppRoll::roll_mean(var_running, 
-    align="right", n=win_dow, weights=weight_s)
+    align="right", n=look_back, weights=weight_s)
 var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(win_dow-1)), ]))
+    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
 colnames(var_ewma) <- "VTI variance"
 # plot EWMA variance with custom line colors
 x11()
