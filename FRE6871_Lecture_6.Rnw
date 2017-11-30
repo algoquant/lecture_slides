@@ -11,8 +11,8 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
-  
-  
+
+
 % Define document options
 \documentclass[10pt]{beamer}
 \mode<presentation>
@@ -21,16 +21,23 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{mathtools}
+% bbold package for unitary vector or matrix symbol
+\usepackage{bbold}
+% bbm package for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
-\usepackage{animate}
-\usepackage{listings}
-\usepackage{xcolor}
-\definecolor{anti-flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -56,13 +63,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#6]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#6, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#6, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{March 6, 2017}
+\date{November 27, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -76,288 +83,46 @@ knit_theme$set(thm)
 \maketitle
 
 
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+
 
 %%%%%%%%%%%%%%%
-\section{Parallel Computing}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Initializing Parallel Clusters Under \protect\emph{Windows}}
+\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Under \emph{Windows} the child processes in the parallel compute cluster don't inherit data and objects from their parent process, 
+      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
       \vskip1ex
-      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-num_cores <- detectCores() - 1
-# initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
-ba_se <- 2
-# fails because child processes don't know ba_se:
-parLapply(clus_ter, 2:4, 
-          function(exponent) ba_se^exponent)
-# ba_se passed to child via dots ... argument:
-parLapply(clus_ter, 2:4, 
-          function(exponent, ba_se) ba_se^exponent, 
-          ba_se=ba_se)
-# ba_se passed to child via clusterExport:
-clusterExport(clus_ter, "ba_se")
-parLapply(clus_ter, 2:4, 
-          function(exponent) ba_se^exponent)
-# stop R processes over cluster under Windows
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reproducible Parallel Simulations Under \protect\emph{Windows}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations use pseudo-random number generators, and in order to perform reproducible results, they must set the \emph{seed} value, so that the number generators produce the same sequence of pseudo-random numbers, 
-      \vskip1ex
-      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value, so that the number generator produces the same sequence of numbers for a given \emph{seed} value, 
-      \vskip1ex
-      But under \emph{Windows} \texttt{set.seed()} doesn't initialize the random number generators of child processes, and they don't produce the same sequence of numbers, 
-      \vskip1ex
-      The function \texttt{clusterSetRNGStream()} initializes the random number generators of child processes under \emph{Windows}, 
-      \vskip1ex
-      The function \texttt{set.seed()} does initialize the random number generators of child processes under \emph{Mac-OSX} and \emph{Linux}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-# calculate number of available cores
-num_cores <- detectCores() - 1
-# initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
-# set seed for cluster under Windows
-# doesn't work: set.seed(1121)
-clusterSetRNGStream(clus_ter, 1121)
-# perform parallel loop under Windows
-out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
-sum(unlist(out_put))
-# stop R processes over cluster under Windows
-stopCluster(clus_ter)
-# perform parallel loop under Mac-OSX or Linux
-out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Credit Portfolios}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of \protect\emph{VaR} Using Bootstrap Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors \emph{VaR} and \emph{CVaR} can be calculated by performing an \texttt{sapply()} loop, selecting random samples from \texttt{default\_probs}, and passing them into \texttt{calc\_var()},
-      <<echo=TRUE,eval=FALSE>>=
-# define number of bootstrap simulations
-num_boot <- 500
-num_assets <- NROW(default_probs)
-# perform bootstrap of calc_var
-set.seed(1121)
-boot_strap <- sapply(rep(l_gd, num_boot), 
-  calc_var, 
-  default_probs=
-    default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end sapply
-boot_strap <- t(boot_strap)
-# calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
-    function(x) c(mean=mean(x), sd=sd(x)))
-# scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-@
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_std_error_boot.png}\\
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
-  xlab="conf_levels", ylab="CVaRs",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=c(1, 1), col=c("red", "black"))
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of \protect\emph{VaR} Using Parallel Bootstrap}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
-# perform bootstrap of calc_var for Windows
-set.seed(1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot), 
-  fun=calc_var, 
-  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end parLapply
-# bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, num_boot), 
-  fun=calc_var, 
-  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end mclapply
-boot_strap <- do.call(rbind, boot_strap)
-stopCluster(clus_ter)  # stop R processes over cluster
-# calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
-    function(x) c(mean=mean(x), sd=sd(x)))
-# scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-@
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cvar_std_error_parallel.png}\\
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
-  xlab="conf_levels", ylab="CVaRs",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=c(1, 1), col=c("red", "black"))
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Interactive Plots}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{HTML}, 
-      \vskip1ex
-      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them, 
-      \vskip1ex
-      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing: 
+      \emph{quantmod} uses time series objects of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
       \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code), 
+        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
+        \item \texttt{getFinancials()} for downloading financial statements,
+        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
+        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
+        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
+        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
+        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
       \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{HTML}, or \emph{MS Word} documents, 
     \column{0.5\textwidth}
       \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily,backgroundcolor=\color{anti-flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:  
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here: 
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents. 
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.  
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.  
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2 
-  \leq 
-  \left( \sum_{k=1}^n a_k^2 \right) 
-  \left( \sum_{k=1}^n b_k^2 \right) 
-$$
-
-    \end{lstlisting}
+      <<eval=FALSE>>=
+# load package quantmod
+library(quantmod)
+# get documentation for package quantmod
+# get short description
+packageDescription("quantmod")
+# load help page
+help(package="quantmod")
+# list all datasets in "quantmod"
+data(package="quantmod")
+# list all objects in "quantmod"
+ls("package:quantmod")
+# remove quantmod from search path
+detach("package:quantmod")
+      @
   \end{columns}
 \end{block}
 
@@ -365,43 +130,1193 @@ $$
 
 
 %%%%%%%%%%%%%%%
-\subsection{Interactive Charts Using Package \protect\emph{shiny}}
+\subsection{ETF Dataset}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{shiny} creates plots able to interact with an active \texttt{R} process, and to display the outputs of live models running in \texttt{R},
-      \vskip1ex
-      The function \texttt{inputPanel()} creates a panel for user input of model parameters,
-      \vskip1ex
-      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R},
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-inputPanel(
-  sliderInput("lamb_da", label="lambda:",
-              min=0.01, max=0.2, value=0.1, step=0.01)
-)  # end inputPanel
-
-renderPlot({
-  lamb_da <- input$lamb_da
-  # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
-  weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(oh_lc))
-  colnames(ew_ma) <- c("VTI", "VTI EWMA")
-  # plot EWMA prices
-  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
-  plot(ch_ob)
-  legend("top", legend=colnames(ew_ma), 
-         inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-         col=plot_theme$col$line.col, bty="n")
-})  # end renderPlot
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(xtable)
+# ETF symbols for asset allocation
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
+  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
+  "IVW", "IWB", "IWD", "IWF")
+# read etf database into data frame
+etf_list <- read.csv(
+  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
+               stringsAsFactors=FALSE)
+rownames(etf_list) <- etf_list$Symbol
+# subset etf_list only those ETF's in sym_bols
+etf_list <- etf_list[sym_bols, ]
+# shorten names
+etf_names <- sapply(etf_list$Name,
+                    function(name) {
+  name_split <- strsplit(name, split=" ")[[1]]
+  name_split <-
+    name_split[c(-1, -length(name_split))]
+  name_match <- match("Select", name_split)
+  if (!is.na(name_match))
+    name_split <- name_split[-name_match]
+  paste(name_split, collapse=" ")
+})  # end sapply
+etf_list$Name <- etf_names
+etf_list["IEF", "Name"] <- "Treasury Bond Fund"
+etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_shiny.pdf}
+    \vspace{-1em}
+      <<echo=FALSE,eval=FALSE,size="tiny">>=
+etf_list[c(1, 2)]
+      @
+      <<eval=TRUE,results='asis',echo=FALSE>>=
+print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+      \vspace{-1em}
+      ETFs with names \emph{X*} represent industry sector funds,
+      \vskip1ex
+      ETFs with names \emph{I*} represent style funds (value, growth),
+      \vskip1ex
+      \emph{IWB} is the Russell 1000 small-cap fund,
+      \vskip1ex
+      \emph{VXX} is the VIX volatility fund,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Time Series Data Using Package \protect\emph{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      \vskip1ex
+      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
+      \vskip1ex
+      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
+      \vskip1ex
+      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
+      \vskip1ex
+      The method \texttt{getSymbols.yahoo} accepts arguments \texttt{"from"} and \texttt{"to"} which specify the date range for the data,
+      \vskip1ex
+      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(quantmod)  # load package quantmod
+env_etf <- new.env()  # new environment for data
+# download data for sym_bols into env_etf
+getSymbols(sym_bols, env=env_etf, adjust=TRUE,
+    from="2007-01-03")
+      @
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+ls(env_etf)  # list files in env_etf
+# get class of object in env_etf
+class(get(x=sym_bols[1], envir=env_etf))
+# another way
+class(env_etf$VTI)
+colnames(env_etf$VTI)
+head(env_etf$VTI, 3)
+# get class of all objects in env_etf
+eapply(env_etf, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adjusting Stock Prices Using Package \protect\emph{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
+      \vskip1ex
+      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices,
+      \vskip1ex
+      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
+      \vskip1ex
+      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
+      \vskip1ex
+      If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# check of object is an OHLC time series
+is.OHLC(env_etf$VTI)
+# adjust single OHLC object using its name
+env_etf$VTI <- adjustOHLC(env_etf$VTI,
+                           use.Adjusted=TRUE)
+
+# adjust OHLC object using string as name
+assign(sym_bols[1], adjustOHLC(
+    get(x=sym_bols[1], envir=env_etf),
+    use.Adjusted=TRUE),
+  envir=env_etf)
+
+# adjust objects in environment using vector of strings
+for (sym_bol in sym_bols) {
+  assign(sym_bol,
+         adjustOHLC(get(sym_bol, envir=env_etf),
+                    use.Adjusted=TRUE),
+         envir=env_etf)
+}  # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Extracting Prices Using Package \protect\emph{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      The function \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
+      \vskip1ex
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# extract and merge all data, subset by symbols
+price_s <- do.call(merge,
+  as.list(env_etf)[sym_bols])
+# or
+price_s <- rutils::do_call(cbind,
+  as.list(env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by symbols
+price_s <- rutils::do_call(cbind,
+  lapply(as.list(env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- rutils::do_call(cbind, 
+  eapply(env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <-
+  sapply(colnames(price_s),
+    function(col_name)
+      strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+# save xts to csv file
+write.zoo(price_s,
+  file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calculating Returns from Adjusted Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4)),eval=FALSE>>=
+library(quantmod)
+# remove rows with NA values
+# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
+# colnames(price_s)
+# calculate returns from adjusted prices
+re_turns <- lapply(env_etf$price_s, function(x_ts) {
+# dailyReturn returns single xts with bad colname
+  daily_return <- dailyReturn(x_ts)
+  colnames(daily_return) <- names(x_ts)
+  daily_return
+})  # end lapply
+
+# "re_turns" is a list of xts
+class(re_turns)
+class(re_turns[[1]])
+
+# flatten list of xts into a single xts
+re_turns <- do.call(merge, re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+class(re_turns)
+dim(re_turns)
+head(re_turns[, 1:3])
+# copy re_turns into env_etf and save to .RData file
+assign("re_turns", re_turns, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Data Inside Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{as.environment()} coerces objects (lists) into an environment,
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+      \vskip1ex
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+start_date <- "2012-05-10"; end_date <- "2013-11-20"
+# subset all objects in environment and return as environment
+new_env <- as.environment(eapply(env_etf, "[",
+                  paste(start_date, end_date, sep="/")))
+# subset only sym_bols in environment and return as environment
+new_env <- as.environment(
+  lapply(as.list(env_etf)[sym_bols], "[",
+         paste(start_date, end_date, sep="/")))
+# extract and merge adjusted prices and return to environment
+assign("price_s", do.call(merge,
+               lapply(ls(env_etf), function(sym_bol) {
+                 x_ts <- Ad(get(sym_bol, env_etf))
+                 colnames(x_ts) <- sym_bol
+                 x_ts
+               })), envir=new_env)
+# get sizes of OHLC xts series in env_etf
+sapply(mget(env_etf$sym_bols, envir=env_etf),
+       object.size)
+# extract and merge adjusted prices and return to environment
+col_name <- function(x_ts)
+  strsplit(colnames(x_ts), split="[.]")[[1]][1]
+assign("price_s", do.call(merge,
+               lapply(mget(env_etf$sym_bols, envir=env_etf),
+                      function(x_ts) {
+                        x_ts <- Ad(x_ts)
+                        colnames(x_ts) <- col_name(x_ts)
+                        x_ts
+               })), envir=new_env)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chartSeries()} from package \emph{quantmod} can produce a variety of plots for \emph{OHLC} time series, including candlestick plots, bar plots, and line plots,
+      \vskip1ex
+      The argument \texttt{"type"} determines the type of plot (candlesticks, bars, or lines),
+      \vskip1ex
+      Argument \texttt{"theme"} accepts a \texttt{"chart.theme"} object, containing parameters that determine the plot appearance (colors, size, fonts),
+      \vskip1ex
+      \texttt{chartSeries()} automatically plots the volume data in a separate panel,
+      \vskip1ex
+      \emph{Candlestick} plots are designed to visualize \emph{OHLC} time series,
+      <<chartSeries_basic,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+# plot OHLC candlechart with volume
+chartSeries(env_etf$VTI["2014-11"],
+            name="VTI",
+            theme=chartTheme("white"))
+# plot OHLC bar chart with volume
+chartSeries(env_etf$VTI["2014-11"],
+            type="bars",
+            name="VTI",
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_basic-1}\\
+      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices,
+      \vskip1ex
+      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Redrawing Plots Using \texttt{reChart()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reChart()} redraws plots using the same data set, but using additional parameters that control the plot appearance,
+      \vskip1ex
+      The argument \texttt{"subset"} allows subsetting the data to a smaller range of dates,
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+# plot OHLC candlechart with volume
+chartSeries(env_etf$VTI["2008-11/2009-04"],
+            name="VTI")
+# redraw plot only for Feb-2009, with white theme
+reChart(subset="2009-02",
+        theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/Rplot01.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/Rplot02.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The argument \texttt{"TA"} allows adding technical indicators to the plot,
+      \vskip1ex
+      The technical indicators are functions provided by the package \emph{TTR},
+      \vskip1ex
+      The function \texttt{newTA()} allows defining new technical indicators,
+      <<chartSeries_TA,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+# candlechart with Bollinger Bands
+chartSeries(env_etf$VTI["2014"],
+            TA="addBBands(): addBBands(draw='percent'): addVo()",
+            name="VTI with Bollinger Bands",
+            theme=chartTheme("white"))
+# candlechart with two Moving Averages
+chartSeries(env_etf$VTI["2014"],
+            TA="addVo(): addEMA(10): addEMA(30)",
+            name="VTI with Moving Averages",
+            theme=chartTheme("white"))
+# candlechart with Commodity Channel Index
+chartSeries(env_etf$VTI["2014"],
+            TA="addVo(): addBBands(): addCCI()",
+            name="VTI with Technical Indicators",
+            theme=chartTheme("white"))
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_TA-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Indicators and Lines Using \texttt{addTA()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{addTA()} adds indicators and lines to plots, and allows plotting lines representing a single vector of data,
+      \vskip1ex
+      The \texttt{addTA()} function argument \texttt{"on"} determines on which plot panel (subplot) the indicator is drawn,
+      \vskip1ex
+      \texttt{"on=NA"} is the default, and draws in a new plot panel below the existing plot,
+      \vskip1ex
+      \texttt{"on=1"} draws in the foreground of the main plot panel, and \texttt{"on=-1"} draws in the background,
+      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
+VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
+# calculate volume-weighted average price
+VTI_vwap <- TTR::VWAP(price=VTI_adj,
+      volume=VTI_vol, n=10)
+# plot OHLC candlechart with volume
+chartSeries(oh_lc, name="VTI plus VWAP",
+            theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=VTI_vwap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_addTA-3}\\
+      The function \texttt{VWAP()} from package \emph{TTR} calculates the Volume Weighted Average Price as the average of past prices multiplied by their trading volumes, divided by the total volume,
+      \vskip1ex
+      The argument \texttt{"n"} represents the number of look-back periods used for averaging,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shading Plots Using \texttt{addTA()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{addTA()} accepts Boolean vectors for shading of plots,
+      \vskip1ex
+      The function \texttt{addLines()} draws vertical or horizontal lines in plots,
+      <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+oh_lc <- rutils::env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+# plot OHLC candlechart with volume
+chartSeries(oh_lc, name="VTI plus VWAP shaded",
+            theme=chartTheme("white"))
+# add VWAP to main plot
+addTA(ta=VTI_vwap, on=1, col='red')
+# add price minus VWAP in extra panel
+addTA(ta=(VTI_adj-VTI_vwap), col='red')
+# add background shading of areas
+addTA((VTI_adj-VTI_vwap) > 0, on=-1,
+      col="lightgreen", border="lightgreen")
+addTA((VTI_adj-VTI_vwap) < 0, on=-1,
+      col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines at VTI_vwap minimum
+addLines(v=which.min(VTI_vwap), col='red')
+addLines(h=min(VTI_vwap), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_addTA_shade-7}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Time Series Using \texttt{chart\_Series()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics,
+      \vskip1ex
+      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()},
+      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(quantmod)
+library(TTR)
+oh_lc <- rutils::env_etf$VTI
+VTI_adj <- Ad(oh_lc)
+VTI_vol <- Vo(oh_lc)
+VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+VTI_adj <- VTI_adj["2009-02/2009-03"]
+oh_lc <- oh_lc["2009-02/2009-03"]
+VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+# OHLC candlechart VWAP in main plot,
+chart_Series(x=oh_lc, # volume in extra panel
+             TA="add_Vo(); add_TA(VTI_vwap, on=1)",
+             name="VTI plus VWAP shaded")
+# add price minus VWAP in extra panel
+add_TA(VTI_adj-VTI_vwap, col='red')
+# add background shading of areas
+add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
+      col="lightgreen", border="lightgreen")
+add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
+      col="lightgrey", border="lightgrey")
+# add vertical and horizontal lines
+abline(v=which.min(VTI_vwap), col='red')
+abline(h=min(VTI_vwap), col='red')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_shaded}\\
+      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
+      \vskip1ex
+      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly},
+      \vskip1ex
+      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot,
+      \vskip1ex
+      A plot can be rendered by calling, plotting, or printing the \emph{plot object},
+      \vskip1ex
+      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts),
+      \vskip1ex
+      The function \texttt{chart\_theme()} returns the \emph{theme object},
+      \vskip1ex
+      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
+      \vskip1ex
+      Plot and theme objects can be modified directly, or by using accessor and setter functions,
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(quantmod)
+oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
+# extract plot object
+ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
+class(ch_ob)
+ls(ch_ob)
+class(ch_ob$get_ylim)
+class(ch_ob$set_ylim)
+# ls(ch_ob$Env)
+class(ch_ob$Env$actions)
+plot_theme <- chart_theme()
+class(plot_theme)
+ls(plot_theme)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Customizing \texttt{chart\_Series()} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects,
+      \vskip1ex
+      Plot and theme objects can be modified directly, or by using accessor and setter functions,
+      \vskip1ex
+      A plot is rendered by calling, plotting, or printing the plot object,
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
+      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
+library(quantmod)
+oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
+# extract, modify theme, format tick marks "%b %d"
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%b %d"
+# create plot object
+ch_ob <- chart_Series(x=oh_lc,
+                      theme=plot_theme, plot=FALSE)
+# extract ylim using accessor function
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(
+  range(Ad(oh_lc)) + c(-1, 1),
+  fixed=TRUE)
+# modify plot object to reduce y-axis range
+ch_ob$set_ylim(y_lim)  # use setter function
+# render the plot
+plot(ch_ob)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_custom_axis-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels,
+      \vskip1ex
+      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements,
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+# calculate VTI and XLF volume-weighted average price
+VTI_vwap <-
+  TTR::VWAP(price=Ad(rutils::env_etf$VTI),
+            volume=Vo(rutils::env_etf$VTI), n=10)
+XLF_vwap <-
+  TTR::VWAP(price=Ad(rutils::env_etf$XLF),
+            volume=Vo(rutils::env_etf$XLF), n=10)
+# open graphics device, and define
+# plot area with two horizontal panels
+x11(); par(mfrow=c(2, 1))
+ch_ob <- chart_Series(  # plot in top panel
+  x=env_etf$VTI["2009-02/2009-04"],
+  name="VTI", plot=FALSE)
+add_TA(VTI_vwap["2009-02/2009-04"],
+       lwd=2, on=1, col='blue')
+ch_ob <- chart_Series(  # plot in bottom panel
+  x=env_etf$XLF["2009-02/2009-04"],
+  name="XLF", plot=FALSE)
+add_TA(XLF_vwap["2009-02/2009-04"],
+       lwd=2, on=1, col='blue')
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_panels.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{dygraphs}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series,
+      \vskip1ex
+      The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines,
+      <<echo=TRUE,eval=FALSE>>=
+library(dygraphs)
+# calculate volume-weighted average price
+oh_lc <- rutils::env_etf$VTI
+VTI_vwap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
+    volume=quantmod::Vo(oh_lc), n=20)
+# add VWAP to OHLC  data
+oh_lc <- cbind(oh_lc[, c(1:3, 6)],
+               VTI_vwap)["2009-02/2009-04"]
+# create dygraphs object
+dy_graph <- dygraphs::dygraph(oh_lc)
+# convert dygraphs object to candlestick plot
+dy_graph <- dygraphs::dyCandlestick(dy_graph)
+# render candlestick plot
+dy_graph
+# candlestick plot using pipes syntax
+dygraphs::dygraph(oh_lc) %>% dyCandlestick()
+# candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}\\
+      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices,
+      \vskip1ex
+      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{dygraphs} \protect\emph{OHLC} Plots With Background Shading}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object,
+      <<echo=TRUE,eval=FALSE>>=
+# create candlestick plot with background shading
+in_dex <- index(oh_lc)
+in_dic <-
+  rutils::diff_xts(oh_lc[, 4] > oh_lc[, "VWAP"])
+in_dic <- rbind(cbind(which(in_dic==1), 1),
+  cbind(which(in_dic==(-1)), -1))
+in_dic <- in_dic[order(in_dic[, 1]), ]
+in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
+  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
+in_dic <-
+  data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
+# create dygraphs object
+dy_graph <- dygraphs::dygraph(oh_lc) %>%
+  dyCandlestick()
+# add shading
+for (i in 1:(NROW(in_dic)-1)) {
+  if (in_dic[i, 2] == 1)
+    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
+  else
+    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
+}  # end for
+# render plot
+dy_graph
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{dygraphs} Plots With Two \texttt{"y"} Axes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dyAxis()} from package \emph{dygraphs} adds customized axes to a \emph{dygraphs} plot object,
+      \vskip1ex
+      The function \texttt{dySeries()} adds a time series to a \emph{dygraphs} plot object,
+      <<echo=TRUE,eval=FALSE>>=
+library(dygraphs)
+# prepare VTI and IEF prices
+price_s <- cbind(Ad(rutils::env_etf$VTI),
+                 Ad(rutils::env_etf$IEF))
+col_names <- rutils::get_name(colnames(price_s))
+colnames(price_s) <- col_names
+
+# dygraphs plot with two y-axes
+library(dygraphs)
+dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Downloading Time Series Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization,
+      \vskip1ex
+      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}),
+      \vskip1ex
+      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
+      \vskip1ex
+      For example, the symbol \emph{\textasciicircum{}GSPC} for the \emph{S\&P500} stock market index isn't a valid name in \texttt{R},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# assign name SP500 to ^GSPC symbol
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# download S&P500 prices into env_etf
+getSymbols("SP500", env=env_etf,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=env_etf$SP500["2016/"],
+             TA="add_Vo()",
+             name="S&P500 index")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading The \protect\emph{DJIA} Index Time Series From \protect\emph{Yahoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Dow Jones Industrial Average (\emph{DJIA}) stock market index is a price-weighted average of the 30 largest U.S. companies (same number of shares per company),
+      \vskip1ex
+      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{DJIA} index (symbol \emph{\textasciicircum{}DJI}), and for the \emph{DJITR} total return index (symbol \emph{DJITR}),
+      \vskip1ex
+      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
+      \vskip1ex
+      For example, the symbol \emph{\textasciicircum{}DJI} for the \emph{DJIA} stock market index isn't a valid name in \texttt{R},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# assign name DJIA to ^DJI symbol
+setSymbolLookup(
+  DJIA=list(name="^DJI", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# download DJIA prices into env_etf
+getSymbols("DJIA", env=env_etf,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=env_etf$DJIA["2016/"],
+             TA="add_Vo()",
+             name="DJIA index")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scraping \protect\emph{S\&P500} Stock Index Constituents From Websites}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{S\&P500} index constituents change over time, and \emph{Standard \& Poor's} replaces companies that have decreased in capitalization with ones that have increased,
+      \vskip1ex
+      The \emph{S\&P500} index may contain more than 500 stocks because some companies have several share classes of stock,
+      \vskip1ex
+      The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages,
+      \vskip1ex
+      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{HTML} text data from a \texttt{URL},
+      \vskip1ex
+      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices,
+      \vskip1ex
+      \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+library(RCurl)  # load package RCurl
+library(XML)  # load package XML
+# download text data from URL
+sp_500 <- getURL(
+  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+# extract tables from the text data
+sp_500 <- readHTMLTable(sp_500,
+                    stringsAsFactors=FALSE)
+str(sp_500)
+# extract colnames of data frames
+lapply(sp_500, colnames)
+# extract S&P500 constituents
+sp_500 <- sp_500[[1]]
+head(sp_500)
+# create valid R names from symbols containing "-" or "."characters
+sp_500$names <- gsub("-", "_", sp_500$Ticker)
+sp_500$names <- gsub("[.]", "_", sp_500$names)
+# write data frame of S&P500 constituents to CSV file
+write.csv(sp_500,
+  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+  row.names=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{S\&P500} Time Series Data From \protect\emph{Yahoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Before time series data for S\&P500 constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R},
+      \vskip1ex
+      For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+     stringsAsFactors=FALSE)
+# register symbols corresponding to R names
+for (in_dex in 1:NROW(sp_500)) {
+  cat("processing: ", sp_500$Ticker[in_dex], "\n")
+  setSymbolLookup(structure(
+    list(list(name=sp_500$Ticker[in_dex])),
+    names=sp_500$names[in_dex]))
+}  # end for
+env_sp500 <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# download data and copy it into environment
+rutils::get_symbols(sp_500$names,
+   env_out=env_sp500, start_date="1990-01-01")
+# or download in loop
+for (sym_bol in sp_500$names) {
+  cat("processing: ", sym_bol, "\n")
+  rutils::get_symbols(sym_bol,
+   env_out=env_sp500, start_date="1990-01-01")
+}  # end for
+save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
+             name="BRK-B stock")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{FRED} Time Series Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
+      \hskip1em\url{http://research.stlouisfed.org/fred2/}
+      \vskip1ex
+      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      \vskip1ex
+      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
+      \vskip1ex
+      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/fred_unemp_rate.png}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+# download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE",
+                  auto.assign=FALSE,
+                  src="FRED")
+# plot U.S. unemployment rate data
+chart_Series(unemp_rate["1990/"],
+            name="U.S. unemployment rate")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Quandl} Database}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets,
+      \vskip1ex
+      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license,
+      \vskip1ex
+      \emph{Quandl} offers online help and a guide to its datasets:\\
+      \hskip1em\url{https://www.quandl.com/help/r}\\
+      \hskip1em\url{https://www.quandl.com/browse}\\
+      \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
+      \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
+      \vskip1ex
+      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+install.packages("devtools")
+library(devtools)
+# install package Quandl from github
+install_github("quandl/R-package")
+library(Quandl)  # load package Quandl
+# register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# get short description
+packageDescription("Quandl")
+# load help page
+help(package="Quandl")
+# remove Quandl from search path
+detach("package:Quandl")
+      @
+      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R},
+      \vskip1ex
+      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Time Series Data from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()},
+      \vskip1ex
+      The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
+      \vskip1ex
+      \emph{Quandl} datasets have a unique \emph{Quandl Code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
+      \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
+      \vskip1ex
+      \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
+      \hskip1em\url{https://www.quandl.com/data/WIKI}
+      \vskip1ex
+      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized),\\
+      \hskip1em\url{https://www.quandl.com/data/SEC}
+      \vskip1ex
+      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond}
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond?keyword=aapl}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# download EOD AAPL prices from WIKI free database
+price_s <- Quandl(code="WIKI/AAPL",
+                  type="xts", start_date="1990-01-01")
+x11(width=14, height=7)
+chart_Series(price_s["2016", 1:4],
+    name="AAPL OHLC prices")
+# add trade volume in extra panel
+add_TA(price_s["2016", 5])
+# download euro currency rates
+price_s <- Quandl(code="BNP/USDEUR",
+    start_date="2013-01-01",
+    end_date="2013-12-01", type="xts")
+# download multiple time series
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+    start_date="2013-01-01", type="xts")
+# download AAPL gross profits
+prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
+    type="xts")
+chart_Series(prof_it, name="AAPL gross profits")
+# download Hurst time series
+price_s <- Quandl(code="PE/AAPL_HURST",
+    start_date="2013-01-01", type="xts")
+chart_Series(price_s["2016/", 1],
+             name="AAPL Hurst")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stock Index and Instrument Metadata on \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
+      \vskip1ex
+      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
+      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
+      \vskip1ex
+      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+# load S&P500 stock Quandl codes
+sp_500 <- read.csv(
+  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
+  stringsAsFactors=FALSE)
+# replace "-" with "_" in symbols
+sp_500$free_code <-
+  gsub("-", "_", sp_500$free_code)
+head(sp_500)
+# vector of symbols in sp_500 frame
+tick_ers <- gsub("-", "_", sp_500$ticker)
+# or
+tick_ers <- matrix(unlist(
+  strsplit(sp_500$free_code, split="/"),
+  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
+# or
+tick_ers <- do_call_rbind(
+  strsplit(sp_500$free_code, split="/"))[, 2]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Multiple Time Series from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl},
+      \vskip1ex
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load package quantmod
+env_sp500 <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Boolean vector of symbols already downloaded
+down_loaded <- tick_ers %in% ls(env_sp500)
+# download data and copy it into environment
+for (tick_er in tick_ers[!down_loaded]) {
+  cat("processing: ", tick_er, "\n")
+  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
+                  start_date="1990-01-01",
+                  type="xts")[, -(1:7)]
+  colnames(da_ta) <- paste(tick_er,
+    c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  assign(tick_er, da_ta, envir=env_sp500)
+}  # end for
+save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
+             name="XOM stock")
+      @
   \end{columns}
 \end{block}
 
@@ -428,6 +1343,7 @@ renderPlot({
       \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
       \vskip1ex
       It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
@@ -441,12 +1357,15 @@ class(get(x=sym_bols[1], envir=env_rates))
 # another way
 class(env_rates$DGS10)
 colnames(env_rates$DGS10)
+save(env_rates, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/treas_10y_rate.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/treas_10y_rate.png}
     \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
 head(env_rates$DGS10, 3)
 # get class of all objects in env_rates
 eapply(env_rates, class)
@@ -454,7 +1373,7 @@ eapply(env_rates, class)
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
 # plot 10-year constant maturity Treasury rate
 chart_Series(env_rates$DGS10["1990/"], 
-            name="10-year constant maturity Treasury rate")
+  name="10-year constant maturity Treasury rate")
       @
   \end{columns}
 \end{block}
@@ -472,15 +1391,17 @@ chart_Series(env_rates$DGS10["1990/"],
       The \emph{yield curve} is a vector of interest rates at different maturities, on a given date,
       \vskip1ex
       The \emph{yield curve} shape changes depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens, 
-      <<echo=TRUE,eval=FALSE>>=
+    \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # load constant maturity Treasury rates
-load(file="C:/Develop/data/rates_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # get end-of-year dates since 2006
-date_s <- endpoints(env_rates$DGS1["2006/"], on="years")
-date_s <- index(env_rates$DGS1["2006/"])[date_s]
+date_s <- xts::endpoints(env_rates$DGS1["2006/"], on="years")
+date_s <- zoo::index(env_rates$DGS1["2006/"])[date_s]
 # create time series of end-of-year rates
 rate_s <- eapply(env_rates, function(ra_te) ra_te[date_s])
-rate_s <- do.call(merge, rate_s)
+rate_s <- rutils::do_call(cbind, rate_s)
 # rename columns and rows, sort columns, and transpose into matrix
 colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
 rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
@@ -488,28 +1409,28 @@ colnames(rate_s) <- paste0(colnames(rate_s), "yr")
 rate_s <- t(rate_s)
 colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
 # plot matrix using plot.zoo()
-color_ramp <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
 plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n", 
-         plot.type="single", xlab="maturity", ylab="yield", col=color_ramp)
+         plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
 # add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # add legend
 legend("bottomright", legend=colnames(rate_s),
-       col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+       col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/yield_curve.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/yield_curve.png}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # alternative plot using matplot()
 matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1, 
-        type="l", xlab="maturity", ylab="yield", col=color_ramp)
+        type="l", xlab="maturity", ylab="yield", col=col_ors)
 # add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # add legend
 legend("bottomright", legend=colnames(rate_s),
-       col=color_ramp, lty=1, lwd=4, inset=0.05, cex=0.8)
+       col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
   \end{columns}
 \end{block}
@@ -529,50 +1450,34 @@ legend("bottomright", legend=colnames(rate_s),
         \mathbf{V} = \frac{\mathbf{r}^T \, \mathbf{r}} {n-1}
       \end{displaymath}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
+      <<echo=(-(1:3)),eval=FALSE>>=
+par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
+# load constant maturity Treasury rates
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-# load constant maturity Treasury rates
-load(file="C:/Develop/data/rates_data.RData")
 # calculate daily percentage changes
-rate_s <- na.omit(do.call(merge, 
+rate_s <- na.omit(rutils::do_call(cbind, 
     as.list(env_rates)[sym_bols]))
-re_turns <- na.omit(diff(log(rate_s)))
+re_turns <- na.omit(rutils::diff_xts(rate_s))
 # correlation matrix of Treasury rates
 cor_mat <- cor(re_turns)
 # reorder correlation matrix based on clusters
 library(corrplot)
-or_der <- corrMatOrder(cor_mat, 
-              order="hclust", 
-              hclust.method="complete")
-cor_mat <- cor_mat[or_der, or_der]
 # plot the correlation matrix
-color_ramp <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title="Correlation of Treasury rates", 
-    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
-    method="square", col=color_ramp(8), 
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title=NA,
+    tl.col="black", tl.cex=0.8, mar=c(0,0,0,0), 
+    method="square", col=col_ors(8), 
     cl.offset=0.75, cl.cex=0.7, 
     cl.align.text="l", cl.ratio=0.25)
+title("Correlation of Treasury rates", line=-1)
 # draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
                 method="complete", col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cor_yield.png}\\
-      \vspace{-1em}
-            <<echo=TRUE,eval=FALSE>>=
-# plot the correlation matrix
-color_ramp <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title="Correlation of Treasury rates", 
-    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
-    method="square", col=color_ramp(8), 
-    cl.offset=0.75, cl.cex=0.7, 
-    cl.align.text="l", cl.ratio=0.25)
-# draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
-                method="complete", col="red")
-      @
-
+      \includegraphics[width=0.5\paperwidth]{figure/cor_yield.png}
   \end{columns}
 \end{block}
 
@@ -592,16 +1497,16 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
       <<echo=TRUE,eval=FALSE>>=
 # perform principal component analysis PCA
 p_ca <- prcomp(re_turns, 
-               center=TRUE, scale=TRUE)
+  center=TRUE, scale=TRUE)
 # plot standard deviations
 barplot(p_ca$sdev, 
-        names.arg=colnames(p_ca$rotation), 
-        las=3, xlab="", ylab="", 
-        main="Volatilities of principal components 
-        of Treasury rates")
+  names.arg=colnames(p_ca$rotation), 
+  las=3, xlab="", ylab="", 
+  main="Volatilities of principal components 
+  of Treasury rates")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth,valign=t]{figure/pca_std_dev_yield.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_std_dev_yield.png}
   \end{columns}
 \end{block}
 
@@ -624,7 +1529,8 @@ barplot(p_ca$sdev,
       The second \emph{principal component} is \emph{yield curve} steepening and flattening,
       \vskip1ex
       The third \emph{principal component} is the \emph{yield curve} butterfly movement,
-      <<echo=TRUE,eval=FALSE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(width=6, height=7)
 # principal component loadings (weights)
 p_ca$rotation
 # plot loading barplots in multiple panels
@@ -638,7 +1544,7 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_loadings_yield.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_loadings_yield.png}
   \end{columns}
 \end{block}
 
@@ -664,7 +1570,7 @@ pca_ts <- cumsum(pca_ts)
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 ra_nge <- range(pca_ts)
-for (or_der in 1:NCOL(p_ca$rotation)) {
+for (or_der in 1:NCOL(pca_ts)) {
   plot.zoo(pca_ts[, or_der], 
            ylim=ra_nge, 
            xlab="", ylab="")
@@ -672,7 +1578,7 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/pca_series_yield.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_series_yield.png}
   \end{columns}
 \end{block}
 
@@ -681,50 +1587,301 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
 
 
 %%%%%%%%%%%%%%%
-\section{Regression Analysis}
+\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Formula Objects}
+\subsection{Determining the Memory Usage of \texttt{R} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{object.size()} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects,
+      \vskip1ex
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
+      \vskip1ex
+      The method \texttt{format.object\_size()} defines a \emph{megabyte} as \texttt{1,048,576} \emph{bytes} ($2^{20}$), not \texttt{1,000,000} \emph{bytes},
+      \vskip1ex
+      The function \texttt{get()} accepts a character string and returns the value of the corresponding object in a specified \emph{environment},
+      \vskip1ex
+      \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
+      \vskip1ex
+      The function \texttt{ll()} from package \texttt{gdata} displays the amount of memory (in \emph{bytes}) allocated to \texttt{R} objects,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# get size of an object
+object.size(runif(1e6))
+format(object.size(runif(1e6)), units="MB")
+# get sizes of objects in workspace
+sort(sapply(ls(),
+  function(ob_ject) {
+    format(object.size(get(ob_ject)), units="KB")}))
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+sort(sapply(mget(ls()),
+      function(ob_ject) {
+        format(object.size(ob_ject), units="KB")}
+))
+# get sizes of objects in env_etf environment
+sort(sapply(ls(env_etf),
+  function(ob_ject) {
+    object.size(get(ob_ject, env_etf))}))
+# get sizes of objects in env_etf environment
+sort(sapply(mget(ls(env_etf), env_etf),
+            object.size))
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+library(gdata)  # load package gdata
+# get names, class, and size of objects in workspace
+ob_jects <- ll(unit="bytes")
+# sort by memory size (descending)
+ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
+ll()[order(ll()$KB, decreasing=TRUE), ]
+# get sizes of objects in env_etf environment
+ll(unit="bytes", env_etf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Very Large Datasets Using Package \protect\emph{SOAR}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      The package \emph{SOAR} allows performing calculations with multiple, very large datasets, without loading them all at once into \texttt{R} memory,
+      \vskip1ex
+      Package \emph{SOAR} uses \emph{delayed assignment} of objects (\emph{lazy loading}), which means that they don't reside in \texttt{R} memory, but they're silently loaded from the hard drive when they're needed,
+      \vskip1ex
+      The function \texttt{Store()} removes objects from memory, stores them in an \emph{object cache}, and places the \emph{object cache} on the search path,
+      \vskip1ex
+      The \emph{object cache} is a sub-directory of the \emph{cwd} called \texttt{.R\_Cache}, and contains \texttt{.RData} files with the stored objects,
+      \vskip1ex
+      The stored objects aren't listed in the \texttt{R} workspace, but they are visible on the search path as \emph{promises},
+      \vskip1ex
+      The function \texttt{Ls()} lists the objects stored in the \emph{object cache}, and attaches the \emph{cache} to the search path,
+      \vskip1ex
+      The function \texttt{find()} finds where objects are located on the search path,
+      \vskip1ex
+      The function \texttt{data()} isn't required to load data sets that are set up for \emph{lazy loading},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(SOAR)  # load package SOAR
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+Store(etf_list)  # store in object cache
+# get sizes of objects in workspace
+sort(sapply(mget(ls()), object.size))
+search()  # get search path for R objects
+Ls()  # list object cache
+find("etf_list")  # find object on search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Memory Usage and Garbage Collection in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      \emph{Garbage collection} is the process of releasing memory occupied by objects no longer in use by a computer program,
+      \vskip1ex
+      The function \texttt{gc()} performs garbage collection and reports the memory used by \texttt{R} in units of \emph{Vcells} (vector cells, which are \texttt{8} \emph{bytes} each),
+      \vskip1ex
+      \texttt{R} performs garbage collection automatically, so calling \texttt{gc()} is designed mostly to report the memory used by \texttt{R},
+      \vskip1ex
+      The memory used by \texttt{R} is usually greater than the total size of all objects in the workspace, because \texttt{R} requires additional memory,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# get R memory
+v_cells <- gc()["Vcells", "used"]
+# create vector with 1,000,000 cells
+foo_bar <- numeric(1000000)
+# get extra R memory
+gc()["Vcells", "used"] - v_cells
+# get total size of all objects in workspace
+format(object.size(x=mget(ls())), units="MB")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Benchmarking the Speed of \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
+      \vskip1ex
+      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting),
+      \vskip1ex
+      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()},
+      \vskip1ex
+      The time it takes to execute an expression is not always the same, since it depends on the state of the processor, caching, etc.
+      \vskip1ex
+      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+microbenchmark(sqrt(foo), foo^0.5, times=10)
+      @
+      The "\texttt{times}" parameter is the number of times the expression is evaluated.
+      \vskip1ex
+      The choice of the "\texttt{times}" parameter is a tradeoff between the time it takes to run \texttt{microbenchmark()}, and the desired accuracy,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R},
+      \vskip1ex
+      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
+      \vskip1ex
+      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
+      \vskip1ex
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+foo <- runif(1e6)
+# sum() is much faster than mean()
+summary(
+  microbenchmark(sum(foo), mean(foo), times=10)
+  )[, c(1, 4, 5)]
+# any() is a compiled primitive function
+any
+# any() is much faster than %in% wrapper for match()
+summary(
+  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
+  )[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
+      \vskip1ex
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
+      \vskip1ex
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
+      \vskip1ex
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
+      \vskip1ex
+      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data,
+      \vskip1ex
+      Such specialized functions are faster but less flexible, so they may fail with different types of data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+mat_rix <- matrix(1:9, ncol=3, # create matrix
+  dimnames=list(paste0("row", 1:3),
+                paste0("col", 1:3)))
+# create specialized function
+matrix_to_dframe <- function(mat_rix) {
+  n_col <- ncol(mat_rix)
+  dframe <- vector("list", n_col)  # empty vector
+  for (in_dex in 1:n_col)  # populate vector
+    dframe <- mat_rix[, in_dex]
+  attr(dframe, "row.names") <-  # add attributes
+    .set_row_names(NROW(mat_rix))
+  attr(dframe, "class") <- "data.frame"
+  dframe  # return data frame
+}  # end matrix_to_dframe
+# compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(mat_rix),
+  as.data.frame.matrix(mat_rix),
+  as.data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
+      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest,
       \vskip1ex
-      Formulas can be defined as separate objects, manipulated, and passed to functions,
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
       \vskip1ex
-      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
-      \vskip1ex
-      The function \texttt{update()} modifies existing \texttt{formulas},
-      \vskip1ex
-      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
+      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<>>=
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapsing a character vector into a text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-              paste("z ~ ",
-                paste(paste0("x", 1:5), collapse="+")
-                )  # end paste
-            )  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
+      <<echo=TRUE,eval=FALSE>>=
+# matrix with 5,000 rows
+big_matrix <- matrix(rnorm(10000), ncol=2)
+# allocate memory for row sums
+row_sums <- numeric(NROW(big_matrix))
+summary(microbenchmark(
+  ap_ply=apply(big_matrix, 1, sum),  # end apply
+  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ]),
+    FUN.VALUE=c(sum=0)),  # end vapply
+  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
+    sum(big_matrix[in_dex, ])),  # end sapply
+  for_loop=for (i in 1:NROW(big_matrix)) {
+    row_sums[i] <- sum(big_matrix[i,])
+  },  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -733,136 +1890,868 @@ update(lin_formula, log(.) ~ . + beta)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simple \protect\emph{Linear Regression}}
+\subsection{Increasing Speed of Loops by Pre-allocating Memory}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \beta x_i + \varepsilon_i
-      \end{displaymath}
-      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
+      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients,
+      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
+      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow,
       \vskip1ex
-      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
-      \begin{align*}
-        RSS = \sum_{i=1}^n {\varepsilon_i^2} = \sum_{i=1}^n {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
-      \end{align*}
-      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^n {x_i}$
-    \column{0.5\textwidth}
-      The regression coefficients can be found by equating the RSS derivatives to zero:
-      \begin{align*}
-        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
-        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
-      \end{align*}
-      The solution for $\alpha$ is:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      The solution for $\beta$ is:
-      \begin{flalign*}
-        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
-        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
-        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
-        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
-      \end{flalign*}
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
+      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment,
       \vskip1ex
-      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} with Multiple Explanatory Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta x + \varepsilon
-      \end{displaymath}
-      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
+      Adding elements to a vector in a loop is very slow, and therefore not recommended,
       \vskip1ex
-      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
+      Pre-allocating memory for large vectors before performing loops increases their speed,
       \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
-    \column{0.5\textwidth}
-      The OLS estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
-        & x^T z - \beta x^T x = 0\\
-        & \beta = (x^T x)^{-1} x^T z
-      \end{flalign*}
-      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
-      \vskip1ex
-      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
-      \vskip1ex
-      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
-      \vskip1ex
-      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Using Function \texttt{lm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
-      \vskip1ex
-      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
-      \vskip1ex
-      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
-      \vskip1ex
-      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
-      \begin{itemize}
-        \item call - the model formula,
-        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
-        \item residuals - the model residuals (response minus fitted values),
-      \end{itemize}
-      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
+      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
+big_vector <- rnorm(5000)
+summary(microbenchmark(
+# allocate full memory for cumulative sum
+  for_loop={cum_sum <- numeric(NROW(big_vector))
+    cum_sum[1] <- big_vector[1]
+    for (i in 2:NROW(big_vector)) {
+      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+    }},  # end for
+# allocate zero memory for cumulative sum
+  grow_vec={cum_sum <- numeric(0)
+    cum_sum[1] <- big_vector[1]
+    for (i in 2:NROW(big_vector)) {
+# add new element to "cum_sum" ("grow" it)
+      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+    }},  # end for
+# allocate zero memory for cumulative sum
+  com_bine={cum_sum <- numeric(0)
+    cum_sum[1] <- big_vector[1]
+    for (i in 2:NROW(big_vector)) {
+# add new element to "cum_sum" ("grow" it)
+      cum_sum <- c(cum_sum, big_vector[i])
+    }},  # end for
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{How to Write Fast \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
+      \begin{itemize}
+        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task,
+        \item call function methods directly instead of calling generic functions,
+        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
+        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
+        \item pre-allocate memory for new vectors,
+        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops,
+        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function),
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+summary(
+  microbenchmark(sqrt(foo), foo^0.5, times=10)
+  )[, c(1, 4, 5)]
+      @
+      \hspace*{-1em}
+      \scriptsize{
+\begin{tabular}{ | c || p{2.1cm} | p{2.1cm} | }
+ \hline
+ \textbf{Task} & \textbf{Low-performance R} & \textbf{High-performance R} \\
+ \hline
+ \textbf{Loops} & for() or apply() loops & C-compiled and vectorized functions \\
+ \hline
+ \textbf{Memory} & Automatic R memory allocation & User memory allocation \\
+ \hline
+ \textbf{Dispatch} & Generic functions & Class methods \\
+ \hline
+ \textbf{Code} & Verbose R code & Rcpp code \\
+ \hline
+\end{tabular}
+      }
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Writing Fast \texttt{R} Code Using Vectorized Operations}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Vector Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value,
+      \vskip1ex
+      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast,
+      \vskip1ex
+      The following \emph{vectorized compiled} functions calculate cumulative values over large vectors:
+      \begin{itemize}
+        \item \texttt{cummax()}
+        \item \texttt{cummin()}
+        \item \texttt{cumsum()}
+        \item \texttt{cumprod()}
+      \end{itemize}
+      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized compiled} functions,
+      \vskip1ex
+      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized compiled} functions for logical operations,
+      \vskip1ex
+      But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
+    \column{0.5\textwidth}
+        <<eval=FALSE>>=
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+system.time(  # sum vectors using "for" loop
+  for (i in 1:NROW(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }  # end for
+)  # end system.time
+# sum vectors using vectorized "+"
+system.time(big_vector <- vec_tor1 + vec_tor2)
+# allocate memory for cumulative sum
+cum_sum <- numeric(NROW(big_vector))
+# cumulative sum using "for" loop
+cum_sum[1] <- big_vector[1]
+system.time(
+  for (i in 2:NROW(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }  # end for
+)  # end system.time
+# cumulative sum using "cumsum"
+system.time(cum_sum <- cumsum(big_vector))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
+      \vskip1ex
+      \texttt{R} has very fast \emph{vectorized compiled} functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=FALSE>>=
+# calculate row sums two different ways
+summary(microbenchmark(
+  row_sums=rowSums(big_matrix),
+  ap_ply=apply(big_matrix, 1, sum),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast \texttt{R} Code for Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments,
+      \vskip1ex
+      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary,
+      \vskip1ex
+      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors,
+      \vskip1ex
+      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()},
+      \vskip1ex
+      \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+str(pmax)
+# calculate row maximums two different ways
+summary(microbenchmark(
+  p_max=
+    do.call(pmax.int,
+      lapply(seq_along(big_matrix[1, ]),
+        function(in_dex) big_matrix[, in_dex])),
+  l_apply=unlist(
+    lapply(seq_along(big_matrix[, 1]),
+        function(in_dex) max(big_matrix[in_dex, ]))),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \texttt{matrixStats} for Fast Matrix Computations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \texttt{matrixStats} contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
+      \begin{itemize}
+        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc.,
+        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc.,
+        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc.,
+        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc.,
+      \end{itemize}
+      A summary of \texttt{matrixStats} functions can be found under:\\
+      \url{https://cran.r-project.org/web/packages/matrixStats/vignettes/matrixStats-methods.html}
+      \vskip1ex
+      The \texttt{matrixStats} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+library(matrixStats)  # load package matrixStats
+# calculate row min values three different ways
+summary(microbenchmark(
+  row_mins=rowMins(big_matrix),
+  p_min=
+    do.call(pmin.int,
+            lapply(seq_along(big_matrix[1, ]),
+                   function(in_dex)
+                     big_matrix[, in_dex])),
+  as_data_frame=
+    do.call(pmin.int,
+            as.data.frame.matrix(big_matrix)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Using Vectorized Operations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R}-style code is code that relies on \emph{vectorized compiled} functions, instead of \texttt{for()} loops,
+      \vskip1ex
+      \texttt{for()} loops in \texttt{R} are slow because they call functions multiple times, and individual function calls are compute-intensive and slow,
+      \vskip1ex
+      The brackets \texttt{"[]"} operator is a \emph{vectorized compiled} function, and is therefore very fast,
+      \vskip1ex
+      Vectorized assignments using brackets \texttt{"[]"} and \texttt{Boolean} or \texttt{integer} vectors to subset vectors or matrices are therefore preferable to \texttt{for()} loops,
+      \vskip1ex
+      \texttt{R} code that uses \emph{vectorized compiled} functions can be as fast as \texttt{C++} code,
+      \vskip1ex
+      \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=FALSE>>=
+summary(microbenchmark(  # assign values to vector three different ways
+# fast vectorized assignment loop performed in C using brackets "[]"
+  brack_ets={vec_tor <- numeric(10)
+    vec_tor[] <- 2},
+# slow because loop is performed in R
+  for_loop={vec_tor <- numeric(10)
+    for (in_dex in seq_along(vec_tor))
+      vec_tor[in_dex] <- 2},
+# very slow because no memory is pre-allocated
+# "vec_tor" is "grown" with each new element
+  grow_vec={vec_tor <- numeric(0)
+    for (in_dex in 1:10)
+# add new element to "vec_tor" ("grow" it)
+      vec_tor[in_dex] <- 2},
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+summary(microbenchmark(  # assign values to vector two different ways
+# fast vectorized assignment loop performed in C using brackets "[]"
+  brack_ets={vec_tor <- numeric(10)
+    vec_tor[4:7] <- rnorm(4)},
+# slow because loop is performed in R
+  for_loop={vec_tor <- numeric(10)
+    for (in_dex in 4:7)
+      vec_tor[in_dex] <- rnorm(1)},
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Functions which use vectorized operations and functions are automatically \emph{vectorized} themselves,
+      \vskip1ex
+      Functions which only call other compiled \texttt{C} vectorized functions, are also very fast,
+      \vskip1ex
+      But not all functions are vectorized, or they're not vectorized with respect to their \emph{parameters},
+      \vskip1ex
+      Some \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define function vectorized automatically
+my_fun <- function(in_put, pa_ram) {
+  pa_ram*in_put
+}  # end my_fun
+# "in_put" is vectorized
+my_fun(in_put=1:3, pa_ram=2)
+# "pa_ram" is vectorized
+my_fun(in_put=10, pa_ram=2:4)
+# define vectors of parameters of rnorm()
+std_devs <-
+  structure(1:3, names=paste0("sd=", 1:3))
+me_ans <-
+  structure(-1:1, names=paste0("mean=", -1:1))
+# "sd" argument of rnorm() isn't vectorized
+rnorm(1, sd=std_devs)
+# "mean" argument of rnorm() isn't vectorized
+rnorm(1, mean=me_ans)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing \texttt{sapply()} Loops Over Function Parameters}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Many functions aren't vectorized with respect to their \emph{parameters},
+      \vskip1ex
+      Performing \texttt{sapply()} loops over a function's parameters produces vector output,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sapply produces desired vector output
+set.seed(1121)
+sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
+set.seed(1121)
+sapply(std_devs, rnorm, n=2, mean=0)
+set.seed(1121)
+sapply(me_ans,
+       function(me_an) rnorm(n=2, mean=me_an))
+set.seed(1121)
+sapply(me_ans, rnorm, n=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Creating Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In order to \emph{vectorize} a function with respect to one of its \emph{parameters}, it's necessary to perform a loop over it,
+      \vskip1ex
+      The function \texttt{Vectorize()} performs an \texttt{apply()} loop over the arguments of a function, and returns a vectorized version of the function,
+      \vskip1ex
+      \texttt{Vectorize()} vectorizes the arguments passed to \texttt{"vectorize.args"},
+      \vskip1ex
+      \texttt{Vectorize()} is an example of a \emph{higher-order} function: it accepts a function as its argument and returns a function as its value,
+      \vskip1ex
+      Functions that are vectorized using \texttt{Vectorize()} or \texttt{apply()} loops are just as slow as \texttt{apply()} loops, but convenient to use,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# rnorm() vectorized with respect to "std_dev"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    sapply(sd, rnorm, n=n, mean=mean)
+}  # end vec_rnorm
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+# rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- Vectorize(FUN=rnorm,
+              vectorize.args=c("mean", "sd")
+)  # end Vectorize
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+set.seed(1121)
+vec_rnorm(n=2, mean=me_ans)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mapply()} Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way,
+      \vskip1ex
+      \texttt{mapply()} accepts a multivariate function passed to the \texttt{"FUN"} argument and any number of vector arguments passed to the dots \texttt{"..."},
+      \vskip1ex
+      \texttt{mapply()} calls \texttt{"FUN"} on the vectors passed to the dots \texttt{"..."}, one element at a time:
+      \begin{multline*}
+        mapply(FUN=fun, vec_1, vec_2, \ldots) = \\
+        [ fun(vec_{1,1}, vec_{2,1}, \ldots), \ldots, \\
+        fun(vec_{1,i}, vec_{2,i}, \ldots), \ldots ]
+      \end{multline*}
+      \texttt{mapply()} passes the first vector to the first argument of \texttt{"FUN"}, the second vector to the second argument, etc.
+      \vskip1ex
+      The first element of the output vector is equal to \texttt{"FUN"} called on the first elements of the input vectors, the second element is \texttt{"FUN"} called on the second elements, etc.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(sum)
+# na.rm is bound by name
+mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
+str(rnorm)
+# mapply vectorizes both arguments "mean" and "sd"
+mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
+mapply(function(in_put, e_xp) in_put^e_xp,
+       1:5, seq(from=1, by=0.2, length.out=5))
+      @
+      The output of \texttt{mapply()} is a vector of length equal to the longest vector passed to the dots \texttt{"..."} argument, with the elements of the other vectors recycled if necessary,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorizing Functions Using \texttt{mapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{mapply()} functional is a multivariate version of \texttt{sapply()}, that allows calling a non-vectorized function in a vectorized way,
+      \vskip1ex
+      \texttt{mapply()} can be used to vectorize several function arguments simultaneously,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(mean)==1 && NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    mapply(rnorm, n=n, mean=mean, sd=sd)
+}  # end vec_rnorm
+# call vec_rnorm() on vector of "sd"
+vec_rnorm(n=2, sd=std_devs)
+# call vec_rnorm() on vector of "mean"
+vec_rnorm(n=2, mean=me_ans)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vectorized \texttt{if-else} Statements Using Function \texttt{ifelse()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
+      \vskip1ex
+      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
+        <<func_ifelse,eval=FALSE,echo=TRUE,fig.show='hide'>>=
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
+                  vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid",
+        col=c("green", "blue", "red"),
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4),
+       title="", inset=0.05, cex=0.8, lwd=2,
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/func_ifelse-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Simulation}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Monte Carlo Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution,
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# MC estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# MC estimate of quantile
+qnorm(0.75)
+sam_ple[0.75*len_gth]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level,
+      \vspace{-1em}
+        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+         (pa_th[in_dex - 1] < lev_el)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses lev_el
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=lev_el, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level", 
+      line=0.5)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
+      \vspace{-1em}
+        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+lev_el <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+# simulate path of Brownian motion
+pa_th <- cumsum(rnorm(len_gth))
+# find index when pa_th crosses lev_el
+cro_ss <- which(pa_th > lev_el)
+# fill remaining pa_th after it crosses lev_el
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):len_gth] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+             start=c(2011, 1))
+# create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=lev_el, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level", 
+      line=0.5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
+      \vskip1ex
+      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      \vskip1ex
+      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed data set,
+      \vskip1ex
+      The \emph{bootstrapped} data is then used to re-calculate the estimator many times, producing a vector of values,
+      \vskip1ex
+      The \emph{bootstrapped} estimator values can then be used to calculate the probability distribution of the estimator and its standard error,
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping Standard Errors Using Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
+      \vskip1ex
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
+      \vskip1ex
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
+      \vskip1ex
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Variance Reduction Using Antithetic Sampling}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Antithetic Sampling} is a \emph{Variance Reduction} technique, in which a new random sample is computed by simply reversing the sign of a Normal random sample ($\phi \to -\phi$), or by complementing a Uniform random sample ($\phi \to 1-\phi$),
+      \vskip1ex
+      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# estimate the 95% quantile
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
+  quantile(boot_sample, 0.95)
+})  # end sapply
+sd(boot_strap)
+# estimate the 95% quantile using antithetic sampling
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
+  quantile(c(boot_sample, -boot_sample), 0.95)
+})  # end sapply
+# standard error of mean from bootstrap
+sd(boot_strap)
+sqrt(2)*sd(boot_strap)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Regression Coefficients Using Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of the regression coefficients can be calculated using a \emph{bootstrap} simulation,
+      \vskip1ex
+      The \emph{bootstrap} procedure creates new design matrices by randomly sampling with replacement from the design matrix,
+      \vskip1ex
+      Regressions are performed on the \emph{bootstrapped} design matrices, and the regression coefficients are saved into a matrix of \emph{bootstrapped} coefficients,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
-# define explanatory variable
+# define explanatory and response variables
 explana_tory <- rnorm(100, mean=2)
 noise <- rnorm(100)
-# response equals linear form plus error terms
 res_ponse <- -3 + explana_tory + noise
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
+# define design matrix and regression formula
+de_sign <- data.frame(res_ponse, explana_tory)
+reg_formula <- paste(colnames(de_sign)[1],
+  paste(colnames(de_sign)[-1], collapse="+"),
+  sep=" ~ ")
+# bootstrap the regression
+boot_strap <- sapply(1:100, function(x) {
+  boot_sample <- sample.int(dim(de_sign)[1],
+                            replace=TRUE)
+  reg_model <- lm(reg_formula,
+                data=de_sign[boot_sample, ])
+  reg_model$coefficients
+})  # end sapply
       @
   \end{columns}
 \end{block}
@@ -871,31 +2760,32 @@ coef(reg_model)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Scatterplot}
+\subsection{Distribution of Bootstrapped Regression Coefficients}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
-      \vskip1ex
-      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
-      \vskip1ex
-      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
-        <<reg_scatter_plot,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
+      The \emph{bootstrapped} coefficient values can be used to calculate the probability distribution of the coefficients and their standard errors,
+        <<boot_distribution,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 x11(width=6, height=6)
-plot(reg_formula)  # plot scatterplot using formula
-title(main="Simple Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-# plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
-       pch=16, col="blue")
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=1,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# means and standard errors from regression summary
+reg_model <- lm(reg_formula, data=de_sign)
+reg_model$coefficients
+summary(reg_model)$coefficients[, "Std. Error"]
+plot(density(boot_strap["explana_tory", ]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap["explana_tory", ]),
+       lwd=2, col="red")
       @
     \column{0.5\textwidth}
       \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot.png}
+      \includegraphics[width=0.5\paperwidth]{figure/boot_reg.png}
   \end{columns}
 \end{block}
 
@@ -903,784 +2793,63 @@ points(x=explana_tory, y=reg_model$fitted.values,
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Summary}
+\subsection{Bootstrapping Regressions Using Parallel Computing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{summary.lm()} produces a list of regression model summary and diagnostic statistics:
-      \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
-        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
-        \item adj.r.squared: r.squared adjusted for higher model complexity,
-        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
-      \end{itemize}
-      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
       \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
       \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
       \vskip1ex
-      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interpreting the Regression Statistics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The regression \texttt{summary} is a list, and its elements can be accessed individually,
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
       \vskip1ex
-      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
       \vskip1ex
-      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
       \vskip1ex
-      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
       \vskip1ex
-      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
-      \vskip1ex
-      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Weak Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1))>>=
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
-  set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(30, sd=std_dev)
-# specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
-# perform regression and get summary
-  reg_model_sum <- summary(lm(reg_formula))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression Another Method}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      <<eval=FALSE,echo=TRUE>>=
-reg_stats <- function(da_ta) {  # get regression
-# perform regression and get summary
-  col_names <- colnames(da_ta)
-  reg_formula <-
-    paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula,
-                              data=da_ta))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function (std_dev) {
-    set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-    res_ponse <- 3 + 0.2*explana_tory +
-      rnorm(30, sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
-    }))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Diagnostic Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
-      \vskip1ex
-      {\scriptsize
-      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
-      \vskip1ex
-      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
-      \vskip1ex
-      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
-      \vskip1ex
-      The residuals should be randomly distributed around the horizontal line representing zero residual error,
-      \vskip1ex
-      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
-      \vskip1ex
-      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
-      \vskip1ex
-      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
-      \vskip1ex
-      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
-      \vskip1ex
-      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
-      \vskip1ex
-      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
-      }
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-# set plot paramaters - margins and font scale
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2, 2))  # plot 2x2 panels
-plot(reg_model)  # plot diagnostic scatterplots
-plot(reg_model, which=2)  # plot just Q-Q
-      @
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_reg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        DW = \frac {\sum_{i=2}^n (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^n \varepsilon_i^2}
-      \end{displaymath}
-      Where $\varepsilon_i$ are the regression residuals,
-      \vskip1ex
-      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
-      \vskip1ex
-      The \emph{DW} is close to two for autocorrelations close to zero,
-      \vskip1ex
-      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Classification}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Wilcoxon} Test for Distribution Mean}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The one-sample \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots , x_n\}$ was obtained from a probability distribution with mean zero, 
-      \vskip1ex
-      The two-sample \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from two probability distributions with equal means, 
-      \vskip1ex
-      The function \texttt{wilcox.test()} calculates the \emph{Wilcoxon} statistic and its \emph{p}-value, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=0.1))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Logistic} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logistic} function expresses the cumulative probability of a numerical variable ranging over the whole interval of real numbers: 
-      \begin{displaymath}
-        p(x) = \frac{1}{1 + \exp(-\lambda x)}
-      \end{displaymath}
-      Where $\lambda$ is the scale (dispersion) parameter,
-      \vskip1ex
-      The \emph{logistic} function can be inverted to obtain the \emph{Odds Ratio} (the ratio of probabilities for favorable to unfavorable outcomes): 
-      \begin{displaymath}
-        \frac{p(x)}{1 - p(x)} = \exp(\lambda x)
-      \end{displaymath}
-      The function \texttt{plogis()} gives the cumulative probability of the \emph{Logistic} distribution, 
-        <<echo=(-(1:1)),eval=FALSE>>=
-par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-lamb_da <- c(0.5, 1, 1.5)
-col_ors <- c("red", "black", "blue")
-# plot three curves in loop
-for (in_dex in 1:3) {
-  curve(expr=plogis(x, scale=lamb_da[in_dex]),
-        xlim=c(-4, 4), type="l", 
-        xlab="", ylab="", lwd=2,
-        col=col_ors[in_dex], add=(in_dex>1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/logistic_func.png}
-      \vspace{-2em}
-        <<echo=TRUE,eval=FALSE>>=
-# add title
-title(main="Logistic function", line=0.5)
-# add legend
-legend("topleft", title="Scale parameters", 
-       paste("lambda", lamb_da, sep="="),
-       inset=0.05, cex=0.8, lwd=2, 
-       lty=c(1, 1, 1), col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing \protect\emph{Logistic} Regression Using the Function \texttt{glm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Linear} regression isn't suitable when the response variable represents categorical data (\texttt{factor}), 
-      \vskip1ex
-      But \emph{logistic} regression (\emph{logit}) can be used to model data with a categorical response variable, 
-      \vskip1ex
-      The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions, 
-      \vskip1ex
-      \texttt{glm()} can fit two different types of response variables: categorical data (\texttt{factors}) from individual observations, or counts of categorical data (\texttt{integers}) from groups of observations, 
-      \vskip1ex
-      The family object \texttt{binomial(link="logit")} specifies a binomial distribution of residuals in the \emph{logistic} regression model, 
-      <<echo=TRUE,eval=FALSE>>=
-# simulate categorical data
-sco_re <- sort(runif(100))
-thresh_old <- 0.5  # probability threshold
-ac_tive <- ((sco_re + rnorm(100, sd=0.1)) > thresh_old)
-# Wilcoxon test for sco_re predictor
-wilcox.test(sco_re[ac_tive], sco_re[!ac_tive])
-# perform logit regression
-log_it <- glm(ac_tive ~ sco_re, family=binomial(logit))
-summary(log_it)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/logistic_density.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(x=sco_re, y=log_it$fitted.values, type="l", lwd=3, 
-     main="Category densities and logistic function", 
-     xlab="score", ylab="probability")
-den_sity <- density(sco_re[ac_tive])
-den_sity$y <- den_sity$y/max(den_sity$y)
-lines(den_sity, col="red")
-polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-den_sity <- density(sco_re[!ac_tive])
-den_sity$y <- den_sity$y/max(den_sity$y)
-lines(den_sity, col="blue")
-polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
-# add legend
-legend(x="top", bty="n", lty=c(1, NA, NA), lwd=c(3, NA, NA), pch=c(NA, 15, 15), 
-       legend=c("logistic fit", "active", "non-active"),
-       col=c("black", "red", "blue"), 
-       text.col=c("black", "red", "blue"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{ISLR} With Datasets for Machine Learning}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{ISLR} contains datasets used in the book \emph{"Introduction to Statistical Learning"}:\
-      \fullcite{islbook}
-    \column{0.5\textwidth}
-      <<echo=TRUE,eval=FALSE>>=
-library(ISLR)  # load package ISLR
-# get documentation for package tseries
-packageDescription("ISLR")  # get short description
-
-help(package="ISLR")  # load help page
-
-library(ISLR)  # load package ISLR
-
-data(package="ISLR")  # list all datasets in ISLR
-
-ls("package:ISLR")  # list all objects in ISLR
-
-detach("package:ISLR")  # remove ISLR from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{Default} dataset is a data frame in package \emph{ISLR}, with credit default data, 
-      \vskip1ex
-      The \texttt{Default} data frame contains two columns of binary categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}, 
-      \vskip1ex
-      The columns \texttt{student}, \texttt{balance}, and \texttt{income} can be used as \emph{predictors} to predict the \texttt{default} column, 
-      <<echo=TRUE,eval=FALSE>>=
-library(ISLR)  # load package ISLR
-# load credit default data
-attach(Default)
-summary(Default)
-sapply(Default, class)
-dim(Default); head(Default)
-x_lim <- range(balance)
-y_lim <- range(income)
-# plot data points for non-defaulters
-default_ed <- (default=="Yes")
-plot(income ~ balance, 
-     main="Default dataset from package ISLR", 
-     xlim=x_lim, ylim=y_lim, 
-     data=Default[!default_ed, ], 
-     pch=4, col="blue")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/islr_default_data.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot data points for defaulters
-points(income ~ balance, 
-       data=Default[default_ed, ], 
-       pch=4, col="red")
-# add legend
-legend(x="topright", bty="n", 
-       legend=c("non-defaulters", "defaulters"),
-       col=c("blue", "red"), lty=1, pch=4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Boxplots of the \texttt{Default} Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of values, 
-      \vskip1ex
-      The \emph{box} represents the upper and lower quartiles, \\
-      the vertical lines (whiskers) represent values beyond the quartiles, \\
-      and open circles represent values beyond the nominal range (outliers),
-      \vskip1ex
-      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of values,
-      \vskip1ex
-      \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames},
-      \vskip1ex
-      The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't, 
-      <<echo=TRUE,eval=FALSE>>=
-default_ed <- (default=="Yes")
-# Wilcoxon test for balance predictor
-wilcox.test(balance[default_ed], balance[!default_ed])
-# Wilcoxon test for income predictor
-wilcox.test(income[default_ed], income[!default_ed])
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/islr_default_boxplot.png}
-      \vspace{-2em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(ISLR)  # load package ISLR
-attach(Default)  # load credit default data
-par(mfrow=c(1,2))  # set plot panels
-# balance boxplot
-boxplot(formula=balance ~ default, 
-        col="lightgrey", 
-        main="balance", xlab="default")
-# income boxplot
-boxplot(formula=income ~ default, 
-        col="lightgrey", 
-        main="income", xlab="default")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Credit Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{balance} column can be used to calculate the probability of default using \emph{logistic} regression, 
-      \vskip1ex
-      The residuals in \emph{logistic} regression are the differences betweeen the actual response values (\texttt{0} and \texttt{1}), and the calculated probabilities of default, 
-      \vskip1ex
-      The \emph{logit} residuals are not normally distributed, so the data is fitted using the \emph{maximum-likelihood} method, instead of least squares, 
-      \vskip1ex
-      The family object \texttt{binomial(link="logit")} specifies a binomial distribution of residuals in the \emph{logistic} regression model, 
-      <<echo=TRUE,eval=FALSE>>=
-# fit logistic regression model
-log_it <- glm(default ~ balance, 
-              family=binomial(logit))
-summary(log_it)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/islr_logistic_reg.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=default_ed, 
-     main="Logistic regression of credit defaults", col="orange", 
-     xlab="credit balance", ylab="defaults")
-or_der <- order(balance)
-lines(x=balance[or_der], y=log_it$fitted.values[or_der], 
-      col="blue", lwd=2)
-legend(x="topleft", inset=0.1, 
-       legend=c("defaults", "logit fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modeling Cumulative Defaults Using \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The cumulative count of defaults with respect to a single predictor can be modelled as a \emph{logistic} function, using the function \texttt{glm()}, 
-      \vskip1ex
-      The response variable should be specified as a matrix with two columns, one containing the number of defaults, and other the number of non-defaults, 
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(ISLR)  # load package ISLR
-attach(Default)  # load credit default data
-# calculate cumulative defaults
-default_ed <- (default=="Yes")
-to_tal <- sum(default_ed)
-default_s <- sapply(balance, function(ba_lance) {
-    sum(default_ed[balance <= ba_lance])
-})  # end sapply
-# perform logit regression
-log_it <- glm(
-  cbind(default_s, to_tal-default_s) ~ 
-    balance, 
-  family=binomial(logit))
-summary(log_it)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/islr_logistic_count.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=default_s/to_tal, col="orange", lwd=1, 
-     main="Cumulative defaults versus balance", 
-     xlab="credit balance", ylab="cumulative defaults")
-or_der <- order(balance)
-lines(x=balance[or_der], y=log_it$fitted.values[or_der], 
-      col="blue", lwd=2)
-legend(x="topleft", inset=0.1, 
-       legend=c("cumulative defaults", "fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multifactor \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Logistic} regression calculates the probability of categorical variables, from the \emph{Odds Ratio} of continuous explanatory variables: 
-      \begin{displaymath}
-        p = \frac{1}{1 + \exp(- \lambda_0 - \sum_{i=1}^n \lambda_i x_i)}
-      \end{displaymath}
-      The \emph{generic} function \texttt{summary()} produces a list of regression model summary and diagnostic statistics:
-      \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{z}-values, and \emph{p}-values, 
-        \item \emph{Null} deviance: measures the differences betweeen the response values and the probabilities calculated using only the intercept, 
-        \item \emph{Residual} deviance: measures the differences betweeen the response values and the model probabilities, 
-      \end{itemize}
-      The \texttt{balance} and \texttt{student} columns are statistically significant, but the \texttt{income} column is not, 
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      <<echo=(-(1:3)),eval=TRUE>>=
-library(ISLR)  # load package ISLR
-attach(Default)  # load credit default data
-# fit multifactor logistic regression model
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1], 
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-log_it <- glm(for_mula, data=Default, 
-              family=binomial(logit))
-summary(log_it)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Confounding Variables in Multifactor \protect\emph{Logistic} Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{student} column is a confounding variable since it's correlated with the \texttt{balance} column, 
-      \vskip1ex
-      Students are less likely to default than non-students with the same \texttt{balance}, 
-      \vskip1ex
-      But on average students have higher \texttt{balances} than non-students, which makes them more likely to default, 
-      \vskip1ex
-      That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive, 
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(ISLR)  # load package ISLR
-attach(Default)  # load credit default data
-default_ed <- (default=="Yes")
-stu_dent <- (student=="Yes")
-# calculate cumulative defaults
-default_s <- sapply(balance, 
-  function(ba_lance) {
-    c(stu_dent=sum(default_ed[stu_dent & (balance <= ba_lance)]), 
-      non_student=sum(default_ed[(!stu_dent) & (balance <= ba_lance)]))
-})  # end sapply
-to_tal <- c(sum(default_ed[stu_dent]), sum(default_ed[!stu_dent]))
-default_s <- t(default_s / to_tal)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/islr_student_boxplot.png}
-      \vspace{-2em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(ISLR)  # load package ISLR
-attach(Default)  # load credit default data
-# plot cumulative defaults
-par(mfrow=c(1,2))  # set plot panels
-or_der <- order(balance)
-plot(x=balance[or_der], y=default_s[or_der, 1], 
-     col="red", t="l", lwd=2, 
-     main="Cumulative defaults of\n students and non-students", 
-     xlab="credit balance", ylab="")
-lines(x=balance[or_der], y=default_s[or_der, 2], 
-      col="blue", lwd=2)
-legend(x="topleft", bty="n", 
-       legend=c("students", "non-students"),
-       col=c("red", "blue"), text.col=c("red", "blue"), 
-       lwd=c(3, 3))
-# balance boxplot for student factor
-boxplot(formula=balance ~ student, 
-        col="lightgrey", 
-        main="balance", xlab="student")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Forecasting of Credit Defaults using Logistic Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{predict()} is a generic function for forecasting based on a given model,
-      \vskip1ex
-      \emph{Logistic} regression calculates the probability of categorical variables, based on continuous explanatory variables, 
-      \vskip1ex
-      A \emph{type I error} is the incorrect rejection of a \texttt{TRUE} case (i.e. a "false positive"), 
-      \vskip1ex
-      That is, a \emph{type I error} is when there is no default, but it's classified as a default, 
-      \vskip1ex
-      A \emph{type II error} is the incorrect acceptance of a \texttt{FALSE} case (i.e. a "false negative"), 
-      \vskip1ex
-      That is, a \emph{type II error} is when there is a default, but it's classified as no default, 
-      \vskip1ex
-      A confusion matrix is a table that summarizes the performance of a classification model on a set of test data for which the true values are known, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# fit full logistic regression model
-for_mula <- default ~ balance
-for_mula <- as.formula(paste(col_names[1], 
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-log_it <- glm(for_mula, data=Default, 
-              family=binomial(logit))
-fore_casts <- predict(log_it, type="response")
-length(fore_casts)
-fore_casts[1:10]
-thresh_old <- 0.5  # probability threshold
-# calculate confusion matrix
-table((fore_casts>thresh_old), default_ed)
-sum(default_ed)
-
-# fit logistic regression over training data
-sam_ple <- sample(x=1:NROW(Default), size=NROW(Default)/2)
-train_data <- Default[sam_ple, ]
-log_it <- glm(for_mula, data=train_data, 
-              family=binomial(link="logit"))
-
-# forecast over test data
-test_data <- Default[-sam_ple, ]
-fore_casts <- predict(log_it, newdata=test_data, type="response")
-# calculate confusion matrix
-table((fore_casts>thresh_old), test_data$default=="Yes")
-detach(Default)
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+# bootstrap the regression under Windows
+boot_strap <- parLapply(clus_ter, 1:1000,
+  function(x, reg_formula, de_sign) {
+    boot_sample <-
+      sample.int(dim(de_sign)[1], replace=TRUE)
+    reg_model <- lm(reg_formula,
+      data=de_sign[boot_sample, ])
+    reg_model$coefficients
+  },
+  reg_formula=reg_formula,
+  de_sign=de_sign)  # end parLapply
+# bootstrap the regression under Mac-OSX or Linux
+boot_strap <- mclapply(1:1000,
+  function(x) {
+    boot_sample <-
+      sample.int(dim(de_sign)[1], replace=TRUE)
+    lm(reg_formula,
+      data=de_sign[boot_sample, ])$coefficients
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), sd=sd(x)))
+x11(width=6, height=6)
+plot(density(boot_strap[, "explana_tory"]),
+     lwd=2, xlab="regression slopes",
+     main="Bootstrapped regression slopes")
+abline(v=mean(boot_strap[, "explana_tory"]),
+       lwd=2, col="red")
       @
   \end{columns}
 \end{block}
@@ -1698,11 +2867,20 @@ detach(Default)
 \begin{frame}[t]{\subsecname}
 \vspace{-1em}
 \begin{block}{Required}
-  Read all the lecture slides in \texttt{FRE6871\_Lecture\_6.pdf}, and run all the code in \texttt{FRE6871\_Lecture\_6.R}
+  \begin{itemize}[]
+    \item Read all the lecture slides in \emph{FRE6871\_Lecture\_6.pdf}, and run all the code in \emph{FRE6871\_Lecture\_6.R}
+  \end{itemize}
 \end{block}
 \begin{block}{Recommended}
-  Read about \emph{Logistic Regression} in the book \emph{"Introduction to Statistical Learning"}:\
-      \fullcite{islbook}
+  \begin{itemize}[]
+    \item Read about \emph{PCA} in:\\
+    \emph{pca-handout.pdf}\\
+    \emph{pcaTutorial.pdf}\\
+    \item Read about \emph{optimization methods}:\\
+    \emph{Bolker Optimization Methods.pdf}\\
+    \emph{Yollin Optimization.pdf}\\
+    \emph{Boudt DEoptim Large Portfolio Optimization.pdf}\\
+  \end{itemize}
 \end{block}
 
 \end{frame}

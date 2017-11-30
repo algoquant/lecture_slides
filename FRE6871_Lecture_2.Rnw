@@ -27,6 +27,9 @@ knit_theme$set(thm)
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -52,13 +55,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#2, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{January 30, 2017}
+\date{November 6, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -74,334 +77,153 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Operators}
+\section{Package \protect\emph{Rcpp} for Running \protect\emph{C++} Programs}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Comparing Objects With \texttt{identical()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{identical()} tests if two objects are exactly the same, and always returns a single logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
-      \vskip1ex
-      For atomic arguments \texttt{identical()} often gives the same result as the \texttt{"=="} operator, but it's not synonymous with it in general,
-      \vskip1ex
-      The \texttt{"=="} operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-num_var <- 2
-num_var==2
-identical(num_var, 2)
-
-identical(num_var, NULL)
-num_var==NULL
-is.null(num_var)
-
-vec_tor <- c(2, 4, 6)
-vec_tor==2
-identical(vec_tor, 2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Lookup and Matching}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{which()} returns the indices of the \texttt{TRUE} elements of a Boolean \texttt{vector} or \texttt{array},
-      \vskip1ex
-      If the argument is an \texttt{array} and \texttt{arr.ind=TRUE}, then \texttt{which()} returns a matrix with rows containing the indices of the \texttt{TRUE} elements,
-      \vskip1ex
-      The functions \texttt{which.max()} and \texttt{which.min()} return the index of the minimum or maximum of a \texttt{numeric} or \texttt{Boolean} vector,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-vec_tor <- sample(1:6, 21, replace=TRUE)
-mat_rix <- matrix(vec_tor, ncol=3)
-vec_tor
-which(vec_tor == 5)
-# equivalent but slower than above
-(1:length(vec_tor))[vec_tor == 5]
-which(vec_tor > 5)
-# find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
-# equivalent but slower than above
-arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
-         dim(mat_rix), dimnames(mat_rix))
-which.max(vec_tor)
-# equivalent but slower than above
-which(vec_tor == max(vec_tor))
-which.min(vec_tor)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{match()} returns the index of the first element of its second argument, that matches its first argument,
-      \vskip1ex
-      The binary operator \texttt{\%in\%} returns a Boolean \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
-      \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
-      \vskip1ex
-      \texttt{\%in\%} never returns \texttt{NA}, so it's preferred in \texttt{if ()} statements,
-      \vskip1ex
-      \texttt{any()} returns \texttt{TRUE} if at least one element of a Boolean vector is \texttt{TRUE}, and \texttt{FALSE} otherwise,
-      \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-match(5, vec_tor)
-# more general but slower than above
-which(vec_tor == 5)
-match(-5, vec_tor)
-5 %in% vec_tor
-# equivalent to above
-match(5, vec_tor, nomatch=0) > 0
--5 %in% vec_tor
-c(5, -5) %in% vec_tor
-# equivalent to "5 %in% vec_tor"
-any(vec_tor == 5)
-# equivalent to "-5 %in% vec_tor"
-any(vec_tor == (-5))
-if (any(vec_tor < 0))
-  cat("vector contains negative values\n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Assignment Operators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The standard assignment operator in \texttt{R} is \texttt{"<-"},
-      \vskip1ex
-      Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in \texttt{R},
-      \vskip1ex
-      The \texttt{"<-"} operator may cause an error if \texttt{R} confuses it with the \texttt{"<"} logical operator,
-      \vskip1ex
-      But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),
-      \vskip1ex
-      The \texttt{"="} operator is used for named arguments in function calls,
-      \vskip1ex
-      When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,
-      \vskip1ex
-      {\color{red}{Rule of Thumb}}:\\
-      Use \texttt{"<-"} in \texttt{R} scripts and inside functions,\\
-      Use \texttt{"="} only in function calls,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-num_var1 <- 3  # "<-" and "=" are valid assignment operators
-num_var1
-num_var1 = 3
-num_var1
-2<-3  # "<" operator confused with "<-"
-2 < -3  # add space or brackets to avoid confusion
-median(x=1:10)  # "=" assignment within argument list
-x  # x doesn't exist outside the function
-median(x <- 1:10)  # "<-" assignment within argument list
-x  # x exists outside the function
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Benchmarking the Speed of \texttt{R} Code}
+\subsection{Package \protect\emph{Rcpp} for Calling \protect\emph{C++} Programs from \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
+      The package \emph{Rcpp} allows calling \emph{C++} programs from \texttt{R}, by compiling the \emph{C++} code and creating \texttt{R} functions,
       \vskip1ex
-      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting),
+      \emph{Rcpp} functions are \texttt{R} functions that were compiled from \emph{C++} code using package \emph{Rcpp},
       \vskip1ex
-      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()},
+      \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
       \vskip1ex
-      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times,
+      The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \emph{C++} code: \\
+      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}\\
+      \vskip1ex
+      You can learn more about the package \emph{Rcpp} here: \\
+      \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
+      \hskip1em\url{http://www.rcpp.org/}\\
+      \hskip1em\url{http://gallery.rcpp.org/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# verify that rtools are working properly:
+devtools::find_rtools()
+devtools::has_devel()
+
+# load package Rcpp
+library(Rcpp)
+# get documentation for package Rcpp
+# get short description
+packageDescription("Rcpp")
+# load help page
+help(package="Rcpp")
+# list all datasets in "Rcpp"
+data(package="Rcpp")
+# list all objects in "Rcpp"
+ls("package:Rcpp")
+# remove Rcpp from search path
+detach("package:Rcpp")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function \texttt{cppFunction()} for Compiling \protect\emph{C++} code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{cppFunction()} compiles \emph{C++} code into an \texttt{R} function,
+      \vskip1ex
+      The function \texttt{cppFunction()} creates an \texttt{R} function only for the current \texttt{R} session, and it must be recompiled for every new \texttt{R} session,
+      \vskip1ex
+      The function \texttt{sourceCpp()} compiles \emph{C++} code contained in a file, into \texttt{R} functions,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# define Rcpp function
+Rcpp::cppFunction("
+  int times_two(int x)
+    { return 2 * x;}
+  ")  # end cppFunction
+# run Rcpp function
+times_two(3)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
+# multiply two numbers
+rcpp_mult(2, 3)
+rcpp_mult(1:3, 6:4)
+# multiply two vectors
+rcpp_mult_vec(2, 3)
+rcpp_mult_vec(1:3, 6:4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Loops in \protect\emph{Rcpp Sugar}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Loops in \emph{Rcpp} can be two orders of magnitude faster than loops in \texttt{R}!
+      \vskip1ex
+      \emph{Rcpp Sugar} allows using \texttt{R}-style vectorized syntax in \emph{Rcpp} code,
+      <<echo=TRUE,eval=FALSE>>=
+# define Rcpp function with loop
+Rcpp::cppFunction("
+double inner_mult(NumericVector x, NumericVector y) {
+int x_size = x.size();
+int y_size = y.size();
+if (x_size != y_size) {
+    return 0;
+  } else {
+    double total = 0;
+    for(int i = 0; i < x_size; ++i) {
+      total += x[i] * y[i];
+  }
+  return total;
+  }
+}")  # end cppFunction
+# run Rcpp function
+inner_mult(1:3, 6:4)
+inner_mult(1:3, 6:3)
+# define Rcpp Sugar function with loop
+Rcpp::cppFunction("
+double inner_mult_sugar(NumericVector x, NumericVector y) {
+  return sum(x * y);
+}")  # end cppFunction
+# run Rcpp Sugar function
+inner_mult_sugar(1:3, 6:4)
+inner_mult_sugar(1:3, 6:3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define R function with loop
+inner_mult_r <- function(x, y) {
+    to_tal <- 0
+    for(i in 1:NROW(x)) {
+      to_tal <- to_tal + x[i] * y[i]
+    }
+    to_tal
+}  # end inner_mult_r
+# run R function
+inner_mult_r(1:3, 6:4)
+inner_mult_r(1:3, 6:3)
+# compare speed of Rcpp and R
 library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Manipulating Vectors and Matrices}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Replicating Objects Using \texttt{rep()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{rep()} replicates vectors and lists a given number of times,
-      \vskip1ex
-      \texttt{rep()} accepts a vector or list \texttt{"x"}, and an integer specifying the type and number of replications,
-      \vskip1ex
-      Argument \texttt{"times"} replicates the whole vector a given number of times,
-      \vskip1ex
-      Argument \texttt{"each"} replicates each vector element a given number of times,
-      \vskip1ex
-      Argument \texttt{"length.out"} replicates the whole vector a certain number of times, so that the output vector length is equal to \texttt{"length.out"},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# replicate a single element
-rep("a", 5)
-# replicate the whole vector several times
-rep(c("a", "b"), 5)
-rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
-rep(c("a", "b"), each=5)
-# replicate to specified length
-rep(c("a", "b"), length.out=5)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multiplying Vectors and Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The multiplication \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices, 
-      \vskip1ex
-      By default the matrix elements are multiplied column-wise by the vector elements: the first matrix element in the first column is multiplied by the first vector element, then the second matrix column is multiplied by the remaining vector elements, etc. 
-      \vskip1ex
-      The \emph{recycling rule} is applied to the vector elements as needed, 
-      \vskip1ex
-      The transpose function \texttt{t()} can be applied if we want to perform row-wise multiplication, 
-     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# define vector and matrix
-vec_tor1 <- c(2, 4, 3)
-mat_rix <- matrix(sample(1:12), ncol=3)
-# multiply matrix by vector column-wise
-vec_tor1 * mat_rix
-# multiply matrix by vector row-wise
-t(vec_tor1 * t(mat_rix))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Inner Multiplication}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
-      \vskip1ex
-      \emph{Inner} multiplication consists of multiplying the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
-      \begin{displaymath}
-        C_{i,j} = \sum_{k=1}^{n} A_{i,k} B_{k,j}
-      \end{displaymath}
-      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
-      \vskip1ex
-      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second), otherwise an error is produced,
-      \vskip1ex
-      The function \texttt{drop()} removes any dimensions of length \emph{one},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1))>>=
-mat_rix <- matrix(1:6, ncol=3)  # create matrix
-vec_tor1
-vec_tor2 <- 6:4  # define vector
-# multiply two vectors element-by-element
-vec_tor1 * vec_tor2
-# calculate inner product
-vec_tor1 %*% vec_tor2
-# calculate inner product and drop dimensions
-drop(vec_tor1 %*% vec_tor2)
-mat_rix
-# multiply vector by matrix
-mat_rix %*% vec_tor1  # single column matrix
-drop(mat_rix %*% vec_tor1)  # vector
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Transpose}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{t()} returns the transpose of a matrix,
-      \vskip1ex
-      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# multiply matrix by vector fails because dimensions aren't conformable
-vec_tor1 %*% mat_rix
-# works after transpose
-drop(vec_tor1 %*% t(mat_rix))
-# calculate inner product
-crossprod(vec_tor1, vec_tor2)
-# create matrix and vector
-mat_rix <- matrix(1:3000, ncol=3)
-tmat_rix <- t(mat_rix)
-vec_tor <- 1:3
-# crossprod is slightly faster than "%*%" operator
 summary(microbenchmark(
-  cross_prod=crossprod(tmat_rix, vec_tor),
-  inner_prod=mat_rix %*% vec_tor,
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  pure_r=inner_mult_r(1:10000, 1:10000),
+  inner_r=1:10000 %*% 1:10000,
+  r_cpp=inner_mult(1:10000, 1:10000),
+  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -410,43 +232,69 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Matrix Outer Multiplication}
+\subsection{Generating Random Numbers Using Logistic Map in \protect\emph{Rcpp}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = A_{i} \cdot B_{j}
-      \end{displaymath}
-      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = f(A_{i}, B_{j})
-      \end{displaymath}
-      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
-      \vskip1ex
-      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# define named vectors
-vec_tor1 <- sample(1:4)
-names(vec_tor1) <- paste0("row", 1:4, "=", vec_tor1)
-vec_tor1
-vec_tor2 <- sample(1:3)
-names(vec_tor2) <- paste0("col", 1:3, "=", vec_tor2)
-vec_tor2
-# calculate outer product of two vectors
-mat_rix <- outer(vec_tor1, vec_tor2)
-mat_rix
-# calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2,
-                 FUN=function(x1, x2) x2*sin(x1))
-mat_rix
+    \column{0.5\textwidth}
+      The \emph{logistic map} in \emph{Rcpp} is about seven times than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
+      <<echo=TRUE,eval=FALSE>>=
+# calculate uniformly distributed pseudo-random sequence
+uni_form <- function(see_d, len_gth=10) {
+  out_put <- numeric(len_gth)
+  out_put[1] <- see_d
+  for (i in 2:len_gth) {
+    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+  }  # end for
+  acos(1-2*out_put)/pi
+}  # end uni_form
+
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
+# microbenchmark Rcpp code
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=runif(1e5),
+  r_loop=uni_form(0.3, 1e5),
+  r_cpp=uniform_rcpp(0.3, 1e5),
+  times=10))[, c(1, 4, 5)]
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// This is a simple example of exporting a C++ function to R. 
+// You can source this function into an R session using the 
+// function Rcpp::sourceCpp() 
+// (or via the Source button on the editor toolbar).
+// Learn more about Rcpp at:
+//
+//   http://www.rcpp.org/
+//   http://adv-r.had.co.nz/Rcpp.html
+//   http://gallery.rcpp.org/
+
+// function uni_form() produces a vector of 
+// uniformly distributed pseudo-random numbers
+// [[Rcpp::export]]
+NumericVector uniform_rcpp(double see_d, int len_gth) {
+// define pi
+static const double pi = 3.14159265;
+// allocate output vector
+  NumericVector out_put(len_gth);
+// initialize output vector
+  out_put[0] = see_d; 
+// perform loop
+  for (int i=1; i < len_gth; ++i) {
+    out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
+  }  // end for
+// rescale output vector and return it
+  return acos(1-2*out_put)/pi;
+}
+
+    \end{lstlisting}
   \end{columns}
 \end{block}
 
@@ -456,6 +304,294 @@ mat_rix
 
 %%%%%%%%%%%%%%%
 \section{Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Return Values of \secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
+      \vskip1ex
+      \texttt{return()} statements are inserted in logical branches to terminate function execution and return its intended value,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# define function that returns NULL for non-numeric argument
+test_func <- function(in_put) {
+  if (!is.numeric(in_put)) {
+    warning(paste("argument", in_put, "isn't numeric"))
+    return(NULL)
+  }
+  2*in_put
+}  # end test_func
+
+test_func(2)
+test_func("hello")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname \hskip0.4em That Return \texttt{invisible}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If a return value is wrapped in the function \texttt{invisible()} then the return value isn't printed,
+      \vskip1ex
+      But if the function is assigned to a variable, then its return value is assigned to that variable,
+      \vskip1ex
+      \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
+      \vskip1ex
+      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+setwd("C:/Develop/R/lecture_slides/data")
+# define a function that returns invisibly
+return_invisible <- function(in_put) {
+  invisible(in_put)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="C:/Develop/data/my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body,
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_n = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_1 = 0, F_2 = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_n = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by the Italian mathematician \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+fibo_nacci <- function(len_gth) {
+  if (len_gth > 2) {
+    fib_seq <- fibo_nacci(len_gth-1)  # recursion
+    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
+  } else {
+    c(0, 1)  # initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(9), 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Calculating Skew}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} provides an easy way for users to write functions,
+      \vskip1ex
+      \texttt{datasets} is a \texttt{base} package containing various datasets, for example: \texttt{EuStockMarkets},
+      \vskip1ex
+      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,
+      \vskip1ex
+      Formal function arguments can be bound to input variables by position or by name,
+      \vskip1ex
+      If the function arguments are missing then their default value is used,
+      \vskip1ex
+      Functions return the value of the last expression that is evaluated,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# DAX returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# calc_skew() calculates skew of time series of returns
+calc_skew <- function(time_series=rnorm(1000)) {
+# default is normal time series
+  len_data <- length(time_series)  # number of observations
+# normalize time_series
+  time_series <-
+    (time_series - mean(time_series))/sd(time_series)
+# calculate skew last statement automatically returned
+  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
+}  # end calc_skew
+
+# calculate skew of DAX returns
+calc_skew(time_series=dax_rets)  # bind arguments by name
+calc_skew(dax_rets)  # bind arguments by position
+calc_skew()  # use default value of arguments
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If a function name is called alone without arguments, then \texttt{R} displays the function code (but it must be on the search path),
+      \vskip1ex
+      Non-visible objects can't be viewed by calling their name,
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays information about \texttt{R} objects, including non-visible objects,
+      \vskip1ex
+      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+calc_skew  # show the function code
+
+getAnywhere(calc_skew)  # display function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Internal and Primitive Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} is a high-level language written in lower-level languages, mostly \texttt{C++} and some \texttt{Fortran},
+      \vskip1ex
+      \texttt{R} functions are either written in \texttt{R} code (\emph{interpreted} functions), or they directly call compiled \texttt{C++} or \texttt{Fortran} code (\emph{compiled} functions, also called \emph{internal} or \emph{primitive}),
+      \vskip1ex
+      \texttt{R} parses the code of \emph{interpreted} functions, and eventually calls compiled \texttt{C++} or \texttt{Fortran} code,
+      \vskip1ex
+      But this extra processing makes \emph{interpreted} functions much slower than \emph{compiled} functions,
+      \vskip1ex
+      Users can distinguish between \emph{interpreted} functions and \emph{compiled} functions by typing their names, and analyzing their source code,
+      \vskip1ex
+      The source code of \emph{interpreted} functions contains multiple lines of \texttt{R} code, or a call to function \texttt{UseMethod()} (which \emph{dispatches} \emph{methods} associated with \emph{generic} functions),
+      \vskip1ex
+      The source code of \emph{compiled} functions contains a single call to one of the functions that execute \emph{compiled} \texttt{C++} or \texttt{Fortran} code: \texttt{.Internal()}, \texttt{.Primitive()}, \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, or \texttt{.External()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE, eval=FALSE>>=
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+# show all methods of mean()
+methods(generic.function=mean)
+# show code for mean.default()
+mean.default
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Internal and Primitive Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \vskip1ex
+      Several functions call compiled code: \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, \texttt{.External()}, or \texttt{.Internal()} and \texttt{.Primitive()}
+      \vskip1ex
+      \texttt{R} \texttt{.Internal()} \texttt{.Primitive()}
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
+      \vskip1ex
+      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
+      \vskip1ex
+      the user can access symbols from a package that isn't attached using the double-colon operator \texttt{tools::file\_ext}
+
+      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# get all methods for generic function "plot"
+methods("plot")
+
+getAnywhere(plot)  # display function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lazy Evaluation of Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions delay evaluation of their arguments until they're needed by their \texttt{R} code,
+      \vskip1ex
+      This is called \emph{lazy} evaluation,
+      \vskip1ex
+      If the function body doesn't evaluate an argument, then the function won't produce an error, even if the argument is missing,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  2*arg1  # just multiply first argument
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # second argument was never evaluated!
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  cat(arg1, '\n')  # write to output
+  cat(arg2)  # write to output
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # first argument written to output
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -535,53 +671,6 @@ bind_dots(1, 2, 3)  # "in_put" not bound, but has default
 \end{frame}
 
 
-%%%%%%%%%%%%%%%
-\subsection{Side effects Using the Super-assignment Operator \texttt{"<<-"}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Function \emph{side effects} are operations on objects outside a function's \emph{evaluation} environment,
-      \vskip1ex
-      The functions \texttt{plot()} and \texttt{load()} are examples of functions that produce \emph{side effects},
-      \vskip1ex
-      \texttt{load()} reads data from an \texttt{*.RData} file, and creates objects in the workspace that are contained in the \texttt{*.RData} file,
-      \vskip1ex
-      The super-assignment operator \texttt{"<<-"} allows creating functions that produce \emph{side effects},
-      \vskip1ex
-      The super-assignment operator \texttt{"<<-"} modifies or creates variables in the \emph{enclosing} environment in which a function was \emph{defined} (\emph{lexical} scoping),
-      \vskip1ex
-      If a function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment, and the \texttt{"<<-"} operator operates on variables in the \emph{global} environment,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1))>>=
-setwd("C:/Develop/data")
-rm(list=ls())  # remove all objects
-ls()  # list objects
-# load objects from file (side effect)
-load(file="my_data.RData")
-ls()  # list objects
-glob_var <- 1  # define a global variable
-# explore function scope and side effects
-side_effect <- function() {
-  cat("global glob_var:\t", glob_var, "\n")
-# define local "glob_var" variable
-  glob_var <- 10
-# re-define the global "glob_var"
-  glob_var <<- 2
-  cat("local glob_var:\t", glob_var, "\n")
-}  # end side_effect
-side_effect()
-# global variable was modified as side effect
-glob_var
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 
 %%%%%%%%%%%%%%%
 \section{Functionals}
@@ -594,11 +683,13 @@ glob_var
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Functionals} are functions that accept a function or a function name as one of their input arguments,
+      \emph{Functionals} are functions that accept a function or a function name (string) as one of their input arguments,
       \vskip1ex
       \emph{Functionals} are able to execute function calls using the function names,
       \vskip1ex
       The function \texttt{match.fun()} returns a function name that is specified by a string,
+      \vskip1ex
+      \emph{Functionals} that call \texttt{match.fun()} are able to accept a string as a function name, because \texttt{match.fun()} converts it to a function,
       \vskip1ex
       \texttt{match.fun()} produces an error condition if it fails to find a function with the specified name,
     \column{0.6\textwidth}
@@ -612,6 +703,8 @@ func_tional <- function(func_name, in_put) {
   func_name(in_put)
 }  # end func_tional
 func_tional(sqrt, 4)
+# string also works because match.fun() converts it to a function
+func_tional("sqrt", 4)
 str(sum)  # sum() accepts multiple arguments
 # func_tional can't accept indefinite number of arguments
 func_tional(sum, 1, 2, 3)
@@ -769,9 +862,9 @@ func_tional(arg_list)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      An important example of \emph{functionals} are the \texttt{apply()} functions,
+      An important example of \emph{functionals} are the \texttt{apply()} functionals,
       \vskip1ex
-      The function \texttt{apply()} returns the result of applying a function to the rows or columns of an array or matrix,
+      The functional \texttt{apply()} returns the result of applying a function to the rows or columns of an array or matrix,
       \vskip1ex
       If \texttt{MARGIN=1} then the function will be applied over the matrix \emph{rows,}
       \vskip1ex
@@ -874,6 +967,381 @@ apply(X=moment_orders, MARGIN=1, FUN=moment,
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{\texttt{apply()} Calling Functions with Multiple Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      When \texttt{apply()} calls a function with multiple arguments, then care must be taken for proper argument binding,
+      \vskip1ex
+      The dots \texttt{"..."} argument in \texttt{apply()} allows passing additional arguments to the function being called by \texttt{apply()},
+      \vskip1ex
+      The additional arguments to \texttt{apply()} must be \emph{bound} by their full (complete) names,
+      \vskip1ex
+      The values of the \texttt{"X"} argument in \texttt{apply()} are \emph{bound} by position to the first unused argument in the function being called by \texttt{apply()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+# function with three arguments
+my_func <- function(arg1, arg2, arg3) {
+  c(arg1=arg1, arg2=arg2, arg3=arg3)
+}  # end my_func
+my_func(1, 2, 3)
+da_ta <- as.matrix(1:4)
+# pass da_ta to arg1
+apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
+# pass da_ta to arg2
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
+# pass da_ta to arg3
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{lapply()} Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{lapply()} functional is a specialized version of the \texttt{apply()} functional,
+      \vskip1ex
+      \texttt{lapply()} applies a function to a list of objects and returns a list,
+      \vskip1ex
+      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list,
+      \vskip1ex
+      {\color{red}{Rule of Thumb}}\\
+      It's often better to use \texttt{lapply()}, since \texttt{apply()} and \texttt{sapply()} attempt to coerce their output into a vector or matrix, which may cause them to fail,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+# vector of means of numeric columns
+sapply(iris[, -5], mean)
+# list of means of numeric columns
+lapply(iris[, -5], mean)
+# lapply using anonymous function
+unlist(lapply(iris,
+              function(col_umn) {
+                if (is.numeric(col_umn)) mean(col_umn)
+              }  # end anonymous function
+              )  # end lapply
+       )  # end unlist
+unlist(sapply(iris, function(col_umn) {
+  if (is.numeric(col_umn)) mean(col_umn)}))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{sapply()} Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{sapply()} functional is a specialized version of the \texttt{apply()} functional,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
+      \vskip1ex
+      \texttt{sapply()} tries to return a vector, but if the elements can't be combined into a vector, then it returns a list,
+      \vskip1ex
+      When \texttt{sapply()} is given a data frame, it interprets it as a list, and applies the function to each element (column) of the data frame,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+sapply(6:10, sqrt)  # sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+
+# calculate means of iris data frame columns
+sapply(iris, mean)  # returns NA for Species
+
+# create a matrix
+mat_rix <- matrix(sample(100), ncol=4)
+# calculate column means using apply
+apply(mat_rix, 2, mean)
+
+# calculate column means using sapply, with anonymous function
+sapply(1:NCOL(mat_rix),
+       function(col_index) {  # anonymous function
+         mean(mat_rix[, col_index])
+  }  # end anonymous function
+)  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{sapply()} Returning Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If the function called by \texttt{sapply()} returns a vector, then \texttt{sapply()} returns a matrix, if possible,
+      \vskip1ex
+      The vectors returned by the function are arranged to form columns of the matrix returned by \texttt{sapply()},
+      \vskip1ex
+      But if the function returns vectors of different lengths, then \texttt{sapply()} cannot return a matrix, and returns a list instead,
+      \vskip1ex
+      This behavior of \texttt{sapply()} can cause run-time errors,
+      \vskip1ex
+      The function \texttt{vapply()} is similar to \texttt{sapply()}, but it always attempts to simplify its output to a matrix, and if it can't then it produces an error,
+      \vskip1ex
+      \texttt{vapply()} requires the argument \texttt{FUN.VALUE} that specifes the output format of the function called by \texttt{vapply()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# vectors form columns of matrix returned by sapply
+sapply(2:4, function(num) c(el1=num, el2=2*num))
+# vectors of different lengths returned as list
+sapply(2:4, function(num) 1:num)
+# vapply is similar to sapply
+vapply(2:4, function(num) c(el1=num, el2=2*num),
+       FUN.VALUE=c(row1=0, row2=0))
+# vapply produces an error if it can't simplify
+vapply(2:4, function(num) 1:num,
+       FUN.VALUE=c(row1=0, row2=0))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Operators}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Comparing Objects With \texttt{identical()} and \texttt{all.equal()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{identical()} tests if two objects are exactly the same, and always returns a single logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
+      \vskip1ex
+      For atomic arguments \texttt{identical()} often gives the same result as the \texttt{"=="} operator, but it's not synonymous with it in general,
+      \vskip1ex
+      The \texttt{"=="} operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
+      \vskip1ex
+      The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
+      \vskip1ex
+      The variable \texttt{.Machine} contains information about the numerical characteristics of the computer \texttt{R} is running on, such as the largest \texttt{double} and \texttt{integer} numbers, and the \emph{machine precision},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+num_var <- 2
+num_var==2
+identical(num_var, 2)
+
+identical(num_var, NULL)
+# this doesn't work:
+# num_var==NULL
+is.null(num_var)
+
+vec_tor <- c(2, 4, 6)
+vec_tor==2
+identical(vec_tor, 2)
+
+# num_ber is equal to "1.0" within machine precision
+num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
+all.equal(num_ber, 1.0)
+
+# info machine precision of computer R is running on
+# ?.Machine
+# machine precision
+.Machine$double.eps
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lookup and Matching Using \texttt{which()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{which()} returns the indices of the \texttt{TRUE} elements of a Boolean \texttt{vector} or \texttt{array},
+      \vskip1ex
+      If the argument is an \texttt{array} and \texttt{arr.ind=TRUE}, then \texttt{which()} returns a matrix with rows containing the indices of the \texttt{TRUE} elements,
+      \vskip1ex
+      The functions \texttt{which.max()} and \texttt{which.min()} return the index of the minimum or maximum of a \texttt{numeric} or \texttt{Boolean} vector,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+vec_tor <- sample(1:6, 21, replace=TRUE)
+mat_rix <- matrix(vec_tor, ncol=3)
+vec_tor
+which(vec_tor == 5)
+# equivalent but slower than above
+(1:length(vec_tor))[vec_tor == 5]
+which(vec_tor > 5)
+# find indices of TRUE elements of Boolean matrix
+which((mat_rix == 5)|(mat_rix == 6),
+      arr.ind=TRUE)
+# equivalent but slower than above
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
+         dim(mat_rix), dimnames(mat_rix))
+which.max(vec_tor)
+# equivalent but slower than above
+which(vec_tor == max(vec_tor))
+which.min(vec_tor)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lookup and Matching Using \texttt{match()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{match()} returns the index of the first element of its second argument, that matches its first argument,
+      \vskip1ex
+      The binary operator \texttt{\%in\%} returns a Boolean \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
+      \vskip1ex
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+      \vskip1ex
+      \texttt{\%in\%} never returns \texttt{NA}, so it's preferred in \texttt{if ()} statements,
+      \vskip1ex
+      \texttt{any()} returns \texttt{TRUE} if at least one element of a Boolean vector is \texttt{TRUE}, and \texttt{FALSE} otherwise,
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
+      \vskip1ex
+      \texttt{pmatch()} performs partial matching of strings,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<>>=
+match(5, vec_tor)
+# more general but slower than above
+which(vec_tor == 5)
+match(-5, vec_tor)
+5 %in% vec_tor
+# equivalent to above
+match(5, vec_tor, nomatch=0) > 0
+-5 %in% vec_tor
+c(5, -5) %in% vec_tor
+# equivalent to "5 %in% vec_tor"
+any(vec_tor == 5)
+# equivalent to "-5 %in% vec_tor"
+any(vec_tor == (-5))
+if (any(vec_tor < 0))
+  cat("vector contains negative values\n")
+# partial matching of strings
+pmatch("med", c("mean", "median", "mode"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Finding Closest Match Using \texttt{findInterval()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{match()} returns the index of the first element of its second argument, that \emph{exactly} matches its first argument,
+      \vskip1ex
+      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
+      \vskip1ex
+      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
+      \vskip1ex
+      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+             all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+             rightmost.closed=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Assignment Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard assignment operator in \texttt{R} is \texttt{"<-"},
+      \vskip1ex
+      Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in \texttt{R},
+      \vskip1ex
+      The \texttt{"<-"} operator may cause an error if \texttt{R} confuses it with the \texttt{"<"} logical operator,
+      \vskip1ex
+      But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),
+      \vskip1ex
+      The \texttt{"="} operator is used for named arguments in function calls,
+      \vskip1ex
+      When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,
+      \vskip1ex
+      {\color{red}{Rule of Thumb}}:\\
+      Use \texttt{"<-"} in \texttt{R} scripts and inside functions,\\
+      Use \texttt{"="} only in function calls,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+num_var1 <- 3  # "<-" and "=" are valid assignment operators
+num_var1
+num_var1 = 3
+num_var1
+2<-3  # "<" operator confused with "<-"
+2 < -3  # add space or brackets to avoid confusion
+# "=" assignment within argument list
+median(x=1:10)
+x  # x doesn't exist outside the function
+# "<-" assignment within argument list
+median(x <- 1:10)
+x  # x exists outside the function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{Atomic Data Objects}
@@ -929,7 +1397,7 @@ as.vector(as.factor(1:5))
     \column{0.5\textwidth}
       The function \texttt{table()} calculates the frequency distribution of categorical data,
       \vskip1ex
-      A contingency table is a matrix that contains the frequency distribution of variables (factors) contained in a set of data, 
+      A contingency table is a matrix that contains the frequency distribution of variables (factors) contained in a set of data,
       \vskip1ex
       The function \texttt{unique()} extracts unique elements of an object,
       \vskip1ex
@@ -943,7 +1411,7 @@ unique(fac_tor)  # get unique elements
 # get contingency (frequency) table
 table(fac_tor)
 # get contingency table using sapply
-sapply(levels(fac_tor), 
+sapply(levels(fac_tor),
        function(le_vel) {
          sum(fac_tor==le_vel)
        })  # end sapply
@@ -954,79 +1422,45 @@ sapply(levels(fac_tor),
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Visualizing Data}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Poisson Probability Distribution}
+\subsection{Classifying Continuous Numeric Data Into Categories}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Poisson} distribution gives the probability of the number of events observed in an interval of space or time,
+      Numeric data that represents a \emph{magnitude}, \emph{intensity}, or \emph{score} can be classified into categorical data, given a vector of \emph{breakpoints},
       \vskip1ex
-      The \emph{Poisson} probability function is given by:
-      \begin{displaymath}
-        P(n; \lambda) = \frac{{\lambda^n}{\cdot}{e^{-\lambda}}}{n!}
-      \end{displaymath}
-      The \emph{Poisson} random variable $n$ is the number of events observed in the interval, 
+      The \emph{breakpoints} create intervals that correspond to different \emph{categories},
       \vskip1ex
-      The parameter $\lambda$ is the average number of events that are observed in the interval, 
+      The \emph{categories} combine elements that have a similar numeric \emph{magnitude},
       \vskip1ex
-      An example of a \emph{Poisson} distribution is the number of mail items received each day, 
-      <<poiss_dist,eval=FALSE,echo=(-(1:2)),fig.show="hide">>=
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-poisson_events <- 0:11  # Poisson events
-poisson_freq <- dpois(poisson_events, lambda=4)
-names(poisson_freq) <- as.character(poisson_events)
-# Poisson function
-poisson_func <- function(x, lambda)
-                    {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
-      xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
-legend(x="topright", legend="Poisson density", title="",
-       inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
-      @
+      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
+      \vskip1ex
+      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
+      \vskip1ex
+      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+      \vskip1ex
+      If all the elements of \texttt{"vec"} are greater than the element of \texttt{"x"}, then \texttt{findInterval()} returns \texttt{zero},
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/poiss_dist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Bar Charts of Table Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{barplot()} plots a bar chart for a table of data, 
-      \vskip1ex
-      The function \texttt{rpois()} produces random numbers from the Poisson distribution,
-      \vskip1ex
-      The function \texttt{table()} calculates the frequency distribution of categorical data,
-      <<eval=TRUE,echo=TRUE>>=
-# generate Poisson variables
-pois_counts <- rpois(1000, lambda=4)
-head(pois_counts)
-# calculate contingency table
-pois_table <- table(pois_counts)
-pois_table
-      @
-    \column{0.5\textwidth}
-    \includegraphics[width=0.5\paperwidth,valign=t]{figure/bar_chart.png}
       \vspace{-1em}
-      <<eval=FALSE,echo=TRUE>>=
-# create barplot of table data
-barplot(pois_table, col="lightgrey", 
-        xlab="counts", ylab="number of observations", 
-        main="barplot of Poisson count data")
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+             all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+             rightmost.closed=TRUE)
       @
   \end{columns}
 \end{block}
@@ -1035,35 +1469,844 @@ barplot(pois_table, col="lightgrey",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Histograms of Frequency Data}
+\subsection{Classifying Numeric Data Into Categories Example}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly, 
+      Temperature can be categorized into "cold", "warm", "hot", etc.
       \vskip1ex
-      If the argument \texttt{freq} is \texttt{TRUE} then the frequencies (counts) are plotted, and if it's \texttt{FALSE} then the probability density is plotted (with total area equal to \texttt{one}), 
+      A named numeric vector of \emph{breakpoints} can be used to convert a temperature into one of the \emph{categories},
       \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density,
+      \emph{Breakpoints} correspond to \emph{categories} of the data,
       \vskip1ex
-      The function \texttt{lines()} draws a line through specified points,
-      <<poisbarplot,eval=FALSE,echo=TRUE,fig.show="hide">>=
-# create histogram of Poisson variables
-histo_gram <- hist(pois_counts, col="lightgrey", xlab="count", 
-     ylab="frequency", freq=FALSE, main="Poisson histogram")
-lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
-# Poisson probability distribution function
-poisson_func <- function(x, lambda)
-        {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, title="Poisson histogram",
-       c("histogram density", "probability"), cex=0.8, lwd=2, lty=c(1, 1),
-       col=c("blue", "red"))
+      The first \emph{breakpoint} should correspond to the lowest \emph{category}, and should have a value less than any of the data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# named numeric vector of breakpoints
+brea_ks <- c(freezing=0, very_cold=30,
+             cold=50, pleasant=60,
+             warm=80, hot=90)
+brea_ks
+tempe_ratures <- runif(10, min=10, max=100)
+feels_like <- names(
+  brea_ks[findInterval(x=tempe_ratures,
+                       vec=brea_ks)])
+names(tempe_ratures) <- feels_like
+tempe_ratures
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Converting Numeric Data Into Factors Using \texttt{cut()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{cut()} converts a numeric vector into a vector of factors, representing the intervals to which the numeric values belong,
+      \vskip1ex
+      \texttt{cut()} divides the range of values into intervals, based on a vector of breaks,
+      \vskip1ex
+      \texttt{cut()} then assigns factors to the numeric values, representing the intervals to which the numeric values belong,
+      \vskip1ex
+      The argument \texttt{"breaks"} is a numeric vector of break points that divide the range of values into intervals,
+      \vskip1ex
+      The argument \texttt{"labels"} is a vector of labels for the intervals,
+      \vskip1ex
+      The argument \texttt{"right"} is a Boolean indicating if the intervals should be closed on the right (and open on the left), or vice versa,
+      \vskip1ex
+      \texttt{cut()} can produce the same classification as \texttt{findInterval()}, but \texttt{findInterval()} is faster than \texttt{cut()}, because it's a compiled function,
+      \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+foo <- sample(0:6) + 0.1
+foo
+cut(x=foo, breaks=c(2, 4, 6, 8))
+rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+# cut() replicates findInterval()
+cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
+    right=FALSE)
+findInterval(x=1:8, vec=c(3, 5, 7))
+# findInterval() is a compiled function, so it's faster than cut()
+vec_tor <- rnorm(1000)
+summary(microbenchmark(
+  find_interval=
+    findInterval(x=vec_tor, vec=c(3, 5, 7)),
+  cuut=
+    cut(x=vec_tor, breaks=c(3, 5, 7)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{matrix()} creates a matrix from a vector, and the matrix dimensions,
+      \vskip1ex
+      By default \texttt{matrix()} creates matrices column-wise, unless the argument \texttt{byrow=TRUE} is used,
+      \vskip1ex
+      The elements of matrices can be subset (dereferenced) using the \texttt{"[]"} operator,
+      \vskip1ex
+      The functions \texttt{nrow()} and \texttt{ncol()} return the number of rows and columns of a matrix,
+      \vskip1ex
+      The functions \texttt{NROW()} and \texttt{NCOL()} also return the number of rows or columns of a matrix, but they can also be applied to vectors, and treat vectors as single column matrices,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
+mat_rix  # by default matrices are constructed column-wise
+# create a matrix row-wise
+matrix(5:10, nrow=2, byrow=TRUE)
+mat_rix[2, 3]  # extract third element from second row
+mat_rix[2, ]  # extract second row
+mat_rix[, 3]  # extract third column
+mat_rix[, c(1,3)]  # extract first and third column
+mat_rix[, -2]  # remove second column
+# subset whole matrix
+mat_rix[] <- 0
+# get the number of rows or columns
+nrow(vec_tor); ncol(vec_tor)
+NROW(vec_tor); NCOL(vec_tor)
+nrow(mat_rix); ncol(mat_rix)
+NROW(mat_rix); NCOL(mat_rix)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Attributes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Arrays are vectors with a dimension attribute,
+      \vskip1ex
+      Matrices are two-dimensional arrays,
+      \vskip1ex
+      The dimension attribute of a matrix is an integer vector of length 2 (nrow, ncol),
+      \vskip1ex
+      The \texttt{dimnames} attribute is a list, with vector elements containing row and column names,
+      \vskip1ex
+      A named matrix can be subset using row and column names,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+attributes(mat_rix)  # get matrix attributes
+dim(mat_rix)  # get dimension attribute
+class(mat_rix)  # get class attribute
+rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
+mat_rix
+mat_rix["row2", "col3"]  # third element from second row
+names(mat_rix)  # get the names attribute
+dimnames(mat_rix)  # get dimnames attribute
+attributes(mat_rix)  # get matrix attributes
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Subsetting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Matrices can be subset in a similar way as Vectors, either by indices (integers), by characters (names), or Boolean vectors,
+      \vskip1ex
+      Subsetting a matrix to a single row or column produces a vector, unless the parameter \texttt{"drop=FALSE"} is used,
+      \vskip1ex
+      Subsetting with the parameter \texttt{"drop=FALSE"} prevents the implicit coercion and preserves the matrix \emph{class},
+      \vskip1ex
+      This is an example of implicit coercion in \texttt{R}, which can cause difficult to trace bugs,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+mat_rix  # matrix with column names
+mat_rix[1, ]  # subset rows by index
+mat_rix[, "col1"]  # subset columns by name
+mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
+mat_rix[1, ]  # subsetting can produce a vector!
+class(mat_rix); class(mat_rix[1, ])
+is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
+mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
+class(mat_rix[1, , drop=FALSE])
+is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Recursive Data Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lists}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Lists are a type of vector that contain elements of different \emph{types},
+      \vskip1ex
+      Lists are recursive object types, meaning each list element can contain other vectors or lists,
+      \vskip1ex
+      The function \texttt{list()} creates a list from a list of vectors,
+      \vskip1ex
+      \texttt{list()} creates a named list from a list of symbol-value pairs,
+      \vskip1ex
+      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise,
+      \vskip1ex
+      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create a list with two elements
+list_var <- list(c('a', 'b'), 1:4)
+list_var
+c(typeof(list_var), mode(list_var), class(list_var))
+# lists are also vectors
+c(is.vector(list_var), is.list(list_var))
+length(list_var)
+# create named list
+list_var <- list(first=c('a', 'b'), second=1:4)
+list_var
+names(list_var)
+unlist(list_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Lists can be subset (indexed) using:
+      \begin{itemize}
+        \item the \texttt{"["} operator (returns sublist),
+        \item the \texttt{"[["} operator (returns an element),
+        \item the \texttt{"\$"} operator (for named lists only),
+      \end{itemize}
+      \vskip1ex
+      Partial name matching allows subsetting with partial name, as long as it can be resolved,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+list_var[2]  # extract second element as sublist
+list_var[[2]]  # extract second element
+list_var[[2]][3]  # extract third element of second element
+list_var[[c(2, 3)]]  # third element of second element
+list_var$second  # extract second element
+list_var$s  # extract second element - partial name matching
+list_var$second[3]  # third element of second element
+list_var <- list()  # empty list
+list_var$a <- 1
+list_var[2] <- 2
+list_var
+names(list_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{as.list()} coerces vectors and other objects into lists,
+      \vskip1ex
+      \texttt{as.list()} returns a list with the same elements as the vector,
+      \vskip1ex
+      \texttt{list()} called on a vector returns a single element equal to the vector,
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+as.list(c(1,2,3))
+list(c(1,2,3))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Data Frames}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types},
+      \vskip1ex
+      Data frames can be thought of as lists of vectors of the same length,
+      \vskip1ex
+      The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0)
+                    )  # end data.frame
+data_frame
+dim(data_frame)  # get dimension attribute
+colnames(data_frame)  # get the colnames attribute
+rownames(data_frame)  # get the rownames attribute
+class(data_frame)  # get object class
+typeof(data_frame)  # data frames are lists
+is.data.frame(data_frame)
+
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Subsetting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Data frames can be subset in a similar way to lists and matrices,
+      \vskip1ex
+      Depending on how a data frame is subset, the result can be either a data frame or a vector,
+      \vskip1ex
+      Extracting a single column from a data frame produces a vector,
+      \vskip1ex
+      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"},
+      \vskip1ex
+      Extracting a single row from a data frame produces a data frame,
+      \vskip1ex
+      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+data_frame[, 3]  # extract third column as vector
+data_frame[[3]]  # extract third column as vector
+data_frame[3]  # extract third column as data frame
+data_frame[, 3, drop=FALSE]  # extract third column as data frame
+data_frame[[3]][2]  # second element from third column
+data_frame$price[2]  # second element from 'price' column
+is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
+data_frame[2, ]  # extract second row
+data_frame[2, ][3]  # third element from second column
+data_frame[2, 3]  # third element from second column
+unlist(data_frame[2, ])  # coerce to vector
+is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()},
+      \vskip1ex
+      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results,
+      \vskip1ex
+      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+data_frame <- data.frame(  # create a data frame
+                      type=c('rose', 'daisy', 'tulip'),
+                      color=c('red', 'white', 'yellow'),
+                      price=c(1.5, 0.5, 1.0),
+                      row.names=c('flower1', 'flower2', 'flower3'),
+                      stringsAsFactors=FALSE
+                    )  # end data.frame
+data_frame
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
+# set option to not coerce character vectors to factors
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+default.stringsAsFactors()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Exploring \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{str()} displays the structure of an \texttt{R} object,
+      \vskip1ex
+      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(data_frame)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Sorting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data frames can be sorted on any column,
+      \vskip1ex
+      The function \texttt{sort()} returns a sorted vector,
+      \vskip1ex
+      The function \texttt{order()} returns the permutation index of the sorted vector,
+      \vskip1ex
+      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the ranks of the elements,
+      \vskip1ex
+      \texttt{order()} can take several vectors as input, to break any ties,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create data sample
+stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
+names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# sort the data
+sort(stu_dents)
+# calculate permution index for sorting the elements
+order(stu_dents)
+# sort the data
+stu_dents[order(stu_dents)]
+# calculate ranks of the elements
+order(order(stu_dents))
+names(stu_dents)[order(order(stu_dents))]
+# permute data_frame on price
+order(data_frame$price)
+# sort data_frame on price
+data_frame[order(data_frame$price), ]
+# sort data_frame on color
+data_frame[order(data_frame$color), ]
+order(c(2, 1:4))  # there's a tie
+order(c(2, 1:4), 1:5)  # there's a tie
+# read sort() Examples
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{as.matrix()} coerces vectors and data frames into matrices,
+      \vskip1ex
+      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character},
+      \vskip1ex
+      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+as.matrix(data_frame)
+vec_tor <- sample(9)
+matrix(vec_tor, ncol=3)
+as.matrix(vec_tor, ncol=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
+      \vskip1ex
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
+      \vskip1ex
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
+      \vskip1ex
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
+      \vskip1ex
+      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()},
+      \vskip1ex
+      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3))>>=
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
+rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
+library(microbenchmark)
+# call method instead of generic function
+as.data.frame.matrix(mat_rix)
+# a few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# function method is faster than generic function
+summary(microbenchmark(
+  as_data_frame_matrix=
+    as.data.frame.matrix(mat_rix),
+  as_data_frame=as.data.frame(mat_rix),
+  data_frame=data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices can be coerced into lists in at least two different ways,
+      \vskip1ex
+      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()},
+      \vskip1ex
+      Matrices can be directly coerced into a list using function \texttt{lapply()},
+      \vskip1ex
+      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function,
+    \column{0.5\textwidth}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+# lapply is faster than coercion function
+summary(microbenchmark(
+  as_list=
+    as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=
+    lapply(seq_along(mat_rix[1, ]),
+           function(in_dex) mat_rix[, in_dex]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{iris} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
+      \vskip1ex
+      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
+      \vskip1ex
+      The function \texttt{unique()} extracts unique elements of an object,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
+      \vskip1ex
+      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
+    \column{0.6\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{mtcars} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
+      \vskip1ex
+    \column{0.6\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{Cars93} Data Frame}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
+        <<Cars93_hist,fig.show='hide'>>=
+library(MASS)
+# ?Cars93  # get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # extract list of car types
+# sapply(Cars93, mean)  # calculate means of Cars93 columns
+# plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
       @
     \column{0.5\textwidth}
-    \includegraphics[width=0.5\paperwidth,valign=t]{figure/hist_poiss.png}
+      \includegraphics[width=0.5\paperwidth]{figure/Cars93_hist-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Data Management and Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bad Data}
+\begin{frame}[fragile,t]{Types of \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Possible sources of bad data are: imported data, class coercion, numeric overflow,
+      \vskip1ex
+      Types of bad data:
+      \begin{itemize}
+        \item \texttt{NA} (not available) is a logical constant indicating missing data,
+        \item \texttt{NaN} means Not a Number data,
+        \item \texttt{Inf} means numeric overflow - divide by zero,
+      \end{itemize}
+      \vskip1ex
+      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error},
+      \vskip1ex
+      \texttt{NA} or \texttt{NaN} values are not \emph{errors},
+      \vskip1ex
+      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values,
+      \vskip1ex
+      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
+NA*1:4  # create vector of Nas
+# create vector with some NA values
+da_ta <- c(1, 2, NA, 4, NA, 5)
+da_ta
+mean(da_ta)  # returns NA, when NAs are input
+mean(da_ta, na.rm=TRUE)  # remove NAs from input data
+da_ta[!is.na(da_ta)]  # delete the NA values
+sum(!is.na(da_ta))  # count non-NA values
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+rm(list=ls())
+# airquality data has some NAs
+head(airquality)
+dim(airquality)
+# number of NAs
+sum(!complete.cases(airquality))
+# display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Rows containing bad data may be either removed or replaced with an estimated value,
+      \vskip1ex
+      The function \texttt{na.locf()} from package \emph{zoo} replaces NAs with most recent non-NA prior to it,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+rm(list=ls())
+# remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+head(good_air)  # NAs removed
+library(zoo)  # load package zoo
+# replace NAs
+good_air <- zoo::na.locf(airquality)
+dim(good_air)
+head(good_air)  # NAs replaced
+# create vector containing NA values
+vec_tor <- sample(22)
+vec_tor[sample(NROW(vec_tor), 4)] <- NA
+# replace NA values with the most recent non-NA values
+zoo::na.locf(vec_tor)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{NULL} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{NULL} represents a null object, and is a legitimate value, not bad data,
+      \vskip1ex
+      \texttt{NULL} is often returned by functions whose value is undefined,
+      \vskip1ex
+      \texttt{NULL} can also be used to initialize vectors,
+      \vskip1ex
+      \texttt{NULL} is not the same as \texttt{NA} values or zero-length (empty) vectors,
+      \vskip1ex
+      The functions \texttt{numeric()} and \texttt{character()} return empty (zero-length) vectors of the specified \emph{type},
+      \vskip1ex
+      The function \texttt{is.null()} tests for \texttt{NULL} values,
+      \vskip1ex
+      Very often variables are initialized to \texttt{NULL} before the start of iteration,
+      \vskip1ex
+      A more efficient way to perform iteration is by pre-allocating the vector,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(length(NULL), length(NA))
+# check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
+# vectors can be initialized to NULL
+vec_tor <- NULL
+is.null(vec_tor)
+# grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# initialize empty vector
+vec_tor <- numeric()
+# grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# allocate vector
+vec_tor <- numeric(5)
+# assign to vector in a loop - good code
+for (in_dex in 1:5)
+  vec_tor[in_dex] <- runif(1)
+      @
   \end{columns}
 \end{block}
 

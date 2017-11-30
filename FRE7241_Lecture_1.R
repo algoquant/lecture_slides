@@ -335,6 +335,15 @@ cumsum(zoo_series)  # cumulative sum
 cummax(cumsum(zoo_series))
 cummin(cumsum(zoo_series))
 library(zoo)  # load package zoo
+zoo_series <- 
+  zoo(as.matrix(cumsum(rnorm(100)), nc=1), 
+order.by=seq(from=as.Date("2013-06-15"), 
+             by="day", length.out=100))
+colnames(zoo_series) <- "zoo_series"
+tail(zoo_series)
+dim(zoo_series)
+attributes(zoo_series)
+library(zoo)  # load package zoo
 coredata(zoo_series) <- (1:4)^2  # replace coredata
 zoo_series
 lag(zoo_series)  # one day lag
@@ -349,7 +358,7 @@ library(zoo)  # load package zoo
 in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
 # create vector of geometric Brownian motion
-zoo_data <- 
+zoo_data <-
   exp(cumsum(rnorm(length(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
@@ -408,10 +417,20 @@ zoo_series <- zoo(sample(4),
 # add NA
 zoo_series[3] <- NA
 zoo_series
-
-na.locf(zoo_series)  # replace NA's using locf
-
-na.omit(zoo_series)  # remove NA's using omit
+zoo::na.locf(zoo_series)  # replace NA's using locf
+zoo::na.omit(zoo_series)  # remove NA's using omit
+# create matrix containing NA values
+mat_rix <- sample(44)
+mat_rix[sample(NROW(mat_rix), 8)] <- NA
+mat_rix <- matrix(mat_rix, nc=2)
+# replace NA values with the most recent non-NA values
+zoo::na.locf(mat_rix)
+rutils::na_locf(mat_rix)
+# create xts series containing NA values
+x_ts <- xts::xts(mat_rix, order.by=seq.Date(from=Sys.Date(),
+  by=1, length.out=NROW(mat_rix)))
+# replace NA values with the most recent non-NA values
+rutils::na_locf(x_ts)
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # methods(as.zoo)  # many methods of coercing into zoo
@@ -489,7 +508,9 @@ first(x_ts)  # get first element
 last(x_ts)  # get last element
 class(x_ts)  # class 'xts'
 attributes(x_ts)
-load(file="C:/Develop/data/zoo_data.RData")
+# get the time zone of an xts object
+indexTZ(x_ts)
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
 st_ox <- as.xts(zoo_stx_adj)
@@ -517,7 +538,7 @@ plot(x_ts[, 1], main="EuStockMarkets using xts",
      col=col_ors[1], major.ticks="years",
      minor.ticks=FALSE)
 # plot remaining columns
-for(col_umn in 2:NCOL(x_ts))
+for (col_umn in 2:NCOL(x_ts))
   lines(x_ts[, col_umn], col=col_ors[col_umn])
 # plot using quantmod
 library(quantmod)
@@ -531,10 +552,10 @@ legend("topleft", legend=colnames(EuStockMarkets),
 library(rutils)
 library(ggplot2)
 # create ggplot object
-etf_gg <- qplot(x=index(env_etf$price_s[, 1]),
-          y=as.numeric(env_etf$price_s[, 1]),
+etf_gg <- qplot(x=index(rutils::env_etf$price_s[, 1]),
+          y=as.numeric(rutils::env_etf$price_s[, 1]),
           geom="line",
-          main=names(env_etf$price_s[, 1])) +
+          main=names(rutils::env_etf$price_s[, 1])) +
   xlab("") + ylab("") +
   theme(  # add legend and title
     legend.position=c(0.1, 0.5),
@@ -548,8 +569,8 @@ library(reshape2)
 library(ggplot2)
 # create data frame of time series
 data_frame <-
-  data.frame(dates=index(env_etf$price_s),
-    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+  data.frame(dates=index(rutils::env_etf$price_s),
+    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
 # reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -567,7 +588,7 @@ ggplot(data=data_frame,
 # load rutils which contains env_etf dataset
 suppressMessages(suppressWarnings(library(rutils)))
 suppressMessages(suppressWarnings(library(dygraphs)))
-x_ts <- env_etf$price_s[, c("VTI", "IEF")]
+x_ts <- rutils::env_etf$price_s[, c("VTI", "IEF")]
 # plot dygraph with date range selector
 dygraph(x_ts, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
@@ -577,19 +598,19 @@ suppressMessages(suppressWarnings(library(rutils)))
 suppressMessages(suppressWarnings(library(plotly)))
 # create data frame of time series
 data_frame <-
-  data.frame(dates=index(env_etf$price_s),
-    coredata(env_etf$price_s[, c("VTI", "IEF")]))
+  data.frame(dates=index(rutils::env_etf$price_s),
+    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
 # plotly syntax using pipes
 data_frame %>%
-  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI") %>%
-  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF") %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
 # or use standard plotly syntax
-p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", fill="tozeroy", name="VTI")
-p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", fill="tonexty", name="IEF")
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
 library(xts)  # load package xts
@@ -648,6 +669,12 @@ rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_stx_adj), 4)
 head(lag(st_ox), 4)
+# library(HighFreq)  # load package HighFreq
+# indices of last observations in each hour
+end_points <- endpoints(price_s, on="hours")
+head(end_points)
+# extract the last observations in each hour
+head(price_s[end_points, ])
 library(xts)  # load package xts
 # lower the periodicity to months
 xts_monthly <- to.period(x=st_ox,
@@ -668,7 +695,7 @@ colnames(xts_yearly) <- sapply(
   )  # end sapply
 head(xts_yearly)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
 st_ox <- as.xts(zoo_stx_adj)
@@ -678,7 +705,7 @@ stox_sub <- st_ox["2014-11", 1:4]
 # plot OHLC using plot.xts method
 plot(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])
@@ -686,3 +713,106 @@ library(xts)
 st_ox <- as.xts(zoo_stx)
 class(st_ox)
 tail(st_ox[, 1:4])
+rm(list=ls())
+# get base environment
+baseenv()
+# get global environment
+globalenv()
+# get current environment
+environment()
+# get environment class
+class(environment())
+# define variable in current environment
+glob_var <- 1
+# get objects in current environment
+ls(environment())
+# create new environment
+new_env <- new.env()
+# get calling environment of new environment
+parent.env(new_env)
+# assign Value to Name
+assign("new_var1", 3, envir=new_env)
+# create object in new environment
+new_env$new_var2 <- 11
+# get objects in new environment
+ls(new_env)
+# get objects in current environment
+ls(environment())
+# environments are subset like lists
+new_env$new_var1
+# environments are subset like lists
+new_env[["new_var1"]]
+search()  # get search path for R objects
+my_list <- 
+  list(flowers=c("rose", "daisy", "tulip"), 
+       trees=c("pine", "oak", "maple"))
+my_list$trees
+attach(my_list)
+trees
+search()  # get search path for R objects
+detach(my_list)
+head(trees)  # "trees" is in datasets base package
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- do.call(merge,
+  as.list(rutils::env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- do.call(merge,
+  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- do.call(merge,
+  eapply(rutils::env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <-
+  sapply(colnames(price_s),
+    function(col_name)
+strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s,
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+# "trees" is in datasets base package
+head(trees, 3)
+colnames(trees)
+mean(Girth)
+mean(trees$Girth)
+with(trees, 
+     c(mean(Girth), mean(Height), mean(Volume)))
+# R startup chunk
+# ```{r setup, include=FALSE}
+library(shiny)
+library(quantmod)
+inter_val <- 31
+cl_ose <- quantmod::Cl(rutils::env_etf$VTI)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+# ```
+#end R startup chunk
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+    min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
+renderPlot({
+  # calculate EWMA prices
+  lamb_da <- input$lamb_da
+  weight_s <- exp(-lamb_da*1:inter_val)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=rev(weight_s), sides=1)
+  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+   inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+   col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot

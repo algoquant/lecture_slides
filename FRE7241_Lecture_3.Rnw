@@ -5,7 +5,7 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
 options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -53,13 +53,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#3]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#3, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#3, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{February 7, 2017}
+\date{November 14, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -75,540 +75,740 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Regression Analysis}
+\section{Time Series Modeling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Formula Objects}
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_k = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \emph{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
+      \vspace{-1em}
+        <<echo=-(1:2),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# autocorrelation from "stats"
+acf(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      \vspace{-1em}
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      The function \texttt{coredata} extracts the core underlying data from a complex object,
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
+      The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
+      \vskip1ex
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=(-(1:1))>>=
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(re_turns), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      <<eval=FALSE>>=
+acf_plus <- function (ts_data, plot=TRUE,
+                      xlab="Lag", ylab="",
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+              max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Squared DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Squared DAX returns do have statistically significant autocorrelations,
+      \vskip1ex
+      But squared random returns are not autocorrelated,
+      <<dax_squared_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(re_turns)^2,
+         lag=10, main="")
+title(main="acf of squared DAX returns",
+      line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+         lag=10, main="")
+title(main="acf of squared random returns",
+      line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_squared_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{U.S. Macroeconomic Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data,
+      \vskip1ex
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter),
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+          Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_data-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Econometric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most econometric data displays a high degree of autocorrelation,
+      \vskip1ex
+      But time series of tradeable prices display very low autocorrelation,
+      <<macro_corr,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+         lag=10)
+title(main="quarterly unemployment rate",
+      line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+         lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_corr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test of Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where $n$ is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- merge(as.zoo(dax_ts),
+                  as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+                   start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Filtered Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering a time series creates autocorrelations,
+      <<dax_filter_acf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(re_turns[, 1]), lag=10,
+         xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+         xlab="")
+title(main="DAX filtered", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Partial Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3,...}, which may obscure higher order autocorrelations,
+      \vskip1ex
+      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
+      \vskip1ex
+      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation,
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1,..., k-1} have been removed,
+        <<eustx_pacf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} time series process \emph{AR(p)} of order \emph{p} is defined as:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      Where the $\varepsilon_i$ are independent random variables with zero mean and constant variance,
+      \vskip1ex
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process,
+      \vskip1ex
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes,
+      \vspace{-1em}
+    <<ar_process,echo=(-(1:3)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_process-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$,
+      \vskip1ex
+      Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
+      <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
+ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=729, model=list(ar=phi))
+  } )
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+# convert returns to prices
+zoo_arima <- cumsum(zoo_arima)
+colnames(zoo_arima) <-
+  paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices",
+         facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_param-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} process of order \emph{one} \emph{AR(1)} is defined by the formula: $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      \vskip1ex
+      An \emph{AR(1)} process can be simulated recursively as follows:\\
+      \hskip1em$r_1 = \varepsilon_1$\\
+      \hskip1em$r_2 = \varphi_1 r_1 + \varepsilon_2=\varepsilon_2 + \varphi_1 \varepsilon_1$\\
+      \hskip1em$r_3 = \varepsilon_3 + \varphi_1 \varepsilon_2 + \varphi_1^2 \varepsilon_1$\\
+      \hskip1em$r_4 = \varepsilon_4 + \varphi_1 \varepsilon_3 + \varphi_1^2 \varepsilon_2 + \varphi_1^3 \varepsilon_1$
+      \vskip1ex
+      If $\varphi_1 < 1.0$ then the influence of any single shock $\varepsilon_i$ decays exponentially,
+      \vskip1ex
+      If $\varphi_1 = 1.0$ then the influence of any single shock $\varepsilon_i$ persists forever, and the variance of $r_i$ increases linearly with time,
+      \vskip1ex
+      An \emph{AR(1)} process has an exponentially declining ACF and a non-zero PACF at lag one,
+      \vspace{-1em}
+      <<ar_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+         main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stationary Processes and Their Characteristic Equations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autoregressive process is \emph{stationary} if its probability distribution does not change with time,
+      \vskip1ex
+      \emph{Stationary} processes have a constant mean and variance,
+      \vskip1ex
+      The \emph{autoregressive} process \emph{AR(p)}:
+      $p_i = \varphi_1 p_{i-1} + \varphi_2 p_{i-2} + \ldots + \varphi_p p_{i-p} + \varepsilon_i$
+      \vskip1ex
+      Has the following characteristic equation:
+      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
+      \vskip1ex
+      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than $1$,
+      \vskip1ex
+      An \emph{AR(1)} process:
+      $p_i = \varphi_1 p_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi_1 z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi_1$,
+      \vskip1ex
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}:
+      $z = 1 / \varphi_1$, and therefore isn't stationary,
+      \vskip1ex
+      The process follows:
+      $p_i = p_{i-1} + \varepsilon_i$,
+      \vskip1ex
+      The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
+      \vskip1ex
+      The variance of a \emph{Wiener} process is proportional to time,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Integrated and Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset prices are the sum of simple asset returns, hence they follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        p_n = {\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        p_i = (1+\varphi_1) p_{i-1} - \varphi_1 p_{i-2} + \varepsilon_i
+      \end{displaymath}
+      If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
+      \vskip1ex
+      A \emph{Wiener} process is a special case of a \emph{unit-root} process,
+      \vskip1ex
+      \emph{Unit-root} processes are not stationary, since their \emph{variance} isn't constant,
+      \vskip1ex
+      If $\varphi_1=0$ (no autocorrelation of returns) then asset prices follow a \emph{Wiener} process (random walk),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<stat_unit_root,echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dickey-Fuller Test for Unit-roots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
+      \vskip1ex
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series exhibits mean reversion:
+      \begin{displaymath}
+        r_i = \gamma p_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      where $p_i = p_{i-1} - r_i$, 
+      \vskip1ex
+      If the price mean reversion parameter is negative: $\gamma < 0$, then the time series process has no \emph{unit root},
+      \vskip1ex
+      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the process is stationary ($\gamma < 0$, mean reversion),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # load tseries
+# simulate AR(1) process
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(729))
+tseries::adf.test(rand_walk)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(10000))
+tseries::adf.test(rand_walk)
+      @
+      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
+      \vskip1ex
+      The \emph{ADF} test is weak in the sense that it requires a lot of data to identify a \emph{unit root} process,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Identification of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR}(3) process of order \emph{three} is defined by the formula:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \varepsilon_i
+      \end{displaymath}
+      Autoregressive processes \emph{AR(p)} of order \emph{p} have an exponentially declining ACF and a non-zero PACF up to lag \emph{p},
+      <<ar_pacf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+          model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+       xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
+      The function \texttt{arima()} from the base package \emph{stats} fits a specified ARIMA model to a univariate time series,
       \vskip1ex
-      Formulas can be defined as separate objects, manipulated, and passed to functions,
-      \vskip1ex
-      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
-      \vskip1ex
-      The function \texttt{update()} modifies existing \texttt{formulas},
-      \vskip1ex
-      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
+      The function \texttt{auto.arima()} from the package \emph{forecast} automatically fits an ARIMA model to a univariate time series,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<>>=
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapsing a character vector into a text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# creating formula from text string
-lin_formula <- as.formula(  # coerce text strings to formula
-              paste("z ~ ",
-                paste(paste0("x", 1:5), collapse="+")
-                )  # end paste
-            )  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
+      <<echo=TRUE>>=
+ar3_zoo <- arima.sim(n=1000,
+            model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simple \protect\emph{Linear Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \beta x_i + \varepsilon_i
-      \end{displaymath}
-      The data consists of $n$ observations of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
-      \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients,
-      \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
-      \vskip1ex
-      In the Ordinary Least Squares method (OLS), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (RSS):
-      \begin{align*}
-        RSS = \sum_{i=1}^n {\varepsilon_i^2} = \sum_{i=1}^n {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbb{1} - \beta x)^T (z - \alpha \mathbb{1} - \beta x)
-      \end{align*}
-      $\mathbb{1}$ is the unit vector, and $\mathbb{1}^T x = x^T \mathbb{1} = \sum_{i=1}^n {x_i}$
-    \column{0.5\textwidth}
-      The regression coefficients can be found by equating the RSS derivatives to zero:
-      \begin{align*}
-        RSS_\alpha = -2 (z - \alpha \mathbb{1} - \beta x)^T \mathbb{1} = 0\\
-        RSS_\beta = -2 (z - \alpha \mathbb{1} - \beta x)^T x = 0
-      \end{align*}
-      The solution for $\alpha$ is:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      The solution for $\beta$ is:
-      \begin{flalign*}
-        & (z - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1} - \beta x)^T x = 0\\
-        & (z^T x - (z^T \mathbb{1} - \beta x^T \mathbb{1}) \mathbb{1}^T x - \beta x^T x) = 0\\
-        & (z^T x - (z^T \mathbb{1}) (x^T \mathbb{1}) + \beta (x^T \mathbb{1})^2 - \beta x^T x) = 0\\
-        & \beta = \frac {z^T x - (x^T \mathbb{1}) (z^T \mathbb{1}) } {x^T x - (\mathbb{1}^T x)^2}
-      \end{flalign*}
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
-      \vskip1ex
-      It's then easy to see that $\beta$ is proportional to the correlation coefficient between the response and explanatory variables,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} with Multiple Explanatory Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A Linear Regression model with $p$ explanatory variables $\{x_j\}$, is defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta x + \varepsilon
-      \end{displaymath}
-      The response variable $z$ and the $p$ explanatory variables $\{x_j\}$ each contain $n$ observations,
-      \vskip1ex
-      The response variable $z$ is a vector of length $n$, and the explanatory variable $x$ is a $(n,p)$-dimensional matrix,
-      \vskip1ex
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $p$,
-      \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $p$,
-    \column{0.5\textwidth}
-      The OLS estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = z^T \mathbb{1} - \beta x^T \mathbb{1}
-      \end{align*}
-      If the variables are de-meaned, then the OLS estimate for $\beta$ is given by equating the RSS derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = - 2 (z - \beta x)^T x = 0\\
-        & x^T z - \beta x^T x = 0\\
-        & \beta = (x^T x)^{-1} x^T z
-      \end{flalign*}
-      The matrix $x^T x$ is the covariance matrix of the matrix $x$,
-      \vskip1ex
-      The covariance matrix $x^T x$ is invertible if the columns of $x$ are linearly independent,
-      \vskip1ex
-      The matrix $(x^T x)^{-1} x^T$ is known as the \emph{Moore-Penrose pseudoinverse} of the matrix $x$,
-      \vskip1ex
-      In the special case when the inverse matrix $x^{-1}$ does exist, then the \emph{pseudoinverse} matrix simplifies to the inverse: $(x^T x)^{-1} x^T = x^{-1} (x^T)^{-1} x^T = x^{-1}$
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Using Function \texttt{lm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
-      \vskip1ex
-      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
-      \vskip1ex
-      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
-      \vskip1ex
-      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
-      \begin{itemize}
-        \item call - the model formula,
-        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
-        \item residuals - the model residuals (response minus fitted values),
-      \end{itemize}
-      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-# response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Scatterplot}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
-      \vskip1ex
-      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
-      \vskip1ex
-      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
-        <<reg_scatter_plot,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-x11(width=6, height=6)
-plot(reg_formula)  # plot scatterplot using formula
-title(main="Simple Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-# plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
-       pch=16, col="blue")
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_scatter_plot.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Summary}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{summary.lm()} produces a list of regression model summary and diagnostic statistics:
-      \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
-        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
-        \item adj.r.squared: r.squared adjusted for higher model complexity,
-        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
-      \end{itemize}
-      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
-      \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
-      \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or even more extreme values, under the \emph{null} hypothesis,
-      \vskip1ex
-      A small \emph{p}-value is often interpreted as meaning that the coefficients are very unlikely to be zero (given the data),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interpreting the Regression Statistics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The regression \texttt{summary} is a list, and its elements can be accessed individually,
-      \vskip1ex
-      The standard errors of the regression are the standard deviations of the coefficients, given the residuals as the source of error,
-      \vskip1ex
-      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
-      \vskip1ex
-      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
-      \vskip1ex
-      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
-      \vskip1ex
-      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Weak Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1))>>=
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + 2*explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
-  set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-  explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(30, sd=std_dev)
-# specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
-# perform regression and get summary
-  reg_model_sum <- summary(lm(reg_formula))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression Another Method}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      <<eval=FALSE,echo=TRUE>>=
-reg_stats <- function(da_ta) {  # get regression
-# perform regression and get summary
-  col_names <- colnames(da_ta)
-  reg_formula <-
-    paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula,
-                              data=da_ta))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function (std_dev) {
-    set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-    explana_tory <- seq(from=0.1, to=3.0, by=0.1)
-    res_ponse <- 3 + 0.2*explana_tory +
-      rnorm(30, sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
-    }))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_noise-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Diagnostic Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
-      \vskip1ex
-      {\scriptsize
-      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
-      \vskip1ex
-      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
-      \vskip1ex
-      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
-      \vskip1ex
-      The residuals should be randomly distributed around the horizontal line representing zero residual error,
-      \vskip1ex
-      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
-      \vskip1ex
-      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
-      \vskip1ex
-      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
-      \vskip1ex
-      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
-      \vskip1ex
-      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
-      \vskip1ex
-      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
-      }
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-# set plot paramaters - margins and font scale
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2, 2))  # plot 2x2 panels
-plot(reg_model)  # plot diagnostic scatterplots
-plot(reg_model, which=2)  # plot just Q-Q
-      @
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/plot_reg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        DW = \frac {\sum_{i=2}^n (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^n \varepsilon_i^2}
-      \end{displaymath}
-      Where $\varepsilon_i$ are the regression residuals,
-      \vskip1ex
-      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
-      \vskip1ex
-      The \emph{DW} is close to two for autocorrelations close to zero,
-      \vskip1ex
-      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Time Series Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Geometric Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under \emph{Geometric Brownian motion}, the percentage returns $\mathrm{d} \ln{S}$ follow \emph{Brownian motion}:
-      \begin{displaymath}
-        \mathrm{d} \ln{S} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \mathrm{d} W_t
-      \end{displaymath}
-      Where $\sigma$ is the volatility, and $\mathrm{d} W_t$ follows the standard normal distribution $N(0, \sqrt{\mathrm{d}t})$, 
-      \vskip1ex
-      The convexity correction $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma), 
-      <<echo=TRUE,eval=FALSE>>=
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# simulate geometric Brownian motion
-re_turns <- vol_at*rnorm(len_gth) + 
-  dri_ft - vol_at^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l", 
-     xlab="periods", ylab="prices", 
-     main="geometric Brownian motion")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/brownian.png}\\
-      \vspace{-1em}
-      Prices at any point in time follow the \emph{Log-normal} distribution, which is the exponential of the normal (\emph{Gaussian}) distribution, 
   \end{columns}
 \end{block}
 
@@ -622,42 +822,42 @@ plot(price_s, type="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \ln{S}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $S$:
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
       \begin{displaymath}
-        \mathrm{d} \ln{S} = \theta ( \mu - S ) \mathrm{d}t + \sigma \mathrm{d} W_t
+        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
       \end{displaymath}
-      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility, 
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
       \vskip1ex
       The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck parameters
-vol_at <- 0.01; eq_price <- 5.0; the_ta <- 0.005
-len_gth <- 1000
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
 # simulate Ornstein-Uhlenbeck process
 re_turns <- numeric(len_gth)
 price_s <- numeric(len_gth)
 price_s[1] <- 5.0
 set.seed(1121)  # reset random numbers
 for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
     vol_at*rnorm(1)
   price_s[i] <- price_s[i-1] * exp(re_turns[i])
 }  # end for
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_proc.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-plot(price_s, type="l", 
-     xlab="periods", ylab="prices", 
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
      main="Ornstein-Uhlenbeck process")
-legend("topright", 
-       title=paste(c(paste0("vol_at = ", vol_at), 
+legend("topright",
+       title=paste(c(paste0("vol_at = ", vol_at),
                      paste0("eq_price = ", eq_price),
                      paste0("the_ta = ", the_ta)),
                    collapse="\n"),
-       legend="", cex=0.8, 
+       legend="", cex=0.8,
        inset=0.1, bg="white", bty="n")
 @
   \end{columns}
@@ -684,7 +884,7 @@ price_s <- numeric(len_gth)
 price_s[1] <- 5.0
 set.seed(1121)  # reset random numbers
 for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + 
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
     vol_at*rnorm(1)
   price_s[i] <- price_s[i-1] * exp(re_turns[i])
 }  # end for
@@ -699,7 +899,7 @@ plot(for_mula, main="returns versus lagged prices")
 abline(l_m, lwd=2, col="red")
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ornstein_uhlenbeck_scatter.png}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_scatter.png}
   \end{columns}
 \end{block}
 
@@ -707,331 +907,102 @@ abline(l_m, lwd=2, col="red")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\section{Estimating and Modeling Volatility and Skew}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Random \emph{OHLC} prices are useful testing financial models,
-      <<echo=TRUE,eval=FALSE>>=
-# simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 10000
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")), 
-              length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)), 
-               order.by=in_dex)
-price_s <- merge(price_s, 
-                 volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# aggregate to daily OHLC data
-price_s <- to.daily(price_s)
-chart_Series(price_s, name="random prices")
-@
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_ohlc.png}\\
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data, 
+      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time,
       \vskip1ex
-      \emph{quantmod} uses time series objects of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
-      \begin{itemize}
-        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data, 
-        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns, 
-        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns, 
-        \item \texttt{chartSeries()} for candlestick plotting \emph{OHLC} data, 
-        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot, 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# load package quantmod
-library(quantmod)
-# get documentation for package quantmod
-# get short description
-packageDescription("quantmod")
-# load help page
-help(package="quantmod")
-# list all datasets in "quantmod"
-data(package="quantmod")
-# list all objects in "quantmod"
-ls("package:quantmod")
-# remove quantmod from search path
-detach("package:quantmod")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF Dataset}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(xtable)
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ", 
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF", 
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", 
-  "IVW", "IWB", "IWD", "IWF")
-# read etf database into data frame
-etf_list <- 
-  read.csv(file='C:/Develop/data/etf_list.csv', 
-                     stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# shorten names
-etf_names <- sapply(etf_list$Name, 
-                    function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <- 
-    name_split[c(-1, -length(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=FALSE,size="tiny">>=
-etf_list[c(1, 2)]
-      @
-      <<eval=TRUE,results='asis',echo=FALSE>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
-      \vspace{-1em}
-      ETFs with names \emph{X*} represent industry sector funds, 
+      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time,
       \vskip1ex
-      ETFs with names \emph{I*} represent style funds (value, growth), 
+      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
+      \end{align*}
+      Where $k$ is the \emph{look-back interval} for performing aggregations over the past, 
       \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund, 
-      \vskip1ex
-      \emph{VXX} is the VIX volatility fund, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
-      \vskip1ex
-      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
-      \vskip1ex
-      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
-      \vskip1ex
-      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
-      \vskip1ex
-      The method \texttt{getSymbols.yahoo} accepts arguments \texttt{"from"} and \texttt{"to"} which specify the date range for the data,
-      \vskip1ex
-      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
+      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf
-getSymbols(sym_bols, env=env_etf, adjust=TRUE,
-    from="2007-01-03")
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-ls(env_etf)  # list files in env_etf
-# get class of object in env_etf
-class(get(x=sym_bols[1], envir=env_etf))
-# another way
-class(env_etf$VTI)
-colnames(env_etf$VTI)
-head(env_etf$VTI, 3)
-# get class of all objects in env_etf
-eapply(env_etf, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adjusting Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
-      \vskip1ex
-      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices, 
-      \vskip1ex
-      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-      \vskip1ex
-      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
-      \vskip1ex
-      If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# check of object is an OHLC time series
-is.OHLC(env_etf$VTI)
-# adjust single OHLC object using its name
-env_etf$VTI <- adjustOHLC(env_etf$VTI, 
-                           use.Adjusted=TRUE)
-
-# adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=env_etf), 
-    use.Adjusted=TRUE), 
-  envir=env_etf)
-
-# adjust objects in environment using vector of strings
-for (sym_bol in sym_bols) {
-  assign(sym_bol, 
-         adjustOHLC(get(sym_bol, envir=env_etf), 
-                    use.Adjusted=TRUE), 
-         envir=env_etf)
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
-      \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# extract and merge all data, subset by symbols
-etf_series <- do.call(merge, 
-                  as.list(env_etf)[sym_bols])
-
-# extract and merge adjusted prices, subset by symbols
-price_s <- do.call(merge, 
-               lapply(as.list(env_etf)[sym_bols], Ad))
-
-# same, but works only for OHLC series
-price_s <- do.call(merge, eapply(env_etf, Ad)[sym_bols])
-
-# drop ".Adjusted" from colnames
-colnames(price_s) <- 
-  sapply(colnames(price_s), 
-    function(col_name) 
-      strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-
-# which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-
-# save xts to csv file
-write.zoo(etf_series, 
-     file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating Returns from Adjusted Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-library(quantmod)
-# remove rows with NA values
-# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
-# colnames(price_s)
-# calculate returns from adjusted prices
-re_turns <- lapply(env_etf$price_s, function(x_ts) {
-# dailyReturn returns single xts with bad colname
-  daily_return <- dailyReturn(x_ts)
-  colnames(daily_return) <- names(x_ts)
-  daily_return
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# define end points
+end_points <- seq_along(re_turns)
+len_gth <- NROW(end_points)
+look_back <- 31
+# start_points are multi-period lag of end_points
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
 })  # end lapply
-
-# "re_turns" is a list of xts
-class(re_turns)
-class(re_turns[[1]])
-
-# flatten list of xts into a single xts
-re_turns <- do.call(merge, re_turns)
+# calculate realized VTI variance in sapply() loop
+vari_ance <- sapply(look_backs, 
+  function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+}) / (look_back-1)  # end sapply
+tail(vari_ance)
+class(vari_ance)
+# coerce vari_ance into xts
+vari_ance <- xts(vari_ance, order.by=index(re_turns))
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using Package \protect\emph{roll}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
+      \begin{itemize}
+        \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
+        \item \texttt{roll\_scale()} for rolling scaling and centering of time series, 
+        \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
+      \end{itemize}
+      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
+      \vskip1ex
+      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using package \emph{Rcpp},
+      \vskip1ex
+      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}, 
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-class(re_turns)
-dim(re_turns)
-head(re_turns[, 1:3])
-# copy re_turns into env_etf and save to .RData file
-assign("re_turns", re_turns, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
+# benchmark calculation of rolling variance
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sapply=sapply(look_backs, function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+  }),
+  ro_ll=roll::roll_var(re_turns, width=look_back),
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -1040,119 +1011,44 @@ save(env_etf, file='etf_data.RData')
 
 
 %%%%%%%%%%%%%%%
-\subsection{Managing Data Inside Environments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.environment()} coerces objects (lists) into an environment, 
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-      \vskip1ex
-      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# subset all objects in environment and return as environment
-new_env <- as.environment(eapply(env_etf, "[", 
-                  paste(start_date, end_date, sep="/")))
-# subset only sym_bols in environment and return as environment
-new_env <- as.environment(
-  lapply(as.list(env_etf)[sym_bols], "[", 
-         paste(start_date, end_date, sep="/")))
-# extract and merge adjusted prices and return to environment
-assign("price_s", do.call(merge, 
-               lapply(ls(env_etf), function(sym_bol) {
-                 x_ts <- Ad(get(sym_bol, env_etf))
-                 colnames(x_ts) <- sym_bol
-                 x_ts
-               })), envir=new_env)
-# get sizes of OHLC xts series in env_etf
-sapply(mget(env_etf$sym_bols, envir=env_etf), 
-       object.size)
-# extract and merge adjusted prices and return to environment
-col_name <- function(x_ts) 
-  strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", do.call(merge, 
-               lapply(mget(env_etf$sym_bols, envir=env_etf), 
-                      function(x_ts) {
-                        x_ts <- Ad(x_ts)
-                        colnames(x_ts) <- col_name(x_ts)
-                        x_ts
-               })), envir=new_env)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Using \texttt{chartSeries()}}
+\subsection{Rolling \protect\emph{EWMA} Realized Variance Estimator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chartSeries()} from package \emph{quantmod} can produce a variety of plots for \emph{OHLC} time series, including candlestick plots, bar plots, and line plots, 
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator, 
       \vskip1ex
-      The argument \texttt{"type"} determines the type of plot (candlesticks, bars, or lines), 
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      \begin{displaymath}
+        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
+      \end{displaymath}
+      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
       \vskip1ex
-      Argument \texttt{"theme"} accepts a \texttt{"chart.theme"} object, containing parameters that determine the plot appearance (colors, size, fonts), 
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
       \vskip1ex
-      \texttt{chartSeries()} automatically plots the volume data in a separate panel, 
-      \vskip1ex
-      \emph{Candlestick} plots are designed to visualize \emph{OHLC} time series,
-      <<chartSeries_basic,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2014-11"], 
-            name="VTI", 
-            theme=chartTheme("white"))
-# plot OHLC bar chart with volume
-chartSeries(env_etf$VTI["2014-11"], 
-            type="bars",
-            name="VTI",
-            theme=chartTheme("white"))
-      @
+      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_basic-1}\\
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices, 
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Redrawing Plots Using \texttt{reChart()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{reChart()} redraws plots using the same data set, but using additional parameters that control the plot appearance, 
-      \vskip1ex
-      The argument \texttt{"subset"} allows subsetting the data to a smaller range of dates,
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2008-11/2009-04"], 
-            name="VTI")
-# redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02", 
-        theme=chartTheme("white"))
+      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate EWMA VTI variance using filter()
+look_back <- 31
+weight_s <- exp(0.1*1:look_back)
+weight_s <- weight_s/sum(weight_s)
+vari_ance <- stats::filter(re_turns^2, 
+    filter=rev(weight_s), sides=1)
+vari_ance[1:(look_back-1)] <- 
+  vari_ance[look_back]
+class(vari_ance)
+vari_ance <- as.numeric(vari_ance)
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+# plot EWMA standard deviation
+chart_Series(x_ts, 
+  name="EWMA standard deviation")
+dygraphs::dygraph(x_ts, main="EWMA standard deviation")
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/Rplot01.png}\\
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/Rplot02.png}
   \end{columns}
 \end{block}
 
@@ -1160,339 +1056,79 @@ reChart(subset="2009-02",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The argument \texttt{"TA"} allows adding technical indicators to the plot,
-      \vskip1ex
-      The technical indicators are functions provided by the package \emph{TTR},
-      \vskip1ex
-      The function \texttt{newTA()} allows defining new technical indicators,
-      <<chartSeries_TA,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# candlechart with Bollinger Bands
-chartSeries(env_etf$VTI["2014"],
-            TA="addBBands(): addBBands(draw='percent'): addVo()",
-            name="VTI with Bollinger Bands",
-            theme=chartTheme("white"))
-# candlechart with two Moving Averages
-chartSeries(env_etf$VTI["2014"],
-            TA="addVo(): addEMA(10): addEMA(30)",
-            name="VTI with Moving Averages",
-            theme=chartTheme("white"))
-# candlechart with Commodity Channel Index
-chartSeries(env_etf$VTI["2014"], 
-            TA="addVo(): addBBands(): addCCI()",
-            name="VTI with Technical Indicators",
-            theme=chartTheme("white"))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_TA-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding Indicators and Lines Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{addTA()} adds indicators and lines to plots, and allows plotting lines representing a single vector of data, 
-      \vskip1ex
-      The \texttt{addTA()} function argument \texttt{"on"} determines on which plot panel (subplot) the indicator is drawn, 
-      \vskip1ex
-      \texttt{"on=NA"} is the default, and draws in a new plot panel below the existing plot, 
-      \vskip1ex
-      \texttt{"on=1"} draws in the foreground of the main plot panel, and \texttt{"on=-1"} draws in the background, 
-      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
-VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
-# calculate volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=VTI_adj, 
-      volume=VTI_vol, n=10)
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP", 
-            theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_addTA-3}\\
-      The function \texttt{VWAP()} from package \emph{TTR} calculates the Volume Weighted Average Price as the average of past prices multiplied by their trading volumes, divided by the total volume, 
-      \vskip1ex
-      The argument \texttt{"n"} represents the number of look-back periods used for averaging, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Shading Plots Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{addTA()} accepts Boolean vectors for shading of plots, 
-      \vskip1ex
-      The function \texttt{addLines()} draws vertical or horizontal lines in plots, 
-      <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP shaded", 
-            theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-# add background shading of areas
-addTA((VTI_adj-VTI_vwap) > 0, on=-1, 
-      col="lightgreen", border="lightgreen")
-addTA((VTI_adj-VTI_vwap) < 0, on=-1, 
-      col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines at VTI_vwap minimum
-addLines(v=which.min(VTI_vwap), col='red')
-addLines(h=min(VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chartSeries_addTA_shade-7}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Using \texttt{chart\_Series()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics, 
-      \vskip1ex
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()}, 
-      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# OHLC candlechart VWAP in main plot, 
-chart_Series(x=oh_lc, # volume in extra panel
-             TA="add_Vo(); add_TA(VTI_vwap, on=1)", 
-             name="VTI plus VWAP shaded")
-# add price minus VWAP in extra panel
-add_TA(VTI_adj-VTI_vwap, col='red')
-# add background shading of areas
-add_TA((VTI_adj-VTI_vwap) > 0, on=-1, 
-      col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-VTI_vwap) < 0, on=-1, 
-      col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines
-abline(v=which.min(VTI_vwap), col='red')
-abline(h=min(VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chart_Series_shaded}\\
-      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
-      \vskip1ex
-      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly}, 
-      \vskip1ex
-      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot, 
-      \vskip1ex
-      A plot can be rendered by calling, plotting, or printing the \emph{plot object}, 
-      \vskip1ex
-      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts),
-      \vskip1ex
-      The function \texttt{chart\_theme()} returns the \emph{theme object}, 
-      \vskip1ex
-      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
-      \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions, 
+      If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
+      \end{align*}
+      Where $w_j$ is the vector of weights:
+      \begin{displaymath}
+        w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
+      \end{displaymath}
+      The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance,
     \column{0.5\textwidth}
       \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- roll::roll_var(re_turns, 
+  weights=weight_s, width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+class(vari_ance)
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Variance calculated over non-overlapping intervals has very statistically significant autocorrelations,
       <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
-oh_lc <- env_etf$VTI["2009-02/2009-03"]
-# extract plot object
-ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
-class(ch_ob)
-ls(ch_ob)
-class(ch_ob$get_ylim)
-class(ch_ob$set_ylim)
-# ls(ch_ob$Env)
-class(ch_ob$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# calculate VTI variance using package roll
+look_back <- 22
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+vari_ance[1:(look_back-1)] <- 0
+colnames(vari_ance) <- "VTI.variance"
+# number of look_backs that fit over re_turns
+n_row <- NROW(re_turns)
+num_agg <- n_row %/% look_back
+end_points <- # define end_points with beginning stub
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
+# subset vari_ance to end_points
+vari_ance <- vari_ance[end_points]
+# improved autocorrelation function
+acf_plus(coredata(vari_ance), lag=10, main="")
+title(main="acf of variance", line=-1)
+# partial autocorrelation
+pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
+title(main="pacf of variance", line=-1)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Customizing \texttt{chart\_Series()} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects,
-      \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions, 
-      \vskip1ex
-      A plot is rendered by calling, plotting, or printing the plot object, 
-      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
-library(quantmod)
-oh_lc <- env_etf$VTI["2010-04/2010-05"]
-# extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
-# create plot object
-ch_ob <- chart_Series(x=oh_lc, 
-                      theme=plot_theme, plot=FALSE)
-# extract ylim using accessor function
-y_lim <- ch_ob$get_ylim()
-y_lim[[2]] <- structure(
-  range(Ad(oh_lc)) + c(-1, 1), 
-  fixed=TRUE)
-# modify plot object to reduce y-axis range
-ch_ob$set_ylim(y_lim)  # use setter function
-# render the plot
-plot(ch_ob)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chart_Series_custom_axis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels, 
-      \vskip1ex
-      Wrapping plot commands in \texttt{invisible()} suspends plotting and allows adding extra plot elements,
-      <<chart_Series_panels,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(quantmod)
-# calculate VTI volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=Ad(env_etf$VTI), 
-          volume=Vo(env_etf$VTI), n=10)
-# calculate XLF volume-weighted average price
-XLF_vwap <- TTR::VWAP(price=Ad(env_etf$XLF), 
-          volume=Vo(env_etf$XLF), n=10)
-# open plot graphics device
-x11()
-# define plot area with two horizontal panels
-par(mfrow=c(2, 1))
-# plot in top panel
-invisible(chart_Series(
-  x=env_etf$VTI["2009-02/2009-04"], name="VTI"))
-add_TA(VTI_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
-# plot in bottom panel
-invisible(chart_Series(
-  x=env_etf$XLF["2009-02/2009-04"], name="XLF"))
-add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chart_Series_panels.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Downloading Time Series Data}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization,
-      \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}), 
-      \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names, 
-      \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}GSPC} for the \emph{S\&P500} stock market index isn't a valid name in \texttt{R}, 
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names, 
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download S&P500 prices into env_etf
-getSymbols("SP500", env=env_etf, 
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$SP500["2016/"], 
-             TA="add_Vo()",
-             name="S&P500 index")
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/acf_var.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pacf_var.png}
   \end{columns}
 \end{block}
 
@@ -1500,181 +1136,45 @@ chart_Series(x=env_etf$SP500["2016/"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{DJIA} Index Time Series From \protect\emph{Yahoo}}
+\subsection{\protect\emph{GARCH} Volatility Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Dow Jones Industrial Average (\emph{DJIA}) stock market index is a price-weighted average of the 30 largest U.S. companies (same number of shares per company), 
+      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
+      \begin{align*}
+        r_i = \sigma_{i-1} \varepsilon_i \\
+        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
+      \end{align*}
+      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$, 
       \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{DJIA} index (symbol \emph{\textasciicircum{}DJI}), and for the \emph{DJITR} total return index (symbol \emph{DJITR}), 
+      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$,
       \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names, 
+      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance, 
       \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}DJI} for the \emph{DJIA} stock market index isn't a valid name in \texttt{R}, 
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names, 
+      The parameter $\omega$ determines the long-term average level of variance, which is given by:
+      \begin{displaymath}
+        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
+      \end{displaymath}
+      The sum of $\alpha$ plus $\beta$ should be less than \texttt{1}, otherwise the volatility is explosive,
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download DJIA prices into env_etf
-getSymbols("DJIA", env=env_etf, 
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$DJIA["2016/"], 
-             TA="add_Vo()",
-             name="DJIA index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{(draft) Stock Index Weighting Methods}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Stock market indices can be capitalization-weighted (\emph{S\&P500}), price-weighted (\emph{DJIA}), or equal-weighted, 
-      \vskip1ex
-      The capitalization-weighted and price-weighted indices have a fixed number of shares (excluding stock splits), while equal-weighted indices must be rebalanced as market prices change, 
-      \vskip1ex
-      Cap-weighted indices are over-weight large-cap stocks, while equal-weighted indices are over-weight small-cap stocks, 
-      \vskip1ex
-      Capitalization-weighted index:\\
-      Index level = Sum \{ (Price of stock * Number of freely traded shares) / Index Divisor \}
-      \vskip1ex
-      Price-weighted index:\\
-      Index level = Sum \{ Price of stock / Index Divisor \}
-      \vskip1ex
-      Equal-weighted index:\\
-      Index level = Sum \{ (Price of stock * factor) / Index Divisor \}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# create name corresponding to "^GSPC" symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download S&P500 prices into env_etf
-getSymbols("SP500", env=env_etf, 
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$SP500["2016/"], 
-             TA="add_Vo()",
-             name="S&P500 index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Scraping \protect\emph{S\&P500} Stock Index Constituents From Websites}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} index constituents change over time, and \emph{Standard \& Poor's} replaces companies that have decreased in capitalization with ones that have increased, 
-      \vskip1ex
-      The \emph{S\&P500} index may contain more than 500 stocks because some companies have several share classes of stock, 
-      \vskip1ex
-      The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages, 
-      \vskip1ex
-      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{HTML} text data from a \texttt{URL}, 
-      \vskip1ex
-      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices, 
-      \vskip1ex
-      \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-library(RCurl)  # load package RCurl
-library(XML)  # load package XML
-# download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500, 
-                    stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
-write.csv(sp_500, 
-  file="C:/Develop/data/sp500_Yahoo.csv", 
-  row.names=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{S\&P500} Time Series Data From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Before time series data for S\&P500 constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"}, 
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R}, 
-      \vskip1ex
-      For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()}, 
-    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])), 
-    names=sp_500$names[in_dex]))
+# define GARCH parameters
+om_ega <- 0.01 ; al_pha <- 0.2
+be_ta <- 0.2 ; len_gth <- 1000
+re_turns <- numeric(len_gth)
+vari_ance <- numeric(len_gth)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+# simulate GARCH model
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
+    be_ta*vari_ance[i-1]
 }  # end for
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# download data and copy it into environment
-rutils::get_symbols(sp_500$names, 
-   env_out=env_sp500, start_date="1990-01-01")
-# or download in loop
-for (na_me in sp_500$names) {
-  cat("processing: ", na_me, "\n")
-  rutils::get_symbols(na_me, 
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()", 
-             name="BRK-B stock")
       @
   \end{columns}
 \end{block}
@@ -1683,180 +1183,35 @@ chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Quandl} Database}
+\subsection{Properties of the \protect\emph{GARCH} Volatility Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets, 
+      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility,
       \vskip1ex
-      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license, 
-      \vskip1ex
-      \emph{Quandl} offers online help and a guide to its datasets:\\
-      \hskip1em\url{https://www.quandl.com/help/r}\\
-      \hskip1em\url{https://www.quandl.com/browse}\\
-      \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
-      \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
-      \vskip1ex
-      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
-      \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
+      But the decay of volatility is faster than observed in practice,
+      <<echo=TRUE,eval=FALSE>>=
+# plot GARCH cumulative returns
+plot(cumsum(re_turns/100), t="l", 
+  lwd=2, col="blue", xlab="", ylab="",
+  main="GARCH cumulative returns")
+date_s <- seq.Date(from=Sys.Date()-len_gth+1, 
+  to=Sys.Date(), length.out=len_gth)
+x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
+# plot GARCH standard deviation
+plot(sqrt(vari_ance), t="l", 
+  lwd=2, col="blue", xlab="", ylab="",
+  main="GARCH standard deviation")
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH standard deviation")
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-install.packages("devtools")
-library(devtools)
-# install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # load package Quandl
-# register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("Quandl")
-# load help page
-help(package="Quandl")
-# remove Quandl from search path
-detach("package:Quandl")
-      @
-      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R}, 
-      \vskip1ex
-      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()}, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}, 
-      \vskip1ex
-      The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
-      \vskip1ex
-      \emph{Quandl} datasets have a unique \emph{Quandl Code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
-      \vskip1ex
-      \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI}
-      \vskip1ex
-      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized),\\
-      \hskip1em\url{https://www.quandl.com/data/SEC}
-      \vskip1ex
-      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database, 
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond}
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond?keyword=aapl}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL", type="xts")
-chart_Series(price_s["2016", 1:4], name="AAPL OHLC prices")
-# add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# download euro currency rates
-price_s <- 
-  Quandl(code="BNP/USDEUR", start_date="2013-01-01", 
-         end_date="2013-12-01", type="xts")
-# download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"), 
-         start_date="2013-01-01", type="xts")
-# download AAPL gross profits
-prof_it <- 
-  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST", 
-             start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1], 
-             name="AAPL Hurst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Stock Index and Instrument Metadata on \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc. 
-      \vskip1ex
-      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
-      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
-      \vskip1ex
-      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# replace "-" with "_" in symbols
-sp_500$free_code <- 
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
-# or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"), 
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
-# or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Multiple Time Series from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl}, 
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er), 
-                  start_date="1990-01-01", 
-                  type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er, 
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()", 
-             name="XOM stock")
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/garch_returns.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/garch_stdev.png}
   \end{columns}
 \end{block}
 

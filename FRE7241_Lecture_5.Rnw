@@ -21,7 +21,12 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{mathtools}
+% bbm package for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -52,13 +57,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#5]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#5, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#5, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{February 21, 2017}
+\date{November 21, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,94 +77,390 @@ knit_theme$set(thm)
 \maketitle
 
 
+%%%%%%%%%%%%%%%
+\section{Active Investment Strategies}
+
 
 %%%%%%%%%%%%%%%
-\section{Asset Pricing Models}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Linear Regression of Returns}
+\subsection{\protect\emph{EWMA} Price Technical Indicator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns, 
-      \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
-      \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or more extreme values,
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(HighFreq)
-# specify formula and perform regression
-reg_formula <- XLP ~ VTI
-reg_model <- lm(reg_formula, 
-                data=rutils::env_etf$re_turns)
-# get regression coefficients
-coef(summary(reg_model))
-# Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(reg_model)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/reg_rets.png}\\
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot scatterplot of returns
-plot(reg_formula, data=rutils::env_etf$re_turns,
-     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
-     asp=1, main="Regression XLP ~ VTI")
-# add regression line and perpendicular line
-abline(reg_model, lwd=2, col="red")
-abline(a=0, b=-1/coef(summary(reg_model))[2, 1], 
-       lwd=2, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Linear Regression Summary Statistics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.55\textwidth}
+      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
+      \begin{displaymath}
+        P_i^{EWMA} = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) P_{i-j}
+      \end{displaymath}
+      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa, 
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-re_turns <- na.omit(rutils::env_etf$re_turns)
-# perform regressions and collect statistics
-etf_reg_stats <- sapply(colnames(re_turns)[-1], 
-                        function(etf_name) {
-# specify regression formula
-  reg_formula <- as.formula(
-    paste(etf_name, "~ VTI"))
-# perform regression
-  reg_model <- lm(reg_formula, data=re_turns)
-# get regression summary
-  reg_model_sum <- summary(reg_model)
-# collect regression statistics
-  etf_reg_stats <- with(reg_model_sum, 
-    c(alpha=coefficients[1, 1], 
-      p_alpha=coefficients[1, 4], 
-      beta=coefficients[2, 1], 
-      p_beta=coefficients[2, 4]))
-  etf_reg_stats <- c(etf_reg_stats, 
-               p_dw=lmtest::dwtest(reg_model)$p.value)
-  etf_reg_stats
+library(HighFreq)  # load package HighFreq
+# select OHLC data
+oh_lc <- rutils::env_etf$VTI["/2011"]
+# calculate close prices
+cl_ose <- Cl(oh_lc)
+# define length for weights and decay parameter
+wid_th <- 51
+lamb_da <- 0.05
+# calculate EWMA prices
+weight_s <- exp(-lamb_da*1:wid_th)
+weight_s <- weight_s/sum(weight_s)
+ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1)
+ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
+ew_ma <- xts(cbind(cl_ose, ew_ma), 
+             order.by=index(oh_lc))
+colnames(ew_ma) <- c("VTI", "VTI EWMA")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot EWMA prices with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+chart_Series(ew_ma, theme=plot_theme, 
+             name="EWMA prices")
+legend("top", legend=colnames(ew_ma), 
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating The \protect\emph{EWMA} Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In a trend-following \emph{EWMA Crossover} strategy, the risk position switches depending if the current price is above or below the \emph{EWMA},
+      \vskip1ex
+      If the current price crosses above the \emph{EWMA}, then the strategy switches its risk position to a fixed unit of long risk, and if it crosses below, to a fixed unit of short risk, 
+      \vskip1ex
+      The strategy holds the same position until the \emph{EWMA} crosses over the current price (either from above or below), and then it switches its position,
+      \vskip1ex
+      The strategy is therefore always either in a long risk, or in a short risk position,
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# determine dates right after EWMA has crossed prices
+in_dic <- sign(cl_ose - ew_ma[, 2])
+trade_dates <- (rutils::diff_xts(in_dic) != 0)
+trade_dates <- which(trade_dates) + 1
+# calculate positions, either: -1, 0, or 1
+position_s <- rep(NA_integer_, NROW(cl_ose))
+position_s[1] <- 0
+position_s[trade_dates] <- 
+  rutils::lag_xts(in_dic)[trade_dates]
+position_s <- na.locf(position_s)
+position_s <- xts(position_s, order.by=index(oh_lc))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot EWMA prices with position shading
+chart_Series(ew_ma, theme=plot_theme, 
+             name="EWMA prices")
+add_TA(position_s > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(position_s < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(ew_ma), 
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of \protect\emph{EWMA} Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The strategy trades at the \emph{Open} price on the next day after prices cross the \emph{EWMA}, since in practice it may not be possible to trade immediately, 
+      \vskip1ex
+      The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position, 
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# calculate open and lagged prices
+op_en <- Op(oh_lc)
+prices_lag <- rutils::lag_xts(cl_ose)
+position_lagged <- rutils::lag_xts(position_s)
+# calculate daily profits and losses
+re_turns <- position_lagged*(cl_ose - prices_lag)
+re_turns[trade_dates] <- 
+  position_lagged[trade_dates] * 
+  (op_en[trade_dates] - prices_lag[trade_dates]) +
+  position_s[trade_dates] * 
+  (cl_ose[trade_dates] - op_en[trade_dates])
+# calculate annualized Sharpe ratio of strategy returns
+sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+pnl_s <- cumsum(re_turns)
+pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), pnl_s)
+colnames(pnl_s) <- c("VTI", "EWMA PnL")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_pnl.png}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# plot EWMA PnL with position shading
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Performance of EWMA Strategy")
+add_TA(position_s > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(position_s < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(pnl_s), 
+       inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for \protect\emph{EWMA} Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{EWMA} strategy can be performed by a single function, which allows the analysis of its performance depending on its parameters,
+      \vskip1ex
+      The function \texttt{simu\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$, 
+      \vskip1ex
+      The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series, 
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+simu_ewma <- function(oh_lc, lamb_da=0.05, wid_th=51) {
+  # calculate EWMA prices
+  weight_s <- exp(-lamb_da*1:wid_th)
+  weight_s <- weight_s/sum(weight_s)
+  cl_ose <- Cl(oh_lc)
+  ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
+  ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
+  # determine dates right after EWMA has crossed prices
+  in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
+  trade_dates <- (rutils::diff_xts(in_dic) != 0)
+  trade_dates <- which(trade_dates) + 1
+  trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
+  # calculate positions, either: -1, 0, or 1
+  position_s <- rep(NA_integer_, NROW(cl_ose))
+  position_s[1] <- 0
+  position_s[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
+  position_s <- xts(na.locf(position_s), order.by=index(oh_lc))
+  op_en <- Op(oh_lc)
+  prices_lag <- rutils::lag_xts(cl_ose)
+  position_lagged <- rutils::lag_xts(position_s)
+  # calculate daily profits and losses
+  re_turns <- position_lagged*(cl_ose - prices_lag)
+  re_turns[trade_dates] <- 
+    position_lagged[trade_dates] * 
+    (op_en[trade_dates] - prices_lag[trade_dates]) +
+    position_s[trade_dates] * 
+    (cl_ose[trade_dates] - op_en[trade_dates])
+  out_put <- cbind(position_s, re_turns)
+  colnames(out_put) <- c("position_s", "re_turns")
+  out_put
+}  # end simu_ewma
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Multiple \protect\emph{EWMA} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the trend-following \emph{EWMA} strategy depends on the decay parameter $\lambda$, 
+      \vskip1ex
+      The best performing strategy can be found by performing an \texttt{sapply()} loop over a vector of $\lambda$ parameters,
+      <<echo=TRUE,eval=FALSE>>=
+lamb_das <- seq(0.001, 0.03, 0.001)
+sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
+  re_turns <- simu_ewma(oh_lc=oh_lc, 
+              lamb_da=lamb_da)[, 2]
+  # calculate annualized Sharpe ratio of strategy returns
+  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 })  # end sapply
-etf_reg_stats <- t(etf_reg_stats)
-# sort by p_alpha
-etf_reg_stats <- etf_reg_stats[
-  order(etf_reg_stats[, "p_alpha"]), ]
+plot(x=lamb_das, y=sharpe_ratios, t="l", 
+     main="Performance of EWMA trend-following strategies 
+     as function of the decay parameter lambda")
       @
-    \column{0.45\textwidth}
-      \vspace{-1em}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_trending.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Trend-following \protect\emph{EWMA} Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The best performing trend-following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading, 
       <<echo=TRUE,eval=FALSE>>=
-etf_reg_stats[, 1:3]
+# simulate best performing strategy
+ewma_trend <- simu_ewma(oh_lc=oh_lc, 
+        lamb_da=lamb_das[which.max(sharpe_ratios)])
+position_s <- ewma_trend[, 1]
+pnl_s <- cumsum(ewma_trend[, 2])
+pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
+              pnl_s)
+colnames(pnl_s) <- c("VTI", "EWMA PnL")
+# plot EWMA PnL with position shading
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Performance of EWMA Strategy")
+add_TA(position_s > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(position_s < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(pnl_s), 
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_best_trend.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Mean-reverting \protect\emph{EWMA} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trend-following \emph{EWMA} strategy experiences losses for large values of the decay parameter $\lambda$ (for our data sample - for different data this may not be true), 
+      \vskip1ex
+      Reverting the rules of the trend-following \emph{EWMA} strategy creates a mean-reverting strategy,
+      <<echo=TRUE,eval=FALSE>>=
+lamb_das <- seq(0.05, 0.12, 0.01)
+sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
+  re_turns <- -simu_ewma(oh_lc=oh_lc, 
+              lamb_da=lamb_da)[, 2]
+  # calculate annualized Sharpe ratio of strategy returns
+  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+})  # end sapply
+plot(x=lamb_das, y=sharpe_ratios, t="l", 
+     main="Performance of EWMA mean-reverting strategies 
+     as function of the decay parameter lambda")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_reverting.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Mean-reverting \protect\emph{EWMA} Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The best performing mean-reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading, 
+      <<echo=TRUE,eval=FALSE>>=
+# simulate best performing strategy
+ewma_revert <- -simu_ewma(oh_lc=oh_lc, 
+        lamb_da=lamb_das[which.max(sharpe_ratios)])
+position_s <- ewma_revert[, 1]
+pnl_s <- cumsum(ewma_revert[, 2])
+pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
+              pnl_s)
+colnames(pnl_s) <- c("VTI", "EWMA PnL")
+# plot EWMA PnL with position shading
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Performance of EWMA Strategy")
+add_TA(position_s > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(position_s < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=colnames(pnl_s), 
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_best_revert.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining Trend-following and Mean-reverting Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The returns of trend-following and mean-reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate correlation between trend-following and mean-reverting strategies
+trend_ing <- ewma_trend[, 2]
+colnames(trend_ing) <- "trend"
+revert_ing <- ewma_revert[, 2]
+colnames(revert_ing) <- "revert"
+corr_matrix <- cor(cbind(trend_ing, revert_ing))
+corr_matrix
+# calculate combined strategy
+re_turns <- trend_ing + revert_ing
+# calculate annualized Sharpe ratio of strategy returns
+sapply(cbind(rutils::diff_xts(cl_ose), 
+    trend_ing, revert_ing, re_turns), 
+      function(re_turns) {
+        sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+      })  # end sapply
+pnl_s <- cumsum(re_turns)
+pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
+              pnl_s)
+colnames(pnl_s) <- c("VTI", "EWMA combined PnL")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_combined.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Performance of EWMA Strategies")
+add_TA(cumsum(trend_ing), on=1, lwd=2, col="green")
+add_TA(cumsum(revert_ing), on=1, lwd=2, col="magenta2")
+legend("topleft", legend=c(colnames(pnl_s), "trending", "reverting"), 
+       inset=0.05, bg="white", lty=rep(1, 4), lwd=rep(4, 4), 
+       col=c(plot_theme$col$line.col, "green", "magenta2"), bty="n")
       @
   \end{columns}
 \end{block}
@@ -168,51 +469,202 @@ etf_reg_stats[, 1:3]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Beta Regressions Over Time}
+\subsection{Ensemble of \protect\emph{EWMA} Strategies}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{rollapply()} allows performing regressions over a rolling window, 
+      Instead of selecting the best performing \emph{EWMA} strategy, one can choose a weighted average of strategies (ensemble), which corresponds to allocating positions according to the weights, 
       \vskip1ex
-      The function \texttt{roll\_lm()} from package \emph{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}, 
+      The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies, 
       <<echo=TRUE,eval=FALSE>>=
+lamb_das <- seq(0.001, 0.03, 0.001)
+sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
+  re_turns <- simu_ewma(oh_lc=oh_lc, 
+              lamb_da=lamb_da)[, 2]
+  # calculate annualized Sharpe ratio of strategy returns
+  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+})  # end sapply
+weight_s <- sharpe_ratios/sum(sharpe_ratios)
+re_turns <- lapply(lamb_das, function(lamb_da) {
+  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da)[, 2]
+})  # end sapply
+re_turns <- rutils::do_call(cbind, re_turns)
+re_turns <- re_turns %*% weight_s
+re_turns <- xts(re_turns, order.by=index(oh_lc))
+pnl_s <- cumsum(re_turns)
+pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
+              pnl_s)
+colnames(pnl_s) <- c("VTI", "EWMA PnL")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_ensemble.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot EWMA PnL without position shading
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Performance of EWMA Strategy")
+legend("top", legend=colnames(pnl_s), 
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moving Average Technical Indicators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes, 
+      \vskip1ex
+      Moving averages (such as \emph{VWAP}) are often used to define technical indicators (trading signals), 
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# calculate open, close, and lagged prices
+op_en <- Op(rutils::env_etf$VTI)
+cl_ose <- Cl(rutils::env_etf$VTI)
+prices_lag <- rutils::lag_xts(cl_ose)
+# define aggregation interval and calculate VWAP
+look_back <- 150
+VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI, 
+              look_back=look_back)
+# calculate VWAP indicator
+in_dic <- sign(cl_ose - VTI_vwap)
+# determine dates right after VWAP has crossed prices
+trade_dates <- (rutils::diff_xts(in_dic) != 0)
+trade_dates <- which(trade_dates) + 1
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vwap_indic.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot prices and VWAP
+chart_Series(x=cl_ose, 
+  name="VTI prices", col="orange")
+add_TA(VTI_vwap, on=1, lwd=2, col="blue")
+legend("top", legend=c("VTI", "VWAP"), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=c("orange", "blue"), bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moving Average Crossover Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In a trend-following \emph{Moving Average Crossover} strategy, when the current price crosses above the \emph{VWAP}, then the strategy switches its position to long risk, and vice versa, 
+      \vskip1ex
+      The strategy trades at the \emph{Open} price in the next period after prices cross the \emph{VWAP}, to reflect that in practice it's impossible to trade immediately, 
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# calculate positions, either: -1, 0, or 1
+position_s <- NA*numeric(NROW(rutils::env_etf$VTI))
+position_s[1] <- 0
+position_s[trade_dates] <- in_dic[trade_dates]
+position_s <- na.locf(position_s)
+position_s <- xts(position_s, order.by=index((rutils::env_etf$VTI)))
+position_lagged <- rutils::lag_xts(position_s)
+# calculate daily profits and losses
+pnl_s <- position_lagged*(cl_ose - prices_lag)
+pnl_s[trade_dates] <- position_lagged[trade_dates] * 
+  (op_en[trade_dates] - prices_lag[trade_dates]) +
+  position_s[trade_dates] * 
+  (cl_ose[trade_dates] - op_en[trade_dates])
+# calculate annualized Sharpe ratio of strategy returns
+sqrt(260)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot prices and VWAP
+pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::env_etf$VTI)))
+chart_Series(x=(cl_ose-as.numeric(cl_ose[1, ])), name="VTI prices", col="orange")
+add_TA(pnl_s, on=1, lwd=2, col="blue")
+add_TA(position_s > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(position_s < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=c("VTI", "VWAP strategy"), 
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=c("orange", "blue"), bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Backtesting Active Investment Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Look-back Intervals for Overlapping Aggregations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Overlapping aggregations can be specified by a vector of \emph{look-back} intervals attached at \emph{end points}, 
+      \vskip1ex
+      For example, we may specify aggregations at monthly \emph{end points}, over overlapping 12-month \emph{look-back} intervals, 
+      \vskip1ex
+      The \emph{look-back} intervals are spanned by the vectors of \emph{start points} and \emph{end points}, 
+      \vskip1ex
+      The \emph{start points} are the \emph{end points} lagged by the length of the \emph{look-back} interval, 
+      \vskip1ex
+      The variable \texttt{look\_back} is equal to the number of \emph{end points} in the \emph{look-back} interval, 
+      \vskip1ex
+      The variable \texttt{look\_backs} is a list of \emph{look-back} intervals, 
+      \vskip1ex
+      A \emph{warmup} period is needed at the beginning, to provide enough rows of data to the model function,
+      \vskip1ex
+      In the \emph{warmup} period the length of the \emph{look-back} intervals expands up to the variable \texttt{look\_back}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)
-# specify regression formula
-reg_formula <- XLP ~ VTI
-# perform rolling beta regressions every month
-beta_s <- rollapply(rutils::env_etf$re_turns, width=252, 
-  FUN=function(de_sign) 
-  coef(lm(reg_formula, data=de_sign))[2],
-  by=22, by.column=FALSE, align="right")
-beta_s <- na.omit(beta_s)
-# plot beta_s in x11() window
-x11(width=(wid_th <- 6), height=(hei_ght <- 4))
-chart_Series(x=beta_s, 
-  name=paste("rolling betas", format(reg_formula)))
-# perform daily rolling beta regressions in parallel
-library(roll)
-beta_s <- roll_lm(x=rutils::env_etf$re_turns[, "VTI"], 
-                  y=rutils::env_etf$re_turns[, "XLP"],
-                  width=252)$coefficients
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rolling_betas.png}\\
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# compare speed of rollapply() versus roll_lm()
-library(microbenchmark)
-da_ta <- rutils::env_etf$re_turns["2012", c("VTI", "XLP")]
-summary(microbenchmark(
-  rollapply=rollapply(da_ta, width=22, 
-      FUN=function(de_sign) 
-      coef(lm(reg_formula, data=de_sign))[2],
-        by.column=FALSE, align="right"), 
-  roll_lm=roll_lm(x=da_ta[, "VTI"], 
-                  y=da_ta[, "XLP"],
-                  width=22)$coefficients, 
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# define oh_lc series
+oh_lc <- rutils::env_etf$VTI["/2011"]
+# end of month end_points
+end_points <- rutils::calc_endpoints(oh_lc, 
+                inter_val="months")
+# define EWMA width parameter
+wid_th <- 51
+# add warmup to end_points so they are greater than EWMA wid_th
+end_points[end_points <= wid_th] <- wid_th + 1
+# define 12-month look-back interval
+look_back <- 12
+# start_points are end_points lagged by look-back interval
+len_gth <- NROW(end_points)
+start_points <- c(rep_len(1, look_back-1), 
+  end_points[1:(len_gth-look_back+1)])
+# create list of look-back intervals
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+names(look_backs) <- index(oh_lc)[end_points]
       @
   \end{columns}
 \end{block}
@@ -221,41 +673,37 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
+\subsection{Aggregation Function for \protect\emph{EWMA} Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
-      \end{displaymath}
-      The \emph{systematic} risk and returns are proportional to $\beta$, 
+      The function \texttt{calc\_sharpe()} calculates the \emph{Sharpe} ratios of \emph{EWMA} strategies, for a given vector of lambda decay parameters,
       \vskip1ex
-      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and the market:
-      \begin{displaymath}
-        \beta = \frac{\sum_{i=1}^k (R_i-\bar{R}) (R_{i,m}-\bar{R_m})} {\sum_{i=1}^k (R_{i,m}-\bar{R_m})^2}
-      \end{displaymath}
-      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns,
+      The function \texttt{calc\_sharpe()} performs an \texttt{sapply()} loop over a vector of lambdas, calls the function \texttt{simu\_ewma()}, and then calculates the \emph{Sharpe} ratios,
+      \vskip1ex
+      The function \texttt{calc\_sharpe()} accepts three arguments: a time series, a vector of lambda parameters, and the dots \texttt{"..."}  argument to be passed to \texttt{simu\_ewma()},
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(PerformanceAnalytics)
-CAPM.beta(Ra=re_turns[, "XLP"], 
-          Rb=re_turns[, "VTI"])
-CAPM.beta.bull(Ra=re_turns[, "XLP"], 
-  Rb=re_turns[, "VTI"])
-CAPM.beta.bear(Ra=re_turns[, "XLP"], 
-  Rb=re_turns[, "VTI"])
-CAPM.alpha(Ra=re_turns[, "XLP"], 
-           Rb=re_turns[, "VTI"])
+# source EWMA model simu_ewma() from file
+source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
+# define aggregation function
+calc_sharpe <- function(oh_lc, lamb_das, ...) {
+  sapply(lamb_das, function(lamb_da) {
+    # simulate EWMA strategy and calculate Sharpe ratio
+    re_turns <- simu_ewma(oh_lc=oh_lc, 
+      lamb_da=lamb_da, ...)[, "re_turns"]
+    sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  })  # end sapply
+}  # end calc_sharpe
+# define EWMA parameters
+wid_th <- 51
+lamb_das <- seq(0.01, 1.0, 0.1)
+# perform aggregation
+calc_sharpe(oh_lc, lamb_das, wid_th)
       @
-      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$,
-      \vskip1ex
-      \emph{Alpha} ($\alpha$) are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active manager performance,
-      \vskip1ex
-      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification,
   \end{columns}
 \end{block}
 
@@ -263,46 +711,29 @@ CAPM.alpha(Ra=re_turns[, "XLP"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Security Market Line}
+\subsection{Performing Overlapping Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk ($\beta$),
+      Overlapping aggregations can be calculated by performing an \texttt{lapply()} loop over the list of \emph{look-back} intervals (\texttt{look\_backs}),
       \vskip1ex
-      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk ($\beta$) and return, for different stocks, 
-      <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-library(PerformanceAnalytics)
-etf_betas <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"], 
-  CAPM.beta, Rb=re_turns[, "VTI"])
-etf_annrets <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"], 
-  Return.annualized)
-# plot scatterplot
-plot(etf_annrets ~ etf_betas, xlab="betas", 
-            ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=etf_annrets["VTI"], col="red", 
-       lwd=3, pch=21)
-abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_reg_stats)[1:13]
-# add labels
-text(x=1, y=etf_annrets["VTI"], labels="VTI", 
-     pos=2)
-text(x=etf_betas[label_names], 
-     y=etf_annrets[label_names], 
-     labels=label_names, pos=2, cex=0.8)
-      @
+      The resulting list of aggregations can then be collapsed into an \emph{xts} series using the function \texttt{rutils::do\_call()}, 
     \column{0.5\textwidth}
-    \vspace{-3em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/capm_scatter-1}\\
-    \vspace{-2em}
-      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't,
-      \vskip1ex
-      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero,
-      \vskip1ex
-      Assets above the \emph{SML} have a positive $\alpha$), and those below have a negative $\alpha$),
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# perform lapply() loop over look_backs
+sharpe_ratios <- lapply(look_backs, 
+  function(look_back, ...) {
+    calc_sharpe(oh_lc[look_back], ...)
+    }, lamb_das=lamb_das, wid_th=wid_th)  # end lapply
+# rbind list into single xts or matrix
+sharpe_ratios <- rutils::do_call(rbind, sharpe_ratios)
+if (!is.xts(sharpe_ratios))
+  sharpe_ratios <- xts(sharpe_ratios, order.by=index(oh_lc[end_points]))
+colnames(sharpe_ratios) <- paste0("lambda=", lamb_das)
+      @
   \end{columns}
 \end{block}
 
@@ -310,33 +741,40 @@ text(x=etf_betas[label_names],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk-adjusted Performance Measurement}
+\subsection{Functional for Performing Overlapping Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Treynor} ratio measures the excess returns per unit of \emph{systematic} risk ($\beta$), and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
-      \begin{displaymath}
-        T_r=\frac{E[R-R_f]}{\beta}
-      \end{displaymath}
-      The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk,
+      The functional \texttt{roll\_agg()} performs an \texttt{lapply()} loop over a list of \emph{look-back} intervals, each time subsetting the input \emph{xts} series, and passing it into an aggregation function \texttt{FUN()},
       \vskip1ex
-      The \emph{Information} ratio is equal to the excess returns (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
-      \begin{displaymath}
-        I_r = \frac{E[R-R_b]} {\sqrt{\sum_{i=1}^k (R_i-R_{i,b})^2}}
-      \end{displaymath}
-      The \emph{Information} ratio measures the amount of outperformance versus the benchmark, and the consistency of outperformance,
+      The functional \texttt{roll\_agg()} also accepts the dots \texttt{"..."} argument, and passes it into \texttt{FUN()},
+      \vskip1ex
+      The functional \texttt{roll\_agg()} returns an \emph{xts} series of the aggregations produced by \texttt{FUN()}, of length equal to the input list \texttt{look\_backs}, 
       \vskip1ex
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(PerformanceAnalytics)
-TreynorRatio(Ra=re_turns[, "XLP"], 
-           Rb=re_turns[, "VTI"])
-
-InformationRatio(Ra=re_turns[, "XLP"], 
-           Rb=re_turns[, "VTI"])
+roll_agg <- function(x_ts, look_backs, FUN, ...) {
+  # perform lapply() loop over look_backs
+  agg_s <- lapply(look_backs, 
+                  function(look_back) {
+                    FUN(x_ts[look_back], ...)
+                  })  # end lapply
+  # rbind list into single xts or matrix
+  agg_s <- rutils::do_call_rbind(agg_s)
+  if (!is.xts(agg_s))
+    agg_s <- xts(agg_s, 
+      order.by=index(x_ts[unlist(lapply(look_backs, last))]))
+  agg_s
+}  # end roll_agg
+sharpe_ratios <- roll_agg(x_ts=oh_lc, 
+                          look_backs=look_backs, 
+                          FUN=calc_sharpe, 
+                          lamb_das=lamb_das,
+                          wid_th=wid_th)
+colnames(sharpe_ratios) <- paste0("lambda=", lamb_das)
       @
   \end{columns}
 \end{block}
@@ -345,39 +783,41 @@ InformationRatio(Ra=re_turns[, "XLP"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{CAPM} Summary Statistics}
+\subsection{Performance of \protect\emph{EWMA} Strategies}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.55\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(PerformanceAnalytics)
-table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
-           Rb=re_turns[, "VTI"], scale=252)
+    \column{0.5\textwidth}
+      The performance of \emph{EWMA} strategies depends on the $\lambda$ parameter, 
+      \vskip1ex
+      The performance of different \emph{EWMA} strategies can be aggregated over \emph{look-back} intervals, 
+      <<echo=TRUE,eval=FALSE>>=
+source("C:/Develop/R/scripts/ewma_model.R")
+lamb_das <- seq(0.01, 1.0, 0.1)
+# perform lapply() loop over lamb_das
+re_turns <- lapply(lamb_das, function(lamb_da) {
+  # simulate EWMA strategy and calculate re_turns
+  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
+})  # end lapply
+re_turns <- rutils::do_call(cbind, re_turns)
+colnames(re_turns) <- paste0("lambda=", lamb_das)
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_returns.png}
       \vspace{-2em}
-      <<eval=FALSE,echo=(-1)>>=
-library(PerformanceAnalytics)
-capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"], 
-              Rb=re_turns[, "VTI"], scale=252)
-colnames(capm_stats) <- 
-  sapply(colnames(capm_stats), 
-  function (str) {strsplit(str, split=" ")[[1]][1]})
-capm_stats <- as.matrix(capm_stats)
-capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[
-  order(capm_stats[, "Annualized Alpha"], 
-        decreasing=TRUE), ]
-# copy capm_stats into env_etf and save to .RData file
-assign("capm_stats", capm_stats, envir=env_etf)
-save(env_etf, file='etf_data.RData')
-      @
-    \column{0.45\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE,echo=TRUE>>=
-capm_stats[, c("Information Ratio", "Annualized Alpha")]
+      <<echo=TRUE,eval=FALSE>>=
+# plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- 
+  colorRampPalette(c("blue", "red"))(NCOL(re_turns))
+chart_Series(cumsum(re_turns), 
+  theme=plot_theme, 
+  name="Cumulative Returns of EWMA Strategies")
+legend("bottomleft", legend=colnames(re_turns), 
+  inset=0.02, bg="white", cex=0.8, lwd=rep(6, NCOL(re_turns)), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -385,135 +825,333 @@ capm_stats[, c("Information Ratio", "Annualized Alpha")]
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Optimization}
-
-
-%%%%%%%%%%%%%%%
-\subsection{One-dimensional Optimization}
+\subsection{Simulating \protect\emph{EWMA} Strategies Using Parallel Computing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
+      Simulating \emph{EWMA} strategies naturally lends itself to parallel computing, since the simulations are independent from each other, 
       \vskip1ex
-      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores, 
       \vskip1ex
+      The resulting list of time series can then be collapsed into a single \emph{xts} series using the functions \texttt{rutils::do\_call()} and \texttt{cbind()}, 
+    \column{0.5\textwidth}
       \vspace{-1em}
-        <<eval=FALSE,echo=(-(1:1))>>=
-options(width=50, dev='pdf')
-str(optimize)
-# objective function with multiple minima
-object_ive <- function(in_put, param1=0.01) {
-  sin(0.25*pi*in_put) + param1*(in_put-1)^2
-}  # end object_ive
-unlist(optimize(f=object_ive, interval=c(-4, 2)))
-unlist(optimize(f=object_ive, interval=c(0, 8)))
-options(width=60, dev='pdf')
+      <<echo=TRUE,eval=FALSE>>=
+# initialize compute cluster under Windows
+library(parallel)
+clus_ter <- makeCluster(detectCores()-1)
+clusterExport(clus_ter, 
+  varlist=c("oh_lc", "wid_th", "simu_ewma"))
+# perform parallel loop over lamb_das under Windows
+re_turns <- parLapply(clus_ter, lamb_das, 
+              function(lamb_da) {
+  library(quantmod)
+  # simulate EWMA strategy and calculate re_turns
+  simu_ewma(oh_lc=oh_lc, 
+    lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
+})  # end parLapply
+# perform parallel loop over lamb_das under Mac-OSX or Linux
+re_turns <- mclapply(lamb_das, 
+              function(lamb_da) {
+  library(quantmod)
+  # simulate EWMA strategy and calculate re_turns
+  simu_ewma(oh_lc=oh_lc, 
+    lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
+})  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+re_turns <- rutils::do_call(cbind, re_turns)
+colnames(re_turns) <- paste0("lambda=", lamb_das)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \protect\emph{EWMA} Strategies Over Forward Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Overlapping aggregations can be calculated by performing an \texttt{lapply()} loop over a list of \emph{look-back} intervals (\texttt{look\_backs}),
+      \vskip1ex
+      Non-overlapping aggregations can also be calculated over a list of \emph{look-forward} intervals (\texttt{look\_fwds}),
+      \vskip1ex
+      The \emph{look-back} intervals should not overlap with the \emph{look-forward} intervals, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate cumulative forward returns
+back_rets <- sapply(look_backs, function(look_back) {
+  sapply(re_turns[look_back], sum)  # end sapply
+})  # end sapply
+back_rets <- t(back_rets)
+back_rets <- xts::xts(back_rets, 
+  order.by=index(re_turns)[end_points])
+# define forward (future) endpoints
+len_gth <- NROW(end_points)
+fwd_points <- end_points[c(2:len_gth, len_gth)]
+# create named list of look-forward intervals
+look_fwds <- lapply(1:len_gth, function(in_dex) 
+  (end_points[in_dex]+1):fwd_points[in_dex])
+look_fwds[[len_gth]] <- end_points[len_gth]
+names(look_fwds) <- index(re_turns)[end_points]
+look_backs[2]
+look_fwds[2]
+# calculate cumulative forward returns
+fwd_rets <- sapply(look_fwds, function(look_fwd) {
+  sapply(re_turns[look_fwd], sum)  # end sapply
+})  # end sapply
+fwd_rets <- t(fwd_rets)
+fwd_rets <- xts::xts(fwd_rets, 
+  order.by=index(re_turns)[end_points])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Backtesting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Backtesting} is the testing of a forecasting model using historical data, 
+      \vskip1ex
+      \emph{Backtesting} is a type of \emph{cross-validation} applied to time series data,
+      \vskip1ex
+      \emph{Backtesting} is performed by \emph{training} the model on past data defined by the \emph{look-back} intervals, and then \emph{testing} the model on future data defined by the \emph{look-forward} intervals, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate weight_s proportional to past_aggs
+weight_s <- coredata(back_rets)
+weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+# select best and worst models in each period
+bes_t <- apply(weight_s, 1, which.max)
+wors_t <- apply(weight_s, 1, which.min)
+pnl_s <- rowSums(weight_s * coredata(fwd_rets))
+pnl_s <- xts(pnl_s, order.by=index(fwd_rets))
+# plot the backtest
+chart_Series(x=cumsum(pnl_s), 
+  name="Back-test of EWMA strategies")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_ewma.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functional for Aggregating Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The aggregations over \emph{look-back} and \emph{look-forward} intervals can be combined into a single \texttt{sapply()} loop,
+      \vskip1ex
+      The functional \texttt{roll\_agg()} performs an \texttt{sapply()} loop over the \emph{end\_points} and the columns of the input \texttt{re\_turns} \emph{xts} time series,
+      \vskip1ex
+      The functional \texttt{roll\_agg()} applies the aggregation function \texttt{agg\_fun()} to \emph{look-back} intervals, and \texttt{sum()} to \emph{look-forward} intervals,
+      \vskip1ex
+      The functional \texttt{roll\_agg()} also accepts the dots \texttt{"..."} argument, and passes it into \texttt{roll\_agg()},
+      \vskip1ex
+      The functional \texttt{roll\_agg()} returns an \emph{xts} series of the aggregations produced by \texttt{roll\_agg()} and \texttt{sum()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define aggregation functional
+roll_agg <- function(re_turns, agg_fun=sum, 
+    look_back=12, re_balance="months", 
+    end_points=rutils::calc_endpoints(re_turns, inter_val=re_balance), ...) {
+# define start_points and forward (future) endpoints
+  len_gth <- NROW(end_points)
+  start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
+  fwd_points <- end_points[c(2:len_gth, len_gth)]
+# Perform loop over end_points and calculate aggregations
+  agg_s <- sapply(2:(len_gth-1), function(in_dex) {
+    c(sapply(re_turns[start_points[in_dex]:end_points[in_dex]], agg_fun, ...),  # end sapply
+    sapply(re_turns[(end_points[in_dex]+1):fwd_points[in_dex]], sum))  # end sapply
+  })  # end sapply
+  agg_s <- t(agg_s)
+  colnames(agg_s) <- c(paste0("past_", colnames(re_turns)), paste0("fwd_", colnames(re_turns)))
+  xts::xts(agg_s, 
+    order.by=index(re_turns[end_points[2:(len_gth-1)]]))
+}  # end roll_agg
+agg_fun <- function(re_turns) sum(re_turns)/sd(re_turns)
+agg_s <- roll_agg(re_turns, agg_fun=agg_fun, 
+  look_back=12, end_points=end_points)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \protect\emph{ETF} Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Overlapping aggregations can be calculated by performing an \texttt{lapply()} loop over a list of \emph{look-back} intervals (\texttt{look\_backs}),
+      \vskip1ex
+      Non-overlapping aggregations can also be calculated over a list of \emph{look-forward} intervals (\texttt{look\_fwds}),
+      \vskip1ex
+      The \emph{look-back} intervals should not overlap with the \emph{look-forward} intervals, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define agg_fun() equal to the Sharpe ratio 
+agg_fun <- function(re_turns) 
+  sum(re_turns)/sd(re_turns)
+# Define vector of symbols for the model:
+sym_bols <- c("VTI", "IEF", "DBC")
+# apply roll_agg() to ETF returns
+agg_s <- roll_agg(rutils::env_etf$re_turns[, sym_bols], 
+                  agg_fun=agg_fun, 
+                  look_back=52, 
+                  re_balance="weeks")
+# select aggregations over look-back intervals
+past_aggs <- agg_s[, seq_along(sym_bols)]
+# select aggregations over look-forward intervals
+fwd_rets <- agg_s[, NROW(sym_bols) + seq_along(sym_bols)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Momentum} Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{momentum} strategy consists of investing in a portfolio of assets according to their relative past performance,
+      \vskip1ex
+      In a \emph{momentum} strategy portfolio weights are proportional to the past performance of the assets,
+      \vskip1ex
+      For example, the \emph{ETF} portfolio weights can be calculated, as proportional to the \texttt{past\_aggs}, 
+      \vskip1ex
+      Constraints can also be applied to the portfolio weights, 
+      \vskip1ex
+      For example, the portfolio weights can be scaled (so that their sum of squares is equal to \texttt{1}), to maintain constant portfolio leverage, 
+      \vskip1ex
+      The portfolio weights can also be de-meaned (so that their sum is equal to zero), to create a long-short portfolio with a small beta, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate the portfolio weights proportional to past_aggs
+weight_s <- past_aggs
+# scale weight_s so that their sum of squares is equal to 1
+weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+# plot the weights in multiple verticle panels
+zoo::plot.zoo(weight_s, xlab=NULL, main="Momentum Portfolio Weights")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_weights.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting the \protect\emph{Momentum} Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The hypothetical out-of-sample \emph{momentum} strategy returns can be calculated by multiplying the \texttt{fwd\_rets} by the forecast \emph{ETF} portfolio weights, 
+      \vskip1ex
+      The \emph{training} data is specified by the \emph{look-back} intervals (\texttt{past\_aggs}), and the forecasts are applied to the future data defined by the \emph{look-forward} intervals (\texttt{fwd\_rets}), 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate portfolio profits and losses
+pnl_s <- rowSums(weight_s * fwd_rets)
+pnl_s <- xts(pnl_s, order.by=index(fwd_rets))
+# calculate vector of transaction costs
+# bid_offer is equal to 10 bps for liquid ETFs
+bid_offer <- 0.001
+cost_s <- bid_offer*abs(rutils::diff_xts(weight_s))
+cost_s <- rowSums(cost_s)
+# subtract cost_s from pnl_s and calculate cumulative strategy pnl_s
+pnl_s <- pnl_s - cost_s
+pnl_s <- exp(cumsum(pnl_s))
+# bind model returns with VTI
+pnl_s <- cbind(rutils::env_etf$VTI[index(pnl_s), 4],
+               pnl_s)
+pnl_s[, 1] <- pnl_s[, 1] / as.numeric(pnl_s[1, 1])
+colnames(pnl_s) <- c("VTI", "momentum")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_backtest.png}
       \vspace{-2em}
-        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot the objective function
-curve(expr=object_ive, type="l", xlim=c(-8, 9),
-xlab="", ylab="", lwd=2)
-# add title
-title(main="Objective Function", line=-1)
+      <<echo=TRUE,eval=FALSE>>=
+# plot momentum strategy with VTI
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+chart_Series(pnl_s, theme=plot_theme, lwd=c(2, 2), 
+             name="Momentum PnL")
+legend("topleft", legend=colnames(pnl_s), 
+  inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining the \protect\emph{Momentum} and Static Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{momentum} strategy has attractive returns compared to a static buy-and-hold strategy,
+      \vskip1ex
+      But the \emph{momentum} strategy suffers from draw-downs called \emph{momentum crashes}, especially after the market rallies from a sharp-sell-off,
+      \vskip1ex
+      This suggests that combining the \protect\emph{momentum} strategy with a static buy-and-hold strategy can achieve significant diversification of risk, 
+      <<echo=TRUE,eval=FALSE>>=
+# combine momentum strategy with static
+pnl_s <- cbind(pnl_s, 0.5* (pnl_s[, "VTI"] + pnl_s[, "momentum"]))
+colnames(pnl_s) <- c("VTI", "momentum", "combined")
+# calculate strategy annualized Sharpe ratios
+sapply(pnl_s, function(cumu_lative) {
+  re_turns <- na.omit(diff(log(cumu_lative)))
+  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+})  # end sapply
+# calculate strategy correlations
+cor(na.omit(diff(log(pnl_s))))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_one_dim-1}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_combined.png}
       \vspace{-2em}
-      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interactive 3d Surface Plots Using Package \protect\emph{rgl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
-      \vskip1ex
-      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
-      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
-library(rgl)  # load rgl
-# define function of two variables
-sur_face <- function(x, y) y*sin(x)
-# draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE)
-# draw 3d surface plot of matrix
-x_lim <- seq(from=-5, to=5, by=0.1)
-y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-        xlab="x", ylab="y", zlab="sur_face",
-        col="green")
-# save current view to png file
-rgl.snapshot("surface_plot.png")
-# define function of two variables and two parameters
-sur_face <- function(x, y, lambda_1=1, lambda_2=1) 
-  sin(lambda_1*x)*sin(lambda_2*y)
-# draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE, 
-        lambda_1=1, lambda_2=2)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/rgl_surf3d.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multi-dimensional Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization,
-      \vskip1ex
-      The argument \texttt{par} are the initial parameter values,
-      \vskip1ex
-      The argument \texttt{fn} is the objective function to be minimized,
-      \vskip1ex
-      The argument of the objective function which is to be optimized, must be a vector argument,
-      \vskip1ex
-      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function,
-      \vskip1ex
-      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn},
-      \vskip1ex
-      \texttt{method="L-BFGS-B"} specifies the quasi-Newton optimization method,
-      \vskip1ex
-      \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
-    \column{0.5\textwidth}
-        <<eval=FALSE,echo=TRUE>>=
-# define object_ive function of one vector argument and two parameters
-object_ive <- function(vec_tor, lambda_1=1, lambda_2=1) 
-  sin(lambda_1*vec_tor[1])*sin(lambda_2*vec_tor[2])
-# optimization to find weights with maximum Sharpe ratio
-weight_s <- c(pi/6, pi/6)
-object_ive(weight_s)
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=c(4*pi, 4*pi),
-                   lower=c(pi/2, pi/2),
-                   lambda_1=1, lambda_2=1)
-# optimal parameters and value
-optim_run$par
-optim_run$value
--object_ive(optim_run$par)
+      <<echo=TRUE,eval=FALSE>>=
+# plot momentum strategy combined with VTI
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue", "green")
+chart_Series(pnl_s, theme=plot_theme, 
+             name="Momentum strategy combined with VTI")
+legend("topleft", legend=colnames(pnl_s), 
+  inset=0.1, bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -522,359 +1160,652 @@ optim_run$value
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Log-likelihood Function}
+\subsection{\protect\emph{Momentum} Strategy Market Beta}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{likelihood} function $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
+      The strategy market beta can be calculated by multiplying the \emph{ETF} betas by the \emph{ETF} portfolio weights, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate betas
+beta_s <- c(1, rutils::env_etf$capm_stats[
+  match(sym_bols[-1], 
+        rownames(rutils::env_etf$capm_stats)), 
+  "Beta"])
+names(beta_s)[1] <- sym_bols[1]
+# weights times betas
+beta_s <- weight_s %*% beta_s
+beta_s <- xts(beta_s, order.by=index(weight_s))
+colnames(beta_s) <- "portf_beta"
+plot.zoo(cbind(beta_s, 
+  rutils::env_etf$VTI[, 4])[index(beta_s)],
+  main="betas & VTI", xlab="")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_betas.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{back\_test()} performs a \emph{back-test} simulation, 
+      \vskip1ex
+      \emph{Backtesting} is a type of \emph{cross-validation} applied to time series data, and consists of:
+      \begin{itemize}
+        \item aggregating past historical data (returns, etc.) into performance statistics (Sharpe ratios, etc.),
+        \item applying a trading rule and forming a portfolio (\emph{training} the model),
+        \item \emph{testing} the portfolio performance \emph{out-of-sample} on future data,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define back-test functional
+back_test <- function(re_turns, agg_fun=sum, look_back=12, 
+                      re_balance="months", bid_offer=0.001) {
+  stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
+  # Calculate aggregations.
+  agg_s <- roll_agg(re_turns, agg_fun=agg_fun, 
+                    look_back=look_back, re_balance=re_balance)
+  # Select aggregations over look-back and look-forward intervals.
+  past_aggs <- agg_s[, 1:NCOL(re_turns)]
+  fwd_rets <- agg_s[, NCOL(re_turns)+1:NCOL(re_turns)]
+  # Calculate portfolio weights.
+  weight_s <- past_aggs
+  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+  # Calculate portfolio profits and losses. 
+  pnl_s <- rowSums(weight_s * fwd_rets)
+  pnl_s <- xts(pnl_s, order.by=index(fwd_rets))
+  colnames(pnl_s) <- "pnl_s"
+  # Calculate transaction costs. 
+  cost_s <- bid_offer*abs(rutils::diff_xts(weight_s))
+  cost_s <- rowSums(cost_s)
+  pnl_s - cost_s
+}  # end back_test
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Meta-parameter Optimization in Parallel}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# define parameters
+re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_balance <- "weeks"
+bid_offer <- 0.001
+look_backs <- 10*(1:15)
+# initialize compute cluster
+library(parallel)
+clus_ter <- makeCluster(detectCores()-1)
+clusterExport(clus_ter, 
+  varlist=c("back_test", "roll_agg", "agg_fun", "re_turns", "re_balance", "bid_offer"))
+# perform parallel loop over look_backs under Windows
+pro_files <- parSapply(clus_ter, look_backs, 
+  function(look_back) {
+  # perform back-test
+    sum(back_test(re_turns=re_turns, 
+                  agg_fun=agg_fun, 
+                  look_back=look_back, 
+                  re_balance=re_balance, 
+                  bid_offer=bid_offer))
+  })  # end parSapply
+# perform parallel loop over look_backs under Mac-OSX or Linux
+pro_files <- mclapply(look_backs, function(look_back) {
+  # perform back-test
+  sum(back_test(re_turns=re_turns, 
+    agg_fun=agg_fun, 
+    look_back=look_back, 
+    re_balance=re_balance, 
+    bid_offer=bid_offer))
+})  # end mclapply
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# non-parallel loop - for reference only
+pro_files <- sapply(look_backs, 
+  function(look_back, ...) 
+    sum(back_test(look_back=look_back, ...)),
+  re_turns=rutils::env_etf$re_turns[, sym_bols], 
+  agg_fun=agg_fun, 
+  re_balance="weeks", 
+  bid_offer=0.001)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/look_back_profile.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(cbind(look_backs, pro_files), t="l", 
+     main="Strategy PnL as function of look_back", 
+     xlab="look_back (weeks)", ylab="pnl")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Efficient Frontier}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum Return Portfolio and Linear Programming}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
       \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^n P(x_i|\theta)
+        w_{min} = \operatorname*{arg\,max}_{w} [ \, r^T w \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
       \end{displaymath}
-      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
+      Where $r$ is the vector of returns, and $w$ is the vector of portfolio weights, constrained by:
+      \begin{align*}
+        w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
+        0 \leq w_i \leq 1
+      \end{align*}
+      The weights of the maximum return portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints, 
       \vskip1ex
-      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
-      \begin{displaymath}
-        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
-      \end{displaymath}
-      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
+      The function \texttt{Rglpk\_solve\_LP()} from package \emph{Rglpk} solves linear programming problems by calling the \emph{GNU Linear Programming Kit} library,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# sample of normal variables
-sam_ple <- rnorm(1000, mean=4, sd=2)
-# objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
-  sum(2*log(pa_r[2]) +
-    ((sam_ple - pa_r[1])/pa_r[2])^2)
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, sam_ple)
-    object_ive(c(mean, sd), sam_ple),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(1, 6, length=50)
-par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd,
-        vec_objective, sam_ple=sam_ple)
-objective_min <- which(  # grid search
-  objective_grid==min(objective_grid),
-  arr.ind=TRUE)
-objective_min
-par_mean[objective_min[1]]  # mean
-par_sd[objective_min[2]]  # sd
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-               (objective_min[, 2] + -1:1)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Perspective Plot of Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
-      \vskip1ex
-      The argument \texttt{"z"} accepts a matrix containing the function values,
-      \vskip1ex
-      \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots,
-      \vskip1ex
-      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix,
-      \vskip1ex
-      \texttt{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework,
-      <<optim_objective,echo=(-(1:1)),eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
-# perspective plot of log-likelihood function
-persp(z=-objective_grid,
-      theta=45, phi=30, shade=0.5,
-      border="green", zlab="objective",
-      main="objective function")
-# interactive perspective plot of log-likelihood function
-library(rgl)  # load package rgl
-par3d(cex=2.0)  # scale text by factor of 2
-persp3d(z=-objective_grid, zlab="objective",
-        col="green", main="objective function")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_objective-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Objective Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{optim()} performs optimization of an objective function, 
-      \vskip1ex
-      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization, 
-\vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# initial parameters
-par_init <- c(mean=0, sd=1)
-# perform optimization using optim()
-optim_fit <- optim(par=par_init,
-  fn=object_ive, # log-likelihood function
-  sam_ple=sam_ple,
-  method="L-BFGS-B", # quasi-Newton method
-  upper=c(10, 10), # upper constraint
-  lower=c(-10, 0.1)) # lower constraint
-# optimal parameters
-optim_fit$par
-# perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
-optim_fit$estimate
-optim_fit$sd
-      @
-\vspace{-2em}
-      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-# plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE,
-     main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_fit$par["mean"],
-                 sd=optim_fit$par["sd"]),
-      add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
-       leg="optimal parameters",
-       lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_basic-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mixture Model Likelihood Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0),
-                   rnorm(100, mean=4, sd=1.0))
-# objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
-  likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
-  if (any(likelihood <= 0)) Inf else
-    -sum(log(likelihood))
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, sam_ple)
-    object_ive(c(w, m1, s1, mean, sd), sam_ple),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(3, 5, length=50)
-par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd,
-          vec_objective, sam_ple=sam_ple,
-          w=0.5, m1=2.0, s1=2.0)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(objective_grid==
-  min(objective_grid), arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-               (objective_min[, 2] + -1:1)]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<optim_mix_like,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
-# perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-      theta=45, phi=30,
-      shade=0.5,
-      col=rainbow(50),
-      border="green",
-      main="objective function")
-      @
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mix_like-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimization of Mixture Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# initial parameters
-par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+library(quantmod)
+# vector of symbol names
+sym_bols <- c("VTI", "IEF", "DBC")
+n_weights <- NROW(sym_bols)
+# calculate mean returns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+mean_rets <- sapply(re_turns, mean)
+# specify weight bounds (default is c(0, Inf))
+bound_s <- 
+  list(lower=list(ind=1:n_weights, val=rep(-1, n_weights)),
+       upper=list(ind=1:n_weights, val=rep(1, n_weights)))
+# specify weight constraints
+constraint_s <- matrix(c(rep(1, n_weights), 
+                       1, 1, 0), 
+                       nc=n_weights, byrow=TRUE)
+direction_s <- c("==", "<=")
+limit_s <- c(1, 0)
 # perform optimization
-optim_fit <- optim(par=par_init,
-            fn=object_ive,
-            sam_ple=sam_ple,
-            method="L-BFGS-B",
-            upper=c(1,10,10,10,10),
-            lower=c(0,-10,0.2,-10,0.2))
-optim_fit$par
+op_tim <- Rglpk::Rglpk_solve_LP(obj=mean_rets, 
+                      mat=constraint_s, 
+                      dir=direction_s, 
+                      bounds=bound_s,
+                      rhs=limit_s, 
+                      max=TRUE)
+unlist(op_tim[1:2])
       @
-\vspace{-2em}
-      <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
-# plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE,
-     main="histogram of sample")
-fit_func <- function(x, pa_r) {
-  pa_r["weight"] * 
-    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
-  (1-pa_r["weight"]) * 
-    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
-}  # end fit_func
-curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
-      type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
-       leg="optimal parameters",
-       lwd=2, bg="white", col="red")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_mixture-1}
   \end{columns}
 \end{block}
 
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Minimum Variance Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If $\mathbb{C}$ is equal to the covariance matrix of returns, then the portfolio variance is equal to:
+      \begin{displaymath}
+        w^T \mathbb{C} \, w
+      \end{displaymath}
+      Where the sum of portfolio weights $w_i$ is constrained to equal $1$: $w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1$,
+      \vskip1ex
+      The weights that minimize the portfolio variance can be found by minimizing the \emph{Lagrangian}:
+      \begin{displaymath}
+        \mathcal{L} = w^T \mathbb{C} \, w - \, \lambda \, (w^T \mathbbm{1} - 1)
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier}, 
+      \vskip1ex
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        d_w[w^T \mathbbm{1}] = d_w[\mathbbm{1}^T w] = \mathbbm{1}^T\\
+        d_w[w^T r] = d_w[r^T w] = r^T\\
+        d_w[w^T \mathbb{C} \, w] = w^T \mathbb{C} + w^T \mathbb{C}^T
+      \end{align*}
+      Where $\mathbbm{1}$ is the unit vector, and $w^T \mathbbm{1} = \mathbbm{1}^T w = \sum_{i=1}^n {x_i}$
+    \column{0.5\textwidth}
+      The derivative of the \emph{Lagrangian} $\mathcal{L}$ with respect to $w$ is given by:
+      \begin{displaymath}
+        d_w \mathcal{L} = 2 w^T \mathbb{C} - \lambda \mathbbm{1}^T
+      \end{displaymath}
+      By setting the derivative to zero we find $w$ equal to:
+      \begin{displaymath}
+        w = \frac{1}{2} \lambda \, \mathbb{C}^{-1} \mathbbm{1}
+      \end{displaymath}
+      By multiplying the above from the left by $\mathbbm{1}^T$, and using $w^T \mathbbm{1} = 1$, we find $\lambda$ to be equal to: 
+      \begin{displaymath}
+        \lambda = \frac{2}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      And finally the portfolio weights are then equal to:
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
-\section{Equity Portfolio Optimization}
+\subsection{Variance of Minimum Variance Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the minimum variance portfolio under the constraint $w^T \mathbbm{1} = 1$ can be calculated using the inverse of the covariance matrix:
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mathbbm{1}}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      The variance of the minimum variance portfolio is equal to:
+      \begin{displaymath}
+        VAR = \frac{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mathbbm{1}}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1})^2} = \frac{1}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mathbbm{1}}
+      \end{displaymath}
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define a covariance matrix
+std_devs <- c(asset1=0.3, asset2=0.6)
+cor_rel <- 0.8
+co_var <- matrix(c(1, cor_rel, cor_rel, 1), 
+                 nc=2)
+co_var <- t(t(std_devs*co_var)*std_devs)
+# calculate inverse of covariance mat_rix
+in_verse <- solve(a=co_var)
+u_nit <- rep(1, NCOL(co_var))
+# minimum variance weights with constraint
+# weight_s <- solve(a=co_var, b=u_nit)
+weight_s <- in_verse %*% u_nit
+weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
+# minimum variance
+t(weight_s) %*% co_var %*% weight_s
+1/(t(u_nit) %*% in_verse %*% u_nit)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Random Portfolios}
+\subsection{Maximum \protect\emph{Sharpe} Portfolio Weights}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sharpe} ratio is defined as the ratio of excess returns divided by the portfolio standard deviation:
+      \begin{displaymath}
+        SR = \frac{w^T \mu}{SD}
+      \end{displaymath}
+      Where $\mu = r - r_{rf}$ is the vector of excess returns (returns in excess of the risk-free rate), $w$ is the vector of portfolio weights, and $SD = \sqrt{w^T \mathbb{C} \, w}$, where $\mathbb{C}$ is the covariance matrix of returns, 
+      \vskip1ex
+      We can calculate the maximum \emph{Sharpe} portfolio weights by setting the derivative of the \emph{Sharpe} ratio with respect to the weights, to zero:
+      \begin{displaymath}
+        d_w {SR} = \frac{1}{SD} (\mu^T - \frac{(w^T \mu) (w^T \mathbb{C})}{{SD}^2}) = 0
+      \end{displaymath}
+      We then get: 
+      \begin{displaymath}
+        (w^T \mathbb{C} \, w) \, \mu = (w^T \mu) \, \mathbb{C} w
+      \end{displaymath}
+      We can multiply the above equation by $\mathbb{C}^{-1}$ to get: 
+      \begin{displaymath}
+        w = \frac{w^T \mathbb{C} \, w}{w^T \mu} \, \mathbb{C}^{-1} \mu
+      \end{displaymath}
+    \column{0.5\textwidth}
+      We can finally rescale the weights so that they satisfy the constraint $w^T \mathbbm{1} = 1$: 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      These are the weights of the maximum \emph{Sharpe} portfolio, with the vector of excess returns equal to $\mu$, and the covariance matrix equal to $\mathbb{C}$, 
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Returns and Variance of Maximum \protect\emph{Sharpe} Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weights of the maximum \emph{Sharpe} portfolio are equal to: 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      Where $\mu$ is the vector of excess returns, and $\mathbb{C}$ is the covariance matrix, 
+      \vskip1ex
+      The excess returns of the maximum \emph{Sharpe} portfolio are equal to:
+      \begin{displaymath}
+        R = w^T \mu = \frac{\mu^T \mathbb{C}^{-1} \mu}{\mathbbm{1}^{T} \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+      The variance of the maximum \emph{Sharpe} portfolio is equal to:
+      \begin{displaymath}
+        VAR = \frac{\mu^{T} \mathbb{C}^{-1} \mathbb{C} \, \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2} = \frac{\mu^T \mathbb{C}^{-1} \mu}{(\mathbbm{1}^{T} \mathbb{C}^{-1} \mu)^2}
+      \end{displaymath}
+      The \emph{Sharpe} ratio is equal to:
+      \begin{displaymath}
+        SR = \sqrt{\mu^T \mathbb{C}^{-1} \mu}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate excess re_turns
+risk_free <- 0.03/260
+ex_cess <- re_turns - risk_free
+# calculate covariance and inverse matrix
+co_var <- cov(re_turns)
+u_nit <- rep(1, NCOL(co_var))
+in_verse <- solve(a=co_var)
+# calculate mean excess returns
+ex_cess <- sapply(ex_cess, mean)
+# weights of maximum Sharpe portfolio
+# weight_s <- solve(a=co_var, b=re_turns)
+weight_s <- in_verse %*% ex_cess
+weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
+# Sharpe ratios
+sqrt(260)*drop((t(weight_s) %*% ex_cess) / 
+  sqrt(t(weight_s) %*% co_var %*% weight_s))
+sapply(re_turns - risk_free, 
+  function(x) sqrt(260)*mean(x)/sd(x))
+weights_maxsharpe <- weight_s
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolios Under Zero Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma_{1}^2 & 0 & \cdots & 0 \\
+          0 & \sigma_{2}^2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma_{n}^2
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma_{i}^2$ is the variance of returns of asset $i$, 
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply: 
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma_{1}^{-2} & 0 & \cdots & 0 \\
+          0 & \sigma_{2}^{-2} & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma_{n}^{-2}
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The minimum variance portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma_{i}^2 \sum_{i=1}^n \sigma_{i}^{-2}}
+      \end{displaymath}
+      The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_{i}}{\sigma_{i}^2 \sum_{i=1}^n \mu_{i} \sigma_{i}^{-2}}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Maximum \protect\emph{Sharpe} and \protect\emph{Minimum Variance} Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The maximum \emph{Sharpe} and \emph{Minimum Variance} portfolios are both \emph{efficient portfolios}, with the lowest risk (standard deviation) for the given level of return, 
+      <<echo=TRUE,eval=FALSE>>=
+library(quantmod)
+# calculate minimum variance weights
+weight_s <- in_verse %*% u_nit
+weights_minvar <- 
+  weight_s / drop(t(u_nit) %*% weight_s)
+# calculate optimal portfolio returns
+optim_rets <- xts(
+  x=cbind(exp(cumsum(re_turns %*% weights_maxsharpe)), 
+          exp(cumsum(re_turns %*% weights_minvar))),
+  order.by=index(re_turns))
+colnames(optim_rets) <- c("maxsharpe", "minvar")
+# plot optimal portfolio returns, with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "green")
+x11(width=6, height=5)
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Maximum Sharpe and \nMinimum Variance portfolios")
+legend("top", legend=colnames(optim_rets), cex=0.8,
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/maxsharpe_minvar.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Efficient Frontier} and \protect\emph{Capital Market Line}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The maximum \emph{Sharpe} portfolio weights depend on the value of the risk-free rate $r_{rf}$, 
+      \begin{displaymath}
+        w = \frac{\mathbb{C}^{-1} (r - r_{rf})}{\mathbbm{1}^{T} \mathbb{C}^{-1} (r - r_{rf})}
+      \end{displaymath}
+      The \emph{Efficient Frontier} is the set of \emph{efficient portfolios}, that have the lowest risk (standard deviation) for the given level of return, 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are \emph{efficient portfolios}, and they lie on the \emph{Efficient Frontier}, forming a tangent line from the risk-free rate to the \emph{Efficient Frontier}, known as the \emph{Capital Market Line} (CML), 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are considered to be the \emph{Market} portfolios, corresponding to different values of the risk-free rate $r_{rf}$, 
+      \vskip1ex
+      The maximum \emph{Sharpe} portfolios are also called \emph{tangency} portfolios, since they are the tangency point on the \emph{Efficient Frontier},
+      \vskip1ex
+      The \emph{Capital Market Line} is the line drawn from the \emph{risk-free} rate to the \emph{market} portfolio on the \emph{Efficient Frontier},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{Efficient Frontier} and Maximum \protect\emph{Sharpe} Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(wid_th <- 6, hei_ght <- 6)
+# calculate minimum variance weights
+weight_s <- in_verse %*% u_nit
+weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
+# minimum standard deviation and return
+std_dev <- sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s))
+min_ret <- 260*drop((t(weight_s) %*% mean_rets))
+# calculate maximum Sharpe portfolios
+risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/260
+eff_front <- sapply(risk_free, function(risk_free) {
+  weight_s <- in_verse %*% (mean_rets - risk_free)
+  weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
+  # portfolio return and standard deviation
+  c(return=260*drop((t(weight_s) %*% mean_rets)), 
+    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
+})  # end sapply
+eff_front <- cbind(260*risk_free, t(eff_front))
+colnames(eff_front)[1] <- "risk-free"
+eff_front <- eff_front[is.finite(eff_front[, "stddev"]), ]
+eff_front <- eff_front[order(eff_front[, "return"]), ]
+# plot maximum Sharpe portfolios
+plot(x=eff_front[, "stddev"], 
+     y=eff_front[, "return"], t="l", 
+     xlim=c(0.0*std_dev, 3.0*std_dev), 
+     ylim=c(0.0*min_ret, 2.0*min_ret),
+     main="Efficient Frontier and Capital Market Line", 
+     xlab="standard deviation", ylab="return")
+points(x=eff_front[, "stddev"], y=eff_front[, "return"], 
+       col="red", lwd=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting the \protect\emph{Capital Market Line}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<random_portfolios,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-# vector of symbol names
-sym_bols <- c("VTI", "IEF", "XLP")
-n_weights <- NROW(sym_bols)
+      <<echo=TRUE,eval=FALSE>>=
+# plot minimum variance portfolio
+points(x=std_dev, y=min_ret, col="green", lwd=6)
+text(std_dev, min_ret, labels="minimum \nvariance", 
+     pos=4, cex=0.8)
+# draw Capital Market Line
+sor_ted <- sort(eff_front[, 1])
+risk_free <- 
+  sor_ted[findInterval(x=0.5*min_ret, vec=sor_ted)]
+points(x=0, y=risk_free, col="blue", lwd=6)
+text(x=0, y=risk_free, labels="risk-free", 
+     pos=4, cex=0.8)
+in_dex <- match(risk_free, eff_front[, 1])
+points(x=eff_front[in_dex, "stddev"], 
+       y=eff_front[in_dex, "return"], 
+       col="blue", lwd=6)
+text(x=eff_front[in_dex, "stddev"], 
+     y=eff_front[in_dex, "return"], 
+     labels="market portfolio", 
+     pos=2, cex=0.8)
+sharp_e <- (eff_front[in_dex, "return"]-risk_free)/
+  eff_front[in_dex, "stddev"]
+abline(a=risk_free, b=sharp_e, col="blue", lwd=2)
+text(x=0.7*eff_front[in_dex, "stddev"], 
+     y=0.7*eff_front[in_dex, "return"]+0.01, 
+     labels="Capital Market Line", pos=2, cex=0.8,
+     srt=45*atan(sharp_e*hei_ght/wid_th)/(0.25*pi))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_market.png}\\
+      \vspace{-1em}
+      The \emph{Capital Market Line} represents delevered and levered portfolios, consisting of the \emph{market} portfolio combined with the \emph{risk-free} rate,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Random Portfolios}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
 # calculate random portfolios
 n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
-  weight_s <- runif(n_weights, min=0, max=10)
-  weight_s <- weight_s/sum(weight_s)
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
-  100*c(ret=mean(portf_rets), sd=sd(portf_rets))
+  weight_s <- runif(n_weights-1, min=-0.25, max=1.0)
+  weight_s <- c(weight_s, 1-sum(weight_s))
+  # portfolio return and standard deviation
+  c(return=260*drop((t(weight_s) %*% mean_rets)), 
+    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
 })  # end sapply
 # plot scatterplot of random portfolios
-x11(width=(wid_th <- 6), height=(hei_ght <- 5))
-plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])), 
-     main="Random portfolios", 
-     ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])), 
-     xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
-# vector of initial portfolio weights equal to 1
-weight_s <- rep(1, n_weights)
-names(weight_s) <- sym_bols
-# objective function equal to standard deviation of returns
-object_ive <- function(weight_s) {
-  portf_rets <- na.omit(rutils::env_etf$re_turns[, sym_bols]) %*% weight_s
-  sd(portf_rets)/sum(weight_s)
-}  # end object_ive
-# object_ive() for equal weight portfolio
-object_ive(weight_s)
-object_ive(2*weight_s)
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# Rescale the optimal weights
-weight_s <- optim_run$par/sum(optim_run$par)
-# minimum variance portfolio returns
-library(quantmod)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="minvar portfolio")
-# Add red point for minimum variance portfolio
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, col="red", lwd=3)
-text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
-# objective function equal to minus Sharpe ratio
-risk_free <- 0.01
-object_ive <- function(weight_s) {
-  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
-  -mean(portf_rets-risk_free)/sd(portf_rets)
-}  # end object_ive
-# perform portfolio optimization
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   method="L-BFGS-B",
-                   upper=rep(10, n_weights),
-                   lower=rep(-10, n_weights))
-# maximum Sharpe ratio portfolio returns
-weight_s <- optim_run$par/sum(optim_run$par)
-optim_rets <- xts(x=env_etf$re_turns[, sym_bols] %*% weight_s,
-                  order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), name="maxSR portfolio")
-optim_sd <- 100*sd(optim_rets)
-optim_ret <- 100*mean(optim_rets)
-points(x=optim_sd, y=optim_ret, 
-       col="blue", lwd=3)
-text(x=optim_sd, y=optim_ret,
-     labels="maxSR", pos=2, cex=0.8)
-max_Sharpe <- (optim_ret-risk_free)/optim_sd
-# Add points for individual assets
-re_turns <- 100*sapply(env_etf$re_turns[, sym_bols], mean)
-std_devs <- 100*sapply(env_etf$re_turns[, sym_bols], sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
-range_s <- par("usr")
-text(optim_sd/3, (optim_ret+risk_free)/2.5, 
-     labels="Capital Market Line", cex=0.8, , pos=3, 
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-                   (range_s[4]-range_s[3])*
-                   hei_ght/wid_th)/(0.25*pi))
+x11(wid_th <- 6, hei_ght <- 6)
+plot(x=ret_sd["stddev", ], y=ret_sd["return", ],
+     main="Efficient Frontier and Random Portfolios", 
+     xlim=c(0.5*std_dev, 0.8*max(ret_sd["stddev", ])), 
+     xlab="standard deviation", ylab="return")
+# plot maximum Sharpe portfolios
+lines(x=eff_front[, "stddev"], 
+     y=eff_front[, "return"], lwd=2)
+points(x=eff_front[, "stddev"], y=eff_front[, "return"], 
+       col="red", lwd=3)
+# plot minimum variance portfolio
+points(x=std_dev, y=min_ret, col="green", lwd=6)
+text(std_dev, min_ret, labels="minimum\nvariance", 
+     pos=2, cex=0.8)
+# plot market portfolio
+points(x=eff_front[in_dex, "stddev"], 
+       y=eff_front[in_dex, "return"], col="green", lwd=6)
+text(x=eff_front[in_dex, "stddev"], 
+     y=eff_front[in_dex, "return"], 
+     labels="market\nportfolio", 
+     pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/random_portfolios.png}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_random.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot individual assets
+points(x=sqrt(260*diag(co_var)), 
+       y=260*mean_rets, col="blue", lwd=6)
+text(x=sqrt(260*diag(co_var)), y=260*mean_rets, 
+     labels=names(mean_rets), 
+     col="blue", pos=1, cex=0.8)
+      @
   \end{columns}
 \end{block}
 
@@ -882,20 +1813,19 @@ text(optim_sd/3, (optim_ret+risk_free)/2.5,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Capital Market Line and Two-asset Portfolios}
+\subsection{Plotting Efficient Frontier for Two-asset Portfolios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
+      \vspace{-2em}
       <<corr_two_assets,echo=TRUE,eval=FALSE>>=
-risk_free <- 0.01
-re_turns <- c(asset1=0.02, asset2=0.04)
-std_devs <- c(asset1=0.8, asset2=1.6)
+risk_free <- 0.03
+re_turns <- c(asset1=0.05, asset2=0.06)
+std_devs <- c(asset1=0.4, asset2=0.5)
 cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), 
-                 nc=2)
+co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
 co_var <- t(t(std_devs*co_var)*std_devs)
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
@@ -906,33 +1836,35 @@ sharpe_ratios <- (portf_rets-risk_free)/portf_sd
 in_dex <- which.max(sharpe_ratios)
 max_Sharpe <- max(sharpe_ratios)
 # plot efficient frontier
-x11(width=(wid_th <- 6), height=(hei_ght <- 5))
+x11(wid_th <- 6, hei_ght <- 5)
 par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(portf_sd, portf_rets, t="l", 
- main=paste0("Two assets correlation = ", 100*cor_rel, "%"), 
+ main=paste0("Efficient frontier and CML for two assets\ncorrelation = ", 100*cor_rel, "%"), 
+ xlab="standard deviation", ylab="return", 
+ lwd=2, col="orange", 
  xlim=c(0, max(portf_sd)), 
- ylim=c(0, max(portf_rets)))
-# Add red point for maximum Sharpe ratio portfolio
+ ylim=c(0.02, max(portf_rets)))
+# add Market Portfolio (maximum Sharpe ratio portfolio)
 points(portf_sd[in_dex], portf_rets[in_dex], 
-       col="red", lwd=3)
+       col="blue", lwd=3)
 text(x=portf_sd[in_dex], y=portf_rets[in_dex], 
-     labels=paste(c("maxSR\n", 
+     labels=paste(c("market portfolio\n", 
        structure(c(weight_s[in_dex], 1-weight_s[in_dex]), 
                names=names(re_turns))), collapse=" "), 
      pos=2, cex=0.8)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/cml_two_assets.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/cml_two_assets.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Add points for individual assets
+# plot individual assets
 points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
+text(std_devs, re_turns, labels=names(re_turns), pos=4, cex=0.8)
+# add point at risk-free rate and draw Capital Market Line
+points(x=0, y=risk_free, col="blue", lwd=3)
+text(0, risk_free, labels="risk-free\nrate", pos=4, cex=0.8)
+abline(a=risk_free, b=max_Sharpe, lwd=2, col="blue")
 range_s <- par("usr")
 text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2, 
      labels="Capital Market Line", cex=0.8, , pos=3, 
@@ -947,79 +1879,113 @@ text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Efficient Frontier for Stock and Bond Portfolios}
+\subsection{Efficient Frontier of Stock and Bond Portfolios}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eff_front_two_assets,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+      \vspace{-2em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+# plot portfolios in x11() window
+x11(wid_th <- 6, hei_ght <- 5)
+par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 # vector of symbol names
 sym_bols <- c("VTI", "IEF")
 # matrix of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
-portf_rets <- env_etf$re_turns[, sym_bols]
-ret_sd <- portf_rets %*% t(weight_s)
-ret_sd <- 100*cbind(colMeans(ret_sd), 
-  matrixStats::colSds(ret_sd))
-colnames(ret_sd) <- c("returns", "StdDev")
-risk_free <- 5.0/260
-ret_sd <- cbind(ret_sd, (ret_sd[, 1]-risk_free)/ret_sd[, 2])
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+ret_sd <- re_turns %*% t(weight_s)
+ret_sd <- cbind(260*colMeans(ret_sd), 
+  sqrt(260)*matrixStats::colSds(ret_sd))
+colnames(ret_sd) <- c("returns", "stddev")
+risk_free <- 0.06
+ret_sd <- cbind(ret_sd, 
+  (ret_sd[, "returns"]-risk_free)/ret_sd[, "stddev"])
 colnames(ret_sd)[3] <- "Sharpe"
 in_dex <- which.max(ret_sd[, "Sharpe"])
 max_Sharpe <- ret_sd[in_dex, "Sharpe"]
-# plot scatterplot of portfolios in x11() window
-x11(width=(wid_th <- 6), height=(hei_ght <- 4))
-par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(x=ret_sd[, 2], y=ret_sd[, 1], t="l", 
-     xlim=c(0, max(ret_sd[, 2]/2)), 
-     ylim=c(min(0, min(ret_sd[, 1])), max(ret_sd[, 1])), 
-     xlab=colnames(ret_sd)[2], ylab=colnames(ret_sd)[1])
-title(main="Stock and bond portfolios", line=-1)
-# Add red point for maximum Sharpe ratio portfolio
-points(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
-       col="red", lwd=3)
-text(x=ret_sd[in_dex, 2], y=ret_sd[in_dex, 1], 
-     labels=paste(c("maxSR\n", 
-       structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), 
-               names=sym_bols)), collapse=" "), 
+plot(x=ret_sd[, "stddev"], y=ret_sd[, "returns"], 
+     main="Stock and Bond portfolios", t="l", 
+     xlim=c(0, 0.7*max(ret_sd[, "stddev"])), ylim=c(0, max(ret_sd[, "returns"])), 
+     xlab="standard deviation", ylab="return")
+# add blue point for market portfolio
+points(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"], col="blue", lwd=6)
+text(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"], 
+     labels=paste(c("market portfolio\n", structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), names=sym_bols)), collapse=" "), 
      pos=3, cex=0.8)
-# Add points for individual assets
-re_turns <- 100*sapply(portf_rets, mean)
-std_devs <- 100*sapply(portf_rets, sd)
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=2, cex=0.8)
-# Add point at risk_free rate and draw Capital Market Line
-points(x=0, y=risk_free)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eff_front_stocks_bonds.png}\\
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot individual assets
+mean_rets <- 260*sapply(re_turns, mean)
+std_devs <- sqrt(260)*sapply(re_turns, sd)
+points(std_devs, mean_rets, col="green", lwd=6)
+text(std_devs, mean_rets, labels=names(re_turns), pos=2, cex=0.8)
+# add point at risk-free rate and draw Capital Market Line
+points(x=0, y=risk_free, col="blue", lwd=6)
 text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue")
+abline(a=risk_free, b=max_Sharpe, col="blue", lwd=2)
 range_s <- par("usr")
-text(ret_sd[in_dex, 2]/3, (ret_sd[in_dex, 1]+risk_free)/2, 
+text(max(ret_sd[, "stddev"])/3, 0.75*max(ret_sd[, "returns"]), 
      labels="Capital Market Line", cex=0.8, , pos=3, 
      srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
                    (range_s[4]-range_s[3])*
                    hei_ght/wid_th)/(0.25*pi))
-# plot max Sharpe ratio portfolio returns
-library(quantmod)
-optim_rets <- 
-  xts(x=env_etf$re_turns[, sym_bols] %*% 
-        c(weight_s[in_dex], 1-weight_s[in_dex]),
-      order.by=index(env_etf$re_turns))
-chart_Series(x=cumsum(optim_rets), 
-             name="Max Sharpe two-asset portfolio")
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/eff_front_two_assets.png}\\
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/maxsr_two_assets.png}
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of Market Portfolio for Stocks and Bonds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+# plot portfolios in x11() window
+x11(wid_th <- 6, hei_ght <- 5)
+# calculate cumulative returns of VTI and IEF
+optim_rets <- lapply(re_turns, 
+  function(re_turns) exp(cumsum(re_turns)))
+optim_rets <- rutils::do_call(cbind, optim_rets)
+# calculate market portfolio returns
+optim_rets <- cbind(
+  exp(cumsum(re_turns %*% 
+    c(weight_s[in_dex], 1-weight_s[in_dex]))),
+  optim_rets)
+colnames(optim_rets)[1] <- "market"
+# plot market portfolio with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue", "green")
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Market portfolio for stocks and bonds")
+legend("top", legend=colnames(optim_rets), 
+       cex=0.8, inset=0.1, bg="white", lty=c(1, 1), 
+       lwd=c(6, 6), col=plot_theme$col$line.col, bty="n")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/market_stocks_bonds.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Optimization}
 
 
 %%%%%%%%%%%%%%%
@@ -1032,37 +1998,59 @@ chart_Series(x=cumsum(optim_rets),
       The function \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable,
       \vskip1ex
       \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval,
-        <<eval=FALSE,echo=TRUE>>=
-# create list of symbols for optimized portfolio
-sym_bols <- c("VTI", "VNQ", "DBC")
+        <<echo=TRUE,eval=FALSE>>=
 # create initial vector of portfolio weights
 weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
 # objective equal to minus Sharpe ratio
 object_ive <- function(weight_s) {
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  portf_rets <- re_turns %*% weight_s
   -mean(portf_rets)/sd(portf_rets)
 }  # end object_ive
 # objective for equal weight portfolio
 object_ive(weight_s)
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_optim_one_dim-1}
-      \vspace{-5em}
-        <<portf_optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+op_tim <- unlist(optimize(
+  f=function(weight) object_ive(c(1, 1, weight)), 
+  interval=c(-4, 1)))
 # vectorize objective function with respect to third weight
+vec_object <- function(weights) sapply(weights, 
+  function(weight) object_ive(c(1, 1, weight)))
+# or
 vec_object <- Vectorize(
   FUN=function(weight) object_ive(c(1, 1, weight)),
   vectorize.args="weight"
 )  # end Vectorize
+vec_object(1)
+vec_object(1:3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_obj_one_dim.png}
+      \vspace{-2em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(3, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot objective function with respect to third weight
 curve(expr=vec_object,
       type="l", xlim=c(-4.0, 1.0),
       xlab=paste("weight of", names(weight_s[3])),
       ylab="", lwd=2)
 title(main="Objective Function", line=-1)  # add title
+points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
+text(x=op_tim[1], y=op_tim[2], 
+     labels="minimum objective", pos=4, cex=0.8)
+
+### below is simplified code for plotting objective function
+# create vector of DBC weights
+weight_s <- seq(from=-4, to=1, by=0.1)
+obj_val <- sapply(weight_s, 
+  function(weight) object_ive(c(1, 1, weight)))
+plot(x=weight_s, y=obj_val, t="l",
+      xlab="weight of DBC", ylab="", lwd=2)
+title(main="Objective Function", line=-1)  # add title
+points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
+text(x=op_tim[1], y=op_tim[2], 
+     labels="minimum objective", pos=4, cex=0.8)
       @
   \end{columns}
 \end{block}
@@ -1080,6 +2068,9 @@ title(main="Objective Function", line=-1)  # add title
       The function \texttt{persp()} plots a 3d perspective surface plot of a function specified over a grid of argument values,
       \vskip1ex
       The function \texttt{outer()} calculates the values of a function over a grid spanned by two variables, and returns a matrix of function values,
+      \vskip1ex
+      The package \emph{rgl} allows creating \emph{interactive} 3d scatterplots and surface plots including perspective plots, based on the \emph{OpenGL} framework,
+      \vspace{-1em}
       <<portf_persp,echo=TRUE,eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
 # vectorize function with respect to all weights
 vec_object <- Vectorize(
@@ -1087,7 +2078,7 @@ vec_object <- Vectorize(
     object_ive(c(w1, w2, w3)),
   vectorize.args=c("w2", "w3"))  # end Vectorize
 # calculate objective on 2-d (w2 x w3) parameter grid
-w2 <- seq(-5, 5, length=50)
+w2 <- seq(-3, 7, length=50)
 w3 <- seq(-5, 5, length=50)
 grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
 rownames(grid_object) <- round(w2, 2)
@@ -1100,17 +2091,17 @@ persp(w2, w3, -grid_object,
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/portf_persp-1}
-    \vspace{-5em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_persp.png}
+    \vspace{-3em}
       <<echo=TRUE,eval=FALSE,fig.width=10,fig.height=10>>=
 # interactive perspective plot of objective function
 library(rgl)
-persp3d(z=-grid_object, zlab="objective",
+rgl::persp3d(z=-grid_object, zlab="objective",
         col="green", main="objective function")
-persp3d(
+rgl::persp3d(
   x=function(w2, w3)
     -vec_object(w1=1, w2, w3),
-  xlim=c(-5, 5), ylim=c(-5, 5),
+  xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
       @
   \end{columns}
@@ -1143,17 +2134,18 @@ persp3d(
       \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
     \column{0.5\textwidth}
     \vspace{-1em}
-      <<eval=FALSE,echo=TRUE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # optimization to find weights with maximum Sharpe ratio
-optim_run <- optim(par=weight_s,
+op_tim <- optim(par=weight_s,
                    fn=object_ive,
                    method="L-BFGS-B",
                    upper=c(1.1, 10, 10),
                    lower=c(0.9, -10, -10))
 # optimal parameters
-optim_run$par
+op_tim$par
+op_tim$par <- op_tim$par/sum(op_tim$par)
 # optimal Sharpe ratio
--object_ive(optim_run$par)
+-object_ive(op_tim$par)
       @
   \end{columns}
 \end{block}
@@ -1162,7 +2154,7 @@ optim_run$par
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimized Portfolio Plot}
+\subsection{Optimized Portfolio Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1172,830 +2164,151 @@ optim_run$par
       \vskip1ex
       \vspace{-1em}
       <<optim_portf_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-par(oma=c(1, 0, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(PortfolioAnalytics)
-# returns of optimal portfolio
-optim_rets <- xts(env_etf$re_turns[, sym_bols] %*%
-      optim_run$par, order.by=index(env_etf$re_turns))
-# assign colnames to this xts
-colnames(optim_rets) <- "optim_rets"
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot in two vertical panels
 layout(matrix(c(1,2), 2),
        widths=c(1,1), heights=c(1,3))
 # barplot of optimal portfolio weights
-barplot(optim_run$par,
-        names.arg=names(optim_run$par),
-        las=3, ylab="", xlab="Symbol", main="")
-# plot optimal returns with "VTI", "VNQ" and "DBC"
-chart.CumReturns(
-  cbind(optim_rets, env_etf$re_turns[, names(weight_s)]),
+barplot(op_tim$par, col=c("red", "green", "blue"), 
+        main="Optimized portfolio weights")
+# calculate cumulative returns of VTI, IEF, DBC
+cum_rets <- lapply(re_turns, 
+  function(re_turns) exp(cumsum(re_turns)))
+cum_rets <- rutils::do_call(cbind, cum_rets)
+# calculate optimal portfolio returns with VTI, IEF, DBC
+optim_rets <- cbind(
+  exp(cumsum(re_turns %*% op_tim$par)),
+  cum_rets)
+colnames(optim_rets)[1] <- "optim_rets"
+# plot optimal returns with VTI, IEF, DBC
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green", "blue")
+chart_Series(optim_rets, theme=plot_theme, 
+             name="Optimized portfolio performance")
+legend("top", legend=colnames(optim_rets), cex=0.8,
+       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
+       col=plot_theme$col$line.col, bty="n")
+# or plot non-compounded (simple) cumulative returns
+PerformanceAnalytics::chart.CumReturns(
+  cbind(re_turns %*% op_tim$par, re_turns),
   lwd=2, ylab="", legend.loc="topleft", main="")
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_basic-1}
+      \includegraphics[width=0.5\paperwidth]{figure/optim_portf.png}
   \end{columns}
 \end{block}
 
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{PortfolioAnalytics} for Portfolio Optimization}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{PortfolioAnalytics}}
+\subsection{Package \protect\emph{quadprog} for Quadratic Programming}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \emph{PortfolioAnalytics} contains functions and data sets for portfolio optimization,
+    \column{0.5\textwidth}
+      Quadratic programming (\emph{QP}) is the optimization of quadratic objective functions subject to linear constraints, 
       \vskip1ex
-      The function \texttt{data()} loads external data or lists data sets in a package,
+      Let $O(x)$ be an objective function that is quadratic with respect to a vector variable $x$:
+      \begin{displaymath}
+        O(x) = \frac{1}{2} x^T \mathbb{Q} x - d^T x
+      \end{displaymath}
+      Where $\mathbb{Q}$ is a \emph{positive definite} matrix ($x^T \mathbb{Q} x > 0$), and $d$ is a vector, 
       \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(PortfolioAnalytics)  # load package "PortfolioAnalytics"
-# get documentation for package "PortfolioAnalytics"
-packageDescription("PortfolioAnalytics")  # get short description
-
-help(package="PortfolioAnalytics")  # load help page
-
-data(package="PortfolioAnalytics")  # list all datasets in "PortfolioAnalytics"
-
-ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
-
-detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Definition}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Portfolios are defined by a named vector of asset weights, and portfolio constraints and objectives,
+      An example of a \emph{positive definite} matrix is the covariance matrix of linearly independent variables, 
       \vskip1ex
-      \texttt{portfolio.spec} creates a portfolio object that contains asset weights, constraints, and objectives,
+      Let the linear constraints on the variable $x$ be specified as:
+      \begin{displaymath}
+        \mathbb{A} x \leq b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, and $b$ is a vector, 
       \vskip1ex
-      \texttt{add.constraint} adds or updates constraints on of the portfolio object,
+      The function \texttt{solve.QP()} from package \emph{quadprog} performs optimization of quadratic objective functions subject to linear constraints,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+library(quadprog)
+# minimum variance weights without constraints
+op_tim <-  solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 2), 
+                    Amat=matrix(0, nr=2, nc=1), 
+                    bvec=0)
+# minimum variance weights sum equal to 1
+op_tim <-  solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 2), 
+                    Amat=matrix(1, nr=2, nc=1), 
+                    bvec=1)
+# optimal value of objective function
+t(op_tim$solution) %*% co_var %*% op_tim$solution
+## perform simple optimization for reference
+# objective function for simple optimization
+object_ive <- function(x) {
+  x <- c(x, 1-x)
+  t(x) %*% co_var %*% x
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-1, 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using Package \protect\emph{quadprog}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The objective function is designed to minimize portfolio variance and maximize its returns:
+      \begin{displaymath}
+        O(x) = w^T \mathbb{C} \, w - w^T r
+      \end{displaymath}
+      Where $\mathbb{C}$ is the covariance matrix of returns, $r$ is the vector of returns, and $w$ is the vector of  portfolio weights, 
       \vskip1ex
-      \texttt{add.objective} adds or updates risk/return objectives of the portfolio object,
-      <<echo=TRUE,eval=FALSE>>=
-library(PortfolioAnalytics)
-# use ETF returns from package HighFreq
-library(HighFreq)
-portf_names <- c("VTI", "IEF", "DBC", "XLF",
-        "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
-# initial portfolio to equal weights
-portf_init <- rep(1/NROW(portf_names),
-                  NROW(portf_names))
-# named vector
-names(portf_init) <- portf_names
-# create portfolio object
-portf_init <- portfolio.spec(
-  assets=portf_init)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add constraints
-portf_maxSR <- add.constraint(
-  portfolio=portf_init,  # initial portfolio
-  type="weight_sum",  # constraint sum weights
-  min_sum=0.9, max_sum=1.1)
-# add constraints
-portf_maxSR <- add.constraint(
-  portfolio=portf_maxSR,
-  type="long_only")  # box constraint min=0, max=1
-# add objectives
-portf_maxSR <- add.objective(
-  portfolio=portf_maxSR,
-  type="return",  # maximize mean return
-  name="mean")
-# add objectives
-portf_maxSR <- add.objective(
-  portfolio=portf_maxSR,
-  type="risk",  # minimize StdDev
-  name="StdDev")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_basic,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
-  portfolio=portf_maxSR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-# plot optimization
-chart.RiskReward(maxSR_DEOpt,
-  risk.col="StdDev",
-  return.col="mean")
-      @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
-options(width=50)
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-maxSR_DEOpt$weights
-maxSR_DEOpt$objective_measures$mean[1]
-maxSR_DEOpt$objective_measures$StdDev[[1]]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_basic-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Scatterplot}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_scatter,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot optimization
-chart.RiskReward(maxSR_DEOpt,
-  risk.col="StdDev",
-  return.col="mean")
-
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points <- function(rets=env_etf$re_turns,
-        risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
-  risk <- match.arg(risk)  # match to arg list
-  if (risk=="ETL") {
-    stopifnot(
-      "package:PerformanceAnalytics" %in% search() ||
-      require("PerformanceAnalytics", quietly=TRUE))
-  }  # end if
-  risk <- match.fun(risk)  # match to function
-  risk_ret <- t(sapply(rets[, sym_bols],
-     function(x_ts)
-       c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
-  points(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
-         col="red", lwd=3)
-  text(x=risk_ret[, "risk"], y=risk_ret[, "ret"],
-       labels=rownames(risk_ret), col="red",
-       lwd=2, pos=4)
-}  # end risk_ret_points
-
-risk_ret_points()
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_scatter-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized Sharpe Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      <<optim_portf_SR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-plot_portf <- function(portfolio,
-            rets_data=env_etf$re_turns) {
-  weight_s <- portfolio$weights
-  portf_names <- names(weight_s)
-  # calculate xts of portfolio
-  portf_max <- xts(
-    rets_data[, portf_names] %*% weight_s,
-    order.by=index(rets_data))
-  colnames(portf_max) <-
-    deparse(substitute(portfolio))
-  graph_params <- par(oma=c(1, 0, 1, 0),
-    mgp=c(2, 1, 0), mar=c(2, 1, 2, 1),
-    cex.lab=0.8, cex.axis=1.0,
-    cex.main=0.8, cex.sub=0.5)
-  layout(matrix(c(1,2), 2),
-    widths=c(1,1), heights=c(1,3))
-  barplot(weight_s, names.arg=portf_names,
-          las=3, ylab="", xlab="Symbol", main="")
-  title(main=paste("Loadings",
-                colnames(portf_max)), line=-1)
-  chart.CumReturns(
-    cbind(portf_max, rets_data[, c("IEF", "VTI")]),
-    lwd=2, ylab="", legend.loc="topleft", main="")
-  title(main=paste0(colnames(portf_max),
-                    ", IEF, VTI"), line=-1)
-  par(graph_params)  # restore original parameters
-  invisible(portf_max)
-}  # end plot_portf
-maxSR_DEOpt_xts <- plot_portf(portfolio=maxSR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SR_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Leverage Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The leverage constraint applies to the sum of absolute weights,
-      \vspace{-1em}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add leverage constraint abs(weight_sum)
-portf_maxSRN <- add.constraint(
-  portfolio=portf_init, type="leverage",
-  min_sum=0.9, max_sum=1.1)
-# add box constraint long/short
-portf_maxSRN <- add.constraint(
-  portfolio=portf_maxSRN,
-  type="box", min=-0.2, max=0.2)
-
-# add objectives
-portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN,
-  type="return",  # maximize mean return
-  name="mean")
-# add objectives
-portf_maxSRN <- add.objective(
-  portfolio=portf_maxSRN,
-  type="risk",  # minimize StdDev
-  name="StdDev")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Leverage Constraint Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_leverage,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSRN_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
-  portfolio=portf_maxSRN,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-# plot optimization
-chart.RiskReward(maxSRN_DEOpt,
-  risk.col="StdDev",
-  return.col="mean",
-  xlim=c(
-    maxSR_DEOpt$objective_measures$StdDev[[1]]-0.001,
-    0.016))
-  points(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
-         y=maxSR_DEOpt$objective_measures$mean[1],
-         col="green", lwd=3)
-  text(x=maxSR_DEOpt$objective_measures$StdDev[[1]],
-         y=maxSR_DEOpt$objective_measures$mean[1],
-       labels="maxSR", col="green",
-       lwd=2, pos=4)
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points()
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_leverage-1}
-    \vspace{-2em}
-      <<echo=(-(1:2)),eval=FALSE,tidy=TRUE>>=
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-maxSRN_DEOpt$weights
-maxSRN_DEOpt$objective_measures$mean[1]
-maxSRN_DEOpt$objective_measures$StdDev[[1]]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized Leverage Constraint Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_portf_SRN_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-maxSRN_DEOpt_xts <-
-  plot_portf(portfolio=maxSRN_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_portf_SRN_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sharpe Portfolios \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_SRN_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts),
-  lwd=2, ylab="",
-  legend.loc="topleft", main="")
-      @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-options(width=50)
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-maxSRN_DEOpt$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-maxSRN_DEOpt$objective_measures$StdDev[[1]])
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_SRN_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{STARR Portfolio Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The objective constraint applies to risk or return,
-      \vspace{-1em}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add constraints
-portf_maxSTARR <- add.constraint(
-  portfolio=portf_init,  # initial portfolio
-  type="weight_sum",  # constraint sum weights
-  min_sum=0.9, max_sum=1.1)
-# add constraints
-portf_maxSTARR <- add.constraint(
-  portfolio=portf_maxSTARR,
-  type="long_only")  # box constraint min=0, max=1
-# add objectives
-portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR,
-  type="return",  # maximize mean return
-  name="mean")
-# add objectives
-portf_maxSTARR <- add.objective(
-  portfolio=portf_maxSTARR,
-  type="risk",  # minimize Expected Shortfall
-  name="ES")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{STARR Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_STARR,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-maxSTARR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
-  portfolio=portf_maxSTARR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSTARR=TRUE,  # maximize STARR
-  trace=TRUE, traceDE=0)
-
-# plot optimization
-chart.RiskReward(maxSTARR_DEOpt,
-  risk.col="ES",
-  return.col="mean")
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points(risk="ETL")
-      @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
-options(width=50)
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-maxSTARR_DEOpt$weights
-maxSTARR_DEOpt$objective_measures$mean[1]
-maxSTARR_DEOpt$objective_measures$ES[[1]]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized STARR Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_STARR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-maxSTARR_DEOpt_xts <-
-  plot_portf(portfolio=maxSTARR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_STARR_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sharpe STARR \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_STARR_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts),
-  lwd=2, ylab="",
-  legend.loc="topleft", main="")
-      @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-options(width=50)
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-maxSTARR_DEOpt$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-maxSTARR_DEOpt$objective_measures$ES[[1]])
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_STARR_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Efficient Frontier and Capital Market Line}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Efficient Frontier is the set of portfolios that have the highest returns among all portfolios with the same risk (standard deviation of returns),
+      The portfolio weights $w_i$ are constrained as:
+      \begin{align*}
+        w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
+        0 \leq w_i \leq 1
+      \end{align*}
+      The function \texttt{solve.QP()} has the arguments: 
       \vskip1ex
-      The Capital Market Line (CML) is the line drawn from the risk-free asset to the tangency point on the Efficient Frontier,
+      \texttt{Dmat} and \texttt{dvec} are the matrix and vector defining the quadratic objective function,
       \vskip1ex
-      The tangency point on the Efficient Frontier is considered to be the Market Portfolio,
-      <<optim_eff_front,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PortfolioAnalytics)
-# plot the efficient frontier
-chart.EfficientFrontier(maxSR_DEOpt,
-                match.col="StdDev",
-                n.portfolios=15, type="l")
-points(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
-         y=maxSRN_DEOpt$objective_measures$mean[1],
-         col="green", lwd=3)
-text(x=maxSRN_DEOpt$objective_measures$StdDev[[1]],
-         y=maxSRN_DEOpt$objective_measures$mean[1],
-       labels="maxSRN", col="green",
-       lwd=2, pos=4)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_eff_front-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{minES Portfolio Constraints}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The objective constraint applies to risk or return,
-      \vspace{-1em}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(PortfolioAnalytics)
-# add constraints
-portf_minES <- add.constraint(
-  portfolio=portf_init,  # initial portfolio
-  type="weight_sum",  # constraint sum weights
-  min_sum=0.9, max_sum=1.1)
-# add constraints
-portf_minES <- add.constraint(
-  portfolio=portf_minES,
-  type="long_only")  # box constraint min=0, max=1
-# add objectives
-portf_minES <- add.objective(
-  portfolio=portf_minES,
-  type="risk",  # minimize ES
-  name="ES")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{minES Optimization}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
+      \texttt{Amat} and \texttt{bvec} are the matrix and vector defining the constraints,
+      \vskip1ex
+      \texttt{meq} specifies the number of equality constraints
+      (the first \texttt{meq} constraints are equalities, and the rest are inequalities),
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<optim_minES,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-# perform optimization of weights
-minES_ROI <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
-  portfolio=portf_minES,  # specify portfolio
-  optimize_method="ROI", # use ROI
-  trace=TRUE, traceDE=0)
-
-# plot optimization
-chart.RiskReward(maxSTARR_DEOpt,
-  risk.col="ES",
-  return.col="mean")
-  points(x=minES_ROI$objective_measures$ES[[1]],
-         y=mean(minES_ROI_xts),
-         col="green", lwd=3)
-  text(x=minES_ROI$objective_measures$ES[[1]],
-         y=mean(minES_ROI_xts),
-       labels="minES", col="green",
-       lwd=2, pos=4)
-# plot risk/ret points in portfolio scatterplot
-risk_ret_points(risk="ETL")
+        <<echo=TRUE,eval=FALSE>>=
+# calculate daily percentage re_turns
+re_turns <- na.omit(rutils::env_etf$re_turns[, sym_bols])
+# calculate the covariance matrix
+co_var <- cov(re_turns)
+# minimum variance weights, with sum equal to 1
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 3), 
+                    Amat=matrix(1, nr=3, nc=1), 
+                    bvec=1)
+# minimum variance, maximum returns
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=sapply(0.1*re_turns, mean), 
+                    Amat=matrix(1, nr=3, nc=1), 
+                    bvec=1)
+# minimum variance positive weights, with sum equal to 1
+a_mat <- cbind(matrix(1, nr=3, nc=1), 
+               diag(3),-diag(3))
+b_vec <- c(1, rep(0, 3), rep(-1, 3))
+op_tim <-  quadprog::solve.QP(Dmat=2*co_var, 
+                    dvec=rep(0, 3), 
+                    Amat=a_mat, 
+                    bvec=b_vec, 
+                    meq=1)
       @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE,tidy=TRUE>>=
-options(width=50)
-library(PortfolioAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-minES_ROI$weights
-minES_ROI$objective_measures$ES[[1]]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimized minES Portfolio}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_minES_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(PortfolioAnalytics)
-minES_ROI_xts <-
-  plot_portf(portfolio=minES_ROI)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_minES_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sharpe minES \texttt{CumReturns} Plots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
-      <<optim_SR_minES_vis,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-chart.CumReturns(
-  cbind(maxSR_DEOpt_xts, minES_ROI_xts),
-  lwd=2, ylab="",
-  legend.loc="topleft", main="")
-      @
-    \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-options(width=50)
-library(PerformanceAnalytics)
-load(file="C:/Develop/data/portf_optim.RData")
-rbind(maxSR_DEOpt$weights, minES_ROI$weights)
-c(maxSR_DEOpt$objective_measures$mean,
-minES_ROI$objective_measures$mean)
-c(maxSR_DEOpt$objective_measures$StdDev[[1]],
-minES_ROI$objective_measures$ES[[1]])
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_minES_vis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolios}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_1h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-options(width=50)
-# perform optimization of weights
-maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns["/2011", portf_names],
-  portfolio=portf_maxSR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-weights_1h <- maxSR_DEOpt$weights
-
-# plot optimization
-maxSR_DEOpt_xts <-
-  plot_portf(portfolio=maxSR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_1h-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolios (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<optim_SR_2h,echo=(-(1:3)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-load(file="C:/Develop/data/portf_optim.RData")
-library(PortfolioAnalytics)
-options(width=50)
-# perform optimization of weights
-maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns["2011/", portf_names],
-  portfolio=portf_maxSR,  # specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
-  trace=TRUE, traceDE=0)
-weights_2h <- maxSR_DEOpt$weights
-
-# plot optimization
-maxSR_DEOpt_xts <-
-  plot_portf(portfolio=maxSR_DEOpt)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_SR_2h-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Out-of-sample Portfolio Weights}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-options(width=50)
-weights_1h
-weights_2h
-weights_1h - weights_2h
-      @
-    \vspace{-2em}
-      <<optim_weights,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-barplot(weights_1h,
-        names.arg=names(weights_1h),
-        las=3, ylab="", xlab="",
-        main="Portfolio Weights First Half")
-barplot(weights_2h,
-        names.arg=names(weights_2h),
-        las=3, ylab="", xlab="",
-        main="Portfolio Weights Second Half")
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/optim_weights-1}
   \end{columns}
 \end{block}
 

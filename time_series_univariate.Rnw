@@ -56,7 +56,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Time Series Univariate]{Time Series Univariate}
-\subtitle{FRE6871 \& FRE7241, Spring 2017}
+\subtitle{FRE6871 \& FRE7241, Fall 2017}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -274,7 +274,7 @@ zoo_eurusd <- suppressWarnings(
     origin="1970-01-01")
 )  # end suppressWarnings
 # bind and scrub data
-zoo_stxeur <- merge(zoo_eurusd,
+zoo_stxeur <- cbind(zoo_eurusd,
                      zoo_stx[, "AdjClose"])
 colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
 zoo_stxeur <-
@@ -308,9 +308,11 @@ tail(zoo_eurusd, 4)
       \vskip1ex
       \texttt{lapply} returns a \emph{list} of \emph{zoo} objects,
       \vskip1ex
-      The list of \emph{zoo} objects can be flattened into a single \emph{zoo} object using functions \texttt{do.call()} and \texttt{merge()},
+      The list of \emph{zoo} objects can be flattened into a single \emph{zoo} object using functions \texttt{do.call()} and \texttt{cbind()},
       \vskip1ex
       The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -331,6 +333,8 @@ zoo_series <- suppressWarnings(
 )  # end suppressWarnings
 # flatten list of zoo objects into a single zoo object
 zoo_series <- do.call(merge, zoo_series)
+# or
+zoo_series <- rutils::do_call(cbind, zoo_series)
 # assign names in format "symbol.Close", "symbol.Volume"
 names(zoo_series) <-
   as.vector(sapply(sym_bols,
@@ -578,59 +582,6 @@ title(main="MSFT Close Prices", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Log-normal} Probability Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $x$ be a random variable which follows the \emph{Normal} distribution $N(x, \mu, \sigma)$,
-      \vskip1ex
-      Then the exponential of $x$: $y = e^x$ follows the \emph{Log-normal} distribution:,
-      \begin{displaymath}
-        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
-      \end{displaymath}
-      The mean of the \emph{Log-normal} distribution is equal to: $\mathbb{E}[x] = \exp(\mu + \sigma^2/2)$
-      \vskip1ex
-      The \emph{Log-normal} distribution has a positive skewness (third moment) equal to: $\mathbb{E}[(x - \mathbb{E}[x])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
-      \vskip1ex
-      If asset returns follow the \emph{Normal} probability distribution, then asset prices follow the \emph{Log-normal} distribution,
-      <<echo=TRUE,eval=FALSE>>=
-# sigma values
-sig_mas <- c(0.5, 1, 1.5)
-# create plot colors
-col_ors <- c("black", "red", "blue")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep="=")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-        type="l", xlim=c(0, 3),
-        xlab="", ylab="", lwd=2,
-        col=col_ors[in_dex],
-        add=as.logical(in_dex-1))
-}  # end for
-# add title
-title(main="Log-normal Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, title="Sigmas",
-       lab_els, cex=0.8, lwd=2,
-       lty=rep(1, NROW(sig_mas)),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Geometric Brownian Motion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -667,6 +618,43 @@ plot(price_s, type="l",
      xlab="periods", ylab="prices",
      main="geometric Brownian motion")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful for testing financial models,
+      <<echo=TRUE,eval=FALSE>>=
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
+  order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>% 
+  dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/random_ohlc.png}
   \end{columns}
 \end{block}
 
@@ -746,7 +734,60 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Evolution of Stock Prices}
+\subsection{\protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ be a random variable which follows the \emph{Normal} distribution $N(x, \mu, \sigma)$,
+      \vskip1ex
+      Then the exponential of $x$: $y = e^x$ follows the \emph{Log-normal} distribution:,
+      \begin{displaymath}
+        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      The mean of the \emph{Log-normal} distribution is equal to: $\mathbb{E}[x] = \exp(\mu + \sigma^2/2)$
+      \vskip1ex
+      The \emph{Log-normal} distribution has a positive skewness (third moment) equal to: $\mathbb{E}[(x - \mathbb{E}[x])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      If asset returns follow the \emph{Normal} probability distribution, then asset prices follow the \emph{Log-normal} distribution,
+      <<echo=TRUE,eval=FALSE>>=
+# sigma values
+sig_mas <- c(0.5, 1, 1.5)
+# create plot colors
+col_ors <- c("black", "red", "blue")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+        type="l", xlim=c(0, 3),
+        xlab="", ylab="", lwd=2,
+        col=col_ors[in_dex],
+        add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Log-normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+       lab_els, cex=0.8, lwd=2,
+       lty=rep(1, NROW(sig_mas)),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Evolution of Stock Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -762,14 +803,14 @@ price_s <- eapply(env_sp500, quantmod::Cl)
 # flatten price_s into a single xts series
 price_s <- rutils::do_call(cbind, price_s)
 # remove NA values
-price_s <- na.locf(price_s)
-price_s <- na.locf(price_s, fromLast=TRUE)
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
 # rename and normalize columns
 colnames(price_s) <- sapply(colnames(price_s),
   function(col_name) strsplit(col_name, split="[.]")[[1]][1])
 price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
-               order.by = index(price_s))
+               order.by=index(price_s))
 # calculate permution index for sorting the lowest to highest final price_s
 or_der <- order(price_s[NROW(price_s), ])
 # select a few symbols
@@ -807,18 +848,19 @@ legend(x="topleft", inset=0.05, cex=0.8,
       \vskip1ex
       For example, for a recent cohort of S\&P500 stocks (but with prices starting from 1990), the current prices of almost 80\% of the stocks are now below the average price of the cohort,
       <<echo=TRUE,eval=FALSE>>=
-# calculate average of stock prices
-num_stocks <- rowSums(price_s != 1)
+# calculate average of valid stock prices
+val_id <- (price_s != 1)  # valid stocks
+num_stocks <- rowSums(val_id)
 num_stocks[1] <- NCOL(price_s)
-in_deks <- rowSums(price_s * (price_s != 1)) / num_stocks
+in_dex <- rowSums(price_s * val_id) / num_stocks
 # calculate percentage of stock prices below the average price
-per_centage <- rowSums((price_s < in_deks) & (price_s != 1)) / num_stocks
+per_centage <- rowSums((price_s < in_dex) & val_id) / num_stocks
 # create zoo time series of average stock prices
-in_deks <- zoo(in_deks, order.by=index(price_s))
+in_dex <- zoo(in_dex, order.by=index(price_s))
 # plot zoo time series of average stock prices
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(in_deks, main="Average S&P500 stock prices (normalized from 1990)",
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
          xlab=NA, ylab=NA, col="blue")
 # create xts time series of percentage of stock prices below the average price
 per_centage <- xts(per_centage, order.by=index(price_s))
@@ -834,128 +876,6 @@ plot.zoo(per_centage[-(1:2),],
       \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
       <<echo=TRUE,eval=FALSE>>=
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
-      \begin{displaymath}
-        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
-      \end{displaymath}
-      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
-      \vskip1ex
-      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
-      <<echo=TRUE,eval=FALSE>>=
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-@
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
-       title=paste(c(paste0("vol_at = ", vol_at),
-                     paste0("eq_price = ", eq_price),
-                     paste0("the_ta = ", the_ta)),
-                   collapse="\n"),
-       legend="", cex=0.8,
-       inset=0.1, bg="white", bty="n")
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
-      <<echo=TRUE,eval=FALSE>>=
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; the_ta <- 0.05
-len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-re_turns <- rutils::diff_it(log(price_s))
-lag_price <- rutils::lag_it(price_s)
-lag_price[1] <- lag_price[2]
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# plot regression
-plot(for_mula, main="returns versus lagged prices")
-abline(l_m, lwd=2, col="red")
-@
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_scatter.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Random \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Random \emph{OHLC} prices are useful testing financial models,
-      <<echo=TRUE,eval=FALSE>>=
-# simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 10000
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-              length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
-               order.by=in_dex)
-price_s <- merge(price_s,
-                 volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# aggregate to daily OHLC data
-price_s <- to.daily(price_s)
-chart_Series(price_s, name="random prices")
-@
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/random_ohlc.png}
   \end{columns}
 \end{block}
 
@@ -984,25 +904,74 @@ chart_Series(price_s, name="random prices")
       \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
       \vskip1ex
       The \texttt{acf()} return data can be assigned to a variable, and then printed,
-        <<acf_func,eval=FALSE,echo=(-(1:1)),fig.width=4,fig.height=3.5,fig.show='hide'>>=
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # load package zoo
-# autocorrelation from "stats"
-acf(coredata(dax_rets), lag=10, main="")
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# acf() autocorrelation from package stats
+acf(zoo::coredata(re_turns), lag=10, main="")
 title(main="acf of DAX returns", line=-1)
       @
+      \vspace{-1em}
       The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
       \vskip1ex
-      \texttt{coredata} extracts the core underlying data from a complex object,
+      The function \texttt{coredata} extracts the core underlying data from a complex object,
     \column{0.5\textwidth}
-      \vspace{-1.0em}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_func-1}
-      \vspace{-3.0em}
+      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
       The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
       \vskip1ex
       The DAX time series of returns does not appear to have statistically significant autocorrelations,
       \vskip1ex
       The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test of Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where $n$ is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
   \end{columns}
 \end{block}
 
@@ -1017,9 +986,9 @@ title(main="acf of DAX returns", line=-1)
   \begin{columns}[T]
     \column{0.5\textwidth}
       Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
-      <<echo=(-(1:1))>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # load package zoo
-dax_acf <- acf(coredata(dax_rets), plot=FALSE)
+dax_acf <- acf(coredata(re_turns), plot=FALSE)
 summary(dax_acf)  # get the structure of the "acf" object
 # print(dax_acf)  # print acf data
 dim(dax_acf$acf)
@@ -1069,8 +1038,10 @@ acf_plus <- function (ts_data, plot=TRUE,
 par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # improved autocorrelation function
-acf_plus(coredata(dax_rets), lag=10, main="")
+acf_plus(coredata(re_turns), lag=10, main="")
 title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1095,15 +1066,17 @@ title(main="acf of DAX returns", line=-1)
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # autocorrelation of squared DAX returns
-acf_plus(coredata(dax_rets)^2,
+acf_plus(coredata(re_turns)^2,
          lag=10, main="")
 title(main="acf of squared DAX returns",
       line=-1)
 # autocorrelation of squared random returns
-acf_plus(rnorm(length(dax_rets))^2,
+acf_plus(rnorm(length(re_turns))^2,
          lag=10, main="")
 title(main="acf of squared random returns",
       line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1189,53 +1162,6 @@ title(main="3 month T-bill EOQ", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Ljung-Box Test of Autocorrelation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
-      \end{displaymath}
-      Where $n$ is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
-      \vskip1ex
-      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
-      \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
-      \vskip1ex
-      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
-      \vskip1ex
-      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4))>>=
-library(Ecdat)  # load Ecdat
-macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX data
-# 'lag' is the number of autocorrelation coefficients
-Box.test(dax_rets, lag=10, type="Ljung")
-
-# changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"],
-         lag=10, type="Ljung")
-
-# changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"],
-         lag=10, type="Ljung")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Filtering Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1251,9 +1177,9 @@ library(gridExtra)  # load gridExtra
 dax_ts <- EuStockMarkets[, 1]
 # filter past values only (sides=1)
 dax_filt <- filter(dax_ts,
-                   filter=rep(1/5,5), sides=1)
+    filter=rep(1/5,5), sides=1)
 # coerce to zoo and merge the time series
-dax_filt <- merge(as.zoo(dax_ts),
+dax_filt <- cbind(as.zoo(dax_ts),
                   as.zoo(dax_filt))
 colnames(dax_filt) <- c("DAX", "DAX filtered")
 dax_data <- window(dax_filt,
@@ -1290,14 +1216,14 @@ theme(  # modify plot theme
       Filtering a time series creates autocorrelations,
       <<dax_filter_acf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-dax_rets <- na.omit(diff(log(dax_filt)))
+re_turns <- na.omit(diff(log(dax_filt)))
 par(mfrow=c(2,1))  # set plot panels
 
-acf_plus(coredata(dax_rets[, 1]), lag=10,
+acf_plus(coredata(re_turns[, 1]), lag=10,
          xlab="")
 title(main="DAX", line=-1)
 
-acf_plus(coredata(dax_rets[, 2]), lag=10,
+acf_plus(coredata(re_turns[, 2]), lag=10,
          xlab="")
 title(main="DAX filtered", line=-1)
       @
@@ -1328,10 +1254,10 @@ title(main="DAX filtered", line=-1)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 # autocorrelation from "stats"
-acf_plus(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
 title(main="DAX filtered autocorrelations", line=-1)
 # partial autocorrelation
-pacf(dax_rets[, 2], lag=10, xlab=NA, ylab=NA)
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
 title(main="DAX filtered partial autocorrelations",
       line=-1)
       @
@@ -1489,7 +1415,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       \emph{Stationary} processes have a constant mean and variance,
       \vskip1ex
       The \emph{autoregressive} process \emph{AR(p)}:
-      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i$
+      $p_i = \varphi_1 p_{i-1} + \varphi_2 p_{i-2} + \ldots + \varphi_p p_{i-p} + \varepsilon_i$
       \vskip1ex
       Has the following characteristic equation:
       $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
@@ -1497,7 +1423,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than $1$,
       \vskip1ex
       An \emph{AR(1)} process:
-      $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      $p_i = \varphi_1 p_{i-1} + \varepsilon_i$
       has the following characteristic equation:
       $1 - \varphi_1 z = 0$,
       with a root equal to:
@@ -1507,7 +1433,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       $z = 1 / \varphi_1$, and therefore isn't stationary,
       \vskip1ex
       The process follows:
-      $r_i = r_{i-1} + \varepsilon_i$,
+      $p_i = p_{i-1} + \varepsilon_i$,
       \vskip1ex
       The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
       \vskip1ex
@@ -1548,7 +1474,7 @@ legend(x="topleft",
     \column{0.5\textwidth}
       Asset prices are the sum of simple asset returns, hence they follow an \emph{integrated} process with respect to asset returns:
       \begin{displaymath}
-        x_i={\sum_{i=1}^n r_i}
+        p_n = {\sum_{i=1}^n r_i}
       \end{displaymath}
       If returns follow an \emph{AR(1)} process:
       \begin{displaymath}
@@ -1556,7 +1482,7 @@ legend(x="topleft",
       \end{displaymath}
       Then asset prices follow the process:
       \begin{displaymath}
-        x_i = (1+\varphi_1) x_{i-1} - \varphi_1 x_{i-2} + \varepsilon_i
+        p_i = (1+\varphi_1) p_{i-1} - \varphi_1 p_{i-2} + \varepsilon_i
       \end{displaymath}
       If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
       \vskip1ex
@@ -1598,19 +1524,19 @@ legend(x="topleft",
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
       \vskip1ex
-      The \emph{Augmented Dickey-Fuller} test fits the following regression model:
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series exhibits mean reversion:
       \begin{displaymath}
-        r_i = {\gamma}_1 x_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+        r_i = \gamma p_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
       \end{displaymath}
-      where $r_i = x_i - x_{i-1}$,
+      where $p_i = p_{i-1} - r_i$, 
       \vskip1ex
-      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$), while the alternative hypothesis is that the process is stationary ($\gamma < 0$),
+      If the price mean reversion parameter is negative: $\gamma < 0$, then the time series process has no \emph{unit root},
       \vskip1ex
-      The \emph{ADF} test is weak in the sense that it needs a lot of data to identify a \emph{unit root} process,
-    \column{0.6\textwidth}
+      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the process is stationary ($\gamma < 0$, mean reversion),
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(tseries)  # load tseries
@@ -1628,6 +1554,9 @@ set.seed(1121)  # initialize random number generator
 rand_walk <- cumsum(rnorm(10000))
 tseries::adf.test(rand_walk)
       @
+      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
+      \vskip1ex
+      The \emph{ADF} test is weak in the sense that it requires a lot of data to identify a \emph{unit root} process,
   \end{columns}
 \end{block}
 
@@ -1689,6 +1618,152 @@ arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
 library(forecast)  # load forecast
 auto.arima(ar3_zoo)  # fit ARIMA model
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
+      \begin{displaymath}
+        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+       title=paste(c(paste0("vol_at = ", vol_at),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8,
+       inset=0.1, bg="white", bty="n")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Ornstein-Uhlenbeck Solution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Standard \emph{Ornstein-Uhlenbeck} process has a solution in the form of an integral over \emph{Brownian motion}:
+      \begin{flalign*}
+        & \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t \\
+        & \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t \\
+        & \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t \\
+      \end{flalign*}
+      \begin{displaymath}
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+       title=paste(c(paste0("vol_at = ", vol_at),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8,
+       inset=0.1, bg="white", bty="n")
+@
   \end{columns}
 \end{block}
 
@@ -1758,9 +1833,9 @@ sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
   "IVW", "IWB", "IWD", "IWF")
 # read etf database into data frame
-etf_list <-
-  read.csv(file='C:/Develop/R/lecture_slides/data/etf_list.csv',
-                     stringsAsFactors=FALSE)
+etf_list <- read.csv(
+  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
+               stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
@@ -1903,46 +1978,47 @@ for (sym_bol in sym_bols) {
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
       \vskip1ex
       A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
       \vskip1ex
       The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
       \vskip1ex
-      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      The function \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
       \vskip1ex
       The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)  # load package quantmod
 # extract and merge all data, subset by symbols
 price_s <- do.call(merge,
-                  as.list(env_etf)[sym_bols])
-
+  as.list(env_etf)[sym_bols])
+# or
+price_s <- rutils::do_call(cbind,
+  as.list(env_etf)[sym_bols])
 # extract and merge adjusted prices, subset by symbols
-price_s <- do.call(merge,
-               lapply(as.list(env_etf)[sym_bols], Ad))
-
+price_s <- rutils::do_call(cbind,
+  lapply(as.list(env_etf)[sym_bols], Ad))
 # same, but works only for OHLC series
-price_s <- do.call(merge, eapply(env_etf, Ad)[sym_bols])
-
+price_s <- rutils::do_call(cbind, 
+  eapply(env_etf, Ad)[sym_bols])
 # drop ".Adjusted" from colnames
 colnames(price_s) <-
   sapply(colnames(price_s),
     function(col_name)
       strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(price_s[, 1:2], 3)
-
 # which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
-
 # save xts to csv file
 write.zoo(price_s,
-     file='etf_series.csv', sep=",")
+  file='etf_series.csv', sep=",")
 # copy price_s into env_etf and save to .RData file
 assign("price_s", price_s, envir=env_etf)
 save(env_etf, file='etf_data.RData')
@@ -2619,7 +2695,7 @@ chart_Series(x=env_etf$DJIA["2016/"],
 
 
 %%%%%%%%%%%%%%%
-\subsection{(draft) Stock Index Weighting Methods}
+\subsection{draft: Stock Index Weighting Methods}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}

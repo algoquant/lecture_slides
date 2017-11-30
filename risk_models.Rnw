@@ -50,7 +50,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Risk Analysis and Model Construction]{Risk Analysis and Model Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2017}
+\subtitle{FRE6871 \& FRE7241, Fall 2017}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -68,6 +68,569 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
+\section{Modeling and Fitting Asset Returns}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Moments of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimators of moments of a probability distribution are given by:
+      \vskip1ex
+      Sample mean: $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$
+      \vskip1ex
+      Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
+      \vskip1ex
+      With their expected values equal to the population mean and standard deviation:\\
+      $\mathbb{E}[\bar{x}]=\mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma]=\sigma$
+      \vskip1ex
+      The sample skewness (third moment):
+      \begin{displaymath}
+        \hat{s}=\frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+      \end{displaymath}
+      The sample kurtosis (fourth moment):
+      \begin{displaymath}
+        \hat{k}=\frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{displaymath}
+      The normal distribution has zero skewness and kurtosis equal to 3,
+      \vskip1ex
+      Stock returns typically have negative skewness and kurtosis much greater than 3,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# number of observations
+n_row <- NROW(re_turns)
+# mean of VTI returns
+mean_rets <- mean(re_turns)
+# standard deviation of VTI returns
+sd_rets <- sd(re_turns)
+# skew of VTI returns
+n_row/((n_row-1)*(n_row-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of VTI returns
+n_row*(n_row+1)/((n_row-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+# random normal returns
+re_turns <- rnorm(n_row, sd=sd_rets)
+# mean and standard deviation of random normal returns
+mean_rets <- mean(re_turns)
+sd_rets <- sd(re_turns)
+# skew of random normal returns
+n_row/((n_row-1)*(n_row-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of random normal returns
+n_row*(n_row+1)/((n_row-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Statistical estimators are functions of samples (which are random variables), and therefore are themselves \emph{random variables},
+      \vskip1ex
+      The \emph{standard error} (SE) of an estimator is defined as its \emph{standard deviation} (not to be confused with the \emph{population standard deviation} of the underlying random variable),
+      \vskip1ex
+      For example, the \emph{standard error} of the estimator of the mean is equal to:
+      \begin{displaymath}
+        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+      \end{displaymath}
+      Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown),
+      \vskip1ex
+      The \emph{estimator} of this \emph{standard error} is equal to:
+      \begin{displaymath}
+        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
+      \end{displaymath}
+      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+n_row <- 1000
+sam_ple <- rnorm(n_row)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Robust Measures of Dispersion and Skewness}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median (instead of the mean):
+      \begin{displaymath}
+        MAD = median(abs(C_i - median(C_i)))
+      \end{displaymath}
+      \vskip1ex
+      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$, 
+      \vskip1ex
+      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation, 
+      \vskip1ex
+      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance, 
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation, 
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+re_turns <- rnorm(1000)
+sd(re_turns)
+mad(re_turns)
+median(abs(re_turns - median(re_turns)))
+median(abs(re_turns - median(re_turns)))/qnorm(0.75)
+# bootstrap of sd and mad estimators
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    re_turns[sample.int(n_row, replace=TRUE)]
+  c(sd=sd(boot_sample),
+    mad=mad(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+# parallel bootstrap under Windows
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+boot_strap <- parLapply(clus_ter, 1:10000, 
+  function(x, re_turns) {
+    boot_sample <- 
+      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
+    c(sd=sd(boot_sample),
+      mad=mad(boot_sample))
+  }, re_turns=re_turns)  # end parLapply
+# parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000, 
+  function(x) {
+    boot_sample <- 
+      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
+    c(sd=sd(boot_sample),
+      mad=mad(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+# analyze bootstrapped variance
+boot_strap <- rutils::do_call(rbind, boot_strap)
+head(boot_strap)
+sum(is.na(boot_strap))
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), std_error=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Normal (Gaussian)} probability density function is given by:
+      \begin{displaymath}
+        N(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
+      \end{displaymath}
+      The \emph{Standard Normal} distribution $N(0, 1)$ is a special case of the \emph{Normal} $N(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$,
+      \vskip1ex
+      The function \texttt{dnorm()} calculates the \emph{Normal} probability density,
+      <<echo=TRUE,eval=FALSE>>=
+x_var <- seq(-5, 7, length=100)
+y_var <- dnorm(x_var, mean=1.0, sd=2.0)
+plot(x_var, y_var, type="l", lty="solid",
+     xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+star_t <- 3; fin_ish <- 5  # set lower and upper bounds
+# set polygon base
+are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
+polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
+        c(-1, y_var[are_a], -1), col="red")
+      @
+    \column{0.5\textwidth}
+    \includegraphics[width=0.5\paperwidth]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name,
+      <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dnorm(x, sd=sig_mas[in_dex]),
+      type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_mult_curves-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + x^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<eval=FALSE,echo=(-(1:2))>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(3, 6, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- c("normal", paste("df", d_free, sep="="))
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=2)
+for (in_dex in 1:3) {  # plot three t-distributions
+curve(expr=dt(x, df=d_free[in_dex]),
+      type="l", xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex+1], add=TRUE)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<eval=FALSE,echo=TRUE>>=
+# add title
+title(main="t-distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Log-likelihood Function of Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standardized Student's \emph{t-distribution} is given by:
+      \begin{displaymath}
+        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{x - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      Where $\nu$ is the degrees of freedom, $\mu$ is the location parameter, and $\sigma$ is the scale parameter,  
+      \vskip1ex
+      The corresponding negative of \emph{log-likelihood} function can be written as:
+      \begin{multline*}
+        P(x) = -log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + log(\sigma ) + \\
+        \frac{\nu+1}{2} \, log(1 + (\frac{x - \mu}{\sigma})^2/\nu)
+      \end{multline*}
+      $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
+      \begin{displaymath}
+        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_i|\theta)
+      \end{displaymath}
+      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
+      \vskip1ex
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+      \end{displaymath}
+      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
+      \vskip1ex
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# objective function is log-likelihood
+object_ive <- function(pa_r, free_dom, sam_ple) {
+  sum(
+    -log(gamma((free_dom+1)/2) / 
+      (sqrt(pi*free_dom) * gamma(free_dom/2))) + 
+    log(pa_r[2]) + 
+    (free_dom+1)/2 * log(1 + ((sam_ple - pa_r[1])/
+                            pa_r[2])^2/free_dom))
+}  # end object_ive
+# simpler objective function
+object_ive <- function(pa_r, free_dom, sam_ple) {
+  -sum(log(dt(x=(sam_ple-pa_r[1])/pa_r[2], 
+              df=free_dom)/pa_r[2]))
+}  # end object_ive
+# demonstrate equivalence of the two methods
+object_ive(c(0, 1), 2, 2:5)
+-sum(log(dt(x=2:5, df=2)))
+object_ive(c(1, 0.5), 2, 2:5)
+-sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Asset Returns into Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization,
+      \vskip1ex
+      The function \texttt{fitdistr()} performs a \emph{maximum likelihood} optimization to find the non-standardized Student's \emph{t-distribution} location and scale parameters,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# initial parameters
+par_init <- c(mean=0, scale=0.01)
+# fit distribution using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=re_turns, 
+  free_dom=2, # degrees of freedom
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(1, 0.1), # upper constraint
+  lower=c(-1, 1e-7)) # lower constraint
+# optimal parameters
+lo_cation <- optim_fit$par["mean"]
+sc_ale <- optim_fit$par["scale"]
+# fit distribution using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(re_turns, 
+  densfun="t", df=2, lower=c(-1, 1e-7))
+optim_fit$estimate
+optim_fit$sd
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting the Fitted Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(width=6, height=5)
+# plot histogram of VTI returns
+histo_gram <- hist(re_turns, col="lightgrey", 
+  xlab="returns", breaks=100, xlim=c(-0.05, 0.05), 
+  ylab="frequency", freq=FALSE, 
+  main="VTI returns histogram")
+lines(density(re_turns, adjust=1.5), 
+      lwd=3, col="blue")
+# plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(re_turns), 
+  sd=sd(re_turns)), add=TRUE, type="l", 
+  xlab="", ylab="", lwd=3, col="green")
+# plot t-distribution function
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale, 
+      type="l", xlab="", ylab="", lwd=3,
+      col="red", add=TRUE)
+# add legend
+legend("topright", inset=0.05, 
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=c(1, 1, 1),
+  col=c("blue", "red", "green"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/t_dist_rets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables,
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with \texttt{k} degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        P(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+        <<eval=FALSE,echo=(-(1:2))>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(2, 5, 8, 11)  # df values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("df", d_free, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dchisq(x, df=d_free[in_dex]),
+      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<eval=FALSE,echo=TRUE>>=
+# add title
+title(main="Chi-squared Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value,
+      \vskip1ex
+      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Goodness of Fit Tests}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of fit} tests are designed to test if a set of observations fits a probability distribution,
+      \vskip1ex
+      The \emph{Chi-squared} test is designed to test if a frequency distribution (contingency table) fits the specified probability distribution,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test is designed to test if two samples were obtained from the same probability distribution,
+      \vskip1ex
+      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate cumulative probabilities and then difference them
+prob_s <- pt((histo_gram$breaks-lo_cation)/sc_ale, df=2)
+prob_s <- diff(prob_s)
+# perform Chi-squared test
+chisq.test(histo_gram$counts, p=prob_s, 
+  rescale.p=TRUE, simulate.p.value=TRUE)
+
+# calculate sample from t-distribution
+sam_ple <- lo_cation + sc_ale*rt(NROW(re_turns), df=2)
+# perform Kolmogorov-Smirnov test
+ks.test(as.numeric(re_turns), sam_ple)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Performing Aggregations Over Time Series}
 
 
@@ -82,7 +645,7 @@ knit_theme$set(thm)
       \vskip1ex
       A time \emph{interval} is defined as the time spanned by one or more neighboring time \emph{periods}, 
       \vskip1ex
-      A look-back \emph{interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
+      A \emph{look-back interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
       \vskip1ex
       The \emph{startpoints} are the \emph{endpoints} lagged by the interval width (number of periods in the interval), 
       \vskip1ex
@@ -123,24 +686,25 @@ knit_theme$set(thm)
       The variable \texttt{look\_back} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point), 
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
-library(HighFreq)  # load package HighFreq
-price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
-end_points <- 0:NROW(price_s)  # define end points
+      <<TRUE,eval=FALSE>>=
+price_s <- Cl(rutils::env_etf$VTI)
+end_points <- seq_along(price_s)  # define end points
 len_gth <- NROW(end_points)
-look_back <- 11  # number of data points per look-back interval
+look_back <- 22  # number of data points per look-back interval
 # start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
 # define aggregation function
-agg_regate <- function(x_ts)
-  c(max=max(x_ts), min=min(x_ts))
-# perform aggregations over length of end_points
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end sapply
+agg_regate <- function(x_ts) c(max=max(x_ts), min=min(x_ts))
+# perform aggregations over look_backs list
+agg_regations <- sapply(look_backs, 
+    function(look_back) agg_regate(price_s[look_back])
+)  # end sapply
 # coerce agg_regations into matrix and transpose it
 if (is.vector(agg_regations))
   agg_regations <- t(agg_regations)
@@ -177,35 +741,27 @@ agg_regations <- xts(agg_regations,
       The function \texttt{chart\_theme()} returns the theme object, 
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
-end_points <- 0:NROW(price_s)  # define end points
-len_gth <- NROW(end_points)
-look_back <- 11  # number of data points per look-back interval
-# define starting points as lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-# define aggregation function
-agg_regate <- function(x_ts)
-  xts(t(c(max=max(x_ts), min=min(x_ts))), 
-      order.by=end(x_ts))
-# perform aggregations over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end lapply
+# perform aggregations over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) agg_regate(price_s[look_back])
+)  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
-agg_regations <- merge(price_s, agg_regations)
+# convert into xts
+agg_regations <- xts::xts(agg_regations, 
+    order.by=index(price_s))
+agg_regations <- cbind(agg_regations, price_s)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green")
+x11()
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
 legend("top", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+  bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -242,22 +798,25 @@ col=plot_theme$col$line.col, bty="n")
 # define functional for rolling aggregations
 roll_agg <- function(x_ts, look_back, FUN, ...) {
 # define end points at every period
-  end_points <- 0:NROW(x_ts)
+  end_points <- seq_along(x_ts)
   len_gth <- NROW(end_points)
 # define starting points as lag of end_points
-  start_points <-  end_points[
-    c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-# perform aggregations over length of end_points
-  agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...)
-    })  # end lapply
+  start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs, 
+    function(look_back) FUN(x_ts[look_back], ...)
+  )  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
 # coerce agg_regations into xts series
   if (!is.xts(agg_regations))
-    agg_regations <- 
-      xts(agg_regations, order.by=index(x_ts[end_points]))
+    agg_regations <- xts(agg_regations, order.by=index(x_ts))
   agg_regations
 }  # end roll_agg
 # define aggregation function
@@ -266,6 +825,8 @@ agg_regate <- function(x_ts)
 # perform aggregations over rolling interval
 agg_regations <- roll_agg(price_s, look_back=look_back, 
                     FUN=agg_regate)
+class(agg_regations)
+dim(agg_regations)
       @
   \end{columns}
 \end{block}
@@ -367,7 +928,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \texttt{vectors} and \texttt{time series} objects,
+      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \emph{vectors} and \emph{time series} objects,
       \vskip1ex
       The methods for these functions are implemented as \emph{vectorized compiled} functions, and are therefore much faster than \texttt{apply()} loops, 
       \vskip1ex
@@ -389,21 +950,23 @@ roll_sum <- function(x_ts, look_back) {
   out_put
 }  # end roll_sum
 agg_regations <- roll_sum(price_s, look_back=look_back)
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
 # perform rolling aggregations using apply loop
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      sum(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end sapply
+agg_regations <- sapply(look_backs, 
+    function(look_back) sum(price_s[look_back])
+)  # end sapply
 head(agg_regations)
 tail(agg_regations)
 # benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
   roll_sum=roll_sum(price_s, look_back=look_back),
-  s_apply=sapply(2:len_gth, 
-    function(in_dex) {
-      sum(price_s[start_points[in_dex]:end_points[in_dex]])
-  }), 
+  s_apply=sapply(look_backs, 
+    function(look_back) sum(price_s[look_back])), 
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -419,7 +982,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{TTR} contains functions for calculating rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      The package \emph{TTR} contains functions for calculating rolling aggregations over \emph{vectors} and \emph{time series} objects: 
       \begin{itemize}
         \item \texttt{runSum()} for rolling sums,
         \item \texttt{runMin()} and \texttt{runMax()} for rolling minima and maxima, 
@@ -455,7 +1018,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppRoll} contains functions for calculating \emph{weighted} rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      The package \emph{RcppRoll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
       \begin{itemize}
         \item \texttt{roll\_sum()} for \emph{weighted} rolling sums,
         \item \texttt{roll\_min()} and \texttt{roll\_max()} for \emph{weighted} rolling minima and maxima, 
@@ -471,25 +1034,25 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # load package RcppRoll
-look_back <- 11  # number of data points per look-back interval
+wid_th <- 22  # number of data points per look-back interval
 # calculate rolling sum using rutils
 prices_mean <- 
-  rutils::roll_sum(price_s, win_dow=look_back)
+  rutils::roll_sum(price_s, win_dow=wid_th)
 # calculate rolling sum using RcppRoll
 prices_mean <- RcppRoll::roll_sum(price_s, 
-                    align="right", n=look_back)
+                    align="right", n=wid_th)
 # benchmark the speed of RcppRoll::roll_sum
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)), 
-  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=look_back),
-  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
+  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=wid_th),
+  roll_sum=rutils::roll_sum(price_s, win_dow=wid_th),
   times=10))[, c(1, 4, 5)]
 # calculate EWMA sum using RcppRoll
-weight_s <- exp(0.1*1:look_back)
+weight_s <- exp(0.1*1:wid_th)
 prices_mean <- RcppRoll::roll_mean(price_s, 
-      align="right", n=look_back, weights=weight_s)
-prices_mean <- merge(price_s, 
+      align="right", n=wid_th, weights=weight_s)
+prices_mean <- cbind(price_s, 
   rbind(coredata(price_s[1:(look_back-1), ]), prices_mean))
 colnames(prices_mean) <- c("SPY", "SPY EWMA")
 # plot EWMA prices with custom line colors
@@ -499,7 +1062,7 @@ x11()
 chart_Series(prices_mean, theme=plot_theme, 
              name="EWMA prices")
 legend("top", legend=colnames(prices_mean), 
-       bg="white", lty=c(1, 1), lwd=c(2, 2), 
+       bg="white", lty=c(1, 1), lwd=c(6, 6), 
        col=plot_theme$col$line.col, bty="n")
 @
   \end{columns}
@@ -522,7 +1085,7 @@ legend("top", legend=colnames(prices_mean),
         \item \texttt{runmad()} for rolling Median Absolute Deviations (MAD),
         \item \texttt{runquantile()} for rolling quantiles,
       \end{itemize}
-      Time series need to be coerced to \texttt{vectors} before they are passed to \emph{caTools} functions,
+      Time series need to be coerced to \emph{vectors} before they are passed to \emph{caTools} functions,
       \vskip1ex
       The rolling \emph{caTools} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
       \vskip1ex
@@ -542,7 +1105,7 @@ ls("package:caTools")  # list all objects in "caTools"
 detach("package:caTools")  # remove caTools from search path
 # median filter
 look_back <- 11
-price_s <- Cl(SPY["2012-02-01/2012-04-01"])
+price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 med_ian <- runmed(x=price_s, k=look_back)
 # vector of rolling volatility
 vol_at <- runsd(x=price_s, k=look_back, 
@@ -572,22 +1135,22 @@ quan_tiles <- runquantile(x=price_s,
       \vspace{-1em}
       <<chart_Series_endp,echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-# extract a single day of minutely price data
-price_s <- Cl(SPY["2012-02-13"])
+# extract daily closing VTI prices
+price_s <- Cl(rutils::env_etf$VTI)
 # define number of data points per interval
-look_back <- 11
+look_back <- 22
 # number of look_backs that fit over price_s
 n_row <- NROW(price_s)
 num_agg <- n_row %/% look_back
 # if n_row==look_back*num_agg then whole number 
 # of look_backs fit over price_s
-end_points <- look_back*(0:num_agg)
+end_points <- (1:num_agg)*look_back
 # if (n_row > look_back*num_agg) 
 # then stub interval at beginning
 end_points <- 
-  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
+  n_row-look_back*num_agg + (0:num_agg)*look_back
 # stub interval at end
-end_points <- c(look_back*(0:num_agg), n_row)
+end_points <- c((1:num_agg)*look_back, n_row)
 # plot data and endpoints as vertical lines
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
@@ -629,7 +1192,7 @@ abline(v=end_points, col="red")
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
-end_points <- endpoints(price_s, on="hours")
+end_points <- xts::endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
@@ -665,15 +1228,21 @@ head(price_s[end_points, ])
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
+  n_row-look_back*num_agg + (0:num_agg)*look_back
 len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform sapply() loop over length of end_points
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
+start_points <- c(1, end_points[1:(len_gth-1)]+1)
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+look_backs[[1]]
+look_backs[[2]]
+# perform sapply() loop over look_backs list
+agg_regations <- sapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
       c(max=max(x_ts), min=min(x_ts))
   })  # end sapply
 # coerce agg_regations into matrix and transpose it
@@ -682,16 +1251,16 @@ if (is.vector(agg_regations))
 agg_regations <- t(agg_regations)
 # coerce agg_regations into xts series
 agg_regations <- xts(agg_regations, 
-                     order.by=index(price_s[end_points]))
+    order.by=index(price_s[end_points]))
 head(agg_regations)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -715,30 +1284,26 @@ col=plot_theme$col$line.col, bty="n")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
-end_points <- # define end_points with beginning stub
-  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- NROW(end_points)
-# start_points are single-period lag of end_points
-start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
-      xts(t(c(max=max(x_ts), min=min(x_ts))), 
-            order.by=index(price_s[end_points[in_dex]]))
-  })  # end lapply
+# perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
+      c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations, 
+    order.by=index(price_s[end_points]))
 head(agg_regations)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -772,10 +1337,10 @@ col=plot_theme$col$line.col, bty="n")
 roll_agg <- function(x_ts, end_points, FUN, ...) {
   len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-  start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform aggregations over length of end_points
-  agg_regations <- lapply(2:len_gth, 
-    function(in_dex) FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...))  # end lapply
+  start_points <- c(1, end_points[1:(len_gth-1)]+1)
+# perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs, 
+    function(look_back) FUN(x_ts[look_back], ...))  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
   if (!is.xts(agg_regations))
@@ -825,7 +1390,7 @@ head(agg_regations)
 # load package HighFreq
 library(HighFreq)
 # extract closing minutely prices
-price_s <- Cl(SPY["2012-02-01/2012-04-01"])
+price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 # apply "mean" over daily periods
 agg_regations <- apply.daily(price_s, FUN=sum)
 head(agg_regations)
@@ -845,42 +1410,48 @@ head(agg_regations)
     \column{0.4\textwidth}
       The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} intervals, 
       \vskip1ex
-      But it's often necessary to perform aggregations over \emph{overlapping} intervals, defined by a vector of \emph{endpoints} and a look-back \emph{interval}, 
+      But it's often necessary to perform aggregations over \emph{overlapping} intervals, defined by a vector of \emph{endpoints} and a \emph{look-back interval}, 
       \vskip1ex
-      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the interval width (number of periods in the look-back \emph{interval}), 
+      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the interval width (number of periods in the \emph{look-back interval}), 
       \vskip1ex
-      Each point in time has an associated look-back \emph{interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
+      Each point in time has an associated \emph{look-back interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
       \vskip1ex
-      The variable \texttt{look\_back} is equal to the number of end points in the look-back \emph{interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
+      The variable \texttt{look\_back} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-look_back <- 4  # number of end points per look-back interval
 end_points <- # define end_points with beginning stub
-  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
+  n_row-look_back*num_agg + (0:num_agg)*look_back
 len_gth <- NROW(end_points)
+num_points <- 4  # number of end points in look-back interval
 # start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
-      xts(t(c(max=max(x_ts), min=min(x_ts))), 
-            order.by=index(price_s[end_points[in_dex]]))
-  })  # end lapply
+start_points <- c(rep_len(1, num_points-1), 
+  end_points[1:(len_gth-num_points+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
+      c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations, 
+    order.by=index(price_s[end_points]))
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -897,34 +1468,18 @@ col=plot_theme$col$line.col, bty="n")
     \column{0.5\textwidth}
       Interval aggregations produce values only at the \emph{endpoints}, but they can be carried forward in time using the function \texttt{na.locf()} from package \emph{zoo},
       <<echo=(-(1:2)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
 library(HighFreq)  # load package HighFreq
-end_points <- # define end_points with beginning stub
-  c(0, n_row-look_back*num_agg+look_back*(0:num_agg))
-len_gth <- NROW(end_points)
-look_back <- 4  # number of end points per look-back interval
-# start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-  function(in_dex) {mean(price_s[start_points[in_dex]:end_points[in_dex]])
-})  # end lapply
-# rbind list into single xts or matrix
-agg_regations <- rutils::do_call_rbind(agg_regations)
-agg_regations <- xts(agg_regations, 
-    order.by=index(price_s[end_points]))
 agg_regations <- cbind(price_s, agg_regations)
-agg_regations <- na.omit(na.locf(agg_regations))
-colnames(agg_regations)[2] <- "aggregations"
+tail(agg_regations, 22)
+agg_regations <- na.omit(zoo::na.locf(agg_regations))
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("red", "green")
+plot_theme$col$line.col <- c("black", "red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/agg_interval_carryfwd.png}\\
@@ -958,7 +1513,7 @@ dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 zoo_agg <- aggregate(zoo_series, by=dates_agg, 
                      FUN=mean)
 # merge with original zoo - union of dates
-zoo_agg <- merge(zoo_series, zoo_agg)
+zoo_agg <- cbind(zoo_series, zoo_agg)
 # replace NA's using locf
 zoo_agg <- na.locf(zoo_agg)
 # extract aggregated zoo
@@ -1003,7 +1558,7 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 zoo_agg <- aggregate(zoo_series, by=dates_agg, 
                      FUN=mean)
 # merge with original zoo - union of dates
-zoo_agg <- merge(zoo_series, zoo_agg)
+zoo_agg <- cbind(zoo_series, zoo_agg)
 # replace NA's using linear interpolation
 zoo_agg <- na.approx(zoo_agg)
 # extract interpolated zoo
@@ -1045,7 +1600,7 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 zoo_mean <- rollapply(zoo_series, width=11, 
                       FUN=mean, align="right")
 # merge with original zoo - union of dates
-zoo_mean <- merge(zoo_series, zoo_mean)
+zoo_mean <- cbind(zoo_series, zoo_mean)
 # replace NA's using na.locf
 zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
 # extract mean zoo
@@ -1070,7 +1625,62 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 
 %%%%%%%%%%%%%%%
-\section{Estimation and Modeling of Volatility and Skew}
+\section{Estimating and Modeling Volatility and Skew}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time,
+      \vskip1ex
+      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time,
+      \vskip1ex
+      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
+      \end{align*}
+      Where $k$ is the \emph{look-back interval} for performing aggregations over the past, 
+      \vskip1ex
+      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# define end points
+end_points <- seq_along(re_turns)
+len_gth <- NROW(end_points)
+look_back <- 51
+# start_points are multi-period lag of end_points
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# calculate realized VTI variance in sapply() loop
+vari_ance <- sapply(look_backs, 
+  function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+}) / (look_back-1)  # end sapply
+tail(vari_ance)
+class(vari_ance)
+# coerce vari_ance into xts
+vari_ance <- xts(vari_ance, order.by=index(re_turns))
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -1080,59 +1690,36 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      It's not possible to vectorize the calculation of rolling realized variance in \texttt{R}, so it must be calculated using an \texttt{apply()} loop,
-      \vskip1ex
-      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
       \begin{itemize}
         \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
         \item \texttt{roll\_scale()} for rolling scaling and centering of time series, 
         \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
       \end{itemize}
-      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops! because they perform calculations in parallel in compiled \texttt{C++} code,
+      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
+      \vskip1ex
+      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using package \emph{Rcpp},
       \vskip1ex
       The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}, 
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-#  calculate returns
-re_turns <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))
-# define end points
-end_points <- 0:NROW(re_turns)
-len_gth <- NROW(end_points)
-look_back <- 31
-# start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-      @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# calculate realized VTI variance
-var_running <- sapply(2:len_gth, function(in_dex) {
-  ret_s <- re_turns[start_points[in_dex]:end_points[in_dex]]
-  sum((ret_s - mean(ret_s))^2)
-}) / (look_back-1)  # end sapply
-tail(re_turns)
-class(var_running)
-# coerce var_running into xts
-var_running <- xts(var_running, order.by=index(re_turns))
-colnames(var_running) <- "VTI.variance"
-head(var_running)
 # calculate VTI variance using package roll
-library(roll)  # load RcppRoll
-weight_s <- exp(0.1*1:look_back)
-var_running <- roll::roll_var(re_turns, width=look_back)
-colnames(var_running) <- "VTI.variance"
-head(var_running)
-sum(is.na(var_running))
-var_running[1:(look_back-1)] <- 0
+library(roll)  # load roll
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
 # benchmark calculation of rolling variance
 library(microbenchmark)
 summary(microbenchmark(
-  roll_sapply=sapply(2:len_gth, function(in_dex) {
-    ret_s <- re_turns[start_points[in_dex]:end_points[in_dex]]
+  roll_sapply=sapply(look_backs, function(look_back) {
+    ret_s <- re_turns[look_back]
     sum((ret_s - mean(ret_s))^2)
   }),
-  roll_roll=roll_var(re_turns, width=look_back),
+  ro_ll=roll::roll_var(re_turns, width=look_back),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -1142,74 +1729,42 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: \protect\emph{EWMA} Realized Variance Estimator}
+\subsection{Rolling \protect\emph{EWMA} Realized Variance Estimator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) \emph{realized} variance estimator, 
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator, 
       \vskip1ex
-      If the returns have zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
       \begin{displaymath}
-        \hspace{-0.5em}\hat\sigma_i^2 = \lambda {\Delta r_i}^2 + (1-\lambda) \hat\sigma_{i-1}^2 = \lambda \sum_{j=0}^{\infty} (1-\lambda)^j {\Delta r_{i-j}}^2
+        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
       \end{displaymath}
-      $\hat\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
+      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
       \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
       \vskip1ex
-      Heteroskedasticity refers to statistical distributions whose parameters vary with time,
-      \vskip1ex
-      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects, 
-      \vskip1ex
-      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-      \vskip1ex
-      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
+      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-#  calculate variance for each period
-var_running <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))^2
-# calculate average realized VTI variance using rutils
-look_back <- 31
-var_avg <- rutils::roll_sum(var_running, 
-                  win_dow=look_back)/look_back
 # calculate EWMA VTI variance using filter()
-weight_s <- exp(0.1*1:look_back)
+wid_th <- 51
+weight_s <- exp(-0.1*1:wid_th)
 weight_s <- weight_s/sum(weight_s)
-var_ewma <- filter(var_running, filter=weight_s, sides=1)
-var_ewma[1:(look_back-1)] <- var_ewma[look_back]
-# plot EWMA prices
-# set plot_theme plot line colors
-# plot_theme <- chart_theme()
-# plot_theme$col$line.col <- c("orange", "blue")
-# var_ewma <- xts(cbind(cl_ose, var_ewma), order.by=index(cl_ose))
-# colnames(var_ewma) <- c("VTI", "VTI EWMA")
-# chart_Series(var_ewma, theme=plot_theme, name="EWMA prices")
-
-library(RcppRoll)  # load RcppRoll
-var_ewma <- RcppRoll::roll_var(var_running, 
-    align="right", n=look_back, weights=weight_s)
-var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
-colnames(var_ewma) <- "VTI.var_ewma"
-# plot average and EWMA variances with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red")
-x11()
-chart_Series(merge(var_avg, var_ewma)["2012"],
-             theme=plot_theme, name="VTI variances")
-legend("top", legend=c(colnames(var_avg), 
-                       colnames(var_ewma)),
-       bg="white", lty=c(1, 1), lwd=c(2, 2),
-       col=plot_theme$col$line.col, bty="n")
-# plot EWMA variance with prices
-x11()
-chart_Series(env_etf$VTI["2010-01/2010-10"], 
-   name="VTI EWMA variance with May 6, 2010 Flash Crash")
-# add variance in extra panel
-add_TA(var_ewma["2010-01/2010-10"], col="black")
+vari_ance <- stats::filter(re_turns^2, 
+    filter=weight_s, sides=1)
+vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+class(vari_ance)
+vari_ance <- as.numeric(vari_ance)
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+# plot EWMA standard deviation
+chart_Series(x_ts, 
+  name="EWMA standard deviation")
+dygraphs::dygraph(x_ts, main="EWMA standard deviation")
       @
   \end{columns}
 \end{block}
@@ -1218,83 +1773,34 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: \protect\emph{EWMA} Realized Variance Estimator}
+\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In order to better estimate time-varying volatility 
-      \vskip1ex
-      The weighted \emph{realized} variance can be estimated as an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) of the variance estimates at each point in time:
+      If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
+      \end{align*}
+      Where $w_j$ is the vector of weights:
       \begin{displaymath}
-        \hspace{-0.5em}\hat\sigma_i^2 = \lambda {\Delta r_i}^2 + (1-\lambda) \hat\sigma_{i-1}^2 = \lambda \sum_{j=0}^{\infty} (1-\lambda)^j {\Delta r_{i-j}}^2
+        w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
       \end{displaymath}
-      $\hat\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
-      \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
-      \vskip1ex
-      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
-      \vskip1ex
-      Heteroskedasticity refers to statistical distributions whose parameter vary with time, 
-      \vskip1ex
-      
-      The \emph{EWMA} variance estimator 
-      as an \emph{Exponentially Weighted Moving Average} () of the variance estimates at each point in time:
-      
-      is when the standard deviations of a variable, monitored over a specific amount of time, are nonconstant. 
-      
-      \vskip1ex
-      The \emph{RcppRoll} functions accept \emph{xts} objects, but they return matrices, not \emph{xts} objects, 
-      \vskip1ex
-      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-      \vskip1ex
-      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
+      The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-#  calculate variance for each period
-var_running <- rutils::diff_xts(log(rutils::env_etf$VTI[, 4]))^2
-# calculate average realized VTI variance using rutils
-look_back <- 31
-var_avg <- rutils::roll_sum(var_running, 
-                  win_dow=look_back)/look_back
-# calculate EWMA VTI variance using filter()
-weight_s <- exp(0.1*1:look_back)
-weight_s <- weight_s/sum(weight_s)
-var_ewma <- filter(var_running, filter=weight_s, sides=1)
-var_ewma[1:(look_back-1)] <- var_ewma[look_back]
-# plot EWMA prices
-# set plot_theme plot line colors
-# plot_theme <- chart_theme()
-# plot_theme$col$line.col <- c("orange", "blue")
-# var_ewma <- xts(cbind(cl_ose, var_ewma), order.by=index(cl_ose))
-# colnames(var_ewma) <- c("VTI", "VTI EWMA")
-# chart_Series(var_ewma, theme=plot_theme, name="EWMA prices")
-
-library(RcppRoll)  # load RcppRoll
-var_ewma <- RcppRoll::roll_var(var_running, 
-    align="right", n=look_back, weights=weight_s)
-var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
-colnames(var_ewma) <- "VTI.var_ewma"
-# plot average and EWMA variances with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red")
-x11()
-chart_Series(merge(var_avg, var_ewma)["2012"],
-             theme=plot_theme, name="VTI variances")
-legend("top", legend=c(colnames(var_avg), 
-                       colnames(var_ewma)),
-       bg="white", lty=c(1, 1), lwd=c(2, 2),
-       col=plot_theme$col$line.col, bty="n")
-# plot EWMA variance with prices
-x11()
-chart_Series(env_etf$VTI["2010-01/2010-10"], 
-   name="VTI EWMA variance with May 6, 2010 Flash Crash")
-# add variance in extra panel
-add_TA(var_ewma["2010-01/2010-10"], col="black")
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- roll::roll_var(re_turns, 
+  weights=rev(weight_s), width=wid_th)
+colnames(vari_ance) <- "VTI.variance"
+class(vari_ance)
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(wid_th-1)] <- 0
       @
   \end{columns}
 \end{block}
@@ -1303,49 +1809,90 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Student's \texttt{t}-distribution}
+\subsection{Autocorrelation of Volatility}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $Z_{1},\ldots ,Z_{k}$ be independent standard normal random variables,
+      Variance calculated over non-overlapping intervals has very statistically significant autocorrelations,
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# calculate VTI variance using package roll
+look_back <- 22
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+vari_ance[1:(look_back-1)] <- 0
+colnames(vari_ance) <- "VTI.variance"
+# number of look_backs that fit over re_turns
+n_row <- NROW(re_turns)
+num_agg <- n_row %/% look_back
+end_points <- # define end_points with beginning stub
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
+# subset vari_ance to end_points
+vari_ance <- vari_ance[end_points]
+# improved autocorrelation function
+acf_plus(coredata(vari_ance), lag=10, main="")
+title(main="acf of variance", line=-1)
+# partial autocorrelation
+pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
+title(main="pacf of variance", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/acf_var.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pacf_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Volatility Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
+      \begin{align*}
+        r_i = \mu + \sigma_{i-1} \varepsilon_i \\
+        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
+      \end{align*}
+      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$, 
       \vskip1ex
-      And let $s^2=\sum_{i=1}^{\nu} Z_i^2$, and $t=\frac{\sum_{i=1}^{\nu} Z_i}{s}$,
+      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$,
       \vskip1ex
-      Then the random variable \texttt{t} is distributed according to the \texttt{t}-distribution with $\nu$ degrees of freedom, given by:
+      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance, 
+      \vskip1ex
+      The parameter $\omega$ determines the long-term average level of variance, which is given by:
       \begin{displaymath}
-        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + x^2/\nu)^{-(\nu+1)/2}
+        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
       \end{displaymath}
-        <<eval=FALSE,echo=(-(1:1))>>=
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(3, 6, 9)  # df values
-# create plot colors
-col_ors <- c("black", "red", "blue", "green")
-# create legend labels
-lab_els <- c("normal", paste("df", d_free, sep="="))
-# plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-4, 4),
-      xlab="", ylab="", lwd=2)
-for (in_dex in 1:3) {  # plot three curves
-curve(expr=dt(x, df=d_free[in_dex]),
-      type="l", xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex+1], add=TRUE)
+      The sum of $\alpha$ plus $\beta$ should be less than \texttt{1}, otherwise the volatility is explosive,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define GARCH parameters
+om_ega <- 0.01 ; al_pha <- 0.2
+be_ta <- 0.2 ; len_gth <- 1000
+re_turns <- numeric(len_gth)
+vari_ance <- numeric(len_gth)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+# simulate GARCH model
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
+    be_ta*vari_ance[i-1]
 }  # end for
       @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/t_dist_mult.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="t-distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05,
-       title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
   \end{columns}
 \end{block}
 
@@ -1353,118 +1900,244 @@ legend("topright", inset=0.05,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Log-likelihood Function of Student's \texttt{t}-distribution}
+\subsection{\protect\emph{GARCH} Volatility Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The non-standardized Student's \texttt{t}-distribution is given by:
-      \begin{displaymath}
-        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{x - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
-      \end{displaymath}
-      Where $\nu$ is the degrees of freedom, $\mu$ is the location parameter, and $\sigma$ is the scale parameter,  
+      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility,
       \vskip1ex
-      The corresponding negative of \emph{log-likelihood} function can be written as:
-      \begin{multline*}
-        P(x) = -log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + log(\sigma ) + \\
-        \frac{\nu+1}{2} \, log(1 + (\frac{x - \mu}{\sigma})^2/\nu)
-      \end{multline*}
-      $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
-      \begin{displaymath}
-        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_i|\theta)
-      \end{displaymath}
-      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
-      \vskip1ex
-      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
-      \begin{displaymath}
-        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
-      \end{displaymath}
-      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# objective function is log-likelihood
-object_ive <- function(pa_r, free_dom, sam_ple) {
-  sum(
-    -log(gamma((free_dom+1)/2) / 
-      (sqrt(pi*free_dom) * gamma(free_dom/2))) + 
-    log(pa_r[2]) + 
-    (free_dom+1)/2 * log(1 + ((sam_ple - pa_r[1])/
-                            pa_r[2])^2/free_dom))
-}  # end object_ive
-# simpler objective function
-object_ive <- function(pa_r, free_dom, sam_ple) {
-  -sum(log(dt(x=(sam_ple-pa_r[1])/pa_r[2], 
-              df=free_dom)/pa_r[2]))
-}  # end object_ive
-# demonstrate equivalence of the two methods
-object_ive(c(0, 1), 2, 2:5)
--sum(log(dt(x=2:5, df=2)))
-object_ive(c(1, 0.5), 2, 2:5)
--sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fitting Asset Returns into Student's \texttt{t}-distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-re_turns <- rutils::diff_xts(
-  log(rutils::env_etf$VTI[, 4]))
-# initial parameters
-par_init <- c(mean=0, scale=0.01)
-# fit distribution using optim()
-optim_fit <- optim(par=par_init,
-  fn=object_ive, # log-likelihood function
-  sam_ple=re_turns, 
-  free_dom=2, # degrees of freedom
-  method="L-BFGS-B", # quasi-Newton method
-  upper=c(0.1, 0.1), # upper constraint
-  lower=c(-0.1, 0.001)) # lower constraint
-# optimal parameters
-optim_fit$par
-# fit distribution using MASS::fitdistr()
-optim_fit <- 
-  MASS::fitdistr(re_turns, densfun="t", df=2)
-optim_fit$estimate; optim_fit$sd
-      @
-\vspace{-2em}
+      But the decay of volatility in the \emph{GARCH} model is faster than what is observed in practice,
       <<echo=(-(1:2)),eval=FALSE>>=
-par(oma=c(1, 1, 1, 1), mar=c(3, 3, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x11(7, 7)
-# plot histogram of VTI returns
-library(PerformanceAnalytics)
-# create plot colors
-col_ors <- c("lightgray", "blue", "green", "red")
-chart.Histogram(re_turns, main="", 
-  xlim=c(-0.05, 0.05), ylim=c(0, 60), col=col_ors[1:3], 
-  methods = c("add.density", "add.normal"))
-curve(expr=dt((x-optim_fit$estimate[1])/
-  optim_fit$estimate[2], df=2)/optim_fit$estimate[2], 
-      type="l", xlab="", ylab="", lwd=2,
-      col=col_ors[4], add=TRUE)
-# add title
-title(main="VTI returns histogram", cex.main=1.3, line=-1)
-# add legend
-lab_els <- c("density", "normal", "t-distr")
-legend("topright", inset=0.05, lab_els,
-       lwd=2, lty=c(1, 1, 1),
-       col=col_ors[2:4])
+x11(width=6, height=4)
+par(mar=c(3, 3, 1, 1), oma=c(0, 0, 0, 0))
+# plot GARCH cumulative returns
+plot(cumsum(re_turns/100), t="l", 
+  lwd=2, col="orange", xlab="", ylab="",
+  main="GARCH cumulative returns")
+date_s <- seq.Date(from=Sys.Date()-len_gth+1, 
+  to=Sys.Date(), length.out=len_gth)
+x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
+# plot GARCH standard deviation
+plot(sqrt(vari_ance), t="l", 
+  col="orange", xlab="", ylab="",
+  main="GARCH standard deviation")
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH standard deviation")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/t_dist_rets.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/garch_returns.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/garch_stdev.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Model Properties}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The parameter $\alpha$ is the weight of the squared realized returns in the variance, 
+      \vskip1ex
+      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis,
+      <<echo=TRUE,eval=FALSE>>=
+# define GARCH parameters
+om_ega <- 0.0001 ; al_pha <- 0.5
+be_ta <- 0.1 ; len_gth <- 10000
+re_turns <- numeric(len_gth)
+vari_ance <- numeric(len_gth)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+# simulate GARCH model
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
+    be_ta*vari_ance[i-1]
+}  # end for
+# calculate kurtosis of GARCH returns
+moments::moment(re_turns, order=4) / 
+  moments::moment(re_turns, order=2)^2
+# perform Jarque-Bera test of normality
+tseries::jarque.bera.test(re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/garch_hist.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot histogram of GARCH returns
+histo_gram <- hist(re_turns, col="lightgrey",
+  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
+  ylab="frequency", freq=FALSE,
+  main="GARCH returns histogram")
+lines(density(re_turns, adjust=1.5),
+      lwd=3, col="blue")
+optim_fit <- MASS::fitdistr(re_turns, 
+  densfun="t", df=2, lower=c(-1, 1e-7))
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
+  type="l", xlab="", ylab="", lwd=3,
+  col="red", add=TRUE)
+legend("topright", inset=0.05,
+       leg=c("density", "t-distr w/ 2 dof"),
+       lwd=6, lty=c(1, 1),
+       col=c("blue", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Model Calibration}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{GARCH} models can be calibrated on returns using the \emph{maximum-likelihood} method, but it's a complex optimization procedure,
+      \vskip1ex
+      The package \emph{fGarch} contains functions for applying \emph{GARCH} models,
+      \vskip1ex
+      The function \texttt{garchFit()} calibrates a \emph{GARCH} model on a time series of returns,
+      \vskip1ex
+      The function \texttt{garchFit()} returns an \texttt{S4} object of class \emph{fGARCH}, with multiple slots containing the \emph{GARCH} model outputs and diagnostic information,
+      <<echo=(-(1:2)),eval=FALSE>>=
+# use fixed notation instead of exponential notation
+options(scipen=999)
+library(fGarch)
+# fit returns into GARCH
+garch_fit <- fGarch::garchFit(data=re_turns)
+# fitted GARCH parameters
+round(garch_fit@fit$coef, 5)
+# actual GARCH parameters
+round(c(mu=mean(re_turns), omega=om_ega, 
+  alpha=al_pha, beta=be_ta), 5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_fitted.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot GARCH fitted standard deviation
+plot.zoo(sqrt(garch_fit@fit$series$h), t="l", 
+  col="orange", xlab="", ylab="",
+  main="GARCH fitted standard deviation")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{GARCH} Model Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{garchSpec()} from package \emph{fGarch} specifies a \emph{GARCH} model,
+      \vskip1ex
+      The function \texttt{garchSim()} simulates a \emph{GARCH} model,
+      <<echo=TRUE,eval=FALSE>>=
+# specify GARCH model
+garch_spec <- fGarch::garchSpec(
+  model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
+# simulate GARCH model
+garch_sim <- 
+  fGarch::garchSim(spec=garch_spec, n=len_gth)
+re_turns <- as.numeric(garch_sim)
+# calculate kurtosis of GARCH returns
+moments::moment(re_turns, order=4) / 
+  moments::moment(re_turns, order=2)^2
+# perform Jarque-Bera test of normality
+tseries::jarque.bera.test(re_turns)
+# plot histogram of GARCH returns
+histo_gram <- hist(re_turns, col="lightgrey",
+  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
+  ylab="frequency", freq=FALSE,
+  main="GARCH returns histogram")
+lines(density(re_turns, adjust=1.5),
+      lwd=3, col="blue")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_hist.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# fir t-distribution into GARCH returns
+optim_fit <- MASS::fitdistr(re_turns, 
+  densfun="t", df=2, lower=c(-1, 1e-7))
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
+  type="l", xlab="", ylab="", lwd=3,
+  col="red", add=TRUE)
+legend("topright", inset=0.05,
+       leg=c("density", "t-distr w/ 2 dof"),
+       lwd=6, lty=c(1, 1),
+       col=c("blue", "red"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: \protect\emph{GARCH} Model Forecasting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{GARCH(1,1)} model is a volatility forecasting model defined as:
+      \begin{displaymath}
+        \hspace{-0.5em}\hat\sigma_i^2 = \omega + \alpha {\Delta r_{i-1}}^2 + \beta \hat\sigma_{i-1}^2
+      \end{displaymath}
+      $\hat\sigma_i^2$ is the \emph{forecasted} variance, equal to the weighted average of the point \emph{realized} variance ${\Delta r_{i-1}}^2$, and the past variance forecast $\hat\sigma_{i-1}^2$, 
+      \vskip1ex
+      The parameter $\omega$ is related to the long-term average level of variance, $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance forecasts, 
+      \vskip1ex
+      In contrast to the \emph{EWMA} model, The \emph{GARCH} model doesn't depend on the realized variance in the current period $i$, but only on the past period $(i-1)$, 
+      \vskip1ex
+      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
+      \vskip1ex
+      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+# calculate variance for each period
+vari_ance <- 252*(24*60*60)^2*
+  HighFreq::run_variance(oh_lc=env_etf$VTI)
+# calculate EWMA VTI variance using RcppRoll
+library(RcppRoll)  # load RcppRoll
+wid_th <- 51
+weight_s <- exp(0.1*1:wid_th)
+var_ewma <- RcppRoll::roll_mean(vari_ance, 
+    align="right", n=wid_th, weights=weight_s)
+var_ewma <- xts(var_ewma, 
+    order.by=index(env_etf$VTI[-(1:(wid_th-1)), ]))
+colnames(var_ewma) <- "VTI variance"
+# plot EWMA variance with custom line colors
+x11()
+chart_Series(env_etf$VTI["2010-01/2010-10"], 
+   name="VTI EWMA variance with May 6, 2010 Flash Crash")
+# add variance in extra panel
+add_TA(var_ewma["2010-01/2010-10"], col="black")
+      @
   \end{columns}
 \end{block}
 
@@ -1490,13 +2163,13 @@ legend("topright", inset=0.05, lab_els,
       <<echo=TRUE,eval=FALSE>>=
 # extract time index from VTI
 in_dex <- index(rutils::env_etf$VTI)
-len_gth <- NROW(in_dex)
-half_length <- len_gth %/% 2
+n_row <- NROW(in_dex)
+half_length <- n_row %/% 2
 # simulate returns with random volatility
 set.seed(1121)  # reset random number generator
 # specify random volatility with sd=1 and sd=4
-vol_at <- 0.01*sample(c(rep(1, half_length), rep(4, len_gth-half_length)))
-re_turns <- vol_at*rnorm(len_gth) - vol_at^2/2
+vol_at <- 0.01*sample(c(rep(1, half_length), rep(4, n_row-half_length)))
+re_turns <- vol_at*rnorm(n_row) - vol_at^2/2
 re_turns <- re_turns/sd(re_turns)
 re_turns <- xts(re_turns, order.by=in_dex)
 # calculate moments
@@ -1531,76 +2204,6 @@ legend("topright", inset=0.05, lab_els,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Robust Measures of Dispersion and Skewness}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median (instead of the mean):
-      \begin{displaymath}
-        MAD = median(abs(C_i - median(C_i)))
-      \end{displaymath}
-      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance, 
-      \vskip1ex
-      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation, 
-      \vskip1ex
-      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}, 
-      \vskip1ex
-      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$, 
-      \vskip1ex
-      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-re_turns <- rnorm(1000)
-sd(re_turns)
-mad(re_turns)
-median(abs(re_turns - median(re_turns)))
-qnorm(0.75)
-# bootstrap of sd and mad estimators
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    re_turns[sample.int(len_gth, replace=TRUE)]
-  c(sd=sd(boot_sample),
-    mad=mad(boot_sample))
-})  # end sapply
-boot_strap <- t(boot_strap)
-# parallel bootstrap under Windows
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
-boot_strap <- parLapply(clus_ter, 1:10000, 
-  function(x, re_turns) {
-    boot_sample <- 
-      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
-    c(sd=sd(boot_sample),
-      mad=mad(boot_sample))
-  }, re_turns=re_turns)  # end parLapply
-# parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000, 
-  function(x) {
-    boot_sample <- 
-      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
-    c(sd=sd(boot_sample),
-      mad=mad(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
-stopCluster(clus_ter)  # stop R processes over cluster
-# analyze bootstrapped variance
-boot_strap <- do.call(rbind, boot_strap)
-head(boot_strap)
-sum(is.na(boot_strap))
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2, 
-      function(x) c(mean=mean(x), std_error=sd(x)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Estimating Volatility of Intraday Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1609,11 +2212,11 @@ apply(boot_strap, MARGIN=2,
     \column{0.5\textwidth}
       The \emph{close-to-close} estimator depends on \texttt{close} prices specified over the aggregation intervals: 
       \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{C_i}{C_{i-1}})-\hat\mu)^2
+        \hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{C_i}{C_{i-1}})-\bar{r})^2
       \end{displaymath}
       \vspace{-1em}
       \begin{displaymath}
-        \hat\mu = \frac{1}{n} \sum_{i=1}^{n} \log(\frac{C_i}{C_{i-1}})
+        \bar{r} = \frac{1}{n} \sum_{i=1}^{n} \log(\frac{C_i}{C_{i-1}})
       \end{displaymath}
       Volatility estimates for intraday time series depend both on the units of returns (per second, minute, day, etc.), and on the aggregation interval (secondly, minutely, daily, etc.), 
       \vskip1ex
@@ -1722,8 +2325,8 @@ table(c(1, diff(.index(SPY_daily))))
       The \emph{Yang-Zhang} estimator is the most efficient (has the lowest standard error) among unbiased estimators, and also accounts for \emph{close-to-open} price jumps: 
       \vspace{-1em}
       \begin{multline*}
-        \hspace{-1em}\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\hat\mu_{co})^2 + \\
-        0.134(\log(\frac{C_i}{O_i})-\hat\mu_{oc})^2 + \\
+        \hspace{-1em}\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
+        0.134(\log(\frac{C_i}{O_i})-\bar{r}_{oc})^2 + \\
         \frac{0.866}{n} \sum_{i=1}^{n} (\log(\frac{H_i}{O_i})\log(\frac{H_i}{C_i}) + \log(\frac{L_i}{O_i})\log(\frac{L_i}{C_i}))
       \end{multline*}
     \column{0.5\textwidth}
@@ -1752,7 +2355,7 @@ sqrt((6.5*60)*mean(na.omit(
       The \emph{Garman-Klass-Yang-Zhang} estimator is another very efficient and unbiased estimator, and also accounts for \emph{close-to-open} price jumps: 
       \vspace{-1em}
       \begin{multline*}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\hat\mu)^2 + \\
+        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
         0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)(\log(\frac{C_i}{O_i})^2))
       \end{multline*}
   \end{columns}
@@ -1777,18 +2380,18 @@ var_close <-
                          calc_method="close")
 var_yang_zhang <- 
   HighFreq::run_variance(oh_lc=env_etf$VTI)
-var_running <- 
-  252*(24*60*60)^2*merge(var_close, var_yang_zhang)
-colnames(var_running) <- 
+vari_ance <- 
+  252*(24*60*60)^2*cbind(var_close, var_yang_zhang)
+colnames(vari_ance) <- 
   c("close var", "Yang-Zhang var")
 # plot
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red")
 x11()
-chart_Series(var_running["2011-06/2011-12"], 
+chart_Series(vari_ance["2011-06/2011-12"], 
   theme=plot_theme, name="Close and YZ variances")
-legend("top", legend=colnames(var_running),
-       bg="white", lty=c(1, 1), lwd=c(2, 2),
+legend("top", legend=colnames(vari_ance),
+       bg="white", lty=c(1, 1), lwd=c(6, 6),
        col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
@@ -1946,55 +2549,6 @@ title(main="VTI squared range partial autocorrelations")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/var_pacf.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Forecasting Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility forecasting model defined as:
-      \begin{displaymath}
-        \hspace{-0.5em}\hat\sigma_i^2 = \omega + \alpha {\Delta r_{i-1}}^2 + \beta \hat\sigma_{i-1}^2
-      \end{displaymath}
-      $\hat\sigma_i^2$ is the \emph{forecasted} variance, equal to the weighted average of the point \emph{realized} variance ${\Delta r_{i-1}}^2$, and the past variance forecast $\hat\sigma_{i-1}^2$, 
-      \vskip1ex
-      The parameter $\omega$ is related to the long-term average level of variance, $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance forecasts, 
-      \vskip1ex
-      In contrast to the \emph{EWMA} model, The \emph{GARCH} model doesn't depend on the realized variance in the current period $i$, but only on the past period $(i-1)$, 
-      \vskip1ex
-      The rolling \emph{RcppRoll} functions are much faster than performing \texttt{apply()} loops, because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-      \vskip1ex
-      But the rolling \emph{RcppRoll} functions are a little slower than using \emph{vectorized compiled} functions such as \texttt{cumsum()}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-#  calculate variance for each period
-var_running <- 252*(24*60*60)^2*
-  HighFreq::run_variance(oh_lc=env_etf$VTI)
-# calculate EWMA VTI variance using RcppRoll
-library(RcppRoll)  # load RcppRoll
-look_back <- 31
-weight_s <- exp(0.1*1:look_back)
-var_ewma <- RcppRoll::roll_mean(var_running, 
-    align="right", n=look_back, weights=weight_s)
-var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(look_back-1)), ]))
-colnames(var_ewma) <- "VTI variance"
-# plot EWMA variance with custom line colors
-x11()
-chart_Series(env_etf$VTI["2010-01/2010-10"], 
-   name="VTI EWMA variance with May 6, 2010 Flash Crash")
-# add variance in extra panel
-add_TA(var_ewma["2010-01/2010-10"], col="black")
-      @
   \end{columns}
 \end{block}
 

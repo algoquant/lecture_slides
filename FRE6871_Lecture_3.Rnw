@@ -21,7 +21,12 @@ knit_theme$set(thm)
 % Uncover everything in a step-wise fashion
 % \beamerdefaultoverlayspecification{<+->}
 % mathtools package for math symbols
-% \usepackage{mathtools}
+\usepackage{mathtools}
+% bbm package for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage[latin1]{inputenc}
 \usepackage{hyperref}
 \usepackage{fancybox}
@@ -52,13 +57,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#3, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#3, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{February 6, 2017}
+\date{November 13, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -74,83 +79,81 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Writing Fast \texttt{R} Code Using Vectorized Operations}
+\section{Manipulating Vectors and Matrices}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\subsection{Multiplying Vectors and Matrices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R},
+      The multiplication \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices,
       \vskip1ex
-      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
+      By default the matrix elements are multiplied column-wise by the vector elements: the first matrix element in the first column is multiplied by the first vector element, then the second matrix column is multiplied by the remaining vector elements, etc.
       \vskip1ex
-      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
+      The \emph{recycling rule} is applied to the vector elements as needed,
       \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
+      The transpose function \texttt{t()} can be applied if we want to perform row-wise multiplication,
+     \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# define vector and matrix
+vec_tor1 <- c(2, 4, 3)
+mat_rix <- matrix(sample(1:12), ncol=3)
+# multiply matrix by vector column-wise
+vec_tor1 * mat_rix
+mat_rix * vec_tor1
+# multiply matrix by vector row-wise
+t(vec_tor1 * t(mat_rix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Inner Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
       \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \begin{displaymath}
+        C_{i,j} = \sum_{k=1}^n A_{i,k} B_{k,j}
+      \end{displaymath}
+      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
+      \vskip1ex
+      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second),
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+      \vskip1ex
+      The functions \texttt{rowSums()} and \texttt{colSums()} calculate the sums of rows and columns, and they're very fast because they pass their data to compiled \texttt{C++} code,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
+      <<echo=(-(1:1))>>=
+vec_tor1
+vec_tor2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_tor1 * vec_tor2
+# calculate inner product
+vec_tor1 %*% vec_tor2
+# calculate inner product and drop dimensions
+drop(vec_tor1 %*% vec_tor2)
+# multiply columns of matrix by vector
+mat_rix %*% vec_tor1  # single column matrix
+drop(mat_rix %*% vec_tor1)  # vector
+rowSums(t(vec_tor1 * t(mat_rix)))
+# using rowSums() and t() is 10 times slower than %*%
 library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-foo <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(foo), mean(foo), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
-  )[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest,
-      \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops,
-      \vskip1ex
-      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
-# allocate memory for row sums
-row_sums <- numeric(NROW(big_matrix))
 summary(microbenchmark(
-  ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
-    FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for(i in 1:NROW(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
-  },  # end for
+  in_ner=drop(mat_rix %*% vec_tor1),
+  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -160,627 +163,34 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Increasing Speed of Loops by Pre-allocating Memory}
+\subsection{Matrix Transpose}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
+      The function \texttt{t()} returns the transpose of a matrix,
       \vskip1ex
-      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
-      \vskip1ex
-      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow,
-      \vskip1ex
-      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment,
-      \vskip1ex
-      Adding elements to a vector in a loop is very slow, and therefore not recommended,
-      \vskip1ex
-      Pre-allocating memory for large vectors before performing loops increases their speed,
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
-      \vskip1ex
-      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
-summary(microbenchmark(
-# allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(length(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  grow_vec={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  com_bine={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for(i in 2:length(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
-    }},  # end for
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Vector Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value,
-      \vskip1ex
-      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast,
-      \vskip1ex
-      The following \emph{vectorized compiled} functions calculate cumulative values over large vectors:
-      \begin{itemize}
-        \item \texttt{cummax()}
-        \item \texttt{cummin()}
-        \item \texttt{cumsum()}
-        \item \texttt{cumprod()}
-      \end{itemize}
-      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized compiled} functions,
-      \vskip1ex
-      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized compiled} functions for logical operations,
-      \vskip1ex
-      But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
-    \column{0.5\textwidth}
-        <<eval=FALSE>>=
-vec_tor1 <- rnorm(1000000)
-vec_tor2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for(i in 1:length(vec_tor1)) {
-    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_tor1 + vec_tor2)
-# allocate memory for cumulative sum
-cum_sum <- numeric(length(big_vector))
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for(i in 2:length(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-# cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
-      \vskip1ex
-      \texttt{R} has very fast \emph{vectorized compiled} functions for calculating sums and means of rows and columns:
-      \begin{itemize}
-        \item \texttt{rowSums()}
-        \item \texttt{colSums()}
-        \item \texttt{rowMeans()}
-        \item \texttt{colMeans()}
-      \end{itemize}
-      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-# calculate row sums two different ways
-summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fast \texttt{R} Code for Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments,
-      \vskip1ex
-      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary,
-      \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors,
-      \vskip1ex
-      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()},
-      \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-str(pmax)
-# calculate row maximums two different ways
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
-      lapply(seq_along(big_matrix[1, ]),
-        function(in_dex) big_matrix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]),
-        function(in_dex) max(big_matrix[in_dex, ]))),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{matrixStats} for Fast Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \texttt{matrixStats} contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
-      \begin{itemize}
-        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc.,
-        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc.,
-        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc.,
-        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc.,
-      \end{itemize}
-      A summary of \texttt{matrixStats} functions can be found under:\\
-      \url{https://cran.r-project.org/web/packages/matrixStats/vignettes/matrixStats-methods.html}
-      \vskip1ex
-      The \texttt{matrixStats} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(matrixStats)  # load package matrixStats
-# calculate row min values three different ways
-summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
-  p_min=
-    do.call(pmin.int,
-            lapply(seq_along(big_matrix[1, ]),
-                   function(in_dex)
-                     big_matrix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int,
-            as.data.frame.matrix(big_matrix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using Vectorized Operations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R}-style code is code that relies on \emph{vectorized compiled} functions, instead of \texttt{for()} loops,
-      \vskip1ex
-      \texttt{for()} loops in \texttt{R} are slow because they call functions multiple times, and individual function calls are compute-intensive and slow,
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{vectorized compiled} function, and is therefore very fast,
-      \vskip1ex
-      Vectorized assignments using brackets \texttt{"[]"} and \texttt{Boolean} or \texttt{integer} vectors to subset vectors or matrices are therefore preferable to \texttt{for()} loops,
-      \vskip1ex
-      \texttt{R} code that uses \emph{vectorized compiled} functions can be as fast as \texttt{C++} code,
-      \vskip1ex
-      \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-summary(microbenchmark(  # assign values to vector three different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector two different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Functions which use vectorized operations and functions are automatically \emph{vectorized} themselves,
-      \vskip1ex
-      Functions which only call other compiled \texttt{C} vectorized functions, are also very fast,
-      \vskip1ex
-      But not all functions are vectorized, or they're not vectorized with respect to their \emph{parameters},
-      \vskip1ex
-      Some \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# define function vectorized automatically
-my_fun <- function(in_put, pa_ram) {
-  pa_ram*in_put
-}  # end my_fun
-# "in_put" is vectorized
-my_fun(in_put=1:3, pa_ram=2)
-# "pa_ram" is vectorized
-my_fun(in_put=10, pa_ram=2:4)
-# define vectors of parameters of rnorm()
-std_devs <-
-  structure(1:3, names=paste0("sd=", 1:3))
-me_ans <-
-  structure(-1:1, names=paste0("mean=", -1:1))
-# "sd" argument of rnorm() isn't vectorized
-rnorm(1, sd=std_devs)
-# "mean" argument of rnorm() isn't vectorized
-rnorm(1, mean=me_ans)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized \texttt{if-else} Statements Using Function \texttt{ifelse()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
-      \vskip1ex
-      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
-        <<func_ifelse,eval=FALSE,echo=TRUE,fig.show='hide'>>=
-# create two numeric vectors
-vec_tor1 <- sin(0.25*pi*1:10)
-vec_tor2 <- cos(0.25*pi*1:10)
-# create third vector using 'ifelse'
-vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
-                  vec_tor1, vec_tor2)
-# cbind all three together
-vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
-
-# set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
-    cex.sub=0.5)
-# plot matrix
-matplot(vec_tor4, type="l", lty="solid",
-        col=c("green", "blue", "red"),
-        lwd=c(2, 2, 2), xlab="", ylab="")
-# add legend
-legend(x="bottomright", legend=colnames(vec_tor4),
-       title="", inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/func_ifelse-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing \texttt{sapply()} Loops Over Function Parameters}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Many functions aren't vectorized with respect to their \emph{parameters},
-      \vskip1ex
-      Performing \texttt{sapply()} loops over a function's parameters produces vector output,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# sapply produces desired vector output
-set.seed(1121)
-sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
-set.seed(1121)
-sapply(std_devs, rnorm, n=2, mean=0)
-set.seed(1121)
-sapply(me_ans,
-       function(me_an) rnorm(n=2, mean=me_an))
-set.seed(1121)
-sapply(me_ans, rnorm, n=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{How to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
-      \begin{itemize}
-        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task,
-        \item call function methods directly instead of calling generic functions,
-        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
-        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
-        \item pre-allocate memory for new vectors,
-        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops,
-        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Probability and Statistics}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generating Binomial Random Numbers}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{binomial} trial is a coin flip, that results in either a success or failure,
-      \vskip1ex
-      The \emph{binomial} distribution specifies the probability of obtaining a certain number of successes in a sequence of independent \emph{binomial} trials,
-      \vskip1ex
-      Let $p$ be the probability of obtaining a success in a \emph{binomial} trial, and let $(1-p)$ be the probability of failure,
-      \vskip1ex
-      $p = 0.5$ corresponds to flipping an unbiased coin,
-      \vskip1ex
-      The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
-      \begin{displaymath}
-        {n \choose k} p^k (1-p)^{(n-k)}
-      \end{displaymath}
-      The function \texttt{rbinom()} produces random numbers from the \emph{binomial} distribution,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-set.seed(1121)  # reset random number generator
-# flip unbiased coin once, 20 times
-rbinom(n=20, size=1, 0.5)
-# number of heads after flipping twice, 20 times
-rbinom(n=20, size=2, 0.5)
-# number of heads after flipping thrice, 20 times
-rbinom(n=20, size=3, 0.5)
-# number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.8)
-# number of heads after flipping biased coin thrice, 20 times
-rbinom(n=20, size=3, 0.2)
-# flip unbiased coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)  # fast
-as.numeric(runif(20) < 0.5)  # slower
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generating Random Samples and Permutations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{sample} is a subset of elements taken from a set of data elements,
-      \vskip1ex
-      The function \texttt{sample()} produces a random sample form a vector of data elements,
-      \vskip1ex
-      By default the \emph{size} of the sample (the \texttt{size} argument) is equal to the number of elements in the data vector,
-      \vskip1ex
-      So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta},
-      \vskip1ex
-      If \texttt{replace=TRUE}, then \texttt{sample()} produces samples with replacement,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-# permutation of five numbers
-sample(x=5)
-# permutation of four strings
-sample(x=c("apple", "grape", "orange", "peach"))
-# sample of size three
-sample(x=5, size=3)
-# sample with replacement
-sample(x=5, replace=TRUE)
-sample(  # sample of strings
-  x=c("apple", "grape", "orange", "peach"),
-  size=12,
-  replace=TRUE)
-# binomial sample: flip coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)
-# flip unbiased coin once, 20 times
-as.numeric(runif(20) > 0.5)  # slower
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Statistical Estimators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A data \emph{sample} is a set of observations of a \emph{random variable},
-      \vskip1ex
-      Let $\{x_1,\ldots ,x_n\}$ be a data \emph{sample} of a \emph{random variable} \texttt{x},
-      \vskip1ex
-      Let \texttt{x} follow a probability distribution with population mean equal to $\mu$ and population standard deviation equal to $\sigma$,
-      \vskip1ex
-      A \emph{statistic} is a function of a data \emph{sample}:  $f( x_1,\ldots ,x_n )$,
-      \vskip1ex
-      A \emph{statistic} is itself a \emph{random variable},
-      \vskip1ex
-      A statistical \emph{estimator} is a \emph{statistic} that provides an estimate of a \emph{distribution} parameter,
-      \vskip1ex
-      For example:
-      \begin{displaymath}
-        \bar{x}=\frac{1}{n}{\sum_{i=1}^n x_i}
-      \end{displaymath}
-      Is an \emph{estimator} of the \emph{mean} of the \emph{distribution},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2))>>=
-rm(list=ls())
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sam_ple <- rnorm(1000)
-
-mean(sam_ple)  # sample mean
-
-median(sam_ple)  # sample median
-
-sd(sam_ple)  # sample standard deviation
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Simulation}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Monte Carlo Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution, 
-      \vskip1ex
-      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
-# sample mean - MC estimate
-mean(sam_ple)
-# sample standard deviation - MC estimate
-sd(sam_ple)
-# MC estimate of cumulative probability
-sam_ple <- sort(sam_ple)
-pnorm(1)
-sum(sam_ple<1)/sample_length
-# MC estimate of quantile
-qnorm(0.75)
-sam_ple[0.75*sample_length]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Statistical estimators are themselves \emph{random variables},
-      \vskip1ex
-      The standard deviation of the estimator of the mean is equal to:
-      \begin{displaymath}
-        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
-      \end{displaymath}
-      Where $\sigma$ is the population standard deviation,
-      \vskip1ex
-      The standard error is the estimator of the standard deviation, and for the mean estimator it is equal to:
-      \begin{displaymath}
-        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
-      \end{displaymath}
-      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\hat\mu)^2$ is the sample standard deviation (the estimator of the population standard deviation),
+      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
+library(microbenchmark)
+# multiply matrix by vector fails because dimensions aren't conformable
+vec_tor1 %*% mat_rix
+# works after transpose
+drop(vec_tor1 %*% t(mat_rix))
+# calculate inner product
+crossprod(vec_tor1, vec_tor2)
+# create matrix and vector
+mat_rix <- matrix(1:3000, ncol=3)
+tmat_rix <- t(mat_rix)
+vec_tor <- 1:3
+# crossprod is slightly faster than "%*%" operator
+summary(microbenchmark(
+  cross_prod=crossprod(tmat_rix, vec_tor),
+  inner_prod=mat_rix %*% vec_tor,
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -789,47 +199,44 @@ sd(sam_ple)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\subsection{Matrix Outer Multiplication}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = A_i \cdot B_j
+      \end{displaymath}
+      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = f(A_i, B_j)
+      \end{displaymath}
+      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
       \vskip1ex
-      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed data set,
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
       \vskip1ex
-      The \emph{bootstrapped} data is then used to re-calculate the estimator many times, producing a vector of values,
-      \vskip1ex
-      The \emph{bootstrapped} estimator values can then be used to calculate the probability distribution of the estimator and its standard error,
-      \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators that are sensitive to the ordering and correlations in the data, 
+      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                       replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(sample_length)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
+      <<echo=TRUE>>=
+# define named vectors
+vec_tor1 <- sample(1:4)
+names(vec_tor1) <-
+  paste0("row", 1:4, "=", vec_tor1)
+vec_tor1
+vec_tor2 <- sample(1:3)
+names(vec_tor2) <-
+  paste0("col", 1:3, "=", vec_tor2)
+vec_tor2
+# calculate outer product of two vectors
+mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix
+# calculate vectorized function spanned over two vectors
+mat_rix <- outer(vec_tor1, vec_tor2,
+                 FUN=function(x1, x2) x2*sin(x1))
+mat_rix
       @
   \end{columns}
 \end{block}
@@ -837,41 +244,638 @@ sd(boot_strap["median", ])
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Variance Reduction Using Antithetic Sampling}
+\section{Linear Algebra}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvectors and Eigenvalues of Matrices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Antithetic Sampling} is a \emph{Variance Reduction} technique, in which a new random sample is computed by simply reversing the sign of a Normal random sample ($\phi \to -\phi$), or by complementing a Uniform random sample ($\phi \to 1-\phi$),
+      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{A}$, if it satisfies the \emph{eigenvalue} equation:
+      \begin{displaymath}
+        \mathbb{A} \, w = \lambda \, w
+      \end{displaymath}
+      Where $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$,
       \vskip1ex
-      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$,
+      The number of \emph{eigenvalues} of a matrix is equal to its dimension,
+      \vskip1ex
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other,
+      \vskip1ex
+      The \emph{eigenvectors} can be normalized to \texttt{1},
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal,
+      \vskip1ex
+      The function \texttt{eigen()} calculates the \emph{eigenvectors} and \emph{eigenvalues} of numeric matrices,
+      \vskip1ex
+      An excellent interactive visualization of \emph{eigenvectors} and \emph{eigenvalues} is available here:\\
+      \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create random real symmetric matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- mat_rix + t(mat_rix)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
+dim(eigen_vec)
+# plot eigenvalues
+barplot(ei_gen$values, 
+  xlab="", ylab="", las=3, 
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+  main="Eigenvalues of a real symmetric matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigen Decomposition of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other,
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
+      \begin{displaymath}
+        \mathbb{D} = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
+      \end{displaymath}
+      Where $\mathbb{D}$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors},
+      \vskip1ex
+      Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{O} \, \mathbb{D} \, \mathbb{O}^T
+      \end{displaymath}
+      The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-sample_length <- 1000
-sam_ple <- rnorm(sample_length)
-# estimate the 95% quantile
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                       replace=TRUE)]
-  quantile(boot_sample, 0.95)
+# eigenvectors form an orthonormal basis
+round(t(eigen_vec) %*% eigen_vec, 
+  digits=4)
+# diagonalize matrix using eigenvector matrix
+round(t(eigen_vec) %*% (mat_rix %*% eigen_vec), 
+  digits=4)
+ei_gen$values
+# eigen decomposition of matrix by rotating the diagonal matrix
+eigen_decomp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
+# create diagonal matrix of eigenvalues
+# diago_nal <- diag(ei_gen$values)
+# eigen_decomp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
+all.equal(mat_rix, eigen_decomp)
+      @
+      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$, 
+      \vskip1ex
+      The \emph{diagonal} matrix $\mathbb{D}$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues},
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Positive Definite} Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices with positive \emph{eigenvalues} are called \emph{positive definite} matrices,
+      \vskip1ex
+      Matrices with non-negative \emph{eigenvalues} are called \emph{positive semi-definite} matrices (some of their \emph{eigenvalues} may be zero),
+      \vskip1ex
+      An example of \emph{positive definite} matrices are the covariance matrices of linearly independent variables, 
+      \vskip1ex
+      But the covariance matrices of linearly dependent variables have some \emph{eigenvalues} equal to zero, in which case they are \emph{singular}, and only \emph{positive semi-definite},
+      \vskip1ex
+      All covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution,
+      \vskip1ex
+      Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices, 
+      \vskip1ex
+      For any real matrix $\mathbb{A}$, the matrix $\mathbb{A}^T \mathbb{A}$ is \emph{positive semi-definite},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+ei_gen$values
+# plot eigenvalues
+barplot(ei_gen$values, las=3, 
+  xlab="", ylab="", 
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+  main="Eigenvalues of positive semi-definite matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Singular Value Decomposition (\protect\emph{SVD}) of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization of the \emph{eigen decomposition} of \emph{positive semi-definite} matrices, 
+      \vskip1ex
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ with dimensions \texttt{m} rows and \texttt{n} columns is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
+      \end{displaymath}
+      Where $\mathbb{U}$ is an (\texttt{m x n}) rectangular matrix, $\Sigma$ is an (\texttt{n x n}) diagonal matrix containing the \emph{singular values}, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, 
+      \vskip1ex
+      The (\texttt{m x n}) rectangular matrix $\mathbb{U}$ consists of \texttt{n} columns of \emph{orthonormal} left-\emph{singular} vectors, with $\mathbb{U}^T \mathbb{U} = \mathbbm{1}$,
+      \vskip1ex
+      The columns of the \emph{orthogonal} matrix $\mathbb{V}$ consist of \texttt{n} \emph{orthonormal} right-\emph{singular} vectors, with $\mathbb{V}^T \mathbb{V} = \mathbbm{1}$,
+      \vskip1ex
+      The \emph{singular} vectors are only defined up to a reflection (sign), i.e. if \texttt{vec} is a \emph{singular} vector, then so is \texttt{-vec},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# dimensions of left and right matrices
+n_left <- 6 ; n_right <- 4
+# create random positive semi-definite matrix
+left_mat <- matrix(runif(n_left^2), nc=n_left)
+left_mat <- left_mat %*% t(left_mat)
+# calculate left eigenvectors
+ei_gen <- eigen(left_mat)
+left_mat <- ei_gen$vectors[, 1:n_right]
+# create random positive semi-definite matrix
+right_mat <- matrix(runif(n_right^2), nc=n_right)
+right_mat <- right_mat %*% t(right_mat)
+# calculate right eigenvectors and singular values
+ei_gen <- eigen(right_mat)
+right_mat <- ei_gen$vectors
+sing_values <- ei_gen$values
+# compose rectangular matrix
+mat_rix <- 
+  left_mat %*% (sing_values * t(right_mat))
+# mat_rix <- left_mat %*% diag(sing_values) %*% t(right_mat)
+      @
+      In the special case when $\mathbb{A}$ is a \emph{positive semi-definite} matrix, the \emph{SVD} reduces to the \emph{eigen decomposition}, with $\mathbb{U} = \mathbb{V}$,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Singular Value Decomposition Using Function \texttt{svd()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ with dimensions \texttt{m} rows and \texttt{n} columns is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
+      \end{displaymath}
+      The (\texttt{m x n}) rectangular matrix $\mathbb{U}$ consists of \texttt{n} columns of \emph{orthonormal} left-\emph{singular} vectors, with $\mathbb{U}^T \mathbb{U} = \mathbbm{1}$,
+      \vskip1ex
+      The left-\emph{singular} vectors are the \emph{eigenvectors} of the matrix $\mathbb{A} \mathbb{A}^T$, 
+      \vskip1ex
+      The columns of the \emph{orthogonal} matrix $\mathbb{V}$ consist of \texttt{n} \emph{orthonormal} right-\emph{singular} vectors, with $\mathbb{V}^T \mathbb{V} = \mathbbm{1}$,
+      \vskip1ex
+      The right-\emph{singular} vectors are the \emph{eigenvectors} of the matrix $\mathbb{A}^T \mathbb{A}$, 
+      \vskip1ex
+      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# compare SVD with inputs
+all.equal(abs(s_vd$u), abs(left_mat))
+all.equal(abs(s_vd$v), abs(right_mat))
+all.equal(s_vd$d, ei_gen$values)
+      @
+      The function \texttt{svd()} performs \emph{Singular Value Decomposition} (\emph{SVD}) of a rectangular matrix, and returns a list of three elements: the \emph{singular values}, and the matrices of left-\emph{singular} vectors and the right-\emph{singular} vectors,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Inverse of Square Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The inverse of a square matrix $\mathbb{A}$ is defined as a square matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
+      \end{displaymath}
+      Where $\mathbbm{1}$ is the identity matrix, 
+      \vskip1ex
+      The inverse $\mathbb{A}^{-1}$ matrix can also be expressed as a product of the inverse of its \emph{eigenvalues} ($\mathbb{D}$) and its \emph{eigenvectors} ($\mathbb{O}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
+      \end{displaymath}
+      But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse,
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+# multiply inverse with matrix
+round(in_verse %*% mat_rix, 4)
+round(mat_rix %*% in_verse, 4)
+
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
+
+# perform eigen decomposition of inverse
+eigen_inverse <- 
+  eigen_vec %*% (t(eigen_vec) / ei_gen$values)
+all.equal(in_verse, eigen_inverse)
+# decompose diagonal matrix with inverse of eigenvalues
+# diago_nal <- diag(1/ei_gen$values)
+# eigen_inverse <-
+#   eigen_vec %*% (diago_nal %*% t(eigen_vec))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generalized Inverse of Rectangular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}
+      \end{displaymath}
+      The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+      \end{displaymath}
+      The generalized inverse $\mathbb{A}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
+      \end{displaymath}
+      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create random rectangular matrix
+# case when: n_left > n_right
+n_left <- 6 ; n_right <- 4
+mat_rix <- matrix(runif(n_left*n_right), 
+  nc=n_right)
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+round(in_verse %*% mat_rix, 4)
+all.equal(mat_rix, 
+          mat_rix %*% in_verse %*% mat_rix)
+# create random rectangular matrix
+# case when: n_left < n_right
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right), 
+  nc=n_right)
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+round(mat_rix %*% in_verse, 4)
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# calculate generalized inverse from SVD
+svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+all.equal(svd_inverse, in_verse)
+# calculate Moore-Penrose pseudo-inverse
+mp_inverse <- 
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generalized Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$,
+      \vskip1ex
+      But if the \emph{singular values} that are equal to zero are removed, then a generalized inverse for \emph{singular} matrices can be specified by:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with rows and columns corresponding to zero \emph{singular values} removed, 
+      <<echo=TRUE,eval=FALSE>>=
+# create random singular matrix
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+# verify inverse of mat_rix
+all.equal(mat_rix, 
+  mat_rix %*% in_verse %*% mat_rix)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# check for zero singular values
+s_vd$d
+not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
+# calculate generalized inverse from SVD
+svd_inverse <- 
+  s_vd$v[, not_zero] %*% 
+  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+all.equal(svd_inverse, in_verse)
+# calculate Moore-Penrose pseudo-inverse
+mp_inverse <- 
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+# calculate generalized inverse from eigen decomposition
+ei_gen <- eigen(mat_rix)
+eigen_values <- ei_gen$values
+eigen_vec <- ei_gen$vectors
+not_zero <- (eigen_values > (to_l * eigen_values[1]))
+eigen_inverse <- eigen_vec[, not_zero] %*% 
+  (t(eigen_vec[, not_zero]) / eigen_values[not_zero])
+all.equal(svd_inverse, eigen_inverse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Diagonalizing Generalized Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{A}$ is diagonal, then we have:
+      \begin{displaymath}
+        \mathbb{U}^T (\mathbb{A}^{-1} \mathbb{A}) \, \mathbb{V} = \mathbbm{1}_n
+      \end{displaymath}
+      So that $\mathbb{A}^{-1} \mathbb{A}$ is diagonal in the same coordinate system where $\mathbb{A}$ is diagonal, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# diagonalize the "unit" matrix
+uni_t <- mat_rix %*% in_verse
+round(uni_t, 4)
+round(mat_rix %*% in_verse, 4)
+round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solving Linear Equations Using \texttt{solve()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A system of linear equations can be defined as: 
+      \begin{displaymath}
+        \mathbb{A} \, x = b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and $x$ is the unknown vector, 
+      \vskip1ex
+      The solution of the system of linear equations is equal to: 
+      \begin{displaymath}
+        x = \mathbb{A}^{-1} b
+      \end{displaymath}
+      Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$,
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define a square matrix
+mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
+vec_tor <- c(2, 1)
+# calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+in_verse %*% mat_rix
+# calculate solution using inverse of mat_rix
+solu_tion <- in_verse %*% vec_tor
+mat_rix %*% solu_tion
+# calculate solution of linear system
+solu_tion <- solve(a=mat_rix, b=vec_tor)
+mat_rix %*% solu_tion
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cholesky Decomposition}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{L}^T \mathbb{L}
+      \end{displaymath}
+      Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements,
+      \vskip1ex
+      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$,
+      \vskip1ex
+      The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite},
+      \vskip1ex
+      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix, 
+      \vskip1ex
+      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# create large random positive semi-definite matrix
+mat_rix <- matrix(runif(1e4), nc=100)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate eigen decomposition
+ei_gen <- eigen(mat_rix)
+eigen_values <- ei_gen$values
+eigen_vec <- ei_gen$vectors
+# set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# if needed convert to positive definite matrix
+not_zero <- (eigen_values > (to_l * eigen_values[1]))
+if (sum(!not_zero) > 0) {
+  eigen_values[!not_zero] <- 2*to_l
+  mat_rix <- eigen_vec %*% 
+    (eigen_values * t(eigen_vec))
+}  # end if
+# calculate the Cholesky mat_rix
+choles_ky <- chol(mat_rix)
+choles_ky[1:5, 1:5]
+all.equal(mat_rix, t(choles_ky) %*% choles_ky)
+# calculate inverse from Cholesky
+chol_inverse <- chol2inv(choles_ky)
+all.equal(solve(mat_rix), chol_inverse)
+# compare speed of Cholesky inversion
+library(microbenchmark)
+summary(microbenchmark(
+  sol_ve=solve(mat_rix),
+  choles_ky=chol2inv(chol(mat_rix)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Correlated Returns Using Cholesky Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a covariance matrix can be used to simulate correlated \emph{Normal} returns following the given covariance matrix: $\mathbb{C} = \mathbb{L}^T \mathbb{L}$
+      \vskip1ex
+      Let $\mathbb{R}$ be a matrix with columns of \emph{uncorrelated} returns following the \emph{Standard Normal} distribution,
+      \vskip1ex
+      The \emph{correlated} returns $\mathbb{R}_c$ can be calculated from the \emph{uncorrelated} returns $\mathbb{R}$ by multilying them by the \emph{Cholesky} matrix $\mathbb{L}$:
+      \begin{displaymath}
+        \mathbb{R}_c = \mathbb{L}^T \mathbb{R}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random covariance matrix
+cov_mat <- matrix(runif(25), nc=5)
+cov_mat <- t(cov_mat) %*% cov_mat
+# calculate the Cholesky mat_rix
+choles_ky <- chol(cov_mat)
+choles_ky
+# simulate random uncorrelated returns
+n_assets <- 5
+n_rows <- 10000
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# calculate correlated returns by applying Cholesky
+corr_returns <- re_turns %*% choles_ky
+# calculate covariance matrix
+cov_returns <- crossprod(corr_returns) / (n_rows-1)
+all.equal(cov_mat, cov_returns)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of the Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If $\mathbb{R}$ is a matrix of returns (with zero mean) for a portfolio of \texttt{k} assets (columns), over \texttt{n} time periods (rows), then the sample covariance matrix is equal to:
+      \begin{displaymath}
+        \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
+      \end{displaymath}
+      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero), 
+      \vskip1ex
+      The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster,
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# simulate random portfolio returns
+n_assets <- 10
+n_rows <- 100
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# de-mean the returns
+re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
+# calculate covariance matrix
+cov_mat <- crossprod(re_turns) / (n_rows-1)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$values
+barplot(ei_gen$values, # plot eigenvalues
+  xlab="", ylab="", las=3, 
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+  main="Eigenvalues of covariance matrix")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_covmat.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate eigenvectors and eigenvalues
+# as function of number of returns
+n_data <- ((n_assets/2):(2*n_assets))
+e_values <- sapply(n_data, function(x) {
+  re_turns <- re_turns[1:x, ]
+  re_turns <- apply(re_turns, MARGIN=2, 
+    function(y) (y-mean(y)))
+  cov_mat <- crossprod(re_turns) / (x-1)
+  min(eigen(cov_mat)$values)
 })  # end sapply
-sd(boot_strap)
-# estimate the 95% quantile using antithetic sampling
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    sam_ple[sample.int(sample_length,
-                       replace=TRUE)]
-  quantile(c(boot_sample, -boot_sample), 0.95)
-})  # end sapply
-# standard error of mean from bootstrap
-sd(boot_strap)
-sqrt(2)*sd(boot_strap)
+plot(y=e_values, x=n_data, t="l", 
+  xlab="", ylab="", lwd=3, col="blue",
+  main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
       @
   \end{columns}
 \end{block}
@@ -881,7 +885,84 @@ sqrt(2)*sd(boot_strap)
 
 
 %%%%%%%%%%%%%%%
-\section{Credit Portfolios}
+\section{Credit Portfolio Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Single-period Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a portfolio of credit assets (bonds or loans) over a single period of time,
+      \vskip1ex
+      At the end of the period, some of the assets default, while the rest don't,
+      \vskip1ex
+      The default probabilities are equal to $p_i$, 
+      \vskip1ex
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$, 
+      \vskip1ex
+      Default occurs if $u_i$ is less than the default probability $p_i$,
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.05)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# simulate average number of defaults
+num_simu <- 1000
+de_faults <- numeric(num_simu)
+for (i in 1:num_simu) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+mean(de_faults)
+# average defaults using vectorized functions
+uni_form <- matrix(runif(num_simu*num_assets), 
+                   ncol=num_simu)
+sum(uni_form < default_probs)/num_simu
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Values and Default Thresholds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables,
+      \vskip1ex
+      Default occurs if the \emph{asset value} is less than the \emph{default threshold}  $t_i$: $a_i < t_i$, 
+      \vskip1ex
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative Standard Normal distribution, 
+      \vskip1ex
+      The asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, 
+      <<echo=TRUE,eval=FALSE>>=
+# plot Standard Normal distribution
+x11(width=6, height=5)
+curve(expr=dnorm(x),
+      type="l", xlim=c(-4, 4),
+      xlab="asset value", ylab="", lwd=2,
+      col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+       labels="default threshold",
+       lwd=2, srt=90, pos=3)
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/default_threshold.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -891,7 +972,7 @@ sqrt(2)*sd(boot_strap)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Under the \emph{Vasicek} single factor model, the asset value is equal to the sum of a systematic factor $s$, plus an idiosyncratic factor $z_i$: 
+      Under the \emph{Vasicek} single factor model, the asset values $a_i$ are equal to the sum of a systematic factor $s$, plus an idiosyncratic factors $z_i$: 
       \begin{displaymath}
         a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
       \end{displaymath}
@@ -934,7 +1015,6 @@ for (i in 1:num_simu) {
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
 \subsection{Distribution of Portfolio Defaults Under Vasicek Model}
 \begin{frame}[fragile,t]{\subsecname}
@@ -950,13 +1030,13 @@ for (i in 1:num_simu) {
       \begin{displaymath}
         P(x) = N(\frac{\sqrt{1-\rho} N^{-1}(x) - t}{\sqrt{\rho}})
       \end{displaymath}
-      The associated probability density f(x) of portfolio defaults is equal to:
+      The associated probability density $f(x)$ of portfolio defaults is equal to:
       \begin{multline*}
         \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} (\sqrt{1-\rho} N^{-1}(x) - t)^2 + \\ \frac{1}{2} (N^{-1}(x))^2)
       \end{multline*}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/default_distr.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/default_distr.png}\\
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # define default probability density function
@@ -990,6 +1070,52 @@ text(x=0.023, y=8,
 
 
 %%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under Extreme Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlation $\rho$ is close to \emph{zero}, then the asset values $a_i$ are independent from each other, and defaults are also independent, so that the fraction of portfolio defaults is very close to the default probability $p$,
+      \vskip1ex
+      In that case, the probability density of portfolio defaults is very narrow and is centered on the default probability $p$,
+      \vskip1ex
+      If the correlation $\rho$ is close to \emph{one}, then the asset values $a_i$ are almost the same, and defaults occur at the same time, so that the fraction of portfolio defaults is either \emph{zero} or \emph{one},
+      \vskip1ex
+      In that case, the probability density of portfolio defaults becomes \emph{bimodal}, with two peaks around  \emph{zero} and \emph{one},
+      <<echo=TRUE,eval=FALSE>>=
+# plot default distribution with low correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.01),
+      type="l", xlab="default fraction", ylab="", 
+      lwd=2, col="green", main="Distribution of defaults")
+# plot default distribution with high correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
+      type="l", add=TRUE, lwd=2, n=10001, 
+      xlab="fraction of defaults", ylab="density", 
+      col="blue", main="")
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/default_distr_corr.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# add legend
+legend(x="topright", legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.1, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10,
+       labels="default probability",
+       lwd=2, pos=4)
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Portfolio Loss Distribution}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1005,14 +1131,14 @@ text(x=0.023, y=8,
         \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} (\sqrt{1-\rho} N^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} (N^{-1}(\frac{x}{LGD}))^2)
       \end{multline*}
       <<echo=TRUE,eval=FALSE>>=
-# define loss distribution density function
+# define Vasicek loss distribution density function
 portf_loss <- function(x, def_thresh=-2, rh_o=0.08, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
 integrate(portf_loss, low=0, up=0.3, def_thresh=-2, rh_o=0.08, l_gd=0.4)
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # plot probability distribution of losses
@@ -1057,7 +1183,7 @@ text(x=0.055-0.001, y=10, labels="VaR",
        lwd=2, srt=90, pos=3)
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_var.png}
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr_var.png}
   \end{columns}
 \end{block}
 
@@ -1093,7 +1219,7 @@ text(x=0.04-0.001, y=10, labels="VaR",
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/loss_distr_cvar.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/loss_distr_cvar.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # add shading for CVaR
@@ -1121,17 +1247,17 @@ text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
     \column{0.5\textwidth}
       The confidence levels of \emph{VaR} values can be calculated by integrating over the tail of the loss density function, 
       <<echo=TRUE,eval=FALSE>>=
-# integrate portf_loss over full range
+# integrate portf_loss() over full range
 integrate(portf_loss, low=0.0, up=0.3, 
           def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
-# calculate expected losses using portf_loss
+# calculate expected losses using portf_loss()
 integrate(function(x, ...) x*portf_loss(x, ...), 
           low=0.0, up=0.3, 
           def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
-# calculate confidence levels of VaR values
+# calculate confidence levels corresponding to VaR values
 var_s <- seq(0.04, 0.06, 0.001)
-conf_levels <- sapply(var_s, function(low, ...) {
-  integrate(portf_loss, low=low, up=0.3, ...)
+conf_levels <- sapply(var_s, function(v_ar, ...) {
+  integrate(portf_loss, low=v_ar, up=0.3, ...)
 }, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
 conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
 colnames(conf_levels) <- c("conf_levels", "VaRs")
@@ -1145,7 +1271,55 @@ plot(x=1-conf_levels[, "conf_levels"],
      t="l", main="VaR values and confidence levels")
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_conf_levels.png}
+      \includegraphics[width=0.5\paperwidth]{figure/var_conf_levels.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate CVaR values
+cvar_s <- sapply(var_s, function(v_ar, ...) {
+  integrate(function(x, ...) x*portf_loss(x, ...), 
+            low=v_ar, up=0.3, ...)
+}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
+conf_levels <- cbind(conf_levels, as.numeric(t(cvar_s)[, 1]))
+colnames(conf_levels)[3] <- "CVaRs"
+# divide CVaR by confidence level
+conf_levels[, "CVaRs"] <- conf_levels[, "CVaRs"]/conf_levels[, "conf_levels"]
+# calculate 95% confidence level CVaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05), 
+  "CVaRs"]
+# plot CVaRs
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "CVaRs"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(conf_levels[, c("VaRs", "CVaRs")]), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="CVaR values and confidence levels")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_conf_levels.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# add VaRs
+lines(x=1-conf_levels[, "conf_levels"],
+      y=conf_levels[, "VaRs"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
   \end{columns}
 \end{block}
 
@@ -1184,7 +1358,7 @@ loss_es <-
   l_gd*colSums(asset_values < default_thresh)/num_assets
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/var_simu.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/var_simu.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate VaRs
@@ -1193,6 +1367,203 @@ var_s <- quantile(loss_es, probs=conf_levels)
 names(var_s) <- round(conf_levels, 3)
 plot(x=conf_levels, y=var_s, t="l",
      main="Simulated VaR and confidence levels")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}, 
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
+      <<echo=TRUE,eval=FALSE>>=
+# calculate frequency table of loss_es
+table_losses <- table(loss_es)/num_simu
+# calculate CVaRs
+cvar_s <- sapply(var_s, function(v_ar) {
+  tai_l <- table_losses[v_ar < names(table_losses)]
+  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# plot CVaRs
+plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(cvar_s), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="Simulated CVaR and confidence levels")
+# add VaRs
+lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_simu.png}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function for Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{calc\_var()} simulates default losses under the \emph{Vasicek} model, and calculates a vector of \emph{VaR} and \emph{CVaR} values, 
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+calc_var <- function(default_probs, 
+                     l_gd=0.6, 
+                     rh_o=0.08, 
+                     num_simu=1000,
+                     conf_levels=seq(0.93, 0.99, 0.01)) {
+  # Define model parameters
+  num_assets <- NROW(default_probs)
+  default_thresh <- qnorm(default_probs)
+  # Define correlation parameters
+  rho_sqrt <- sqrt(rh_o)
+  rho_sqrtm <- sqrt(1-rh_o)
+  # Simulate losses under Vasicek model
+  system_atic <- rnorm(num_simu)
+  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+  asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
+  # Calculate VaRs
+  var_s <- quantile(loss_es, probs=conf_levels)
+  names(var_s) <- round(conf_levels, 3)
+  # Calculate CVaRs from the frequency table 
+  table_losses <- table(loss_es)/num_simu
+  cvar_s <- sapply(var_s, function(v_ar) {
+    tai_l <- table_losses[v_ar < names(table_losses)]
+    tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+  })  # end sapply
+  names(cvar_s) <- round(conf_levels, 3)
+  c(var_s, cvar_s)
+}  # end calc_var
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of \protect\emph{VaR} Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors \emph{VaR} and \emph{CVaR} can be calculated by performing an \texttt{sapply()} loop, selecting random samples from \texttt{default\_probs}, and passing them into \texttt{calc\_var()},
+      <<echo=TRUE,eval=FALSE>>=
+# define number of bootstrap simulations
+num_boot <- 500
+num_assets <- NROW(default_probs)
+# perform bootstrap of calc_var
+set.seed(1121)
+boot_strap <- sapply(rep(l_gd, num_boot), 
+  calc_var, 
+  default_probs=
+    default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end sapply
+boot_strap <- t(boot_strap)
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+@
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_std_error_boot.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of \protect\emph{VaR} Using Parallel Bootstrap}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# perform bootstrap of calc_var for Windows
+set.seed(1121)
+boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot), 
+  fun=calc_var, 
+  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end parLapply
+# bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(rep(l_gd, num_boot), 
+  fun=calc_var, 
+  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end mclapply
+boot_strap <- do.call(rbind, boot_strap)
+stopCluster(clus_ter)  # stop R processes over cluster
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+@
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_std_error_parallel.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
 @
   \end{columns}
 \end{block}

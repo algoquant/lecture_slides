@@ -28,11 +28,13 @@ Sys.time()  # get date and time
 
 Sys.Date()  # get date only
 rm(list=ls())
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 var1 <- 3  # define new object
 ls()  # list all objects in workspace
 # list objects starting with "v"
 ls(pattern=glob2rx("v*"))
+# remove all objects starting with "v"
+rm(list=ls(pattern=glob2rx("v*")))
 save.image()  # save workspace to file .RData in cwd
 rm(var1)  # remove object
 ls()  # list objects
@@ -40,10 +42,10 @@ load(".RData")
 ls()  # list objects
 var2 <- 5  # define another object
 save(var1, var2,  # save selected objects
-     file="C:/Develop/data/my_data.RData")
+     file="C:/Develop/R/lecture_slides/data/my_data.RData")
 rm(list=ls())  # remove all objects
 ls()  # list objects
-load_ed <- load(file="C:/Develop/data/my_data.RData")
+load_ed <- load(file="C:/Develop/R/lecture_slides/data/my_data.RData")
 load_ed
 ls()  # list objects
   q()  # quit R session
@@ -161,7 +163,7 @@ seq(-2,2, len=11)  # 10 numbers from -2 to 2
 rep(100, times=5)  # replicate a number
 character(5)  # create empty character vector
 numeric(5)  # create empty numeric vector
-numeric(0)  # create zero length vector
+numeric(0)  # create zero-length vector
 2*4:8  # multiply a vector
 2*(4:8)  # multiply a vector
 4:8/2  # divide a vector
@@ -201,6 +203,8 @@ vec_tor[c(FALSE, TRUE, TRUE)]
 vec_tor["eulery"]
 # extract elements using their names
 vec_tor[c("pie", "gammy")]
+# subset whole vector
+vec_tor[] <- 0
 vec_tor <- runif(5)
 vec_tor
 vec_tor > 0.5  # Boolean vector
@@ -213,40 +217,6 @@ vec_tor < 1  # Boolean vector of elements less than one
 vec_tor[vec_tor > 1]
 vec_tor[vec_tor > 0.5]  # filter elements > 0.5
 which(vec_tor > 0.5)  # index of elements > 0.5
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-mat_rix  # by default matrices are constructed column-wise
-# create a matrix row-wise
-matrix(5:10, nrow=2, byrow=TRUE)
-mat_rix[2, 3]  # extract third element from second row
-mat_rix[2, ]  # extract second row
-mat_rix[, 3]  # extract third column
-mat_rix[, c(1,3)]  # extract first and third column
-mat_rix[, -2]  # remove second column
-# get the number of rows or columns
-nrow(vec_tor); ncol(vec_tor)
-NROW(vec_tor); NCOL(vec_tor)
-nrow(mat_rix); ncol(mat_rix)
-NROW(mat_rix); NCOL(mat_rix)
-attributes(mat_rix)  # get matrix attributes
-dim(mat_rix)  # get dimension attribute
-class(mat_rix)  # get class attribute
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-mat_rix
-mat_rix["row2", "col3"]  # third element from second row
-names(mat_rix)  # get the names attribute
-dimnames(mat_rix)  # get dimnames attribute
-attributes(mat_rix)  # get matrix attributes
-mat_rix  # matrix with column names
-mat_rix[1, ]  # subset rows by index
-mat_rix[, "col1"]  # subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
-mat_rix[1, ]  # subsetting can produce a vector!
-class(mat_rix); class(mat_rix[1, ])
-is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
-mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
-class(mat_rix[1, , drop=FALSE])
-is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -274,11 +244,44 @@ if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
+?Arithmetic
 4.7 * 0.5  # multiplication
 4.7 / 0.5  # division
 # exponentiation
 2**3
 2^3
+library(microbenchmark)
+foo <- runif(1e6)
+system.time(foo^0.5)
+microbenchmark(sqrt(foo), foo^0.5, times=10)
+rm(list=ls())
+# expressions enclosed in parenthesis are less ambiguous
+-2:5
+(-2):5
+-(2:5)
+# expressions enclosed in parenthesis are less ambiguous
+-2*3+5
+-2*(3+5)
+
+# expressions can be separated by semicolons or by lines
+{1+2; 2*3; 1:5}
+# or
+{1+2
+2*3
+1:5}
+
+mat_rix <- matrix(nr=3, nc=4)
+mat_rix <- 0
+# subset whole matrix
+mat_rix[] <- 0
+
+# parenthesis and braces require a little additional processing time
+library(microbenchmark)
+summary(microbenchmark(
+  ba_se=sqrt(rnorm(10000)^2),
+  pa_ren=sqrt(((((rnorm(10000)^2))))),
+  bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 rm(list=ls())
 num_var1 <- 1
 
@@ -291,13 +294,13 @@ if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
 }  # end if
 
 num_var2
-switch("a", a="aaahh", b="bee", c="see", d=2, 
+switch("a", a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch("c", a="aaahh", b="bee", c="see", d=2, 
+switch("c", a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch(3, a="aaahh", b="bee", c="see", d=2, 
+switch(3, a="aaahh", b="bee", c="see", d=2,
        "else this")
-switch("cc", a="aaahh", b="bee", c="see", d=2, 
+switch("cc", a="aaahh", b="bee", c="see", d=2,
        "else this")
 # measure of central tendency
 centra_lity <- function(in_put,
@@ -313,20 +316,39 @@ my_var <- rnorm(100, mean=2)
 centra_lity(my_var, "mean")
 centra_lity(my_var, "mean_narm")
 centra_lity(my_var, "median")
+for (in_dex in vec_tor) {ex_pressions}
 rm(list=ls())
 color_list <- list("red", "white", "blue")
-for (some_color in color_list) {  # loop over list
+# loop over list
+for (some_color in color_list) {
   print(some_color)
-}
-for (in_dex in 1:3) {  # loop over vector
+}  # end for
+# loop over vector
+for (in_dex in 1:3) {
   print(color_list[[in_dex]])
-}
+}  # end for
 
-in_dex <- 1  # while loops need initialization
-while (in_dex < 4) {  # while loop
+# while loops require initialization
+in_dex <- 1
+# while loop
+while (in_dex < 4) {
   print(color_list[[in_dex]])
   in_dex <- in_dex + 1
-}
+}  # end while
+rm(list=ls())
+# loop over a vector and overwrite it
+vec_tor <- integer(7)
+for (i in 1:7) {
+  cat("Changing element:", i, "\n")
+  vec_tor[i] <- i^2
+}  # end for
+# equivalent way (without cat side effect)
+for (i in seq_along(vec_tor)) 
+  vec_tor[i] <- i^2
+
+# sapply() loop returns vector of values
+vec_tor <- sapply(seq_along(vec_tor), 
+          function(x) (x^2))
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
 # pre-allocate vector instead of "growing" it
@@ -337,6 +359,35 @@ for (i in 3:10) {  # perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
 fib_seq
+# allocate character vector
+character()
+character(5)
+is.character(character(5))
+# allocate integer vector
+integer()
+integer(5)
+is.integer(integer(5))
+is.numeric(integer(5))
+# allocate numeric vector
+numeric()
+numeric(5)
+is.integer(numeric(5))
+is.numeric(numeric(5))
+# allocate Boolean vector
+vector()
+vector(length=5)
+# allocate numeric vector
+vector(length=5, mode="numeric")
+is.null(vector())
+# allocate Boolean matrix
+matrix()
+is.null(matrix())
+# allocate integer matrix
+matrix(NA_integer_, nrow=3, ncol=2)
+is.integer(matrix(NA_integer_, nrow=3, ncol=2))
+# allocate numeric matrix
+matrix(NA_real_, nrow=3, ncol=2)
+is.numeric(matrix(NA_real_, nrow=3, ncol=2))
 vec_tor <- sample(1:9)
 vec_tor
 vec_tor < 5  # element-wise comparison
@@ -363,17 +414,32 @@ mat_rix <- matrix(1:10, 2, 5)  # create matrix
 mat_rix
 # as.numeric strips dim attribute from matrix
 as.numeric(mat_rix)
-mat_rix <- as.character(mat_rix)  # explicitly coerce to "character"
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
 c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 # coercion converted matrix to vector
 c(is.matrix(mat_rix), is.vector(mat_rix))
 vec_tor1 <- 1:3  # define vector
 vec_tor2 <- 6:4  # define vector
-cbind(vec_tor1, vec_tor2)  # bind into columns
-rbind(vec_tor1, vec_tor2)  # bind into rows
-vec_tor2 <- c(vec_tor2, 7)  # extend to four elements
-cbind(vec_tor1, vec_tor2)  # recycling rule applied
-1:6 + c(10, 20)  # another example of recycling rule
+# bind vectors into columns
+cbind(vec_tor1, vec_tor2)
+# bind vectors into rows
+rbind(vec_tor1, vec_tor2)
+# extend to four elements
+vec_tor2 <- c(vec_tor2, 7)
+# recycling rule applied
+cbind(vec_tor1, vec_tor2)
+# another example of recycling rule
+1:6 + c(10, 20)
+# replicate a single element
+rep("a", 5)
+# replicate the whole vector several times
+rep(c("a", "b"), 5)
+rep(c("a", "b"), times=5)
+# replicate the first element, then the second, etc.
+rep(c("a", "b"), each=5)
+# replicate to specified length
+rep(c("a", "b"), length.out=5)
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -492,8 +558,24 @@ line=0.1)
 legend(x="topright", legend=c("Normal", "shifted"),
  title="legend", inset=0.05, cex=0.8, bg="white",
  lwd=2, lty=c(1, 1), col=c("blue", "red"))
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+graph_params <- par()  # get existing parameters
+par("mar")  # get plot margins
+par(mar=c(2, 1, 2, 1))  # set plot margins
+par(oma=c(1, 1, 1, 1))  # set outer margins
+par(mgp=c(2, 1, 0))  # set title and label margins
+par(cex.lab=0.8,  # set font scales
+    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(las=1)  # set axis labels to horizontal
+par(ask=TRUE)  # pause, ask before plotting
+par(mfrow=c(2, 2))  # plot on 2x2 grid by rows
+for (i in 1:4) {  # plot 4 panels
+  barplot(sample(1:6), main=paste("panel", i),
+    col=rainbow(6), border=NA, axes=FALSE)
+  box()
+}  # end for
+par(ask=FALSE)  # restore automatic plotting
+par(new=TRUE)  # allow new plot on same chart
+par(graph_params)  # restore original parameters
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)
 plot(x_var, y_var, type="l", lty="solid",
@@ -523,6 +605,129 @@ title(main="Normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
  lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
  col=col_ors)
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+x_var <- seq(-4, 4, length=100)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+# plot an empty chart
+plot(x_var, dnorm(x_var, sd=sig_mas[1]),
+     type="n", xlab="", ylab="",
+     main="Normal Distributions")
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]),
+  lwd=2, col=col_ors[in_dex])
+}  # end for
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+ lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+ col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(2, 5, 8, 11)  # df values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("df", d_free, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dchisq(x, df=d_free[in_dex]),
+      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Chi-squared Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(3, 6, 9)  # df values
+# create plot colors
+col_ors <- c("black", "red", "blue", "green")
+# create legend labels
+lab_els <- c("normal", paste("df", d_free, sep="="))
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=2)
+for (in_dex in 1:3) {  # plot three curves
+curve(expr=dt(x, df=d_free[in_dex]),
+      type="l", xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex+1], add=TRUE)
+}  # end for
+# add title
+title(main="t-distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+x_var <- seq(-4, 4, length=100)
+d_free <- c(3, 6, 9)  # df values
+# create plot colors
+col_ors <- c("black", "red", "blue", "green")
+# create legend labels
+lab_els <- c("normal", paste("df", d_free, sep="="))
+# plot chart of normal distribution
+plot(x_var, dnorm(x_var), type="l",
+     lwd=2, xlab="", ylab="")
+# add lines to plot
+for (in_dex in 1:3) {
+  lines(x_var, dt(x_var, df=d_free[in_dex]),
+lwd=2, col=col_ors[in_dex+1])
+}  # end for
+# add title
+title(main="t-distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+rm(list=ls())
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+poisson_events <- 0:11  # Poisson events
+poisson_freq <- dpois(poisson_events, lambda=4)
+names(poisson_freq) <- as.character(poisson_events)
+# Poisson function
+poisson_func <- function(x, lambda)
+              {exp(-lambda)*lambda^x/factorial(x)}
+curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
+xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
+legend(x="topright", legend="Poisson density", title="",
+ inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
+# generate Poisson variables
+pois_counts <- rpois(1000, lambda=4)
+head(pois_counts)
+# calculate contingency table
+pois_table <- table(pois_counts)
+pois_table
+# create barplot of table data
+barplot(pois_table, col="lightgrey",
+  xlab="counts", ylab="number of observations",
+  main="barplot of Poisson count data")
+# create histogram of Poisson variables
+histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
+     ylab="frequency", freq=FALSE, main="Poisson histogram")
+lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
+# Poisson probability distribution function
+poisson_func <- function(x, lambda)
+  {exp(-lambda)*lambda^x/factorial(x)}
+curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
+# add legend
+legend("topright", inset=0.05, title="Poisson histogram",
+ c("histogram density", "probability"), cex=0.8, lwd=2,
+ lty=c(1, 1), col=c("blue", "red"))
+# total area under histogram
+diff(histo_gram$breaks) %*% histo_gram$density
 set.seed(1121)  # reset random number generator
 runif(3)  # three numbers from uniform distribution
 runif(3)  # produce another three numbers
@@ -565,53 +770,99 @@ plot(
   density(uni_form(see_d=runif(1), len_gth=1e5)),
   xlab="", ylab="", lwd=2, col="blue",
   main="uniform pseudo-random number density")
-# calculate random default probabilities
-num_assets <- 100
-default_probs <- runif(num_assets, max=0.05)
-# calculate number of defaults
-uni_form <- runif(num_assets)
-sum(uni_form < default_probs)
-# calculate average number of defaults
-de_faults <- numeric(200)
-for (i in 1:200) {  # perform loop
-  uni_form <- runif(num_assets)
-  de_faults[i] <- sum(uni_form < default_probs)
-}  # end for
-mean(de_faults)
-# average defaults using vectorized functions
-uni_form <- matrix(runif(200*num_assets),
-             ncol=200)
-sum(uni_form < default_probs)/200
-# plot Standard Normal distribution
-x11(width=6, height=5)
-curve(expr=dnorm(x),
-type="l", xlim=c(-4, 4),
-xlab="asset value", ylab="", lwd=2,
-col="blue", main="Distribution of Asset Values")
-abline(v=qnorm(0.025), col="red", lwd=2)
-text(x=qnorm(0.025)-0.1, y=0.15,
- labels="default threshold",
- lwd=2, srt=90, pos=3)
-# define default probability function
-vasi_cek <- function(x, def_thresh=-2, rh_o=0.01)
-  sqrt(1-rh_o)*dnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))/sqrt(rh_o)
-vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
-# plot probability distribution of defaults
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
-type="l", xlim=c(0, 0.1),
-xlab="fraction of defaults", ylab="", lwd=2,
-col="green", main="Distribution of defaults")
-# plot default distribution with higher correlation
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
-type="l", xlim=c(0, 0.1), add=TRUE,
-xlab="default fraction", ylab="", lwd=2,
-col="blue", main="")
-# add legend
-legend(x="topright", legend=c("high correlation", "low correlation"),
- title="", inset=0.05, cex=0.8, bg="white",
- lwd=2, lty=c(1, 1), col=c("blue", "green"))
-# add unconditional default probability
-abline(v=0.025, col="red", lwd=2)
-text(x=0.023, y=1,
- labels="default probability",
- lwd=2, srt=90, pos=3)
+set.seed(1121)  # reset random number generator
+# flip unbiased coin once, 20 times
+rbinom(n=20, size=1, 0.5)
+# number of heads after flipping twice, 20 times
+rbinom(n=20, size=2, 0.5)
+# number of heads after flipping thrice, 20 times
+rbinom(n=20, size=3, 0.5)
+# number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.8)
+# number of heads after flipping biased coin thrice, 20 times
+rbinom(n=20, size=3, 0.2)
+# flip unbiased coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)  # fast
+as.numeric(runif(20) < 0.5)  # slower
+# permutation of five numbers
+sample(x=5)
+# permutation of four strings
+sample(x=c("apple", "grape", "orange", "peach"))
+# sample of size three
+sample(x=5, size=3)
+# sample with replacement
+sample(x=5, replace=TRUE)
+sample(  # sample of strings
+  x=c("apple", "grape", "orange", "peach"),
+  size=12,
+  replace=TRUE)
+# binomial sample: flip coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)
+# flip unbiased coin once, 20 times
+as.numeric(runif(20) > 0.5)  # slower
+rm(list=ls())
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+sam_ple <- rnorm(1000)
+
+mean(sam_ple)  # sample mean
+
+median(sam_ple)  # sample median
+
+sd(sam_ple)  # sample standard deviation
+rm(list=ls())
+# DAX returns
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# number of observations
+len_rets <- NROW(re_turns)
+# mean of DAX returns
+mean_rets <- mean(re_turns)
+# standard deviation of DAX returns
+sd_rets <- sd(re_turns)
+# skew of DAX returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of DAX returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+# random normal returns
+re_turns <- rnorm(len_rets, sd=2)
+# mean and standard deviation of random normal returns
+mean_rets <- mean(re_turns)
+sd_rets <- sd(re_turns)
+# skew of random normal returns
+len_rets/((len_rets-1)*(len_rets-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of random normal returns
+len_rets*(len_rets+1)/((len_rets-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])

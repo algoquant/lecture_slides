@@ -55,13 +55,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#2]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#2, Spring 2017}
-% \subject{Getting Started With R}
+\subtitle{Lecture\#2, Fall 2017}
+
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{January 31, 2017}
+\date{November 7, 2017}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -75,239 +75,155 @@ knit_theme$set(thm)
 \maketitle
 
 
+
 %%%%%%%%%%%%%%%
-\section{Active Investment Strategies}
+\section{Modeling and Fitting Asset Returns}
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Price Technical Indicator}
+\subsection{Higher Moments of Asset Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling window:
+      The estimators of moments of a probability distribution are given by:
+      \vskip1ex
+      Sample mean: $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$
+      \vskip1ex
+      Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
+      \vskip1ex
+      With their expected values equal to the population mean and standard deviation:\\
+      $\mathbb{E}[\bar{x}]=\mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma]=\sigma$
+      \vskip1ex
+      The sample skewness (third moment):
       \begin{displaymath}
-        P_{i}^{EWMA} = (1-exp(-\lambda)) \sum_{j=i}^{\infty} exp(-\lambda (i-j)) P_{i-j}
+        \hat{s}=\frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa, 
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# select OHLC data
-oh_lc <- rutils::env_etf$VTI["/2011"]
-# calculate close prices
-cl_ose <- Cl(oh_lc)
-# define lookback window and decay parameter
-win_dow <- 51
-lamb_da <- 0.05
-# calculate EWMA prices
-weight_s <- exp(-lamb_da*1:win_dow)
-weight_s <- weight_s/sum(weight_s)
-ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
-ew_ma <- xts(cbind(cl_ose, ew_ma), 
-             order.by=index(oh_lc))
-colnames(ew_ma) <- c("VTI", "VTI EWMA")
-      @
+      The sample kurtosis (fourth moment):
+      \begin{displaymath}
+        \hat{k}=\frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+      \end{displaymath}
+      The normal distribution has zero skewness and kurtosis equal to 3,
+      \vskip1ex
+      Stock returns typically have negative skewness and kurtosis much greater than 3,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_indic.png}
-      \vspace{-2em}
+        <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# number of observations
+n_row <- NROW(re_turns)
+# mean of VTI returns
+mean_rets <- mean(re_turns)
+# standard deviation of VTI returns
+sd_rets <- sd(re_turns)
+# skew of VTI returns
+n_row/((n_row-1)*(n_row-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of VTI returns
+n_row*(n_row+1)/((n_row-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+# random normal returns
+re_turns <- rnorm(n_row, sd=sd_rets)
+# mean and standard deviation of random normal returns
+mean_rets <- mean(re_turns)
+sd_rets <- sd(re_turns)
+# skew of random normal returns
+n_row/((n_row-1)*(n_row-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
+# kurtosis of random normal returns
+n_row*(n_row+1)/((n_row-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Statistical estimators are functions of samples (which are random variables), and therefore are themselves \emph{random variables},
+      \vskip1ex
+      The \emph{standard error} (SE) of an estimator is defined as its \emph{standard deviation} (not to be confused with the \emph{population standard deviation} of the underlying random variable),
+      \vskip1ex
+      For example, the \emph{standard error} of the estimator of the mean is equal to:
+      \begin{displaymath}
+        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+      \end{displaymath}
+      Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown),
+      \vskip1ex
+      The \emph{estimator} of this \emph{standard error} is equal to:
+      \begin{displaymath}
+        SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
+      \end{displaymath}
+      where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+n_row <- 1000
+sam_ple <- rnorm(n_row)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      \vskip1ex
+      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed data set,
+      \vskip1ex
+      The \emph{bootstrapped} data is then used to re-calculate the estimator many times, producing a vector of values,
+      \vskip1ex
+      The \emph{bootstrapped} estimator values can then be used to calculate the probability distribution of the estimator and its standard error,
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(ew_ma, theme=plot_theme, 
-             name="EWMA prices")
-legend("top", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating The \protect\emph{EWMA} Crossover Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In a trend-following \emph{EWMA Crossover} strategy, the risk position switches depending if the current price is above or below the \emph{EWMA},
-      \vskip1ex
-      If the current price crosses above the \emph{EWMA}, then the strategy switches its risk position to a fixed unit of long risk, and if it crosses below, to a fixed unit of short risk, 
-      \vskip1ex
-      The strategy holds the same position until the \emph{EWMA} crosses over the current price (either from above or below), and then it switches its position,
-      \vskip1ex
-      The strategy is therefore always either in a long risk, or in a short risk position,
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# determine dates right after EWMA has crossed prices
-in_dic <- sign(cl_ose - ew_ma[, 2])
-trade_dates <- (rutils::diff_xts(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
-# calculate positions, either: -1, 0, or 1
-po_sitions <- rep(NA_integer_, NROW(cl_ose))
-po_sitions[1] <- 0
-po_sitions[trade_dates] <- 
-  rutils::lag_xts(in_dic)[trade_dates]
-po_sitions <- na.locf(po_sitions)
-po_sitions <- xts(po_sitions, order.by=index(oh_lc))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_strat.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with position shading
-chart_Series(ew_ma, theme=plot_theme, 
-             name="EWMA prices")
-add_TA(po_sitions > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performance of \protect\emph{EWMA} Crossover Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The strategy trades at the \emph{Open} price on the next day after prices cross the \emph{EWMA}, since in practice it may not be possible to trade immediately, 
-      \vskip1ex
-      The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position, 
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# calculate open and lagged prices
-op_en <- Op(oh_lc)
-prices_lag <- rutils::lag_xts(cl_ose)
-position_lagged <- rutils::lag_xts(po_sitions)
-# calculate daily profits and losses
-re_turns <- position_lagged*(cl_ose - prices_lag)
-re_turns[trade_dates] <- 
-  position_lagged[trade_dates] * 
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  po_sitions[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# calculate annualized Sharpe ratio of strategy returns
-sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-pn_l <- cumsum(re_turns)
-pn_l <- cbind(cl_ose-as.numeric(cl_ose[1, ]), pn_l)
-colnames(pn_l) <- c("VTI", "EWMA PnL")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_strat_pnl.png}
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# plot EWMA PnL with position shading
-chart_Series(pn_l, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pn_l), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function for \protect\emph{EWMA} Crossover Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{EWMA} strategy can be performed by a single function, which allows the analysis of its performance depending on its parameters,
-      \vskip1ex
-      The function \texttt{simu\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$, 
-      \vskip1ex
-      The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-simu_ewma <- function(oh_lc, lamb_da=0.05, win_dow=51) {
-  # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
-  weight_s <- weight_s/sum(weight_s)
-  cl_ose <- Cl(oh_lc)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
-  # determine dates right after EWMA has crossed prices
-  in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
-  trade_dates <- (rutils::diff_xts(in_dic) != 0)
-  trade_dates <- which(trade_dates) + 1
-  # calculate positions, either: -1, 0, or 1
-  po_sitions <- rep(NA_integer_, NROW(cl_ose))
-  po_sitions[1] <- 0
-  po_sitions[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
-  po_sitions <- xts(na.locf(po_sitions), order.by=index(oh_lc))
-  op_en <- Op(oh_lc)
-  prices_lag <- rutils::lag_xts(cl_ose)
-  position_lagged <- rutils::lag_xts(po_sitions)
-  # calculate daily profits and losses
-  re_turns <- position_lagged*(cl_ose - prices_lag)
-  re_turns[trade_dates] <- 
-    position_lagged[trade_dates] * 
-    (op_en[trade_dates] - prices_lag[trade_dates]) +
-    po_sitions[trade_dates] * 
-    (cl_ose[trade_dates] - op_en[trade_dates])
-  cbind(po_sitions, re_turns)
-}  # end simu_ewma
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Multiple \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The performance of the trend-following \emph{EWMA} strategy depends on the decay parameter $\lambda$, 
-      \vskip1ex
-      The best performing strategy can be found by performing an \texttt{sapply()} loop over a vector of $\lambda$ values,
-      <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.001, 0.03, 0.001)
-sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
-  re_turns <- simu_ewma(oh_lc=oh_lc, 
-              lamb_da=lamb_da)[, 2]
-  # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
 })  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA trend-following strategies 
-     as function of the decay parameter lambda")
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_trending.png}
   \end{columns}
 \end{block}
 
@@ -315,274 +231,57 @@ plot(x=lamb_das, y=sharpe_ratios, t="l",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Trend-following \protect\emph{EWMA} Strategy}
+\subsection{Bootstrapping Standard Errors Using Parallel Computing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The best performing trend-following \emph{EWMA} strategy has a relatively small $\lambda$ value, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading, 
-      <<echo=TRUE,eval=FALSE>>=
-# simulate best performing strategy
-ewma_trend <- simu_ewma(oh_lc=oh_lc, 
-        lamb_da=lamb_das[which.max(sharpe_ratios)])
-po_sitions <- ewma_trend[, 1]
-pn_l <- cumsum(ewma_trend[, 2])
-pn_l <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pn_l)
-colnames(pn_l) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL with position shading
-chart_Series(pn_l, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pn_l), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_best_trend.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mean-reverting \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The trend-following \emph{EWMA} strategy experiences losses for large values of the decay parameter $\lambda$ (for our data sample - for different data this may not be true), 
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
       \vskip1ex
-      Reverting the rules of the trend-following \emph{EWMA} strategy creates a mean-reverting strategy,
-      <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.05, 0.12, 0.01)
-sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
-  re_turns <- -simu_ewma(oh_lc=oh_lc, 
-              lamb_da=lamb_da)[, 2]
-  # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-})  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA mean-reverting strategies 
-     as function of the decay parameter lambda")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_reverting.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Mean-reverting \protect\emph{EWMA} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The best performing mean-reverting \emph{EWMA} strategy has a relatively large $\lambda$ value, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading, 
-      <<echo=TRUE,eval=FALSE>>=
-# simulate best performing strategy
-ewma_revert <- -simu_ewma(oh_lc=oh_lc, 
-        lamb_da=lamb_das[which.max(sharpe_ratios)])
-po_sitions <- ewma_revert[, 1]
-pn_l <- cumsum(ewma_revert[, 2])
-pn_l <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pn_l)
-colnames(pn_l) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL with position shading
-chart_Series(pn_l, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(po_sitions > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(po_sitions < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pn_l), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_best_revert.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Combining Trend-following and Mean-reverting Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The returns of trend-following and mean-reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk, 
-      <<echo=TRUE,eval=FALSE>>=
-# calculate correlation between trend-following and mean-reverting strategies
-trend_ing <- ewma_trend[, 2]
-colnames(trend_ing) <- "trend"
-revert_ing <- ewma_revert[, 2]
-colnames(revert_ing) <- "revert"
-corr_matrix <- cor(cbind(trend_ing, revert_ing))
-corr_matrix
-# calculate combined strategy
-re_turns <- trend_ing + revert_ing
-# calculate annualized Sharpe ratio of strategy returns
-sapply(cbind(rutils::diff_xts(cl_ose), 
-    trend_ing, revert_ing, re_turns), 
-      function(re_turns) {
-        sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-      })  # end sapply
-pn_l <- cumsum(re_turns)
-pn_l <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pn_l)
-colnames(pn_l) <- c("VTI", "EWMA combined PnL")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_combined.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-chart_Series(pn_l, theme=plot_theme, 
-             name="Performance of EWMA Strategies")
-add_TA(cumsum(trend_ing), on=1, lwd=2, col="green")
-add_TA(cumsum(revert_ing), on=1, lwd=2, col="magenta2")
-legend("topleft", legend=c(colnames(pn_l), "trending", "reverting"), 
-       inset=0.05, bg="white", lty=rep(1, 4), lwd=rep(4, 4), 
-       col=c(plot_theme$col$line.col, "green", "magenta2"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ensemble of \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instead of selecting the best performing \emph{EWMA} strategy, one can choose a weighted average of strategies (ensemble), which corresponds to allocating positions according to the weights, 
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
       \vskip1ex
-      The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies, 
-      <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.001, 0.03, 0.001)
-re_turns <- lapply(lamb_das, function(lamb_da) {
-  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da)[, 2]
-})  # end sapply
-re_turns <- do.call(cbind, re_turns)
-weight_s <- sharpe_ratios/sum(sharpe_ratios)
-re_turns <- re_turns %*% weight_s
-re_turns <- xts(re_turns, order.by=index(oh_lc))
-pn_l <- cumsum(re_turns)
-pn_l <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pn_l)
-colnames(pn_l) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL without position shading
-chart_Series(pn_l, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-legend("top", legend=colnames(pn_l), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_ensemble.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Interactive Plots}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{HTML}, 
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
       \vskip1ex
-      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them, 
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
       \vskip1ex
-      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing: 
-      \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code), 
-      \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{HTML}, or \emph{MS Word} documents, 
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
+      \vskip1ex
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily,backgroundcolor=\color{anti-flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:  
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here: 
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents. 
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.  
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.  
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2 
-  \leq 
-  \left( \sum_{k=1}^n a_k^2 \right) 
-  \left( \sum_{k=1}^n b_k^2 \right) 
-$$
-
-    \end{lstlisting}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- do.call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+      @
   \end{columns}
 \end{block}
 
@@ -590,43 +289,454 @@ $$
 
 
 %%%%%%%%%%%%%%%
-\subsection{Interactive Charts Using Package \protect\emph{shiny}}
+\subsection{Robust Measures of Dispersion and Skewness}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{shiny} creates plots able to interact with an active \texttt{R} process, and to display the outputs of live models running in \texttt{R},
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median (instead of the mean):
+      \begin{displaymath}
+        MAD = median(abs(C_i - median(C_i)))
+      \end{displaymath}
       \vskip1ex
-      The function \texttt{inputPanel()} creates a panel for user input of model parameters,
+      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$, 
       \vskip1ex
-      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R},
+      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation, 
+      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance, 
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation, 
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}, 
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-inputPanel(
-  sliderInput("lamb_da", label="lambda:",
-              min=0.01, max=0.2, value=0.1, step=0.01)
-)  # end inputPanel
+re_turns <- rnorm(1000)
+sd(re_turns)
+mad(re_turns)
+median(abs(re_turns - median(re_turns)))
+median(abs(re_turns - median(re_turns)))/qnorm(0.75)
+# bootstrap of sd and mad estimators
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    re_turns[sample.int(n_row, replace=TRUE)]
+  c(sd=sd(boot_sample),
+    mad=mad(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+# parallel bootstrap under Windows
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+boot_strap <- parLapply(clus_ter, 1:10000, 
+  function(x, re_turns) {
+    boot_sample <- 
+      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
+    c(sd=sd(boot_sample),
+      mad=mad(boot_sample))
+  }, re_turns=re_turns)  # end parLapply
+# parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000, 
+  function(x) {
+    boot_sample <- 
+      re_turns[sample.int(NROW(re_turns), replace=TRUE)]
+    c(sd=sd(boot_sample),
+      mad=mad(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+# analyze bootstrapped variance
+boot_strap <- do.call(rbind, boot_strap)
+head(boot_strap)
+sum(is.na(boot_strap))
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), std_error=sd(x)))
+      @
+  \end{columns}
+\end{block}
 
-renderPlot({
-  lamb_da <- input$lamb_da
-  # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
-  weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(oh_lc))
-  colnames(ew_ma) <- c("VTI", "VTI EWMA")
-  # plot EWMA prices
-  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
-  plot(ch_ob)
-  legend("top", legend=colnames(ew_ma), 
-         inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2), 
-         col=plot_theme$col$line.col, bty="n")
-})  # end renderPlot
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Normal (Gaussian)} probability density function is given by:
+      \begin{displaymath}
+        N(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
+      \end{displaymath}
+      The \emph{Standard Normal} distribution $N(0, 1)$ is a special case of the \emph{Normal} $N(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$,
+      \vskip1ex
+      The function \texttt{dnorm()} calculates the \emph{Normal} probability density,
+      <<echo=TRUE,eval=FALSE>>=
+x_var <- seq(-5, 7, length=100)
+y_var <- dnorm(x_var, mean=1.0, sd=2.0)
+plot(x_var, y_var, type="l", lty="solid",
+     xlab="", ylab="")
+title(main="Normal Density Function", line=0.5)
+star_t <- 3; fin_ish <- 5  # set lower and upper bounds
+# set polygon base
+are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
+polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
+        c(-1, y_var[are_a], -1), col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/ewma_shiny.pdf}
+    \includegraphics[width=0.5\paperwidth]{figure/norm_dist}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name,
+      <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dnorm(x, sd=sig_mas[in_dex]),
+      type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_mult_curves-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
+      \vskip1ex
+      Then the random variable (\emph{t-ratio}):
+      \begin{displaymath}
+        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
+      \end{displaymath}
+      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + x^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      \vspace{-1em}
+        <<eval=FALSE,echo=(-(1:2))>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(3, 6, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- c("normal", paste("df", d_free, sep="="))
+# plot a Normal probability distribution
+curve(expr=dnorm, type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=2)
+for (in_dex in 1:3) {  # plot three t-distributions
+curve(expr=dt(x, df=d_free[in_dex]),
+      type="l", xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex+1], add=TRUE)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/t_dist_mult.png}\\
+      \vspace{-1em}
+        <<eval=FALSE,echo=TRUE>>=
+# add title
+title(main="t-distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees\n of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Log-likelihood Function of Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The non-standardized Student's \emph{t-distribution} is given by:
+      \begin{displaymath}
+        P(x) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \sigma \, \Gamma(\nu/2)} \, (1 + (\frac{x - \mu}{\sigma})^2/\nu)^{-(\nu+1)/2}
+      \end{displaymath}
+      Where $\nu$ is the degrees of freedom, $\mu$ is the location parameter, and $\sigma$ is the scale parameter,  
+      \vskip1ex
+      The corresponding negative of \emph{log-likelihood} function can be written as:
+      \begin{multline*}
+        P(x) = -log(\frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu} \, \Gamma(\nu/2)}) + log(\sigma ) + \\
+        \frac{\nu+1}{2} \, log(1 + (\frac{x - \mu}{\sigma})^2/\nu)
+      \end{multline*}
+      $\mathcal{L}(\theta|\bar{x})$ is a function of the parameters of a statistical model $(\theta)$, given a sample of observed values $(\bar{x})$, taken under the model's probability distribution $P(x|\theta)$:
+      \begin{displaymath}
+        \mathcal{L}(\theta|x) = \prod_{i=1}^{n} P(x_i|\theta)
+      \end{displaymath}
+      The \emph{likelihood} function measures how \emph{likely} are the parameters of a statistical model, given a sample of observed values $(\bar{x})$,
+      \vskip1ex
+      The \emph{maximum-likelihood} estimate (\emph{MLE}) of the model's parameters are those that maximize the \emph{likelihood} function:
+      \begin{displaymath}
+        \theta_{MLE} = \operatorname*{arg\,max}_{\theta} {\mathcal{L}(\theta|x)}
+      \end{displaymath}
+      In practice the logarithm of the \emph{likelihood} $\log(\mathcal{L})$ is maximized, instead of the \emph{likelihood} itself,
+      \vskip1ex
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# objective function is log-likelihood
+object_ive <- function(pa_r, free_dom, sam_ple) {
+  sum(
+    -log(gamma((free_dom+1)/2) / 
+      (sqrt(pi*free_dom) * gamma(free_dom/2))) + 
+    log(pa_r[2]) + 
+    (free_dom+1)/2 * log(1 + ((sam_ple - pa_r[1])/
+                            pa_r[2])^2/free_dom))
+}  # end object_ive
+# simpler objective function
+object_ive <- function(pa_r, free_dom, sam_ple) {
+  -sum(log(dt(x=(sam_ple-pa_r[1])/pa_r[2], 
+              df=free_dom)/pa_r[2]))
+}  # end object_ive
+# demonstrate equivalence of the two methods
+object_ive(c(0, 1), 2, 2:5)
+-sum(log(dt(x=2:5, df=2)))
+object_ive(c(1, 0.5), 2, 2:5)
+-sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Asset Returns into Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization,
+      \vskip1ex
+      The function \texttt{fitdistr()} performs a \emph{maximum likelihood} optimization to find the non-standardized Student's \emph{t-distribution} location and scale parameters,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# initial parameters
+par_init <- c(mean=0, scale=0.01)
+# fit distribution using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=re_turns, 
+  free_dom=2, # degrees of freedom
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(1, 0.1), # upper constraint
+  lower=c(-1, 1e-7)) # lower constraint
+# optimal parameters
+lo_cation <- optim_fit$par["mean"]
+sc_ale <- optim_fit$par["scale"]
+# fit distribution using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(re_turns, 
+  densfun="t", df=2, lower=c(-1, 1e-7))
+optim_fit$estimate
+optim_fit$sd
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting the Fitted Student's \protect\emph{t-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(width=6, height=5)
+# plot histogram of VTI returns
+histo_gram <- hist(re_turns, col="lightgrey", 
+  xlab="returns", breaks=100, xlim=c(-0.05, 0.05), 
+  ylab="frequency", freq=FALSE, 
+  main="VTI returns histogram", )
+lines(density(re_turns, adjust=1.5), type="l", 
+      lwd=3, col="blue")
+# plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(re_turns), 
+  sd=sd(re_turns)), add=TRUE, type="l", 
+  xlab="", ylab="", lwd=3, col="green")
+# plot t-distribution function
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale, 
+      type="l", xlab="", ylab="", lwd=3,
+      col="red", add=TRUE)
+# add legend
+legend("topright", inset=0.05, 
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=c(1, 1, 1),
+  col=c("blue", "red", "green"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/t_dist_rets.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables,
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with \texttt{k} degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        P(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+        <<eval=FALSE,echo=(-(1:2))>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+d_free <- c(2, 5, 8, 11)  # df values
+# create plot colors
+col_ors <- c("red", "black", "blue", "green")
+# create legend labels
+lab_els <- paste("df", d_free, sep="=")
+for (in_dex in 1:4) {  # plot four curves
+curve(expr=dchisq(x, df=d_free[in_dex]),
+      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<eval=FALSE,echo=TRUE>>=
+# add title
+title(main="Chi-squared Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value,
+      \vskip1ex
+      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<>>=
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Goodness of Fit Tests}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of fit} tests are designed to test if a set of observations fits a probability distribution,
+      \vskip1ex
+      The \emph{Chi-squared} test is designed to test if a frequency distribution (contingency table) fits the specified probability distribution,
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test is designed to test if two samples were obtained from the same probability distribution,
+      \vskip1ex
+      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate cumulative probabilities and then difference them
+prob_s <- pt((histo_gram$breaks-lo_cation)/sc_ale, df=2)
+prob_s <- diff(prob_s)
+# perform Chi-squared test
+chisq.test(histo_gram$counts, p=prob_s, 
+  rescale.p=TRUE, simulate.p.value=TRUE)
+
+# calculate sample from t-distribution
+sam_ple <- lo_cation + sc_ale*rt(NROW(re_turns), df=2)
+# perform Kolmogorov-Smirnov test
+ks.test(as.numeric(re_turns), sam_ple)
+      @
   \end{columns}
 \end{block}
 
@@ -639,7 +749,7 @@ renderPlot({
 
 
 %%%%%%%%%%%%%%%
-\subsection{Aggregations Over Look-back Windows}
+\subsection{Aggregations Over Look-back Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -649,24 +759,24 @@ renderPlot({
       \vskip1ex
       A time \emph{interval} is defined as the time spanned by one or more neighboring time \emph{periods}, 
       \vskip1ex
-      A look-back \emph{window} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
+      A \emph{look-back interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
       \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the window width (number of periods in the window), 
+      The \emph{startpoints} are the \emph{endpoints} lagged by the interval width (number of periods in the interval), 
       \vskip1ex
-      The look-back \emph{windows} may or may not \emph{overlap} with their neighboring windows, 
+      The look-back \emph{intervals} may or may not \emph{overlap} with their neighboring intervals, 
     \column{0.5\textwidth}
-      A rolling aggregation is specified by a vector of look-back \emph{windows} at each point in time, 
+      A rolling aggregation is specified by a vector of look-back \emph{intervals} at each point in time, 
       \vskip1ex
       An example of a rolling aggregation are moving average prices, 
       \vskip1ex
-      An interval aggregation is specified by a vector of look-back \emph{windows} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
+      An interval aggregation is specified by a vector of look-back \emph{intervals} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
       \vskip1ex
       An example of a non-overlapping interval aggregation are monthly asset returns, 
       \vskip1ex
-      An example of an overlapping interval aggregation are 12-month asset returns calculated monthly, 
+      An example of an overlapping interval aggregation are trailing 12-month asset returns calculated monthly, 
   \end{columns}
     \vspace{-2em}
-    \includegraphics[width=0.9\paperwidth,valign=t]{figure/data_models_rolling_windows.png}\\
+    \includegraphics[width=0.9\paperwidth]{figure/rolling_intervals.png}\\
 \end{block}
 
 \end{frame}
@@ -681,33 +791,34 @@ renderPlot({
     \column{0.4\textwidth}
       Aggregations performed over time series can be extremely slow if done improperly, therefore it's very important to find the fastest methods of performing aggregations, 
       \vskip1ex
-      The \texttt{sapply()} functional allows performing aggregations over the look-back \emph{windows}, 
+      The \texttt{sapply()} functional allows performing aggregations over the look-back \emph{intervals}, 
       \vskip1ex
       The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series,
       \vskip1ex
       The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series,
       \vskip1ex
-      The variable \texttt{win\_dow} is the size of the lookback window, equal to the number of data points used for applying the aggregation function (including the current point), 
+      The variable \texttt{look\_back} is the size of the look-back interval, equal to the number of data points used for applying the aggregation function (including the current point), 
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
-library(HighFreq)  # load package HighFreq
-price_s <- SPY["2012-02-13", 4]  # extract closing minutely prices
-end_points <- 0:NROW(price_s)  # define end points
-len_gth <- length(end_points)
-win_dow <- 11  # number of data points per look-back window
+      <<TRUE,eval=FALSE>>=
+price_s <- Cl(rutils::env_etf$VTI)
+end_points <- seq_along(price_s)  # define end points
+len_gth <- NROW(end_points)
+look_back <- 22  # number of data points per look-back interval
 # start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
 # define aggregation function
-agg_regate <- function(x_ts)
-  c(max=max(x_ts), min=min(x_ts))
-# perform aggregations over length of end_points
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end sapply
+agg_regate <- function(x_ts) c(max=max(x_ts), min=min(x_ts))
+# perform aggregations over look_backs list
+agg_regations <- sapply(look_backs, 
+    function(look_back) agg_regate(price_s[look_back])
+)  # end sapply
 # coerce agg_regations into matrix and transpose it
 if (is.vector(agg_regations))
   agg_regations <- t(agg_regations)
@@ -729,7 +840,7 @@ agg_regations <- xts(agg_regations,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \texttt{lapply()} functional allows performing aggregations over the look-back \emph{windows}, 
+      The \texttt{lapply()} functional allows performing aggregations over the look-back \emph{intervals}, 
       \vskip1ex
       The \texttt{lapply()} functional by default returns a list, not an \emph{xts} series,
       \vskip1ex
@@ -744,35 +855,27 @@ agg_regations <- xts(agg_regations,
       The function \texttt{chart\_theme()} returns the theme object, 
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-price_s <- Cl(SPY["2012-02-13"])  # extract closing minutely prices
-end_points <- 0:NROW(price_s)  # define end points
-len_gth <- length(end_points)
-win_dow <- 11  # number of data points per look-back window
-# define starting points as lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
-# define aggregation function
-agg_regate <- function(x_ts)
-  xts(t(c(max=max(x_ts), min=min(x_ts))), 
-      order.by=end(x_ts))
-# perform aggregations over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      agg_regate(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end lapply
+# perform aggregations over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) agg_regate(price_s[look_back])
+)  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
-agg_regations <- merge(price_s, agg_regations)
+# convert into xts
+agg_regations <- xts::xts(agg_regations, 
+    order.by=index(price_s))
+agg_regations <- cbind(agg_regations, price_s)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green")
+x11()
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
 legend("top", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+  bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -787,39 +890,57 @@ col=plot_theme$col$line.col, bty="n")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \texttt{lapply()} functional can be called inside a functional designed for performing rolling aggregations, 
+      The functional \texttt{roll\_agg()} performs rolling aggregations of its function argument \texttt{FUN}, over an \emph{xts} series (\texttt{x\_ts}), and a look-back interval (\texttt{look\_back}),
       \vskip1ex
+      The argument \texttt{FUN} is an aggregation function over a subset of \texttt{x\_ts} series, 
+      \vskip1ex
+      The dots \texttt{"..."} argument is passed into \texttt{FUN} as additional arguments,
+      \vskip1ex
+      The argument \texttt{look\_back} is equal to the number of periods of \texttt{x\_ts} series which are passed to the aggregation function \texttt{FUN}, 
+      \vskip1ex
+      The functional \texttt{roll\_agg()} calls \texttt{lapply()}, which loops over the length of series \texttt{x\_ts}, 
+      \vskip1ex
+      Note that two different intervals may be used with \texttt{roll\_agg()},
+      \vskip1ex
+      The first interval is the argument \texttt{look\_back}, 
+      \vskip1ex
+      A second interval may be one of the variables bound to the dots \texttt{"..."} argument, and passed to the aggregation function \texttt{FUN} (for example, an \emph{EWMA} window), 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations
-roll_agg <- function(x_ts, win_dow, FUN, ...) {
-# define end points at every point
-  end_points <- 0:NROW(x_ts)
-  len_gth <- length(end_points)
+roll_agg <- function(x_ts, look_back, FUN, ...) {
+# define end points at every period
+  end_points <- seq_along(x_ts)
+  len_gth <- NROW(end_points)
 # define starting points as lag of end_points
-  start_points <-  end_points[
-    c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
-# perform aggregations over length of end_points
-  agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...)
-    })  # end lapply
+  start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs, 
+    function(look_back) FUN(x_ts[look_back], ...)
+  )  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
 # coerce agg_regations into xts series
   if (!is.xts(agg_regations))
-    agg_regations <- 
-      xts(agg_regations, order.by=index(x_ts[end_points]))
+    agg_regations <- xts(agg_regations, order.by=index(x_ts))
   agg_regations
 }  # end roll_agg
 # define aggregation function
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
-# perform aggregations over rolling window
-agg_regations <- roll_agg(price_s, win_dow=win_dow, 
+# perform aggregations over rolling interval
+agg_regations <- roll_agg(price_s, look_back=look_back, 
                     FUN=agg_regate)
+class(agg_regations)
+dim(agg_regations)
       @
   \end{columns}
 \end{block}
@@ -851,9 +972,9 @@ agg_xts <- function(x_ts)
 # benchmark the speed of aggregation functions
 library(microbenchmark)
 summary(microbenchmark(
-  agg_vector=roll_agg(price_s, win_dow=win_dow,
+  agg_vector=roll_agg(price_s, look_back=look_back,
                     FUN=agg_vector),
-  agg_xts=roll_agg(price_s, win_dow=win_dow,
+  agg_xts=roll_agg(price_s, look_back=look_back,
                     FUN=agg_xts),
   times=10))[, c(1, 4, 5)]
 @
@@ -876,11 +997,11 @@ summary(microbenchmark(
         \item \texttt{rollapply.xts()} from package \emph{xts},
         \item \texttt{apply.rolling()} from package \emph{PerformanceAnalytics},
       \end{itemize}
-      These functionals don't require specifying the \emph{endpoints}, and instead calculate the \emph{endpoints} from the rolling window width, 
+      These functionals don't require specifying the \emph{endpoints}, and instead calculate the \emph{endpoints} from the rolling interval width, 
       \vskip1ex
       These functionals can only apply functions that return a single value, not a vector, 
       \vskip1ex
-      These functionals return an \emph{xts} series with leading \texttt{NA} values at points before the rolling window can fit over the data, 
+      These functionals return an \emph{xts} series with leading \texttt{NA} values at points before the rolling interval can fit over the data, 
       \vskip1ex
       The argument \texttt{align="right"} of \texttt{rollapply()} determines that aggregations are taken from the past,
       \vskip1ex
@@ -891,22 +1012,22 @@ summary(microbenchmark(
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
-# perform aggregations over a rolling window
-agg_regations <- xts:::rollapply.xts(price_s, width=win_dow, 
+# perform aggregations over a rolling interval
+agg_regations <- xts:::rollapply.xts(price_s, width=look_back, 
                     FUN=agg_regate, align="right")
-# perform aggregations over a rolling window
+# perform aggregations over a rolling interval
 library(PerformanceAnalytics)  # load package PerformanceAnalytics
 agg_regations <- apply.rolling(price_s, 
-                    width=win_dow, FUN=agg_regate)
+                    width=look_back, FUN=agg_regate)
 # benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
-  roll_agg=roll_agg(price_s, win_dow=win_dow,
+  roll_agg=roll_agg(price_s, look_back=look_back,
                     FUN=max),
-  roll_xts=xts:::rollapply.xts(price_s, width=win_dow, 
+  roll_xts=xts:::rollapply.xts(price_s, width=look_back, 
                        FUN=max, align="right"), 
   apply_rolling=apply.rolling(price_s, 
-                              width=win_dow, FUN=max), 
+                              width=look_back, FUN=max), 
   times=10))[, c(1, 4, 5)]
 @
   \end{columns}
@@ -921,7 +1042,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \texttt{vectors} and \texttt{time series} objects,
+      The generic functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return the cumulative sums, minima, and maxima of \emph{vectors} and \emph{time series} objects,
       \vskip1ex
       The methods for these functions are implemented as \emph{vectorized compiled} functions, and are therefore much faster than \texttt{apply()} loops, 
       \vskip1ex
@@ -935,29 +1056,31 @@ summary(microbenchmark(
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 # rolling sum using cumsum()
-roll_sum <- function(x_ts, win_dow) {
+roll_sum <- function(x_ts, look_back) {
   cum_sum <- cumsum(na.omit(x_ts))
-  out_put <- cum_sum - lag(x=cum_sum, k=win_dow)
-  out_put[1:win_dow, ] <- cum_sum[1:win_dow, ]
+  out_put <- cum_sum - lag(x=cum_sum, k=look_back)
+  out_put[1:look_back, ] <- cum_sum[1:look_back, ]
   colnames(out_put) <- paste0(colnames(x_ts), "_stdev")
   out_put
 }  # end roll_sum
-agg_regations <- roll_sum(price_s, win_dow=win_dow)
+agg_regations <- roll_sum(price_s, look_back=look_back)
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
 # perform rolling aggregations using apply loop
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      sum(price_s[start_points[in_dex]:end_points[in_dex]])
-  })  # end sapply
+agg_regations <- sapply(look_backs, 
+    function(look_back) sum(price_s[look_back])
+)  # end sapply
 head(agg_regations)
 tail(agg_regations)
 # benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
-  roll_sum=roll_sum(price_s, win_dow=win_dow),
-  s_apply=sapply(2:len_gth, 
-    function(in_dex) {
-      sum(price_s[start_points[in_dex]:end_points[in_dex]])
-  }), 
+  roll_sum=roll_sum(price_s, look_back=look_back),
+  s_apply=sapply(look_backs, 
+    function(look_back) sum(price_s[look_back])), 
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -973,7 +1096,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{TTR} contains functions for calculating rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      The package \emph{TTR} contains functions for calculating rolling aggregations over \emph{vectors} and \emph{time series} objects: 
       \begin{itemize}
         \item \texttt{runSum()} for rolling sums,
         \item \texttt{runMin()} and \texttt{runMax()} for rolling minima and maxima, 
@@ -992,8 +1115,8 @@ summary(microbenchmark(
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)), 
-  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
-  run_sum=TTR::runSum(price_s, n=win_dow),
+  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
+  run_sum=TTR::runSum(price_s, n=look_back),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -1009,7 +1132,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{RcppRoll} contains functions for calculating \emph{weighted} rolling aggregations over \texttt{vectors} and \texttt{time series} objects: 
+      The package \emph{RcppRoll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
       \begin{itemize}
         \item \texttt{roll\_sum()} for \emph{weighted} rolling sums,
         \item \texttt{roll\_min()} and \texttt{roll\_max()} for \emph{weighted} rolling minima and maxima, 
@@ -1025,26 +1148,26 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # load package RcppRoll
-win_dow <- 11  # number of data points per look-back window
+look_back <- 22  # number of data points per look-back interval
 # calculate rolling sum using rutils
 prices_mean <- 
-  rutils::roll_sum(price_s, win_dow=win_dow)
+  rutils::roll_sum(price_s, win_dow=look_back)
 # calculate rolling sum using RcppRoll
 prices_mean <- RcppRoll::roll_sum(price_s, 
-                    align="right", n=win_dow)
+                    align="right", n=look_back)
 # benchmark the speed of RcppRoll::roll_sum
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)), 
-  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=win_dow),
-  roll_sum=rutils::roll_sum(price_s, win_dow=win_dow),
+  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=look_back),
+  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
   times=10))[, c(1, 4, 5)]
 # calculate EWMA sum using RcppRoll
-weight_s <- exp(0.1*1:win_dow)
+weight_s <- exp(0.1*1:look_back)
 prices_mean <- RcppRoll::roll_mean(price_s, 
-      align="right", n=win_dow, weights=weight_s)
+      align="right", n=look_back, weights=weight_s)
 prices_mean <- merge(price_s, 
-  rbind(coredata(price_s[1:(win_dow-1), ]), prices_mean))
+  rbind(coredata(price_s[1:(look_back-1), ]), prices_mean))
 colnames(prices_mean) <- c("SPY", "SPY EWMA")
 # plot EWMA prices with custom line colors
 plot_theme <- chart_theme()
@@ -1053,7 +1176,7 @@ x11()
 chart_Series(prices_mean, theme=plot_theme, 
              name="EWMA prices")
 legend("top", legend=colnames(prices_mean), 
-       bg="white", lty=c(1, 1), lwd=c(2, 2), 
+       bg="white", lty=c(1, 1), lwd=c(6, 6), 
        col=plot_theme$col$line.col, bty="n")
 @
   \end{columns}
@@ -1069,20 +1192,20 @@ legend("top", legend=colnames(prices_mean),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{caTools} contains functions for calculating rolling window aggregations over a \texttt{vector} of data:
+      The package \emph{caTools} contains functions for calculating rolling interval aggregations over a \texttt{vector} of data:
       \begin{itemize}
         \item \texttt{runmin} and \texttt{runmax} for rolling minima and maxima, 
         \item \texttt{runsd()} for rolling standard deviations,
         \item \texttt{runmad()} for rolling Median Absolute Deviations (MAD),
         \item \texttt{runquantile()} for rolling quantiles,
       \end{itemize}
-      Time series need to be coerced to \texttt{vectors} before they are passed to \emph{caTools} functions,
+      Time series need to be coerced to \emph{vectors} before they are passed to \emph{caTools} functions,
       \vskip1ex
       The rolling \emph{caTools} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
       \vskip1ex
       The argument \texttt{"endrule"} determines how the end values of the data are treated,
       \vskip1ex
-      The argument \texttt{"align"} determines whether the window is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
+      The argument \texttt{"align"} determines whether the interval is centered (default), left-aligned or right-aligned, with \texttt{align="center"} the fastest option,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -1095,15 +1218,15 @@ data(package="caTools")  # list all datasets in "caTools"
 ls("package:caTools")  # list all objects in "caTools"
 detach("package:caTools")  # remove caTools from search path
 # median filter
-win_dow <- 11
-price_s <- Cl(SPY["2012-02-01/2012-04-01"])
-med_ian <- runmed(x=price_s, k=win_dow)
+look_back <- 11
+price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
+med_ian <- runmed(x=price_s, k=look_back)
 # vector of rolling volatility
-vol_at <- runsd(x=price_s, k=win_dow, 
+vol_at <- runsd(x=price_s, k=look_back, 
                 endrule="constant", align="center")
 # vector of rolling quantiles
 quan_tiles <- runquantile(x=price_s, 
-                  k=win_dow, probs=0.9, 
+                  k=look_back, probs=0.9, 
                   endrule="constant", 
                   align="center")
       @
@@ -1126,22 +1249,22 @@ quan_tiles <- runquantile(x=price_s,
       \vspace{-1em}
       <<chart_Series_endp,echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
-# extract a single day of minutely price data
-price_s <- Cl(SPY["2012-02-13"])
+# extract daily closing VTI prices
+price_s <- Cl(rutils::env_etf$VTI)
 # define number of data points per interval
-win_dow <- 11
-# number of win_dows that fit over price_s
+look_back <- 22
+# number of look_backs that fit over price_s
 n_row <- NROW(price_s)
-num_agg <- n_row %/% win_dow
-# if n_row==win_dow*num_agg then whole number 
-# of win_dows fit over price_s
-end_points <- win_dow*(0:num_agg)
-# if (n_row > win_dow*num_agg) 
+num_agg <- n_row %/% look_back
+# if n_row==look_back*num_agg then whole number 
+# of look_backs fit over price_s
+end_points <- (1:num_agg)*look_back
+# if (n_row > look_back*num_agg) 
 # then stub interval at beginning
 end_points <- 
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
+  n_row-look_back*num_agg + (0:num_agg)*look_back
 # stub interval at end
-end_points <- c(win_dow*(0:num_agg), n_row)
+end_points <- c((1:num_agg)*look_back, n_row)
 # plot data and endpoints as vertical lines
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
@@ -1150,7 +1273,7 @@ chart_Series(price_s, theme=plot_theme,
 abline(v=end_points, col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/chart_Series_endp.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_endp.png}\\
       \vskip1ex
       \emph{Endpoints} may be equally spaced, with a fixed number of data points between neighboring \emph{endpoints}, 
       \vskip1ex
@@ -1183,7 +1306,7 @@ abline(v=end_points, col="red")
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
-end_points <- endpoints(price_s, on="hours")
+end_points <- xts::endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
@@ -1219,15 +1342,21 @@ head(price_s[end_points, ])
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
-len_gth <- length(end_points)
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform sapply() loop over length of end_points
-agg_regations <- sapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
+start_points <- c(1, end_points[1:(len_gth-1)]+1)
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+look_backs[[1]]
+look_backs[[2]]
+# perform sapply() loop over look_backs list
+agg_regations <- sapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
       c(max=max(x_ts), min=min(x_ts))
   })  # end sapply
 # coerce agg_regations into matrix and transpose it
@@ -1236,16 +1365,16 @@ if (is.vector(agg_regations))
 agg_regations <- t(agg_regations)
 # coerce agg_regations into xts series
 agg_regations <- xts(agg_regations, 
-                     order.by=index(price_s[end_points]))
+    order.by=index(price_s[end_points]))
 head(agg_regations)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -1269,30 +1398,26 @@ col=plot_theme$col$line.col, bty="n")
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # library(HighFreq)  # load package HighFreq
-end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
-len_gth <- length(end_points)
-# start_points are single-period lag of end_points
-start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
-      xts(t(c(max=max(x_ts), min=min(x_ts))), 
-            order.by=index(price_s[end_points[in_dex]]))
-  })  # end lapply
+# perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
+      c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations, 
+    order.by=index(price_s[end_points]))
 head(agg_regations)
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -1324,19 +1449,17 @@ col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations over end_points
 roll_agg <- function(x_ts, end_points, FUN, ...) {
-  len_gth <- length(end_points)
+  len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-  start_points <- end_points[c(1, 1:(len_gth-1))] + 1
-# perform aggregations over length of end_points
-  agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...)
-    })  # end lapply
+  start_points <- c(1, end_points[1:(len_gth-1)]+1)
+# perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs, 
+    function(look_back) FUN(x_ts[look_back], ...))  # end lapply
 # rbind list into single xts or matrix
   agg_regations <- rutils::do_call_rbind(agg_regations)
   if (!is.xts(agg_regations))
     agg_regations <-  # coerce agg_regations into xts series
-      xts(agg_regations, order.by=index(x_ts[end_points]))
+    xts(agg_regations, order.by=index(x_ts[end_points]))
   agg_regations
 }  # end roll_agg
 # apply sum() over end_points
@@ -1381,7 +1504,7 @@ head(agg_regations)
 # load package HighFreq
 library(HighFreq)
 # extract closing minutely prices
-price_s <- Cl(SPY["2012-02-01/2012-04-01"])
+price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 # apply "mean" over daily periods
 agg_regations <- apply.daily(price_s, FUN=sum)
 head(agg_regations)
@@ -1399,44 +1522,50 @@ head(agg_regations)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} windows, 
+      The functional \texttt{period.apply()} performs aggregations over \emph{non-overlapping} intervals, 
       \vskip1ex
-      But it's often necessary to perform aggregations over \emph{overlapping} windows, defined by a vector of \emph{endpoints} and a look-back \emph{window}, 
+      But it's often necessary to perform aggregations over \emph{overlapping} intervals, defined by a vector of \emph{endpoints} and a \emph{look-back interval}, 
       \vskip1ex
-      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the window width (number of intervals in the window), 
+      The \emph{startpoints} are defined as the \emph{endpoints} lagged by the interval width (number of periods in the \emph{look-back interval}), 
       \vskip1ex
-      Each point in time has an associated look-back \emph{window}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
+      Each point in time has an associated \emph{look-back interval}, which starts at a certain number of periods in the past (\emph{start\_point}) and ends at that point (\emph{end\_point}), 
       \vskip1ex
-      The variable \texttt{win\_dow} is equal to the number of end points in the look-back \emph{window}, while (\texttt{win\_dow-1}) is equal to the number of intervals in the window, 
+      The variable \texttt{look\_back} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
-len_gth <- length(end_points)
-win_dow <- 4  # number of end points per look-back window
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
+num_points <- 4  # number of end points in look-back interval
 # start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-    function(in_dex) {
-      x_ts <- 
-        price_s[start_points[in_dex]:end_points[in_dex]]
-      xts(t(c(max=max(x_ts), min=min(x_ts))), 
-            order.by=index(price_s[end_points[in_dex]]))
-  })  # end lapply
+start_points <- c(rep_len(1, num_points-1), 
+  end_points[1:(len_gth-num_points+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs, 
+    function(look_back) {
+      x_ts <- price_s[look_back]
+      c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
 # rbind list into single xts or matrix
 agg_regations <- rutils::do_call_rbind(agg_regations)
+# coerce agg_regations into xts series
+agg_regations <- xts(agg_regations, 
+    order.by=index(price_s[end_points]))
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1), lwd=c(6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
 \end{block}
@@ -1453,38 +1582,21 @@ col=plot_theme$col$line.col, bty="n")
     \column{0.5\textwidth}
       Interval aggregations produce values only at the \emph{endpoints}, but they can be carried forward in time using the function \texttt{na.locf()} from package \emph{zoo},
       <<echo=(-(1:2)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
 library(HighFreq)  # load package HighFreq
-end_points <- # define end_points with beginning stub
-  c(0, n_row-win_dow*num_agg+win_dow*(0:num_agg))
-len_gth <- length(end_points)
-win_dow <- 4  # number of end points per look-back window
-# start_points are multi-period lag of end_points
-start_points <-  end_points[
-  c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
-# perform lapply() loop over length of end_points
-agg_regations <- lapply(2:len_gth, 
-                function(in_dex) {mean(
-price_s[start_points[in_dex]:end_points[in_dex]])
-})  # end lapply
-# rbind list into single xts or matrix
-agg_regations <- rutils::do_call_rbind(agg_regations)
-agg_regations <- xts(agg_regations, 
-    order.by=index(price_s[end_points]))
 agg_regations <- cbind(price_s, agg_regations)
-agg_regations <- na.omit(na.locf(agg_regations))
-colnames(agg_regations)[2] <- "aggregations"
+tail(agg_regations, 22)
+agg_regations <- na.omit(zoo::na.locf(agg_regations))
 # plot aggregations with custom line colors
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("red", "green")
+plot_theme$col$line.col <- c("black", "red", "green")
 chart_Series(agg_regations, theme=plot_theme, 
              name="price aggregations")
-legend("bottomright", legend=colnames(agg_regations), 
-bg="white", lty=c(1, 1), lwd=c(2, 2), 
-col=plot_theme$col$line.col, bty="n")
+legend("top", legend=colnames(agg_regations), 
+  bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6), 
+  col=plot_theme$col$line.col, bty="n")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/agg_interval_carryfwd.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/agg_interval_carryfwd.png}\\
   \end{columns}
 \end{block}
 
@@ -1508,7 +1620,7 @@ library(zoo)  # load package zoo
 # create zoo time series of random returns
 in_dex <- Sys.Date() + 0:365
 zoo_series <- 
-  zoo(rnorm(length(in_dex)), order.by=in_dex)
+  zoo(rnorm(NROW(in_dex)), order.by=in_dex)
 # create monthly dates
 dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 # perform monthly mean aggregation
@@ -1522,7 +1634,7 @@ zoo_agg <- na.locf(zoo_agg)
 zoo_agg <- zoo_agg[index(zoo_series), 2]
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_agg-1}
+      \includegraphics[width=0.5\paperwidth]{figure/zoo_agg-1}
       \vspace{-7em}
       <<zoo_agg,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
 # library(HighFreq)  # load package HighFreq
@@ -1574,7 +1686,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
        col=c("black", "red"))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_interpol-1}
+      \includegraphics[width=0.5\paperwidth]{figure/zoo_interpol-1}
   \end{columns}
 \end{block}
 
@@ -1590,7 +1702,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
     \column{0.5\textwidth}
       The package \emph{zoo} has several functions for rolling calculations:
       \begin{itemize}
-        \item \texttt{rollapply()} performing aggregations over a rolling (sliding) window,
+        \item \texttt{rollapply()} performing aggregations over a rolling (sliding) interval,
         \item \texttt{rollmean()} calculating rolling means,
         \item \texttt{rollmedian()} calculating rolling median,
         \item \texttt{rollmax()} calculating rolling max,
@@ -1598,7 +1710,7 @@ legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
       \vspace{-1em}
       <<zoo_roll,echo=(-(1:1)),eval=FALSE,fig.show="hide">>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# "mean" aggregation over window with width=11
+# "mean" aggregation over interval with width=11
 zoo_mean <- rollapply(zoo_series, width=11, 
                       FUN=mean, align="right")
 # merge with original zoo - union of dates
@@ -1616,9 +1728,1057 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
        col=c("black", "red"))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth,valign=t]{figure/zoo_roll-1}
+      \includegraphics[width=0.5\paperwidth]{figure/zoo_roll-1}
       \vspace{-3em}
       The argument \texttt{align="right"} determines that aggregations are taken from the past,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Modeling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_k = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \emph{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
+      \vspace{-1em}
+        <<echo=-(1:2),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# autocorrelation from "stats"
+acf(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      \vspace{-1em}
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      The function \texttt{coredata} extracts the core underlying data from a complex object,
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
+      The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
+      \vskip1ex
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=(-(1:1))>>=
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(re_turns), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+      @
+    \column{0.5\textwidth}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      <<eval=FALSE>>=
+acf_plus <- function (ts_data, plot=TRUE,
+                      xlab="Lag", ylab="",
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+              max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Squared DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Squared DAX returns do have statistically significant autocorrelations,
+      \vskip1ex
+      But squared random returns are not autocorrelated,
+      <<dax_squared_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(re_turns)^2,
+         lag=10, main="")
+title(main="acf of squared DAX returns",
+      line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+         lag=10, main="")
+title(main="acf of squared random returns",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_squared_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{U.S. Macroeconomic Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data,
+      \vskip1ex
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter),
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+          Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_data-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Econometric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most econometric data displays a high degree of autocorrelation,
+      \vskip1ex
+      But time series of tradeable prices display very low autocorrelation,
+      <<macro_corr,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+         lag=10)
+title(main="quarterly unemployment rate",
+      line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+         lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_corr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ljung-Box Test of Autocorrelation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where $n$ is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:4))>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX data
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- merge(as.zoo(dax_ts),
+                  as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+                   start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Filtered Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering a time series creates autocorrelations,
+      <<dax_filter_acf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(re_turns[, 1]), lag=10,
+         xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+         xlab="")
+title(main="DAX filtered", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Partial Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3,...}, which may obscure higher order autocorrelations,
+      \vskip1ex
+      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
+      \vskip1ex
+      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation,
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1,..., k-1} have been removed,
+        <<eustx_pacf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} time series process \emph{AR(p)} of order \emph{p} is defined as:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      Where the $\varepsilon_i$ are independent random variables with zero mean and constant variance,
+      \vskip1ex
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process,
+      \vskip1ex
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes,
+      \vspace{-1em}
+    <<ar_process,echo=(-(1:3)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_process-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$,
+      \vskip1ex
+      Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
+      <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
+ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=729, model=list(ar=phi))
+  } )
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+# convert returns to prices
+zoo_arima <- cumsum(zoo_arima)
+colnames(zoo_arima) <-
+  paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices",
+         facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_param-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} process of order \emph{one} \emph{AR(1)} is defined by the formula: $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      \vskip1ex
+      An \emph{AR(1)} process can be simulated recursively as follows:\\
+      \hskip1em$r_1 = \varepsilon_1$\\
+      \hskip1em$r_2 = \varphi_1 r_1 + \varepsilon_2=\varepsilon_2 + \varphi_1 \varepsilon_1$\\
+      \hskip1em$r_3 = \varepsilon_3 + \varphi_1 \varepsilon_2 + \varphi_1^2 \varepsilon_1$\\
+      \hskip1em$r_4 = \varepsilon_4 + \varphi_1 \varepsilon_3 + \varphi_1^2 \varepsilon_2 + \varphi_1^3 \varepsilon_1$
+      \vskip1ex
+      If $\varphi_1 < 1.0$ then the influence of any single shock $\varepsilon_i$ decays exponentially,
+      \vskip1ex
+      If $\varphi_1 = 1.0$ then the influence of any single shock $\varepsilon_i$ persists forever, and the variance of $r_i$ increases linearly with time,
+      \vskip1ex
+      An \emph{AR(1)} process has an exponentially declining ACF and a non-zero PACF at lag one,
+      \vspace{-1em}
+      <<ar_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+         main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stationary Processes and Their Characteristic Equations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autoregressive process is \emph{stationary} if its probability distribution does not change with time,
+      \vskip1ex
+      \emph{Stationary} processes have a constant mean and variance,
+      \vskip1ex
+      The \emph{autoregressive} process \emph{AR(p)}:
+      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i$
+      \vskip1ex
+      Has the following characteristic equation:
+      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
+      \vskip1ex
+      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than $1$,
+      \vskip1ex
+      An \emph{AR(1)} process:
+      $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi_1 z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi_1$,
+      \vskip1ex
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}:
+      $z = 1 / \varphi_1$, and therefore isn't stationary,
+      \vskip1ex
+      The process follows:
+      $r_i = r_{i-1} + \varepsilon_i$,
+      \vskip1ex
+      The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
+      \vskip1ex
+      The variance of a \emph{Wiener} process is proportional to time,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Integrated and Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset prices are the sum of simple asset returns, hence they follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        x_i={\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        x_i = (1+\varphi_1) x_{i-1} - \varphi_1 x_{i-2} + \varepsilon_i
+      \end{displaymath}
+      If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
+      \vskip1ex
+      A \emph{Wiener} process is a special case of a \emph{unit-root} process,
+      \vskip1ex
+      \emph{Unit-root} processes are not stationary, since their \emph{variance} isn't constant,
+      \vskip1ex
+      If $\varphi_1=0$ (no autocorrelation of returns) then asset prices follow a \emph{Wiener} process (random walk),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<stat_unit_root,echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dickey-Fuller Test for Unit-roots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
+      \vskip1ex
+      The \emph{Augmented Dickey-Fuller} test fits the following regression model:
+      \begin{displaymath}
+        r_i = {\gamma}_1 x_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      where $r_i = x_i - x_{i-1}$,
+      \vskip1ex
+      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$), while the alternative hypothesis is that the process is stationary ($\gamma < 0$),
+      \vskip1ex
+      The \emph{ADF} test is weak in the sense that it needs a lot of data to identify a \emph{unit root} process,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # load tseries
+# simulate AR(1) process
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(729))
+tseries::adf.test(rand_walk)
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(rnorm(10000))
+tseries::adf.test(rand_walk)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Identification of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR}(3) process of order \emph{three} is defined by the formula:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \varepsilon_i
+      \end{displaymath}
+      Autoregressive processes \emph{AR(p)} of order \emph{p} have an exponentially declining ACF and a non-zero PACF up to lag \emph{p},
+      <<ar_pacf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+          model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+       xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Autoregressive Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{arima()} from the base package \emph{stats} fits a specified ARIMA model to a univariate time series,
+      \vskip1ex
+      The function \texttt{auto.arima()} from the package \emph{forecast} automatically fits an ARIMA model to a univariate time series,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+ar3_zoo <- arima.sim(n=1000,
+            model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
+      \begin{displaymath}
+        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+       title=paste(c(paste0("vol_at = ", vol_at),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8,
+       inset=0.1, bg="white", bty="n")
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
+      <<echo=TRUE,eval=FALSE>>=
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Estimating and Modeling Volatility and Skew}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time,
+      \vskip1ex
+      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time,
+      \vskip1ex
+      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
+      \end{align*}
+      Where $k$ is the \emph{look-back interval} for performing aggregations over the past, 
+      \vskip1ex
+      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# define end points
+end_points <- seq_along(re_turns)
+len_gth <- NROW(end_points)
+look_back <- 31
+# start_points are multi-period lag of end_points
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points), 
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# calculate realized VTI variance in sapply() loop
+vari_ance <- sapply(look_backs, 
+  function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+}) / (look_back-1)  # end sapply
+tail(vari_ance)
+class(vari_ance)
+# coerce vari_ance into xts
+vari_ance <- xts(vari_ance, order.by=index(re_turns))
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Rolling Variance Using Package \protect\emph{roll}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
+      \begin{itemize}
+        \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
+        \item \texttt{roll\_scale()} for rolling scaling and centering of time series, 
+        \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
+      \end{itemize}
+      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
+      \vskip1ex
+      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using package \emph{Rcpp},
+      \vskip1ex
+      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
+# benchmark calculation of rolling variance
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sapply=sapply(look_backs, function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+  }),
+  ro_ll=roll::roll_var(re_turns, width=look_back),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling \protect\emph{EWMA} Realized Variance Estimator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator, 
+      \vskip1ex
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      \begin{displaymath}
+        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
+      \end{displaymath}
+      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period $i$ and the past \emph{realized} variance, 
+      \vskip1ex
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      \vskip1ex
+      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate EWMA VTI variance using filter()
+weight_s <- exp(0.1*1:look_back)
+weight_s <- weight_s/sum(weight_s)
+vari_ance <- filter(re_turns, 
+    filter=rev(weight_s), sides=1)
+vari_ance[1:(look_back-1)] <- 
+  vari_ance[look_back]
+class(vari_ance)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
+      \begin{align*}
+        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
+        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
+      \end{align*}
+      Where $w_j$ is the vector of weights:
+      \begin{displaymath}
+        w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
+      \end{displaymath}
+      The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- 
+  roll::roll_var(re_turns, weights=weight_s, 
+                 width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+class(vari_ance)
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Variance calculated over non-overlapping intervals has very statistically significant autocorrelations,
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# calculate VTI variance using package roll
+look_back <- 22
+vari_ance <- 
+  roll::roll_var(re_turns, width=look_back)
+vari_ance[1:(look_back-1)] <- 0
+colnames(vari_ance) <- "VTI.variance"
+# number of look_backs that fit over re_turns
+n_row <- NROW(re_turns)
+num_agg <- n_row %/% look_back
+end_points <- # define end_points with beginning stub
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
+# subset vari_ance to end_points
+vari_ance <- vari_ance[end_points]
+# improved autocorrelation function
+acf_plus(coredata(vari_ance), lag=10, main="")
+title(main="acf of variance", line=-1)
+# partial autocorrelation
+pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
+title(main="pacf of variance", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/acf_var.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pacf_var.png}
   \end{columns}
 \end{block}
 

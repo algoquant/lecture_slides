@@ -3,13 +3,13 @@
 # library(HighFreq)  # load package HighFreq
 
 # simulate single EWMA model using historical oh_lc data
-simu_ewma <- function(oh_lc, lamb_da=0.05, look_back=51) {
+simu_ewma <- function(oh_lc, lamb_da=0.05, wid_th=51) {
   # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:look_back)
+  weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- quantmod::Cl(oh_lc)
   ew_ma <- filter(as.numeric(cl_ose), filter=weight_s, sides=1)
-  ew_ma[1:(look_back-1)] <- ew_ma[look_back]
+  ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # determine dates right after EWMA has crossed prices
   in_dic <- xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
   trade_dates <- (rutils::diff_xts(in_dic) != 0)
@@ -37,11 +37,11 @@ simu_ewma <- function(oh_lc, lamb_da=0.05, look_back=51) {
 
 
 # simulate two EWMA model using historical oh_lc data
-simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, look_back=51) {
+simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, wid_th=51) {
   # calculate EWMA prices
-  weights_1 <- exp(-lambda_1*1:look_back)
+  weights_1 <- exp(-lambda_1*1:wid_th)
   weights_1 <- weights_1/sum(weights_1)
-  weights_2 <- exp(-lambda_2*1:look_back)
+  weights_2 <- exp(-lambda_2*1:wid_th)
   weights_2 <- weights_2/sum(weights_2)
   # calculate open and close prices
   op_en <- Op(oh_lc)
@@ -52,9 +52,9 @@ simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, look_back=51) {
   prices_lag <- rutils::lag_xts(cl_ose)
   # filter the prices using weights
   ewma_1 <- filter(cl_ose, filter=weights_1, sides=1)
-  ewma_1[1:(look_back-1)] <- ewma_1[look_back]
+  ewma_1[1:(wid_th-1)] <- ewma_1[wid_th]
   ewma_2 <- filter(cl_ose, filter=weights_2, sides=1)
-  ewma_2[1:(look_back-1)] <- ewma_2[look_back]
+  ewma_2[1:(wid_th-1)] <- ewma_2[wid_th]
   # determine dates right after EWMAs have crossed
   in_dic <- xts(sign(ewma_1 - ewma_2), order.by=index(oh_lc))
   trade_dates <- (rutils::diff_xts(in_dic) != 0)
