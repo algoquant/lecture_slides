@@ -255,12 +255,10 @@ class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # get first three rows
 # EuStockMarkets index is equally spaced
-diff(tail(time(EuStockMarkets), 4))
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot all the columns
-plot(EuStockMarkets, main="", xlab="")
-# add title
-title(main="EuStockMarkets", line=-2)
+diff(tail(time(EuStockMarkets), 11))
+par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
+# plot all the columns in separate panels
+plot(EuStockMarkets, main="EuStockMarkets", xlab="")
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot in single panel
 plot(EuStockMarkets, main="EuStockMarkets",
@@ -270,7 +268,7 @@ plot(EuStockMarkets, main="EuStockMarkets",
 legend(x=1992, y=8000,
  legend=colnames(EuStockMarkets),
  col=c("black", "red", "blue", "green"),
- lty=1)
+ lwd=6, lty=1)
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 # mean and standard deviation of returns
@@ -330,6 +328,15 @@ coredata(zoo_series) <- rep(1, 4)  # replace coredata
 cumsum(zoo_series)  # cumulative sum
 cummax(cumsum(zoo_series))
 cummin(cumsum(zoo_series))
+library(zoo)  # load package zoo
+zoo_series <- 
+  zoo(as.matrix(cumsum(rnorm(100)), nc=1), 
+order.by=seq(from=as.Date("2013-06-15"), 
+             by="day", length.out=100))
+colnames(zoo_series) <- "zoo_series"
+tail(zoo_series)
+dim(zoo_series)
+attributes(zoo_series)
 library(zoo)  # load package zoo
 coredata(zoo_series) <- (1:4)^2  # replace coredata
 zoo_series
@@ -397,27 +404,31 @@ zoo_series2 <- zoo(rnorm(length(in_dex2)),
 merge(zoo_series1, zoo_series2)  # union of dates
 # intersection of dates
 merge(zoo_series1, zoo_series2, all=FALSE)
-library(zoo)  # load package zoo
-# create zoo time series
-zoo_series <- zoo(sample(4),
-            order.by=(Sys.Date() + 0:3))
-# add NA
-zoo_series[3] <- NA
-zoo_series
-zoo::na.locf(zoo_series)  # replace NA's using locf
-zoo::na.omit(zoo_series)  # remove NA's using omit
 # create matrix containing NA values
-mat_rix <- sample(44)
-mat_rix[sample(NROW(mat_rix), 8)] <- NA
-mat_rix <- matrix(mat_rix, nc=2)
-# replace NA values with the most recent non-NA values
+mat_rix <- sample(18)
+mat_rix[sample(NROW(mat_rix), 4)] <- NA
+mat_rix <- matrix(mat_rix, nc=3)
+# replace NA values with most recent non-NA values
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
-# create xts series containing NA values
-x_ts <- xts::xts(mat_rix, order.by=seq.Date(from=Sys.Date(),
-  by=1, length.out=NROW(mat_rix)))
-# replace NA values with the most recent non-NA values
-rutils::na_locf(x_ts)
+# get time series of prices
+price_s <- mget(c("VTI", "VXX"), envir=rutils::env_etf)
+price_s <- lapply(price_s, quantmod::Ad)
+price_s <- rutils::do_call(cbind, price_s)
+sum(is.na(price_s))
+# carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# remove whole rows containing NA returns
+re_turns <- rutils::env_etf$re_turns
+sum(is.na(re_turns))
+re_turns <- na.omit(re_turns)
+# or carry forward non-NA returns (preferred)
+re_turns <- rutils::env_etf$re_turns
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns)
+sum(is.na(re_turns))
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # methods(as.zoo)  # many methods of coercing into zoo
@@ -497,7 +508,7 @@ class(x_ts)  # class 'xts'
 attributes(x_ts)
 # get the time zone of an xts object
 indexTZ(x_ts)
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
 st_ox <- as.xts(zoo_stx_adj)
@@ -589,15 +600,15 @@ data_frame <-
     coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
 # plotly syntax using pipes
 data_frame %>%
-  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines+markers", name="VTI") %>%
-  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines+markers", name="IEF") %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
   layout(title="VTI and IEF prices",
    xaxis=list(title="Time"),
    yaxis=list(title="Stock Prices"),
    legend=list(x=0.1, y=0.9))
 # or use standard plotly syntax
-p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines+markers", name="VTI")
-p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines+markers", name="IEF")
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
 library(xts)  # load package xts
@@ -682,7 +693,7 @@ colnames(xts_yearly) <- sapply(
   )  # end sapply
 head(xts_yearly)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
 st_ox <- as.xts(zoo_stx_adj)
@@ -692,7 +703,7 @@ stox_sub <- st_ox["2014-11", 1:4]
 # plot OHLC using plot.xts method
 plot(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])

@@ -131,14 +131,14 @@ library(HighFreq)  # load package HighFreq
 oh_lc <- rutils::env_etf$VTI["/2011"]
 # calculate close prices
 cl_ose <- Cl(oh_lc)
-# define aggregation window and decay parameter
-win_dow <- 51
+# define length for weights and decay parameter
+wid_th <- 51
 lamb_da <- 0.05
 # calculate EWMA prices
-weight_s <- exp(-lamb_da*1:win_dow)
+weight_s <- exp(-lamb_da*1:wid_th)
 weight_s <- weight_s/sum(weight_s)
 ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1)
-ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
 ew_ma <- xts(cbind(cl_ose, ew_ma),
        order.by=index(oh_lc))
 colnames(ew_ma) <- c("VTI", "VTI EWMA")
@@ -148,7 +148,7 @@ plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(ew_ma, theme=plot_theme,
        name="EWMA prices")
 legend("top", legend=colnames(ew_ma),
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+ inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
  col=plot_theme$col$line.col, bty="n")
 library(HighFreq)  # load package HighFreq
 # determine dates right after EWMA has crossed prices
@@ -170,7 +170,7 @@ add_TA(position_s > 0, on=-1,
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(ew_ma),
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+ inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
  col=plot_theme$col$line.col, bty="n")
 library(HighFreq)  # load package HighFreq
 # calculate open and lagged prices
@@ -185,7 +185,7 @@ re_turns[trade_dates] <-
   position_s[trade_dates] *
   (cl_ose[trade_dates] - op_en[trade_dates])
 # calculate annualized Sharpe ratio of strategy returns
-sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 pnl_s <- cumsum(re_turns)
 pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
@@ -198,16 +198,16 @@ add_TA(position_s > 0, on=-1,
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
- inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
+ inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6),
  col=plot_theme$col$line.col, bty="n")
 library(HighFreq)  # load package HighFreq
-simu_ewma <- function(oh_lc, lamb_da=0.05, win_dow=51) {
+simu_ewma <- function(oh_lc, lamb_da=0.05, wid_th=51) {
   # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
+  weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- Cl(oh_lc)
   ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
+  ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # determine dates right after EWMA has crossed prices
   in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
   trade_dates <- (rutils::diff_xts(in_dic) != 0)
@@ -237,7 +237,7 @@ sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
   re_turns <- simu_ewma(oh_lc=oh_lc,
         lamb_da=lamb_da)[, 2]
   # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 })  # end sapply
 plot(x=lamb_das, y=sharpe_ratios, t="l",
      main="Performance of EWMA trend-following strategies
@@ -258,14 +258,14 @@ add_TA(position_s > 0, on=-1,
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
- inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=plot_theme$col$line.col, bty="n")
 lamb_das <- seq(0.05, 0.12, 0.01)
 sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
   re_turns <- -simu_ewma(oh_lc=oh_lc,
         lamb_da=lamb_da)[, 2]
   # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 })  # end sapply
 plot(x=lamb_das, y=sharpe_ratios, t="l",
      main="Performance of EWMA mean-reverting strategies
@@ -286,8 +286,8 @@ add_TA(position_s > 0, on=-1,
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
- inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=plot_theme$col$line.col, bty="n")
 # calculate correlation between trend-following and mean-reverting strategies
 trend_ing <- ewma_trend[, 2]
 colnames(trend_ing) <- "trend"
@@ -301,7 +301,7 @@ re_turns <- trend_ing + revert_ing
 sapply(cbind(rutils::diff_xts(cl_ose),
     trend_ing, revert_ing, re_turns),
 function(re_turns) {
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 })  # end sapply
 pnl_s <- cumsum(re_turns)
 pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]),
@@ -315,11 +315,17 @@ legend("topleft", legend=c(colnames(pnl_s), "trending", "reverting"),
  inset=0.05, bg="white", lty=rep(1, 4), lwd=rep(4, 4),
  col=c(plot_theme$col$line.col, "green", "magenta2"), bty="n")
 lamb_das <- seq(0.001, 0.03, 0.001)
+sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
+  re_turns <- simu_ewma(oh_lc=oh_lc,
+        lamb_da=lamb_da)[, 2]
+  # calculate annualized Sharpe ratio of strategy returns
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+})  # end sapply
+weight_s <- sharpe_ratios/sum(sharpe_ratios)
 re_turns <- lapply(lamb_das, function(lamb_da) {
   simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da)[, 2]
 })  # end sapply
-re_turns <- do.call(merge, re_turns)
-weight_s <- sharpe_ratios/sum(sharpe_ratios)
+re_turns <- rutils::do_call(cbind, re_turns)
 re_turns <- re_turns %*% weight_s
 re_turns <- xts(re_turns, order.by=index(oh_lc))
 pnl_s <- cumsum(re_turns)
@@ -330,17 +336,17 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of EWMA Strategy")
 legend("top", legend=colnames(pnl_s),
- inset=0.05, bg="white", lty=c(1, 1), lwd=c(2, 2),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=plot_theme$col$line.col, bty="n")
 library(HighFreq)  # load package HighFreq
 # calculate open, close, and lagged prices
 op_en <- Op(rutils::env_etf$VTI)
 cl_ose <- Cl(rutils::env_etf$VTI)
 prices_lag <- rutils::lag_xts(cl_ose)
-# define aggregation window and calculate VWAP
-win_dow <- 150
+# define aggregation interval and calculate VWAP
+look_back <- 150
 VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI,
-      win_dow=win_dow)
+        look_back=look_back)
 # calculate VWAP indicator
 in_dic <- sign(cl_ose - VTI_vwap)
 # determine dates right after VWAP has crossed prices
@@ -351,8 +357,8 @@ chart_Series(x=cl_ose,
   name="VTI prices", col="orange")
 add_TA(VTI_vwap, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "VWAP"),
-bg="white", lty=c(1, 1), lwd=c(2, 2),
-col=c("orange", "blue"), bty="n")
+  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=c("orange", "blue"), bty="n")
 library(HighFreq)  # load package HighFreq
 # calculate positions, either: -1, 0, or 1
 position_s <- NA*numeric(NROW(rutils::env_etf$VTI))
@@ -368,7 +374,7 @@ pnl_s[trade_dates] <- position_lagged[trade_dates] *
   position_s[trade_dates] *
   (cl_ose[trade_dates] - op_en[trade_dates])
 # calculate annualized Sharpe ratio of strategy returns
-sqrt(260)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 # plot prices and VWAP
 pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::env_etf$VTI)))
 chart_Series(x=(cl_ose-as.numeric(cl_ose[1, ])), name="VTI prices", col="orange")
@@ -378,83 +384,56 @@ add_TA(position_s > 0, on=-1,
 add_TA(position_s < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=c("VTI", "VWAP strategy"),
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+ inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
  col=c("orange", "blue"), bty="n")
 library(HighFreq)
-# define oh_lc series and look-back interval
+# define oh_lc series
 oh_lc <- rutils::env_etf$VTI["/2011"]
+# end of month end_points
+end_points <- rutils::calc_endpoints(oh_lc,
+          inter_val="months")
+# define EWMA width parameter
+wid_th <- 51
+# add warmup to end_points so they are greater than EWMA wid_th
+end_points[end_points <= wid_th] <- wid_th + 1
+# define 12-month look-back interval
 look_back <- 12
-# calculate end of month end_points
-end_points <- xts::endpoints(oh_lc, on="months")
-# start_points are end_points lagged by look_back
+# start_points are end_points lagged by look-back interval
 len_gth <- NROW(end_points)
-start_points <-
-  end_points[c(rep_len(1, look_back-1),
-         1:(len_gth-look_back+1))]
+start_points <- c(rep_len(1, look_back-1),
+  end_points[1:(len_gth-look_back+1)])
 # create list of look-back intervals
-look_backs <- lapply(2:len_gth,
-  function(in_dex) start_points[in_dex]:end_points[in_dex])
-# second warmup interval spans only two months
-warm_up <- oh_lc[look_backs[[3]]]
-dim(warm_up)
-head(warm_up)
-tail(warm_up)
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+names(look_backs) <- index(oh_lc)[end_points]
 # source EWMA model simu_ewma() from file
-source("C:/Develop/R/scripts/ewma_model.R")
+source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
 # define aggregation function
-agg_regate <- function(oh_lc, lamb_das, ...) {
+calc_sharpe <- function(oh_lc, lamb_das, ...) {
   sapply(lamb_das, function(lamb_da) {
     # simulate EWMA strategy and calculate Sharpe ratio
-    re_turns <-
-simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, ...)[, "re_turns"]
-    sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+    re_turns <- simu_ewma(oh_lc=oh_lc,
+lamb_da=lamb_da, ...)[, "re_turns"]
+    sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
   })  # end sapply
-}  # end agg_regate
+}  # end calc_sharpe
 # define EWMA parameters
-win_dow <- 51
-lamb_das <- seq(0.001, 0.01, 0.001)
+wid_th <- 51
+lamb_das <- seq(0.01, 1.0, 0.1)
 # perform aggregation
-agg_regate(oh_lc, lamb_das, win_dow)
-# adjust end_points so they are greater than EWMA win_dow
-end_points[(end_points > 0) &
-  (end_points <= win_dow)] <- win_dow+1
-# start_points are end_points lagged by look_back
-len_gth <- NROW(end_points)
-start_points <- end_points[c(rep_len(1, look_back-1),
-         1:(len_gth-look_back+1))]
-# create list of look-back intervals
-look_backs <- lapply(2:len_gth,
-  function(in_dex) start_points[in_dex]:end_points[in_dex])
+calc_sharpe(oh_lc, lamb_das, wid_th)
 # perform lapply() loop over look_backs
-agg_s <- lapply(look_backs,
+sharpe_ratios <- lapply(look_backs,
   function(look_back, ...) {
-    agg_regate(oh_lc[look_back], ...)
-    }, lamb_das=lamb_das, win_dow=win_dow)  # end lapply
+    calc_sharpe(oh_lc[look_back], ...)
+    }, lamb_das=lamb_das, wid_th=wid_th)  # end lapply
 # rbind list into single xts or matrix
-agg_s <- rutils::do_call_rbind(agg_s)
-if (!is.xts(agg_s))
-  agg_s <- xts(agg_s, order.by=index(oh_lc[end_points]))
-roll_agg <- function(x_ts, end_points, look_back, FUN, ...) {
-  len_gth <- NROW(end_points)
-  # start_points are multi-period lag of end_points
-  start_points <- end_points[c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-  # perform lapply() loop over length of end_points
-  agg_s <- lapply(2:len_gth,
-            function(in_dex) {
-              FUN(x_ts[start_points[in_dex]:end_points[in_dex]], ...)
-            })  # end lapply
-  # rbind list into single xts or matrix
-  agg_s <- rutils::do_call_rbind(agg_s)
-  if (!is.xts(agg_s))
-    agg_s <- xts(agg_s, order.by=index(x_ts[end_points]))
-  agg_s
-}  # end roll_agg
-sharpe_ratios <- roll_agg(x_ts=oh_lc,
-                    end_points=end_points,
-                    look_back=look_back,
-                    FUN=agg_regate,
-                    lamb_das=lamb_das,
-                    win_dow=win_dow)
+sharpe_ratios <- rutils::do_call(rbind, sharpe_ratios)
+if (!is.xts(sharpe_ratios))
+  sharpe_ratios <- xts(sharpe_ratios, order.by=index(oh_lc[end_points]))
+colnames(sharpe_ratios) <- paste0("lambda=", lamb_das)
 roll_agg <- function(x_ts, look_backs, FUN, ...) {
   # perform lapply() loop over look_backs
   agg_s <- lapply(look_backs,
@@ -464,102 +443,101 @@ roll_agg <- function(x_ts, look_backs, FUN, ...) {
   # rbind list into single xts or matrix
   agg_s <- rutils::do_call_rbind(agg_s)
   if (!is.xts(agg_s))
-    agg_s <- xts(agg_s, order.by=
-             index(x_ts[unlist(lapply(look_backs, last))]))
+    agg_s <- xts(agg_s,
+order.by=index(x_ts[unlist(lapply(look_backs, last))]))
   agg_s
 }  # end roll_agg
 sharpe_ratios <- roll_agg(x_ts=oh_lc,
                     look_backs=look_backs,
-                    FUN=agg_regate,
+                    FUN=calc_sharpe,
                     lamb_das=lamb_das,
-                    win_dow=win_dow)
+                    wid_th=wid_th)
+colnames(sharpe_ratios) <- paste0("lambda=", lamb_das)
 source("C:/Develop/R/scripts/ewma_model.R")
 lamb_das <- seq(0.01, 1.0, 0.1)
 # perform lapply() loop over lamb_das
 re_turns <- lapply(lamb_das, function(lamb_da) {
   # simulate EWMA strategy and calculate re_turns
-  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
 })  # end lapply
-re_turns <- do.call(merge, re_turns)
+re_turns <- rutils::do_call(cbind, re_turns)
 colnames(re_turns) <- paste0("lambda=", lamb_das)
 # plot EWMA strategies with custom line colors
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- colorRampPalette(c("red", "blue"))(NCOL(re_turns))
-chart_Series(cumsum(re_turns), theme=plot_theme, name="Cumulative Returns of EWMA Strategies")
+plot_theme$col$line.col <-
+  colorRampPalette(c("blue", "red"))(NCOL(re_turns))
+chart_Series(cumsum(re_turns),
+  theme=plot_theme,
+  name="Cumulative Returns of EWMA Strategies")
 legend("bottomleft", legend=colnames(re_turns),
- inset=0.02, bg="white", cex=0.8, lwd=rep(6, NCOL(re_turns)),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.02, bg="white", cex=0.8, lwd=rep(6, NCOL(re_turns)),
+  col=plot_theme$col$line.col, bty="n")
 # initialize compute cluster under Windows
 library(parallel)
 clus_ter <- makeCluster(detectCores()-1)
-win_dow <- 51
 clusterExport(clus_ter,
-        varlist=c("oh_lc", "win_dow", "simu_ewma"))
+  varlist=c("oh_lc", "wid_th", "simu_ewma"))
 # perform parallel loop over lamb_das under Windows
-lamb_das <- seq(0.01, 1.0, 0.1)
-re_turns <- parLapply(clus_ter, lamb_das, function(lamb_da) {
+re_turns <- parLapply(clus_ter, lamb_das,
+        function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc,
-      lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+    lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
 })  # end parLapply
 # perform parallel loop over lamb_das under Mac-OSX or Linux
-re_turns <- mclapply(lamb_das, function(lamb_da) {
+re_turns <- mclapply(lamb_das,
+        function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
   simu_ewma(oh_lc=oh_lc,
-      lamb_da=lamb_da, win_dow=win_dow)[, "re_turns"]
+    lamb_da=lamb_da, wid_th=wid_th)[, "re_turns"]
 })  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
-re_turns <- do.call(merge, re_turns)
+re_turns <- rutils::do_call(cbind, re_turns)
 colnames(re_turns) <- paste0("lambda=", lamb_das)
-look_back <- 12
-# calculate end of month end_points
-end_points <- xts::endpoints(re_turns, on="months")
-# start_points are end_points lagged by look_back
-len_gth <- NROW(end_points)
-start_points <- end_points[c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
-# Create a named list of look-back intervals.
-look_backs <- lapply(2:len_gth,
-               function(in_dex) start_points[in_dex]:end_points[in_dex])
-names(look_backs) <- index(re_turns)[end_points[2:len_gth]]
-# Perform loop over look_back intervals and calculate past_aggs.
-past_aggs <- sapply(look_backs,
-             function(look_back) {
-               sapply(re_turns[look_back], sum)  # end sapply
-             })  # end sapply
-past_aggs <- t(past_aggs)
-past_aggs <- xts::as.xts(past_aggs)
+# calculate cumulative forward returns
+back_rets <- sapply(look_backs, function(look_back) {
+  sapply(re_turns[look_back], sum)  # end sapply
+})  # end sapply
+back_rets <- t(back_rets)
+back_rets <- xts::xts(back_rets,
+  order.by=index(re_turns)[end_points])
 # define forward (future) endpoints
+len_gth <- NROW(end_points)
 fwd_points <- end_points[c(2:len_gth, len_gth)]
 # create named list of look-forward intervals
-look_fwds <- lapply(2:(len_gth-1),
-              function(in_dex) (end_points[in_dex]+1):fwd_points[in_dex])
-names(look_fwds) <- index(re_turns)[end_points[2:(len_gth-1)]]
+look_fwds <- lapply(1:len_gth, function(in_dex)
+  (end_points[in_dex]+1):fwd_points[in_dex])
+look_fwds[[len_gth]] <- end_points[len_gth]
+names(look_fwds) <- index(re_turns)[end_points]
+look_backs[2]
+look_fwds[2]
 # calculate cumulative forward returns
-fwd_rets <- sapply(look_fwds,
-        function(look_fwd) {
-          sapply(re_turns[look_fwd], sum)  # end sapply
-        })  # end sapply
+fwd_rets <- sapply(look_fwds, function(look_fwd) {
+  sapply(re_turns[look_fwd], sum)  # end sapply
+})  # end sapply
 fwd_rets <- t(fwd_rets)
-fwd_rets <- xts::as.xts(fwd_rets)
+fwd_rets <- xts::xts(fwd_rets,
+  order.by=index(re_turns)[end_points])
 # calculate weight_s proportional to past_aggs
-weight_s <- coredata(past_aggs[index(fwd_rets)])
+weight_s <- coredata(back_rets)
 weight_s <- weight_s/sqrt(rowSums(weight_s^2))
 # select best and worst models in each period
 bes_t <- apply(weight_s, 1, which.max)
 wors_t <- apply(weight_s, 1, which.min)
 pnl_s <- rowSums(weight_s * coredata(fwd_rets))
 pnl_s <- xts(pnl_s, order.by=index(fwd_rets))
+# plot the backtest
 chart_Series(x=cumsum(pnl_s),
-       name="Back-test of EWMA strategies")
+  name="Back-test of EWMA strategies")
 # define aggregation functional
 roll_agg <- function(re_turns, agg_fun=sum,
     look_back=12, re_balance="months",
-    end_points=xts::endpoints(re_turns, on=re_balance), ...) {
+    end_points=rutils::calc_endpoints(re_turns, inter_val=re_balance), ...) {
 # define start_points and forward (future) endpoints
   len_gth <- NROW(end_points)
-  start_points <- end_points[c(rep_len(1, look_back-1), 1:(len_gth-look_back+1))]
+  start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
   fwd_points <- end_points[c(2:len_gth, len_gth)]
 # Perform loop over end_points and calculate aggregations
   agg_s <- sapply(2:(len_gth-1), function(in_dex) {
@@ -567,15 +545,16 @@ roll_agg <- function(re_turns, agg_fun=sum,
     sapply(re_turns[(end_points[in_dex]+1):fwd_points[in_dex]], sum))  # end sapply
   })  # end sapply
   agg_s <- t(agg_s)
-#  colnames(agg_s) <- c(paste0("past_", colnames(re_turns)), paste0("fwd_", colnames(re_turns)))
+  colnames(agg_s) <- c(paste0("past_", colnames(re_turns)), paste0("fwd_", colnames(re_turns)))
   xts::xts(agg_s,
-     order.by=index(re_turns[end_points[2:(len_gth-1)]]))
+    order.by=index(re_turns[end_points[2:(len_gth-1)]]))
 }  # end roll_agg
 agg_fun <- function(re_turns) sum(re_turns)/sd(re_turns)
 agg_s <- roll_agg(re_turns, agg_fun=agg_fun,
-            look_back=12, re_balance="months")
+  look_back=12, end_points=end_points)
 # define agg_fun() equal to the Sharpe ratio
-agg_fun <- function(re_turns) sum(re_turns)/sd(re_turns)
+agg_fun <- function(re_turns)
+  sum(re_turns)/sd(re_turns)
 # Define vector of symbols for the model:
 sym_bols <- c("VTI", "IEF", "DBC")
 # apply roll_agg() to ETF returns
@@ -593,20 +572,6 @@ weight_s <- past_aggs
 weight_s <- weight_s/sqrt(rowSums(weight_s^2))
 # plot the weights in multiple verticle panels
 zoo::plot.zoo(weight_s, xlab=NULL, main="Momentum Portfolio Weights")
-# calculate betas
-beta_s <- c(1, rutils::env_etf$capm_stats[
-  match(sym_bols[-1],
-  rownames(rutils::env_etf$capm_stats)),
-  "Beta"])
-names(beta_s)[1] <- sym_bols[1]
-# weights times betas
-beta_s <- weight_s %*% beta_s
-beta_s <- xts(beta_s, order.by=index(weight_s))
-colnames(beta_s) <- "portf_beta"
-x11()
-plot.zoo(cbind(beta_s,
-  rutils::env_etf$VTI[, 4])[index(beta_s)],
-  main="betas & VTI", xlab="")
 # calculate portfolio profits and losses
 pnl_s <- rowSums(weight_s * fwd_rets)
 pnl_s <- xts(pnl_s, order.by=index(fwd_rets))
@@ -619,7 +584,7 @@ cost_s <- rowSums(cost_s)
 pnl_s <- pnl_s - cost_s
 pnl_s <- exp(cumsum(pnl_s))
 # bind model returns with VTI
-pnl_s <- merge(rutils::env_etf$VTI[index(pnl_s), 4],
+pnl_s <- cbind(rutils::env_etf$VTI[index(pnl_s), 4],
          pnl_s)
 pnl_s[, 1] <- pnl_s[, 1] / as.numeric(pnl_s[1, 1])
 colnames(pnl_s) <- c("VTI", "momentum")
@@ -629,15 +594,15 @@ plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme, lwd=c(2, 2),
        name="Momentum PnL")
 legend("topleft", legend=colnames(pnl_s),
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=plot_theme$col$line.col, bty="n")
 # combine momentum strategy with static
-pnl_s <- merge(pnl_s, 0.5* (pnl_s[, "VTI"] + pnl_s[, "Momentum"]))
+pnl_s <- cbind(pnl_s, 0.5* (pnl_s[, "VTI"] + pnl_s[, "momentum"]))
 colnames(pnl_s) <- c("VTI", "momentum", "combined")
 # calculate strategy annualized Sharpe ratios
 sapply(pnl_s, function(cumu_lative) {
   re_turns <- na.omit(diff(log(cumu_lative)))
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
 })  # end sapply
 # calculate strategy correlations
 cor(na.omit(diff(log(pnl_s))))
@@ -647,8 +612,21 @@ plot_theme$col$line.col <- c("orange", "blue", "green")
 chart_Series(pnl_s, theme=plot_theme,
        name="Momentum strategy combined with VTI")
 legend("topleft", legend=colnames(pnl_s),
- inset=0.1, bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6),
- col=plot_theme$col$line.col, bty="n")
+  inset=0.1, bg="white", lty=c(1, 1, 1), lwd=c(6, 6, 6),
+  col=plot_theme$col$line.col, bty="n")
+# calculate betas
+beta_s <- c(1, rutils::env_etf$capm_stats[
+  match(sym_bols[-1],
+  rownames(rutils::env_etf$capm_stats)),
+  "Beta"])
+names(beta_s)[1] <- sym_bols[1]
+# weights times betas
+beta_s <- weight_s %*% beta_s
+beta_s <- xts(beta_s, order.by=index(weight_s))
+colnames(beta_s) <- "portf_beta"
+plot.zoo(cbind(beta_s,
+  rutils::env_etf$VTI[, 4])[index(beta_s)],
+  main="betas & VTI", xlab="")
 # define back-test functional
 back_test <- function(re_turns, agg_fun=sum, look_back=12,
                 re_balance="months", bid_offer=0.001) {
@@ -713,6 +691,73 @@ pro_files <- sapply(look_backs,
 plot(cbind(look_backs, pro_files), t="l",
      main="Strategy PnL as function of look_back",
      xlab="look_back (weeks)", ylab="pnl")
+# load S&P500 constituent stock prices
+load("C:/Develop/R/lecture_slides/data/sp500.RData")
+price_s <- eapply(env_sp500, quantmod::Cl)
+price_s <- rutils::do_call(cbind, price_s)
+# carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+# calculate time series of static, equal weighted prices of the index components
+n_col <- NCOL(price_s)
+in_dex <- rowSums(zoo::coredata(price_s))/n_col
+in_dex <- in_dex/in_dex[1]
+sd_index <- sd(rutils::diff_it(log(in_dex)))
+in_dex <- xts::xts(in_dex, order.by=index(price_s))
+colnames(in_dex) <- "index"
+# calculate the percentage (log) returns of the S&P500 constituent stocks
+re_turns <- rutils::diff_xts(log(price_s))
+wid_th <- 220
+returns_width <- rutils::diff_xts(log(price_s),
+  lagg=wid_th)
+# calculate rolling variance of S&P500 portfolio
+vari_ance <- roll::roll_var(re_turns, width=wid_th)
+vari_ance <- zoo::na.locf(vari_ance)
+vari_ance[is.na(vari_ance)] <- 0
+# calculate rolling Sharpe of S&P500 portfolio
+weight_s <- returns_width / sqrt(wid_th*vari_ance)
+weight_s[vari_ance==0] <- 0
+weight_s[1:wid_th, ] <- 1
+weight_s[is.na(weight_s)] <- 0
+weight_s <- weight_s/rowSums(abs(weight_s))
+sum(is.na(weight_s))
+# calculate portfolio profits and losses
+pnl_s <- rowSums(rutils::lag_xts(weight_s)*re_turns)
+sd_moment <- sd(pnl_s)
+pnl_s <- sd_index*pnl_s/sd_moment
+pnl_s <- exp(cumsum(pnl_s))
+pnl_s <- xts(pnl_s, order.by=index(re_turns))
+colnames(pnl_s) <- "momentum"
+pnl_s <- cbind(in_dex, pnl_s)
+# plot
+dygraphs::dygraph(pnl_s, main="Momentum PnL")
+# Define all-weather symbols and weights
+sym_bols <- c("VTI", "IEF", "DBC")
+weight_s <- c(0.30, 0.55, 0.15)
+all_weather <-
+  rutils::env_etf$re_turns[, sym_bols] %*% weight_s
+all_weather <- exp(cumsum(all_weather))
+all_weather <- xts(all_weather,
+  index(rutils::env_etf$re_turns))
+colnames(all_weather) <- "all_weather"
+# combine momentum strategy with all-weather
+pnl_s <- cbind(pnl_s, all_weather[index(pnl_s)])
+# calculate strategy annualized Sharpe ratios
+sapply(pnl_s, function(cumu_lative) {
+  re_turns <- na.omit(diff(log(cumu_lative)))
+  sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
+})  # end sapply
+# calculate strategy correlations
+cor(na.omit(diff(log(pnl_s))))
+# plot momentum strategy, combined, and all-weather
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue", "green", "violet")
+chart_Series(pnl_s, theme=plot_theme, lwd=2, name="Momentum PnL")
+legend("topleft", legend=colnames(pnl_s),
+  inset=0.1, bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
 # library(HighFreq)  # load package HighFreq
 # define time interval for end points
 re_balance <- "weeks"
@@ -723,11 +768,10 @@ end_points <- xts::endpoints(rutils::env_etf$re_turns,
                        on=re_balance)
 # start_points are multi-period lag of end_points
 len_gth <- NROW(end_points)
-start_points <- end_points[
-  c(rep_len(1, look_back-1),
-    1:(len_gth-look_back+1))]
+start_points <- c(rep_len(1, look_back-1),
+  end_points[1:(len_gth-look_back+1)])
 # create list of look-back intervals
-inter_vals <- lapply(2:len_gth,
+look_backs <- lapply(2:len_gth,
     function(in_dex) {
 start_points[in_dex]:end_points[in_dex]
   })  # end lapply
@@ -736,11 +780,11 @@ start_points[in_dex]:end_points[in_dex]
 sym_bols <- c("VTI", "IEF", "DBC")
 
 # calculate risk&ret stats for some symbols, over a range of dates
-# perform lapply() loop over inter_vals
-risk_stats <- lapply(inter_vals,
-  function(inter_val) {
+# perform lapply() loop over look_backs
+risk_stats <- lapply(look_backs,
+  function(look_back) {
     x_ts <-
-rutils::env_etf$re_turns[inter_val, sym_bols]
+rutils::env_etf$re_turns[look_back, sym_bols]
     t(sapply(x_ts,
 function(col_umn)
   c(return=mean(col_umn), risk=mad(col_umn))

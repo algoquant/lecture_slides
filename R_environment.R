@@ -24,7 +24,7 @@ Sys.time()  # get date and time
 
 Sys.Date()  # get date only
 rm(list=ls())
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 var1 <- 3  # define new object
 ls()  # list all objects in workspace
 # list objects starting with "v"
@@ -38,10 +38,10 @@ load(".RData")
 ls()  # list objects
 var2 <- 5  # define another object
 save(var1, var2,  # save selected objects
-     file="C:/Develop/data/my_data.RData")
+     file="C:/Develop/R/lecture_slides/data/my_data.RData")
 rm(list=ls())  # remove all objects
 ls()  # list objects
-load_ed <- load(file="C:/Develop/data/my_data.RData")
+load_ed <- load(file="C:/Develop/R/lecture_slides/data/my_data.RData")
 load_ed
 ls()  # list objects
   q()  # quit R session
@@ -113,7 +113,7 @@ normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
 # R documentation directory
 normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
 # options(max.print=5)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 sample(dir(), 5)  # get 5 file names - dir() lists all files
 sample(dir(pattern="csv"), 5)  # list files containing "csv"
 sample(list.files(R.home()), 5)  # all files in R_HOME directory
@@ -215,7 +215,7 @@ mean(Girth)
 mean(trees$Girth)
 with(trees, 
      c(mean(Girth), mean(Height), mean(Volume)))
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 cat("Enter\ttab")  # cat() interprets backslash escape sequences
 print("Enter\ttab")
 
@@ -239,7 +239,7 @@ getOption("digits")
 foo <- 12
 bar <- "months"
 sprintf("There are %i %s in the year", foo, bar)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # read text from file
 scan(file="mytext.txt", what=character(), sep="\n")
 
@@ -255,7 +255,7 @@ in_put <- as.numeric(in_put)
 # read text from file and display in editor:
 # file.show("mytext.txt")
 # file.show("mytext.txt", pager="")
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
 mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
 rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
@@ -272,7 +272,7 @@ class(mat_read)
 # coerce from data frame back to matrix
 mat_read <- as.matrix(mat_read)
 class(mat_read)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
 data_frame <- read.table("mydata.txt", header=TRUE)
 data_frame <- read.table("clipboard", header=TRUE)
@@ -300,7 +300,7 @@ write_clip(data=data_frame)
 
 # launch spreadsheet-style data editor
 data_frame <- edit(data_frame)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # write data frame to CSV file, and then read it back
 write.csv(data_frame, file="florist.csv")
 data_read <- read.csv(file="florist.csv", 
@@ -313,12 +313,12 @@ data_read
 # read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv", row.names=1)
 data_read
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # write data frame to CSV file, without row names
 write.csv(data_frame, row.names=FALSE, file="florist.csv")
 data_read <- read.csv(file="florist.csv")
 data_read  # a data frame without row names
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # write matrix to csv file, and then read it back
 write.csv(mat_rix, file="matrix.csv")
 mat_read <- read.csv(file="matrix.csv", row.names=1)
@@ -331,7 +331,7 @@ write.csv(mat_rix, row.names=FALSE,
 mat_read <- read.csv(file="matrix_ex_rows.csv")
 mat_read <- as.matrix(mat_read)
 mat_read  # a matrix without row names
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 library(MASS)  # load package "MASS"
 # write to CSV file by row - it's very SLOW!!!
 write.matrix(mat_rix, file="matrix.csv", sep=",")
@@ -347,7 +347,7 @@ mat_read <- matrix(mat_read, ncol=length(col_names),
             byrow=TRUE)
 colnames(mat_read) <- col_names  # restore colnames
 mat_read
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # read data from a csv file, including row names
 mat_rix <- read.csv(file="matrix_bad.csv", row.names=1,
                stringsAsFactors=FALSE)
@@ -363,21 +363,21 @@ row.names(mat_rix) <- row_names  # restore row names
 mat_rix[is.na(mat_rix)] <- 0
 # matrix without NAs
 mat_rix
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo with Date index
 in_dex <- seq(from=as.Date("2013-06-15"), 
             by="day", length.out=100)
-zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
+zoo_series <- zoo(cumsum(rnorm(NROW(in_dex))), 
             order.by=in_dex)
 tail(zoo_series, 3)
 # write zoo to text file, and then read it back
 write.zoo(zoo_series, file="zoo_series.txt")
 zoo_series <- read.zoo("zoo_series.txt")  # read it back
 tail(zoo_series, 3)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
@@ -397,19 +397,24 @@ zoo_series <- read.zoo(file="zoo_series.txt",
                  index.column=list(1,2), 
                  tz="America/New_York")
 tail(zoo_series, 3)
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 library(zoo)  # load package zoo
 # write zoo to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv", sep=",")
+write.zoo(zoo_series, file="zoo_series.csv", 
+    sep=",", col.names=TRUE)
 zoo_series <- read.zoo(file="zoo_series.csv", 
-            header=TRUE, sep=",", FUN=as.POSIXct,
-            tz="America/New_York")
+            header=TRUE, sep=",", 
+            drop=FALSE, 
+            FUN=as.POSIXct, tz="America/New_York")
 tail(zoo_series, 3)
 # read zoo from CSV file, with custom date-time format
-zoo_frame <- read.table(file="zoo_series2.csv", sep=",")
+zoo_frame <- read.table(file="zoo_series2.csv", 
+                  sep=",")
 tail(zoo_frame, 3)  # date-time format mm/dd/yyyy hh:mm
 zoo_series <- read.zoo(file="zoo_series2.csv", 
-            header=TRUE, sep=",", FUN=as.POSIXct, 
+            header=TRUE, sep=",", 
+            drop=FALSE, 
+            FUN=as.POSIXct, 
             tz="America/New_York",
             format="%m/%d/%Y %H:%M")
 tail(zoo_series, 3)
@@ -492,20 +497,20 @@ google_sheet <- gs_title("my_data")
 # view sheet summary
 google_sheet
 # list tab names in sheet
-gs_ws_ls(google_sheet)
+tab_s <- gs_ws_ls(google_sheet)
 # set curl options
 library(httr)
 httr::set_config(config(ssl_verifypeer=0L))
 # read data from sheet
 gs_read(google_sheet)
 # read data from single tab of sheet
-gs_read(google_sheet, ws="Sheet1")
-gs_read_csv(google_sheet, ws="Sheet1")
+gs_read(google_sheet, ws=tab_s[1])
+gs_read_csv(google_sheet, ws=tab_s[1])
 # or using dplyr pipes
-google_sheet %>% gs_read(ws="Sheet1")
+google_sheet %>% gs_read(ws=tab_s[1])
 # download data from sheet into file
-gs_download(google_sheet, ws="Sheet1",
-      to="C:/Develop/data/google_sheet.csv")
+gs_download(google_sheet, ws=tab_s[1],
+      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
 # open sheet in internet browser
 gs_browse(google_sheet)
 # install latest version of googlesheets
@@ -522,20 +527,20 @@ google_sheet <- gs_title("my_data")
 # view sheet summary
 google_sheet
 # list tab names in sheet
-gs_ws_ls(google_sheet)
+tab_s <- gs_ws_ls(google_sheet)
 # set curl options
 library(httr)
 httr::set_config(config(ssl_verifypeer=0L))
 # read data from sheet
 gs_read(google_sheet)
 # read data from single tab of sheet
-gs_read(google_sheet, ws="Sheet1")
-gs_read_csv(google_sheet, ws="Sheet1")
+gs_read(google_sheet, ws=tab_s[1])
+gs_read_csv(google_sheet, ws=tab_s[1])
 # or using dplyr pipes
-google_sheet %>% gs_read(ws="Sheet1")
+google_sheet %>% gs_read(ws=tab_s[1])
 # download data from sheet into file
-gs_download(google_sheet, ws="Sheet1",
-      to="C:/Develop/data/google_sheet.csv")
+gs_download(google_sheet, ws=tab_s[1],
+      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
 # open sheet in internet browser
 gs_browse(google_sheet)
 script_dir <- "C:/Develop/R/scripts"
@@ -603,7 +608,7 @@ main="Sine function")
 while (!is.null(dev.list())) Sys.sleep(1)
 #perform calculations in R,
 #and export to CSV files
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv",
               row.names=1)
@@ -614,7 +619,7 @@ data_read <-
 write.csv(data_read, file="daisies.csv")
 #perform calculations in R,
 #and export to CSV files
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv",
               row.names=1)

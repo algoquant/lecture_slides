@@ -135,9 +135,9 @@ strsplit("Hello.World", split='.', fixed=TRUE)  # split string
 substring("Hello World", 3, 6)  # extract characters from 3 to 6
 gsub("is", "XX", "is this gratis?")  # replace "is" with "XX"
 
-grep("b+", c("abc", "xyz", "cba d", "bbb"))  # get indexes
+grep("b", c("abc", "xyz", "cba d", "bbb"))  # get indexes
 
-grep("b+", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # get values
+grep("b", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # get values
 
 glob2rx("abc.*")  # convert globs into regex
 glob2rx("*.doc")
@@ -206,6 +206,8 @@ vec_tor[c(FALSE, TRUE, TRUE)]
 vec_tor["eulery"]
 # extract elements using their names
 vec_tor[c("pie", "gammy")]
+# subset whole vector
+vec_tor[] <- 0
 vec_tor <- runif(5)
 vec_tor
 vec_tor > 0.5  # Boolean vector
@@ -292,6 +294,8 @@ mat_rix[2, ]  # extract second row
 mat_rix[, 3]  # extract third column
 mat_rix[, c(1,3)]  # extract first and third column
 mat_rix[, -2]  # remove second column
+# subset whole matrix
+mat_rix[] <- 0
 # get the number of rows or columns
 nrow(vec_tor); ncol(vec_tor)
 NROW(vec_tor); NCOL(vec_tor)
@@ -388,19 +392,25 @@ str(data_frame)  # display the object structure
 dim(cars)  # the cars data frame has 50 rows
 head(cars, n=5)  # get first five rows
 tail(cars, n=5)  # get last five rows
-# create data sample
+# create a named vector
 stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
 names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
-# sort the data
+# sort the vector into ascending order
 sort(stu_dents)
-# calculate permution index for sorting the elements
+# calculate index to sort into ascending order
 order(stu_dents)
-# sort the data
+# sort the vector into ascending order
 stu_dents[order(stu_dents)]
-# calculate ranks of the elements
+# calculate the sorted (ordered) vector
+sort_ed <- stu_dents[order(stu_dents)]
+# calculate index to sort into unsorted (original) order
 order(order(stu_dents))
-names(stu_dents)[order(order(stu_dents))]
-# permute data_frame on price
+sort_ed[order(order(stu_dents))]
+stu_dents
+# create a data frame of stu_dents and their ranks
+ra_nks <- c("first", "second", "third", "fourth", "fifth")
+data.frame(students=stu_dents, rank=ra_nks[order(order(stu_dents))])
+# permute data_frame of flowers on price column
 order(data_frame$price)
 # sort data_frame on price
 data_frame[order(data_frame$price), ]
@@ -408,7 +418,7 @@ data_frame[order(data_frame$price), ]
 data_frame[order(data_frame$color), ]
 order(c(2, 1:4))  # there's a tie
 order(c(2, 1:4), 1:5)  # there's a tie
-# read sort() Examples
+# read the Examples for sort()
 as.matrix(data_frame)
 vec_tor <- sample(9)
 matrix(vec_tor, ncol=3)

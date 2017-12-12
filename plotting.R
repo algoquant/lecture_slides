@@ -2,7 +2,7 @@ library(knitr)
 library(rgl)
 knit_hooks$set(rgl=hook_rgl)
 knit_hooks$set(webgl=hook_webgl)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="scriptsize", fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="scriptsize", fig.width=4, fig.height=4)
 options(width=60, dev="pdf")
 options(digits=3)
 thm <- knit_theme$get("acid")
@@ -72,9 +72,9 @@ line=0.1)
 legend(x="topright", legend=c("Normal", "shifted"),
  title="legend", inset=0.05, cex=0.8, bg="white",
  lwd=2, lty=c(1, 1), col=c("blue", "red"))
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # load zoo
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 zoo_series <- window(zoo_stx[, "AdjClose"],
    start=as.Date("2013-01-01"),
    end=as.Date("2013-12-31"))
@@ -83,13 +83,10 @@ in_dex <- index(zoo_series)
 # coerce index to monthly dates
 month_ly <- as.yearmon(in_dex)
 # tick locations at beginning of month
-tick_s <-
-  in_dex[match(unique(month_ly), month_ly)]
-# or
-tick_s <-
-  as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
+tick_s <- in_dex[match(unique(month_ly), month_ly)]
+# tick_s <- as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
 # first plot zoo without "x" axis
-plot(zoo_series, xaxt="n", xlab=NA, ylab=NA)
+plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
 # add "x" axis with monthly ticks
 axis(side=1, at=tick_s,
  labels=format(tick_s, "%b-%y"), tcl=-0.7)
@@ -97,14 +94,15 @@ axis(side=1, at=tick_s,
 abline(v=tick_s, col="grey", lwd=0.5)
 # plot zoo using base plotting functions
 plot(as.vector(zoo_series), xaxt="n",
- xlab=NA, ylab=NA, t="l")
-a_t <- seq_along(in_dex)[in_dex %in% tick_s]
+ xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
+a_t <- match(tick_s, in_dex)
+# a_t <- seq_along(in_dex)[in_dex %in% tick_s]
 # add "x" axis with monthly ticks
 axis(side=1, at=a_t,
  labels=format(tick_s, "%b-%y"), tcl=-0.7)
 abline(v=a_t, col="grey", lwd=0.5)
 library(zoo)  # load zoo
-load(file="C:/Develop/data/zoo_data.RData")
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
 in_dex <- index(zoo_stx)
 # coerce index to monthly dates
@@ -119,37 +117,44 @@ t_apply=
                  INDEX=month_ly, FUN=min)),
 times=10)
   )[, c(1, 4, 5)]
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/data/zoo_data.RData")
-#plot with two "y" axes
-par(las=1)  # set text printing to "horizontal"
-# plot first ts
-plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+# set plot margines
+par(mar=c(3, 3, 3, 3), oma=c(0, 0, 0, 0))
+par(las=1)  # set text printing to horizontal
+plot with two y-axes - plot first time series
+zoo::plot.zoo(zoo_stxeur[, 1], lwd=2, xlab=NA, ylab=NA)
+par(new=TRUE)  # allow new plot on same chart
+# plot second time series without y-axis
+zoo::plot.zoo(zoo_stxeur[, 2], xlab=NA, ylab=NA,
+     lwd=2, yaxt="n", col="red")
+# plot second y-axis on right
+axis(side=4, col="red")
+# add axis labels
+col_names <- colnames(zoo_stxeur)
+mtext(col_names[1], side=2, adj=-0.5)
+mtext(col_names[2], side=4, adj=1.5, col="red")
+# add title and legend
+title(main=paste0(col_names, collapse=" and "),
+line=0.5)
+legend("top", legend=col_names,
+  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=c("black", "red"), bty="n")
+slightly different method using par("usr")
+par(las=1)  # set text printing to horizontal
+zoo::plot.zoo(zoo_stxeur[, 1], xlab=NA, ylab=NA, lwd=2)
 # set range of "y" coordinates for second axis
 par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
-lines(zoo_stxeur[, 2], col="red")  # second plot
-axis(side=4, col="red")  # second "y" axis on right
-# print axis labels
-mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-title(main="EUR and MSFT")  # add title
-# add legend without box
-legend("bottomright", legend=colnames(zoo_stxeur), bg="white",
- lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
-
-##########
-
-# slightly different method using par(new=TRUE)
-# par(las=1)  # set text printing to "horizontal"
-# plot(zoo_stxeur[, 1], xlab=NA, ylab=NA)
-# par(new=TRUE)  # allow new plot on same chart
-# plot(zoo_stxeur[, 2], xlab=NA, ylab=NA, yaxt="n", col="red")
-# axis(side=4, col="red")  # second "y" axis on right
-# mtext(colnames(zoo_stxeur)[1], side=2, padj=-6, line=-4)
-# mtext(colnames(zoo_stxeur)[2], col="red", side=4, padj=-2, line=-3)
-# title(main="EUR and MSFT", line=-1)  # add title
-# legend("bottomright", legend=colnames(zoo_stxeur),
-#        lty=c(1, 1), lwd=c(2, 2), col=c("black", "red"), bty="n")
+lines(zoo_stxeur[, 2], col="red", lwd=2)  # second plot
+axis(side=4, col="red")  # second y-axis on right
+# add axis labels
+mtext(col_names[1], side=2, adj=-0.5)
+mtext(col_names[2], side=4, adj=1.5, col="red")
+# add title and legend
+title(main=paste0(col_names, collapse=" and "),
+line=0.5)
+legend("top", legend=col_names,
+  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  col=c("black", "red"), bty="n")
 graph_params <- par()  # get existing parameters
 par("mar")  # get plot margins
 par(mar=c(2, 1, 2, 1))  # set plot margins
@@ -205,7 +210,7 @@ sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
 lab_els <- paste("sigma", sig_mas, sep="=")
-# plot an empty chart
+# plot the first chart
 plot(x_var, dnorm(x_var, sd=sig_mas[1]),
      type="n", xlab="", ylab="",
      main="Normal Distributions")
@@ -265,14 +270,12 @@ legend("topright", inset=0.05,
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 d_free <- c(3, 6, 9)  # df values
-# create plot colors
 col_ors <- c("black", "red", "blue", "green")
-# create legend labels
 lab_els <- c("normal", paste("df", d_free, sep="="))
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
-for (in_dex in 1:3) {  # plot three curves
+for (in_dex in 1:3) {  # plot three t-distributions
 curve(expr=dt(x, df=d_free[in_dex]),
       type="l", xlab="", ylab="", lwd=2,
       col=col_ors[in_dex+1], add=TRUE)
@@ -288,15 +291,12 @@ x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 x_var <- seq(-4, 4, length=100)
 d_free <- c(3, 6, 9)  # df values
-# create plot colors
 col_ors <- c("black", "red", "blue", "green")
-# create legend labels
 lab_els <- c("normal", paste("df", d_free, sep="="))
 # plot chart of normal distribution
 plot(x_var, dnorm(x_var), type="l",
      lwd=2, xlab="", ylab="")
-# add lines to plot
-for (in_dex in 1:3) {
+for (in_dex in 1:3) {  # add lines for t-distributions
   lines(x_var, dt(x_var, df=d_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1])
 }  # end for
@@ -350,18 +350,28 @@ boxplot(x=pois_counts, ylab="counts",
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
+# R startup chunk
+# ```{r setup, include=FALSE}
+library(shiny)
+library(quantmod)
+inter_val <- 31
+cl_ose <- quantmod::Cl(rutils::env_etf$VTI)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+# ```
+#end R startup chunk
 inputPanel(
   sliderInput("lamb_da", label="lambda:",
-        min=0.01, max=0.2, value=0.1, step=0.01)
+    min=0.01, max=0.2, value=0.1, step=0.01)
 )  # end inputPanel
 renderPlot({
-  lamb_da <- input$lamb_da
   # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:win_dow)
+  lamb_da <- input$lamb_da
+  weight_s <- exp(-lamb_da*1:inter_val)
   weight_s <- weight_s/sum(weight_s)
   ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(win_dow-1)] <- ew_ma[win_dow]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(oh_lc))
+  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
   colnames(ew_ma) <- c("VTI", "VTI EWMA")
   # plot EWMA prices
   ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")

@@ -95,6 +95,12 @@ purl('C:/Develop/R/lecture_slides/time_series_univariate.Rnw', documentation=0)
 ###############
 ### to-do list
 
++ [ ] In time_series_multivariate slide Principal Component Analysis, set scale=TRUE and reproduce PCA plots
+Explain that PCA is a dimensional reduction technique.
+Explain that scaling the input time series improves the accuracy of PCA.
+
++ [ ] study effect of sqrt(abs()) shrinkage
+
 + [ ] rework slide "Time Series from Principal Components" to achieve better fit
 Use "scale=TRUE": p_ca <- prcomp(re_turns, center=TRUE, scale=TRUE)
 
@@ -354,6 +360,8 @@ https://www.coursera.org/specialization/jhudatascience/1?utm_medium=sem&utm_sour
 
 + [ ] read: Sornette Power Law Tail Risk.pdf
 
++ [x] change to 252 business days, instead of 260
+
 + [x] add files to NYU Classes:
 Storn Differential Evolution.pdf
 DEoptim.pdf
@@ -402,9 +410,39 @@ http://www.bearcave.com/finance/portfolio_equations/
 
 + [ ] add slide portfolio optimization with elastic net shrinkage  
 
-+ [x] add slide calculating portfolio CVaR: historical
++ [ ] add slide constrained portfolio optimization using penalty terms: sum of weights equal to 1
+This is an objective function equal to the portfolio variance plus a penalty term for the weight constraint: sum(weight_s) == 1.
+object_ive <- function(weight_s, re_turns) {
+  var(re_turns %*% weight_s) + 
+    (sum(weight_s) - 1)^2
+}  # end object_ive
+You can then perform portfolio optimization for minimum variance, with the weight constraint:
+op_tim <- optim(par=rep(1.0, NCOL(re_turns)),
+                fn=object_ive,
+                method="L-BFGS-B",
+                upper=rep(1, NCOL(re_turns)),
+                lower=rep(-1, NCOL(re_turns)),
+                re_turns=re_turns)
+weight_s <- op_tim$par
+var(re_turns %*% weight_s)
+
++ [ ] add slide calculating minimum CVaR portfolio: historical
+Explain how Rglpk::Rglpk_solve_LP() works in case of minimum CVaR portfolio:
+The (unkown) weights are applied to the portfolio, plus additional weights are applied to the individual returns at each point in time.
+Rglpk_solve_LP() tries to maximize the product of the obj vector parameter times the (unkown) weights.
+Since the obj vector elements are negative, the weights are pushed towards zero.
+At the same time the mat constraints require the weights to be larger, because some of the individual returns are negative.
+So the only way to maximize the obj product is to make the individual returns less negative, but adjusting the portfolio weights.
 
 + [ ] add slide CVaR portfolio optimization using linear programming optimization
+
++ [ ] calculate standard error of stock beta as function of time series length and level of volatility
+Perform same analysis for eigenvectors and eigenvalues.
+Simulate returns or bootstrap historical returns, and calculate standard errors of betas, alphas and sharpe ratios.
+Demonstrate that sampling at higher frequency doesn’t reduce standard errors.
+Calculate how many years of data are need to reduce standard errors to tolerable level.
+Explain that stock betas are useless because they have huge standard errors.
+Since beta depends on time, we are not able to measure beta.
 
 + [ ] constrained portfolio optimization shrinkage  
 http://www.finance-r.com/s/efficient_frontier_fPortfolio/complete/  
@@ -938,6 +976,7 @@ C:\Research\R\Packages\mpo\kirk\MVO\efrontplot.shiny.R
 + [ ] add package ROI (R Optimization Infrastructure): interface to the Rglpk package and the quadprog package to solve linear and quadratic programming problems  
 Solves convex optimization problems: maxmimize portfolio return subject leverage
 ECON457 R lab 3 Optimization in R: ROI_lab03.Rmd ROI_lab03.nb
+https://moderndata.plot.ly/portfolio-optimization-using-r-and-plotly/
 
 + [ ] create estimator of slope (returns), equal to difference of prices over lookback interval, and study the bias-variance tradeoff  
 Simulate prices as the sum of deterministic sine function plus stochastic normal noise.
@@ -2517,6 +2556,23 @@ Please add Stack Overflow as one of your communities on Stack Exchange.
 
 
 ###
+
+Dear Students,
+If you're not able to install package rutils, then you can copy directly from the source code of rutils available on github:
+https://github.com/algoquant/rutils/blob/master/R/rutils.R
+
+Copy and paste the required rutils functions into your solution code, and call them directly:
+diff_xts()
+instead of: 
+rutils::diff_xts()
+
+You can download the source code of rutils into your local drive, by going into this page:
+https://github.com/algoquant/rutils
+
+And then click on the green button on the right that says "clone or download".
+Github will download a zip file with a directory structure.  In the data directory there's a file called etf_data.RData.  
+You can load etf_data.RData into R using load().
+
 
 Dear Students,
 The first class of FRE7241 Algorithmic Portfolio Management will be tomorrow, Tuesday October 31st at 6:00 PM, in room RH211.

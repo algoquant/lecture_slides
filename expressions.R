@@ -42,7 +42,8 @@ num_var==2
 identical(num_var, 2)
 
 identical(num_var, NULL)
-num_var==NULL
+# this doesn't work:
+# num_var==NULL
 is.null(num_var)
 
 vec_tor <- c(2, 4, 6)
@@ -236,6 +237,11 @@ rm(list=ls())
 2*3
 1:5}
 
+mat_rix <- matrix(nr=3, nc=4)
+mat_rix <- 0
+# subset whole matrix
+mat_rix[] <- 0
+
 # parenthesis and braces require a little additional processing time
 library(microbenchmark)
 summary(microbenchmark(
@@ -243,7 +249,6 @@ summary(microbenchmark(
   pa_ren=sqrt(((((rnorm(10000)^2))))),
   bra_ce=sqrt({{{{rnorm(10000)^2}}}}),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
 rm(list=ls())
 num_var1 <- 1
 
@@ -780,16 +785,24 @@ tryCatch(  # with error handler
     num_var <- 101  # assign
     stop('my error')  # produce error
   },
-  error=function(error_cond)  # handler captures error condition
-    print(paste("error handler: ", error_cond)),
+  # error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 rm(list=ls())
 # apply loop without tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     stopifnot(num_var != 3)  # check for error
-    cat("(cat) num_var =", num_var, "\n")  # broadcast
-    paste("(return) num_var =", num_var)  # return value
+    # broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # return a value
+    paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
 # apply loop with tryCatch
@@ -797,10 +810,13 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     tryCatch(  # with error handler
 {  # body
   stopifnot(num_var != 3)  # check for error
-  cat("(cat) num_var =", num_var, "\t")  # broadcast
-  paste("(return) num_var =", num_var)  # return value
+  # broadcast message to console
+  cat("(cat) num_var =", num_var, "\t")
+  # return a value
+  paste("(return) num_var =", num_var)
 },
-error=function(error_cond)  # handler captures error condition
+# error handler captures error condition
+error=function(error_cond)
   paste("handler: ", error_cond),
 finally=print(paste("(finally) num_var =", num_var))
     )  # end tryCatch

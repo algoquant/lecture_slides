@@ -88,30 +88,30 @@ median(sam_ple)  # sample median
 sd(sam_ple)  # sample standard deviation
 rm(list=ls())
 # DAX returns
-ts_rets <- diff(log(EuStockMarkets[, 1]))
+re_turns <- diff(log(EuStockMarkets[, 1]))
 # number of observations
-len_rets <- NROW(ts_rets)
+len_gth <- NROW(re_turns)
 # mean of DAX returns
-mean_rets <- mean(ts_rets)
+mean_rets <- mean(re_turns)
 # standard deviation of DAX returns
-sd_rets <- sd(ts_rets)
+sd_rets <- sd(re_turns)
 # skew of DAX returns
-len_rets/((len_rets-1)*(len_rets-2))*
-  sum(((ts_rets - mean_rets)/sd_rets)^3)
+len_gth/((len_gth-1)*(len_gth-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of DAX returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
-  sum(((ts_rets - mean_rets)/sd_rets)^4)
+len_gth*(len_gth+1)/((len_gth-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
 # random normal returns
-ts_rets <- rnorm(len_rets, sd=2)
+re_turns <- rnorm(len_gth, sd=2)
 # mean and standard deviation of random normal returns
-mean_rets <- mean(ts_rets)
-sd_rets <- sd(ts_rets)
+mean_rets <- mean(re_turns)
+sd_rets <- sd(re_turns)
 # skew of random normal returns
-len_rets/((len_rets-1)*(len_rets-2))*
-  sum(((ts_rets - mean_rets)/sd_rets)^3)
+len_gth/((len_gth-1)*(len_gth-2))*
+  sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of random normal returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
-  sum(((ts_rets - mean_rets)/sd_rets)^4)
+len_gth*(len_gth+1)/((len_gth-1)^3)*
+  sum(((re_turns - mean_rets)/sd_rets)^4)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
@@ -189,6 +189,27 @@ ggplot(  # main function
   plot.title=element_text(vjust=-1.0),
   plot.background=element_blank()
   )  # end theme
+# t-test for single sample
+t.test(rnorm(100))
+# t-test for two samples
+t.test(rnorm(100),
+       rnorm(100, mean=1))
+# Wilcoxon test for normal distribution
+wilcox.test(rnorm(100))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=0.1))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=1.0))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100), rnorm(100))
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 
@@ -211,22 +232,6 @@ jarque.bera.test(dax_rets)
 
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(dax_rets)))
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=0.1))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
 # formula of linear model with zero intercept
 lin_formula <- z ~ x + y - 1
 lin_formula
@@ -248,16 +253,18 @@ lin_formula
 update(lin_formula, log(.) ~ . + beta)
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
+len_gth <- 100
+explana_tory <- rnorm(len_gth, mean=2)
+noise <- rnorm(len_gth)
 # response equals linear form plus error terms
 res_ponse <- -3 + explana_tory + noise
-
-be_ta <- (sum(pnl_s * re_turns) - sum(pnl_s) * sum(re_turns)) / (sum(pnl_s * pnl_s) - sum(pnl_s)^2 )
-
-al_pha <- sum(pnl_s) - be_ta * sum(re_turns)
-
-
+# calculate de-meaned explanatory and response vectors
+explan_zm <- explana_tory - mean(explana_tory)
+response_zm <- res_ponse - mean(res_ponse)
+# solve for regression beta
+be_ta <- sum(explan_zm*response_zm) / sum(explan_zm^2)
+# solve for regression alpha
+al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
 # specify regression formula
 reg_formula <- res_ponse ~ explana_tory
 reg_model <- lm(reg_formula)  # perform regression
@@ -266,29 +273,30 @@ attributes(reg_model)
 eval(reg_model$call$formula)  # regression formula
 reg_model$coefficients  # regression coefficients
 coef(reg_model)
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-# response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-x11(width=6, height=6)
-plot(reg_formula)  # plot scatterplot using formula
+c(al_pha, be_ta)
+x11(width=6, height=5)  # open x11 for plotting
+# set plot parameters to reduce whitespace around plot
+par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
+# plot scatterplot using formula
+plot(reg_formula)
 title(main="Simple Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 # plot fitted (predicted) response values
 points(x=explana_tory, y=reg_model$fitted.values,
        pch=16, col="blue")
+# sum of residuals = 0
+sum(reg_model$residuals)
+x11(width=6, height=5)  # open x11 for plotting
+# set plot parameters to reduce whitespace around plot
+par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
+# extract residuals
+resi_duals <- cbind(explana_tory, reg_model$residuals)
+colnames(resi_duals) <- c("explanatory variable", "residuals")
+# plot residuals
+plot(resi_duals)
+title(main="Residuals of the Linear Regression", line=-1)
+abline(h=0, lwd=2, col="red")
 reg_model_sum <- summary(reg_model)  # copy regression summary
 reg_model_sum  # print the summary to console
 attributes(reg_model_sum)$names  # get summary elements
@@ -421,6 +429,32 @@ title(main="Spurious Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+len_gth <- 100
+n_var <- 5
+explana_tory <- matrix(rnorm(n_var*len_gth), 
+  nc=n_var)
+noise <- rnorm(len_gth, sd=0.5)
+# response equals linear form plus error terms
+weight_s <- rnorm(n_var)
+res_ponse <- 
+  -3 + explana_tory %*% weight_s + noise
+# calculate de-meaned explanatory matrix
+explan_zm <- t(t(explana_tory) - colSums(explana_tory)/len_gth)
+# or
+explan_zm <- apply(explan_zm, 2, function(x) (x-mean(x)))
+# calculate de-meaned response vector
+response_zm <- res_ponse - mean(res_ponse)
+# solve for regression betas
+beta_s <- MASS::ginv(explan_zm) %*% response_zm
+# solve for regression alpha
+al_pha <- mean(res_ponse) - colSums(explana_tory) %*% beta_s / len_gth
+# multivariate regression using lm()
+reg_model <- lm(res_ponse ~ explana_tory)
+coef(reg_model)
+c(al_pha, beta_s)
+c(-3, weight_s)
 library(lmtest)  # load lmtest
 de_sign <- data.frame(  # design matrix
   explana_tory=1:30, omit_var=sin(0.2*1:30))
@@ -498,23 +532,30 @@ legend("topleft", title="Scale parameters",
        paste("lambda", lamb_da, sep="="),
        inset=0.05, cex=0.8, lwd=2,
        lty=c(1, 1, 1), col=col_ors)
-# simulate categorical data
-sco_re <- sort(runif(100))
-ac_tive <- ((sco_re + rnorm(100, sd=0.1)) > 0.5)
-# Wilcoxon test for sco_re predictor
-wilcox.test(sco_re[ac_tive], sco_re[!ac_tive])
+set.seed(1121)
+# simulate overlapping scores data
+scores_1 <- runif(100, max=0.6)
+scores_2 <- runif(100, min=0.4)
+# perform Wilcoxon test for mean
+wilcox.test(scores_1, scores_2)
+# combine scores and add categorical variable
+score_s <- c(scores_1, scores_2)
+ac_tive <- c(logical(100), !logical(100))
 # perform logit regression
-log_it <- glm(ac_tive ~ sco_re, family=binomial(logit))
+log_it <- glm(ac_tive ~ score_s, family=binomial(logit))
 class(log_it)
 summary(log_it)
-plot(x=sco_re, y=log_it$fitted.values, type="l", lwd=3,
+par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
+or_der <- order(score_s)
+plot(x=score_s[or_der], y=log_it$fitted.values[or_der],
+     type="l", lwd=3,
      main="Category densities and logistic function",
      xlab="score", ylab="probability")
-den_sity <- density(sco_re[ac_tive])
+den_sity <- density(score_s[ac_tive])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="red")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-den_sity <- density(sco_re[!ac_tive])
+den_sity <- density(score_s[!ac_tive])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="blue")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)

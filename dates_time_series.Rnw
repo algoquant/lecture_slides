@@ -1233,37 +1233,48 @@ merge(zoo_series1, zoo_series2, all=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Operations on time series can produce \texttt{NA} values,
+      Binding two time series that don't share the same time index produces \texttt{NA} values,
       \vskip1ex
       There are two dedicated functions for managing \texttt{NA} values in time series:
       \begin{itemize}
-        \item \texttt{na.omit()} removes observations containing \texttt{NA} values,
-        \item \texttt{na.locf()} (from package \emph{zoo}) carries the last non-\texttt{NA} observation forward,
+        \item \texttt{stats::na.omit()} removes whole rows of data containing \texttt{NA} values,
+        \item \texttt{zoo::na.locf()} copies the last non-\texttt{NA} values onto future \texttt{NA} values (\emph{locf} stands for \emph{last observation carry forward}),
       \end{itemize}
+      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data,
+      \vskip1ex
+      But copying values forward requires initializing the first row of data, to guarantee that initial \texttt{NA} values are also over-written, 
+      \vskip1ex
+      Initial \texttt{NA} prices should be initialized to the first non-\texttt{NA} price, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE},
+      \vskip1ex
+      Initial \texttt{NA} returns should be initialized to \texttt{zero}, 
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1)>>=
-library(zoo)  # load package zoo
-# create zoo time series
-zoo_series <- zoo(sample(4),
-                  order.by=(Sys.Date() + 0:3))
-# add NA
-zoo_series[3] <- NA
-zoo_series
-zoo::na.locf(zoo_series)  # replace NA's using locf
-zoo::na.omit(zoo_series)  # remove NA's using omit
+      <<echo=TRUE,eval=FALSE>>=
 # create matrix containing NA values
-mat_rix <- sample(44)
-mat_rix[sample(NROW(mat_rix), 8)] <- NA
-mat_rix <- matrix(mat_rix, nc=2)
-# replace NA values with the most recent non-NA values
+mat_rix <- sample(18)
+mat_rix[sample(NROW(mat_rix), 4)] <- NA
+mat_rix <- matrix(mat_rix, nc=3)
+# replace NA values with most recent non-NA values
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
-# create xts series containing NA values
-x_ts <- xts::xts(mat_rix, order.by=seq.Date(from=Sys.Date(),
-  by=1, length.out=NROW(mat_rix)))
-# replace NA values with the most recent non-NA values
-rutils::na_locf(x_ts)
+# get time series of prices
+price_s <- mget(c("VTI", "VXX"), envir=rutils::env_etf)
+price_s <- lapply(price_s, quantmod::Ad)
+price_s <- rutils::do_call(cbind, price_s)
+sum(is.na(price_s))
+# carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# remove whole rows containing NA returns
+re_turns <- rutils::env_etf$re_turns
+sum(is.na(re_turns))
+re_turns <- na.omit(re_turns)
+# or carry forward non-NA returns (preferred)
+re_turns <- rutils::env_etf$re_turns
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns)
+sum(is.na(re_turns))
       @
   \end{columns}
 \end{block}

@@ -57,7 +57,7 @@ test_func <- function(in_put) {
 
 test_func(2)
 test_func("hello")
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 # define a function that returns invisibly
 return_invisible <- function(in_put) {
   invisible(in_put)
@@ -70,7 +70,7 @@ glob_var
 
 rm(list=ls())  # remove all objects
 # load objects from file
-loaded <- load(file="my_data.RData")
+loaded <- load(file="C:/Develop/data/my_data.RData")
 loaded  # vector of loaded objects
 ls()  # list objects
 fibo_nacci <- function(len_gth) {
@@ -254,7 +254,7 @@ double_it <- function(in_put) {
 }
 double_it(a)
 a  # variable "a" is unchanged
-setwd("C:/Develop/data")
+setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())  # remove all objects
 ls()  # list objects
 # load objects from file (side effect)

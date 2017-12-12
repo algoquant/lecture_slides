@@ -211,7 +211,7 @@ portf_maxSR <- add.objective(
     \column{0.5\textwidth}
       The weights of the maximum return portfolio are obtained by maximizing the portfolio returns:
       \begin{displaymath}
-        w_{min} = \operatorname*{arg\,max}_{w} [ \, r^T w \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
+        w_{max} = \operatorname*{arg\,max}_{w} [ \, r^T w \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
       \end{displaymath}
       Where $r$ is the vector of returns, and $w$ is the vector of portfolio weights, constrained by:
       \begin{align*}
@@ -236,9 +236,9 @@ mean_rets <- sapply(re_turns, mean)
 constraint_s <- matrix(c(rep(1, n_weights), 
                        1, 1, 0), 
                        nc=n_weights, byrow=TRUE)
-rh_s <- c(1, 0)
 direction_s <- c("==", "<=")
-# specify weight bounds (default is c(0, Inf))
+rh_s <- c(1, 0)
+# specify weight bounds (-1, 1) (default is c(0, Inf))
 bound_s <- 
   list(lower=list(ind=1:n_weights, val=rep(-1, n_weights)),
        upper=list(ind=1:n_weights, val=rep(1, n_weights)))
@@ -246,8 +246,8 @@ bound_s <-
 op_tim <- Rglpk::Rglpk_solve_LP(
   obj=mean_rets, 
   mat=constraint_s, 
-  rhs=rh_s, 
   dir=direction_s, 
+  rhs=rh_s, 
   bounds=bound_s,
   max=TRUE)
 unlist(op_tim[1:2])
@@ -346,7 +346,7 @@ u_nit <- rep(1, NCOL(co_var))
 weight_s <- in_verse %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
 # minimum variance
-t(weight_s) %*% co_var %*% weight_s
+weight_s %*% co_var %*% weight_s
 1/(t(u_nit) %*% in_verse %*% u_nit)
       @
   \end{columns}
@@ -421,7 +421,7 @@ t(weight_s) %*% co_var %*% weight_s
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate excess re_turns
-risk_free <- 0.03/260
+risk_free <- 0.03/252
 ex_cess <- re_turns - risk_free
 # calculate covariance and inverse matrix
 co_var <- cov(re_turns)
@@ -434,10 +434,10 @@ ex_cess <- sapply(ex_cess, mean)
 weight_s <- in_verse %*% ex_cess
 weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
 # Sharpe ratios
-sqrt(260)*drop((t(weight_s) %*% ex_cess) / 
-  sqrt(t(weight_s) %*% co_var %*% weight_s))
+sqrt(252)*sum(weight_s * ex_cess) / 
+  sqrt(drop(weight_s %*% co_var %*% weight_s))
 sapply(re_turns - risk_free, 
-  function(x) sqrt(260)*mean(x)/sd(x))
+  function(x) sqrt(252)*mean(x)/sd(x))
 weights_maxsharpe <- weight_s
       @
   \end{columns}
@@ -569,18 +569,18 @@ x11(wid_th <- 6, hei_ght <- 6)
 weight_s <- in_verse %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
 # minimum standard deviation and return
-std_dev <- sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s))
-min_ret <- 260*drop((t(weight_s) %*% mean_rets))
+std_dev <- sqrt(252*drop(weight_s %*% co_var %*% weight_s))
+min_ret <- 252*sum(weight_s * mean_rets)
 # calculate maximum Sharpe portfolios
-risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/260
+risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/252
 eff_front <- sapply(risk_free, function(risk_free) {
   weight_s <- in_verse %*% (mean_rets - risk_free)
   weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
   # portfolio return and standard deviation
-  c(return=260*drop((t(weight_s) %*% mean_rets)), 
-    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
+  c(return=252*sum(weight_s * mean_rets), 
+    stddev=sqrt(252*drop(weight_s %*% co_var %*% weight_s)))
 })  # end sapply
-eff_front <- cbind(260*risk_free, t(eff_front))
+eff_front <- cbind(252*risk_free, t(eff_front))
 colnames(eff_front)[1] <- "risk-free"
 eff_front <- eff_front[is.finite(eff_front[, "stddev"]), ]
 eff_front <- eff_front[order(eff_front[, "return"]), ]
@@ -665,8 +665,8 @@ ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights-1, min=-0.25, max=1.0)
   weight_s <- c(weight_s, 1-sum(weight_s))
   # portfolio return and standard deviation
-  c(return=260*drop((t(weight_s) %*% mean_rets)), 
-    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
+  c(return=252*sum(weight_s * mean_rets), 
+    stddev=sqrt(252*drop(weight_s %*% co_var %*% weight_s)))
 })  # end sapply
 # plot scatterplot of random portfolios
 x11(wid_th <- 6, hei_ght <- 6)
@@ -697,9 +697,9 @@ text(x=eff_front[in_dex, "stddev"],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # plot individual assets
-points(x=sqrt(260*diag(co_var)), 
-       y=260*mean_rets, col="blue", lwd=6)
-text(x=sqrt(260*diag(co_var)), y=260*mean_rets, 
+points(x=sqrt(252*diag(co_var)), 
+       y=252*mean_rets, col="blue", lwd=6)
+text(x=sqrt(252*diag(co_var)), y=252*mean_rets, 
      labels=names(mean_rets), 
      col="blue", pos=1, cex=0.8)
       @
@@ -742,9 +742,9 @@ plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # plot individual assets
-points(x=sqrt(260*diag(co_var)), 
-       y=260*mean_rets, col="blue", lwd=6)
-text(x=sqrt(260*diag(co_var)), y=260*mean_rets, 
+points(x=sqrt(252*diag(co_var)), 
+       y=252*mean_rets, col="blue", lwd=6)
+text(x=sqrt(252*diag(co_var)), y=252*mean_rets, 
      labels=names(mean_rets), 
      col="blue", pos=1, cex=0.8)
       @
@@ -884,8 +884,8 @@ weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
 re_turns <- rutils::env_etf$re_turns[, sym_bols]
 ret_sd <- re_turns %*% t(weight_s)
-ret_sd <- cbind(260*colMeans(ret_sd), 
-  sqrt(260)*matrixStats::colSds(ret_sd))
+ret_sd <- cbind(252*colMeans(ret_sd), 
+  sqrt(252)*matrixStats::colSds(ret_sd))
 colnames(ret_sd) <- c("returns", "stddev")
 risk_free <- 0.06
 ret_sd <- cbind(ret_sd, 
@@ -909,8 +909,8 @@ text(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"],
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # plot individual assets
-mean_rets <- 260*sapply(re_turns, mean)
-std_devs <- sqrt(260)*sapply(re_turns, sd)
+mean_rets <- 252*sapply(re_turns, mean)
+std_devs <- sqrt(252)*sapply(re_turns, sd)
 points(std_devs, mean_rets, col="green", lwd=6)
 text(std_devs, mean_rets, labels=names(re_turns), pos=2, cex=0.8)
 # add point at risk-free rate and draw Capital Market Line
@@ -1041,9 +1041,9 @@ text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
     \column{0.5\textwidth}
       The weights of the minimum \emph{CVaR} portfolio can be calculated using linear programming (\emph{LP}), which is the optimization of linear objective functions subject to linear constraints, 
       \begin{displaymath}
-        w_{min} = \operatorname*{arg\,max}_{w} [ \, r^T w \, ] = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i r_i \, ]
+        w_{min} = \operatorname*{arg\,max}_{w} [ \, \sum_{i=1}^n w_i b_i \, ]
       \end{displaymath}
-      Where $r$ is the vector of returns, and $w$ is the vector of portfolio weights, constrained by:
+      Where $b_i$ is the negative objective vector, and $w$ is the vector of returns weights, constrained by:
       \begin{align*}
         w^T \mathbbm{1} = {\sum_{i=1}^n w_i} = 1\\
         0 \leq w_i \leq 1
@@ -1052,20 +1052,20 @@ text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
+library(HighFreq)
 library(Rglpk)
 # vector of symbol names and returns
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::env_etf$re_turns[((NROW(re_turns)-6):NROW(re_turns)), sym_bols]
 mean_rets <- colMeans(re_turns)
 conf_level <- 0.05
 r_min <- 0 ; w_min <- 0 ; w_max <- 1
 weight_sum <- 1
-n_col <- ncol(re_turns) # number of assets
-n_row <- nrow(re_turns) # number of scenarios i.e. periods
+n_col <- NCOL(re_turns) # number of assets
+n_row <- NROW(re_turns) # number of rows
 # creat objective vector
-object_ive <- c(numeric(n_col), rep(-1/(conf_level*n_row), n_row), -1)
+obj_vector <- c(numeric(n_col), rep(-1/(conf_level*n_row), n_row), -1)
 # specify weight constraints
 constraint_s <- rbind(
   cbind(rbind(1, mean_rets), 
@@ -1078,10 +1078,10 @@ bound_s <- list(
   lower=list(ind=1:n_col, val=rep(w_min, n_col)), 
   upper=list(ind=1:n_col, val=rep(w_max, n_col)))
 # perform optimization
-op_tim <- Rglpk_solve_LP(obj=object_ive, mat=constraint_s, dir=direction_s, rhs=rh_s, types=rep("C", NROW(object_ive)), max=T, bounds=bound_s)
+op_tim <- Rglpk_solve_LP(obj=obj_vector, mat=constraint_s, dir=direction_s, rhs=rh_s, types=rep("C", NROW(obj_vector)), max=T, bounds=bound_s)
 op_tim$solution
 constraint_s %*% op_tim$solution
-object_ive %*% op_tim$solution
+obj_vector %*% op_tim$solution
 as.numeric(op_tim$solution[1:n_col])
       @
   \end{columns}
@@ -1566,7 +1566,7 @@ op_tim <- quadprog::solve.QP(Dmat=2*co_var,
                     bvec=1)
 # minimum variance positive weights, sum equal to 1
 a_mat <- cbind(matrix(1, nr=3, nc=1), 
-               diag(3),-diag(3))
+               diag(3), -diag(3))
 b_vec <- c(1, rep(0, 3), rep(-1, 3))
 op_tim <- quadprog::solve.QP(Dmat=2*co_var, 
                     dvec=numeric(3), 
@@ -1630,7 +1630,7 @@ names(weight_s) <- colnames(re_turns)
       \vskip1ex
       The \emph{elastic net} regularization is a combination of \emph{ridge} regularization and \emph{Lasso} regularization:
       \begin{align*}
-        w_{min} = \operatorname*{arg\,max}_{w} [ \, w^T r - \\
+        w_{max} = \operatorname*{arg\,max}_{w} [ \, w^T r - \\
         \lambda ( (1-\alpha) \sum_{i=1}^n w_i^2 + \alpha \sum_{i=1}^n|w_i| ) \, ]
       \end{align*}
       The portfolio weights $w_i$ are shrunk to zero as the parameters $\lambda$ and $\alpha$ increase,
@@ -2633,23 +2633,24 @@ legend("bottomright", legend=colnames(rate_s),
         \mathbf{V} = \frac{\mathbf{r}^T \, \mathbf{r}} {n-1}
       \end{displaymath}
       \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
 par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
 # load constant maturity Treasury rates
 load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-# calculate daily percentage changes
-rate_s <- na.omit(rutils::do_call(cbind, 
+# calculate daily rates changes
+rate_s <- zoo::na.locf(rutils::do_call(cbind, 
     as.list(env_rates)[sym_bols]))
-re_turns <- na.omit(rutils::diff_xts(rate_s))
+re_turns <- rutils::diff_xts(rate_s)
 # correlation matrix of Treasury rates
 cor_mat <- cor(re_turns)
 # reorder correlation matrix based on clusters
+library(corrplot)
 or_der <- corrMatOrder(cor_mat, order="hclust", 
   hclust.method="complete")
 cor_mat <- cor_mat[or_der, or_der]
-library(corrplot)
 # plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title=NA, tl.col="black", 
@@ -2674,28 +2675,148 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
 
 
 %%%%%%%%%%%%%%%
+\subsection{Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal components} are linear combinations of the $k$ return vectors $\mathbf{r}_i$:
+      \begin{displaymath}
+        \mathbf{pc}_j = \sum_{i=1}^k {w_{ij} \, \mathbf{r}_i}
+      \end{displaymath}
+      Where $\mathbf{w}_j$ is a vector of weights (loadings) of the \emph{principal component} $j$, with $\mathbf{w}_j^T \mathbf{w}_j = 1$,
+      \vskip1ex
+      The weights $\mathbf{w}_j$ are chosen to maximize the variance of the \emph{principal components}, under the condition that they are orthogonal:
+      \begin{align*}
+        \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
+        \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
+      \end{align*}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) + 
+    1000*(1 - sum(weight_s*weight_s))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# compare speed of vector multiplication methods
+summary(microbenchmark(
+  trans_pose=t(portf_rets) %*% portf_rets,
+  s_um=sum(portf_rets*portf_rets),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(1.0, n_weights),
+                   lower=rep(-1.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# plot first principal component loadings
+barplot(weight_s, names.arg=names(weight_s), 
+        xlab="", ylab="", 
+        main="first principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Order Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}, 
+      \vskip1ex
+      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}, 
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) + 
+    1000*(1 - sum(weight_s*weight_s))^2 + 
+    1000*sum(pc_1*portf_rets)^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(1.0, n_weights),
+                   lower=rep(-1.0, n_weights))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load2.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="second principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Principal Component Analysis of the Yield Curve}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data, and returns the results as an object of class \texttt{prcomp}, 
+      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimensionality reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series,
       \vskip1ex
-      The first few \emph{principal components} explain most of the volatility in the data, so \emph{PCA} is a form of \emph{dimensionality reduction}, 
+      The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimensionality reduction}, so that more information is retained by the first few \emph{principal component} time series,
+      \vskip1ex
+      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as an object of class \texttt{prcomp}, 
+      \vskip1ex
+      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations,
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_scree.png}
+      A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}, 
       <<echo=TRUE,eval=FALSE>>=
 # perform principal component analysis PCA
-p_ca <- prcomp(re_turns, 
-  center=TRUE, scale=TRUE)
+pc_a <- prcomp(re_turns, scale=TRUE)
 # plot standard deviations
-barplot(p_ca$sdev, 
-  names.arg=colnames(p_ca$rotation), 
+barplot(pc_a$sdev, 
+  names.arg=colnames(pc_a$rotation), 
   las=3, xlab="", ylab="", 
-  main="Volatilities of principal components 
+  main="Scree Plot: Volatilities of Principal Components 
   of Treasury rates")
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_std_dev_yield.png}
   \end{columns}
 \end{block}
 
@@ -2721,12 +2842,12 @@ barplot(p_ca$sdev,
       <<echo=(-(1:1)),eval=FALSE>>=
 x11(width=6, height=7)
 # principal component loadings (weights)
-p_ca$rotation
+pc_a$rotation
 # plot loading barplots in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
-for (or_der in 1:NCOL(p_ca$rotation)) {
-  barplot(p_ca$rotation[, or_der], 
+for (or_der in 1:NCOL(pc_a$rotation)) {
+  barplot(pc_a$rotation[, or_der], 
         las=3, xlab="", ylab="", main="")
   title(paste0("PC", or_der), line=-2.0, 
         col.main="red")
@@ -2752,7 +2873,7 @@ for (or_der in 1:NCOL(p_ca$rotation)) {
       Higher order \emph{principal components} are gradually less volatile,
       <<echo=TRUE,eval=FALSE>>=
 # principal component time series
-pca_ts <- xts(re_turns %*% p_ca$rotation, 
+pca_ts <- xts(re_turns %*% pc_a$rotation, 
                 order.by=index(re_turns))
 pca_ts <- cumsum(pca_ts)
 # plot principal component time series in multiple panels
@@ -2868,14 +2989,14 @@ sum(uni_form < default_probs)
 # simulate average number of defaults
 num_simu <- 1000
 de_faults <- numeric(num_simu)
-# inefficient way to simulate using for() loop
+# simulate using for() loop (inefficient way)
 for (i in 1:num_simu) {  # perform loop
   uni_form <- runif(num_assets)
   de_faults[i] <- sum(uni_form < default_probs)
 }  # end for
 # calculate average number of defaults
 mean(de_faults)
-# efficient way to simulate using vectorized functions
+# simulate using vectorized functions  (efficient way)
 uni_form <- matrix(runif(num_simu*num_assets), 
                    ncol=num_simu)
 sum(uni_form < default_probs)/num_simu
@@ -2940,9 +3061,10 @@ text(x=qnorm(0.025)-0.1, y=0.15,
       \vskip1ex
       The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor,
       \vskip1ex
-      Empirical studies have found that the correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk, 
-      \vskip1ex
-      Obligors with higher default risk tend to also have higher correlation, since they are more  sensitive to the economic conditions,
+      The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for credit risk:\\
+\hskip1em\url{http://bis2information.org/content/Vasicek_model}\\
+\hskip1em\url{https://www.bis.org/bcbs/basel3.htm}\\
+\hskip1em\url{https://www.bis.org/bcbs/irbriskweight.pdf}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2952,13 +3074,13 @@ rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
 num_assets <- 5 ; num_simu <- 10000
 # calculate vector of systematic factors
 system_atic <- rnorm(num_simu)
-# efficient way to simulate asset values using vectorized functions
+# simulate asset values using vectorized functions (efficient way)
 asset_values <- rho_sqrt*system_atic + 
   rho_sqrtm*rnorm(num_simu*num_assets)
 dim(asset_values) <- c(num_simu, num_assets)
 # calculate correlations between asset values
 cor(asset_values)
-# inefficient way to simulate asset values using for() loop
+# simulate asset values using for() loop (inefficient way)
 # allocate matrix of assets
 asset_values <- matrix(nr=num_simu, nc=num_assets)
 # simulate asset values using for() loop
@@ -3003,8 +3125,6 @@ summary(microbenchmark(
       But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults, 
       \vskip1ex
       This way the \emph{Vasicek} model introduces a correlation among defaults,
-      \vskip1ex
-      Default correlations are the correlations between the Boolean vectors of default events, and default correlation is much lower than the corresponding asset correlation,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3014,13 +3134,13 @@ default_probs <- runif(num_assets, max=0.2)
 mean(default_probs)
 # calculate default thresholds
 default_thresh <- qnorm(default_probs)
-# efficient way to calculate number of defaults using vectorized functions
+# calculate number of defaults using vectorized functions (efficient way)
 # calculate vector of number of defaults
 de_faults <- 
   colSums(t(t(asset_values) < default_thresh))
 de_faults / num_simu
 default_probs
-# inefficient way to calculate number of defaults using for() loop
+# calculate number of defaults using for() loop (inefficient way)
 # allocate matrix of de_faults
 de_faults <- matrix(nr=num_simu, nc=num_assets)
 # simulate asset values using for() loop
@@ -3032,6 +3152,55 @@ colSums(de_faults) / num_simu
 default_probs
 # calculate correlations between defaults
 cor(de_faults)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlation and Default Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Default correlation is defined as the correlation between the \emph{Boolean} vectors of default events, 
+      \vskip1ex
+      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values},
+      \vskip1ex
+      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well,
+      \vskip1ex
+      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk, 
+      \vskip1ex
+      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions,
+      \vskip1ex
+      Default correlations are usually much lower than the corresponding asset correlations,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define default probabilities
+num_assets <- 2
+default_prob <- 0.2
+default_thresh <- qnorm(default_prob)
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+# calculate vector of systematic factors
+num_simu <- 1000
+system_atic <- rnorm(num_simu)
+# simulate asset values using vectorized functions
+asset_values <- rho_sqrt*system_atic + 
+  rho_sqrtm*rnorm(num_simu*num_assets)
+dim(asset_values) <- c(num_simu, num_assets)
+# calculate number of defaults using vectorized functions
+de_faults <- t(t(asset_values) < default_thresh)
+# calculate correlations between defaults
+cor(de_faults)
+# calculate averaage number of defaults and compare to default_prob
+colSums(de_faults) / num_simu
+default_prob
       @
   \end{columns}
 \end{block}
@@ -3474,7 +3643,6 @@ loss_es <-
 # calculate VaRs
 conf_levels <- seq(0.93, 0.99, 0.01)
 var_s <- quantile(loss_es, probs=conf_levels)
-names(var_s) <- round(conf_levels, 3)
 plot(x=conf_levels, y=var_s, t="l", lwd=2,
      main="Simulated VaR and confidence levels")
       @
@@ -3495,20 +3663,31 @@ plot(x=conf_levels, y=var_s, t="l", lwd=2,
       \vskip1ex
       The function \texttt{table()} calculates the frequency distribution of categorical data,
       <<echo=TRUE,eval=FALSE>>=
-# calculate frequency table of loss_es
-table_losses <- table(loss_es)/num_simu
 # calculate CVaRs
+cvar_s <- sapply(var_s, function(va_r) {
+  mean(loss_es[loss_es>va_r])
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# alternative CVaR calculation using frequency table
+# first calculate frequency table of loss_es
+table_losses <- table(loss_es)/num_simu
+# calculate CVaRs from frequency table
 cvar_s <- sapply(var_s, function(va_r) {
   tai_l <- table_losses[names(table_losses) > va_r]
   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
 })  # end sapply
-cvar_s <- cbind(cvar_s, var_s)
 # plot CVaRs
 plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"], 
      t="l", col="red", lwd=2, 
      ylim=range(cvar_s), 
      xlab="conf_levels", ylab="CVaRs",
      main="Simulated CVaR and confidence levels")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
 # add VaRs
 lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
 # add legend
@@ -3516,8 +3695,6 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
        title=NULL, inset=0.05, cex=0.8, bg="white",
        lwd=6, lty=c(1, 1), col=c("red", "black"))
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
   \end{columns}
 \end{block}
 
@@ -3535,32 +3712,25 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-calc_var <- function(default_probs, 
+calc_var <- function(default_thresh, 
                      l_gd=0.6, 
-                     rh_o=0.1, 
+                     rho_sqrt,
+                     rho_sqrtm,
                      num_simu=1000,
                      conf_levels=seq(0.93, 0.99, 0.01)) {
   # Define model parameters
-  num_assets <- NROW(default_probs)
-  default_thresh <- qnorm(default_probs)
-  # Define correlation parameters
-  rho_sqrt <- sqrt(rh_o)
-  rho_sqrtm <- sqrt(1-rh_o)
+  num_assets <- NROW(default_thresh)
   # Simulate losses under Vasicek model
   system_atic <- rnorm(num_simu)
   asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
   asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
   loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
-  # Calculate VaRs
+  # Calculate VaRs and CVaRs
   var_s <- quantile(loss_es, probs=conf_levels)
-  names(var_s) <- round(conf_levels, 3)
-  # Calculate CVaRs from the frequency table 
-  table_losses <- table(loss_es)/num_simu
   cvar_s <- sapply(var_s, function(va_r) {
-    tai_l <- table_losses[names(table_losses) > va_r]
-    tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+    mean(loss_es[loss_es>va_r])
   })  # end sapply
-  names(cvar_s) <- round(conf_levels, 3)
+  names(cvar_s) <- names(var_s)
   c(var_s, cvar_s)
 }  # end calc_var
       @
@@ -3586,8 +3756,10 @@ num_assets <- NROW(default_probs)
 set.seed(1121)
 boot_strap <- sapply(rep(l_gd, num_boot), 
   calc_var, 
-  default_probs=default_probs,
-  rh_o=rh_o, num_simu=num_simu,
+  default_thresh=qnorm(default_probs),
+  rho_sqrt=rho_sqrt,
+  rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
   conf_levels=conf_levels)  # end sapply
 boot_strap <- t(boot_strap)
 # calculate vectors of standard errors of VaR and CVaR from boot_strap data
