@@ -229,7 +229,7 @@ plot(
       \vskip1ex
       $p = 0.5$ corresponds to flipping an unbiased coin,
       \vskip1ex
-      The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
+      The probability of obtaining \texttt{k} successes in \texttt{n} independent \emph{binomial} trials is equal to:
       \begin{displaymath}
         {n \choose k} p^k (1-p)^{(n-k)}
       \end{displaymath}
@@ -457,48 +457,82 @@ sd(sam_ple)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Hypothesis Testing} is designed to test the validity of a \emph{null hypothesis},
-      \vskip1ex
-      A \emph{Hypothesis Test} consists of:
+      \emph{Hypothesis Tests} are designed to test the validity of \emph{null hypotheses}, and they consist of:
       \begin{itemize}
-        \item \emph{null hypothesis},
-        \item test \emph{statistic} (from the data sample),
-        \item \emph{p}-value (conditional probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE}),
-        \item \emph{significance level} $\alpha$, to determine whether to accept or reject the \emph{null hypothesis},
-      \end{itemize}
-      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected, otherwise it's accepted as \texttt{TRUE},
+        \item A \emph{null hypothesis},
+        \item A test \emph{statistic} derived from the data sample,
+        \item A \emph{p}-value: the conditional probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE},
+        \item A \emph{significance level} $\alpha$ corresponding to a \emph{critical value},       \end{itemize}
+      The \emph{p}-value is compared to the \emph{significance level} in order to decide whether to reject the \emph{null hypothesis} or not,
+      \vskip1ex
+      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected, 
+      \vskip1ex
+      It's possible for the \emph{null hypothesis} to be \texttt{TRUE}, but to obtain a very small \emph{p}-value purely by chance,
       \vskip1ex
       The \emph{p}-value is the probability of erroneously rejecting a \texttt{TRUE} \emph{null hypothesis}, due to the randomness of the data sample,
-      \vskip1ex
-      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE} or not, but we can attempt to invalidate it, and conclude that it's unlikely to be \texttt{TRUE}, given the test statistic value and its \emph{p}-value,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<>>=
 ### Perform two-tailed test that sample is
 ### from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1000))
-
+test_frame <- data.frame(samples=rnorm(1e4))
+# get p-values for all the samples
+test_frame$p_values <- sapply(test_frame$samples, 
+              function(x) 2*pnorm(-abs(x)))
 # significance level, two-tailed test, critical value=2*SD
 signif_level <- 2*(1-pnorm(2))
-signif_level
-# get p-values for all the samples
-test_frame$p_values <-
-  sapply(test_frame$samples, pnorm)
-test_frame$p_values <-
-  2*(0.5-abs(test_frame$p_values-0.5))
 # compare p_values to significance level
 test_frame$result <-
   test_frame$p_values > signif_level
 # number of null rejections
-sum(!test_frame$result)
+sum(!test_frame$result) / NROW(test_frame)
 # show null rejections
 head(test_frame[!test_frame$result, ])
       @
       \vspace{-1em}
       The \emph{p}-value is a conditional probability, and is not equal to the un-conditional probability of the hypothesis being \texttt{TRUE},
       \vskip1ex
-      It's possible for the probability of a hypothesis to be high, but when testing it, to obtain a very small \emph{p}-value, purely by chance,
+      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE} or not, but we can attempt to invalidate it, and conclude that it's unlikely to be \texttt{TRUE}, given the test statistic value and its \emph{p}-value,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Two-tailed Hypothesis Tests}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
+      \vskip1ex
+      Two-tailed hypothesis tests are applied for testing if the absolute value of a sample  exceeds the critical value, 
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# plot the Normal probability distribution
+curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
+      xlab="", ylab="", lwd=3, col="blue")
+title(main="Two-tailed Test", line=0.5)
+# plot tails of the distribution using polygons
+star_t <- 2; e_nd <- 4
+# plot right tail using polygon
+x_var <- seq(star_t, e_nd, length=100)
+y_var <- dnorm(x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=x_var, y=y_var, col="red")
+# plot left tail using polygon
+y_var <- dnorm(-x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=(-x_var), y=y_var, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/hyp_test_tow_tail.png}
   \end{columns}
 \end{block}
 
@@ -512,6 +546,7 @@ head(test_frame[!test_frame$result, ])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
       <<hyp_test_ggp2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -553,6 +588,7 @@ geom_vline(  # add vertical line
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
       <<hyp_test_ggp2_2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -590,11 +626,6 @@ ggplot(  # main function
 \end{frame}
 
 
-
-%%%%%%%%%%%%%%%
-\section{Univariate Statistical Analysis}
-
-
 %%%%%%%%%%%%%%%
 \subsection{Student's \protect\emph{t-test} for the Distribution Mean}
 \begin{frame}[fragile,t]{\subsecname}
@@ -610,9 +641,9 @@ ggplot(  # main function
       \end{displaymath}
       Where $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$ is the sample mean and $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample variance,
       \vskip1ex
-      Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with $n$ degrees of freedom, with the probability density function: 
+      Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with \texttt{n} degrees of freedom, with the probability density function: 
       \begin{displaymath}
-        P(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n}\,\Gamma(n/2)}\, (1 + x^2/n)^{-(n+1)/2}
+        P(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
       \end{displaymath}
       Student's \emph{t-test} can also be used to test if two different normally distributed samples have equal \emph{population means},
     \column{0.5\textwidth}
@@ -792,6 +823,41 @@ jarque.bera.test(runif(NROW(dax_rets)))
 
 
 %%%%%%%%%%%%%%%
+\subsection{Vector and Matrix Calculus}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+    \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\boldsymbol{v}$ and $\boldsymbol{w}$ be vectors, with $\boldsymbol{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$,
+      \vskip1ex
+      Then the inner product of $\boldsymbol{v}$ and $\boldsymbol{w}$ can be written as $\boldsymbol{v}^T \boldsymbol{w} = \boldsymbol{w}^T \boldsymbol{v} = {\sum_{i=1}^n {v_i w_i}}$,
+      \vskip1ex
+      We can then express the sum of the elements of $\boldsymbol{v}$ as the inner product: $\boldsymbol{v}^T \mathbbm{1} = \mathbbm{1}^T \boldsymbol{v} = {\sum_{i=1}^n v_i}$,
+      \vskip1ex
+      And the sum of squares of $\boldsymbol{v}$ as the inner product: $\boldsymbol{v}^T \boldsymbol{v} = {\sum_{i=1}^n v_i^2}$,
+      \vskip1ex
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$,
+      \vskip1ex
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\boldsymbol{v}$ and $\boldsymbol{w}$ can be written as: 
+      \begin{displaymath}
+        \boldsymbol{v}^T \mathbb{A} \, \boldsymbol{w} = \boldsymbol{w}^T \mathbb{A}^T \boldsymbol{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\boldsymbol{v}^T \mathbbm{1})}{d \boldsymbol{v}} = d_v[\boldsymbol{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \boldsymbol{v}] = \mathbbm{1}^T\\
+        d_v[\boldsymbol{v}^T \boldsymbol{w}] = d_v[\boldsymbol{w}^T \boldsymbol{v}] = \boldsymbol{w}^T\\
+        d_v[\boldsymbol{v}^T \mathbb{A} \, \boldsymbol{w}] = \boldsymbol{w}^T \mathbb{A}^T\\
+        d_v[\boldsymbol{v}^T \mathbb{A} \, \boldsymbol{v}] = \boldsymbol{v}^T \mathbb{A} + \boldsymbol{v}^T \mathbb{A}^T
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Formula Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -849,19 +915,19 @@ update(lin_formula, log(.) ~ . + beta)
     \column{0.5\textwidth}
       A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
       \begin{displaymath}
-        z_i = \alpha + \beta x_i + \varepsilon_i
+        y_i = \alpha + \beta x_i + \varepsilon_i
       \end{displaymath}
       $\alpha$ and $\beta$ are the unknown regression coefficients,
       \vskip1ex
       $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
       \vskip1ex
-      In the Ordinary Least Squares method (\emph{OLS}), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (\emph{RSS}):
+      In the Ordinary Least Squares method (\emph{OLS}), the regression parameters are estimated by minimizing the sum of squared residuals, also called the \emph{Residual Sum of Squares} (\emph{RSS}):
       \begin{align*}
-        RSS = \sum_{i=1}^n {\varepsilon_i^2} = \sum_{i=1}^n {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbbm{1} - \beta x)^T (z - \alpha \mathbbm{1} - \beta x)
+        RSS = \sum_{i=1}^n {\varepsilon_i^2} = \sum_{i=1}^n {(y_i - \alpha - \beta x_i)^2}\\ = (y - \alpha \mathbbm{1} - \beta x)^T (y - \alpha \mathbbm{1} - \beta x)
       \end{align*}
       Where $\mathbbm{1}$ is the unit vector, with $\mathbbm{1}^T \mathbbm{1} = n$ and $\mathbbm{1}^T x = x^T \mathbbm{1} = \sum_{i=1}^n {x_i}$
       \vskip1ex
-      The data consists of $n$ pairs of observations $(x_i, z_i)$ of the response and explanatory variables, with the index $i$ ranging from $1$ to $n$,
+      The data consists of \texttt{n} pairs of observations $(x_i, y_i)$ of the response and explanatory variables, with the index \texttt{i} ranging from \texttt{1} to \texttt{n},
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/reg_scatter_plot.png}
@@ -870,10 +936,10 @@ update(lin_formula, log(.) ~ . + beta)
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
 len_gth <- 100
-explana_tory <- rnorm(len_gth, mean=2)
+ex_plain <- rnorm(len_gth, mean=2)
 noise <- rnorm(len_gth)
 # response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + ex_plain + noise
       @
   \end{columns}
 \end{block}
@@ -882,42 +948,46 @@ res_ponse <- -3 + explana_tory + noise
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Solution}
+\subsection{Solution of \protect\emph{Linear Regression}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The regression coefficients can be found by equating the \emph{RSS} derivatives to zero:
+      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
       \begin{align*}
-        RSS_\alpha = -2 (z - \alpha \mathbbm{1} - \beta x)^T \mathbbm{1} = 0\\
-        RSS_\beta = -2 (z - \alpha \mathbbm{1} - \beta x)^T x = 0
+        RSS_\alpha = -2 (y - \alpha \mathbbm{1} - \beta x)^T \mathbbm{1} = 0\\
+        RSS_\beta = -2 (y - \alpha \mathbbm{1} - \beta x)^T x = 0
       \end{align*}
       The solution for $\alpha$ is given by:
       \begin{align*}
-        \alpha = \bar{z} - \beta \bar{x}
+        \alpha = \bar{y} - \beta \bar{x}
       \end{align*}
       The solution for $\beta$ is given by:
       \begin{flalign*}
-        & (z - (\bar{z} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((z - \bar{z} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((z - \bar{z} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & (z - \bar{z} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & \beta = \frac {(z - \bar{z} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} {(x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} = \frac {\sigma_z}{\sigma_x} \rho_{zx}
+        & (y - (\bar{y} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) = 0\\
+        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
+        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
+        & (y - \bar{y} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) = 0\\
+        & \beta = \frac {(y - \bar{y} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} {(x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} = \frac {\sigma_y}{\sigma_x} \rho_{xy}
       \end{flalign*}
-      $\beta$ is proportional to the correlation coefficient $\rho_{zx}$ between the response and explanatory variables,
+      $\beta$ is proportional to the correlation coefficient $\rho_{xy}$ between the response and explanatory variables,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # calculate de-meaned explanatory and response vectors
-explan_zm <- explana_tory - mean(explana_tory)
+explain_zm <- ex_plain - mean(ex_plain)
 response_zm <- res_ponse - mean(res_ponse)
 # solve for regression beta
-be_ta <- sum(explan_zm*response_zm) / sum(explan_zm^2)
+be_ta <- sum(explain_zm*response_zm) / sum(explain_zm^2)
 # solve for regression alpha
-al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
+al_pha <- mean(res_ponse) - be_ta*mean(ex_plain)
       @
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
+      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {y^T x} {x^T x}$,
+      \vskip1ex
+      The residuals $\varepsilon = y - \alpha \mathbbm{1} - \beta x$ have zero mean: $RSS_\alpha = -2 \varepsilon^T \mathbbm{1} = 0$,
+      \vskip1ex
+      The residuals $\varepsilon$ are orthogonal to the explanatory variable \texttt{x}: $RSS_\beta = -2 \varepsilon^T x = 0$,
   \end{columns}
 \end{block}
 
@@ -948,12 +1018,12 @@ al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # specify regression formula
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 class(reg_model)  # regressions have class lm
 attributes(reg_model)
 eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
+reg_model$coeff  # regression coefficients
 coef(reg_model)
 c(al_pha, be_ta)
       @
@@ -985,7 +1055,7 @@ title(main="Simple Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 # plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
+points(x=ex_plain, y=reg_model$fitted.values,
        pch=16, col="blue")
       @
     \column{0.5\textwidth}
@@ -1005,7 +1075,7 @@ points(x=explana_tory, y=reg_model$fitted.values,
     \column{0.5\textwidth}
       The \emph{residuals} of a \emph{linear regression} are defined as the response variable minus the regression fitted values:
       \begin{displaymath}
-        res_i = z_i - (\alpha + \beta x_i)
+        res_i = y_i - (\alpha + \beta x_i)
       \end{displaymath}
       The \emph{residuals} are the error terms associated with a particular realization of the response and explanatory variables,
       \vskip1ex
@@ -1017,7 +1087,7 @@ x11(width=6, height=5)  # open x11 for plotting
 # set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # extract residuals
-resi_duals <- cbind(explana_tory, reg_model$residuals)
+resi_duals <- cbind(ex_plain, reg_model$residuals)
 colnames(resi_duals) <- c("explanatory variable", "residuals")
 # plot residuals
 plot(resi_duals)
@@ -1042,7 +1112,7 @@ abline(h=0, lwd=2, col="red")
       The function \texttt{summary.lm()} produces a list of regression model diagnostic statistics:
       \begin{itemize}
         \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
-        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
+        \item r.squared: fraction of response variance explained by the model,
         \item adj.r.squared: r.squared adjusted for higher model complexity,
         \item fstatistic: ratio of variance explained by model divided by unexplained variance,
       \end{itemize}
@@ -1087,14 +1157,14 @@ attributes(reg_model_sum)$names  # get summary elements
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 reg_model_sum$adj.r.squared
 reg_model_sum$fstatistic
 # standard error of beta
 reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
+  coefficients["ex_plain", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(ex_plain)/
   sqrt(unname(reg_model_sum$fstatistic[3]))
 anova(reg_model)
       @
@@ -1118,9 +1188,9 @@ anova(reg_model)
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
 # high noise compared to coefficient
-res_ponse <- 3 + explana_tory + rnorm(30, sd=8)
+res_ponse <- 3 + ex_plain + rnorm(30, sd=8)
 reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
+# values of regression coefficients are not
 # statistically significant
 summary(reg_model)
       @
@@ -1143,11 +1213,11 @@ par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axi
 reg_stats <- function(std_dev) {  # noisy regression
   set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-  explana_tory <- rnorm(100, mean=2)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(NROW(explana_tory), sd=std_dev)
+  ex_plain <- rnorm(100, mean=2)
+  res_ponse <- 3 + 0.2*ex_plain +
+    rnorm(NROW(ex_plain), sd=std_dev)
 # specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
+  reg_formula <- res_ponse ~ ex_plain
 # perform regression and get summary
   reg_model_sum <- summary(lm(reg_formula))
 # extract regression statistics
@@ -1206,10 +1276,10 @@ mat_stats <-
   t(sapply(vec_sd, function (std_dev) {
     set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-    explana_tory <- rnorm(100, mean=2)
-    res_ponse <- 3 + 0.2*explana_tory +
-      rnorm(NROW(explana_tory), sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
+    ex_plain <- rnorm(100, mean=2)
+    res_ponse <- 3 + 0.2*ex_plain +
+      rnorm(NROW(ex_plain), sd=std_dev)
+    reg_stats(data.frame(ex_plain, res_ponse))
     }))
 # plot in loop
 par(mfrow=c(NCOL(mat_stats), 1))
@@ -1365,13 +1435,13 @@ foo <- rollsum(foo, k=11)
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
 res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 # summary indicates statistically significant regression
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- dwtest(reg_model)
@@ -1404,21 +1474,17 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A multivariate \emph{linear regression} model with $k$ explanatory variables $\{x_j\}$, is defined by the formula:
+      A multivariate \emph{linear regression} model with \texttt{k} explanatory variables $\{x_j\}$, is defined by the formula:
       \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
       \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta \mathbb{X} + \varepsilon
-      \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$,
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length \texttt{k},
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length $k$,
+      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length \texttt{k},
       \vskip1ex
-      The response variable $z$ and the $k$ explanatory variables $\{x_j\}$ each contain $n$ observations, and they form the columns of matrix $\mathbb{X}$,
+      The response variable $y$ and the \texttt{k} explanatory variables $\{x_j\}$ each contain \texttt{n} observations, and they form the columns of matrix $\mathbb{X}$,
       \vskip1ex
-      The response variable $z$ is a vector of length $n$, and the explanatory variable $\mathbb{X}$ is a $(n,k)$-dimensional matrix,
+      The response variable $y$ is a vector of length \texttt{n}, and the explanatory variable $\mathbb{X}$ is a $(n,k)$-dimensional matrix,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=(-(1:1)),eval=TRUE>>=
@@ -1426,13 +1492,123 @@ set.seed(1121)  # initialize random number generator
 # define explanatory variable
 len_gth <- 100
 n_var <- 5
-explana_tory <- matrix(rnorm(n_var*len_gth), 
-  nc=n_var)
-noise <- rnorm(len_gth, sd=0.5)
+ex_plain <- matrix(rnorm(n_var*len_gth), nc=n_var)
+noise <- rnorm(len_gth, sd=1.0)
 # response equals linear form plus error terms
 weight_s <- rnorm(n_var)
-res_ponse <- 
-  -3 + explana_tory %*% weight_s + noise
+res_ponse <- -3 + ex_plain %*% weight_s + noise
+      @
+      \vspace{-1em}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \alpha + \mathbb{X} \beta + \varepsilon = \hat{y} + \varepsilon\\
+        & \hat{y} = \alpha + \mathbb{X} \beta
+      \end{flalign*}
+      Where $\hat{y}$ are the \emph{fitted values} of the model,
+      \vskip1ex
+      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared residuals:
+      \begin{align*}
+        RSS = \varepsilon^T \varepsilon = (y - \hat{y})^T (y - \hat{y}) =\\ (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solution of Multivariate \protect\emph{Linear Regression}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
+      \begin{flalign*}
+        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0\\
+        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
+      \end{flalign*}
+      The solutions for $\alpha$ and $\beta$ are given by:
+      \begin{flalign*}
+        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
+        & RSS_\beta = -2 (\tilde{y} - \tilde{\mathbb{X}} \beta)^T \tilde{\mathbb{X}} = 0\\
+        & \tilde{\mathbb{X}}^T \tilde{y} - \tilde{\mathbb{X}}^T \tilde{\mathbb{X}} \beta = 0\\
+        & \beta = (\tilde{\mathbb{X}}^T \tilde{\mathbb{X}})^{-1} \tilde{\mathbb{X}}^T \tilde{y}
+      \end{flalign*}
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\tilde{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\tilde{y} = y - \bar{y} = \tilde{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables,
+      \vskip1ex
+      The matrix $\mathbb{C} = \tilde{\mathbb{X}}^T \tilde{\mathbb{X}} / (n-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent,
+      \vskip1ex
+      The residuals have zero mean: $\varepsilon^T \mathbbm{1} = 0$, and they are orthogonal to the explanatory variables: $\varepsilon^T \mathbb{X} = 0$, and variance equal to: $\mathbbm{E}[\varepsilon \varepsilon^T] = {\sigma_\varepsilon}^2 \mathbbm{1}$
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# calculate de-meaned explanatory matrix
+explain_zm <- t(t(ex_plain) - colMeans(ex_plain))
+# explain_zm <- apply(explain_zm, 2, function(x) (x-mean(x)))
+# calculate de-meaned response vector
+response_zm <- res_ponse - mean(res_ponse)
+# solve for regression betas
+beta_s <- MASS::ginv(explain_zm) %*% response_zm
+# solve for regression alpha
+al_pha <- mean(res_ponse) - 
+  sum(colSums(ex_plain)*drop(beta_s))/len_gth
+# multivariate regression using lm()
+reg_model <- lm(res_ponse ~ ex_plain)
+coef(reg_model)
+c(al_pha, beta_s)
+c(-3, weight_s)
+sum(reg_model$residuals * reg_model$fitted.values)
+      @
+      \vspace{-1em}
+      The residuals are also orthogonal to the \emph{fitted values}: $\varepsilon^T \hat{y} = 0$,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      \begin{flalign*}
+        & TSS = (y - \bar{y})^T (y - \bar{y})\\
+        & ESS = (\hat{y} - \bar{y})^T (\hat{y} - \bar{y})\\
+        & RSS = (y - \hat{y})^T (y - \hat{y})
+      \end{flalign*}
+      Since the residuals $\varepsilon = y - \hat{y}$ are orthogonal to the \emph{fitted values} $\hat{y}$, they are also orthogonal to the \emph{fitted} excess values: 
+      \begin{displaymath}
+        (y - \hat{y})^T (\hat{y} - \bar{y}) = 0
+      \end{displaymath}
+      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      \vspace{-2em}
+        <<echo=TRUE,eval=TRUE>>=
+# calculate fitted values
+fit_ted <- drop(al_pha + ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/reg_tss.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# residuals are orthogonal to fitted values
+sum(resid_uals * fit_ted)
+# TSS = ESS + RSS
+t_ss <- (len_gth-1)*var(drop(res_ponse))
+e_ss <- (len_gth-1)*var(fit_ted)
+r_ss <- (len_gth-1)*var(resid_uals)
+all.equal(t_ss, e_ss + r_ss)
       @
   \end{columns}
 \end{block}
@@ -1441,49 +1617,223 @@ res_ponse <-
 
 
 %%%%%%%%%%%%%%%
-\subsection{Multivariate \protect\emph{Linear Regression} Solution}
+\subsection{\protect\emph{R-squared} of Multivariate \protect\emph{Linear Regression}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{OLS} estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = \bar{z} - \beta \bar{\mathbb{X}}
-      \end{align*}
-      Where $\bar{\mathbb{X}}$ is a vector of column means of the explanatory matrix $\mathbb{X}$,
+      The \emph{R-squared} is the fraction of the response variance (\emph{TSS}) that is explained by the model (\emph{ESS}):
+      \begin{displaymath}
+        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+      \end{displaymath}
+      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to \texttt{1} for models fitting the data very well, and \emph{R-squared} close to \texttt{0} for poorly fitting models,
       \vskip1ex
-      The \emph{OLS} estimate for the $\beta$ vector is given by equating the \emph{RSS} derivative to zero:
+      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
       \begin{flalign*}
-        & RSS_\beta = - 2 (\hat{z} - \beta \hat{\mathbb{X}})^T \hat{\mathbb{X}} = 0\\
-        & \hat{\mathbb{X}}^T \hat{z} - \beta \hat{\mathbb{X}}^T \hat{\mathbb{X}} = 0\\
-        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{z}
+        & \rho_{y\hat{y}} = \frac{(\hat{y} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \frac{(\hat{y} - \bar{y})^T (\hat{y} - \bar{y})}{\sqrt{TSS \cdot ESS}} =\\
+        & \sqrt{\frac{ESS}{TSS}}
       \end{flalign*}
-      Where $\hat{z} = z - \bar{z}$ and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ are the de-meaned variables,
-      \vskip1ex
-      The matrix $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is known as the \emph{Moore-Penrose pseudo-inverse} of the matrix $\mathbb{X}$,
-      \vskip1ex
-      In the special case when the inverse matrix $\mathbb{X}^{-1}$ does exist, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{X}^{-1} (\mathbb{X}^T)^{-1} \mathbb{X}^T = \mathbb{X}^{-1}$
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# calculate de-meaned explanatory matrix
-explan_zm <- t(t(explana_tory) - colSums(explana_tory)/len_gth)
-# or
-explan_zm <- apply(explan_zm, 2, function(x) (x-mean(x)))
-# calculate de-meaned response vector
-response_zm <- res_ponse - mean(res_ponse)
-# solve for regression betas
-beta_s <- MASS::ginv(explan_zm) %*% response_zm
-# solve for regression alpha
-al_pha <- mean(res_ponse) - colSums(explana_tory) %*% beta_s / len_gth
-# multivariate regression using lm()
-reg_model <- lm(res_ponse ~ explana_tory)
-coef(reg_model)
-c(al_pha, beta_s)
-c(-3, weight_s)
+# regression summary
+reg_model_sum <- summary(reg_model)
+# regression R-squared
+r_squared <- e_ss/t_ss
+all.equal(r_squared, reg_model_sum$r.squared)
+# correlation between response and fitted values
+cor_fitted <- drop(cor(res_ponse, fit_ted))
+# squared correlation between response and fitted values
+all.equal(cor_fitted^2, r_squared)
       @
-      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (k-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi_m^2$ and $\chi_n^2$ be independent random variables following \emph{Chi-squared} distributions with \texttt{m} and \texttt{n} degrees of freedom,
+      \vskip1ex
+      Then the random variable:
+      \begin{displaymath}
+        F = \frac{m \, \chi_n^2}{n \, \chi_m^2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with \texttt{m} and \texttt{n} degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{n/2-1}}{(m+nF)^{(m+n)/2}}
+      \end{displaymath}
+      \vspace{-1em}
+        <<eval=FALSE,echo=(-(1:2))>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
+      \vspace{-1em}
+        <<eval=FALSE,echo=TRUE>>=
+# add title
+title(main="F-Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-test} of Model Significance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{responses} better than a \emph{restricted} model with fewer parameters,
+      \vskip1ex
+      Let $y_i$ be a vector of \texttt{n} observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional matrix of explanatory variables, 
+      \vskip1ex
+      Let $\hat{y}_i$ be a vector of \emph{fitted values} of the model, using the matrix of explanatory variables $x_{ij}$, 
+      \vskip1ex
+      Let the \emph{restricted} model have $p_1$ parameters, so its \emph{fitted values} have $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters, so its \emph{fitted values} have $df_2 = n - p_2$ degrees of freedom, with $p_1 < p_2$,
+      \vskip1ex
+      Then the \emph{F}-statistic, defined as the ratio: 
+      \begin{displaymath}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the residuals are normally distributed), 
+    \column{0.5\textwidth}
+      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{responses}: $\hat{y}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$,
+      \vskip1ex
+      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - \hat{y})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
+      \begin{displaymath}
+        F = \frac{ESS/k}{RSS/(n - k - 1)}
+      \end{displaymath}
+      \vspace{-2em}
+        <<eval=TRUE,echo=TRUE>>=
+# F-statistic from lm()
+reg_model_sum$fstatistic
+# degrees of freedom of residuals
+deg_free <- len_gth-n_var-1
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/n_var
+all.equal(f_stat, reg_model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=len_gth-n_var-1, df2=n_var)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multivariate \protect\emph{Linear Regression} in Homogeneous Form}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We can add an extra unit column to the explanatory matrix $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
+      \begin{flalign*}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{flalign*}
+      Where the $\beta$ regression coefficients now contain the intercept: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$,
+      \vskip1ex
+      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
+        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
+        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y
+      \end{flalign*}
+      The vector $\hat{y} = \mathbb{X} \beta$ are the \emph{fitted values} of the \emph{responses} in the regression model,
+      \vskip1ex
+      The residuals $\varepsilon = y - \hat{y}$ are orthogonal to the explanatory variables: $\varepsilon^T \mathbb{X} = 0$, and they have zero mean: $\varepsilon^T \mathbbm{X}[, 1] = 0$, 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# add intercept column to explanatory
+ex_plain <- cbind(rep(1, NROW(ex_plain)), ex_plain)
+# solve for regression betas
+beta_s <- MASS::ginv(ex_plain) %*% res_ponse
+all.equal(drop(beta_s), coef(reg_model), check.attributes=FALSE)
+# calculate fitted values
+fit_ted <- drop(ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+      @
+      The matrix $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the projection matrix onto the explanatory matrix $\mathbb{X}$, and the $\beta$ coefficients can be interpreted as the coefficients of the projections onto the columns of matrix $\mathbb{X}$,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Standard Errors} of Multivariate \protect\emph{Linear Regression}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of the regression \emph{betas} are due to the residuals as the source of error:
+      \begin{flalign*}
+        & {{\sigma}_{\beta}}^2 = \mathbbm{E}[(\beta(y) - \beta) (\beta(y) - \beta)^T] =\\
+        & \mathbbm{E}[(\beta(y) - \beta)^2] = \mathbbm{E}[((\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \tilde{y} - \beta)^2] =\\
+        & \mathbbm{E}[((\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \varepsilon) - \beta)^2] =\\
+        & \mathbbm{E}[((\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \varepsilon)^2] =\\
+        & \mathbbm{E}[((\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \varepsilon) ((\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \varepsilon)^T] =\\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\varepsilon \varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =\\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T {\sigma_\varepsilon}^2 \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
+        {\sigma_\varepsilon}^2 (\mathbb{X}^T \mathbb{X})^{-1}
+      \end{flalign*}
+      The key assumption is that the residuals are normally distributed, independent, and stationary, with variance equal to: $\mathbbm{E}[\varepsilon \varepsilon^T] = {\sigma_\varepsilon}^2 \mathbbm{1}$
+      \vskip1ex
+      The matrix $\mathbb{C} = \tilde{\mathbb{X}}^T \tilde{\mathbb{X}} / (n-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# degrees of freedom of residuals
+deg_free <- len_gth-NCOL(ex_plain)
+# variance of residuals
+resid_var <- sum(resid_uals^2)/deg_free
+# explanatory matrix squared
+explain_squared <- crossprod(ex_plain)
+# explain_squared <- t(ex_plain) %*% ex_plain
+# calculate covariance matrix of betas
+beta_covar <- resid_var*MASS::ginv(explain_squared)
+beta_sd <- sqrt(diag(beta_covar))
+all.equal(beta_sd, reg_model_sum$coeff[, 2], check.attributes=FALSE)
+# calculate t-values of betas
+beta_tvals <- drop(beta_s)/beta_sd
+all.equal(beta_tvals, reg_model_sum$coeff[, 3], check.attributes=FALSE)
+# calculate two-sided p-values of betas
+beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
+all.equal(beta_pvals, reg_model_sum$coeff[, 4], check.attributes=FALSE)
+      @
   \end{columns}
 \end{block}
 
@@ -1506,15 +1856,15 @@ c(-3, weight_s)
         <<echo=(-(1:1)),eval=FALSE>>=
 library(lmtest)  # load lmtest
 de_sign <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
+  ex_plain=1:30, omit_var=sin(0.2*1:30))
 # response depends on both explanatory variables
 res_ponse <- with(de_sign,
-          0.2*explana_tory + omit_var + 0.2*rnorm(30))
+          0.2*ex_plain + omit_var + 0.2*rnorm(30))
 # mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
+reg_model <- lm(res_ponse ~ ex_plain,
                 data=de_sign)
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dwtest(reg_model)$p.value
@@ -1557,13 +1907,13 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
 res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 # summary indicates statistically significant regression
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- dwtest(reg_model)
@@ -1601,11 +1951,11 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
       \texttt{predict.lm()} is the predict method for linear models (regressions),
       \vspace{-1em}
         <<predict_lm,echo=TRUE,fig.show='hide'>>=
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
+ex_plain <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*ex_plain + rnorm(30)
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
+new_data <- data.frame(ex_plain=0.1*31:40)
 predict_lm <- predict(object=reg_model,
                       newdata=new_data, level=0.95,
                       interval="confidence")
@@ -1616,9 +1966,9 @@ plot(reg_formula, xlim=c(1.0, 4.0),
      main="Regression predictions")
 abline(reg_model, col="red")
 with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+  points(x=new_data$ex_plain, y=fit, pch=16, col="blue")
+  lines(x=new_data$ex_plain, y=lwr, lwd=2, col="red")
+  lines(x=new_data$ex_plain, y=upr, lwd=2, col="red")
 })  # end with
       @
     \column{0.5\textwidth}

@@ -107,12 +107,12 @@ foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
 foo == 0.1  # foo is not equal to "0.1"
-format(foo, digits=10)
-format(foo, digits=16)
+print(foo, digits=10)
+print(foo, digits=16)
 # foo is equal to "0.1" within machine precision
 all.equal(foo, 0.1)
 foo <- (3-2.9)
-format(foo, digits=20)
+print(foo, digits=20)
 # info machine precision of computer R is running on
 # ?.Machine
 # machine precision
@@ -121,6 +121,8 @@ format(foo, digits=20)
       The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
       \vskip1ex
       The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
+      \vskip1ex
+      The generic function \texttt{print()} prints its argument and returns it \emph{invisibly},
   \end{columns}
 \end{block}
 
@@ -153,7 +155,7 @@ format(foo, digits=20)
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
-format(foo^2, digits=20)
+print(foo^2, digits=20)
 # foo^2 is equal to "2" within machine precision
 all.equal(foo^2, 2)
 # numbers with precision 0.1
@@ -252,7 +254,7 @@ all.equal(num_ber, 1.0)
 6 %/% 2  # use integers to get correct result
 # 0.2 stored as binary number
 # slightly larger than 0.2
-format(0.2, digits=22)
+print(0.2, digits=22)
       @
   \end{columns}
 \end{block}
@@ -309,7 +311,7 @@ sort(sapply(ls(env_etf),
 sort(sapply(mget(ls(env_etf), env_etf),
             object.size))
 # get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
+print(object.size(x=mget(ls())), units="MB")
 library(gdata)  # load package gdata
 # get names, class, and size of objects in workspace
 ob_jects <- ll(unit="bytes")
@@ -392,7 +394,7 @@ foo_bar <- numeric(1000000)
 # get extra R memory
 gc()["Vcells", "used"] - v_cells
 # get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
+print(object.size(x=mget(ls())), units="MB")
       @
   \end{columns}
 \end{block}
@@ -1411,11 +1413,11 @@ sqrt(2)*sd(boot_strap)
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
-explana_tory <- rnorm(100, mean=2)
+ex_plain <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + ex_plain + noise
 # define design matrix and regression formula
-de_sign <- data.frame(res_ponse, explana_tory)
+de_sign <- data.frame(res_ponse, ex_plain)
 reg_formula <- paste(colnames(de_sign)[1],
   paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
@@ -1452,10 +1454,10 @@ apply(boot_strap, MARGIN=1,
 reg_model <- lm(reg_formula, data=de_sign)
 reg_model$coefficients
 summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["explana_tory", ]),
+plot(density(boot_strap["ex_plain", ]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["explana_tory", ]),
+abline(v=mean(boot_strap["ex_plain", ]),
        lwd=2, col="red")
       @
     \column{0.5\textwidth}
@@ -1520,10 +1522,10 @@ boot_strap <- rutils::do_call(rbind, boot_strap)
 apply(boot_strap, MARGIN=2,
       function(x) c(mean=mean(x), sd=sd(x)))
 x11(width=6, height=6)
-plot(density(boot_strap[, "explana_tory"]),
+plot(density(boot_strap[, "ex_plain"]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "explana_tory"]),
+abline(v=mean(boot_strap[, "ex_plain"]),
        lwd=2, col="red")
       @
   \end{columns}
@@ -2357,7 +2359,7 @@ plot(op_tim)
       \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
       \vskip1ex
       The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \emph{C++} code: \\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}\\
+      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
       \vskip1ex
       You can learn more about the package \emph{Rcpp} here: \\
       \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
@@ -2583,6 +2585,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
 #include <Rcpp.h>
 using namespace Rcpp;
 
@@ -2613,7 +2616,174 @@ static const double pi = 3.14159265;
 // rescale output vector and return it
   return acos(1-2*out_put)/pi;
 }
+    \end{lstlisting}
+  \end{columns}
+\end{block}
 
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{RcppArmadillo} for Fast Linear Algebra}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \emph{C++} linear algebra library,
+      \vskip1ex
+      \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab},       \vskip1ex
+      \emph{RcppArmadillo} functions are often faster than even compiled \texttt{R} functions, because they use better optimized \emph{C++} code:\\
+      \url{http://arma.sourceforge.net/speed.html}\\
+      \vskip1ex
+      You can learn more about \emph{RcppArmadillo}: \\
+      \tiny \url{http://arma.sourceforge.net/}\\
+      \tiny \url{http://dirk.eddelbuettel.com/code/rcpp.armadillo.html}\\
+      \tiny \url{https://cran.r-project.org/web/packages/RcppArmadillo/index.html}\\
+      \tiny \url{https://github.com/RcppCore/RcppArmadillo}
+      <<echo=TRUE,eval=FALSE>>=
+library(RcppArmadillo)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+vec1 <- runif(1e5)
+vec2 <- runif(1e5)
+vec_in(vec1, vec2)
+vec1 %*% vec2
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h>
+using namespace Rcpp;
+using namespace arma;
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// Examples of RcppArmadillo functions below
+
+// vec_in() calculates the inner (dot) product of two vectors.
+// It accepts pointers to the two vectors and returns a double.
+//' @export
+// [[Rcpp::export]]
+double vec_in(const arma::vec& vec1, const arma::vec& vec2){
+  return arma::dot(vec1, vec2);
+}  // end vec_in
+
+// mat_2vec_in() calculates the inner (dot) product of a matrix
+// with two vectors.
+// It accepts pointers to the matrix and vectors, and returns a double.
+//' @export
+// [[Rcpp::export]]
+double mat_2vec_in(const arma::vec& vec_tor2, const arma::mat& mat_rix, const arma::vec& vec_tor1){
+  return arma::as_scalar(trans(vec_tor2) * (mat_rix * vec_tor1));
+}  // end mat_2vec_in
+    \end{lstlisting}
+      \vspace{-1.5em}
+      <<echo=TRUE,eval=FALSE>>=
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  vec_in=vec_in(vec1, vec2),
+  r_code=(vec1 %*% vec2),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows: 
+# vec_in() is several times faster than %*%, especially for longer vectors.
+#     expr     mean   median
+# 1 vec_in 110.7067 110.4530
+# 2 r_code 585.5127 591.3575
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Matrix Algebra Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RcppArmadillo} functions can be made even faster by operating on pointers to matrices and performing calculations in place, without copying large matrices,
+      \vskip1ex
+      \emph{RcppArmadillo} functions can be compiled using the same \emph{Rtools} as those for \emph{Rcpp} functions:\\
+      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
+      <<echo=TRUE,eval=FALSE>>=
+library(RcppArmadillo)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+mat_rix <- matrix(runif(1e5), nc=1e3)
+# de-mean using apply()
+new_mat <- apply(mat_rix, 2, 
+  function(x) (x-mean(x)))
+# de-mean using demean_mat()
+demean_mat(mat_rix)
+all.equal(new_mat, mat_rix)
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  demean_mat=demean_mat(mat_rix),
+  apply=(apply(mat_rix, 2, mean)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows: 
+# demean_mat() is over 70 times faster than apply()
+#         expr       mean   median
+# 1 demean_mat   127.7539  125.604
+# 2      apply 10781.7534 9291.674
+
+# perform matrix inversion
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# invert the matrix
+matrix_inv <- solve(mat_rix)
+inv_mat(mat_rix)
+all.equal(inv_mat, mat_rix)
+# microbenchmark RcppArmadillo code
+library(microbenchmark)
+summary(microbenchmark(
+  inv_mat=inv_mat(mat_rix),
+  solve=solve(mat_rix),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows: 
+# inv_mat() is over 10 times faster than solve()
+#      expr     mean median
+# 1 inv_mat  3.42669  2.933
+# 2 solve   32.00254 31.280
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h>
+using namespace Rcpp;
+using namespace arma;
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// Examples of RcppArmadillo functions below
+
+// demean_mat() calculates a matrix with de-meaned columns.
+// It accepts a pointer to a matrix and operates on the matrix in place.
+// It returns the number of columns of the input matrix.
+//' @export
+// [[Rcpp::export]]
+double demean_mat(arma::mat& mat_rix){
+  for (unsigned int i = 0; i < mat_rix.n_cols; i++) {
+    mat_rix.col(i) -= arma::mean(mat_rix.col(i));
+  }  // end for
+  return mat_rix.n_cols;
+}  // end demean_mat
+
+// inv_mat() calculates the inverse of symmetric positive
+// definite matrix.
+// It accepts a pointer to a matrix and operates on the matrix in place.
+// It returns the number of columns of the input matrix.
+// It uses RcppArmadillo.
+//' @export
+// [[Rcpp::export]]
+double inv_mat(arma::mat& mat_rix){
+  mat_rix = arma::inv_sympd(mat_rix);
+  return mat_rix.n_cols;
+}  // end inv_mat
     \end{lstlisting}
   \end{columns}
 \end{block}
@@ -2624,6 +2794,41 @@ static const double pi = 3.14159265;
 
 %%%%%%%%%%%%%%%
 \section{Linear Algebra}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vector and Matrix Calculus}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+    \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\boldsymbol{v}$ and $\boldsymbol{w}$ be vectors, with $\boldsymbol{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$,
+      \vskip1ex
+      Then the inner product of $\boldsymbol{v}$ and $\boldsymbol{w}$ can be written as $\boldsymbol{v}^T \boldsymbol{w} = \boldsymbol{w}^T \boldsymbol{v} = {\sum_{i=1}^n {v_i w_i}}$,
+      \vskip1ex
+      We can then express the sum of the elements of $\boldsymbol{v}$ as the inner product: $\boldsymbol{v}^T \mathbbm{1} = \mathbbm{1}^T \boldsymbol{v} = {\sum_{i=1}^n v_i}$,
+      \vskip1ex
+      And the sum of squares of $\boldsymbol{v}$ as the inner product: $\boldsymbol{v}^T \boldsymbol{v} = {\sum_{i=1}^n v_i^2}$,
+      \vskip1ex
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$,
+      \vskip1ex
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\boldsymbol{v}$ and $\boldsymbol{w}$ can be written as: 
+      \begin{displaymath}
+        \boldsymbol{v}^T \mathbb{A} \, \boldsymbol{w} = \boldsymbol{w}^T \mathbb{A}^T \boldsymbol{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\boldsymbol{v}^T \mathbbm{1})}{d \boldsymbol{v}} = d_v[\boldsymbol{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \boldsymbol{v}] = \mathbbm{1}^T\\
+        d_v[\boldsymbol{v}^T \boldsymbol{w}] = d_v[\boldsymbol{w}^T \boldsymbol{v}] = \boldsymbol{w}^T\\
+        d_v[\boldsymbol{v}^T \mathbb{A} \, \boldsymbol{w}] = \boldsymbol{w}^T \mathbb{A}^T\\
+        d_v[\boldsymbol{v}^T \mathbb{A} \, \boldsymbol{v}] = \boldsymbol{v}^T \mathbb{A} + \boldsymbol{v}^T \mathbb{A}^T
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -3066,7 +3271,7 @@ round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
       \begin{displaymath}
         \mathbb{A} \, x = b
       \end{displaymath}
-      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and $x$ is the unknown vector, 
+      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector, 
       \vskip1ex
       The solution of the system of linear equations is equal to: 
       \begin{displaymath}
