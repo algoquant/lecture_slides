@@ -1,9 +1,7 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
+# display documentation on function "getwd"
+help(getwd)
+?getwd  # equivalent to "help(getwd)"
+help.start()  # open the hypertext documentation
 # "<-" and "=" are valid assignment operators
 my_var <- 3
 
@@ -628,7 +626,3 @@ data_read <-
   data_read[data_read[, "type"]=="daisy", ]
 # write data frame to CSV file, with row names
 write.csv(data_read, file="daisies.csv")
-# display documentation on function "getwd"
-help(getwd)
-?getwd  # equivalent to "help(getwd)"
-help.start()  # open the hypertext documentation

@@ -33,7 +33,6 @@ knit_theme$set(thm)
 \usepackage{listings}
 \usepackage{xcolor}
 \definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
-\usepackage{amsfonts}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -60,7 +59,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Fall 2017}
+\subtitle{FRE6871 \& FRE7241, Spring 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -703,24 +702,27 @@ summary(
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for (i in 1:NROW(vec_tor1)) {
+# sum two vectors in two different ways
+summary(microbenchmark(
+  # sum vectors using "for" loop
+  r_loop=(for (i in 1:NROW(vec_tor1)) {
     big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_tor1 + vec_tor2)
+  }),
+  # sum vectors using vectorized "+"
+  vec_torized=(vec_tor1 + vec_tor2),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # allocate memory for cumulative sum
 cum_sum <- numeric(NROW(big_vector))
-# cumulative sum using "for" loop
 cum_sum[1] <- big_vector[1]
-system.time(
-  for (i in 2:NROW(big_vector)) {
+# calculate cumulative sum in two different ways
+summary(microbenchmark(
+# cumulative sum using "for" loop
+  r_loop=(for (i in 2:NROW(big_vector)) {
     cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
+  }),
 # cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
+  vec_torized=cumsum(big_vector),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1386,7 +1388,7 @@ boot_strap <- sapply(1:10000, function(x) {
                                     replace=TRUE)]
   quantile(c(boot_sample, -boot_sample), 0.95)
 })  # end sapply
-# standard error of mean from bootstrap
+# standard error of quantile from bootstrap
 sd(boot_strap)
 sqrt(2)*sd(boot_strap)
       @
@@ -2560,7 +2562,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{logistic map} in \emph{Rcpp} is about seven times than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
+      The \emph{logistic map} in \emph{Rcpp} is about seven times faster than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # calculate uniformly distributed pseudo-random sequence
 uni_form <- function(see_d, len_gth=10) {

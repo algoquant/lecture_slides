@@ -1,116 +1,88 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-# verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# load package Rcpp
-library(Rcpp)
-# get documentation for package Rcpp
-# get short description
-packageDescription("Rcpp")
-# load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# remove Rcpp from search path
-detach("package:Rcpp")
-# define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# run Rcpp function
-times_two(3)
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
-# multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
-# multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
-# define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-# define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# compare speed of Rcpp and R
+# create factor vector
+fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fac_tor
+fac_tor[3]
+attributes(fac_tor)  # get factor attributes
+levels(fac_tor)  # get allowed values
+as.numeric(fac_tor)  # get encoding vector
+is.vector(fac_tor)
+as.factor(1:5)  # coerce vector to factor
+# coerce factor to character vector
+as.vector(as.factor(1:5))
+fac_tor
+levels(fac_tor)  # get allowed values
+unique(fac_tor)  # get unique elements
+# get contingency (frequency) table
+table(fac_tor)
+# get contingency table using sapply
+sapply(levels(fac_tor),
+ function(le_vel) {
+   sum(fac_tor==le_vel)
+ })  # end sapply
 library(microbenchmark)
-summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
-# calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
-  out_put[1] <- see_d
-  for (i in 2:len_gth) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
-  }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
-
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
-# microbenchmark Rcpp code
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+       all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+       rightmost.closed=TRUE)
+# named numeric vector of breakpoints
+brea_ks <- c(freezing=0, very_cold=30,
+       cold=50, pleasant=60,
+       warm=80, hot=90)
+brea_ks
+tempe_ratures <- runif(10, min=10, max=100)
+feels_like <- names(
+  brea_ks[findInterval(x=tempe_ratures,
+                 vec=brea_ks)])
+names(tempe_ratures) <- feels_like
+tempe_ratures
 library(microbenchmark)
+foo <- sample(0:6) + 0.1
+foo
+cut(x=foo, breaks=c(2, 4, 6, 8))
+rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+# cut() replicates findInterval()
+cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
+    right=FALSE)
+findInterval(x=1:8, vec=c(3, 5, 7))
+# findInterval() is a compiled function, so it's faster than cut()
+vec_tor <- rnorm(1000)
 summary(microbenchmark(
-  pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
-# define function that returns NULL for non-numeric argument
-test_func <- function(in_put) {
-  if (!is.numeric(in_put)) {
-    warning(paste("argument", in_put, "isn't numeric"))
-    return(NULL)
-  }
-  2*in_put
-}  # end test_func
-
-test_func(2)
-test_func("hello")
+  find_interval=
+    findInterval(x=vec_tor, vec=c(3, 5, 7)),
+  cuut=
+    cut(x=vec_tor, breaks=c(3, 5, 7)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# plot histogram
+par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+histo_gram <- hist(dax_rets, breaks=30,
+  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
+  xlab="", ylab="", freq=FALSE)
+# draw kernel density of histogram
+lines(density(dax_rets), col='red', lwd=2)
+# add density of normal distribution
+curve(expr=dnorm(x, mean=mean(dax_rets),
+  sd=sd(dax_rets)), add=TRUE, type="l",
+  lwd=2, col="blue")
+title(main="DAX return distribution", line=0)
+# add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+  leg=c(colnames(EuStockMarkets)[1], "Normal"),
+  lwd=6, bg="white", col=c("red", "blue"))
+# total area under histogram
+diff(histo_gram$breaks) %*% histo_gram$density
 setwd("C:/Develop/R/lecture_slides/data")
 # define a function that returns invisibly
 return_invisible <- function(in_put) {
@@ -127,60 +99,10 @@ rm(list=ls())  # remove all objects
 loaded <- load(file="C:/Develop/data/my_data.RData")
 loaded  # vector of loaded objects
 ls()  # list objects
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
-  } else {
-    c(0, 1)  # initialize and return
-  }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
-# DAX returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-# calc_skew() calculates skew of time series of returns
-calc_skew <- function(time_series=rnorm(1000)) {
-# default is normal time series
-  len_data <- length(time_series)  # number of observations
-# normalize time_series
-  time_series <-
-    (time_series - mean(time_series))/sd(time_series)
-# calculate skew last statement automatically returned
-  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
-}  # end calc_skew
-
-# calculate skew of DAX returns
-calc_skew(time_series=dax_rets)  # bind arguments by name
-calc_skew(dax_rets)  # bind arguments by position
-calc_skew()  # use default value of arguments
-calc_skew  # show the function code
-
-getAnywhere(calc_skew)  # display function
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-# show all methods of mean()
-methods(generic.function=mean)
-# show code for mean.default()
-mean.default
-# get all methods for generic function "plot"
-methods("plot")
-
-getAnywhere(plot)  # display function
-rm(list=ls())
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  2*arg1  # just multiply first argument
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # second argument was never evaluated!
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  cat(arg1, '\n')  # write to output
-  cat(arg2)  # write to output
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # first argument written to output
+# show the function code
+plot.default
+# display function
+getAnywhere(plot.default)
 str(plot)  # dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
   paste0("in_put=", in_put,
@@ -210,6 +132,66 @@ bind_dots <- function(..., in_put=10) {
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
+# wrapper for mean() with default na.rm=TRUE
+my_mean <- function(x, na.rm=TRUE, ...) {
+  mean(x=x, na.rm=na.rm, ...)
+}  # end my_mean
+foo <- sample(c(1:10, NA, rep(0.1, t=5)))
+mean(c(foo, NA))
+mean(c(foo, NA), na.rm=TRUE)
+my_mean(c(foo, NA))
+my_mean(c(foo, NA), trim=0.4)  # pass extra argument
+# wrapper for saving data into default directory
+save_data <- function(...,
+              file=stop("error: no file name"),
+              my_dir="C:/Develop/data") {
+# create file path
+  file <- file.path(my_dir, file)
+  save(..., file=file)
+}  # end save_data
+foo <- 1:10
+save_data(foo, file="scratch.RData")
+save_data(foo, file="scratch.RData", my_dir="C:/Develop")
+# wrapper for testing negative arguments
+stop_if_neg <- function(in_put) {
+  if (!is.numeric(in_put) || in_put<0)
+    stop("argument not numeric or negative")
+}  # end stop_if_neg
+# wrapper for sqrt()
+my_sqrt <- function(in_put) {
+  stop_if_neg(in_put)
+  sqrt(in_put)
+}  # end my_sqrt
+my_sqrt(2)
+my_sqrt(-2)
+my_sqrt(NA)
+setwd("C:/Develop/R/lecture_slides/data")
+rm(list=ls())  # remove all objects
+ls()  # list objects
+# load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # list objects
+glob_var <- 1  # define a global variable
+# explore function scope and side effects
+side_effect <- function() {
+  cat("global glob_var:\t", glob_var, "\n")
+# define local "glob_var" variable
+  glob_var <- 10
+# re-define the global "glob_var"
+  glob_var <<- 2
+  cat("local glob_var:\t", glob_var, "\n")
+}  # end side_effect
+side_effect()
+# global variable was modified as side effect
+glob_var
+# create functional that accepts a function as input argument
+func_tional <- function(func_name) {
+# calculates statistic on random numbers
+  set.seed(1)
+  func_name(runif(1e4))  # apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
 # func_tional accepts function name and additional argument
 func_tional <- function(func_name, in_put) {
 # produce function name from argument
@@ -368,401 +350,627 @@ vapply(2:4, function(num) c(el1=num, el2=2*num),
 # vapply produces an error if it can't simplify
 vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
-num_var <- 2
-num_var==2
-identical(num_var, 2)
-
-identical(num_var, NULL)
-# this doesn't work:
-# num_var==NULL
-is.null(num_var)
-
-vec_tor <- c(2, 4, 6)
-vec_tor==2
-identical(vec_tor, 2)
-
-# num_ber is equal to "1.0" within machine precision
-num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
-all.equal(num_ber, 1.0)
-
-# info machine precision of computer R is running on
-# ?.Machine
-# machine precision
-.Machine$double.eps
-vec_tor <- sample(1:6, 21, replace=TRUE)
-mat_rix <- matrix(vec_tor, ncol=3)
-vec_tor
-which(vec_tor == 5)
-# equivalent but slower than above
-(1:length(vec_tor))[vec_tor == 5]
-which(vec_tor > 5)
-# find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6),
-      arr.ind=TRUE)
-# equivalent but slower than above
-arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
- dim(mat_rix), dimnames(mat_rix))
-which.max(vec_tor)
-# equivalent but slower than above
-which(vec_tor == max(vec_tor))
-which.min(vec_tor)
-match(5, vec_tor)
-# more general but slower than above
-which(vec_tor == 5)
-match(-5, vec_tor)
-5 %in% vec_tor
-# equivalent to above
-match(5, vec_tor, nomatch=0) > 0
--5 %in% vec_tor
-c(5, -5) %in% vec_tor
-# equivalent to "5 %in% vec_tor"
-any(vec_tor == 5)
-# equivalent to "-5 %in% vec_tor"
-any(vec_tor == (-5))
-if (any(vec_tor < 0))
-  cat("vector contains negative values\n")
-# partial matching of strings
-pmatch("med", c("mean", "median", "mode"))
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
-num_var1 <- 3  # "<-" and "=" are valid assignment operators
-num_var1
-num_var1 = 3
-num_var1
-2<-3  # "<" operator confused with "<-"
-2 < -3  # add space or brackets to avoid confusion
-# "=" assignment within argument list
-median(x=1:10)
-x  # x doesn't exist outside the function
-# "<-" assignment within argument list
-median(x <- 1:10)
-x  # x exists outside the function
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor),
- function(le_vel) {
-   sum(fac_tor==le_vel)
- })  # end sapply
-library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-       cold=50, pleasant=60,
-       warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+# sum two vectors in two different ways
 summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
+  # sum vectors using "for" loop
+  r_loop=(for (i in 1:NROW(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }),
+  # sum vectors using vectorized "+"
+  vec_torized=(vec_tor1 + vec_tor2),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-mat_rix  # by default matrices are constructed column-wise
-# create a matrix row-wise
-matrix(5:10, nrow=2, byrow=TRUE)
-mat_rix[2, 3]  # extract third element from second row
-mat_rix[2, ]  # extract second row
-mat_rix[, 3]  # extract third column
-mat_rix[, c(1,3)]  # extract first and third column
-mat_rix[, -2]  # remove second column
-# subset whole matrix
-mat_rix[] <- 0
-# get the number of rows or columns
-nrow(vec_tor); ncol(vec_tor)
-NROW(vec_tor); NCOL(vec_tor)
-nrow(mat_rix); ncol(mat_rix)
-NROW(mat_rix); NCOL(mat_rix)
-attributes(mat_rix)  # get matrix attributes
-dim(mat_rix)  # get dimension attribute
-class(mat_rix)  # get class attribute
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-mat_rix
-mat_rix["row2", "col3"]  # third element from second row
-names(mat_rix)  # get the names attribute
-dimnames(mat_rix)  # get dimnames attribute
-attributes(mat_rix)  # get matrix attributes
-mat_rix  # matrix with column names
-mat_rix[1, ]  # subset rows by index
-mat_rix[, "col1"]  # subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
-mat_rix[1, ]  # subsetting can produce a vector!
-class(mat_rix); class(mat_rix[1, ])
-is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
-mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
-class(mat_rix[1, , drop=FALSE])
-is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
-# create a list with two elements
-list_var <- list(c('a', 'b'), 1:4)
-list_var
-c(typeof(list_var), mode(list_var), class(list_var))
-# lists are also vectors
-c(is.vector(list_var), is.list(list_var))
-length(list_var)
-# create named list
-list_var <- list(first=c('a', 'b'), second=1:4)
-list_var
-names(list_var)
-unlist(list_var)
-list_var[2]  # extract second element as sublist
-list_var[[2]]  # extract second element
-list_var[[2]][3]  # extract third element of second element
-list_var[[c(2, 3)]]  # third element of second element
-list_var$second  # extract second element
-list_var$s  # extract second element - partial name matching
-list_var$second[3]  # third element of second element
-list_var <- list()  # empty list
-list_var$a <- 1
-list_var[2] <- 2
-list_var
-names(list_var)
-as.list(c(1,2,3))
-list(c(1,2,3))
-data_frame <- data.frame(  # create a data frame
-                type=c('rose', 'daisy', 'tulip'),
-                color=c('red', 'white', 'yellow'),
-                price=c(1.5, 0.5, 1.0)
-              )  # end data.frame
-data_frame
-dim(data_frame)  # get dimension attribute
-colnames(data_frame)  # get the colnames attribute
-rownames(data_frame)  # get the rownames attribute
-class(data_frame)  # get object class
-typeof(data_frame)  # data frames are lists
-is.data.frame(data_frame)
-
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-data_frame[, 3]  # extract third column as vector
-data_frame[[3]]  # extract third column as vector
-data_frame[3]  # extract third column as data frame
-data_frame[, 3, drop=FALSE]  # extract third column as data frame
-data_frame[[3]][2]  # second element from third column
-data_frame$price[2]  # second element from 'price' column
-is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[2, ]  # extract second row
-data_frame[2, ][3]  # third element from second column
-data_frame[2, 3]  # third element from second column
-unlist(data_frame[2, ])  # coerce to vector
-is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
-data_frame <- data.frame(  # create a data frame
-                type=c('rose', 'daisy', 'tulip'),
-                color=c('red', 'white', 'yellow'),
-                price=c(1.5, 0.5, 1.0),
-                row.names=c('flower1', 'flower2', 'flower3'),
-                stringsAsFactors=FALSE
-              )  # end data.frame
-data_frame
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-# set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
-options("stringsAsFactors")
-default.stringsAsFactors()
-str(data_frame)  # display the object structure
-dim(cars)  # the cars data frame has 50 rows
-head(cars, n=5)  # get first five rows
-tail(cars, n=5)  # get last five rows
-# create data sample
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
-# sort the data
-sort(stu_dents)
-# calculate permution index for sorting the elements
-order(stu_dents)
-# sort the data
-stu_dents[order(stu_dents)]
-# calculate ranks of the elements
-order(order(stu_dents))
-names(stu_dents)[order(order(stu_dents))]
-# permute data_frame on price
-order(data_frame$price)
-# sort data_frame on price
-data_frame[order(data_frame$price), ]
-# sort data_frame on color
-data_frame[order(data_frame$color), ]
-order(c(2, 1:4))  # there's a tie
-order(c(2, 1:4), 1:5)  # there's a tie
-# read sort() Examples
-as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-library(microbenchmark)
-# call method instead of generic function
-as.data.frame.matrix(mat_rix)
-# a few methods for generic function as.data.frame()
-sample(methods(as.data.frame), size=4)
-# function method is faster than generic function
+# allocate memory for cumulative sum
+cum_sum <- numeric(NROW(big_vector))
+cum_sum[1] <- big_vector[1]
+# calculate cumulative sum in two different ways
 summary(microbenchmark(
-  as_data_frame_matrix=
-    as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
+# cumulative sum using "for" loop
+  r_loop=(for (i in 2:NROW(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }),
+# cumulative sum using "cumsum"
+  vec_torized=cumsum(big_vector),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# calculate row sums two different ways
+summary(microbenchmark(
+  row_sums=rowSums(big_matrix),
+  ap_ply=apply(big_matrix, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
-# lapply is faster than coercion function
+str(pmax)
+# calculate row maximums two different ways
 summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
-     function(in_dex) mat_rix[, in_dex]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# ?iris  # get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # list of unique elements of iris
-class(unique(iris$Species))
-# find which columns of iris are numeric
-sapply(iris, is.numeric)
-# calculate means of iris columns
-sapply(iris, mean)  # returns NA for Species
-# ?mtcars  # mtcars data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp	 Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # extract list of car cylinders
-sapply(mtcars, mean)  # calculate means of mtcars columns
-library(MASS)
-# ?Cars93  # get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # extract list of car types
-# sapply(Cars93, mean)  # calculate means of Cars93 columns
-# plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1",
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
-rm(list=ls())
-as.numeric(c(1:3, "a"))  # NA from coercion
-0/0  # NaN from ambiguous math
-1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
-NA*1:4  # create vector of Nas
-# create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # delete the NA values
-sum(!is.na(da_ta))  # count non-NA values
-rm(list=ls())
-# airquality data has some NAs
-head(airquality)
-dim(airquality)
-# number of NAs
-sum(!complete.cases(airquality))
-# display rows containing NAs
-head(airquality[!complete.cases(airquality), ])
-rm(list=ls())
-# remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
-# create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
-# replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
-# NULL values have no mode or type
-c(mode(NULL), mode(NA))
-c(typeof(NULL), typeof(NA))
-c(length(NULL), length(NA))
-# check for NULL values
-is.null(NULL)
-# NULL values are ignored when combined into a vector
-c(1, 2, NULL, 4, 5)
-# But NA value isn't ignored
-c(1, 2, NA, 4, 5)
-# vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# initialize empty vector
-vec_tor <- numeric()
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# allocate vector
-vec_tor <- numeric(5)
-# assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+  p_max=
+    do.call(pmax.int,
+lapply(seq_along(big_matrix[1, ]),
+  function(in_dex) big_matrix[, in_dex])),
+  l_apply=unlist(
+    lapply(seq_along(big_matrix[, 1]),
+  function(in_dex) max(big_matrix[in_dex, ]))),
+  times=10))[, c(1, 4, 5)]
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
+          vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid",
+col=c("green", "blue", "red"),
+lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4),
+       title="", inset=0.05, cex=0.8, lwd=2,
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# perform parallel loop under Mac-OSX or Linux
+paw_s <- mclapply(1:10, paws, mc.cores=num_cores,
+          sleep_time=0.01)
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+paw_s <- parLapply(clus_ter, 1:10, paws,
+           sleep_time=0.01)
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+lapply=lapply(1:max_iterations, paws,
+              sleep_time=sleep_time),
+parallel=parLapply(clus_ter, 1:max_iterations,
+        paws, sleep_time=sleep_time),
+times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+        names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+ inset=0.1, cex=1.0, bg="white",
+ lwd=2, lty=c(1, 1), col=c("blue", "green"))
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:NROW(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ter, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ter, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+ba_se <- 2
+# fails because child processes don't know ba_se:
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# ba_se passed to child via dots ... argument:
+parLapply(clus_ter, 2:4,
+    function(exponent, ba_se) ba_se^exponent,
+    ba_se=ba_se)
+# ba_se passed to child via clusterExport:
+clusterExport(clus_ter, "ba_se")
+parLapply(clus_ter, 2:4,
+    function(exponent) ba_se^exponent)
+# fails because child processes don't know zoo::index():
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol)
+      NROW(index(get(sym_bol, envir=rutils::env_etf))))
+# zoo function referenced using "::" in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol)
+      NROW(zoo::index(get(sym_bol, envir=rutils::env_etf))))
+# package zoo loaded in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+    function(sym_bol) {
+      stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
+      NROW(index(get(sym_bol, envir=rutils::env_etf)))
+    })  # end parSapply
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# set seed for cluster under Windows
+# doesn't work: set.seed(1121)
+clusterSetRNGStream(clus_ter, 1121)
+# perform parallel loop under Windows
+out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
+sum(unlist(out_put))
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# perform parallel loop under Mac-OSX or Linux
+out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.2)
+mean(default_probs)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# simulate average number of defaults
+num_simu <- 1000
+de_faults <- numeric(num_simu)
+# simulate using for() loop (inefficient way)
+for (i in 1:num_simu) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+# calculate average number of defaults
+mean(de_faults)
+# simulate using vectorized functions  (efficient way)
+uni_form <- matrix(runif(num_simu*num_assets),
+             ncol=num_simu)
+sum(uni_form < default_probs)/num_simu
+# plot Standard Normal distribution
+curve(expr=dnorm(x),
+type="l", xlim=c(-4, 4),
+xlab="asset value", ylab="", lwd=2,
+col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+ labels="default threshold",
+ lwd=2, srt=90, pos=3)
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+num_assets <- 5 ; num_simu <- 10000
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate asset values using vectorized functions (efficient way)
+asset_values <- rho_sqrt*system_atic +
+  rho_sqrtm*rnorm(num_simu*num_assets)
+dim(asset_values) <- c(num_simu, num_assets)
+# calculate correlations between asset values
+cor(asset_values)
+# simulate asset values using for() loop (inefficient way)
+# allocate matrix of assets
+asset_values <- matrix(nr=num_simu, nc=num_assets)
+# simulate asset values using for() loop
+for (i in 1:num_simu) {  # perform loop
+  asset_values[i, ] <-
+    rho_sqrt*system_atic[i] +
+    rho_sqrtm*rnorm(num_assets)
+}  # end for
+cor(asset_values)
+# benchmark the speed of the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  for_loop={for (i in 1:num_simu) {
+    rho_sqrt*system_atic[i] +
+    rho_sqrtm*rnorm(num_assets)}},
+  vector_ized={rho_sqrt*system_atic +
+        rho_sqrtm*rnorm(num_simu*num_assets)},
+  times=10))[, c(1, 4, 5)]
+# calculate random default probabilities
+num_assets <- 5
+default_probs <- runif(num_assets, max=0.2)
+mean(default_probs)
+# calculate default thresholds
+default_thresh <- qnorm(default_probs)
+# calculate number of defaults using vectorized functions (efficient way)
+# calculate vector of number of defaults
+de_faults <-
+  colSums(t(t(asset_values) < default_thresh))
+de_faults / num_simu
+default_probs
+# calculate number of defaults using for() loop (inefficient way)
+# allocate matrix of de_faults
+de_faults <- matrix(nr=num_simu, nc=num_assets)
+# simulate asset values using for() loop
+for (i in 1:num_simu) {  # perform loop
+  de_faults[i, ] <-
+    (asset_values[i, ] < default_thresh)
+}  # end for
+colSums(de_faults) / num_simu
+default_probs
+# calculate correlations between defaults
+cor(de_faults)
+# define default probabilities
+num_assets <- 2
+default_prob <- 0.2
+default_thresh <- qnorm(default_prob)
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+# calculate vector of systematic factors
+num_simu <- 1000
+system_atic <- rnorm(num_simu)
+# simulate asset values using vectorized functions
+asset_values <- rho_sqrt*system_atic +
+  rho_sqrtm*rnorm(num_simu*num_assets)
+dim(asset_values) <- c(num_simu, num_assets)
+# calculate number of defaults using vectorized functions
+de_faults <- t(t(asset_values) < default_thresh)
+# calculate correlations between defaults
+cor(de_faults)
+# calculate averaage number of defaults and compare to default_prob
+colSums(de_faults) / num_simu
+default_prob
+# define cumulative default probability function
+def_prob <- function(x, def_thresh=qnorm(0.1), rh_o=0.1)
+  pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
+def_prob(x=0.2, def_thresh=qnorm(0.2), rh_o=0.2)
+# plot cumulative default probability function
+curve(expr=def_prob(x, def_thresh=qnorm(0.4), rh_o=0.05),
+xlim=c(0, 0.999), lwd=3,
+xlab="percent default", ylab="probability",
+col="green", main="Cumulative Default Probabilities")
+# plot default distribution with higher correlation
+curve(expr=def_prob(x, def_thresh=qnorm(0.4), rh_o=0.2),
+xlim=c(0, 0.999), add=TRUE, lwd=3,
+col="blue", main="")
+# add legend
+legend(x="topleft",
+ legend=c("high correlation", "low correlation"),
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.4, col="red", lwd=3)
+text(x=0.4, y=0.0,
+ labels="default probability",
+ lwd=2, srt=90, pos=4)
+# define default probability density function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.1)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
+  def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+xlim=c(0, 0.1), lwd=3,
+xlab="percentage of defaults", ylab="density",
+col="green", main="Distribution of Defaults")
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.1),
+xlab="default percentage", ylab="",
+add=TRUE, lwd=3, col="blue", main="")
+# add legend
+legend(x="topright",
+ legend=c("high correlation", "low correlation"),
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=3)
+text(x=0.023, y=8,
+ labels="default probability",
+ lwd=2, srt=90, pos=3)
+# plot default distribution with low correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.01),
+xlab="default percentage", ylab="", lwd=2,
+col="green", main="Distribution of Defaults")
+# plot default distribution with high correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
+xlab="percentage of defaults", ylab="density",
+add=TRUE, lwd=2, n=10001, col="blue", main="")
+# add legend
+legend(x="top",
+ legend=c("high correlation", "low correlation"),
+ title=NULL, inset=0.1, cex=0.8, bg="white",
+ bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10, lwd=2, pos=4,
+ labels="default probability")
+# define Vasicek loss distribution density function
+portf_loss <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(portf_loss, low=0, up=0.3,
+  def_thresh=-2, rh_o=0.1, l_gd=0.4)
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.06), rh_o=0.1),
+type="l", xlim=c(0, 0.06),
+xlab="loss percentage", ylab="density", lwd=3,
+col="orange", main="Distribution of Losses")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+ lwd=2, srt=90, pos=3)
+# add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35,
+ code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss",
+     lwd=2, pos=3)
+# add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25,
+ code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+ lwd=2, srt=90, pos=3)
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.1), rh_o=0.1),
+type="l", xlim=c(0, 0.06),
+xlab="loss percentage", ylab="density", lwd=3,
+col="orange", main="Conditional Value at Risk")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+ lwd=2, srt=90, pos=3)
+# add lines for VaR
+abline(v=0.04, col="red", lwd=3)
+text(x=0.04-0.001, y=10, labels="VaR",
+ lwd=2, srt=90, pos=3)
+# add shading for CVaR
+va_r <- 0.04; var_max <- 0.07
+var_s <- seq(va_r, var_max, length=100)
+dens_ity <- sapply(var_s, portf_loss,
+  def_thresh=qnorm(0.1), rh_o=0.1)
+# draw shaded polygon
+polygon(c(va_r, var_s, var_max),
+  c(-1, dens_ity, -1), col="red", border=NA)
+text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
+# VaR (quantile of the loss distribution)
+var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+  l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
+var_func(x=0.99, def_thresh=qnorm(0.1), rh_o=0.2, l_gd=0.4)
+# plot VaR
+curve(expr=var_func(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4),
+type="l", xlim=c(0, 0.999),
+xlab="confidence level", ylab="VaR", lwd=3,
+col="orange", main="VaR versus Confidence Level")
+# add line for expected loss
+abline(h=0.04, col="red", lwd=3)
+text(x=0.2, y=0.04, labels="expected loss",
+     lwd=2, pos=3)
+# integrate portf_loss() over full range
+integrate(portf_loss, low=0.0, up=0.3,
+    def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+# calculate expected losses using portf_loss()
+integrate(function(x, ...) x*portf_loss(x, ...),
+    low=0.0, up=0.3,
+    def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+# calculate confidence levels corresponding to VaR values
+var_s <- seq(0.07, 0.12, 0.001)
+conf_levels <- sapply(var_s, function(va_r, ...) {
+  integrate(portf_loss, low=va_r, up=0.3, ...)
+}, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)  # end sapply
+conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
+colnames(conf_levels) <- c("conf_levels", "VaRs")
+# calculate 95% confidence level VaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05), "VaRs"]
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "VaRs"], lwd=2,
+     xlab="conf_levels", ylab="VaRs",
+     t="l", main="VaR values and confidence levels")
+# calculate CVaR values
+cvar_s <- sapply(var_s, function(va_r, ...) {
+  integrate(function(x, ...) x*portf_loss(x, ...),
+      low=va_r, up=0.3, ...)
+}, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)  # end sapply
+conf_levels <- cbind(conf_levels, as.numeric(t(cvar_s)[, 1]))
+colnames(conf_levels)[3] <- "CVaRs"
+# divide CVaR by confidence level
+conf_levels[, "CVaRs"] <-
+  conf_levels[, "CVaRs"]/conf_levels[, "conf_levels"]
+# calculate 95% confidence level CVaR value
+conf_levels[match(TRUE,
+  conf_levels[, "conf_levels"] < 0.05), "CVaRs"]
+# plot CVaRs
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "CVaRs"],
+     t="l", col="red", lwd=2,
+     ylim=range(conf_levels[, c("VaRs", "CVaRs")]),
+     xlab="conf_levels", ylab="CVaRs",
+     main="CVaR values and confidence levels")
+# add VaRs
+lines(x=1-conf_levels[, "conf_levels"],
+y=conf_levels[, "VaRs"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+ title="default probability = 10%
+correlation = 10%
+loss given default = 40%",
+ inset=0.1, cex=0.8, bg="white", bty="n",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))
+# Define model parameters
+num_assets <- 300
+num_simu <- 1000
+l_gd <- 0.4
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default probabilities and thresholds
+set.seed(1121)
+default_probs <- runif(num_assets, max=0.2)
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate losses under Vasicek model
+asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+loss_es <-
+  l_gd*colSums(asset_values < default_thresh)/num_assets
+# calculate VaRs
+conf_levels <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=conf_levels)
+plot(x=conf_levels, y=var_s, t="l", lwd=2,
+     main="Simulated VaR and confidence levels")
+# calculate CVaRs
+cvar_s <- sapply(var_s, function(va_r) {
+  mean(loss_es[loss_es>va_r])
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# alternative CVaR calculation using frequency table
+# first calculate frequency table of loss_es
+table_losses <- table(loss_es)/num_simu
+# calculate CVaRs from frequency table
+cvar_s <- sapply(var_s, function(va_r) {
+  tai_l <- table_losses[names(table_losses) > va_r]
+  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+})  # end sapply
+# plot CVaRs
+plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"],
+     t="l", col="red", lwd=2,
+     ylim=range(cvar_s),
+     xlab="conf_levels", ylab="CVaRs",
+     main="Simulated CVaR and confidence levels")
+# add VaRs
+lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))
+calc_var <- function(default_thresh,
+               l_gd=0.6,
+               rho_sqrt,
+               rho_sqrtm,
+               num_simu=1000,
+               conf_levels=seq(0.93, 0.99, 0.01)) {
+  # Define model parameters
+  num_assets <- NROW(default_thresh)
+  # Simulate losses under Vasicek model
+  system_atic <- rnorm(num_simu)
+  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+  asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
+  # Calculate VaRs and CVaRs
+  var_s <- quantile(loss_es, probs=conf_levels)
+  cvar_s <- sapply(var_s, function(va_r) {
+    mean(loss_es[loss_es>va_r])
+  })  # end sapply
+  names(cvar_s) <- names(var_s)
+  c(var_s, cvar_s)
+}  # end calc_var
+# define number of bootstrap simulations
+num_boot <- 500
+num_assets <- NROW(default_probs)
+# perform bootstrap of calc_var
+set.seed(1121)
+boot_strap <- sapply(rep(l_gd, num_boot),
+  calc_var,
+  default_thresh=qnorm(default_probs),
+  rho_sqrt=rho_sqrt,
+  rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
+  conf_levels=conf_levels)  # end sapply
+boot_strap <- t(boot_strap)
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# perform bootstrap of calc_var for Windows
+set.seed(1121)
+boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot),
+  fun=calc_var, default_probs=default_probs,
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end parLapply
+# bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(rep(l_gd, num_boot),
+  FUN=calc_var, default_probs=default_probs,
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+stopCluster(clus_ter)  # stop R processes over cluster
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+ title=NULL, inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=c(1, 1), col=c("red", "black"))

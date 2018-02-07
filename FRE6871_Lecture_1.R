@@ -1,9 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 # display documentation on function "getwd"
 help(getwd)
 ?getwd  # equivalent to "help(getwd)"
@@ -92,6 +86,97 @@ options(warn=2)
 op_tions <- options()
 # restore all options from variable
 options(op_tions)
+# single numbers are vectors of length 1
+1
+# character strings are vectors of length 1
+"a"
+# strings without quotes are variable names
+a  # variable "a" doesn't exist
+# list elements can have different mode
+list(aa=c('a', 'b'), bb=1:5)
+data.frame(aa=c('a', 'b'), bb=1:2)
+is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
+is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+my_var <- "hello"
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- runif(5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(1:10, 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- matrix(runif(10), 2, 5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- list(aa=c('a', 'b'), bb=1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
+# a simple vector has no attributes
+attributes(5:10)
+my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
+# named vector has "names" attribute
+attributes(my_var)
+my_var <- 1:10
+is.vector(my_var)  # is the object a vector?
+attributes(my_var) <- list(my_attr="foo")
+my_var
+is.vector(my_var)  # is the object a vector?
+my_var <- 0
+attributes(my_var) <- list(class="Date")
+my_var  # "Date" object
+structure(0, class="Date")  # "Date" object
+my_var <- matrix(runif(10), 2, 5)
+class(my_var)  # has implicit class
+# but no explicit "class" attribute
+attributes(my_var)
+c(typeof(my_var), mode(my_var), class(my_var))
+# assign explicit "class" attribute
+class(my_var) <- "my_class"
+class(my_var)  # has explicit "class"
+# has explicit "class" attribute
+attributes(my_var)
+is.matrix(my_var)  # is the object a matrix?
+is.vector(my_var)  # is the object a vector?
+attributes(unclass(my_var))
+# integer implicit class derived from type
+my_var <- vector(mode="integer", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+# numeric implicit class derived from mode
+my_var <- vector(mode="numeric", length=10)
+c(typeof(my_var), mode(my_var), class(my_var))
+# adding dim attribute changes implicit class to matrix
+dim(my_var) <- c(5, 2)
+c(typeof(my_var), mode(my_var), class(my_var))
+# data frames have implicit dim attribute
+my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+c(typeof(my_var), mode(my_var), class(my_var))
+attributes(my_var)
+dim(my_var)
+my_var <- 1:5
+c(typeof(my_var), mode(my_var), class(my_var))
+mode(my_var) <- "character"  # coerce to "character"
+my_var
+c(typeof(my_var), mode(my_var), class(my_var))
+# explicitly coerce to "character"
+my_var <- as.character(1:5)
+c(typeof(my_var), mode(my_var), class(my_var))
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+as.logical(0:3)  # explicit coercion to "logical"
+as.numeric(c(FALSE, TRUE, TRUE, TRUE))
+c(1:3, 'a')  # implicit coercion to "character"
+# explicit coercion to "numeric"
+as.numeric(c(1:3, 'a'))
 "Hello World!"  # type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name
@@ -132,9 +217,9 @@ strsplit("Hello.World", split='.', fixed=TRUE)  # split string
 substring("Hello World", 3, 6)  # extract characters from 3 to 6
 gsub("is", "XX", "is this gratis?")  # replace "is" with "XX"
 
-grep("b+", c("abc", "xyz", "cba d", "bbb"))  # get indexes
+grep("b", c("abc", "xyz", "cba d", "bbb"))  # get indexes
 
-grep("b+", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # get values
+grep("b", c("abc", "xyz", "cba d", "bbb"), value=TRUE)  # get values
 
 glob2rx("abc.*")  # convert globs into regex
 glob2rx("*.doc")
@@ -217,6 +302,42 @@ vec_tor < 1  # Boolean vector of elements less than one
 vec_tor[vec_tor > 1]
 vec_tor[vec_tor > 0.5]  # filter elements > 0.5
 which(vec_tor > 0.5)  # index of elements > 0.5
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
+mat_rix  # by default matrices are constructed column-wise
+# create a matrix row-wise
+matrix(5:10, nrow=2, byrow=TRUE)
+mat_rix[2, 3]  # extract third element from second row
+mat_rix[2, ]  # extract second row
+mat_rix[, 3]  # extract third column
+mat_rix[, c(1,3)]  # extract first and third column
+mat_rix[, -2]  # remove second column
+# subset whole matrix
+mat_rix[] <- 0
+# get the number of rows or columns
+nrow(vec_tor); ncol(vec_tor)
+NROW(vec_tor); NCOL(vec_tor)
+nrow(mat_rix); ncol(mat_rix)
+NROW(mat_rix); NCOL(mat_rix)
+attributes(mat_rix)  # get matrix attributes
+dim(mat_rix)  # get dimension attribute
+class(mat_rix)  # get class attribute
+rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
+mat_rix
+mat_rix["row2", "col3"]  # third element from second row
+names(mat_rix)  # get the names attribute
+dimnames(mat_rix)  # get dimnames attribute
+attributes(mat_rix)  # get matrix attributes
+mat_rix  # matrix with column names
+mat_rix[1, ]  # subset rows by index
+mat_rix[, "col1"]  # subset columns by name
+mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
+mat_rix[1, ]  # subsetting can produce a vector!
+class(mat_rix); class(mat_rix[1, ])
+is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
+mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
+class(mat_rix[1, , drop=FALSE])
+is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -250,10 +371,88 @@ if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
 # exponentiation
 2**3
 2^3
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
+num_var <- 2
+num_var==2
+identical(num_var, 2)
+
+identical(num_var, NULL)
+# this doesn't work:
+# num_var==NULL
+is.null(num_var)
+
+vec_tor <- c(2, 4, 6)
+vec_tor==2
+identical(vec_tor, 2)
+
+# num_ber is equal to "1.0" within machine precision
+num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
+all.equal(num_ber, 1.0)
+
+# info machine precision of computer R is running on
+# ?.Machine
+# machine precision
+.Machine$double.eps
+vec_tor <- sample(1:6, 21, replace=TRUE)
+mat_rix <- matrix(vec_tor, ncol=3)
+vec_tor
+which(vec_tor == 5)
+# equivalent but slower than above
+(1:length(vec_tor))[vec_tor == 5]
+which(vec_tor > 5)
+# find indices of TRUE elements of Boolean matrix
+which((mat_rix == 5)|(mat_rix == 6),
+      arr.ind=TRUE)
+# equivalent but slower than above
+arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
+ dim(mat_rix), dimnames(mat_rix))
+which.max(vec_tor)
+# equivalent but slower than above
+which(vec_tor == max(vec_tor))
+which.min(vec_tor)
+match(5, vec_tor)
+# more general but slower than above
+which(vec_tor == 5)
+match(-5, vec_tor)
+5 %in% vec_tor
+# equivalent to above
+match(5, vec_tor, nomatch=0) > 0
+-5 %in% vec_tor
+c(5, -5) %in% vec_tor
+# equivalent to "5 %in% vec_tor"
+any(vec_tor == 5)
+# equivalent to "-5 %in% vec_tor"
+any(vec_tor == (-5))
+if (any(vec_tor < 0))
+  cat("vector contains negative values\n")
+# partial matching of strings
+pmatch("med", c("mean", "median", "mode"))
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+       all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+       rightmost.closed=TRUE)
+num_var1 <- 3  # "<-" and "=" are valid assignment operators
+num_var1
+num_var1 = 3
+num_var1
+2<-3  # "<" operator confused with "<-"
+2 < -3  # add space or brackets to avoid confusion
+# "=" assignment within argument list
+median(x=1:10)
+x  # x doesn't exist outside the function
+# "<-" assignment within argument list
+median(x <- 1:10)
+x  # x exists outside the function
 rm(list=ls())
 # expressions enclosed in parenthesis are less ambiguous
 -2:5
@@ -440,6 +639,64 @@ rep(c("a", "b"), times=5)
 rep(c("a", "b"), each=5)
 # replicate to specified length
 rep(c("a", "b"), length.out=5)
+# define vector and matrix
+vec_tor1 <- c(2, 4, 3)
+mat_rix <- matrix(sample(1:12), ncol=3)
+# multiply matrix by vector column-wise
+vec_tor1 * mat_rix
+mat_rix * vec_tor1
+# multiply matrix by vector row-wise
+t(vec_tor1 * t(mat_rix))
+vec_tor1
+vec_tor2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_tor1 * vec_tor2
+# calculate inner product
+vec_tor1 %*% vec_tor2
+# calculate inner product and drop dimensions
+drop(vec_tor1 %*% vec_tor2)
+# multiply columns of matrix by vector
+mat_rix %*% vec_tor1  # single column matrix
+drop(mat_rix %*% vec_tor1)  # vector
+rowSums(t(vec_tor1 * t(mat_rix)))
+# using rowSums() and t() is 10 times slower than %*%
+library(microbenchmark)
+summary(microbenchmark(
+  in_ner=drop(mat_rix %*% vec_tor1),
+  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(microbenchmark)
+# multiply matrix by vector fails because dimensions aren't conformable
+vec_tor1 %*% mat_rix
+# works after transpose
+drop(vec_tor1 %*% t(mat_rix))
+# calculate inner product
+crossprod(vec_tor1, vec_tor2)
+# create matrix and vector
+mat_rix <- matrix(1:3000, ncol=3)
+tmat_rix <- t(mat_rix)
+vec_tor <- 1:3
+# crossprod is slightly faster than "%*%" operator
+summary(microbenchmark(
+  cross_prod=crossprod(tmat_rix, vec_tor),
+  inner_prod=mat_rix %*% vec_tor,
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# define named vectors
+vec_tor1 <- sample(1:4)
+names(vec_tor1) <-
+  paste0("row", 1:4, "=", vec_tor1)
+vec_tor1
+vec_tor2 <- sample(1:3)
+names(vec_tor2) <-
+  paste0("col", 1:3, "=", vec_tor2)
+vec_tor2
+# calculate outer product of two vectors
+mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix
+# calculate vectorized function spanned over two vectors
+mat_rix <- outer(vec_tor1, vec_tor2,
+           FUN=function(x1, x2) x2*sin(x1))
+mat_rix
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -613,7 +870,7 @@ sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
 lab_els <- paste("sigma", sig_mas, sep="=")
-# plot an empty chart
+# plot the first chart
 plot(x_var, dnorm(x_var, sd=sig_mas[1]),
      type="n", xlab="", ylab="",
      main="Normal Distributions")
@@ -628,13 +885,13 @@ legend("topright", inset=0.05, title="Sigmas",
  col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(2, 5, 8, 11)  # df values
+deg_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
-lab_els <- paste("df", d_free, sep="=")
+lab_els <- paste("df", deg_free, sep="=")
 for (in_dex in 1:4) {  # plot four curves
-curve(expr=dchisq(x, df=d_free[in_dex]),
+curve(expr=dchisq(x, df=deg_free[in_dex]),
       type="l", xlim=c(0, 20), ylim=c(0, 0.3),
       xlab="", ylab="", lwd=2,
       col=col_ors[in_dex],
@@ -649,16 +906,37 @@ legend("topright", inset=0.05,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(3, 6, 9)  # df values
+deg_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
-col_ors <- c("black", "red", "blue", "green")
+col_ors <- c("red", "black", "blue", "green")
 # create legend labels
-lab_els <- c("normal", paste("df", d_free, sep="="))
+lab_els <- paste("df", deg_free, sep="=")
+# plot an empty chart
+x_var <- seq(0, 20, length=100)
+plot(x_var, dchisq(x_var, df=deg_free[1]),
+     type="n", xlab="", ylab="", ylim=c(0, 0.3))
+# add lines to plot
+for (in_dex in 1:4) {
+  lines(x_var, dchisq(x_var, df=deg_free[in_dex]),
+lwd=2, col=col_ors[in_dex])
+}  # end for
+# add title
+title(main="Chi-squared Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05,
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 6, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
-for (in_dex in 1:3) {  # plot three curves
-curve(expr=dt(x, df=d_free[in_dex]),
+for (in_dex in 1:3) {  # plot three t-distributions
+curve(expr=dt(x, df=deg_free[in_dex]),
       type="l", xlab="", ylab="", lwd=2,
       col=col_ors[in_dex+1], add=TRUE)
 }  # end for
@@ -672,17 +950,14 @@ legend("topright", inset=0.05,
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 x_var <- seq(-4, 4, length=100)
-d_free <- c(3, 6, 9)  # df values
-# create plot colors
+deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
-# create legend labels
-lab_els <- c("normal", paste("df", d_free, sep="="))
+lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot chart of normal distribution
 plot(x_var, dnorm(x_var), type="l",
      lwd=2, xlab="", ylab="")
-# add lines to plot
-for (in_dex in 1:3) {
-  lines(x_var, dt(x_var, df=d_free[in_dex]),
+for (in_dex in 1:3) {  # add lines for t-distributions
+  lines(x_var, dt(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1])
 }  # end for
 # add title
@@ -691,6 +966,24 @@ title(main="t-distributions", line=0.5)
 legend("topright", inset=0.05,
        title="Degrees\n of freedom", lab_els,
        cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="F-Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
        col=col_ors)
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -704,30 +997,6 @@ curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution"
 xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
 legend(x="topright", legend="Poisson density", title="",
  inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
-# generate Poisson variables
-pois_counts <- rpois(1000, lambda=4)
-head(pois_counts)
-# calculate contingency table
-pois_table <- table(pois_counts)
-pois_table
-# create barplot of table data
-barplot(pois_table, col="lightgrey",
-  xlab="counts", ylab="number of observations",
-  main="barplot of Poisson count data")
-# create histogram of Poisson variables
-histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
-     ylab="frequency", freq=FALSE, main="Poisson histogram")
-lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
-# Poisson probability distribution function
-poisson_func <- function(x, lambda)
-  {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
-# add legend
-legend("topright", inset=0.05, title="Poisson histogram",
- c("histogram density", "probability"), cex=0.8, lwd=2,
- lty=c(1, 1), col=c("blue", "red"))
-# total area under histogram
-diff(histo_gram$breaks) %*% histo_gram$density
 set.seed(1121)  # reset random number generator
 runif(3)  # three numbers from uniform distribution
 runif(3)  # produce another three numbers
@@ -752,6 +1021,8 @@ x11(width=6, height=5)
 curve(expr=log_map, type="l", xlim=c(0, 1),
 xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
 main="logistic map")
+lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="blue")
+lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="blue")
 # calculate uniformly distributed pseudo-random
 # sequence using logistic map function
 uni_form <- function(see_d, len_gth=10) {
@@ -814,27 +1085,27 @@ rm(list=ls())
 # DAX returns
 re_turns <- diff(log(EuStockMarkets[, 1]))
 # number of observations
-len_rets <- NROW(re_turns)
+len_gth <- NROW(re_turns)
 # mean of DAX returns
 mean_rets <- mean(re_turns)
 # standard deviation of DAX returns
 sd_rets <- sd(re_turns)
 # skew of DAX returns
-len_rets/((len_rets-1)*(len_rets-2))*
+len_gth/((len_gth-1)*(len_gth-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of DAX returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
+len_gth*(len_gth+1)/((len_gth-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
 # random normal returns
-re_turns <- rnorm(len_rets, sd=2)
+re_turns <- rnorm(len_gth, sd=2)
 # mean and standard deviation of random normal returns
 mean_rets <- mean(re_turns)
 sd_rets <- sd(re_turns)
 # skew of random normal returns
-len_rets/((len_rets-1)*(len_rets-2))*
+len_gth/((len_gth-1)*(len_gth-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of random normal returns
-len_rets*(len_rets+1)/((len_rets-1)^3)*
+len_gth*(len_gth+1)/((len_gth-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
@@ -844,25 +1115,226 @@ sam_ple <- rnorm(len_gth)
 mean(sam_ple)
 # sample standard deviation
 sd(sam_ple)
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                              replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
+#Perform two-tailed test that sample is
+#from Standard Normal Distribution (mean=0, SD=1)
+# generate vector of samples and store in data frame
+test_frame <- data.frame(samples=rnorm(1e4))
+# get p-values for all the samples
+test_frame$p_values <- sapply(test_frame$samples, 
+        function(x) 2*pnorm(-abs(x)))
+# significance level, two-tailed test, critical value=2*SD
+signif_level <- 2*(1-pnorm(2))
+# compare p_values to significance level
+test_frame$result <-
+  test_frame$p_values > signif_level
+# number of null rejections
+sum(!test_frame$result) / NROW(test_frame)
+# show null rejections
+head(test_frame[!test_frame$result, ])
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# plot the Normal probability distribution
+curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
+xlab="", ylab="", lwd=3, col="blue")
+title(main="Two-tailed Test", line=0.5)
+# plot tails of the distribution using polygons
+star_t <- 2; e_nd <- 4
+# plot right tail using polygon
+x_var <- seq(star_t, e_nd, length=100)
+y_var <- dnorm(x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=x_var, y=y_var, col="red")
+# plot left tail using polygon
+y_var <- dnorm(-x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=(-x_var), y=y_var, col="red")
+rm(list=ls())
+par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(ggplot2)  # load ggplot2
+
+qplot(  # simple ggplot2
+    main="Standard Normal Distribution",
+    c(-4, 4),
+    stat="function",
+    fun=dnorm,
+    geom="line",
+    xlab=NULL, ylab=NULL
+    ) +  # end qplot
+
+theme(  # modify plot theme
+    plot.title=element_text(vjust=-1.0),
+    plot.background=element_blank()
+    ) +  # end theme
+
+geom_vline(  # add vertical line
+  aes(xintercept=c(-2.0, 2.0)),
+  colour="red",
+  linetype="dashed"
+  )  # end geom_vline
+rm(list=ls())
+par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+#create ggplot2 with shaded area
+x_var <- -400:400/100
+norm_frame <- data.frame(x_var=x_var,
+                 d.norm=dnorm(x_var))
+norm_frame$shade <- ifelse(
+            abs(norm_frame$x_var) >= 2,
+            norm_frame$d.norm, NA)
+ggplot(  # main function
+  data=norm_frame,
+  mapping=aes(x=x_var, y=d.norm)
+  ) +  # end ggplot
+# plot line
+  geom_line() +
+# plot shaded area
+  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
+# no axis labels
+  xlab("") + ylab("") +
+# add title
+  ggtitle("Standard Normal Distribution") +
+# modify plot theme
+  theme(
+  plot.title=element_text(vjust=-1.0),
+  plot.background=element_blank()
+  )  # end theme
+# t-test for single sample
+t.test(rnorm(100))
+# t-test for two samples
+t.test(rnorm(100),
+       rnorm(100, mean=1))
+# Wilcoxon test for normal distribution
+wilcox.test(rnorm(100))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=0.1))
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=1.0))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100), rnorm(100))
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+
+# Shapiro-Wilk test for normal distribution
+shapiro.test(rnorm(NROW(dax_rets)))
+
+# Shapiro-Wilk test for DAX returns
+shapiro.test(dax_rets)
+
+# Shapiro-Wilk test for uniform distribution
+shapiro.test(runif(NROW(dax_rets)))
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+library(tseries)  # load package tseries
+
+# Jarque-Bera test for normal distribution
+jarque.bera.test(rnorm(NROW(dax_rets)))
+
+# Jarque-Bera test for DAX returns
+jarque.bera.test(dax_rets)
+
+# Jarque-Bera test for uniform distribution
+jarque.bera.test(runif(NROW(dax_rets)))
+# verify that rtools are working properly:
+devtools::find_rtools()
+devtools::has_devel()
+
+# load package Rcpp
+library(Rcpp)
+# get documentation for package Rcpp
+# get short description
+packageDescription("Rcpp")
+# load help page
+help(package="Rcpp")
+# list all datasets in "Rcpp"
+data(package="Rcpp")
+# list all objects in "Rcpp"
+ls("package:Rcpp")
+# remove Rcpp from search path
+detach("package:Rcpp")
+# define Rcpp function
+Rcpp::cppFunction("
+  int times_two(int x)
+    { return 2 * x;}
+  ")  # end cppFunction
+# run Rcpp function
+times_two(3)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
+# multiply two numbers
+rcpp_mult(2, 3)
+rcpp_mult(1:3, 6:4)
+# multiply two vectors
+rcpp_mult_vec(2, 3)
+rcpp_mult_vec(1:3, 6:4)
+# define Rcpp function with loop
+Rcpp::cppFunction("
+double inner_mult(NumericVector x, NumericVector y) {
+int x_size = x.size();
+int y_size = y.size();
+if (x_size != y_size) {
+    return 0;
+  } else {
+    double total = 0;
+    for(int i = 0; i < x_size; ++i) {
+total += x[i] * y[i];
+  }
+  return total;
+  }
+}")  # end cppFunction
+# run Rcpp function
+inner_mult(1:3, 6:4)
+inner_mult(1:3, 6:3)
+# define Rcpp Sugar function with loop
+Rcpp::cppFunction("
+double inner_mult_sugar(NumericVector x, NumericVector y) {
+  return sum(x * y);
+}")  # end cppFunction
+# run Rcpp Sugar function
+inner_mult_sugar(1:3, 6:4)
+inner_mult_sugar(1:3, 6:3)
+# define R function with loop
+inner_mult_r <- function(x, y) {
+    to_tal <- 0
+    for(i in 1:NROW(x)) {
+to_tal <- to_tal + x[i] * y[i]
+    }
+    to_tal
+}  # end inner_mult_r
+# run R function
+inner_mult_r(1:3, 6:4)
+inner_mult_r(1:3, 6:3)
+# compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=inner_mult_r(1:10000, 1:10000),
+  inner_r=1:10000 %*% 1:10000,
+  r_cpp=inner_mult(1:10000, 1:10000),
+  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
+  times=10))[, c(1, 4, 5)]
+# calculate uniformly distributed pseudo-random sequence
+uni_form <- function(see_d, len_gth=10) {
+  out_put <- numeric(len_gth)
+  out_put[1] <- see_d
+  for (i in 2:len_gth) {
+    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
+  }  # end for
+  acos(1-2*out_put)/pi
+}  # end uni_form
+
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
+# microbenchmark Rcpp code
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=runif(1e5),
+  r_loop=uni_form(0.3, 1e5),
+  r_cpp=uniform_rcpp(0.3, 1e5),
+  times=10))[, c(1, 4, 5)]

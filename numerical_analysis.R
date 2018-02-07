@@ -1,19 +1,13 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
 foo == 0.1  # foo is not equal to "0.1"
-format(foo, digits=10)
-format(foo, digits=16)
+print(foo, digits=10)
+print(foo, digits=16)
 # foo is equal to "0.1" within machine precision
 all.equal(foo, 0.1)
 foo <- (3-2.9)
-format(foo, digits=20)
+print(foo, digits=20)
 # info machine precision of computer R is running on
 # ?.Machine
 # machine precision
@@ -21,7 +15,7 @@ format(foo, digits=20)
 foo <- sqrt(2)
 foo^2  # printed as "2"
 foo^2 == 2  # foo^2 is not equal to "2"
-format(foo^2, digits=20)
+print(foo^2, digits=20)
 # foo^2 is equal to "2" within machine precision
 all.equal(foo^2, 2)
 # numbers with precision 0.1
@@ -66,7 +60,7 @@ all.equal(num_ber, 1.0)
 6 %/% 2  # use integers to get correct result
 # 0.2 stored as binary number
 # slightly larger than 0.2
-format(0.2, digits=22)
+print(0.2, digits=22)
 # get size of an object
 object.size(runif(1e6))
 format(object.size(runif(1e6)), units="MB")
@@ -88,7 +82,7 @@ sort(sapply(ls(env_etf),
 sort(sapply(mget(ls(env_etf), env_etf),
       object.size))
 # get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
+print(object.size(x=mget(ls())), units="MB")
 library(gdata)  # load package gdata
 # get names, class, and size of objects in workspace
 ob_jects <- ll(unit="bytes")
@@ -113,7 +107,7 @@ foo_bar <- numeric(1000000)
 # get extra R memory
 gc()["Vcells", "used"] - v_cells
 # get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
+print(object.size(x=mget(ls())), units="MB")
 library(microbenchmark)
 foo <- runif(1e6)
 system.time(foo^0.5)
@@ -205,24 +199,27 @@ summary(
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for (i in 1:NROW(vec_tor1)) {
+# sum two vectors in two different ways
+summary(microbenchmark(
+  # sum vectors using "for" loop
+  r_loop=(for (i in 1:NROW(vec_tor1)) {
     big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_tor1 + vec_tor2)
+  }),
+  # sum vectors using vectorized "+"
+  vec_torized=(vec_tor1 + vec_tor2),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # allocate memory for cumulative sum
 cum_sum <- numeric(NROW(big_vector))
-# cumulative sum using "for" loop
 cum_sum[1] <- big_vector[1]
-system.time(
-  for (i in 2:NROW(big_vector)) {
+# calculate cumulative sum in two different ways
+summary(microbenchmark(
+# cumulative sum using "for" loop
+  r_loop=(for (i in 2:NROW(big_vector)) {
     cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
+  }),
 # cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
+  vec_torized=cumsum(big_vector),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # calculate row sums two different ways
 summary(microbenchmark(
   row_sums=rowSums(big_matrix),
@@ -489,16 +486,16 @@ boot_strap <- sapply(1:10000, function(x) {
                               replace=TRUE)]
   quantile(c(boot_sample, -boot_sample), 0.95)
 })  # end sapply
-# standard error of mean from bootstrap
+# standard error of quantile from bootstrap
 sd(boot_strap)
 sqrt(2)*sd(boot_strap)
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
-explana_tory <- rnorm(100, mean=2)
+ex_plain <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + ex_plain + noise
 # define design matrix and regression formula
-de_sign <- data.frame(res_ponse, explana_tory)
+de_sign <- data.frame(res_ponse, ex_plain)
 reg_formula <- paste(colnames(de_sign)[1],
   paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
@@ -519,10 +516,10 @@ apply(boot_strap, MARGIN=1,
 reg_model <- lm(reg_formula, data=de_sign)
 reg_model$coefficients
 summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["explana_tory", ]),
+plot(density(boot_strap["ex_plain", ]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["explana_tory", ]),
+abline(v=mean(boot_strap["ex_plain", ]),
        lwd=2, col="red")
 library(parallel)  # load package parallel
 num_cores <- detectCores() - 1  # number of cores
@@ -552,10 +549,10 @@ boot_strap <- rutils::do_call(rbind, boot_strap)
 apply(boot_strap, MARGIN=2,
 function(x) c(mean=mean(x), sd=sd(x)))
 x11(width=6, height=6)
-plot(density(boot_strap[, "explana_tory"]),
+plot(density(boot_strap[, "ex_plain"]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "explana_tory"]),
+abline(v=mean(boot_strap[, "ex_plain"]),
  lwd=2, col="red")
 library(parallel)  # load package parallel
 # get short description
@@ -1049,6 +1046,63 @@ summary(microbenchmark(
   r_loop=uni_form(0.3, 1e5),
   r_cpp=uniform_rcpp(0.3, 1e5),
   times=10))[, c(1, 4, 5)]
+library(RcppArmadillo)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+vec1 <- runif(1e5)
+vec2 <- runif(1e5)
+vec_in(vec1, vec2)
+vec1 %*% vec2
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  vec_in=vec_in(vec1, vec2),
+  r_code=(vec1 %*% vec2),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows:
+# vec_in() is several times faster than %*%, especially for longer vectors.
+#     expr     mean   median
+# 1 vec_in 110.7067 110.4530
+# 2 r_code 585.5127 591.3575
+library(RcppArmadillo)
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+mat_rix <- matrix(runif(1e5), nc=1e3)
+# de-mean using apply()
+new_mat <- apply(mat_rix, 2,
+  function(x) (x-mean(x)))
+# de-mean using demean_mat()
+demean_mat(mat_rix)
+all.equal(new_mat, mat_rix)
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  demean_mat=demean_mat(mat_rix),
+  apply=(apply(mat_rix, 2, mean)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows:
+# demean_mat() is over 70 times faster than apply()
+#         expr       mean   median
+# 1 demean_mat   127.7539  125.604
+# 2      apply 10781.7534 9291.674
+
+# perform matrix inversion
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# invert the matrix
+matrix_inv <- solve(mat_rix)
+inv_mat(mat_rix)
+all.equal(inv_mat, mat_rix)
+# microbenchmark RcppArmadillo code
+library(microbenchmark)
+summary(microbenchmark(
+  inv_mat=inv_mat(mat_rix),
+  solve=solve(mat_rix),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# microbenchmark shows:
+# inv_mat() is over 10 times faster than solve()
+#      expr     mean median
+# 1 inv_mat  3.42669  2.933
+# 2 solve   32.00254 31.280
 # create random real symmetric matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- mat_rix + t(mat_rix)

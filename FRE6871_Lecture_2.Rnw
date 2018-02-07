@@ -1,5 +1,4 @@
 % FRE6871_Lecture_2
-
 % Define knitr options
 % !Rnw weave=knitr
 % Set global chunk options
@@ -55,13 +54,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Fall 2017}
+\subtitle{Lecture\#2, Spring 2018}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
-% \email{jp3900@poly.edu}
-\date{November 6, 2017}
+% \email{jp3900@nyu.edu}
+\date{January 29, 2018}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -77,49 +76,43 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{Rcpp} for Running \protect\emph{C++} Programs}
+\section{Atomic Data Objects}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{Rcpp} for Calling \protect\emph{C++} Programs from \texttt{R}}
+\subsection{Factors}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{Rcpp} allows calling \emph{C++} programs from \texttt{R}, by compiling the \emph{C++} code and creating \texttt{R} functions,
+      Factors are similar to vectors, but their elements can only take values from a set of \emph{levels},
       \vskip1ex
-      \emph{Rcpp} functions are \texttt{R} functions that were compiled from \emph{C++} code using package \emph{Rcpp},
+      Factors are designed for categorical data which can only take certain values,
       \vskip1ex
-      \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
+      The function \texttt{factor()} converts a vector into a factor,
       \vskip1ex
-      The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \emph{C++} code: \\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}\\
+      Factors have two attributes: \emph{class} (equal to \texttt{"factor"}) and \texttt{levels} (the allowed values),
       \vskip1ex
-      You can learn more about the package \emph{Rcpp} here: \\
-      \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
-      \hskip1em\url{http://www.rcpp.org/}\\
-      \hskip1em\url{http://gallery.rcpp.org/}
+      Although factors aren't vectors, the data underlying a factor is an integer vector, called an \emph{encoding vector},
+      \vskip1ex
+      The function \texttt{as.numeric()} extracts the encoding vector (indices) of a factor,
+      \vskip1ex
+      The function \texttt{as.vector()} coerces a factor to a character vector,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-# verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# load package Rcpp
-library(Rcpp)
-# get documentation for package Rcpp
-# get short description
-packageDescription("Rcpp")
-# load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# remove Rcpp from search path
-detach("package:Rcpp")
+      <<echo=TRUE,eval=FALSE>>=
+# create factor vector
+fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fac_tor
+fac_tor[3]
+attributes(fac_tor)  # get factor attributes
+levels(fac_tor)  # get allowed values
+as.numeric(fac_tor)  # get encoding vector
+is.vector(fac_tor)
+as.factor(1:5)  # coerce vector to factor
+# coerce factor to character vector
+as.vector(as.factor(1:5))
       @
   \end{columns}
 \end{block}
@@ -128,35 +121,32 @@ detach("package:Rcpp")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function \texttt{cppFunction()} for Compiling \protect\emph{C++} code}
+\subsection{Tables of Categorical Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{cppFunction()} compiles \emph{C++} code into an \texttt{R} function,
+      The function \texttt{table()} calculates the frequency distribution of categorical data,
       \vskip1ex
-      The function \texttt{cppFunction()} creates an \texttt{R} function only for the current \texttt{R} session, and it must be recompiled for every new \texttt{R} session,
+      A contingency table is a matrix that contains the frequency distribution of variables (factors) contained in a set of data,
       \vskip1ex
-      The function \texttt{sourceCpp()} compiles \emph{C++} code contained in a file, into \texttt{R} functions,
+      The function \texttt{unique()} extracts unique elements of an object,
+      \vskip1ex
+      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# run Rcpp function
-times_two(3)
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
-# multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
-# multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
+fac_tor
+levels(fac_tor)  # get allowed values
+unique(fac_tor)  # get unique elements
+# get contingency (frequency) table
+table(fac_tor)
+# get contingency table using sapply
+sapply(levels(fac_tor),
+       function(le_vel) {
+         sum(fac_tor==le_vel)
+       })  # end sapply
       @
   \end{columns}
 \end{block}
@@ -165,65 +155,44 @@ rcpp_mult_vec(1:3, 6:4)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Loops in \protect\emph{Rcpp Sugar}}
+\subsection{Classifying Continuous Numeric Data Into Categories}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Loops in \emph{Rcpp} can be two orders of magnitude faster than loops in \texttt{R}!
+      Numeric data that represents a \emph{magnitude}, \emph{intensity}, or \emph{score} can be classified into categorical data, given a vector of \emph{breakpoints},
       \vskip1ex
-      \emph{Rcpp Sugar} allows using \texttt{R}-style vectorized syntax in \emph{Rcpp} code,
-      <<echo=TRUE,eval=FALSE>>=
-# define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-      total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-      @
+      The \emph{breakpoints} create intervals that correspond to different \emph{categories},
+      \vskip1ex
+      The \emph{categories} combine elements that have a similar numeric \emph{magnitude},
+      \vskip1ex
+      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
+      \vskip1ex
+      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
+      \vskip1ex
+      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+      \vskip1ex
+      If all the elements of \texttt{"vec"} are greater than the element of \texttt{"x"}, then \texttt{findInterval()} returns \texttt{zero},
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-      to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# compare speed of Rcpp and R
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(microbenchmark)
-summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
+str(findInterval)
+# get index of the element of "vec" that matches 5
+findInterval(x=5, vec=c(3, 5, 7))
+match(5, c(3, 5, 7))
+# no exact match
+findInterval(x=6, vec=c(3, 5, 7))
+match(6, c(3, 5, 7))
+# indices of "vec" that match elements of "x"
+findInterval(x=1:8, vec=c(3, 5, 7))
+# return only indices of inside intervals
+findInterval(x=1:8, vec=c(3, 5, 7),
+             all.inside=TRUE)
+# make rightmost interval inclusive
+findInterval(x=1:8, vec=c(3, 5, 7),
+             rightmost.closed=TRUE)
       @
   \end{columns}
 \end{block}
@@ -232,69 +201,131 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Generating Random Numbers Using Logistic Map in \protect\emph{Rcpp}}
+\subsection{Classifying Numeric Data Into Categories Example}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{logistic map} in \emph{Rcpp} is about seven times than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
-      <<echo=TRUE,eval=FALSE>>=
-# calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
-  out_put[1] <- see_d
-  for (i in 2:len_gth) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
-  }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
-
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
-# microbenchmark Rcpp code
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
-      @
+      Temperature can be categorized into "cold", "warm", "hot", etc.
+      \vskip1ex
+      A named numeric vector of \emph{breakpoints} can be used to convert a temperature into one of the \emph{categories},
+      \vskip1ex
+      \emph{Breakpoints} correspond to \emph{categories} of the data,
+      \vskip1ex
+      The first \emph{breakpoint} should correspond to the lowest \emph{category}, and should have a value less than any of the data,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-#include <Rcpp.h>
-using namespace Rcpp;
+      <<echo=TRUE,eval=FALSE>>=
+# named numeric vector of breakpoints
+brea_ks <- c(freezing=0, very_cold=30,
+             cold=50, pleasant=60,
+             warm=80, hot=90)
+brea_ks
+tempe_ratures <- runif(10, min=10, max=100)
+feels_like <- names(
+  brea_ks[findInterval(x=tempe_ratures,
+                       vec=brea_ks)])
+names(tempe_ratures) <- feels_like
+tempe_ratures
+      @
+  \end{columns}
+\end{block}
 
-// This is a simple example of exporting a C++ function to R. 
-// You can source this function into an R session using the 
-// function Rcpp::sourceCpp() 
-// (or via the Source button on the editor toolbar).
-// Learn more about Rcpp at:
-//
-//   http://www.rcpp.org/
-//   http://adv-r.had.co.nz/Rcpp.html
-//   http://gallery.rcpp.org/
+\end{frame}
 
-// function uni_form() produces a vector of 
-// uniformly distributed pseudo-random numbers
-// [[Rcpp::export]]
-NumericVector uniform_rcpp(double see_d, int len_gth) {
-// define pi
-static const double pi = 3.14159265;
-// allocate output vector
-  NumericVector out_put(len_gth);
-// initialize output vector
-  out_put[0] = see_d; 
-// perform loop
-  for (int i=1; i < len_gth; ++i) {
-    out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
-  }  // end for
-// rescale output vector and return it
-  return acos(1-2*out_put)/pi;
-}
 
-    \end{lstlisting}
+%%%%%%%%%%%%%%%
+\subsection{Converting Numeric Data Into Factors Using \texttt{cut()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{cut()} converts a numeric vector into a vector of factors, representing the intervals to which the numeric values belong,
+      \vskip1ex
+      \texttt{cut()} divides the range of values into intervals, based on a vector of breaks,
+      \vskip1ex
+      \texttt{cut()} then assigns factors to the numeric values, representing the intervals to which the numeric values belong,
+      \vskip1ex
+      The argument \texttt{"breaks"} is a numeric vector of break points that divide the range of values into intervals,
+      \vskip1ex
+      The argument \texttt{"labels"} is a vector of labels for the intervals,
+      \vskip1ex
+      The argument \texttt{"right"} is a Boolean indicating if the intervals should be closed on the right (and open on the left), or vice versa,
+      \vskip1ex
+      \texttt{cut()} can produce the same classification as \texttt{findInterval()}, but \texttt{findInterval()} is faster than \texttt{cut()}, because it's a compiled function,
+      \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+foo <- sample(0:6) + 0.1
+foo
+cut(x=foo, breaks=c(2, 4, 6, 8))
+rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+# cut() replicates findInterval()
+cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
+    right=FALSE)
+findInterval(x=1:8, vec=c(3, 5, 7))
+# findInterval() is a compiled function, so it's faster than cut()
+vec_tor <- rnorm(1000)
+summary(microbenchmark(
+  find_interval=
+    findInterval(x=vec_tor, vec=c(3, 5, 7)),
+  cuut=
+    cut(x=vec_tor, breaks=c(3, 5, 7)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Histograms of Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram,
+      \vskip1ex
+      If the argument \texttt{freq} is \texttt{TRUE} then the frequencies (counts) are plotted, and if it's \texttt{FALSE} then the probability density is plotted (with total area equal to \texttt{1}),
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density,
+      \vskip1ex
+      The function \texttt{lines()} draws a line through specified points,
+      <<echo=TRUE,eval=FALSE>>=
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# plot histogram
+par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+histo_gram <- hist(dax_rets, breaks=30, 
+  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04), 
+  xlab="", ylab="", freq=FALSE)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth]{figure/hist_dax.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# draw kernel density of histogram
+lines(density(dax_rets), col='red', lwd=2)
+# add density of normal distribution
+curve(expr=dnorm(x, mean=mean(dax_rets), 
+  sd=sd(dax_rets)), add=TRUE, type="l", 
+  lwd=2, col="blue")
+title(main="DAX return distribution", line=0)
+# add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+  leg=c(colnames(EuStockMarkets)[1], "Normal"),
+  lwd=6, bg="white", col=c("red", "blue"))
+# total area under histogram
+diff(histo_gram$breaks) %*% histo_gram$density
+      @
   \end{columns}
 \end{block}
 
@@ -304,37 +335,6 @@ static const double pi = 3.14159265;
 
 %%%%%%%%%%%%%%%
 \section{Functions}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Return Values of \secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function body doesn't require a \texttt{return} statement, since by default \texttt{R} functions return the last statement evaluated in the body,
-      \vskip1ex
-      \texttt{return()} statements are inserted in logical branches to terminate function execution and return its intended value,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# define function that returns NULL for non-numeric argument
-test_func <- function(in_put) {
-  if (!is.numeric(in_put)) {
-    warning(paste("argument", in_put, "isn't numeric"))
-    return(NULL)
-  }
-  2*in_put
-}  # end test_func
-
-test_func(2)
-test_func("hello")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -378,91 +378,6 @@ ls()  # list objects
 
 
 %%%%%%%%%%%%%%%
-\subsection{Recursive Function for Calculating Fibonacci Sequence}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Recursive} functions call themselves in their own body,
-      \vskip1ex
-      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
-      \begin{displaymath}
-        F_n = F_{n-1} + F_{n-2},
-      \end{displaymath}
-      \begin{displaymath}
-        F_1 = 0, F_2 = 1,
-      \end{displaymath}
-      \begin{displaymath}
-        F_n = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
-      \end{displaymath}
-      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by the Italian mathematician \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE>>=
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
-  } else {
-    c(0, 1)  # initialize and return
-  }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function for Calculating Skew}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} provides an easy way for users to write functions,
-      \vskip1ex
-      \texttt{datasets} is a \texttt{base} package containing various datasets, for example: \texttt{EuStockMarkets},
-      \vskip1ex
-      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices,
-      \vskip1ex
-      Formal function arguments can be bound to input variables by position or by name,
-      \vskip1ex
-      If the function arguments are missing then their default value is used,
-      \vskip1ex
-      Functions return the value of the last expression that is evaluated,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# DAX returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-# calc_skew() calculates skew of time series of returns
-calc_skew <- function(time_series=rnorm(1000)) {
-# default is normal time series
-  len_data <- length(time_series)  # number of observations
-# normalize time_series
-  time_series <-
-    (time_series - mean(time_series))/sd(time_series)
-# calculate skew last statement automatically returned
-  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
-}  # end calc_skew
-
-# calculate skew of DAX returns
-calc_skew(time_series=dax_rets)  # bind arguments by name
-calc_skew(dax_rets)  # bind arguments by position
-calc_skew()  # use default value of arguments
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Exploring Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -478,115 +393,11 @@ calc_skew()  # use default value of arguments
       The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<>>=
-calc_skew  # show the function code
-
-getAnywhere(calc_skew)  # display function
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Internal and Primitive Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} is a high-level language written in lower-level languages, mostly \texttt{C++} and some \texttt{Fortran},
-      \vskip1ex
-      \texttt{R} functions are either written in \texttt{R} code (\emph{interpreted} functions), or they directly call compiled \texttt{C++} or \texttt{Fortran} code (\emph{compiled} functions, also called \emph{internal} or \emph{primitive}),
-      \vskip1ex
-      \texttt{R} parses the code of \emph{interpreted} functions, and eventually calls compiled \texttt{C++} or \texttt{Fortran} code,
-      \vskip1ex
-      But this extra processing makes \emph{interpreted} functions much slower than \emph{compiled} functions,
-      \vskip1ex
-      Users can distinguish between \emph{interpreted} functions and \emph{compiled} functions by typing their names, and analyzing their source code,
-      \vskip1ex
-      The source code of \emph{interpreted} functions contains multiple lines of \texttt{R} code, or a call to function \texttt{UseMethod()} (which \emph{dispatches} \emph{methods} associated with \emph{generic} functions),
-      \vskip1ex
-      The source code of \emph{compiled} functions contains a single call to one of the functions that execute \emph{compiled} \texttt{C++} or \texttt{Fortran} code: \texttt{.Internal()}, \texttt{.Primitive()}, \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, or \texttt{.External()},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE, eval=FALSE>>=
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-# show all methods of mean()
-methods(generic.function=mean)
-# show code for mean.default()
-mean.default
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring Internal and Primitive Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \vskip1ex
-      Several functions call compiled code: \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, \texttt{.External()}, or \texttt{.Internal()} and \texttt{.Primitive()}
-      \vskip1ex
-      \texttt{R} \texttt{.Internal()} \texttt{.Primitive()}
-      \vskip1ex
-      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
-      \vskip1ex
-      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
-      \vskip1ex
-      the user can access symbols from a package that isn't attached using the double-colon operator \texttt{tools::file\_ext}
-
-      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<>>=
-# get all methods for generic function "plot"
-methods("plot")
-
-getAnywhere(plot)  # display function
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Lazy Evaluation of Function Arguments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{R} functions delay evaluation of their arguments until they're needed by their \texttt{R} code,
-      \vskip1ex
-      This is called \emph{lazy} evaluation,
-      \vskip1ex
-      If the function body doesn't evaluate an argument, then the function won't produce an error, even if the argument is missing,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=(-1)>>=
-rm(list=ls())
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  2*arg1  # just multiply first argument
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # second argument was never evaluated!
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  cat(arg1, '\n')  # write to output
-  cat(arg2)  # write to output
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # first argument written to output
+      <<echo=TRUE,eval=FALSE>>=
+# show the function code
+plot.default
+# display function
+getAnywhere(plot.default)
       @
   \end{columns}
 \end{block}
@@ -664,6 +475,147 @@ bind_dots <- function(..., in_put=10) {
          ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Wrapper \secname \hskip0.4em With dots \texttt{"..."} Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Wrapper} functions provide a convenient user interface to functions, by assigning default argument values, validating data, and formatting the output,
+      \vskip1ex
+      \emph{Wrapper} functions are designed to perform the actions of other functions, while reducing their complexity,
+      \vskip1ex
+      The dots \texttt{"..."} argument of the \emph{wrapper} function allows passing additional arguments on to the wrapped function,
+      \vskip1ex
+      \emph{Wrapper} functions should be used with caution, since wrapping a function creates extra code (overhead), which slows down \texttt{R},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# wrapper for mean() with default na.rm=TRUE
+my_mean <- function(x, na.rm=TRUE, ...) {
+  mean(x=x, na.rm=na.rm, ...)
+}  # end my_mean
+foo <- sample(c(1:10, NA, rep(0.1, t=5)))
+mean(c(foo, NA))
+mean(c(foo, NA), na.rm=TRUE)
+my_mean(c(foo, NA))
+my_mean(c(foo, NA), trim=0.4)  # pass extra argument
+# wrapper for saving data into default directory
+save_data <- function(...,
+                      file=stop("error: no file name"),
+                      my_dir="C:/Develop/data") {
+# create file path
+  file <- file.path(my_dir, file)
+  save(..., file=file)
+}  # end save_data
+foo <- 1:10
+save_data(foo, file="scratch.RData")
+save_data(foo, file="scratch.RData", my_dir="C:/Develop")
+# wrapper for testing negative arguments
+stop_if_neg <- function(in_put) {
+  if (!is.numeric(in_put) || in_put<0)
+    stop("argument not numeric or negative")
+}  # end stop_if_neg
+# wrapper for sqrt()
+my_sqrt <- function(in_put) {
+  stop_if_neg(in_put)
+  sqrt(in_put)
+}  # end my_sqrt
+my_sqrt(2)
+my_sqrt(-2)
+my_sqrt(NA)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Side effects Using the Super-assignment Operator \texttt{"<<-"}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Function \emph{side effects} are operations on objects outside a function's \emph{evaluation} environment,
+      \vskip1ex
+      The functions \texttt{plot()} and \texttt{load()} are examples of functions that produce \emph{side effects},
+      \vskip1ex
+      \texttt{load()} reads data from an \texttt{*.RData} file, and creates objects in the workspace that are contained in the \texttt{*.RData} file,
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} allows creating functions that produce \emph{side effects},
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} modifies or creates variables in the \emph{enclosing} environment in which a function was \emph{defined} (\emph{lexical} scoping),
+      \vskip1ex
+      If a function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment, and the \texttt{"<<-"} operator operates on variables in the \emph{global} environment,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+setwd("C:/Develop/R/lecture_slides/data")
+rm(list=ls())  # remove all objects
+ls()  # list objects
+# load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # list objects
+glob_var <- 1  # define a global variable
+# explore function scope and side effects
+side_effect <- function() {
+  cat("global glob_var:\t", glob_var, "\n")
+# define local "glob_var" variable
+  glob_var <- 10
+# re-define the global "glob_var"
+  glob_var <<- 2
+  cat("local glob_var:\t", glob_var, "\n")
+}  # end side_effect
+side_effect()
+# global variable was modified as side effect
+glob_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Higher-order Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions as First Class Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Functions in \texttt{R} are \emph{first class objects}, which means they can be treated like any other \texttt{R} object:
+      \begin{itemize}
+        \item Functions can be passed as arguments to other functions,
+        \item Functions can be nested (defined inside other functions),
+        \item Functions can return functions as their return value,
+      \end{itemize}
+      \emph{Higher-order} functions are \texttt{R} functions that either accept a function as their argument (input) or return a function as their value (output),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<>>=
+# create functional that accepts a function as input argument
+func_tional <- function(func_name) {
+# calculates statistic on random numbers
+  set.seed(1)
+  func_name(runif(1e4))  # apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
       @
   \end{columns}
 \end{block}
@@ -1122,49 +1074,58 @@ vapply(2:4, function(num) 1:num,
 
 
 %%%%%%%%%%%%%%%
-\section{Operators}
+\section{Writing Fast \texttt{R} Code Using Vectorized Operations}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Comparing Objects With \texttt{identical()} and \texttt{all.equal()}}
+\subsection{Vectorized Functions for Vector Computations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{identical()} tests if two objects are exactly the same, and always returns a single logical \texttt{TRUE} or \texttt{FALSE} (never \texttt{NA} or logical \texttt{vectors}),
+      \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value,
       \vskip1ex
-      For atomic arguments \texttt{identical()} often gives the same result as the \texttt{"=="} operator, but it's not synonymous with it in general,
+      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast,
       \vskip1ex
-      The \texttt{"=="} operator applies the \emph{recycling rule} to vector arguments and returns logical \texttt{vectors}, but \texttt{identical()} doesn't and returns a single logical value,
+      The following \emph{vectorized compiled} functions calculate cumulative values over large vectors:
+      \begin{itemize}
+        \item \texttt{cummax()}
+        \item \texttt{cummin()}
+        \item \texttt{cumsum()}
+        \item \texttt{cumprod()}
+      \end{itemize}
+      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized compiled} functions,
       \vskip1ex
-      The function \texttt{all.equal()} tests the equality of two objects to within the square root of the \emph{machine precision},
+      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized compiled} functions for logical operations,
       \vskip1ex
-      The variable \texttt{.Machine} contains information about the numerical characteristics of the computer \texttt{R} is running on, such as the largest \texttt{double} and \texttt{integer} numbers, and the \emph{machine precision},
+      But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
     \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-num_var <- 2
-num_var==2
-identical(num_var, 2)
-
-identical(num_var, NULL)
-# this doesn't work:
-# num_var==NULL
-is.null(num_var)
-
-vec_tor <- c(2, 4, 6)
-vec_tor==2
-identical(vec_tor, 2)
-
-# num_ber is equal to "1.0" within machine precision
-num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
-all.equal(num_ber, 1.0)
-
-# info machine precision of computer R is running on
-# ?.Machine
-# machine precision
-.Machine$double.eps
+        <<eval=FALSE>>=
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+# sum two vectors in two different ways
+summary(microbenchmark(
+  # sum vectors using "for" loop
+  r_loop=(for (i in 1:NROW(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }),
+  # sum vectors using vectorized "+"
+  vec_torized=(vec_tor1 + vec_tor2),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# allocate memory for cumulative sum
+cum_sum <- numeric(NROW(big_vector))
+cum_sum[1] <- big_vector[1]
+# calculate cumulative sum in two different ways
+summary(microbenchmark(
+# cumulative sum using "for" loop
+  r_loop=(for (i in 2:NROW(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }),
+# cumulative sum using "cumsum"
+  vec_torized=cumsum(big_vector),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1173,37 +1134,30 @@ all.equal(num_ber, 1.0)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Lookup and Matching Using \texttt{which()}}
+\subsection{Vectorized Functions for Matrix Computations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{which()} returns the indices of the \texttt{TRUE} elements of a Boolean \texttt{vector} or \texttt{array},
+      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices,
       \vskip1ex
-      If the argument is an \texttt{array} and \texttt{arr.ind=TRUE}, then \texttt{which()} returns a matrix with rows containing the indices of the \texttt{TRUE} elements,
-      \vskip1ex
-      The functions \texttt{which.max()} and \texttt{which.min()} return the index of the minimum or maximum of a \texttt{numeric} or \texttt{Boolean} vector,
+      \texttt{R} has very fast \emph{vectorized compiled} functions for calculating sums and means of rows and columns:
+      \begin{itemize}
+        \item \texttt{rowSums()}
+        \item \texttt{colSums()}
+        \item \texttt{rowMeans()}
+        \item \texttt{colMeans()}
+      \end{itemize}
+      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
-vec_tor <- sample(1:6, 21, replace=TRUE)
-mat_rix <- matrix(vec_tor, ncol=3)
-vec_tor
-which(vec_tor == 5)
-# equivalent but slower than above
-(1:length(vec_tor))[vec_tor == 5]
-which(vec_tor > 5)
-# find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6),
-      arr.ind=TRUE)
-# equivalent but slower than above
-arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
-         dim(mat_rix), dimnames(mat_rix))
-which.max(vec_tor)
-# equivalent but slower than above
-which(vec_tor == max(vec_tor))
-which.min(vec_tor)
+        <<eval=FALSE>>=
+# calculate row sums two different ways
+summary(microbenchmark(
+  row_sums=rowSums(big_matrix),
+  ap_ply=apply(big_matrix, 1, sum),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1212,85 +1166,36 @@ which.min(vec_tor)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Lookup and Matching Using \texttt{match()}}
+\subsection{Fast \texttt{R} Code for Matrix Computations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{match()} returns the index of the first element of its second argument, that matches its first argument,
+      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments,
       \vskip1ex
-      The binary operator \texttt{\%in\%} returns a Boolean \texttt{vector} with \texttt{TRUE} values corresponding to elements that have matches,
+      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary,
       \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0},
+      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors,
       \vskip1ex
-      \texttt{\%in\%} never returns \texttt{NA}, so it's preferred in \texttt{if ()} statements,
+      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()},
       \vskip1ex
-      \texttt{any()} returns \texttt{TRUE} if at least one element of a Boolean vector is \texttt{TRUE}, and \texttt{FALSE} otherwise,
-      \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function,
-      \vskip1ex
-      \texttt{pmatch()} performs partial matching of strings,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<>>=
-match(5, vec_tor)
-# more general but slower than above
-which(vec_tor == 5)
-match(-5, vec_tor)
-5 %in% vec_tor
-# equivalent to above
-match(5, vec_tor, nomatch=0) > 0
--5 %in% vec_tor
-c(5, -5) %in% vec_tor
-# equivalent to "5 %in% vec_tor"
-any(vec_tor == 5)
-# equivalent to "-5 %in% vec_tor"
-any(vec_tor == (-5))
-if (any(vec_tor < 0))
-  cat("vector contains negative values\n")
-# partial matching of strings
-pmatch("med", c("mean", "median", "mode"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Finding Closest Match Using \texttt{findInterval()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{match()} returns the index of the first element of its second argument, that \emph{exactly} matches its first argument,
-      \vskip1ex
-      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
-      \vskip1ex
-      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
-      \vskip1ex
-      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
+      \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-             all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-             rightmost.closed=TRUE)
+library(microbenchmark)
+str(pmax)
+# calculate row maximums two different ways
+summary(microbenchmark(
+  p_max=
+    do.call(pmax.int,
+      lapply(seq_along(big_matrix[1, ]),
+        function(in_dex) big_matrix[, in_dex])),
+  l_apply=unlist(
+    lapply(seq_along(big_matrix[, 1]),
+        function(in_dex) max(big_matrix[in_dex, ]))),
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -1299,42 +1204,102 @@ findInterval(x=1:8, vec=c(3, 5, 7),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Assignment Operators}
+\subsection{Vectorized \texttt{if-else} Statements Using Function \texttt{ifelse()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The standard assignment operator in \texttt{R} is \texttt{"<-"},
+      The function \texttt{ifelse()} performs \emph{vectorized} \texttt{if-else} statements on vectors,
       \vskip1ex
-      Both \texttt{"<-"} and \texttt{"="} are valid assignment operators in \texttt{R},
+      \texttt{ifelse()} is much faster than performing an element-wise loop in \texttt{R},
+        <<func_ifelse,eval=FALSE,echo=TRUE,fig.show='hide'>>=
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
+                  vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
+
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid",
+        col=c("green", "blue", "red"),
+        lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4),
+       title="", inset=0.05, cex=0.8, lwd=2,
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/func_ifelse-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Parallel Computing}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing in \texttt{R}}
+\begin{frame}[t]{\subsecname}
+\vspace{-1em}
+
+\begin{block}{Parallel Computing in \texttt{R}}
+      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores,
       \vskip1ex
-      The \texttt{"<-"} operator may cause an error if \texttt{R} confuses it with the \texttt{"<"} logical operator,
+      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \emph{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
+      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
+      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
+      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
+\end{block}
+
+\begin{block}{\texttt{R} Base Package \emph{parallel}}
+  The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs,
+  \vskip1ex
+  The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
+  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
+  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
+\end{block}
+
+\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
+      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Using Package \protect\emph{parallel}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs,
       \vskip1ex
-      But they differ in \emph{scope} and  \emph{precedence} (\texttt{"<-"} has higher precedence than \texttt{"="}),
+      The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed,
       \vskip1ex
-      The \texttt{"="} operator is used for named arguments in function calls,
-      \vskip1ex
-      When variables are assigned within an argument list using the \texttt{"="} operator, their \emph{scope} is limited to the function,
-      \vskip1ex
-      {\color{red}{Rule of Thumb}}:\\
-      Use \texttt{"<-"} in \texttt{R} scripts and inside functions,\\
-      Use \texttt{"="} only in function calls,
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
-num_var1 <- 3  # "<-" and "=" are valid assignment operators
-num_var1
-num_var1 = 3
-num_var1
-2<-3  # "<" operator confused with "<-"
-2 < -3  # add space or brackets to avoid confusion
-# "=" assignment within argument list
-median(x=1:10)
-x  # x doesn't exist outside the function
-# "<-" assignment within argument list
-median(x <- 1:10)
-x  # x exists outside the function
+      <<eval=FALSE>>=
+library(parallel)  # load package parallel
+# get short description
+packageDescription("parallel")
+# load help page
+help(package="parallel")
+# list all objects in "parallel"
+ls("package:parallel")
       @
   \end{columns}
 \end{block}
@@ -1342,45 +1307,55 @@ x  # x exists outside the function
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Atomic Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Factors}
+\subsection{Performing Parallel Loops Using Package \protect\emph{parallel}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Factors are similar to vectors, but their elements can only take values from a set of \emph{levels},
+      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops,
       \vskip1ex
-      Factors are designed for categorical data which can only take certain values,
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
       \vskip1ex
-      The function \texttt{factor()} converts a vector into a factor,
+      The function \texttt{mclapply()} performs apply loops (similar to \texttt{lapply()}) using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
       \vskip1ex
-      Factors have two attributes: \emph{class} (equal to \texttt{"factor"}) and \texttt{levels} (the allowed values),
+      Under \emph{Windows}, a cluster of \texttt{R} processes (one per each CPU core) need to be started first, by calling the function \texttt{makeCluster()},
       \vskip1ex
-      Although factors aren't vectors, the data underlying a factor is an integer vector, called an \emph{encoding vector},
+      \emph{Mac-OSX} and \emph{Linux} don't require calling the function \texttt{makeCluster()},
       \vskip1ex
-      The function \texttt{as.numeric()} extracts the encoding vector (indices) of a factor,
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
       \vskip1ex
-      The function \texttt{as.vector()} coerces a factor to a character vector,
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# perform parallel loop under Mac-OSX or Linux
+paw_s <- mclapply(1:10, paws, mc.cores=num_cores,
+                sleep_time=0.01)
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# perform parallel loop under Windows
+paw_s <- parLapply(clus_ter, 1:10, paws,
+                 sleep_time=0.01)
+library(microbenchmark)  # load package microbenchmark
+# compare speed of lapply versus parallel computing
+summary(microbenchmark(
+  l_apply=lapply(1:10, paws, sleep_time=0.01),
+  parl_apply=
+    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
       @
   \end{columns}
 \end{block}
@@ -1389,113 +1364,953 @@ as.vector(as.factor(1:5))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Tables of Categorical Data}
+\subsection{Computing Overhead of Parallel Computing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead,
+      \vskip1ex
+      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks,
+      <<echo=(-(1:10)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define function that pauses execution
+paws <- function(x, sleep_time) {
+  Sys.sleep(sleep_time)
+  x
+}  # end paws
+# compare speed of lapply with parallel computing
+iter_ations <- 3:10
+compute_times <- sapply(iter_ations,
+  function(max_iterations, sleep_time) {
+    out_put <- summary(microbenchmark(
+      lapply=lapply(1:max_iterations, paws,
+                    sleep_time=sleep_time),
+      parallel=parLapply(clus_ter, 1:max_iterations,
+              paws, sleep_time=sleep_time),
+      times=10))[, c(1, 4)]
+    structure(out_put[, 2],
+              names=as.vector(out_put[, 1]))
+    }, sleep_time=0.01)
+compute_times <- t(compute_times)
+rownames(compute_times) <- iter_ations
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/parallel_plot.png}\\
+      \vspace{-1em}
+      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
+library(parallel)  # load package parallel
+plot(x=rownames(compute_times),
+     y=compute_times[, "lapply"],
+     type="l", lwd=2, col="blue",
+     main="Compute times",
+     xlab="number of iterations in loop", ylab="",
+     ylim=c(0, max(compute_times[, "lapply"])))
+lines(x=rownames(compute_times),
+      y=compute_times[, "parallel"], lwd=2, col="green")
+legend(x="topleft", legend=colnames(compute_times),
+       inset=0.1, cex=1.0, bg="white",
+       lwd=2, lty=c(1, 1), col=c("blue", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Computing Over Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Very often we need to perform time consuming calculations over columns of matrices,
+      \vskip1ex
+      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# define large matrix
+mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# define aggregation function over column of matrix
+agg_regate <- function(col_umn) {
+  out_put <- 0
+  for (in_dex in 1:NROW(col_umn))
+    out_put <- out_put + col_umn[in_dex]
+  out_put
+}  # end agg_regate
+# perform parallel aggregations over columns of matrix
+agg_regations <-
+  parCapply(clus_ter, mat_rix, agg_regate)
+# compare speed of apply with parallel computing
+summary(microbenchmark(
+  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
+  parl_apply=
+    parCapply(clus_ter, mat_rix, agg_regate),
+  times=10)
+)[, c(1, 4, 5)]
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Initializing Parallel Clusters Under \protect\emph{Windows}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under \emph{Windows} the child processes in the parallel compute cluster don't inherit data and objects from their parent process,
+      \vskip1ex
+      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()},
+      \vskip1ex
+      Objects from packages must be either referenced using the double-colon operator \texttt{"::"}, or the packages must be loaded in the child processes,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:5)),eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+ba_se <- 2
+# fails because child processes don't know ba_se:
+parLapply(clus_ter, 2:4,
+          function(exponent) ba_se^exponent)
+# ba_se passed to child via dots ... argument:
+parLapply(clus_ter, 2:4,
+          function(exponent, ba_se) ba_se^exponent,
+          ba_se=ba_se)
+# ba_se passed to child via clusterExport:
+clusterExport(clus_ter, "ba_se")
+parLapply(clus_ter, 2:4,
+          function(exponent) ba_se^exponent)
+# fails because child processes don't know zoo::index():
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+          function(sym_bol)
+            NROW(index(get(sym_bol, envir=rutils::env_etf))))
+# zoo function referenced using "::" in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+          function(sym_bol)
+            NROW(zoo::index(get(sym_bol, envir=rutils::env_etf))))
+# package zoo loaded in child process:
+parSapply(clus_ter, c("VTI", "IEF", "DBC"),
+          function(sym_bol) {
+            stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
+            NROW(index(get(sym_bol, envir=rutils::env_etf)))
+          })  # end parSapply
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reproducible Parallel Simulations Under \protect\emph{Windows}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations use pseudo-random number generators, and in order to perform reproducible results, they must set the \emph{seed} value, so that the number generators produce the same sequence of pseudo-random numbers,
+      \vskip1ex
+      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value, so that the number generator produces the same sequence of numbers for a given \emph{seed} value,
+      \vskip1ex
+      But under \emph{Windows} \texttt{set.seed()} doesn't initialize the random number generators of child processes, and they don't produce the same sequence of numbers,
+      \vskip1ex
+      The function \texttt{clusterSetRNGStream()} initializes the random number generators of child processes under \emph{Windows},
+      \vskip1ex
+      The function \texttt{set.seed()} does initialize the random number generators of child processes under \emph{Mac-OSX} and \emph{Linux},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+# calculate number of available cores
+num_cores <- detectCores() - 1
+# initialize compute cluster under Windows
+clus_ter <- makeCluster(num_cores)
+# set seed for cluster under Windows
+# doesn't work: set.seed(1121)
+clusterSetRNGStream(clus_ter, 1121)
+# perform parallel loop under Windows
+out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
+sum(unlist(out_put))
+# stop R processes over cluster under Windows
+stopCluster(clus_ter)
+# perform parallel loop under Mac-OSX or Linux
+out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Credit Portfolio Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Single-period Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a portfolio of credit assets (bonds or loans) over a single period of time,
+      \vskip1ex
+      At the end of the period, some of the assets default, while the rest don't,
+      \vskip1ex
+      The default probabilities are equal to $p_i$, 
+      \vskip1ex
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$, 
+      \vskip1ex
+      Default occurs if $u_i$ is less than the default probability $p_i$:
+      \begin{displaymath}
+        u_i < p_i
+      \end{displaymath}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{for()} loops,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random default probabilities
+num_assets <- 100
+default_probs <- runif(num_assets, max=0.2)
+mean(default_probs)
+# calculate number of defaults
+uni_form <- runif(num_assets)
+sum(uni_form < default_probs)
+# simulate average number of defaults
+num_simu <- 1000
+de_faults <- numeric(num_simu)
+# simulate using for() loop (inefficient way)
+for (i in 1:num_simu) {  # perform loop
+  uni_form <- runif(num_assets)
+  de_faults[i] <- sum(uni_form < default_probs)
+}  # end for
+# calculate average number of defaults
+mean(de_faults)
+# simulate using vectorized functions  (efficient way)
+uni_form <- matrix(runif(num_simu*num_assets), 
+                   ncol=num_simu)
+sum(uni_form < default_probs)/num_simu
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Values and Default Thresholds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables,
+      \vskip1ex
+      These asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, but may be thought of as related to the balance of company assets minus its liabilities,
+      \vskip1ex
+      Default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{displaymath}
+        a_i < t_i
+      \end{displaymath}
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative Standard Normal distribution, 
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/default_threshold.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot Standard Normal distribution
+curve(expr=dnorm(x),
+      type="l", xlim=c(-4, 4),
+      xlab="asset value", ylab="", lwd=2,
+      col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+       labels="default threshold",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Asset Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$: 
+      \begin{displaymath}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
+      \end{displaymath}
+      Where $\rho$ is the correlation between asset values, 
+      \vskip1ex
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$, 
+      \vskip1ex
+      The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor,
+      \vskip1ex
+      The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for credit risk:\\
+\hskip1em\url{http://bis2information.org/content/Vasicek_model}\\
+\hskip1em\url{https://www.bis.org/bcbs/basel3.htm}\\
+\hskip1em\url{https://www.bis.org/bcbs/irbriskweight.pdf}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+num_assets <- 5 ; num_simu <- 10000
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate asset values using vectorized functions (efficient way)
+asset_values <- rho_sqrt*system_atic + 
+  rho_sqrtm*rnorm(num_simu*num_assets)
+dim(asset_values) <- c(num_simu, num_assets)
+# calculate correlations between asset values
+cor(asset_values)
+# simulate asset values using for() loop (inefficient way)
+# allocate matrix of assets
+asset_values <- matrix(nr=num_simu, nc=num_assets)
+# simulate asset values using for() loop
+for (i in 1:num_simu) {  # perform loop
+  asset_values[i, ] <- 
+    rho_sqrt*system_atic[i] + 
+    rho_sqrtm*rnorm(num_assets)
+}  # end for
+cor(asset_values)
+# benchmark the speed of the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  for_loop={for (i in 1:num_simu) {
+    rho_sqrt*system_atic[i] + 
+    rho_sqrtm*rnorm(num_assets)}},
+  vector_ized={rho_sqrt*system_atic + 
+              rho_sqrtm*rnorm(num_simu*num_assets)},
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} model, default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{align*}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i \\
+        a_i < t_i
+      \end{align*}
+      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession, 
+      \vskip1ex
+      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults, 
+      \vskip1ex
+      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults, 
+      \vskip1ex
+      This way the \emph{Vasicek} model introduces a correlation among defaults,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate random default probabilities
+num_assets <- 5
+default_probs <- runif(num_assets, max=0.2)
+mean(default_probs)
+# calculate default thresholds
+default_thresh <- qnorm(default_probs)
+# calculate number of defaults using vectorized functions (efficient way)
+# calculate vector of number of defaults
+de_faults <- 
+  colSums(t(t(asset_values) < default_thresh))
+de_faults / num_simu
+default_probs
+# calculate number of defaults using for() loop (inefficient way)
+# allocate matrix of de_faults
+de_faults <- matrix(nr=num_simu, nc=num_assets)
+# simulate asset values using for() loop
+for (i in 1:num_simu) {  # perform loop
+  de_faults[i, ] <- 
+    (asset_values[i, ] < default_thresh)
+}  # end for
+colSums(de_faults) / num_simu
+default_probs
+# calculate correlations between defaults
+cor(de_faults)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlation and Default Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Default correlation is defined as the correlation between the \emph{Boolean} vectors of default events, 
+      \vskip1ex
+      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values},
+      \vskip1ex
+      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well,
+      \vskip1ex
+      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk, 
+      \vskip1ex
+      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions,
+      \vskip1ex
+      Default correlations are usually much lower than the corresponding asset correlations,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define default probabilities
+num_assets <- 2
+default_prob <- 0.2
+default_thresh <- qnorm(default_prob)
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+# calculate vector of systematic factors
+num_simu <- 1000
+system_atic <- rnorm(num_simu)
+# simulate asset values using vectorized functions
+asset_values <- rho_sqrt*system_atic + 
+  rho_sqrtm*rnorm(num_simu*num_assets)
+dim(asset_values) <- c(num_simu, num_assets)
+# calculate number of defaults using vectorized functions
+de_faults <- t(t(asset_values) < default_thresh)
+# calculate correlations between defaults
+cor(de_faults)
+# calculate averaage number of defaults and compare to default_prob
+colSums(de_faults) / num_simu
+default_prob
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cumulative Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=N^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
+      \begin{displaymath}
+        p(s) = N(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
+      \end{displaymath}
+      The cumulative probability $P(x)$ for the percentage \texttt{x} of portfolio defaults (the portfolio cumulative default distribution) is equal to:
+      \begin{displaymath}
+        P(x) = N(\frac{{\sqrt{1-\rho}} N^{-1}(x) - t}{\sqrt{\rho}})
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define cumulative default probability function
+def_prob <- function(x, def_thresh=qnorm(0.1), rh_o=0.1)
+  pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
+def_prob(x=0.2, def_thresh=qnorm(0.2), rh_o=0.2)
+# plot cumulative default probability function
+curve(expr=def_prob(x, def_thresh=qnorm(0.4), rh_o=0.05),
+      xlim=c(0, 0.999), lwd=3,
+      xlab="percent default", ylab="probability", 
+      col="green", main="Cumulative Default Probabilities")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cum_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot default distribution with higher correlation
+curve(expr=def_prob(x, def_thresh=qnorm(0.4), rh_o=0.2),
+      xlim=c(0, 0.999), add=TRUE, lwd=3,
+      col="blue", main="")
+# add legend
+legend(x="topleft", 
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white", 
+       bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.4, col="red", lwd=3)
+text(x=0.4, y=0.0,
+       labels="default probability",
+       lwd=2, srt=90, pos=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability density $f(x)$ of portfolio defaults is equal to the derivative of the cumulative default distribution:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} N^{-1}(x) - t)^2 + \\ \frac{1}{2} {N^{-1}(x)^2)}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+# define default probability density function
+vasi_cek <- function(x, def_thresh=-2, rh_o=0.1)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) - 
+  def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
+# plot probability distribution of defaults
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
+      xlim=c(0, 0.1), lwd=3,
+      xlab="percentage of defaults", ylab="density", 
+      col="green", main="Distribution of Defaults")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot default distribution with higher correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.1),
+      xlab="default percentage", ylab="", 
+      add=TRUE, lwd=3, col="blue", main="")
+# add legend
+legend(x="topright", 
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.025, col="red", lwd=3)
+text(x=0.023, y=8,
+       labels="default probability",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under Extreme Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlation $\rho$ is close to \emph{zero}, then the asset values $a_i$ are independent from each other, and defaults are also independent, so that the percentage of portfolio defaults is very close to the default probability $p$,
+      \vskip1ex
+      In that case, the probability density of portfolio defaults is very narrow and is centered on the default probability $p$,
+      \vskip1ex
+      If the correlation $\rho$ is close to \emph{one}, then the asset values $a_i$ are almost the same, and defaults occur at the same time, so that the percentage of portfolio defaults is either \emph{zero} or \emph{one},
+      \vskip1ex
+      In that case, the probability density of portfolio defaults becomes \emph{bimodal}, with two peaks around  \emph{zero} and \emph{one},
+      <<echo=TRUE,eval=FALSE>>=
+# plot default distribution with low correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.01),
+      xlab="default percentage", ylab="", lwd=2, 
+      col="green", main="Distribution of Defaults")
+# plot default distribution with high correlation
+curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
+      xlab="percentage of defaults", ylab="density", 
+      add=TRUE, lwd=2, n=10001, col="blue", main="")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_high_corr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# add legend
+legend(x="top", 
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.1, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=c(1, 1), col=c("blue", "green"))
+# add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10, lwd=2, pos=4,
+       labels="default probability")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Loss Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Expected Loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity): 
+      \begin{displaymath}
+        EL = \sum_{i=1}^{n} p_i LGD_i
+      \end{displaymath}
+      If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} N^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {N^{-1}(\frac{x}{LGD}))^2}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+# define Vasicek loss distribution density function
+portf_loss <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(portf_loss, low=0, up=0.3, 
+  def_thresh=-2, rh_o=0.1, l_gd=0.4)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_loss_distr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.06), rh_o=0.1),
+      type="l", xlim=c(0, 0.06), 
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Distribution of Losses")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$, 
+      \vskip1ex
+      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution}, 
+      <<echo=TRUE,eval=FALSE>>=
+# add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35, 
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss", 
+     lwd=2, pos=3)
+# add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25, 
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$: 
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^\alpha \mathrm{VaR}(p) \, \mathrm{d}p
+      \end{displaymath}
+      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}), 
+      <<echo=TRUE,eval=FALSE>>=
+# plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=qnorm(0.1), rh_o=0.1),
+      type="l", xlim=c(0, 0.06), 
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Conditional Value at Risk")
+# add line for expected loss
+abline(v=0.02, col="red", lwd=3)
+text(x=0.02-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+# add lines for VaR
+abline(v=0.04, col="red", lwd=3)
+text(x=0.04-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_cvar.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# add shading for CVaR
+va_r <- 0.04; var_max <- 0.07
+var_s <- seq(va_r, var_max, length=100)
+dens_ity <- sapply(var_s, portf_loss, 
+  def_thresh=qnorm(0.1), rh_o=0.1)
+# draw shaded polygon
+polygon(c(va_r, var_s, var_max),
+  c(-1, dens_ity, -1), col="red", border=NA)
+text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$, 
+      \vskip1ex
+      The \emph{quantile} of the loss distribution (the \emph{VaR}), for a given a confidence level $\alpha$, is given by the inverse of the cumulative loss distribution:
+      \begin{displaymath}
+        VaR(\alpha) = LGD \cdot N(\frac{{\sqrt{\rho}} N^{-1}(\alpha) + t}{\sqrt{1-\rho}})
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# VaR (quantile of the loss distribution)
+var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+  l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
+var_func(x=0.99, def_thresh=qnorm(0.1), rh_o=0.2, l_gd=0.4)
+# plot VaR
+curve(expr=var_func(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4),
+      type="l", xlim=c(0, 0.999), 
+      xlab="confidence level", ylab="VaR", lwd=3,
+      col="orange", main="VaR versus Confidence Level")
+# add line for expected loss
+abline(h=0.04, col="red", lwd=3)
+text(x=0.2, y=0.04, labels="expected loss",
+     lwd=2, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk and Confidence Levels}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function, 
+      <<echo=TRUE,eval=FALSE>>=
+# integrate portf_loss() over full range
+integrate(portf_loss, low=0.0, up=0.3, 
+          def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+# calculate expected losses using portf_loss()
+integrate(function(x, ...) x*portf_loss(x, ...), 
+          low=0.0, up=0.3, 
+          def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+# calculate confidence levels corresponding to VaR values
+var_s <- seq(0.07, 0.12, 0.001)
+conf_levels <- sapply(var_s, function(va_r, ...) {
+  integrate(portf_loss, low=va_r, up=0.3, ...)
+}, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)  # end sapply
+conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
+colnames(conf_levels) <- c("conf_levels", "VaRs")
+# calculate 95% confidence level VaR value
+conf_levels[
+  match(TRUE, conf_levels[, "conf_levels"] < 0.05), "VaRs"]
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "VaRs"], lwd=2,
+     xlab="conf_levels", ylab="VaRs",
+     t="l", main="VaR values and confidence levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_conf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function, 
+      <<echo=TRUE,eval=FALSE>>=
+# calculate CVaR values
+cvar_s <- sapply(var_s, function(va_r, ...) {
+  integrate(function(x, ...) x*portf_loss(x, ...), 
+            low=va_r, up=0.3, ...)
+}, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)  # end sapply
+conf_levels <- cbind(conf_levels, as.numeric(t(cvar_s)[, 1]))
+colnames(conf_levels)[3] <- "CVaRs"
+# divide CVaR by confidence level
+conf_levels[, "CVaRs"] <- 
+  conf_levels[, "CVaRs"]/conf_levels[, "conf_levels"]
+# calculate 95% confidence level CVaR value
+conf_levels[match(TRUE, 
+  conf_levels[, "conf_levels"] < 0.05), "CVaRs"]
+# plot CVaRs
+plot(x=1-conf_levels[, "conf_levels"],
+     y=conf_levels[, "CVaRs"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(conf_levels[, c("VaRs", "CVaRs")]), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="CVaR values and confidence levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/cvar_conf_levels.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# add VaRs
+lines(x=1-conf_levels[, "conf_levels"],
+      y=conf_levels[, "VaRs"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title="default probability = 10%
+correlation = 10%
+loss given default = 40%", 
+       inset=0.1, cex=0.8, bg="white", bty="n",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model, 
+      \vskip1ex
+      In that case the portfolio losses and \emph{VaR} must be simulated,
+      <<echo=TRUE,eval=FALSE>>=
+# Define model parameters
+num_assets <- 300
+num_simu <- 1000
+l_gd <- 0.4
+# define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o)
+rho_sqrtm <- sqrt(1-rh_o)
+# calculate default probabilities and thresholds
+set.seed(1121)
+default_probs <- runif(num_assets, max=0.2)
+default_thresh <- qnorm(default_probs)
+# calculate vector of systematic factors
+system_atic <- rnorm(num_simu)
+# simulate losses under Vasicek model
+asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+loss_es <- 
+  l_gd*colSums(asset_values < default_thresh)/num_assets
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_simu.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate VaRs
+conf_levels <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=conf_levels)
+plot(x=conf_levels, y=var_s, t="l", lwd=2,
+     main="Simulated VaR and confidence levels")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}, 
+      \vskip1ex
       The function \texttt{table()} calculates the frequency distribution of categorical data,
-      \vskip1ex
-      A contingency table is a matrix that contains the frequency distribution of variables (factors) contained in a set of data,
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object,
-      \vskip1ex
-      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
-    \column{0.5\textwidth}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor),
-       function(le_vel) {
-         sum(fac_tor==le_vel)
-       })  # end sapply
+# calculate CVaRs
+cvar_s <- sapply(var_s, function(va_r) {
+  mean(loss_es[loss_es>va_r])
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# alternative CVaR calculation using frequency table
+# first calculate frequency table of loss_es
+table_losses <- table(loss_es)/num_simu
+# calculate CVaRs from frequency table
+cvar_s <- sapply(var_s, function(va_r) {
+  tai_l <- table_losses[names(table_losses) > va_r]
+  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+})  # end sapply
+# plot CVaRs
+plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"], 
+     t="l", col="red", lwd=2, 
+     ylim=range(cvar_s), 
+     xlab="conf_levels", ylab="CVaRs",
+     main="Simulated CVaR and confidence levels")
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Continuous Numeric Data Into Categories}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
     \column{0.5\textwidth}
-      Numeric data that represents a \emph{magnitude}, \emph{intensity}, or \emph{score} can be classified into categorical data, given a vector of \emph{breakpoints},
-      \vskip1ex
-      The \emph{breakpoints} create intervals that correspond to different \emph{categories},
-      \vskip1ex
-      The \emph{categories} combine elements that have a similar numeric \emph{magnitude},
-      \vskip1ex
-      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
-      \vskip1ex
-      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
-      \vskip1ex
-      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
-      \vskip1ex
-      If all the elements of \texttt{"vec"} are greater than the element of \texttt{"x"}, then \texttt{findInterval()} returns \texttt{zero},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-             all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-             rightmost.closed=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Numeric Data Into Categories Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Temperature can be categorized into "cold", "warm", "hot", etc.
-      \vskip1ex
-      A named numeric vector of \emph{breakpoints} can be used to convert a temperature into one of the \emph{categories},
-      \vskip1ex
-      \emph{Breakpoints} correspond to \emph{categories} of the data,
-      \vskip1ex
-      The first \emph{breakpoint} should correspond to the lowest \emph{category}, and should have a value less than any of the data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
+    \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-             cold=50, pleasant=60,
-             warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                       vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
+# add VaRs
+lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
+# add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -1504,124 +2319,37 @@ tempe_ratures
 
 
 %%%%%%%%%%%%%%%
-\subsection{Converting Numeric Data Into Factors Using \texttt{cut()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cut()} converts a numeric vector into a vector of factors, representing the intervals to which the numeric values belong,
-      \vskip1ex
-      \texttt{cut()} divides the range of values into intervals, based on a vector of breaks,
-      \vskip1ex
-      \texttt{cut()} then assigns factors to the numeric values, representing the intervals to which the numeric values belong,
-      \vskip1ex
-      The argument \texttt{"breaks"} is a numeric vector of break points that divide the range of values into intervals,
-      \vskip1ex
-      The argument \texttt{"labels"} is a vector of labels for the intervals,
-      \vskip1ex
-      The argument \texttt{"right"} is a Boolean indicating if the intervals should be closed on the right (and open on the left), or vice versa,
-      \vskip1ex
-      \texttt{cut()} can produce the same classification as \texttt{findInterval()}, but \texttt{findInterval()} is faster than \texttt{cut()}, because it's a compiled function,
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{matrix()} creates a matrix from a vector, and the matrix dimensions,
-      \vskip1ex
-      By default \texttt{matrix()} creates matrices column-wise, unless the argument \texttt{byrow=TRUE} is used,
-      \vskip1ex
-      The elements of matrices can be subset (dereferenced) using the \texttt{"[]"} operator,
-      \vskip1ex
-      The functions \texttt{nrow()} and \texttt{ncol()} return the number of rows and columns of a matrix,
-      \vskip1ex
-      The functions \texttt{NROW()} and \texttt{NCOL()} also return the number of rows or columns of a matrix, but they can also be applied to vectors, and treat vectors as single column matrices,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-mat_rix  # by default matrices are constructed column-wise
-# create a matrix row-wise
-matrix(5:10, nrow=2, byrow=TRUE)
-mat_rix[2, 3]  # extract third element from second row
-mat_rix[2, ]  # extract second row
-mat_rix[, 3]  # extract third column
-mat_rix[, c(1,3)]  # extract first and third column
-mat_rix[, -2]  # remove second column
-# subset whole matrix
-mat_rix[] <- 0
-# get the number of rows or columns
-nrow(vec_tor); ncol(vec_tor)
-NROW(vec_tor); NCOL(vec_tor)
-nrow(mat_rix); ncol(mat_rix)
-NROW(mat_rix); NCOL(mat_rix)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Attributes}
+\subsection{Function for Simulating \protect\emph{VaR} Under the Vasicek Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Arrays are vectors with a dimension attribute,
-      \vskip1ex
-      Matrices are two-dimensional arrays,
-      \vskip1ex
-      The dimension attribute of a matrix is an integer vector of length 2 (nrow, ncol),
-      \vskip1ex
-      The \texttt{dimnames} attribute is a list, with vector elements containing row and column names,
-      \vskip1ex
-      A named matrix can be subset using row and column names,
+      The function \texttt{calc\_var()} simulates default losses under the \emph{Vasicek} model, and calculates a vector of \emph{VaR} and \emph{CVaR} values, 
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-attributes(mat_rix)  # get matrix attributes
-dim(mat_rix)  # get dimension attribute
-class(mat_rix)  # get class attribute
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-mat_rix
-mat_rix["row2", "col3"]  # third element from second row
-names(mat_rix)  # get the names attribute
-dimnames(mat_rix)  # get dimnames attribute
-attributes(mat_rix)  # get matrix attributes
+calc_var <- function(default_thresh, 
+                     l_gd=0.6, 
+                     rho_sqrt,
+                     rho_sqrtm,
+                     num_simu=1000,
+                     conf_levels=seq(0.93, 0.99, 0.01)) {
+  # Define model parameters
+  num_assets <- NROW(default_thresh)
+  # Simulate losses under Vasicek model
+  system_atic <- rnorm(num_simu)
+  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+  asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
+  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
+  # Calculate VaRs and CVaRs
+  var_s <- quantile(loss_es, probs=conf_levels)
+  cvar_s <- sapply(var_s, function(va_r) {
+    mean(loss_es[loss_es>va_r])
+  })  # end sapply
+  names(cvar_s) <- names(var_s)
+  c(var_s, cvar_s)
+}  # end calc_var
       @
   \end{columns}
 \end{block}
@@ -1630,624 +2358,51 @@ attributes(mat_rix)  # get matrix attributes
 
 
 %%%%%%%%%%%%%%%
-\subsection{Matrix Subsetting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Matrices can be subset in a similar way as Vectors, either by indices (integers), by characters (names), or Boolean vectors,
-      \vskip1ex
-      Subsetting a matrix to a single row or column produces a vector, unless the parameter \texttt{"drop=FALSE"} is used,
-      \vskip1ex
-      Subsetting with the parameter \texttt{"drop=FALSE"} prevents the implicit coercion and preserves the matrix \emph{class},
-      \vskip1ex
-      This is an example of implicit coercion in \texttt{R}, which can cause difficult to trace bugs,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-mat_rix  # matrix with column names
-mat_rix[1, ]  # subset rows by index
-mat_rix[, "col1"]  # subset columns by name
-mat_rix[, c(TRUE, FALSE, TRUE)]  # subset columns Boolean vector
-mat_rix[1, ]  # subsetting can produce a vector!
-class(mat_rix); class(mat_rix[1, ])
-is.matrix(mat_rix[1, ]); is.vector(mat_rix[1, ])
-mat_rix[1, , drop=FALSE]  # drop=FALSE preserves matrix
-class(mat_rix[1, , drop=FALSE])
-is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Recursive Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Lists}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists are a type of vector that contain elements of different \emph{types},
-      \vskip1ex
-      Lists are recursive object types, meaning each list element can contain other vectors or lists,
-      \vskip1ex
-      The function \texttt{list()} creates a list from a list of vectors,
-      \vskip1ex
-      \texttt{list()} creates a named list from a list of symbol-value pairs,
-      \vskip1ex
-      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise,
-      \vskip1ex
-      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create a list with two elements
-list_var <- list(c('a', 'b'), 1:4)
-list_var
-c(typeof(list_var), mode(list_var), class(list_var))
-# lists are also vectors
-c(is.vector(list_var), is.list(list_var))
-length(list_var)
-# create named list
-list_var <- list(first=c('a', 'b'), second=1:4)
-list_var
-names(list_var)
-unlist(list_var)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists can be subset (indexed) using:
-      \begin{itemize}
-        \item the \texttt{"["} operator (returns sublist),
-        \item the \texttt{"[["} operator (returns an element),
-        \item the \texttt{"\$"} operator (for named lists only),
-      \end{itemize}
-      \vskip1ex
-      Partial name matching allows subsetting with partial name, as long as it can be resolved,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-list_var[2]  # extract second element as sublist
-list_var[[2]]  # extract second element
-list_var[[2]][3]  # extract third element of second element
-list_var[[c(2, 3)]]  # third element of second element
-list_var$second  # extract second element
-list_var$s  # extract second element - partial name matching
-list_var$second[3]  # third element of second element
-list_var <- list()  # empty list
-list_var$a <- 1
-list_var[2] <- 2
-list_var
-names(list_var)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.list()} coerces vectors and other objects into lists,
-      \vskip1ex
-      \texttt{as.list()} returns a list with the same elements as the vector,
-      \vskip1ex
-      \texttt{list()} called on a vector returns a single element equal to the vector,
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.list(c(1,2,3))
-list(c(1,2,3))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Data Frames}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types},
-      \vskip1ex
-      Data frames can be thought of as lists of vectors of the same length,
-      \vskip1ex
-      The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0)
-                    )  # end data.frame
-data_frame
-dim(data_frame)  # get dimension attribute
-colnames(data_frame)  # get the colnames attribute
-rownames(data_frame)  # get the rownames attribute
-class(data_frame)  # get object class
-typeof(data_frame)  # data frames are lists
-is.data.frame(data_frame)
-
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames can be subset in a similar way to lists and matrices,
-      \vskip1ex
-      Depending on how a data frame is subset, the result can be either a data frame or a vector,
-      \vskip1ex
-      Extracting a single column from a data frame produces a vector,
-      \vskip1ex
-      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"},
-      \vskip1ex
-      Extracting a single row from a data frame produces a data frame,
-      \vskip1ex
-      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame[, 3]  # extract third column as vector
-data_frame[[3]]  # extract third column as vector
-data_frame[3]  # extract third column as data frame
-data_frame[, 3, drop=FALSE]  # extract third column as data frame
-data_frame[[3]][2]  # second element from third column
-data_frame$price[2]  # second element from 'price' column
-is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[2, ]  # extract second row
-data_frame[2, ][3]  # third element from second column
-data_frame[2, 3]  # third element from second column
-unlist(data_frame[2, ])  # coerce to vector
-is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()},
-      \vskip1ex
-      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results,
-      \vskip1ex
-      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0),
-                      row.names=c('flower1', 'flower2', 'flower3'),
-                      stringsAsFactors=FALSE
-                    )  # end data.frame
-data_frame
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-# set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
-options("stringsAsFactors")
-default.stringsAsFactors()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Exploring \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{str()} displays the structure of an \texttt{R} object,
-      \vskip1ex
-      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-str(data_frame)  # display the object structure
-dim(cars)  # the cars data frame has 50 rows
-head(cars, n=5)  # get first five rows
-tail(cars, n=5)  # get last five rows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Sorting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Data frames can be sorted on any column,
-      \vskip1ex
-      The function \texttt{sort()} returns a sorted vector,
-      \vskip1ex
-      The function \texttt{order()} returns the permutation index of the sorted vector,
-      \vskip1ex
-      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the ranks of the elements,
-      \vskip1ex
-      \texttt{order()} can take several vectors as input, to break any ties,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create data sample
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
-# sort the data
-sort(stu_dents)
-# calculate permution index for sorting the elements
-order(stu_dents)
-# sort the data
-stu_dents[order(stu_dents)]
-# calculate ranks of the elements
-order(order(stu_dents))
-names(stu_dents)[order(order(stu_dents))]
-# permute data_frame on price
-order(data_frame$price)
-# sort data_frame on price
-data_frame[order(data_frame$price), ]
-# sort data_frame on color
-data_frame[order(data_frame$color), ]
-order(c(2, 1:4))  # there's a tie
-order(c(2, 1:4), 1:5)  # there's a tie
-# read sort() Examples
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.matrix()} coerces vectors and data frames into matrices,
-      \vskip1ex
-      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character},
-      \vskip1ex
-      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
-      \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
-      \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
-      \vskip1ex
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
-      \vskip1ex
-      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()},
-      \vskip1ex
-      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:3))>>=
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-library(microbenchmark)
-# call method instead of generic function
-as.data.frame.matrix(mat_rix)
-# a few methods for generic function as.data.frame()
-sample(methods(as.data.frame), size=4)
-# function method is faster than generic function
-summary(microbenchmark(
-  as_data_frame_matrix=
-    as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Matrices can be coerced into lists in at least two different ways,
-      \vskip1ex
-      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()},
-      \vskip1ex
-      Matrices can be directly coerced into a list using function \texttt{lapply()},
-      \vskip1ex
-      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function,
-    \column{0.5\textwidth}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# lapply is faster than coercion function
-summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
-           function(in_dex) mat_rix[, in_dex]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{iris} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
-      \vskip1ex
-      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object,
-      \vskip1ex
-      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
-      \vskip1ex
-      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?iris  # get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # list of unique elements of iris
-class(unique(iris$Species))
-# find which columns of iris are numeric
-sapply(iris, is.numeric)
-# calculate means of iris columns
-sapply(iris, mean)  # returns NA for Species
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{mtcars} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
-      \vskip1ex
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?mtcars  # mtcars data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp	 Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # extract list of car cylinders
-sapply(mtcars, mean)  # calculate means of mtcars columns
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Cars93} Data Frame}
+\subsection{Standard Errors of \protect\emph{VaR} Using Bootstrap Simulation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
-      \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
-      \vskip1ex
-      The parameter \texttt{breaks} is the number of cells of the histogram,
-      \vskip1ex
-      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
-        <<Cars93_hist,fig.show='hide'>>=
-library(MASS)
-# ?Cars93  # get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # extract list of car types
-# sapply(Cars93, mean)  # calculate means of Cars93 columns
-# plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1",
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+      The \emph{scaled} standard errors of \emph{VaR} and \emph{CVaR} increase with the confidence level, making them much less reliable at very high confidence levels,
+      <<echo=TRUE,eval=FALSE>>=
+# define number of bootstrap simulations
+num_boot <- 500
+num_assets <- NROW(default_probs)
+# perform bootstrap of calc_var
+set.seed(1121)
+boot_strap <- sapply(rep(l_gd, num_boot), 
+  calc_var, 
+  default_thresh=qnorm(default_probs),
+  rho_sqrt=rho_sqrt,
+  rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
+  conf_levels=conf_levels)  # end sapply
+boot_strap <- t(boot_strap)
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/Cars93_hist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Data Management and Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bad Data}
-\begin{frame}[fragile,t]{Types of \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Possible sources of bad data are: imported data, class coercion, numeric overflow,
-      \vskip1ex
-      Types of bad data:
-      \begin{itemize}
-        \item \texttt{NA} (not available) is a logical constant indicating missing data,
-        \item \texttt{NaN} means Not a Number data,
-        \item \texttt{Inf} means numeric overflow - divide by zero,
-      \end{itemize}
-      \vskip1ex
-      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error},
-      \vskip1ex
-      \texttt{NA} or \texttt{NaN} values are not \emph{errors},
-      \vskip1ex
-      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values,
-      \vskip1ex
-      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-as.numeric(c(1:3, "a"))  # NA from coercion
-0/0  # NaN from ambiguous math
-1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
-NA*1:4  # create vector of Nas
-# create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # delete the NA values
-sum(!is.na(da_ta))  # count non-NA values
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# airquality data has some NAs
-head(airquality)
-dim(airquality)
-# number of NAs
-sum(!complete.cases(airquality))
-# display rows containing NAs
-head(airquality[!complete.cases(airquality), ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Rows containing bad data may be either removed or replaced with an estimated value,
-      \vskip1ex
-      The function \texttt{na.locf()} from package \emph{zoo} replaces NAs with most recent non-NA prior to it,
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
-# create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
-# replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_stderror.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -2256,56 +2411,55 @@ zoo::na.locf(vec_tor)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\texttt{NULL} Values}
+\subsection{Standard Errors of \protect\emph{VaR} Using Parallel Bootstrap}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{NULL} represents a null object, and is a legitimate value, not bad data,
-      \vskip1ex
-      \texttt{NULL} is often returned by functions whose value is undefined,
-      \vskip1ex
-      \texttt{NULL} can also be used to initialize vectors,
-      \vskip1ex
-      \texttt{NULL} is not the same as \texttt{NA} values or zero-length (empty) vectors,
-      \vskip1ex
-      The functions \texttt{numeric()} and \texttt{character()} return empty (zero-length) vectors of the specified \emph{type},
-      \vskip1ex
-      The function \texttt{is.null()} tests for \texttt{NULL} values,
-      \vskip1ex
-      Very often variables are initialized to \texttt{NULL} before the start of iteration,
-      \vskip1ex
-      A more efficient way to perform iteration is by pre-allocating the vector,
-    \column{0.5\textwidth}
+      The \emph{scaled} standard errors of \emph{VaR} and \emph{CVaR} increase with the confidence level, making them much less reliable at very high confidence levels,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# NULL values have no mode or type
-c(mode(NULL), mode(NA))
-c(typeof(NULL), typeof(NA))
-c(length(NULL), length(NA))
-# check for NULL values
-is.null(NULL)
-# NULL values are ignored when combined into a vector
-c(1, 2, NULL, 4, 5)
-# But NA value isn't ignored
-c(1, 2, NA, 4, 5)
-# vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# initialize empty vector
-vec_tor <- numeric()
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# allocate vector
-vec_tor <- numeric(5)
-# assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+# perform bootstrap of calc_var for Windows
+set.seed(1121)
+boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot), 
+  fun=calc_var, default_probs=default_probs,
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end parLapply
+# bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(rep(l_gd, num_boot), 
+  FUN=calc_var, default_probs=default_probs,
+  rh_o=rh_o, num_simu=num_simu,
+  conf_levels=conf_levels)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+stopCluster(clus_ter)  # stop R processes over cluster
+# calculate vectors of standard errors of VaR and CVaR from boot_strap data
+std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+    function(x) c(mean=mean(x), sd=sd(x)))
+# scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_stderror_parallel.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot the standard errors of VaRs and CVaRs
+plot(x=colnames(std_error_cvar),
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
+  xlab="conf_levels", ylab="CVaRs",
+  main="Scaled standard errors of CVaR and VaR")
+lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=c(1, 1), col=c("red", "black"))
       @
   \end{columns}
 \end{block}
@@ -2325,11 +2479,6 @@ for (in_dex in 1:5)
 \begin{block}{Required}
   \begin{itemize}[]
     \item Read all the lecture slides in \emph{FRE6871\_Lecture\_2.pdf}, and run all the code in \emph{FRE6871\_Lecture\_2.R}
-    \item Download from Google Drive and study:\\
-    \emph{numerical\_analysis.pdf}: pages 14-15,\\
-    slide: \emph{Vectorized Functions for Vector Computations},\\
-    slide: \emph{Vectorized Functions for Matrix Computations},\\
-    \url{https://drive.google.com/drive/u/0/folders/0Bxzva1I0t63vVGEtaXNIY1JMa00}
   \end{itemize}
 \end{block}
 \begin{block}{Recommended}

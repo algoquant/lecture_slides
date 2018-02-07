@@ -1,15 +1,15 @@
 ### FRE-7241 Algorithmic Portfolio Management
 FRE-GY 7241
 
-GA is Haoran Su hs3265@nyu.edu
-room RH211
-Shu Ye \href{shu.ye@nyu.edu}{shu.ye@nyu.edu}
+GA is Zhenyu (Lucy) Yin \href{zy944@nyu.edu}{zy944@nyu.edu}
+Rogers Hall room 705
 
 # potential GAs
 Gaurav Sharma <gaurav.sharma@nyu.edu>
 Xiang Li <xiang.l@nyu.edu>
 
 # former GAs
+Haoran Su hs3265@nyu.edu
 Shu Ye shu.ye@nyu.edu
 Jaimin Doshi jbd316@nyu.edu
 Luping Liu	ll2525@nyu.edu
@@ -72,7 +72,7 @@ Preference is for student who has already taken FRE-7241 or FRE-6871, or who has
 21.	Intertemporal portfolio choice and out-of-sample performance of optimized portfolios, 
 22.	Strategy backtesting and optimization: data snooping, cross-validation, model overfitting, parameter regularization, 
 
-### extract R chunks into .R file
+## extract R chunks into .R file
 
 # loop to extract R chunks in: C:/Develop/render_scripts.R
 # without loop:
@@ -97,18 +97,146 @@ purl('C:/Develop/R/lecture_slides/time_series_univariate.Rnw', documentation=0)
 ###############
 ### to-do list
 
+topics:
+different asset allocation functions (rules)
+p-hacking increases with portfolio size: back-test will always find profitable strategy out of the many allocation functions rules
+divide data in two: in-sample performance increases but out-of-sample performance decreases
+simulating Brownian motion
+optimization
+regression
+CAPM market timing
+
+
++ [ ] study different asset allocation functions (rules)
+Modify function back_test() so it accepts an asset allocation function ?
+Create asset allocation function which takes a permutation of recent returns to calculate weights.
+That way every permutation corresponds to a different strategy.
+Demonstrate that there's always one asset allocation function that is profitable in a back-test.
+Demonstrate that the profitability grows with the number of assets.
+
++ [ ] explain that portfolio managers have two types of skill:
+Portfolio selection (stock-picking) skill
+Market timing skill
+Market timing skill is the ability to adjust the portfolio market beta by correctly forecasting future market returns.
+
++ [ ] explain Grinold's Fundamental Law of Active Management (FLAM)
+Outperformance is achieved by a combination of skill and breadth (trading frequency).
+Models that trade more frequently perform better because they diversify their risk of being wrong.
+Hallerbach Market Timing Strategies.pdf
+Grinold Synopsis Active Portfolio Management.pdf  
+
++ [ ] explain risk of data mining (p-hacking, synonyms significance inflation, multiple testing), and false discovery rate  
+Demonstrate that the effects of p-hacking can be reduced by not selecting the optimal parameters, but instead selecting a range of parameters around the optimal value.
+https://en.wikipedia.org/wiki/Look-elsewhere_effect  
+create example of data mining: create tech indicator with several parameters  
+http://datagrid.lbl.gov/backtest/  
+http://www.financial-math.org/software/  
+
++ [ ] controlling the false-discovery rate using Bonferroni method Sidak correction  
+http://www.alexchinco.com/screening-using-false-discovery-rates/  
+http://eranraviv.com/sample-data-snooping/  
+http://eranraviv.com/modern-statistical-discoveries/  
+Bailey Prado Deflated Sharpe Ratio Overfitting.pdf  
+Bailey Prado Strategy Backtesting Overfitting Cross-validation.pdf  
+Bailey Prado Strategy Backtesting Overfitting.pdf  
+Harvey Backtesting Data Mining Bonferroni Adjustment.pdf  
+Harvey Evaluating Trading Strategies.pdf  
+White Strategy Backtesting Overfitting Data Mining Cross-validation Bootstrap.pdf  
+
++ [x] explain the benefits of performing a back-test 
+Performing a back-test allows finding the optimal trading model parameters.
+But the back-test just redefines the problem of finding (tuning) the optimal trading model parameters, into the problem of finding the optimal back-test meta-model parameters.
+But the advantage of using the back-test meta-model is that it reduces the number of parameters that need to be optimized.
+But the benefit of a dynamic quant strategy is that is has fewer meta-parameters than the number of portfolio weights, and the performance is less critical on the exact knowledge of those meta-parameters.
+There are two models in a back-test: the trading model and the back-test (the meta-model).
+For example, a momentum trading model has the following parameters: the length of the look-back interval, the lambda decay, and the asset allocation function (rule). 
+The back-test meta-model has the following parameters: the bid-offer spread, and the rebalancing frequency.
+The parameters of the back-test meta-model are the meta-parameters.
+In the case of EWMA, the model has only one parameter (the lambda), and the meta-model has two parameters (look-back interval and rebalancing period) and a rebalancing function (rule).
+
++ [ ] create backtest of EWMA strategy for single asset
+calculate standard error of optimal EWMA strategy parameters
+calculate standard errors of optimal EWMA strategy parameters
+Create strategy with two EWMAs, and demonstrate that it performs better in-sample, but worse out-of-sample
+Create strategy with multiple EWMAs, and demonstrate that they performs better in-sample, but worse out-of-sample
+Demonstrate that applying shrinkage to EWMA coefficients improves out-of-sample performance
+Perform backtest to find optimal shrinkage parameter
+
+Investment strategies for multiple assets.
+Momentum strategy for S&P500 stock portfolio.
+Portfolio optimization for multiple assets
+
++ [ ] introduce univariate regression
+perform regression of future cumulative returns from past cumulative returns
+demonstrate that regression works better over longer period of future cumulative returns
+introduce multivariate regression 
+introduce ARIMA as regression
+rolling regression in RcppArmadillo 
+
+
++ [ ] demonstrate that a model with more parameters has bigger parameter standard errors than one with fewer parameters, when both models are calibrated on the same data
+Is this a manifestation of conservation of entropy: the information in the parameters cannot exceed the information in the data?
+Is this a manifestation of the Cramer-Rao bound and Fisher information?
+Demonstrate that calibrating a model with more parameters requires more data, to achieve the same parameter standard errors. 
+Demonstrate that parameter shrinkage reduces the standard errors, but increases the model bias (bias-variance tradeoff).
+DeMiguel Shrinkage Estimators Portfolio Optimization draft.pdf
+
++ [ ] perform simulation to demonstrate that shrinkage reduces estimator variance and standard error, even though it increases its bias
+Stein's paradox: Yung Shrinkage Estimators Stein's Paradox
+beta shrinkage estimator
+http://eranraviv.com/blog/a-shrinkage-estimator-for-beta/
+
 + [ ] In time_series_multivariate slide Principal Component Analysis, set scale=TRUE and reproduce PCA plots
 Explain that PCA is a dimensional reduction technique.
 Explain that scaling the input time series improves the accuracy of PCA.
 
-+ [ ] study effect of sqrt(abs()) shrinkage
-
 + [ ] rework slide "Time Series from Principal Components" to achieve better fit
 Use "scale=TRUE": p_ca <- prcomp(re_turns, center=TRUE, scale=TRUE)
 
-+ [ ] rework backtesting to use roll_agg() from the start - skip looping over look_backs list
++ [ ] study effect of shrinkage term in the form sqrt(abs())
 
-+ [ ] create Hampel filter using package roll
+
++ [ ] rework backtesting to use roll_agg() (slide #33 titled Functional for Aggregating Asset Returns) from the start - skip looping over look_backs list
+First pre-calculate matrix of EWMA returns (called re_turns) for a vector of lambda decay parameters, using parallel computing.
+Use slide Performance of EWMA Strategies.
+Then apply roll_agg() to perform loop and calculate aggregations over endpoints.
+Get rid of calc_sharpe() and look_backs list.
+Apply to ETF returns rutils::env_etf$re_turns.
+
++ [ ] rework backtesting: in roll_agg() call FUN() and then perform a look_backs loop over the output of FUN(), instead of a look_backs loop over the oh_lc input of FUN(). 
+Get rid of the agg_regate() function. 
+roll_agg() should perform two loops: 
+first, a loop over lamb_das, to run the model function with multiple lamb_da parameters, output is time series of returns, 
+second, a look_backs loop over the time series of returns, output is matrix of performance statistics (Sharpe ratios), 
+roll_agg() should accept the arguments: x_ts, look_backs, FUN, lamb_das, ...
+further improvement: instead of performing sapply() loop over the time series of returns, perform vectorized operation.
+roll_agg() should return an time series of performance statistics (Sharpe ratios).
+
++ [ ] create backtesting: at each endpoint rebalance, run models over expanding window, select optimal lamb_da, don't loop over lamb_das 
+
++ [ ] vectorize simu_ewma() with respect to its lamb_da parameter ?
+
++ [ ] rewrite the Backtesting Framework using exclusively vectorized functions:
+introduce improved out-of-sample data notation using period_s
+is "periods" needed?
+risk_ret_stats() should perform lapply() and return list
+split and rename pnl_period()
+etf_reg_stats is not defined anywhere in "investment_strategies"
+	load it from "time_series_multivariate"
+
+
++ [ ] deprecate slides in investment_strategies.Rnw
+deprecate calc_sharpe() on slide Aggregation Function for EWMA Model
+deprecate slide Performing Overlapping Aggregations
+deprecate roll_agg() on slide Functional for Performing Overlapping Aggregations
+
++ [ ] move slides in investment_strategies.Rnw
+Move slides from Backtesting Active Investment Strategies to Active Investment Strategies:
+Performance of EWMA Strategies
+Simulating EWMA Strategies Using Parallel Computing
+
++ [ ] rewrite simu_ewma() in Rcpp ?
+
 
 + [ ] modify simu_ewma() to catch error when oh_lc is shorter than look_back
 add warmup period?
@@ -118,6 +246,9 @@ add warmup period?
 + [ ] compare speed of filter() with RcppRoll::roll_mean()
 
 + [ ] replace: sapply(re_turns, mean) with colMeans(re_turns) and microbenchmark the two
+
++ [ ] add slide to risk_models: describing in-sample and out-of-sample aggregations
+after slide Performing Aggregations Over Overlapping Intervals
 
 + [ ] add Rcpp slide for calculating weighted rolling sum in numerical_analysis.Rnw based on roll_wsum.R from HighFreq
 
@@ -130,6 +261,45 @@ use RcppEigen or RcppArmadillo?
 http://dirk.eddelbuettel.com/code/rcpp.eigen.html
 https://stackoverflow.com/questions/22110075/r-use-primitive-functions-like-max-sum-in-rcpp
 https://stackoverflow.com/questions/27490659/rcppeigen-going-from-inline-to-a-cpp-function-in-a-package-and-map
+
+
+
++ [ ] demonstrate that investing in the optimal portfolio is a trend-following strategy  
+
++ [ ] explain difference between cross-sectional momentum and time-series momentum (trend-following)
+http://blog.alphaarchitect.com/2017/04/17/does-market-sentiment-help-explain-momentum/
+trend-following is trading single asset using many predictors.
+momentum is trading several assets by sorting them using many predictors.
+
++ [ ] explain difference between trend-following and momentum strategies
+create simple trend-following and momentum strategies
+Lewellen: momentum is cross-sectional ranking, meaning winners outperform losers
+Autocorrelation is longitudinal ranking, meaning past performance will continue
+Is it possible to have zero autocorrelation, but non-zero momentum?
+
++ [ ] explain why momentum strategy works, even when trend-following doesn't work
+demonstrate that trend-following is very hard to trade, but cross-sectional momentum is easier, because it isolates effect of market beta
+create model of several time series, where each time series is random, but differences between them are autocorrelated
+There's no autocorrelation of returns, but there's autocorrelation of rank statistics.
+study Lewellen: momentum is cross-sectional ranking, meaning winners outperform losers
+Autocorrelation is longitudinal ranking, meaning past performance will continue
+How is it possible to have zero autocorrelation, but non-zero momentum?
+
++ [ ] reproduce time series momentum smile
+Moskowitz Time Series Momentum.pdf
+Hurst Pedersen AQR Momentum Evidence.pdf
+
++ [ ] can a momentum strategy based on ranking work even if trend-following doesn't work?
+
++ [ ] read Jonathan Kinlay articles on linkedin
+
+
++ [ ] explain that strategies that have both positive returns and positive skewness are genuine market anomalies
+Strategies with positive returns usually also have negative skewness, and they have the characteristics of short option strategies.
+
+
+
++ [ ] create Hampel filter using package roll
 
 + [ ] create slides from homework ?
 Calculate autocorrelations and partial autocorrelations by hand.
@@ -199,9 +369,6 @@ Simaam Financial Time Series Using R.R
 Trapletti finance.R
 Ian Kaplan etf_opt.R
 
-+ [ ] add slide to risk_models: describing in-sample and out-of-sample aggregations
-after slide Performing Aggregations Over Overlapping Intervals
-
 + [ ] adapt from: Zivot Factor Models.pdf
 C:\Research\R\Tutorials\Zivot\research\factorModels.R
 
@@ -209,14 +376,14 @@ C:\Research\R\Tutorials\Zivot\research\factorModels.R
 
 + [ ] adapt from: Bloch ebook Quantitative Portfolio Management.pdf
 
-+ [ ] adapt from: Engels Portfolio Optimization.pdf
-Demonstrate that efficient frontier is a hyperbola
-
 + [ ] adapt from: Simaan Efficient Portfolio Parameter Uncertainty.pdf
 
 + [ ] adapt from: 
 http://gekkoquant.com/2012/08/29/parameter-optimisation-backtesting-part1/
 http://gekkoquant.com/2012/08/29/parameter-optimisation-backtesting-part-2/
+
++ [ ] adapt from: Engels Portfolio Optimization.pdf
+Demonstrate that efficient frontier is a hyperbola
 
 + [ ] demonstrate that the efficient frontier is close to a parabola for small standard deviations, and close to a straight line for large standard deviations  
 Explain why for small standard deviations, the efficient portfolio returns are proportional to the square root of their standard deviations (for different risk free rates).
@@ -288,59 +455,9 @@ https://www.portfoliovisualizer.com/
 https://www.portfoliovisualizer.com/examples
 https://www.portfoliovisualizer.com/rolling-optimization
 
-+ [ ] explain that strategies that have both positive returns and positive skewness are genuine market anomalies
-Strategies with positive returns usually also have negative skewness, and they have the characteristics of short option strategies.
-
 + [ ] adapt from package parma Portfolio Optimization: parma Vignette.pdf
 
-+ [ ] demonstrate that investing in the optimal portfolio is a trend-following strategy  
-
-+ [ ] explain difference between cross-sectional momentum and time-series momentum (trend-following)
-http://blog.alphaarchitect.com/2017/04/17/does-market-sentiment-help-explain-momentum/
-trend-following is trading single asset using many predictors.
-momentum is trading several assets by sorting them using many predictors.
-
-+ [ ] explain difference between trend-following and momentum strategies
-create simple trend-following and momentum strategies
-Lewellen: momentum is cross-sectional ranking, meaning winners outperform losers
-Autocorrelation is longitudinal ranking, meaning past performance will continue
-Is it possible to have zero autocorrelation, but non-zero momentum?
-
-+ [ ] demonstrate that momentum strategy is able to time the market: the beta changes ahead of market moves
-Market timing is the act of moving in and out of the market or switching between asset classes based on using predictive methods such as technical indicators or economic data. 
-MarketTiming from PerformanceAnalytics.pdf
-CAPM.beta p.30 in PerformanceAnalytics.pdf:
-The TimingRatio may help assess whether the manager is a good timer of asset allocation decisions. 
-https://www.rdocumentation.org/packages/PerformanceAnalytics/versions/1.4.3541/topics/MarketTiming
-http://www.quantsportal.com/introduction-to-market-timing-models/
-https://seekingalpha.com/article/3252075-trend-following-doesnt-work-for-stocks
-Wermers Market Timing.pdf
-Hallerbach Market Timing Strategies.pdf
-Henriksson Market Timing.pdf
-
-+ [ ] explain why momentum strategy works, even when trend-following doesn't work
-demonstrate that trend-following is very hard to trade, but cross-sectional momentum is easier, because it isolates effect of market beta
-create model of several time series, where each time series is random, but differences between them are autocorrelated
-There's no autocorrelation of returns, but there's autocorrelation of rank statistics.
-study Lewellen: momentum is cross-sectional ranking, meaning winners outperform losers
-Autocorrelation is longitudinal ranking, meaning past performance will continue
-How is it possible to have zero autocorrelation, but non-zero momentum?
-
-+ [ ] can a momentum strategy based on ranking work even if trend-following doesn't work?
-
 + [ ] always use expanding look-backs, otherwise model may not have enough data  
-
-+ [ ] demonstrate that a model with more parameters has bigger standard errors than one with fewer parameters, when both models are calibrated on the same data
-Is this a manifestation of conservation of entropy: the information in the parameters cannot exceed the information in the data?
-Is this a manifestation of the Cramer-Rao bound and Fisher information?
-Demonstrate that calibrating a model with more parameters requires more data, to achieve the same parameter standard errors. 
-Demonstrate that parameter shrinkage reduces the standard errors, but increases the model bias (bias-variance tradeoff).
-DeMiguel Shrinkage Estimators Portfolio Optimization draft.pdf
-
-+ [ ] perform simulation to demonstrate that shrinkage reduces estimator variance and standard error, even though it increases its bias
-Stein's paradox: Yung Shrinkage Estimators Stein's Paradox
-beta shrinkage estimator
-http://eranraviv.com/blog/a-shrinkage-estimator-for-beta/
 
 + [ ] adapt optimization code for models and portfolios from package NMOF
 http://enricoschumann.net/NMOF.htm
@@ -355,8 +472,6 @@ C:\Users\Jerzy\Documents\R\win-library\3.3\NMOF\book\C-EconometricModels\R
 https://github.com/topepo/caret
 
 + [ ] adapt from book R for Data Science
-
-+ [ ] read Jonathan Kinlay articles on linkedin
 
 + [ ] pkg fImport
 yahooBriefing("AAPL")
@@ -374,6 +489,18 @@ source(file="C:/Develop/R/scripts/vis_portf.R")
 https://www.coursera.org/specialization/jhudatascience/1?utm_medium=sem&utm_source=gg&utm_campaign=spn_dss
 
 + [ ] read: Sornette Power Law Tail Risk.pdf
+
++ [x] flip ETF momentum strategy to a mean-reverting model - doesn't produce positive returns
+
++ [x] demonstrate that momentum strategy is able to time the market: the beta changes ahead of market moves
+Market timing is the act of moving in and out of the market or switching between asset classes based on using predictive methods such as technical indicators or economic data. 
+https://www.rdocumentation.org/packages/PerformanceAnalytics/versions/1.4.3541/topics/MarketTiming
+Wermers Market Timing.pdf
+Henriksson Market Timing.pdf
+
++ [x] add transaction costs to simu_ewma()
+
++ [x] add Alpha Vantage as main data provider in time_series_univariate.Rnw
 
 + [x] change to 252 business days, instead of 260
 
@@ -421,12 +548,112 @@ http://www.bearcave.com/finance/portfolio_equations/
 ###############
 ### topics to add
 
++ [ ] introduce statarb
+select warmup data and perform PCA to determine factors
+perform rolling PCA and calculate factors and z-scores
+sort on z-scores and go long and short
+
++ [ ] define stock skewness as ratio of downside beta divided by upside beta - use OHLC data
+Sort stocks by their rolling skewness, and check if it has forecasting ability.
+
++ [ ] add stop-loss to back-test
+
++ [ ] add slide explaining, summarizing conclusions about quant trading strategies:
+It's very hard for quant strategies to beat a static stock and bond portfolio.
+It's very hard to identify, distinguish a good quant strategy from a bad one, especially if it trades infrequently.
+Trend-following and mean-reverting quant strategies tend to be uncorrelated, so it's best to combine them.
+Good quant trading strategies tend to be uncorrelated with stocks, so it's best to combine quant strategies with stocks.
+
++ [ ] explain that rolling backtest makes sense only if standard errors of meta-parameters are less than the standard errors of model parameters (?)
+In other words, rolling backtest reduces parameter uncertainty
+No, meta-parameter uncertainty is still large, but pnl is less sensitive to meta-parameter value, so it doesn't matter.
+
++ [ ] adapt scripts for testing manager skill
+Use bullet points under Benchmarking portfolio management skill, in file Systematic Investment Strategies.md
+C:\Develop\R\scripts\select_manager.R
+Demonstrate that active managers are likely to underperform the index, unless they have extraordinary skill.
+The best performing stocks drive the index performance, while most stocks in the index perform relatively badly. 
+So randomly picking stocks from the index will result in portfolios which underperform the index.
+Heaton Stock Index Selection Active Portfolio Management.pdf  
+https://www.bloomberg.com/view/articles/2015-11-11/why-indexing-beats-stock-picking
+https://www.bloomberg.com/news/articles/2017-04-09/lopsided-stocks-and-the-math-explaining-active-manager-futility
+package PeerPerformance
+https://github.com/ArdiaD/PeerPerformance
+
++ [ ] use coin flip puzzle to demonstrate difficulty of testing manager skill
+Demonstrate that it's impossible to confirm skill of strategy that trades infrequently.
+C:\Develop\R\scripts\coin_flips.R
+
++ [ ] add slide where data is split in half, with calibration in first half and out-of-sample performance in second half
+Demonstrate that this performs better than rolling backtest
+
++ [ ] add backtest slides to section Performing Aggregations Over Time Series in risk_models.pdf
+perform backtest in parallel using the map/reduce (split-apply-combine) procedure 
+expand the slide Simulating EWMA Strategies Using Parallel Computing in investment_strategies.pdf
+
++ [ ] create slide with bullet points of backtesting: collect historical data (returns, etc.), aggregate data into performance statistics (Sharpe ratio, etc.), apply trading rule and form portfolio, test portfolio performance out-of-sample
+adapt language from Arman Arkilic capstone project.md
+
++ [ ] adapt backtest code from package PMwR
+http://enricoschumann.net/R/packages/PMwR/manual/PMwR.html
+
++ [ ] adapt backtest code from package cv.ts
+http://moderntoolmaking.blogspot.com/2011/11/functional-and-parallel-time-series.html
+http://moderntoolmaking.blogspot.com/2011/11/time-series-cross-validation-2.html
+https://github.com/zachmayer/cv.ts
+http://robjhyndman.com/researchtips/tscvexample
+# foreach package for parallelized backtesting with foreach
+http://blog.revolutionanalytics.com/2009/05/parallelized-backtesting-with-foreach.html
+# backtesting with elastic net, LASSO, glmnet and caret
+https://quantmacro.wordpress.com/2016/04/26/fitting-elastic-net-model-in-r/
+
++ [ ] a backtest can only reject a potential strategy, but it can't predict its future success
+Historical data can never be long enough to capture all the possible Black Swan events that can occur in the future, so a backtest can't tell us if a strategy will fail miserably. 
+But if a strategy has failed in a backtest, then it's very likely to fail again in the future.
+
++ [ ] adapt from: Harvey Evaluating Trading Strategies.pdf
+Harvey Backtesting Data Mining Bonferroni Adjustment SSRN.pdf
+
++ [ ] demonstrate that in backtest, an ensemble of EWMA strategies out-performs any single EWMA strategy out-of-sample
+make ensemble weights dependent on correlations, to avoid over-weighting similar strategies
+use minimum correlation portfolio model
+
++ [ ] calculate confidence interval of strategy parameters as function of length of data used for calibration and total number of trades
+Show that confidence interval increases with total number of trades, so strategy which trades infrequently requires very long backtest which may exceed available data.
+SharpeR Vignette.pdf
+Lo Sharpe Ratio Statistics.pdf
+http://robotwealth.com/optimal-data-windows-for-training-a-machine-learning-model-for-financial-prediction/
+
++ [ ] create backtesting study of time series data scrubbing using Hampel median filter  
+explain Type I and Type II errors
+Type I error is rejecting a true null hypothesis
+power of test
+http://dsp.stackexchange.com/questions/26552/what-is-a-hampel-filter-and-how-does-it-work
+https://en.wikipedia.org/wiki/Median_filter
+use code from "demo_HighFreq.R" and "hfreq_aggregation.R"
+1. create xts of smooth or random prices with changing vol
+2. add random jump noise to it
+3. filtering define scrubbing function with two params: vol estimation window and noise threshold
+apply filtering to remove jump noise by applying: filter function, caTools, TTR, highfrequency package, etc. (compare speed)
+http://www.cookbook-r.com/Manipulating_data/Calculating_a_moving_average/
+http://stackoverflow.com/questions/743812/calculating-moving-average-in-r
+4. optimize filter parameters and create ROC curve
+5. add jump noise with variable volatility
+6. optimize filter parameters in-sample: study bias-variance tradeoff with regards to window length, Precision and Recall tradeoff
+7. create rCharts and shiny visualizations
+8. apply best in-sample filter parameters to out-of-sample data
+second version:
+create a csv file with time series data plus some bad text data 
+read csv file and coerce to numeric
+format the dates and times
+find bad data and scrub it
+create zoo and plot it
+
++ [ ] explain backtest overfitting and the Triple Penance Rule
+Prado Portfolio Allocation Trading Meta-Strategies.pdf
+
 + [ ] futures price prediction using the order book data
 http://blog.kahutrading.com/2012/03/futures-price-prediction-using-order.html
-
-+ [ ] rolling portfolio optimization with shrinkage
-
-+ [ ] add slide portfolio optimization with elastic net shrinkage  
 
 + [ ] add slide constrained portfolio optimization using penalty terms: sum of weights equal to 1
 This is an objective function equal to the portfolio variance plus a penalty term for the weight constraint: sum(weight_s) == 1.
@@ -462,6 +689,10 @@ Calculate how many years of data are need to reduce standard errors to tolerable
 Explain that stock betas are useless because they have huge standard errors.
 Since beta depends on time, we are not able to measure beta.
 
++ [ ] rolling portfolio optimization with shrinkage
+
++ [ ] add slide portfolio optimization with elastic net shrinkage  
+
 + [ ] constrained portfolio optimization shrinkage  
 http://www.finance-r.com/s/efficient_frontier_fPortfolio/complete/  
 http://www.finance-r.com/s/simple_portfolio_optimization_tseries/complete/  
@@ -485,10 +716,6 @@ Boudt DEoptim Large Portfolio Optimization.pdf
 Boudt PortfolioAnalytics Portfolio Optimization CVaR Budgets.pdf
 CRAN Task View Empirical Finance
 http://cran.r-project.org/web/packages/DEoptim/vignettes/DEoptimPortfolioOptimization.pdf
-
-+ [ ] reproduce time series momentum smile
-Moskowitz Time Series Momentum.pdf
-Hurst Pedersen AQR Momentum Evidence.pdf
 
 + [ ] demonstrate how to fix singular correlation matrix
 first generate singular correlation matrix
@@ -551,7 +778,7 @@ http://unstarched.net/r-examples/rugarch/a-short-introduction-to-the-rugarch-pac
 + [ ] calibrate into simulated GARCH data and show how the standard error of parameter estimates depends on the number of data points
 
 + [ ] perform backtest of GARCH model, and calibrate it using variance targeting  
-use Deoptim
+use DEoptim
 http://unstarched.net/2013/01/07/does-anything-not-beat-the-garch11/
 rolling GARCH:
 http://stackoverflow.com/questions/25732348/volatility-forecast-with-for-loop-for-garch-family-model
@@ -614,8 +841,6 @@ Second, fit the residuals into normal distribtution
 calculate by hand
 summary(reg_model)
 
-+ [ ] demonstrate that given any two random price series, you can always find a coefficient that creates a cointegrated portfolio in-sample, but it falls apart out-of-sample
-
 + [ ] explain that individual prices are almost impossible to forecast, but prices of some portfolios may be possible to forecast.
 Examples of portfolios possible to forecast: pairs, max Sharpe.
 But then the problem is, do these remain stable out-of-sample?
@@ -639,17 +864,6 @@ http://www4.stat.ncsu.edu/~reich/BigData/code/svd_v_eigen.html
 
 + [ ] lift LaTeX formulas:
 https://web.stanford.edu/~hastie/glmnet/glmnet_beta.html
-
-+ [ ] add slide about best way to calculate beta using zero intercept regression
-https://stackoverflow.com/questions/7333203/linear-regression-with-a-known-fixed-intercept-in-r
-Demonstrate that zero intercept beta has higher bias but lower variance (bias-variance tradeoff).
-Calculate rolling zero intercept beta and demonstrate that it has lower realized variance.
-
-+ [ ] expand on spurious time series regression
-http://r-datameister.blogspot.com/2013/12/spurious-regression-of-time-series.html
-http://davegiles.blogspot.com/2012/05/more-about-spurious-regressions.html
-https://eranraviv.com/spurious-regression-illustrated/
-https://eranraviv.com/how-regression-statistics-mislead-experts/
 
 + [ ] adapt EWMA moving average indicators from: 
 C:\Research\R\R-Finance 2016\Service Dual Moving Average Indicators Automated Trading.pdf
@@ -686,75 +900,6 @@ sharpe_matrix_dense <- raster::raster(sharpe_matrix)
 sharpe_matrix_dense <- raster::disaggregate(sharpe_matrix_dense, fact=c(5, 5), method="bilinear")
 sharpe_matrix_dense <- raster::as.matrix(sharpe_matrix_dense)
 rgl::persp3d(z=sharpe_matrix_dense, col="green", zlab="", main="sharpe_matrix")
-
-+ [ ] add backtest slides to section Performing Aggregations Over Time Series in risk_models.pdf
-perform backtest in parallel using the map/reduce (split-apply-combine) procedure 
-expand the slide Simulating EWMA Strategies Using Parallel Computing in investment_strategies.pdf
-
-+ [ ] create slide with bullet points of backtesting: collect historical data (returns, etc.), aggregate data into performance statistics (Sharpe ratio, etc.), apply trading rule and form portfolio, test portfolio performance out-of-sample
-adapt language from Arman Arkilic capstone project.md
-
-+ [ ] rework backtesting: in roll_agg() call FUN() and then perform a look_backs loop over the output of FUN(), instead of a look_backs loop over the oh_lc input of FUN(). 
-Get rid of the agg_regate() function. 
-roll_agg() should perform two loops: 
-first, a loop over lamb_das, to run the model function with multiple lamb_da parameters, output is time series of returns, 
-second, a look_backs loop over the time series of returns, output is matrix of performance statistics (Sharpe ratios), 
-roll_agg() should accept the arguments: x_ts, look_backs, FUN, lamb_das, ...
-further improvement: instead of performing sapply() loop over the time series of returns, perform vectorized operation.
-roll_agg() should return an time series of performance statistics (Sharpe ratios).
-
-+ [ ] create backtesting: at each endpoint rebalance, run models over expanding window, select optimal lamb_da, don't loop over lamb_das 
-
-+ [ ] vectorize simu_ewma() with respect to its lamb_da parameter ?
-
-+ [ ] rewrite the Backtesting Framework using exclusively vectorized functions:
-introduce improved out-of-sample data notation using period_s
-is "periods" needed?
-risk_ret_stats() should perform lapply() and return list
-split and rename pnl_period()
-etf_reg_stats is not defined anywhere in "investment_strategies"
-	load it from "time_series_multivariate"
-
-+ [ ] adapt backtest code from package PMwR
-http://enricoschumann.net/R/packages/PMwR/manual/PMwR.html
-
-+ [ ] adapt backtest code from package cv.ts
-http://moderntoolmaking.blogspot.com/2011/11/functional-and-parallel-time-series.html
-http://moderntoolmaking.blogspot.com/2011/11/time-series-cross-validation-2.html
-https://github.com/zachmayer/cv.ts
-http://robjhyndman.com/researchtips/tscvexample
-# foreach package for parallelized backtesting with foreach
-http://blog.revolutionanalytics.com/2009/05/parallelized-backtesting-with-foreach.html
-# backtesting with elastic net, LASSO, glmnet and caret
-https://quantmacro.wordpress.com/2016/04/26/fitting-elastic-net-model-in-r/
-
-+ [ ] a backtest can only reject a potential strategy, but it can't predict its future success
-Historical data can never be long enough to capture all the possible Black Swan events that can occur in the future, so a backtest can't tell us if a strategy will fail miserably. 
-But if a strategy has failed in a backtest, then it's very likely to fail again in the future.
-
-+ [ ] adapt from: Harvey Evaluating Trading Strategies.pdf
-Harvey Backtesting Data Mining Bonferroni Adjustment SSRN.pdf
-
-+ [ ] demonstrate that in backtest, an ensemble of EWMA strategies out-performs any single EWMA strategy out-of-sample
-make ensemble weights dependent on correlations, to avoid over-weighting similar strategies
-use minimum correlation portfolio model
-
-+ [ ] calculate confidence interval of strategy parameters as function of length of data used for calibration and total number of trades
-Show that confidence interval increases with total number of trades, so strategy which trades infrequently requires very long backtest which may exceed available data.
-SharpeR Vignette.pdf
-Lo Sharpe Ratio Statistics.pdf
-http://robotwealth.com/optimal-data-windows-for-training-a-machine-learning-model-for-financial-prediction/
-
-+ [ ] adapt scripts for testing manager skill
-C:\Develop\R\scripts\select_manager.R
-Demonstrate that active managers are likely to underperform the index, unless they have extraordinary skill.
-The best performing stocks drive the index performance, while most stocks in the index perform relatively badly. 
-So randomly picking stocks from the index will result in portfolios which underperform the index.
-Heaton Stock Index Selection Active Portfolio Management.pdf  
-https://www.bloomberg.com/view/articles/2015-11-11/why-indexing-beats-stock-picking
-https://www.bloomberg.com/news/articles/2017-04-09/lopsided-stocks-and-the-math-explaining-active-manager-futility
-package PeerPerformance
-https://github.com/ArdiaD/PeerPerformance
 
 + [ ] estimate Hurst exponent for an xts time series of prices using variance ratios  
 use package pracma 
@@ -829,6 +974,8 @@ C:\Research\R\R-Finance 2015\Lewis RFinance 2015 Cointegration SVD.html
 https://bwlewis.github.io/rfinance-2017/#/section
 https://github.com/bwlewis/irlba
 
++ [ ] demonstrate that given any two random price series, you can always find a coefficient that creates a cointegrated portfolio in-sample, but it falls apart out-of-sample
+
 + [ ] adapt from Sebastian Fossati and Hauser - very good time series and cointegration with some R
 Granger Causality
 C:\Research\R\Tutorials\Fossati\e509\Lec8.R
@@ -845,7 +992,7 @@ C:\Research\R\Tutorials\Georgakopoulos\rfortraders\Chapter_06
 3. test persistence of cointegrated pairs out-of-sample,
 4. identify cointegrated portfolios from cluster analysis,
 5. apply ADF test to pairs and portfolios
-use sources in: ### trading cointegration pairs trading statistical arbitrage
+use sources in: ## trading cointegration pairs trading statistical arbitrage
 https://github.com/matthewclegg/egcm
 https://github.com/mikeschmitt/pairs-trading
 https://www.quantstart.com/articles/Cointegrated-Augmented-Dickey-Fuller-Test-for-Pairs-Trading-Evaluation-in-R
@@ -873,6 +1020,17 @@ Zivot VAR Vector Autoregressive Time Series Models.pdf
 ADF test for cointegration  
 Phillips-Ouliaris test for cointegration  
 package urca  
+
++ [ ] add slide about best way to calculate beta using zero intercept regression
+https://stackoverflow.com/questions/7333203/linear-regression-with-a-known-fixed-intercept-in-r
+Demonstrate that zero intercept beta has higher bias but lower variance (bias-variance tradeoff).
+Calculate rolling zero intercept beta and demonstrate that it has lower realized variance.
+
++ [ ] expand on spurious time series regression
+http://r-datameister.blogspot.com/2013/12/spurious-regression-of-time-series.html
+http://davegiles.blogspot.com/2012/05/more-about-spurious-regressions.html
+https://eranraviv.com/spurious-regression-illustrated/
+https://eranraviv.com/how-regression-statistics-mislead-experts/
 
 + [ ] create slides explaining Johansen test 
 Demonstrate that unit root test power is poor, by simulating and testing almost stationary ARIMA process. 
@@ -904,7 +1062,7 @@ https://github.com/ctbrownlees/R-Package-nets
 + [ ] create slides for pairs trading  
 1. trade pairs in-sample and out-of-sample,
 2. demonstrate that using ensemble of cointegration factors produces higher Sharpe out-of-sample. 
-use sources in: ### trading cointegration pairs trading statistical arbitrage
+use sources in: ## trading cointegration pairs trading statistical arbitrage
 http://www.rfortraders.com/lecture-4-regression-and-pairs-trading/
 http://gekkoquant.com/2013/01/21/statistical-arbitrage-trading-a-cointegrated-pair/
 https://stackoverflow.com/questions/24051503/filter-xts-objects-by-common-dates
@@ -1157,9 +1315,6 @@ http://quantbros.com/category/tutorial/
 + [ ] explain Optimism of the Training Error Rate
 http://eranraviv.com/optimism-training-error-rate/
 https://stats.stackexchange.com/questions/88912/optimism-bias-estimates-of-prediction-error
-
-+ [ ] explain backtest overfitting and the Triple Penance Rule
-Prado Portfolio Allocation Trading Meta-Strategies.pdf
 
 + [ ] explain Fama-MacBeth two-pass regressions to explain cross-sectional returns/values by factors  
 Fama-MacBeth two-pass regressions to explain cross-sectional returns/values by factors  
@@ -1573,31 +1728,6 @@ https://quantivity.wordpress.com/2012/10/23/volume-clock-gaps-and-goog/
 + [ ] demonstrate that using trading time makes the distribution of returns more Gaussian and reduces skew and kurtosis
 Easley Volume Clock Trading Paradigm.pdf
 
-+ [ ] create backtesting study of time series data scrubbing using Hampel median filter  
-explain Type I and Type II errors
-Type I error is rejecting a true null hypothesis
-power of test
-http://dsp.stackexchange.com/questions/26552/what-is-a-hampel-filter-and-how-does-it-work
-https://en.wikipedia.org/wiki/Median_filter
-use code from "demo_HighFreq.R" and "hfreq_aggregation.R"
-1. create xts of smooth or random prices with changing vol
-2. add random jump noise to it
-3. filtering define scrubbing function with two params: vol estimation window and noise threshold
-apply filtering to remove jump noise by applying: filter function, caTools, TTR, highfrequency package, etc. (compare speed)
-http://www.cookbook-r.com/Manipulating_data/Calculating_a_moving_average/
-http://stackoverflow.com/questions/743812/calculating-moving-average-in-r
-4. optimize filter parameters and create ROC curve
-5. add jump noise with variable volatility
-6. optimize filter parameters in-sample: study bias-variance tradeoff with regards to window length, Precision and Recall tradeoff
-7. create rCharts and shiny visualizations
-8. apply best in-sample filter parameters to out-of-sample data
-second version:
-create a csv file with time series data plus some bad text data 
-read csv file and coerce to numeric
-format the dates and times
-find bad data and scrub it
-create zoo and plot it
-
 + [ ] package ROCR for Visualizing the Performance of Scoring Classifiers
 
 + [ ] nonlinear time series BDS test
@@ -1936,12 +2066,16 @@ https://plot.ly
 # Summary: Create a function which simulates an EWMA 
 
 # Summary: Calculate the number of trades in an 
+# EWMA strategy, and plot the number of trades as 
+# a function of the lambda decay parameter.
 
 # Simulate a long-short trading strategy based on two VWAPs
 number of trades
 winners losers
 success rate
 fix data snooping
+
+# Summary: Fit t-distributions with different degrees of freedom 
 
 # Calculate autocorrelations and partial autocorrelations by hand.
 
@@ -1957,6 +2091,8 @@ fix data snooping
 # of SPY, and plot it with custom axis.
 
 ## backtesting models
+
+# Summary: Perform multiple back-tests of momentum strategies 
 
 # Optimize the weights and find the maximum Sharpe 
 # for a portfolio with and without the VWAP strategy. 
@@ -1976,6 +2112,16 @@ fix data snooping
 
 ###############
 ### homework and test ideas
+
++ [ ] perform rolling generalized inverse of singular matrices in RcppArmadillo
+
++ [ ] rework slide Eigenvalues of the Covariance Matrix in RcppArmadillo
+
++ [ ] modify function back_test():
+return list with performance stats: Sharpe, number of trades, trading volume ?
+compare speed when weights aren't returned
+
++ [ ] perform loop in parallel to run back_test() over vector of look-back intervals and calculate matrix of performance stats: Sharpe, number of trades, trading volume
 
 + [ ] simulate multiple momentum strategies for S&P500, with different wid_th parameters to calculate past returns, but use the same rolling variance
 create shiny Rmd file
@@ -2323,7 +2469,7 @@ Use sapply() and paste(),
 
 
 ###############
-### save data for future load
+## save data for future load
 
 save(env_data, sym_bols, etf_series_ad, etf_rets, etf_list, ret_stats, etf_perf_stats, file='etf_data.Rdata')
 
@@ -2389,7 +2535,7 @@ Please change your default settings in Linkedin so that you receive alerts for n
 
 ##
 
-I recommend that you first take FRE6871 R in Finance, which also will contain very valuable material that can be applied to investing.  
+I also highly recommend that you first take FRE6871 R in Finance, which also contains very valuable material that can be applied to investing.  
 
 Dear Students,
 Welcome to FRE7241 Algorithmic Portfolio Management.  Please see attached the syllabus. 
@@ -2407,7 +2553,7 @@ https://www.datacamp.com/courses/intermediate-r
 https://www.datacamp.com/introduction-to-statistics
 https://www.datacamp.com/courses/statistical-inference-and-data-analysis
 
-I've uploaded the syllabus and other course materials to NYU Classes.
+I uploaded the syllabus and other course materials to NYU Classes.
 
 You may download the previous lecture slides from here:
 https://drive.google.com/drive/u/1/folders/0Bxzva1I0t63vVGEtaXNIY1JMa00
@@ -2420,7 +2566,7 @@ Below is the link to the survey results for the FRE7241 course.  13 students ans
 
 https://www.surveymonkey.com/results/SM-P76ZVKKJ/
 
-### GA
+## GA
 
 Can you please send a message to all students via NYU Classes announcing that you will be the GA?
 Also please ask students for the most convenient time for office hours, and then announce to them when you'll be holding office hours.
@@ -2441,23 +2587,23 @@ Best Regards,  Jerzy Pawlowski
 
 
 
-### Google drive
+## Google drive
 
 Dear Students,
-I've uploaded many lecture slides to Google drive:
+I uploaded many lecture slides to Google drive:
 https://drive.google.com/folderview?id=0Bxzva1I0t63vVGEtaXNIY1JMa00&usp=sharing
 
 I encourage you to study them, and I welcome your questions via NYU Classes forums or in class.
 
 
-### grading
+## grading
 
 Dear Students,
 As stated in the FRE6871 syllabus: 
 "The final course letter grade will be derived from the cumulative scores obtained for all the homeworks and tests."
 However, there is no fixed formula for assigning a letter grade from the cumulative score.  Over half of students received letter grades of "A" or "A-", which I think is very generous.
 
-### tests
+## tests
 
 Dear Students,
 Please upload your test file to NYU Classes by 7:00 PM.
@@ -2600,6 +2746,18 @@ You can load etf_data.RData into R using load().
 
 
 Dear Students,
+Installing all the required R packages is mandatory.
+But we won't be using the packages roll, rutils, and HighFreq in the next few weeks, so you have time to install them later.
+
+If you have problems with installing packages then please send a request to the GA using NYU Classes and copy me.
+Please provide the text or screenshots of error messages.
+Specify your operating system, Windows or OSX, and version.
+Did these commands produce any errors?
+devtools::find_rtools()
+devtools::has_devel()
+
+
+Dear Students,
 The first class of FRE7241 Algorithmic Portfolio Management will be tomorrow, Tuesday October 31st at 6:00 PM, in room RH211.
 Before the class please install R and RStudio: 
 http://cran.us.r-project.org
@@ -2607,36 +2765,43 @@ https://www.rstudio.com/products/rstudio/download/
 
 Please download all the Resources files from NYU Classes.
 
-If you already have a previous R installation, then upgrade R and RStudio to the newest versions.
+If you already have a previous R installation, then upgrade R and RStudio to the newest versions.  It's better to install only the 64-bit version of R, without the 32-bit version.
 
-Please install the following R packages: lubridate, microbenchmark, devtools, xts, ggplot2, dygraphs, plotly, shiny, htmltools, knitr, rmarkdown, Rcpp, matrixStats, ISLR, PerformanceAnalytics, and PortfolioAnalytics.
+Please install the following R packages: lubridate, microbenchmark, devtools, tseries, xts, ggplot2, dygraphs, plotly, shiny, htmltools, knitr, rmarkdown, Rcpp, matrixStats, ISLR, PerformanceAnalytics, and PortfolioAnalytics.
 You can install them from the "Tools" menu in RStudio, or using the R command:
-install.packages(c("lubridate", "microbenchmark", "devtools", "xts", "ggplot2", "dygraphs", "plotly", "shiny", "htmltools", "knitr", "rmarkdown", "Rcpp", "matrixStats", "ISLR", "PerformanceAnalytics", "PortfolioAnalytics"))
+install.packages(c("lubridate", "microbenchmark", "devtools", "tseries", "xts", "ggplot2", "dygraphs", "plotly", "shiny", "htmltools", "knitr", "rmarkdown", "Rcpp", "matrixStats", "ISLR", "PerformanceAnalytics", "PortfolioAnalytics"))
 
-Also install the packages TTR, quantmod, roll, rutils, and HighFreq as follows:
+Also install the packages TTR, quantmod, and roll from GitHub as follows:
 devtools::install_github(repo="joshuaulrich/TTR")
 devtools::install_github(repo="joshuaulrich/quantmod")
 devtools::install_github(repo="jjf234/roll")
-devtools::install_github(repo="algoquant/rutils")
-devtools::install_github(repo="algoquant/HighFreq")
 
-Also install Rtools for Windows:
+Next install the 64-bit version of Rtools for Windows:
 https://cran.r-project.org/bin/windows/Rtools/Rtools33.exe
 
-Or install Xcode for Mac/OSX:
+Or install 64-bit version of Xcode for Mac/OSX:
 https://developer.apple.com/xcode/
 
 Verify that Rtools is working properly by running these commands in R:
 devtools::find_rtools()
 devtools::has_devel()
 
-Next install the package RQuantLib as follows:
-install.packages("RQuantLib", type="binary")
+Check the system PATH to ensure that the PATH contains the directories with Rtools and the gcc compiler.  If needed edit the PATH.
+For example, I have the following paths:
+C:\Rtools\bin
+C:\Rtools\gcc-4.6.3\bin
 
-Please install the following packages:
-install.packages("Deoptim")
-install.packages("glpkAPI")
-install.packages("Rglpk")
+Next install the packages rutils and HighFreq from GitHub as follows:
+devtools::install_github(repo="algoquant/rutils", type="source")
+devtools::install_github(repo="algoquant/HighFreq", type="source")
+
+Next install the package RQuantLib as follows:
+install.packages("RQuantLib", type="source")
+
+Please also install the following packages:
+install.packages("DEoptim")
+install.packages("Rglpk", type="source")
+install.packages("glpkAPI", type="source")
 devtools::install_github("cran/quadprog", type="source", INSTALL_opts = "--merge-multiarch")
 
 Next install the package factorAnalytics as follows:
@@ -2667,9 +2832,53 @@ install.packages(c("lmtest", "lubridate", "quantmod", "TTR", "PerformanceAnalyti
 
 install.packages(c("dplyr", "ggvis", "shiny", "knitr", "rmarkdown", "nycflights13", "babynames", "forecast", "devtools"))
 
-Regards,  Jerzy Pawlowski
-NYU Tandon, Finance and Risk Engineering
+##
 
+Zhuo,
+Installing all the packages, including HighFreq, is a prerequisite for this course, and you can't finish this course without installing all the packages.  
+Please send an email request for assistance via NYU Classes to the GA and copy me.  Please include a minimal working example.
+
+Dear Students,
+If you're having problems installing some R packages, then follow these steps:
+
+Remove your R installation and reinstall only 64-bit R, without 32-bit R.
+Reinstall Rtools and make sure it installs the gcc compiler.
+Run sessionInfo() and make sure you have installed 64-bit R and 64-bit RTools.
+Edit the system PATH to ensure that the PATH contains the directories with Rtools and the gcc compiler.
+I have the following paths:
+C:\Rtools\bin
+C:\Rtools\gcc-4.6.3\bin
+
+Under Windowz do this:
+Go to "Control Panel -> System."
+Click on the tab "Advanced" and then on "Environment Variables."
+Highlight "Path" at the bottom and click "Edit".
+
+You can read more here:
+http://thecoatlessprofessor.com/programming/installing-rtools-for-compiled-code-via-rcpp/
+
+## 
+
+Friedrich,
+If I understand correctly, you want 5 or 10 second OHLCV time series bar data for stocks.
+Yes, my package HighFreq has the function save_scrub_agg() for scrubbing and aggregating TAQ time series into OHLCV time series.
+The package vignettes: managing_time_series.html and HighFreq.pdf explain how to perform the aggregation.  They're both on github.
+
+The function save_scrub_agg() assumes a certain format of the TAQ data.  You can find an example of that format in the SPY_TAQ dataset.
+Run these commands:
+ls("package:HighFreq")
+tail(HighFreq::SPY_TAQ)
+
+Have you looked at package highfrequency by Kris Boudt?  It also has scrubbing and aggregation functions, but I decided to write my own because I wasn't totally happy with the speed and features of package highfrequency.
+http://cran.r-project.org/web/packages/highfrequency/index.html
+https://github.com/jonathancornelissen/highfrequency
+http://highfrequency.herokuapp.com/
+
+
+Have you considered the CRSP database (part of WRDS) for downloading the TAQ data?
+https://wrds-web.wharton.upenn.edu/wrds/
+
+I have downloaded some data from there, but not TAQ.  I have used TAQ data from other friendly sources.
 
 
 ########################
