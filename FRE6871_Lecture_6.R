@@ -1,3 +1,492 @@
+# create a list with two elements
+list_var <- list(c('a', 'b'), 1:4)
+list_var
+c(typeof(list_var), mode(list_var), class(list_var))
+# lists are also vectors
+c(is.vector(list_var), is.list(list_var))
+length(list_var)
+# create named list
+list_var <- list(first=c('a', 'b'), second=1:4)
+list_var
+names(list_var)
+unlist(list_var)
+list_var[2]  # extract second element as sublist
+list_var[[2]]  # extract second element
+list_var[[2]][3]  # extract third element of second element
+list_var[[c(2, 3)]]  # third element of second element
+list_var$second  # extract second element
+list_var$s  # extract second element - partial name matching
+list_var$second[3]  # third element of second element
+list_var <- list()  # empty list
+list_var$a <- 1
+list_var[2] <- 2
+list_var
+names(list_var)
+as.list(c(1,2,3))
+list(c(1,2,3))
+data_frame <- data.frame(  # create a data frame
+                type=c('rose', 'daisy', 'tulip'),
+                color=c('red', 'white', 'yellow'),
+                price=c(1.5, 0.5, 1.0)
+              )  # end data.frame
+data_frame
+dim(data_frame)  # get dimension attribute
+colnames(data_frame)  # get the colnames attribute
+rownames(data_frame)  # get the rownames attribute
+class(data_frame)  # get object class
+typeof(data_frame)  # data frames are lists
+is.data.frame(data_frame)
+
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
+data_frame[, 3]  # extract third column as vector
+data_frame[[3]]  # extract third column as vector
+data_frame[3]  # extract third column as data frame
+data_frame[, 3, drop=FALSE]  # extract third column as data frame
+data_frame[[3]][2]  # second element from third column
+data_frame$price[2]  # second element from 'price' column
+is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
+data_frame[2, ]  # extract second row
+data_frame[2, ][3]  # third element from second column
+data_frame[2, 3]  # third element from second column
+unlist(data_frame[2, ])  # coerce to vector
+is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+data_frame <- data.frame(  # create a data frame
+                type=c('rose', 'daisy', 'tulip'),
+                color=c('red', 'white', 'yellow'),
+                price=c(1.5, 0.5, 1.0),
+                row.names=c('flower1', 'flower2', 'flower3'),
+                stringsAsFactors=FALSE
+              )  # end data.frame
+data_frame
+class(data_frame$type)  # get column class
+class(data_frame$price)  # get column class
+# set option to not coerce character vectors to factors
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+default.stringsAsFactors()
+str(data_frame)  # display the object structure
+dim(cars)  # the cars data frame has 50 rows
+head(cars, n=5)  # get first five rows
+tail(cars, n=5)  # get last five rows
+# create a named vector
+stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
+names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# sort the vector into ascending order
+sort(stu_dents)
+# calculate index to sort into ascending order
+order(stu_dents)
+# sort the vector into ascending order
+stu_dents[order(stu_dents)]
+# calculate the sorted (ordered) vector
+sort_ed <- stu_dents[order(stu_dents)]
+# calculate index to sort into unsorted (original) order
+order(order(stu_dents))
+sort_ed[order(order(stu_dents))]
+stu_dents
+# create a data frame of stu_dents and their ranks
+ra_nks <- c("first", "second", "third", "fourth", "fifth")
+data.frame(students=stu_dents, rank=ra_nks[order(order(stu_dents))])
+# permute data_frame of flowers on price column
+order(data_frame$price)
+# sort data_frame on price
+data_frame[order(data_frame$price), ]
+# sort data_frame on color
+data_frame[order(data_frame$color), ]
+order(c(2, 1:4))  # there's a tie
+order(c(2, 1:4), 1:5)  # there's a tie
+# read the Examples for sort()
+as.matrix(data_frame)
+vec_tor <- sample(9)
+matrix(vec_tor, ncol=3)
+as.matrix(vec_tor, ncol=3)
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
+rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
+library(microbenchmark)
+# call method instead of generic function
+as.data.frame.matrix(mat_rix)
+# a few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# function method is faster than generic function
+summary(microbenchmark(
+  as_data_frame_matrix=
+    as.data.frame.matrix(mat_rix),
+  as_data_frame=as.data.frame(mat_rix),
+  data_frame=data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(microbenchmark)
+# lapply is faster than coercion function
+summary(microbenchmark(
+  as_list=
+    as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=
+    lapply(seq_along(mat_rix[1, ]),
+     function(in_dex) mat_rix[, in_dex]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# ?iris  # get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # list of unique elements of iris
+class(unique(iris$Species))
+# find which columns of iris are numeric
+sapply(iris, is.numeric)
+# calculate means of iris columns
+sapply(iris, mean)  # returns NA for Species
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # extract list of car cylinders
+sapply(mtcars, mean)  # calculate means of mtcars columns
+library(MASS)
+# ?Cars93  # get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # extract list of car types
+# sapply(Cars93, mean)  # calculate means of Cars93 columns
+# plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
+NA*1:4  # create vector of Nas
+# create vector with some NA values
+da_ta <- c(1, 2, NA, 4, NA, 5)
+da_ta
+mean(da_ta)  # returns NA, when NAs are input
+mean(da_ta, na.rm=TRUE)  # remove NAs from input data
+da_ta[!is.na(da_ta)]  # delete the NA values
+sum(!is.na(da_ta))  # count non-NA values
+rm(list=ls())
+# airquality data has some NAs
+head(airquality)
+dim(airquality)
+# number of NAs
+sum(!complete.cases(airquality))
+# display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+rm(list=ls())
+# remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+head(good_air)  # NAs removed
+library(zoo)  # load package zoo
+# replace NAs
+good_air <- zoo::na.locf(airquality)
+dim(good_air)
+head(good_air)  # NAs replaced
+# create vector containing NA values
+vec_tor <- sample(22)
+vec_tor[sample(NROW(vec_tor), 4)] <- NA
+# replace NA values with the most recent non-NA values
+zoo::na.locf(vec_tor)
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(length(NULL), length(NA))
+# check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
+# vectors can be initialized to NULL
+vec_tor <- NULL
+is.null(vec_tor)
+# grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# initialize empty vector
+vec_tor <- numeric()
+# grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# allocate vector
+vec_tor <- numeric(5)
+# assign to vector in a loop - good code
+for (in_dex in 1:5)
+  vec_tor[in_dex] <- runif(1)
+# create list of vectors
+li_st <- lapply(1:3, function(x) sample(6))
+# bind list elements into matrix - doesn't work
+rbind(li_st)
+# bind list elements into matrix - tedious
+rbind(li_st[[1]], li_st[[2]], li_st[[3]])
+# bind list elements into matrix - works!
+do.call(rbind, li_st)
+# create numeric list
+li_st <- list(1, 2, 3, 4)
+do.call(rbind, li_st)  # returns single column matrix
+do.call(cbind, li_st)  # returns single row matrix
+# recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(li_st) {
+  while (length(li_st) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=length(li_st), by=2)
+# bind odd and even elements, and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+if (in_dex==length(li_st)) return(li_st[[in_dex]])
+rbind(li_st[[in_dex]], li_st[[in_dex+1]])
+    })  # end lapply
+  }  # end while
+# li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
+library(microbenchmark)
+airquality[(airquality$Solar.R>320 &
+        !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R>320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R>320)),
+    brackets=airquality[(airquality$Solar.R>320 &
+            !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+unique(iris$Species)  # Species has three distinct values
+# split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+unique(mtcars$cyl)  # cyl has three unique values
+# split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# mean mpg for each cylinder group
+sapply(split_cars, function(x) mean(x$mpg))
+# function aggregate() performs split-apply-combine
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+# aggregate() all columns
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+# mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars,
+     tapply(X=mpg, INDEX=cyl, FUN=mean))
+# function sapply() instead of tapply()
+with(mtcars,
+     sapply(sort(unique(cyl)), function(x) {
+       structure(mean(mpg[x==cyl]), names=x)
+       }, USE.NAMES=TRUE))  # end with
+
+# function by() instead of tapply()
+with(mtcars,
+     by(data=mpg, INDICES=cyl, FUN=mean))
+# get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
+      function(x) {
+        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+      }  # end anonymous function
+      )  # end sapply
+data_cars  # sapply produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+      function(x) {
+        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+      }  # end anonymous function
+      )  # end sapply
+is.list(data_cars)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
+# ?options  # get info on global options
+getOption("warn")  # global option for "warn"
+options("warn")  # global option for "warn"
+getOption("error")  # global option for "error"
+sqrt_safe <- function(in_put) {
+# returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
+# function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put=", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# print the call stack
+traceback()
+vali_date <- function(in_put) {
+# check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+      is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # even more robust
+# check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+      !missing(in_put2))
+# check if arguments are valid and return sum
+  if (is.numeric(in_put1) &&
+      is.numeric(in_put2)) {
+    in_put1 + in_put2  # both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+# flag "vali_date" for debugging
+debug(vali_date)
+# calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
+vali_date <- function(in_put) {
+  browser()  # pause and invoke browser
+# check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+      is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # invokes debugger
+options("error")  # show default NULL "error" option
+options(error=recover)  # set "error" option to "recover"
+options(error=NULL)  # set back to default "error" option
+str(tryCatch)  # get arguments of tryCatch()
+tryCatch(  # without error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+tryCatch(  # with error handler
+  {  # evaluate expressions
+    num_var <- 101  # assign
+    stop('my error')  # produce error
+  },
+  # error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+rm(list=ls())
+# apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    stopifnot(num_var != 3)  # check for error
+    # broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # return a value
+    paste("(return) num_var =", num_var)
+  }  # end anonymous function
+)  # end apply
+# apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
+    tryCatch(  # with error handler
+{  # body
+  stopifnot(num_var != 3)  # check for error
+  # broadcast message to console
+  cat("(cat) num_var =", num_var, "\t")
+  # return a value
+  paste("(return) num_var =", num_var)
+},
+# error handler captures error condition
+error=function(error_cond)
+  paste("handler: ", error_cond),
+finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
 # load package quantmod
 library(quantmod)
 # get documentation for package quantmod
@@ -42,9 +531,10 @@ etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 library(quantmod)  # load package quantmod
 env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf
-getSymbols(sym_bols, env=env_etf, adjust=TRUE,
-    from="2007-01-03")
+# download data for sym_bols into env_etf from Alpha Vantage
+getSymbols.av(sym_bols, adjust=TRUE, env=env_etf,
+  output.size="full", api.key="T7JPW54ES8G75310")
+# getSymbols(sym_bols, env=env_etf, adjust=TRUE, from="2005-01-03")
 library(quantmod)  # load package quantmod
 ls(env_etf)  # list files in env_etf
 # get class of object in env_etf
@@ -121,7 +611,7 @@ class(re_turns)
 class(re_turns[[1]])
 
 # flatten list of xts into a single xts
-re_turns <- do.call(merge, re_turns)
+re_turns <- rutils::do_call(cbind, re_turns)
 class(re_turns)
 dim(re_turns)
 head(re_turns[, 1:3])
@@ -145,8 +635,7 @@ assign("price_s", do.call(merge,
            x_ts
          })), envir=new_env)
 # get sizes of OHLC xts series in env_etf
-sapply(mget(env_etf$sym_bols, envir=env_etf),
- object.size)
+sapply(mget(sym_bols, envir=env_etf), object.size)
 # extract and merge adjusted prices and return to environment
 col_name <- function(x_ts)
   strsplit(colnames(x_ts), split="[.]")[[1]][1]
@@ -157,77 +646,6 @@ assign("price_s", do.call(merge,
                   colnames(x_ts) <- col_name(x_ts)
                   x_ts
          })), envir=new_env)
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2014-11"],
-      name="VTI",
-      theme=chartTheme("white"))
-# plot OHLC bar chart with volume
-chartSeries(env_etf$VTI["2014-11"],
-      type="bars",
-      name="VTI",
-      theme=chartTheme("white"))
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2008-11/2009-04"],
-      name="VTI")
-# redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02",
-  theme=chartTheme("white"))
-library(quantmod)
-# candlechart with Bollinger Bands
-chartSeries(env_etf$VTI["2014"],
-      TA="addBBands(): addBBands(draw='percent'): addVo()",
-      name="VTI with Bollinger Bands",
-      theme=chartTheme("white"))
-# candlechart with two Moving Averages
-chartSeries(env_etf$VTI["2014"],
-      TA="addVo(): addEMA(10): addEMA(30)",
-      name="VTI with Moving Averages",
-      theme=chartTheme("white"))
-# candlechart with Commodity Channel Index
-chartSeries(env_etf$VTI["2014"],
-      TA="addVo(): addBBands(): addCCI()",
-      name="VTI with Technical Indicators",
-      theme=chartTheme("white"))
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
-# calculate volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=VTI_adj,
-volume=VTI_vol, n=10)
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP",
-      theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP shaded",
-      theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-# add background shading of areas
-addTA((VTI_adj-VTI_vwap) > 0, on=-1,
-col="lightgreen", border="lightgreen")
-addTA((VTI_adj-VTI_vwap) < 0, on=-1,
-col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines at VTI_vwap minimum
-addLines(v=which.min(VTI_vwap), col='red')
-addLines(h=min(VTI_vwap), col='red')
 library(quantmod)
 library(TTR)
 oh_lc <- rutils::env_etf$VTI
@@ -356,766 +774,3 @@ dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(col_names[2], axis="y2", col=c("red", "blue"))
-library(quantmod)  # load package quantmod
-# assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download S&P500 prices into env_etf
-getSymbols("SP500", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$SP500["2016/"],
-       TA="add_Vo()",
-       name="S&P500 index")
-library(quantmod)  # load package quantmod
-# assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download DJIA prices into env_etf
-getSymbols("DJIA", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$DJIA["2016/"],
-       TA="add_Vo()",
-       name="DJIA index")
-library(quantmod)  # load package quantmod
-library(RCurl)  # load package RCurl
-library(XML)  # load package XML
-# download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-              stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
-write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-  row.names=FALSE)
-library(HighFreq)  # load package HighFreq
-# load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])),
-    names=sp_500$names[in_dex]))
-}  # end for
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
-# or download in loop
-for (sym_bol in sp_500$names) {
-  cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
-       name="BRK-B stock")
-library(quantmod)
-# download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-            auto.assign=FALSE,
-            src="FRED")
-# plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-      name="U.S. unemployment rate")
-library(quantmod)  # load package quantmod
-install.packages("devtools")
-library(devtools)
-# install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # load package Quandl
-# register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("Quandl")
-# load help page
-help(package="Quandl")
-# remove Quandl from search path
-detach("package:Quandl")
-library(quantmod)  # load package quantmod
-# download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL",
-            type="xts", start_date="1990-01-01")
-x11(width=14, height=7)
-chart_Series(price_s["2016", 1:4],
-    name="AAPL OHLC prices")
-# add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# download euro currency rates
-price_s <- Quandl(code="BNP/USDEUR",
-    start_date="2013-01-01",
-    end_date="2013-12-01", type="xts")
-# download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-    start_date="2013-01-01", type="xts")
-# download AAPL gross profits
-prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
-    type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST",
-    start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1],
-       name="AAPL Hurst")
-library(quantmod)  # load package quantmod
-# load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# replace "-" with "_" in symbols
-sp_500$free_code <-
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
-# or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"),
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
-# or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-library(quantmod)  # load package quantmod
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-            start_date="1990-01-01",
-            type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-       name="XOM stock")
-# symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
-library(quantmod)  # load package quantmod
-env_rates <- new.env()  # new environment for data
-# download data for sym_bols into env_rates
-getSymbols(sym_bols, env=env_rates, src="FRED")
-ls(env_rates)  # list files in env_rates
-# get class of object in env_rates
-class(get(x=sym_bols[1], envir=env_rates))
-# another way
-class(env_rates$DGS10)
-colnames(env_rates$DGS10)
-save(env_rates, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
-x11(width=6, height=4)
-par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-head(env_rates$DGS10, 3)
-# get class of all objects in env_rates
-eapply(env_rates, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-# plot 10-year constant maturity Treasury rate
-chart_Series(env_rates$DGS10["1990/"],
-  name="10-year constant maturity Treasury rate")
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-# load constant maturity Treasury rates
-load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
-# get end-of-year dates since 2006
-date_s <- xts::endpoints(env_rates$DGS1["2006/"], on="years")
-date_s <- zoo::index(env_rates$DGS1["2006/"])[date_s]
-# create time series of end-of-year rates
-rate_s <- eapply(env_rates, function(ra_te) ra_te[date_s])
-rate_s <- rutils::do_call(cbind, rate_s)
-# rename columns and rows, sort columns, and transpose into matrix
-colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
-rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
-colnames(rate_s) <- paste0(colnames(rate_s), "yr")
-rate_s <- t(rate_s)
-colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
-# plot matrix using plot.zoo()
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
-plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
-   plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
-# add x-axis
-axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
-# add legend
-legend("bottomright", legend=colnames(rate_s),
- col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
-# alternative plot using matplot()
-matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
-  type="l", xlab="maturity", ylab="yield", col=col_ors)
-# add x-axis
-axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
-# add legend
-legend("bottomright", legend=colnames(rate_s),
- col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
-par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
-# load constant maturity Treasury rates
-load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
-# symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
-# calculate daily percentage changes
-rate_s <- na.omit(rutils::do_call(cbind,
-    as.list(env_rates)[sym_bols]))
-re_turns <- na.omit(rutils::diff_xts(rate_s))
-# correlation matrix of Treasury rates
-cor_mat <- cor(re_turns)
-# reorder correlation matrix based on clusters
-library(corrplot)
-# plot the correlation matrix
-col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title=NA,
-    tl.col="black", tl.cex=0.8, mar=c(0,0,0,0),
-    method="square", col=col_ors(8),
-    cl.offset=0.75, cl.cex=0.7,
-    cl.align.text="l", cl.ratio=0.25)
-title("Correlation of Treasury rates", line=-1)
-# draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
-          method="complete", col="red")
-# perform principal component analysis PCA
-p_ca <- prcomp(re_turns,
-  center=TRUE, scale=TRUE)
-# plot standard deviations
-barplot(p_ca$sdev,
-  names.arg=colnames(p_ca$rotation),
-  las=3, xlab="", ylab="",
-  main="Volatilities of principal components
-  of Treasury rates")
-x11(width=6, height=7)
-# principal component loadings (weights)
-p_ca$rotation
-# plot loading barplots in multiple panels
-par(mfrow=c(3,2))
-par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
-for (or_der in 1:NCOL(p_ca$rotation)) {
-  barplot(p_ca$rotation[, or_der],
-  las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0,
-  col.main="red")
-}  # end for
-# principal component time series
-pca_ts <- xts(re_turns %*% p_ca$rotation,
-          order.by=index(re_turns))
-pca_ts <- cumsum(pca_ts)
-# plot principal component time series in multiple panels
-par(mfrow=c(3,2))
-par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-ra_nge <- range(pca_ts)
-for (or_der in 1:NCOL(pca_ts)) {
-  plot.zoo(pca_ts[, or_der],
-     ylim=ra_nge,
-     xlab="", ylab="")
-  title(paste0("PC", or_der), line=-2.0)
-}  # end for
-# get size of an object
-object.size(runif(1e6))
-format(object.size(runif(1e6)), units="MB")
-# get sizes of objects in workspace
-sort(sapply(ls(),
-  function(ob_ject) {
-    format(object.size(get(ob_ject)), units="KB")}))
-# get sizes of objects in workspace
-sort(sapply(mget(ls()), object.size))
-sort(sapply(mget(ls()),
-function(ob_ject) {
-  format(object.size(ob_ject), units="KB")}
-))
-# get sizes of objects in env_etf environment
-sort(sapply(ls(env_etf),
-  function(ob_ject) {
-    object.size(get(ob_ject, env_etf))}))
-# get sizes of objects in env_etf environment
-sort(sapply(mget(ls(env_etf), env_etf),
-      object.size))
-# get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
-library(gdata)  # load package gdata
-# get names, class, and size of objects in workspace
-ob_jects <- ll(unit="bytes")
-# sort by memory size (descending)
-ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
-ll()[order(ll()$KB, decreasing=TRUE), ]
-# get sizes of objects in env_etf environment
-ll(unit="bytes", env_etf)
-library(SOAR)  # load package SOAR
-# get sizes of objects in workspace
-sort(sapply(mget(ls()), object.size))
-Store(etf_list)  # store in object cache
-# get sizes of objects in workspace
-sort(sapply(mget(ls()), object.size))
-search()  # get search path for R objects
-Ls()  # list object cache
-find("etf_list")  # find object on search path
-# get R memory
-v_cells <- gc()["Vcells", "used"]
-# create vector with 1,000,000 cells
-foo_bar <- numeric(1000000)
-# get extra R memory
-gc()["Vcells", "used"] - v_cells
-# get total size of all objects in workspace
-format(object.size(x=mget(ls())), units="MB")
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-microbenchmark(sqrt(foo), foo^0.5, times=10)
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-foo <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(foo), mean(foo), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(foo == 1), {1 %in% foo}, times=10)
-  )[, c(1, 4, 5)]
-library(microbenchmark)
-mat_rix <- matrix(1:9, ncol=3, # create matrix
-  dimnames=list(paste0("row", 1:3),
-          paste0("col", 1:3)))
-# create specialized function
-matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for (in_dex in 1:n_col)  # populate vector
-    dframe <- mat_rix[, in_dex]
-  attr(dframe, "row.names") <-  # add attributes
-    .set_row_names(NROW(mat_rix))
-  attr(dframe, "class") <- "data.frame"
-  dframe  # return data frame
-}  # end matrix_to_dframe
-# compare speed of three methods
-summary(microbenchmark(
-  matrix_to_dframe(mat_rix),
-  as.data.frame.matrix(mat_rix),
-  as.data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]
-# matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
-# allocate memory for row sums
-row_sums <- numeric(NROW(big_matrix))
-summary(microbenchmark(
-  ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
-    FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for (i in 1:NROW(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
-  },  # end for
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-big_vector <- rnorm(5000)
-summary(microbenchmark(
-# allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  grow_vec={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# allocate zero memory for cumulative sum
-  com_bine={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-# add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
-    }},  # end for
-  times=10))[, c(1, 4, 5)]
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
-vec_tor1 <- rnorm(1000000)
-vec_tor2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-system.time(  # sum vectors using "for" loop
-  for (i in 1:NROW(vec_tor1)) {
-    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }  # end for
-)  # end system.time
-# sum vectors using vectorized "+"
-system.time(big_vector <- vec_tor1 + vec_tor2)
-# allocate memory for cumulative sum
-cum_sum <- numeric(NROW(big_vector))
-# cumulative sum using "for" loop
-cum_sum[1] <- big_vector[1]
-system.time(
-  for (i in 2:NROW(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }  # end for
-)  # end system.time
-# cumulative sum using "cumsum"
-system.time(cum_sum <- cumsum(big_vector))
-# calculate row sums two different ways
-summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-library(microbenchmark)
-str(pmax)
-# calculate row maximums two different ways
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
-lapply(seq_along(big_matrix[1, ]),
-  function(in_dex) big_matrix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]),
-  function(in_dex) max(big_matrix[in_dex, ]))),
-  times=10))[, c(1, 4, 5)]
-library(matrixStats)  # load package matrixStats
-# calculate row min values three different ways
-summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
-  p_min=
-    do.call(pmin.int,
-      lapply(seq_along(big_matrix[1, ]),
-             function(in_dex)
-               big_matrix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int,
-      as.data.frame.matrix(big_matrix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector three different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # assign values to vector two different ways
-# fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)},
-# slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# define function vectorized automatically
-my_fun <- function(in_put, pa_ram) {
-  pa_ram*in_put
-}  # end my_fun
-# "in_put" is vectorized
-my_fun(in_put=1:3, pa_ram=2)
-# "pa_ram" is vectorized
-my_fun(in_put=10, pa_ram=2:4)
-# define vectors of parameters of rnorm()
-std_devs <-
-  structure(1:3, names=paste0("sd=", 1:3))
-me_ans <-
-  structure(-1:1, names=paste0("mean=", -1:1))
-# "sd" argument of rnorm() isn't vectorized
-rnorm(1, sd=std_devs)
-# "mean" argument of rnorm() isn't vectorized
-rnorm(1, mean=me_ans)
-# sapply produces desired vector output
-set.seed(1121)
-sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
-set.seed(1121)
-sapply(std_devs, rnorm, n=2, mean=0)
-set.seed(1121)
-sapply(me_ans,
- function(me_an) rnorm(n=2, mean=me_an))
-set.seed(1121)
-sapply(me_ans, rnorm, n=2)
-# rnorm() vectorized with respect to "std_dev"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (NROW(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    sapply(sd, rnorm, n=n, mean=mean)
-}  # end vec_rnorm
-set.seed(1121)
-vec_rnorm(n=2, sd=std_devs)
-# rnorm() vectorized with respect to "mean" and "sd"
-vec_rnorm <- Vectorize(FUN=rnorm,
-        vectorize.args=c("mean", "sd")
-)  # end Vectorize
-set.seed(1121)
-vec_rnorm(n=2, sd=std_devs)
-set.seed(1121)
-vec_rnorm(n=2, mean=me_ans)
-str(sum)
-# na.rm is bound by name
-mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
-str(rnorm)
-# mapply vectorizes both arguments "mean" and "sd"
-mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
-mapply(function(in_put, e_xp) in_put^e_xp,
- 1:5, seq(from=1, by=0.2, length.out=5))
-# rnorm() vectorized with respect to "mean" and "sd"
-vec_rnorm <- function(n, mean=0, sd=1) {
-  if (NROW(mean)==1 && NROW(sd)==1)
-    rnorm(n=n, mean=mean, sd=sd)
-  else
-    mapply(rnorm, n=n, mean=mean, sd=sd)
-}  # end vec_rnorm
-# call vec_rnorm() on vector of "sd"
-vec_rnorm(n=2, sd=std_devs)
-# call vec_rnorm() on vector of "mean"
-vec_rnorm(n=2, mean=me_ans)
-# create two numeric vectors
-vec_tor1 <- sin(0.25*pi*1:10)
-vec_tor2 <- cos(0.25*pi*1:10)
-# create third vector using 'ifelse'
-vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
-          vec_tor1, vec_tor2)
-# cbind all three together
-vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
-
-# set plotting parameters
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
-    cex.sub=0.5)
-# plot matrix
-matplot(vec_tor4, type="l", lty="solid",
-col=c("green", "blue", "red"),
-lwd=c(2, 2, 2), xlab="", ylab="")
-# add legend
-legend(x="bottomright", legend=colnames(vec_tor4),
-       title="", inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean - MC estimate
-mean(sam_ple)
-# sample standard deviation - MC estimate
-sd(sam_ple)
-# MC estimate of cumulative probability
-sam_ple <- sort(sam_ple)
-pnorm(1)
-sum(sam_ple<1)/len_gth
-# MC estimate of quantile
-qnorm(0.75)
-sam_ple[0.75*len_gth]
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
-pa_th[1] <- 0  # initialize path
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
- (pa_th[in_dex - 1] < lev_el)) {
-# simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-# fill remaining pa_th after it crosses lev_el
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-# simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses lev_el
-cro_ss <- which(pa_th > lev_el)
-# fill remaining pa_th after it crosses lev_el
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
-# create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                              replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# bootstrap mean and median under Windows
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-stopCluster(clus_ter)  # stop R processes over cluster under Windows
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# estimate the 95% quantile
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                              replace=TRUE)]
-  quantile(boot_sample, 0.95)
-})  # end sapply
-sd(boot_strap)
-# estimate the 95% quantile using antithetic sampling
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                              replace=TRUE)]
-  quantile(c(boot_sample, -boot_sample), 0.95)
-})  # end sapply
-# standard error of mean from bootstrap
-sd(boot_strap)
-sqrt(2)*sd(boot_strap)
-set.seed(1121)  # initialize random number generator
-# define explanatory and response variables
-explana_tory <- rnorm(100, mean=2)
-noise <- rnorm(100)
-res_ponse <- -3 + explana_tory + noise
-# define design matrix and regression formula
-de_sign <- data.frame(res_ponse, explana_tory)
-reg_formula <- paste(colnames(de_sign)[1],
-  paste(colnames(de_sign)[-1], collapse="+"),
-  sep=" ~ ")
-# bootstrap the regression
-boot_strap <- sapply(1:100, function(x) {
-  boot_sample <- sample.int(dim(de_sign)[1],
-                      replace=TRUE)
-  reg_model <- lm(reg_formula,
-          data=de_sign[boot_sample, ])
-  reg_model$coefficients
-})  # end sapply
-par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-x11(width=6, height=6)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=1,
-      function(x) c(mean=mean(x), sd=sd(x)))
-# means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=de_sign)
-reg_model$coefficients
-summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["explana_tory", ]),
-     lwd=2, xlab="regression slopes",
-     main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["explana_tory", ]),
-       lwd=2, col="red")
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-# bootstrap the regression under Windows
-boot_strap <- parLapply(clus_ter, 1:1000,
-  function(x, reg_formula, de_sign) {
-    boot_sample <-
-sample.int(dim(de_sign)[1], replace=TRUE)
-    reg_model <- lm(reg_formula,
-data=de_sign[boot_sample, ])
-    reg_model$coefficients
-  },
-  reg_formula=reg_formula,
-  de_sign=de_sign)  # end parLapply
-# bootstrap the regression under Mac-OSX or Linux
-boot_strap <- mclapply(1:1000,
-  function(x) {
-    boot_sample <-
-sample.int(dim(de_sign)[1], replace=TRUE)
-    lm(reg_formula,
-data=de_sign[boot_sample, ])$coefficients
-  }, mc.cores=num_cores)  # end mclapply
-stopCluster(clus_ter)  # stop R processes over cluster under Windows
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
-x11(width=6, height=6)
-plot(density(boot_strap[, "explana_tory"]),
-     lwd=2, xlab="regression slopes",
-     main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "explana_tory"]),
- lwd=2, col="red")

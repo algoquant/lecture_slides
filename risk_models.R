@@ -108,14 +108,14 @@ legend("topright", inset=0.05, title="Sigmas",
  col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(3, 6, 9)  # df values
+deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", d_free, sep="="))
+lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
 for (in_dex in 1:3) {  # plot three t-distributions
-curve(expr=dt(x, df=d_free[in_dex]),
+curve(expr=dt(x, df=deg_free[in_dex]),
       type="l", xlab="", ylab="", lwd=2,
       col=col_ors[in_dex+1], add=TRUE)
 }  # end for
@@ -190,13 +190,13 @@ legend("topright", inset=0.05,
   col=c("blue", "red", "green"))
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(2, 5, 8, 11)  # df values
+deg_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
-lab_els <- paste("df", d_free, sep="=")
+lab_els <- paste("df", deg_free, sep="=")
 for (in_dex in 1:4) {  # plot four curves
-curve(expr=dchisq(x, df=d_free[in_dex]),
+curve(expr=dchisq(x, df=deg_free[in_dex]),
       type="l", xlim=c(0, 20), ylim=c(0, 0.3),
       xlab="", ylab="", lwd=2,
       col=col_ors[in_dex],
@@ -463,7 +463,7 @@ end_points <- # define end_points with beginning stub
   n_row-look_back*num_agg + (0:num_agg)*look_back
 len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-start_points <- c(1, end_points[1:(len_gth-1)]+1)
+start_points <- c(1, end_points[1:(len_gth-1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points),
   function(in_dex) {
@@ -519,7 +519,7 @@ legend("top", legend=colnames(agg_regations),
 roll_agg <- function(x_ts, end_points, FUN, ...) {
   len_gth <- NROW(end_points)
 # start_points are single-period lag of end_points
-  start_points <- c(1, end_points[1:(len_gth-1)]+1)
+  start_points <- c(1, end_points[1:(len_gth-1)])
 # perform aggregations over look_backs list
   agg_regations <- lapply(look_backs,
     function(look_back) FUN(x_ts[look_back], ...))  # end lapply
@@ -845,7 +845,7 @@ histo_gram <- hist(re_turns, col="lightgrey",
   main="GARCH returns histogram")
 lines(density(re_turns, adjust=1.5),
 lwd=3, col="blue")
-# fir t-distribution into GARCH returns
+# fit t-distribution into GARCH returns
 optim_fit <- MASS::fitdistr(re_turns,
   densfun="t", df=2, lower=c(-1, 1e-7))
 lo_cation <- optim_fit$estimate[1]

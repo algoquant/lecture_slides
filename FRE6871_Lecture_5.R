@@ -1,287 +1,3 @@
-# t-test for single sample
-t.test(rnorm(100))
-# t-test for two samples
-t.test(rnorm(100),
-       rnorm(100, mean=1))
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=0.1))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-
-# Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(dax_rets)))
-
-# Shapiro-Wilk test for DAX returns
-shapiro.test(dax_rets)
-
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(dax_rets)))
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-library(tseries)  # load package tseries
-
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(dax_rets)))
-
-# Jarque-Bera test for DAX returns
-jarque.bera.test(dax_rets)
-
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(dax_rets)))
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapse vector of strings into single text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# create formula from text string
-lin_formula <- as.formula(
-  # coerce text strings to formula
-  paste("z ~ ",
-  paste(paste0("x", 1:5), collapse="+")
-  )  # end paste
-)  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-len_gth <- 100
-explana_tory <- rnorm(len_gth, mean=2)
-noise <- rnorm(len_gth)
-# response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-# calculate de-meaned explanatory and response vectors
-explan_zm <- explana_tory - mean(explana_tory)
-response_zm <- res_ponse - mean(res_ponse)
-# solve for regression beta
-be_ta <- sum(explan_zm*response_zm) / sum(explan_zm^2)
-# solve for regression alpha
-al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-c(al_pha, be_ta)
-x11(width=6, height=5)  # open x11 for plotting
-# set plot parameters to reduce whitespace around plot
-par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
-# plot scatterplot using formula
-plot(reg_formula)
-title(main="Simple Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-# plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
-       pch=16, col="blue")
-# sum of residuals = 0
-sum(reg_model$residuals)
-x11(width=6, height=5)  # open x11 for plotting
-# set plot parameters to reduce whitespace around plot
-par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
-# extract residuals
-resi_duals <- cbind(explana_tory, reg_model$residuals)
-colnames(resi_duals) <- c("explanatory variable", "residuals")
-# plot residuals
-plot(resi_duals)
-title(main="Residuals of the Linear Regression", line=-1)
-abline(h=0, lwd=2, col="red")
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
-  set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-  explana_tory <- rnorm(100, mean=2)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(NROW(explana_tory), sd=std_dev)
-# specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
-# perform regression and get summary
-  reg_model_sum <- summary(lm(reg_formula))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-   adj_rsquared=adj.r.squared,
-   fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
- xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
- labels=rownames(mat_stats))
-}  # end for
-reg_stats <- function(da_ta) {  # get regression
-# perform regression and get summary
-  col_names <- colnames(da_ta)
-  reg_formula <-
-    paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula,
-                        data=da_ta))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-   adj_rsquared=adj.r.squared,
-   fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function (std_dev) {
-    set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-    explana_tory <- rnorm(100, mean=2)
-    res_ponse <- 3 + 0.2*explana_tory +
-rnorm(NROW(explana_tory), sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
-    }))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
- xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
- labels=rownames(mat_stats))
-}  # end for
-# set plot paramaters - margins and font scale
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2, 2))  # plot 2x2 panels
-plot(reg_model)  # plot diagnostic scatterplots
-plot(reg_model, which=2)  # plot just Q-Q
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-len_gth <- 100
-n_var <- 5
-explana_tory <- matrix(rnorm(n_var*len_gth), 
-  nc=n_var)
-noise <- rnorm(len_gth, sd=0.5)
-# response equals linear form plus error terms
-weight_s <- rnorm(n_var)
-res_ponse <- 
-  -3 + explana_tory %*% weight_s + noise
-# calculate de-meaned explanatory matrix
-explan_zm <- t(t(explana_tory) - colSums(explana_tory)/len_gth)
-# or
-explan_zm <- apply(explan_zm, 2, function(x) (x-mean(x)))
-# calculate de-meaned response vector
-response_zm <- res_ponse - mean(res_ponse)
-# solve for regression betas
-beta_s <- MASS::ginv(explan_zm) %*% response_zm
-# solve for regression alpha
-al_pha <- mean(res_ponse) - colSums(explana_tory) %*% beta_s / len_gth
-# multivariate regression using lm()
-reg_model <- lm(res_ponse ~ explana_tory)
-coef(reg_model)
-c(al_pha, beta_s)
-c(-3, weight_s)
-library(lmtest)  # load lmtest
-de_sign <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
-# response depends on both explanatory variables
-res_ponse <- with(de_sign,
-  0.2*explana_tory + omit_var + 0.2*rnorm(30))
-# mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
-        data=de_sign)
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dwtest(reg_model)$p.value
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, data=de_sign)
-abline(reg_model, lwd=2, col="red")
-title(main="OVB Regression", line=-1)
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-set.seed(1121)
-library(lmtest)
-# spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-# summary indicates statistically significant regression
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(reg_model)
-c(dw_test$statistic[[1]], dw_test$p.value)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model,
-              newdata=new_data, level=0.95,
-              interval="confidence")
-predict_lm <- as.data.frame(predict_lm)
-head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0),
-     ylim=range(res_ponse, predict_lm),
-     main="Regression predictions")
-abline(reg_model, col="red")
-with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
-})  # end with
 par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 lamb_da <- c(0.5, 1, 1.5)
 col_ors <- c("red", "black", "blue")
@@ -299,24 +15,30 @@ legend("topleft", title="Scale parameters",
        paste("lambda", lamb_da, sep="="),
        inset=0.05, cex=0.8, lwd=2,
        lty=c(1, 1, 1), col=col_ors)
-# simulate categorical data
-sco_re <- sort(runif(100))
-ac_tive <-
-  ((sco_re + rnorm(100, sd=0.1)) > 0.5)
-# Wilcoxon test for sco_re predictor
-wilcox.test(sco_re[ac_tive], sco_re[!ac_tive])
+set.seed(1121)
+# simulate overlapping scores data
+scores_1 <- runif(100, max=0.6)
+scores_2 <- runif(100, min=0.4)
+# perform Wilcoxon test for mean
+wilcox.test(scores_1, scores_2)
+# combine scores and add categorical variable
+score_s <- c(scores_1, scores_2)
+ac_tive <- c(logical(100), !logical(100))
 # perform logit regression
-log_it <- glm(ac_tive ~ sco_re, family=binomial(logit))
+log_it <- glm(ac_tive ~ score_s, family=binomial(logit))
 class(log_it)
 summary(log_it)
-plot(x=sco_re, y=log_it$fitted.values, type="l", lwd=3,
+par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
+or_der <- order(score_s)
+plot(x=score_s[or_der], y=log_it$fitted.values[or_der],
+     type="l", lwd=3,
      main="Category densities and logistic function",
      xlab="score", ylab="probability")
-den_sity <- density(sco_re[ac_tive])
+den_sity <- density(score_s[ac_tive])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="red")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-den_sity <- density(sco_re[!ac_tive])
+den_sity <- density(score_s[!ac_tive])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="blue")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
@@ -541,3 +263,429 @@ plot(x=error_rates[, "typeI"],
      main="ROC curve for defaults",
      type="l", lwd=2, col="blue")
 abline(a=0.0, b=1.0)
+options(width=50, dev='pdf')
+str(optimize)
+# objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=60, dev='pdf')
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# plot the objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
+# add title
+title(main="Objective Function", line=-1)
+library(rgl)  # load rgl
+# define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE)
+# draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+  xlab="x", ylab="y", zlab="sur_face",
+  col="green")
+# save current view to png file
+rgl.snapshot("surface_plot.png")
+# define function of two variables and two parameters
+sur_face <- function(x, y, par_1=1, par_2=1)
+  sin(par_1*x)*sin(par_2*y)
+# draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE,
+  par_1=1, par_2=2)
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+# draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastri_gin")
+# optimize with respect to vector argument
+op_tim <- optim(par=vec_tor, fn=rastri_gin,
+        method="L-BFGS-B",
+        upper=c(4*pi, 4*pi),
+        lower=c(pi/2, pi/2),
+        pa_ram=1)
+# optimal parameters and value
+op_tim$par
+op_tim$value
+rastri_gin(op_tim$par, pa_ram=1)
+# sample of normal variables
+sam_ple <- rnorm(1000, mean=4, sd=2)
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  sum(2*log(pa_r[2]) +
+    ((sam_ple - pa_r[1])/pa_r[2])^2)
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, sam_ple)
+    object_ive(c(mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(1, 6, length=50)
+par_sd <- seq(0.5, 3.0, length=50)
+objective_grid <- outer(par_mean, par_sd,
+vec_objective, sam_ple=sam_ple)
+objective_min <- which(  # grid search
+  objective_grid==min(objective_grid),
+  arr.ind=TRUE)
+objective_min
+par_mean[objective_min[1]]  # mean
+par_sd[objective_min[2]]  # sd
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+       (objective_min[, 2] + -1:1)]
+par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
+# perspective plot of log-likelihood function
+persp(z=-objective_grid,
+theta=45, phi=30, shade=0.5,
+border="green", zlab="objective",
+main="objective function")
+# interactive perspective plot of log-likelihood function
+library(rgl)  # load package rgl
+par3d(cex=2.0)  # scale text by factor of 2
+persp3d(z=-objective_grid, zlab="objective",
+  col="green", main="objective function")
+# initial parameters
+par_init <- c(mean=0, sd=1)
+# perform optimization using optim()
+optim_fit <- optim(par=par_init,
+  fn=object_ive, # log-likelihood function
+  sam_ple=sam_ple,
+  method="L-BFGS-B", # quasi-Newton method
+  upper=c(10, 10), # upper constraint
+  lower=c(-10, 0.1)) # lower constraint
+# optimal parameters
+optim_fit$par
+# perform optimization using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit$estimate
+optim_fit$sd
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+curve(expr=dnorm(x, mean=optim_fit$par["mean"],
+           sd=optim_fit$par["sd"]),
+add=TRUE, type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+ leg="optimal parameters",
+ lwd=2, bg="white", col="red")
+# sample from mixture of normal distributions
+sam_ple <- c(rnorm(100, sd=1.0),
+             rnorm(100, mean=4, sd=1.0))
+# objective function is log-likelihood
+object_ive <- function(pa_r, sam_ple) {
+  likelihood <- pa_r[1]/pa_r[3] *
+  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
+  if (any(likelihood <= 0)) Inf else
+    -sum(log(likelihood))
+}  # end object_ive
+# vectorize objective function
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, w, m1, s1, sam_ple)
+    object_ive(c(w, m1, s1, mean, sd), sam_ple),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+# objective function on parameter grid
+par_mean <- seq(3, 5, length=50)
+par_sd <- seq(0.5, 1.5, length=50)
+objective_grid <- outer(par_mean, par_sd,
+    vec_objective, sam_ple=sam_ple,
+    w=0.5, m1=2.0, s1=2.0)
+rownames(objective_grid) <- round(par_mean, 2)
+colnames(objective_grid) <- round(par_sd, 2)
+objective_min <- which(objective_grid==
+  min(objective_grid), arr.ind=TRUE)
+objective_min
+objective_grid[objective_min]
+objective_grid[(objective_min[, 1] + -1:1),
+         (objective_min[, 2] + -1:1)]
+# perspective plot of objective function
+persp(par_mean, par_sd, -objective_grid,
+theta=45, phi=30,
+shade=0.5,
+col=rainbow(50),
+border="green",
+main="objective function")
+# initial parameters
+par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
+# perform optimization
+optim_fit <- optim(par=par_init,
+      fn=object_ive,
+      sam_ple=sam_ple,
+      method="L-BFGS-B",
+      upper=c(1,10,10,10,10),
+      lower=c(0,-10,0.2,-10,0.2))
+optim_fit$par
+# plot histogram
+histo_gram <- hist(sam_ple, plot=FALSE)
+plot(histo_gram, freq=FALSE,
+     main="histogram of sample")
+fit_func <- function(x, pa_r) {
+  pa_r["weight"] *
+    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"]) *
+    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
+}  # end fit_func
+curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
+type="l", lwd=2, col="red")
+legend("topright", inset=0.0, cex=0.8, title=NULL,
+ leg="optimal parameters",
+ lwd=2, bg="white", col="red")
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+library(DEoptim)
+optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
+# symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
+library(quantmod)  # load package quantmod
+env_rates <- new.env()  # new environment for data
+# download data for sym_bols into env_rates
+getSymbols(sym_bols, env=env_rates, src="FRED")
+ls(env_rates)  # list files in env_rates
+# get class of object in env_rates
+class(get(x=sym_bols[1], envir=env_rates))
+# another way
+class(env_rates$DGS10)
+colnames(env_rates$DGS10)
+save(env_rates, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+x11(width=6, height=4)
+par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
+head(env_rates$DGS10, 3)
+# get class of all objects in env_rates
+eapply(env_rates, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+# plot 10-year constant maturity Treasury rate
+chart_Series(env_rates$DGS10["1990/"],
+  name="10-year constant maturity Treasury rate")
+par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+# load constant maturity Treasury rates
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+# get end-of-year dates since 2006
+date_s <- xts::endpoints(env_rates$DGS1["2006/"], on="years")
+date_s <- zoo::index(env_rates$DGS1["2006/"])[date_s]
+# create time series of end-of-year rates
+rate_s <- eapply(env_rates, function(ra_te) ra_te[date_s])
+rate_s <- rutils::do_call(cbind, rate_s)
+# rename columns and rows, sort columns, and transpose into matrix
+colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
+rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
+colnames(rate_s) <- paste0(colnames(rate_s), "yr")
+rate_s <- t(rate_s)
+colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+# plot matrix using plot.zoo()
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
+plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
+   plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
+# add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# add legend
+legend("bottomright", legend=colnames(rate_s),
+ col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+# alternative plot using matplot()
+matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
+  type="l", xlab="maturity", ylab="yield", col=col_ors)
+# add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# add legend
+legend("bottomright", legend=colnames(rate_s),
+ col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+x11(width=6, height=4)
+par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
+# load constant maturity Treasury rates
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+# symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+# calculate daily rates changes
+rate_s <- zoo::na.locf(rutils::do_call(cbind,
+    as.list(env_rates)[sym_bols]))
+rate_s <- zoo::na.locf(rate_s)
+rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
+re_turns <- rutils::diff_it(rate_s)
+date_s <- index(re_turns)
+# de-mean (center) and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
+# correlation matrix of Treasury rates
+cor_mat <- cor(re_turns)
+# reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat, order="hclust",
+  hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title=NA, tl.col="black",
+  tl.cex=0.8, mar=c(0,0,0,0), method="square",
+  col=col_ors(8), cl.offset=0.75, cl.cex=0.7,
+  cl.align.text="l", cl.ratio=0.25)
+title("Correlation of Treasury rates", line=-1)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+  method="complete", col="red")
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1e7*(1 - sum(weight_s*weight_s))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# compare speed of vector multiplication methods
+summary(microbenchmark(
+  trans_pose=t(re_turns) %*% re_turns,
+  s_um=sum(re_turns*re_turns),
+  times=10))[, c(1, 4, 5)]
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+  fn=object_ive,
+  re_turns=re_turns,
+  method="L-BFGS-B",
+  upper=rep(1.0, n_weights),
+  lower=rep(-1.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# plot first principal component loadings
+barplot(weight_s, names.arg=names(weight_s),
+  xlab="", ylab="",
+  main="first principal component loadings")
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1e7*(1 - sum(weight_s*weight_s))^2 +
+    1e7*sum(pc_1*portf_rets)^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+             fn=object_ive,
+             re_turns=re_turns,
+             method="L-BFGS-B",
+             upper=rep(1.0, n_weights),
+             lower=rep(-1.0, n_weights))
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2),
+  xlab="", ylab="",
+  main="second principal component loadings")
+# covariance matrix and variance vector of returns
+cov_mat <- cov(re_turns)
+vari_ance <- diag(cov_mat)
+cor_mat <- cor(re_turns)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$vectors
+weights_1
+weights_2
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # plot eigenvalues
+  names.arg=paste0("PC", 1:n_weights),
+  las=3, xlab="", ylab="", main="Principal Component Variances")
+# perform principal component analysis PCA
+pc_a <- prcomp(re_turns, scale=TRUE)
+# plot standard deviations
+barplot(pc_a$sdev,
+  names.arg=colnames(pc_a$rotation),
+  las=3, xlab="", ylab="",
+  main="Scree Plot: Volatilities of Principal Components
+  of Treasury rates")
+x11(width=6, height=7)
+# principal component loadings (weights)
+pc_a$rotation
+# plot loading barplots in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:NCOL(pc_a$rotation)) {
+  barplot(pc_a$rotation[, or_der],
+  las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0,
+  col.main="red")
+}  # end for
+# principal component time series
+pca_ts <- xts(re_turns %*% pc_a$rotation,
+          order.by=index(re_turns))
+pca_ts <- cumsum(pca_ts)
+# plot principal component time series in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:NCOL(pca_ts)) {
+  plot.zoo(pca_ts[, or_der],
+     ylim=ra_nge,
+     xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+library(quantmod)  # load quantmod
+library(RQuantLib)  # load RQuantLib
+# specify curve parameters
+curve_params <- list(tradeDate=as.Date("2018-01-17"),
+               settleDate=as.Date("2018-01-19"),
+               dt=0.25,
+               interpWhat="discount",
+               interpHow="loglinear")
+# specify market data: prices of FI instruments
+market_data <- list(d3m=0.0363,
+              fut1=96.2875,
+              fut2=96.7875,
+              fut3=96.9875,
+              fut4=96.6875,
+              s5y=0.0443,
+              s10y=0.05165,
+              s15y=0.055175)
+# specify dates for calculating the zero rates
+disc_dates <- seq(0, 10, 0.25)
+# specify the evaluation (as of) date
+setEvaluationDate(as.Date("2018-01-17"))
+# calculate the zero rates
+disc_curves <- DiscountCurve(params=curve_params,
+                       tsQuotes=market_data,
+                       times=disc_dates)
+# plot the zero rates
+x11()
+plot(x=disc_curves$zerorates, t="l", main="zerorates")

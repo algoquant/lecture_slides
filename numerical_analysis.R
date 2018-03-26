@@ -1,3 +1,9 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(digits=3)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
 foo <- 0.3/3
 foo  # printed as "0.1"
 foo - 0.1  # foo is not equal to "0.1"
@@ -366,48 +372,58 @@ sam_ple <- rnorm(len_gth)
 mean(sam_ple)
 # sample standard deviation - MC estimate
 sd(sam_ple)
-# MC estimate of cumulative probability
+# Monte Carlo estimate of cumulative probability
 sam_ple <- sort(sam_ple)
 pnorm(1)
 sum(sam_ple<1)/len_gth
-# MC estimate of quantile
-qnorm(0.75)
-sam_ple[0.75*len_gth]
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+sam_ple[conf_level*len_gth]
+quantile(sam_ple, probs=conf_level)
+# analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
+bar_rier <- 20  # barrier level
 len_gth <- 1000  # number of simulation steps
 pa_th <- numeric(len_gth)  # allocate path vector
 pa_th[1] <- 0  # initialize path
 in_dex <- 2  # initialize simulation index
 while ((in_dex <= len_gth) &&
- (pa_th[in_dex - 1] < lev_el)) {
+ (pa_th[in_dex - 1] < bar_rier)) {
 # simulate next step
   pa_th[in_dex] <-
     pa_th[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # advance in_dex
 }  # end while
-# fill remaining pa_th after it crosses lev_el
+# fill remaining pa_th after it crosses bar_rier
 if (in_dex <= len_gth)
   pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
 # create daily time series starting 2011
 ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")
+abline(h=bar_rier, lwd=2, col="red")
 title(main="Brownian motion crossing a barrier level",
       line=0.5)
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
+bar_rier <- 20  # barrier level
 len_gth <- 1000  # number of simulation steps
 # simulate path of Brownian motion
 pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses lev_el
-cro_ss <- which(pa_th > lev_el)
-# fill remaining pa_th after it crosses lev_el
+# find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# fill remaining pa_th after it crosses bar_rier
 if (NROW(cro_ss)>0) {
   pa_th[(cro_ss[1]+1):len_gth] <-
     pa_th[cro_ss[1]]
@@ -418,7 +434,7 @@ ts_path <- ts(data=pa_th, frequency=365,
 # create plot with horizontal line
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")
+abline(h=bar_rier, lwd=2, col="red")
 title(main="Brownian motion crossing a barrier level",
       line=0.5)
 set.seed(1121)  # reset random number generator
@@ -469,6 +485,68 @@ function(x) c(mean=mean(x), sd=sd(x)))
 # standard error from formula
 sd(sam_ple)/sqrt(len_gth)
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
+# sample from time series of ETF returns
+sam_ple <- rutils::env_etf$re_turns[, "VTI"]
+sam_ple <- na.omit(sam_ple)
+len_gth <- NROW(sam_ple)
+# bootstrap mean and median under Windows
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+clusterSetRNGStream(clus_ter, 1121)  # reset random number generator in all cores
+num_boot <- 1e4
+boot_strap <- parLapply(clus_ter, 1:num_boot,
+  function(x, sam_ple, len_gth) {
+    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:num_boot,
+  function(x) {
+    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+# standard error assuming normal distribution of returns
+sd(sam_ple)/sqrt(num_boot)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+# load time series of ETF prices
+sam_ple <- rutils::env_etf$VTI[, 4]
+len_gth <- NROW(sam_ple)
+# calculate percentage returns
+sam_ple <- rutils::diff_it(log(sam_ple))
+# define barrier level with respect to sam_ple
+bar_rier <- 0.8*max(exp(cumsum(sam_ple)))
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+num_boot <- 1e4
+# perform parallel bootstrap under Windows
+set.seed(1121)  # reset random number generator
+boot_strap <- parLapply(clus_ter, 1:num_boot,
+  function(x, sam_ple, len_gth, bar_rier) {
+    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    # calculate prices from percentage returns
+    boot_sample <- exp(cumsum(boot_sample))
+    # calculate payout
+    sum(boot_sample > bar_rier) > 0
+  }, sam_ple=sam_ple, len_gth=len_gth, bar_rier=bar_rier)  # end parLapply
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+# perform parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:num_boot,
+  function(x) {
+    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    # calculate prices from percentage returns
+    boot_sample <- exp(cumsum(boot_sample))
+    # calculate payout
+    sum(boot_sample > bar_rier) > 0
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# calculate probability of crossing barrier
+sum(boot_strap)/num_boot
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
@@ -1330,27 +1408,54 @@ e_values <- sapply(n_data, function(x) {
 plot(y=e_values, x=n_data, t="l",
   xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
+# create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(rnorm(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+cor_mat <- cor(mat_rix)
+std_dev <- sqrt(diag(cov_mat))
+# calculate target matrix
+cor_mean <- mean(cor_mat[upper.tri(cor_mat)])
+tar_get <- matrix(cor_mean, nr=NROW(cov_mat), nc=NCOL(cov_mat))
+diag(tar_get) <- 1
+tar_get <- t(t(tar_get * std_dev) * std_dev)
+# calculate shrinkage covariance matrix
+al_pha <- 0.5
+cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
+# calculate inverse matrix
+in_verse <- solve(cov_shrink)
+# create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(rnorm(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+# perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+# calculate regularized inverse matrix
+max_eigen <- 2
+in_verse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
-lev_el <- 20  # barrier level
+bar_rier <- 20  # barrier level
 len_gth <- 1000  # number of simulation steps
 pa_th <- numeric(len_gth)  # allocate path vector
 pa_th[1] <- 0  # initialize path
 in_dex <- 2  # initialize simulation index
 while ((in_dex <= len_gth) &&
- (pa_th[in_dex - 1] < lev_el)) {
+ (pa_th[in_dex - 1] < bar_rier)) {
 # simulate next step
   pa_th[in_dex] <-
     pa_th[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # advance in_dex
 }  # end while
-# fill remaining pa_th after it crosses lev_el
+# fill remaining pa_th after it crosses bar_rier
 if (in_dex <= len_gth)
   pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
 # create daily time series starting 2011
 ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 plot(ts_path, type="l", col="black",  # create plot
      lty="solid", xlab="", ylab="")
-abline(h=lev_el, lwd=2, col="red")  # add horizontal line
+abline(h=bar_rier, lwd=2, col="red")  # add horizontal line
 title(main="Brownian motion crossing a barrier level",
       line=0.5)

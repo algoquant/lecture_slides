@@ -504,12 +504,12 @@ std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 # plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
+plot(x=conf_levels,
   y=std_error_cvar[2, ], t="l", col="red", lwd=2,
   ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
   xlab="conf_levels", ylab="CVaRs",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+lines(x=conf_levels, y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=c(1, 1), col=c("red", "black"))
@@ -519,13 +519,19 @@ clus_ter <- makeCluster(num_cores)  # initialize compute cluster
 # perform bootstrap of calc_var for Windows
 set.seed(1121)
 boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot),
-  fun=calc_var, default_probs=default_probs,
-  rh_o=rh_o, num_simu=num_simu,
+  fun=calc_var, 
+  default_thresh=default_thresh,
+  rho_sqrt=rho_sqrt,
+  rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
   conf_levels=conf_levels)  # end parLapply
 # bootstrap under Mac-OSX or Linux
 boot_strap <- mclapply(rep(l_gd, num_boot),
-  FUN=calc_var, default_probs=default_probs,
-  rh_o=rh_o, num_simu=num_simu,
+  FUN=calc_var, 
+  default_thresh=default_thresh,
+  rho_sqrt=rho_sqrt,
+  rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
   conf_levels=conf_levels)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 stopCluster(clus_ter)  # stop R processes over cluster
@@ -538,12 +544,12 @@ std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 # plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
+plot(x=conf_levels,
   y=std_error_cvar[2, ], t="l", col="red", lwd=2,
   ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
   xlab="conf_levels", ylab="CVaRs",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+lines(x=conf_levels, y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=c(1, 1), col=c("red", "black"))

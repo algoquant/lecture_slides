@@ -225,13 +225,13 @@ legend("topright", inset=0.05, title="Sigmas",
  col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(2, 5, 8, 11)  # df values
+deg_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
-lab_els <- paste("df", d_free, sep="=")
+lab_els <- paste("df", deg_free, sep="=")
 for (in_dex in 1:4) {  # plot four curves
-curve(expr=dchisq(x, df=d_free[in_dex]),
+curve(expr=dchisq(x, df=deg_free[in_dex]),
       type="l", xlim=c(0, 20), ylim=c(0, 0.3),
       xlab="", ylab="", lwd=2,
       col=col_ors[in_dex],
@@ -246,18 +246,18 @@ legend("topright", inset=0.05,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(2, 5, 8, 11)  # df values
+deg_free <- c(2, 5, 8, 11)  # df values
 # create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # create legend labels
-lab_els <- paste("df", d_free, sep="=")
+lab_els <- paste("df", deg_free, sep="=")
 # plot an empty chart
 x_var <- seq(0, 20, length=100)
-plot(x_var, dchisq(x_var, df=d_free[1]),
+plot(x_var, dchisq(x_var, df=deg_free[1]),
      type="n", xlab="", ylab="", ylim=c(0, 0.3))
 # add lines to plot
 for (in_dex in 1:4) {
-  lines(x_var, dchisq(x_var, df=d_free[in_dex]),
+  lines(x_var, dchisq(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex])
 }  # end for
 # add title
@@ -269,14 +269,14 @@ legend("topright", inset=0.05,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-d_free <- c(3, 6, 9)  # df values
+deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", d_free, sep="="))
+lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot a Normal probability distribution
 curve(expr=dnorm, type="l", xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
 for (in_dex in 1:3) {  # plot three t-distributions
-curve(expr=dt(x, df=d_free[in_dex]),
+curve(expr=dt(x, df=deg_free[in_dex]),
       type="l", xlab="", ylab="", lwd=2,
       col=col_ors[in_dex+1], add=TRUE)
 }  # end for
@@ -290,14 +290,14 @@ legend("topright", inset=0.05,
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 x_var <- seq(-4, 4, length=100)
-d_free <- c(3, 6, 9)  # df values
+deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", d_free, sep="="))
+lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot chart of normal distribution
 plot(x_var, dnorm(x_var), type="l",
      lwd=2, xlab="", ylab="")
 for (in_dex in 1:3) {  # add lines for t-distributions
-  lines(x_var, dt(x_var, df=d_free[in_dex]),
+  lines(x_var, dt(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1])
 }  # end for
 # add title
@@ -306,6 +306,24 @@ title(main="t-distributions", line=0.5)
 legend("topright", inset=0.05,
        title="Degrees\n of freedom", lab_els,
        cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       col=col_ors)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="F-Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
        col=col_ors)
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)

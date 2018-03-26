@@ -210,458 +210,6 @@ sharpe(zoo_stx[, "Close"], r=0.01)
 # add title
 plot(zoo_stx[, "Close"], xlab="", ylab="")
 title(main="MSFT Close Prices", line=-1)
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# simulate geometric Brownian motion
-re_turns <- vol_at*rnorm(len_gth) +
-  dri_ft - vol_at^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
-# simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 10000
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-  length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
-  order.by=in_dex)
-price_s <- cbind(price_s,
-  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# aggregate to daily OHLC data
-oh_lc <- xts::to.daily(price_s)
-quantmod::chart_Series(oh_lc, name="random prices")
-# dygraphs candlestick plot using pipes syntax
-library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>%
-  dyCandlestick()
-# dygraphs candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 5000
-path_s <- 10
-# simulate multiple paths of geometric Brownian motion
-price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
-    dri_ft - vol_at^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# create zoo time series
-price_s <- zoo(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
-# plot zoo time series
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-# define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 10000
-path_s <- 100
-# simulate multiple paths of geometric Brownian motion
-price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
-    dri_ft - vol_at^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# calculate percentage of paths below the expected value
-per_centage <- rowSums(price_s < 1.0) / path_s
-# create zoo time series of percentage of paths below the expected value
-per_centage <- zoo(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
-# plot zoo time series of percentage of paths below the expected value
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(per_centage, main="Percentage of GBM paths below mean",
-   xlab=NA, ylab=NA, col="blue")
-# sigma values
-sig_mas <- c(0.5, 1, 1.5)
-# create plot colors
-col_ors <- c("black", "red", "blue")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep="=")
-# plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-  type="l", xlim=c(0, 3),
-  xlab="", ylab="", lwd=2,
-  col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
-}  # end for
-# add title
-title(main="Log-normal Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, title="Sigmas",
- lab_els, cex=0.8, lwd=2,
- lty=rep(1, NROW(sig_mas)),
- col=col_ors)
-# load S&P500 stock prices
-load("C:/Develop/R/lecture_slides/data/sp500.RData")
-ls(env_sp500)
-# extract closing prices
-price_s <- eapply(env_sp500, quantmod::Cl)
-# flatten price_s into a single xts series
-price_s <- rutils::do_call(cbind, price_s)
-# carry forward and backward non-NA prices
-price_s <- zoo::na.locf(price_s)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
-sum(is.na(price_s))
-# rename and normalize columns
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
-         order.by=index(price_s))
-# calculate permution index for sorting the lowest to highest final price_s
-or_der <- order(price_s[NROW(price_s), ])
-# select a few symbols
-sym_bols <- colnames(price_s)[or_der]
-sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
-# plot xts time series of price_s
-col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-legend(x="topleft", inset=0.05, cex=0.8,
- legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
-# calculate average of valid stock prices
-val_id <- (price_s != 1)  # valid stocks
-num_stocks <- rowSums(val_id)
-num_stocks[1] <- NCOL(price_s)
-in_dex <- rowSums(price_s * val_id) / num_stocks
-# calculate percentage of stock prices below the average price
-per_centage <- rowSums((price_s < in_dex) & val_id) / num_stocks
-# create zoo time series of average stock prices
-in_dex <- zoo(in_dex, order.by=index(price_s))
-# plot zoo time series of average stock prices
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
-   xlab=NA, ylab=NA, col="blue")
-# create xts time series of percentage of stock prices below the average price
-per_centage <- xts(per_centage, order.by=index(price_s))
-# plot percentage of stock prices below the average price
-plot.zoo(per_centage[-(1:2),],
-   main="Percentage of S&P500 stock prices below the average price",
-   xlab=NA, ylab=NA, col="blue")
-NA
-x11(width=6, height=4)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
-library(zoo)
-re_turns <- diff(log(EuStockMarkets[, 1]))
-# acf() autocorrelation from package stats
-acf(zoo::coredata(re_turns), lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-library(Ecdat)  # load Ecdat
-macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(re_turns, lag=10, type="Ljung")
-
-# changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"],
-   lag=10, type="Ljung")
-
-# changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"],
-   lag=10, type="Ljung")
-library(zoo)  # load package zoo
-dax_acf <- acf(coredata(re_turns), plot=FALSE)
-summary(dax_acf)  # get the structure of the "acf" object
-# print(dax_acf)  # print acf data
-dim(dax_acf$acf)
-dim(dax_acf$lag)
-head(dax_acf$acf)
-acf_plus <- function (ts_data, plot=TRUE,
-                xlab="Lag", ylab="",
-                main="", ...) {
-  acf_data <- acf(x=ts_data, plot=FALSE, ...)
-# remove first element of acf data
-  acf_data$acf <-  array(data=acf_data$acf[-1],
-    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <-  array(data=acf_data$lag[-1],
-    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  if (plot) {
-    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
-    ylim <- c(min(-ci, range(acf_data$acf[-1])),
-        max(ci, range(acf_data$acf[-1])))
-    plot(acf_data, xlab=xlab, ylab=ylab,
-   ylim=ylim, main=main, ci=0)
-    abline(h=c(-ci, ci), col="blue", lty=2)
-  }
-  invisible(acf_data)  # return invisibly
-}  # end acf_plus
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # load package zoo
-# improved autocorrelation function
-acf_plus(coredata(re_turns), lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-# Ljung-Box test for DAX returns
-Box.test(re_turns, lag=10, type="Ljung")
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# autocorrelation of squared DAX returns
-acf_plus(coredata(re_turns)^2,
-   lag=10, main="")
-title(main="acf of squared DAX returns",
-line=-1)
-# autocorrelation of squared random returns
-acf_plus(rnorm(length(re_turns))^2,
-   lag=10, main="")
-title(main="acf of squared random returns",
-line=-1)
-# Ljung-Box test for squared DAX returns
-Box.test(re_turns^2, lag=10, type="Ljung")
-library(zoo)  # load package zoo
-library(Ecdat)  # load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # coerce to "zoo"
-    Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # generic ggplot2 for "zoo"
-  object=macro_zoo, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-macro_diff <- na.omit(diff(macro_zoo))
-
-acf_plus(coredata(macro_diff[, "unemprate"]),
-   lag=10)
-title(main="quarterly unemployment rate",
-line=-1)
-
-acf_plus(coredata(macro_diff[, "3mTbill"]),
-   lag=10)
-title(main="3 month T-bill EOQ", line=-1)
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-library(gridExtra)  # load gridExtra
-# extract DAX time series
-dax_ts <- EuStockMarkets[, 1]
-# filter past values only (sides=1)
-dax_filt <- filter(dax_ts,
-    filter=rep(1/5,5), sides=1)
-# coerce to zoo and merge the time series
-dax_filt <- cbind(as.zoo(dax_ts),
-            as.zoo(dax_filt))
-colnames(dax_filt) <- c("DAX", "DAX filtered")
-dax_data <- window(dax_filt,
-             start=1997, end=1998)
-autoplot(  # plot ggplot2
-    dax_data, main="Filtered DAX",
-    facets=NULL) +  # end autoplot
-xlab("") + ylab("") +
-theme(  # modify plot theme
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-    plot.background=element_blank(),
-    axis.text.y=element_blank()
-    )  # end theme
-# end ggplot2
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-re_turns <- na.omit(diff(log(dax_filt)))
-par(mfrow=c(2,1))  # set plot panels
-
-acf_plus(coredata(re_turns[, 1]), lag=10,
-   xlab="")
-title(main="DAX", line=-1)
-
-acf_plus(coredata(re_turns[, 2]), lag=10,
-   xlab="")
-title(main="DAX filtered", line=-1)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# autocorrelation from "stats"
-acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered autocorrelations", line=-1)
-# partial autocorrelation
-pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered partial autocorrelations",
-      line=-1)
-# ARIMA processes
-library(ggplot2)  # load ggplot2
-library(gridExtra)  # load gridExtra
-in_dex <- Sys.Date() + 0:728  # two year daily series
-set.seed(1121)  # reset random numbers
-zoo_arima <- zoo(  # AR time series of returns
-  x=arima.sim(n=729, model=list(ar=0.2)),
-  order.by=in_dex)  # zoo_arima
-zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
-colnames(zoo_arima) <- c("AR returns", "AR prices")
-autoplot(object=zoo_arima, # ggplot AR process
- facets="Series ~ .",
- main="Autoregressive process (phi=0.2)") +
-  facet_grid("Series ~ .", scales="free_y") +
-  xlab("") + ylab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
-zoo_arima <- sapply(  # create three AR time series
-  ar_coeff, function(phi) {
-    set.seed(1121)  # reset random numbers
-    arima.sim(n=729, model=list(ar=phi))
-  } )
-zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
-# convert returns to prices
-zoo_arima <- cumsum(zoo_arima)
-colnames(zoo_arima) <-
-  paste("autocorr", ar_coeff)
-autoplot(zoo_arima, main="AR prices",
-   facets=Series ~ .) +
-    facet_grid(Series ~ ., scales="free_y") +
-xlab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# simulate AR(1) process
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-# ACF of AR(1) process
-acf_plus(ari_ma, lag=10, xlab="", ylab="",
-   main="ACF of AR(1) process")
-# PACF of AR(1) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(1) process")
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-            order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# add legend
-legend(x="topleft",
- legend=colnames(rand_walk),
- col=c("black", "red", "blue"), lty=1)
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-            order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# add legend
-legend(x="topleft",
- legend=colnames(rand_walk),
- col=c("black", "red", "blue"), lty=1)
-library(tseries)  # load tseries
-# simulate AR(1) process
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-tseries::adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
-tseries::adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(729))
-tseries::adf.test(rand_walk)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(10000))
-tseries::adf.test(rand_walk)
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-ar3_zoo <- zoo(  # AR(3) time series of returns
-  x=arima.sim(n=365,
-    model=list(ar=c(0.1, 0.5, 0.1))),
-  order.by=in_dex)  # zoo_arima
-# ACF of AR(3) process
-acf_plus(ar3_zoo, lag=10,
- xlab="", ylab="", main="ACF of AR(3) process")
-
-# PACF of AR(3) process
-pacf(ar3_zoo, lag=10,
-     xlab="", ylab="", main="PACF of AR(3) process")
-ar3_zoo <- arima.sim(n=1000,
-      model=list(ar=c(0.1, 0.3, 0.1)))
-arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
-library(forecast)  # load forecast
-auto.arima(ar3_zoo)  # fit ARIMA model
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
- title=paste(c(paste0("vol_at = ", vol_at),
-               paste0("eq_price = ", eq_price),
-               paste0("the_ta = ", the_ta)),
-             collapse="\n"),
- legend="", cex=0.8,
- inset=0.1, bg="white", bty="n")
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; the_ta <- 0.05
-len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-re_turns <- rutils::diff_it(log(price_s))
-lag_price <- rutils::lag_it(price_s)
-lag_price[1] <- lag_price[2]
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# plot regression
-plot(for_mula, main="returns versus lagged prices")
-abline(l_m, lwd=2, col="red")
-# define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-# simulate Ornstein-Uhlenbeck process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- 5.0
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
- title=paste(c(paste0("vol_at = ", vol_at),
-               paste0("eq_price = ", eq_price),
-               paste0("the_ta = ", the_ta)),
-             collapse="\n"),
- legend="", cex=0.8,
- inset=0.1, bg="white", bty="n")
 # load package quantmod
 library(quantmod)
 # get documentation for package quantmod
@@ -706,9 +254,10 @@ etf_list[c(1, 2)]
 print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 library(quantmod)  # load package quantmod
 env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf
-getSymbols(sym_bols, env=env_etf, adjust=TRUE,
-    from="2007-01-03")
+# download data for sym_bols into env_etf from Alpha Vantage
+getSymbols.av(sym_bols, adjust=TRUE, env=env_etf,
+  output.size="full", api.key="T7JPW54ES8G75310")
+# getSymbols(sym_bols, env=env_etf, adjust=TRUE, from="2005-01-03")
 library(quantmod)  # load package quantmod
 ls(env_etf)  # list files in env_etf
 # get class of object in env_etf
@@ -785,7 +334,7 @@ class(re_turns)
 class(re_turns[[1]])
 
 # flatten list of xts into a single xts
-re_turns <- do.call(merge, re_turns)
+re_turns <- rutils::do_call(cbind, re_turns)
 class(re_turns)
 dim(re_turns)
 head(re_turns[, 1:3])
@@ -1109,6 +658,64 @@ for (sym_bol in sp_500$names) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
+library(HighFreq)  # load package HighFreq
+# load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+sym_bols <- sp_500$co_tic
+env_sp500 <- new.env()  # new environment for data
+# remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# download in while loop from Alpha Vantage and copy into environment
+down_loaded <- sym_bols %in% ls(env_sp500)
+it_er <- 0
+while (((NROW(down_loaded) - sum(down_loaded)) > 0) & (it_er<10)) {
+  # Boolean vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  # download data and copy it into environment
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("processing: ", sym_bol, "\n")
+    tryCatch(  # with error handler
+  getSymbols(sym_bol, adjust=TRUE, env=env_sp500,
+             output.size="full", api.key="T7JPW54ES8G75310"),
+# error handler captures error condition
+error=function(error_cond) {
+  print(paste("error handler: ", error_cond))
+},  # end error handler
+finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  it_er <- it_er + 1
+  Sys.sleep(2*60)
+}  # end while
+library(HighFreq)  # load package HighFreq
+# rename "LOW" colnames to "L_OWES"
+colnames(env_sp500$LOW) <-
+  sapply(colnames(env_sp500$LOW),
+    function(col_name) {
+col_name <- strsplit(col_name, split="[.]")[[1]]
+paste("L_OWES", col_name[2], sep=".")
+    })
+assign("L_OWES", env_sp500$LOW, envir=env_sp500)
+rm(LOW, envir=env_sp500)
+# rename "BRK.B" colnames to "BRK_B"
+colnames(env_sp500$BRK.B) <-
+  sapply(colnames(env_sp500$BRK.B),
+   function(col_name) {
+     col_name <- strsplit(col_name, split="[.]")[[1]]
+     paste("BRK_B", col_name[3], sep=".")
+   })
+assign("BRK_B", env_sp500$BRK.B, envir=env_sp500)
+rm(BRK.B, envir=env_sp500)
+# adjust all OHLC in environment using vector of strings
+for (sym_bol in ls(env_sp500)) {
+  assign(sym_bol,
+    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE),
+    envir=env_sp500)
+}  # end for
+save(env_sp500,
+  file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$L_OWES["2017-06/"],
+  TA="add_Vo()", name="LOWES stock")
 library(quantmod)
 # download U.S. unemployment rate data
 unemp_rate <- getSymbols("UNRATE",
@@ -1193,6 +800,492 @@ for (tick_er in tick_ers[!down_loaded]) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# simulate geometric Brownian motion
+re_turns <- vol_at*rnorm(len_gth) +
+  dri_ft - vol_at^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="geometric Brownian motion")
+# simulate geometric Brownian motion
+vol_at <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 10000
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
+  order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>%
+  dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+path_s <- 10
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# create zoo time series
+price_s <- zoo(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# plot zoo time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+# define daily volatility and growth rate
+vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+path_s <- 100
+# simulate multiple paths of geometric Brownian motion
+price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
+    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# create zoo time series of percentage of paths below the expected value
+per_centage <- zoo(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# plot zoo time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+   xlab=NA, ylab=NA, col="blue")
+# sigma values
+sig_mas <- c(0.5, 1, 1.5)
+# create plot colors
+col_ors <- c("black", "red", "blue")
+# create legend labels
+lab_els <- paste("sigma", sig_mas, sep="=")
+# plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+  type="l", xlim=c(0, 3),
+  xlab="", ylab="", lwd=2,
+  col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="Log-normal Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="Sigmas",
+ lab_els, cex=0.8, lwd=2,
+ lty=rep(1, NROW(sig_mas)),
+ col=col_ors)
+# load S&P500 stock prices
+load("C:/Develop/R/lecture_slides/data/sp500.RData")
+ls(env_sp500)
+# extract closing prices
+price_s <- eapply(env_sp500, quantmod::Cl)
+# flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
+         order.by=index(price_s))
+# calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+# plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+ legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+# calculate average of valid stock prices
+val_id <- (price_s != 1)  # valid stocks
+num_stocks <- rowSums(val_id)
+num_stocks[1] <- NCOL(price_s)
+in_dex <- rowSums(price_s * val_id) / num_stocks
+# calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_dex) & val_id) / num_stocks
+# create zoo time series of average stock prices
+in_dex <- zoo(in_dex, order.by=index(price_s))
+# plot zoo time series of average stock prices
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
+   xlab=NA, ylab=NA, col="blue")
+# create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+   main="Percentage of S&P500 stock prices below the average price",
+   xlab=NA, ylab=NA, col="blue")
+NA
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# acf() autocorrelation from package stats
+acf(zoo::coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+   lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+   lag=10, type="Ljung")
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(re_turns), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+acf_plus <- function (ts_data, plot=TRUE,
+                xlab="Lag", ylab="",
+                main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+        max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+   ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(re_turns)^2,
+   lag=10, main="")
+title(main="acf of squared DAX returns",
+line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+   lag=10, main="")
+title(main="acf of squared random returns",
+line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+    Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+   lag=10)
+title(main="quarterly unemployment rate",
+line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+   lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- cbind(as.zoo(dax_ts),
+            as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+             start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(re_turns[, 1]), lag=10,
+   xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+   xlab="")
+title(main="DAX filtered", line=-1)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+ facets="Series ~ .",
+ main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=1e3, model=list(ar=phi))
+  } )  # end sapply
+colnames(zoo_arima) <- paste("autocorr", ar_coeff)
+zoo::plot.zoo(zoo_arima, main="AR(1) prices", xlab=NA)
+# plot using ggplot
+library(ggplot)
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+autoplot(zoo_arima, main="AR(1) prices",
+   facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+   main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+            order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+ legend=colnames(rand_walk),
+ col=c("black", "red", "blue"), lty=1)
+# define ARIMA coefficients
+co_eff <- c(0.9, 0.09)
+# calculate modulus of roots of characteristic equation
+root_s <- Mod(polyroot(c(1, -co_eff)))
+# calculate warmup period
+warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
+# simulate ARIMA process
+set.seed(1121)
+len_gth <- 1e4
+in_nov <- rnorm(len_gth + warm_up)
+ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+arima_sim <- arima.sim(n=len_gth, model=list(ar=co_eff),
+  start.innov=in_nov[1:warm_up],
+  innov=in_nov[(warm_up+1):NROW(in_nov)])
+all.equal(ari_ma[-(1:warm_up)], as.numeric(arima_sim))
+# simulate random walks using apply() loops
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrix(rnorm(1000*100), ncol=1000)
+rand_walks <- apply(rand_walks, 2, cumsum)
+vari_ance <- apply(rand_walks, 1, var)
+# simulate random walks using vectorized functions
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
+vari_ance <- matrixStats::rowVars(rand_walks)
+par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot(vari_ance, xlab="time steps", ylab="",
+     t="l", col="blue", lwd=2,
+     main="Variance of Random Walk")
+len_gth <- 1e4
+# simulate arima with small AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.01))
+tseries::adf.test(ari_ma)
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# simulate arima with different AR coefficients
+coeff_s <- seq(0.99, 1.0, 0.001) - 0.001
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+adf_test <- sapply(coeff_s, function(co_eff) {
+  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
+  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
+})  # end sapply
+plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient",
+     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
+plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient",
+     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+# simulate arima with negative AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=-0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+    model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+ xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+ar3_zoo <- arima.sim(n=1000,
+      model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+ title=paste(c(paste0("vol_at = ", vol_at),
+               paste0("eq_price = ", eq_price),
+               paste0("the_ta = ", the_ta)),
+             collapse="\n"),
+ legend="", cex=0.8,
+ inset=0.1, bg="white", bty="n")
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+ title=paste(c(paste0("vol_at = ", vol_at),
+               paste0("eq_price = ", eq_price),
+               paste0("the_ta = ", the_ta)),
+             collapse="\n"),
+ legend="", cex=0.8,
+ inset=0.1, bg="white", bty="n")
 library(xtable)
 # read etf database into data frame
 fundamental_data <-

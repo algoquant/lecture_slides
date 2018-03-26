@@ -1884,6 +1884,79 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
 
 
 %%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over a vector of end points: 
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculate the maximum Sharpe ratio portfolio weights at each end point, 
+        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns, 
+      \end{enumerate}
+      The parameters of this strategy are:
+      \begin{enumerate}
+        \item Rebalancing frequency (annual, monthly, etc.)
+        \item Length of look-back interval (sliding or expanding), 
+        \item Scaling of the weights (sum or sum-of-squares), 
+      \end{enumerate}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sym_bols contains all the symbols in rutils::env_etf$re_turns except for "VXX"
+sym_bols <- colnames(rutils::env_etf$re_turns)
+sym_bols <- sym_bols[!(sym_bols=="VXX")]
+# Extract columns of rutils::env_etf$re_turns and remove NA values
+re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- zoo::na.locf(re_turns)
+re_turns <- na.omit(re_turns)
+# Calculate vector of monthly end points and start points
+look_back <- 12
+end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
+end_points[end_points<2*NCOL(re_turns)] <- 2*NCOL(re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+len_gth <- NROW(end_points)
+# sliding window
+start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
+# OR expanding window
+# start_points <- rep_len(1, NROW(end_points))
+# risk_free is the daily risk-free rate
+risk_free <- 0.03/260
+# Calculate daily excess returns 
+ex_cess <- re_turns - risk_free
+# Perform loop over end_points
+portf_rets <- lapply(2:NROW(end_points),
+  function(i) {
+    # subset the ex_cess returns
+    ex_cess <- ex_cess[start_points[i-1]:end_points[i-1], ]
+    in_verse <- solve(cov(ex_cess))
+    # calculate the maximum Sharpe ratio portfolio weights.
+    weight_s <- in_verse %*% colMeans(ex_cess)
+    weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+    # subset the re_turns
+    re_turns <- re_turns[(end_points[i-1]+1):end_points[i], ]
+    # calculate the out-of-sample portfolio returns
+    xts(re_turns %*% weight_s, index(re_turns))
+  }  # end anonymous function
+)  # end lapply
+portf_rets <- rutils::do_call(rbind, portf_rets)
+colnames(portf_rets) <- "portf_rets"
+# Calculate compounded cumulative portfolio returns
+portf_rets <- cumsum(portf_rets)
+quantmod::chart_Series(portf_rets,
+  name="Cumulative Returns of Max Sharpe Portfolio Strategy")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{\protect\emph{S\&P500} Stock Index Constituent Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1964,7 +2037,9 @@ dygraphs::dygraph(da_ta,
       A very simple \emph{momentum} strategy for the \emph{S\&P500}, is to go long constituents with positive recent performance, and short constituents with negative performance,
       \vskip1ex
       This \emph{momentum} strategy does not perform well and suffers from \emph{momentum crashes} when the market rebounds sharply from a recent lows,
-      <<echo=TRUE,eval=FALSE>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
+load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
+re_turns <- rutils::diff_it(price_s)
 # calculate rolling variance of S&P500 portfolio
 wid_th <- 252
 vari_ance <- roll::roll_var(re_turns, width=wid_th)
@@ -2003,7 +2078,7 @@ col_names <- colnames(pnl_s)
 dygraphs::dygraph(pnl_s, main=paste(col_names, collapse=" and ")) %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
+  dySeries(col_names[2], axis="y2", col=c("blue", "red"))
       @
   \end{columns}
 \end{block}
@@ -2124,6 +2199,63 @@ chart_Series(pro_files,
 legend("bottomleft", legend=colnames(pro_files), 
   inset=0.0, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
   col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization Strategy for \protect\emph{S\&P500}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)
+load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
+n_col <- NCOL(price_s)
+# define end_points
+end_points <- rutils::calc_endpoints(price_s, inter_val="months")
+end_points <- end_points[end_points>50]
+len_gth <- NROW(end_points)
+look_back <- 12
+start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
+# scale price_s
+date_s <- index(price_s)
+price_s <- t(t(price_s) / as.numeric(price_s[1, ]))
+sum(is.na(price_s))
+in_dex <- xts(rowSums(price_s)/n_col, date_s)
+re_turns <- diff_it(price_s)
+# compile backtest function
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_test6.cpp")
+# run backtest function
+al_pha <- 0.01
+max_eigen <- 2
+strat_rets_arma <- roll_portf(re_turns,
+  re_turns,
+  start_points-1,
+  end_points-1,
+  al_pha=al_pha,
+  max_eigen=max_eigen)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_sharpe_monthly.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot strategy
+strat_rets_arma <- cumsum(strat_rets_arma)
+strat_rets_arma <- xts(strat_rets_arma, date_s)
+library(dygraphs)
+strat_rets_arma <- cbind(strat_rets_arma, in_dex)
+col_names <- c("Strategy", "Index")
+colnames(strat_rets_arma) <- col_names
+dygraphs::dygraph(strat_rets_arma, main=paste(col_names, collapse=" and ")) %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
       @
   \end{columns}
 \end{block}

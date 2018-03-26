@@ -221,7 +221,7 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Capital Asset Pricing Model (\protect \emph{CAPM})}
+\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -426,9 +426,9 @@ bar <- cov_mat(re_turns, an_gle=pi/4)
 (t(bar) %*% bar) / NROW(bar)
 
 angle_s <- seq(0, pi/2, by=pi/24)
-co_var <- sapply(angle_s, function(an_gle) 
+cov_mat <- sapply(angle_s, function(an_gle) 
   cov_mat(re_turns, an_gle=an_gle)[1, 1])
-plot(x=angle_s, y=co_var, t="l")
+plot(x=angle_s, y=cov_mat, t="l")
 
 op_tim <- optimize(
   f=function(an_gle) 
@@ -492,7 +492,7 @@ abline(reg_model, lwd=2, col="red")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Covariance Matrix of Returns}
+\subsection{Covariance Matrix of ETF Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -503,20 +503,27 @@ abline(reg_model, lwd=2, col="red")
         \mathbb{C} = \frac{r^T r} {n-1}
       \end{displaymath}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# select ETF symbols
-sym_bols <- c("IEF", "DBC", "XLF", "XLP", "XLI", "VXX")
-# select and de-mean the returns
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns)
-in_dex <- index(re_turns)
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+# Select ETF symbols
+sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
+# calculate ETF prices and simple returns (not percentage)
+price_s <- rutils::env_etf$price_s[, sym_bols]
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+date_s <- index(price_s)
+re_turns <- rutils::diff_it(price_s)
+# de-mean (center) and scale the returns
 re_turns <- t(t(re_turns) - colMeans(re_turns))
-# scale the re_turns
-re_turns <- apply(re_turns, 2, scale)
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
+# alternative de-mean (center) and scale the returns
+# re_turns <- scale(re_turns, center=TRUE, scale=TRUE)
+# re_turns <- xts(re_turns, date_s)
+# or
 # re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
 # re_turns <- rutils::do_call(cbind, re_turns)
-# re_turns <- scale(re_turns, scale=FALSE)
+# re_turns <- apply(re_turns, 2, scale)
 # covariance matrix and variance vector of returns
 cov_mat <- cov(re_turns)
 vari_ance <- diag(cov_mat)
@@ -532,7 +539,7 @@ or_der <- corrMatOrder(cor_mat,
 cor_mat <- cor_mat[or_der, or_der]
 # plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title="Correlation Matrix", 
+corrplot(cor_mat, title="ETF Correlation Matrix", 
     tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
     method="square", col=col_ors(8), 
     cl.offset=0.75, cl.cex=0.7, 
@@ -542,7 +549,7 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
                 method="complete", col="red")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/cor_mat.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/corr_etf.png}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
 # plot the correlation matrix
@@ -590,36 +597,36 @@ names(weight_s) <- sym_bols
 # objective function equal to minus portfolio variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) + 
-    1000*(1 - sum(weight_s*weight_s))^2
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2
 }  # end object_ive
 # objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # compare speed of vector multiplication methods
 summary(microbenchmark(
-  trans_pose=t(portf_rets) %*% portf_rets,
-  s_um=sum(portf_rets*portf_rets),
+  trans_pose=(t(re_turns[, 1]) %*% re_turns[, 1]),
+  s_um=sum(re_turns[, 1]^2),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_stock_load1.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load1.png}
       \vspace{-3em}
       <<echo=TRUE,eval=FALSE>>=
 # find weights with maximum variance
 optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   re_turns=re_turns,
-                   method="L-BFGS-B",
-                   upper=rep(10.0, n_weights),
-                   lower=rep(-10.0, n_weights))
+  fn=object_ive,
+  re_turns=re_turns,
+  method="L-BFGS-B",
+  upper=rep(10.0, n_weights),
+  lower=rep(-10.0, n_weights))
 # optimal weights and maximum variance
 weight_s <- optim_run$par
 -object_ive(weight_s, re_turns)
-# plot first principal component loadings
+# plot first principal component weights
 barplot(weight_s, names.arg=names(weight_s), 
         xlab="", ylab="", 
-        main="First Principal Component Loadings")
+        main="First Principal Component Weights")
       @
   \end{columns}
 \end{block}
@@ -634,7 +641,7 @@ barplot(weight_s, names.arg=names(weight_s),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}, 
+      The second \emph{principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the first \emph{principal component}, 
       \vskip1ex
       Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}, 
       <<echo=TRUE,eval=FALSE>>=
@@ -644,27 +651,27 @@ pc_1 <- re_turns %*% weights_1
 # redefine objective function
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) + 
-    1000*(1 - sum(weight_s*weight_s))^2 + 
-    1000*(sum(pc_1*portf_rets))^2
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2 + 
+    1e7*(sum(weights_1*weight_s))^2
 }  # end object_ive
-# find second principal component weights
-optim_run <- optim(par=weight_s,
-                   fn=object_ive,
-                   re_turns=re_turns,
-                   method="L-BFGS-B",
-                   upper=rep(10.0, n_weights),
-                   lower=rep(-10.0, n_weights))
+# find second PC weights using parallel DEoptim
+optim_run <- DEoptim::DEoptim(fn=object_ive,
+  upper=rep(10, NCOL(re_turns)),
+  lower=rep(-10, NCOL(re_turns)),
+  re_turns=re_turns, control=list(parVar="weights_1", 
+    trace=FALSE, itermax=1000, parallelType=1))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_stock_load2.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load2.png}
       \vspace{-3em}
       <<echo=TRUE,eval=FALSE>>=
 # pc2 weights and returns
-weights_2 <- optim_run$par
-pc_2 <- re_turns %*% weights_2
-sum(pc_1*pc_2)
+weights_2 <- optim_run$optim$bestmem
+names(weights_2) <- colnames(re_turns)
+sum(weights_2^2)
+sum(weights_1*weights_2)
 # plot second principal component loadings
 barplot(weights_2, names.arg=names(weights_2), 
         xlab="", ylab="", 
@@ -704,11 +711,14 @@ barplot(weights_2, names.arg=names(weights_2),
       The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_eigen_values.png}\\
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_eigenvalues.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate eigenvectors and eigenvalues
-ei_gen <- eigen(cov(re_turns))
+ei_gen <- eigen(cov_mat)
+ei_gen$vectors
+weights_1
+weights_2
 ei_gen$values[1]
 var(pc_1)
 (cov_mat %*% weights_1) / weights_1
@@ -728,7 +738,55 @@ barplot(ei_gen$values, # plot eigenvalues
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Analysis of Stock Returns}
+\subsection{Minimum Variance Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The highest order \emph{principal component}, with the smallest eigenvalue, has the lowest possible variance, under the constraint that the sum of the squared weights is equal to \texttt{1}: $\mathbf{w}^T \mathbf{w} = 1$,
+      \vskip1ex
+      So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio},
+      <<echo=TRUE,eval=FALSE>>=
+# redefine objective function to minimize variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2
+}  # end object_ive
+# find highest order PC weights using parallel DEoptim
+optim_run <- DEoptim::DEoptim(fn=object_ive,
+  upper=rep(10, NCOL(re_turns)),
+  lower=rep(-10, NCOL(re_turns)),
+  re_turns=re_turns, control=list(trace=FALSE, 
+    itermax=1000, parallelType=1))
+# pc6 weights and returns
+weights_6 <- optim_run$optim$bestmem
+names(weights_6) <- colnames(re_turns)
+sum(weights_6^2)
+sum(weights_1*weights_6)
+# calculate objective function
+object_ive(weights_6, re_turns)
+object_ive(ei_gen$vectors[, 6], re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load6.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot highest order principal component loadings
+barplot(weights_6, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="Highest Order Principal Component Loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component Analysis} of ETF Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -745,7 +803,7 @@ barplot(ei_gen$values, # plot eigenvalues
       The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations,
       \vskip1ex
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_stock_scree.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_scree.png}
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}, 
       <<echo=TRUE,eval=FALSE>>=
 # perform principal component analysis PCA
@@ -764,7 +822,7 @@ barplot(pc_a$sdev,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Loadings (Weights)}
+\subsection{\protect\emph{Principal Component} Loadings (Weights)}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -772,12 +830,14 @@ barplot(pc_a$sdev,
     \column{0.5\textwidth}
       \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns,
       \vskip1ex
-      The \emph{principal component} portfolios represent the different orthogonal modes of the return variance, 
+      The \emph{principal component} (\emph{PC}) portfolios represent the different orthogonal modes of the return variance,
+      \vskip1ex
+      The \emph{PC} portfolios typically consist of long or short positions of highly correlated groups of assets (clusters), so that they represent relative value portfolios,
       <<echo=TRUE,eval=FALSE>>=
 # principal component loadings (weights)
 pc_a$rotation
-# plot loading barplots in multiple panels
-par(mfrow=c(n_weights/2,2))
+# Plot barplots with PCA weights in multiple panels
+par(mfrow=c(n_weights/2, 2))
 par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (or_der in 1:n_weights) {
   barplot(pc_a$rotation[, or_der], 
@@ -787,8 +847,7 @@ for (or_der in 1:n_weights) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_stock_loadings.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_loadings.png}
   \end{columns}
 \end{block}
 
@@ -796,7 +855,7 @@ for (or_der in 1:n_weights) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Time Series}
+\subsection{\protect\emph{Principal Component} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -804,14 +863,16 @@ for (or_der in 1:n_weights) {
     \column{0.5\textwidth}
       The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data,
       \vskip1ex
-      Higher order \emph{principal components} are gradually less volatile,
+      The higher order \emph{PCs} are gradually less volatile,
       <<echo=TRUE,eval=FALSE>>=
 # principal component time series
-pca_ts <- xts(re_turns %*% pc_a$rotation, 
-                order.by=in_dex)
-pca_ts <- xts:::cumsum.xts(pca_ts)
+pca_rets <- xts(re_turns %*% pc_a$rotation, 
+                order.by=date_s)
+round(cov(pca_rets), 3)
+all.equal(unname(coredata(pca_rets)), unname(pc_a$x))
+pca_ts <- xts:::cumsum.xts(pca_rets)
 # plot principal component time series in multiple panels
-par(mfrow=c(n_weights/2,2))
+par(mfrow=c(n_weights/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 ra_nge <- range(pca_ts)
 for (or_der in 1:n_weights) {
@@ -822,8 +883,7 @@ for (or_der in 1:n_weights) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_stock_series.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series.png}
   \end{columns}
 \end{block}
 
@@ -831,48 +891,46 @@ for (or_der in 1:n_weights) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Series from Principal Components}
+\subsection{Time Series from the \protect\emph{Principal Components}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The original time series data can be calculated exactly from the time series of all the \emph{principal components}, by inverting the loadings matrix, 
+      The original time series of returns can be calculated exactly from the time series of all the \emph{principal components}, by inverting the loadings matrix, 
       \vskip1ex
-      The original time series can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimensionality reduction}, 
+      The original time series of returns can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimensionality reduction}, 
       \vskip1ex
-      The \emph{Kaiser-Guttman} rule retains only \emph{principal components} with \emph{eigenvalues} greater than \texttt{1}, 
+      The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with \emph{variance} greater than \texttt{1}, 
       \vskip1ex
-      Another rule is to retain the \emph{principal components} with the largest \emph{eigenvalues} which sum up to \texttt{80\%} of total variance explained,
+      Another rule is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns,
       \vskip1ex
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
-      \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
-par(mfrow=c(n_weights/2,2))
+par(mfrow=c(n_weights/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-# invert principal component time series
+# invert all the principal component time series
 pca_rets <- re_turns %*% pc_a$rotation
 sol_ved <- pca_rets %*% solve(pc_a$rotation)
 all.equal(re_turns, sol_ved)
+# invert first 3 principal component time series
 sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
-sol_ved <- xts::xts(sol_ved, in_dex)
+sol_ved <- xts::xts(sol_ved, date_s)
 sol_ved <- xts:::cumsum.xts(sol_ved)
-re_turns <- xts::xts(re_turns, in_dex)
-re_turns <- xts:::cumsum.xts(re_turns)
+cum_returns <- xts:::cumsum.xts(re_turns)
 # plot the solved returns
 for (sym_bol in sym_bols) {
   plot.zoo(
-    cbind(re_turns[, sym_bol], sol_ved[, sym_bol]), 
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]), 
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
-  legend(x="topright", 
+  legend(x="topleft", bty="n",
          legend=paste0(sym_bol, c("", " solved")),
-         title="", inset=0.05, cex=1.0, lwd=c(6, 6),
-         lty=c(1, 1), col=c("black", "blue"))
+         title=NULL, inset=0.0, cex=1.0, lwd=6,
+         lty=1, col=c("black", "blue"))
 }  # end for
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_stock_series_solved.png}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series_solved.png}
   \end{columns}
 \end{block}
 
@@ -880,143 +938,42 @@ for (sym_bol in sym_bols) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Returns Time Series}
+\subsection{\protect\emph{Principal Component Analysis} Versus \protect\emph{Eigen Decomposition}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-\vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-# PC returns from rotation and scaled re_turns
-re_turns_scaled <- apply(re_turns, 2, scale)
-pca_rets <- re_turns_scaled %*% pc_a$rotation
-# "x" matrix contains time series of PC returns
-dim(pc_a$x)
-class(pc_a$x)
-head(pc_a$x[, 1:3], 3)
-# convert PC matrix to xts and rescale to decimals
-pca_rets <- xts(pc_a$x/100, 
-    order.by=index(re_turns))
-      @
-\vspace{-1em}
-      <<pca_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-chart.CumReturns(
-  pca_rets[, 1:3], lwd=2, ylab="", 
-  legend.loc="topright", main="")
-# add title
-title(main="ETF cumulative returns", line=-1)
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_cum_returns-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Principal Component Returns Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
+      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the covariance or the correlation matrix,
+      \vskip1ex
+      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the covariance matrix,
+      \vskip1ex
+      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      Scaling the input time series improves the accuracy of the \emph{PCA dimensionality reduction}, allowing a smaller number of \emph{principal components} to more accurately capture the data contained in the input time series,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(PerformanceAnalytics)
-# Calculate PC correlation matrix
-cor_mat <- cor(pca_rets)
-colnames(cor_mat) <- colnames(pca_rets)
-rownames(cor_mat) <- colnames(pca_rets)
-cor_mat[1:3, 1:3]
-table.CAPM(Ra=pca_rets[, 1:3], 
-    Rb=re_turns[, "VTI"], scale=252)
+      <<echo=TRUE,eval=FALSE>>=
+# eigen decomposition of covariance matrix
+re_turns <- rutils::diff_it(price_s)
+cov_mat <- cov(re_turns)
+ei_gen <- eigen(cov_mat)
+# perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(unname(ei_gen$vectors)), 
+          abs(unname(pc_a$rotation)))
+# eigen decomposition of correlation matrix
+cor_mat <- cor(re_turns)
+ei_gen <- eigen(cor_mat)
+# perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(unname(ei_gen$vectors)), 
+          abs(unname(pc_a$rotation)))
       @
-    \column{0.5\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{old - Principal Component Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<pca_plot,echo=(-(1:2)),fig.height=5,fig.show='hide',eval=FALSE>>=
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-### Perform principal component analysis PCA
-re_turns <- na.omit(rutils::env_etf$re_turns)
-pc_a <- prcomp(re_turns, center=TRUE, scale=TRUE)
-barplot(pc_a$sdev[1:10], 
-        names.arg=colnames(pc_a$rotation)[1:10], 
-        las=3, ylab="STDEV", xlab="PCVec", 
-        main="PCA Explain VAR")
-# Show first three principal component loadings
-head(pc_a$rotation[,1:3], 3)
-# Permute second principal component loadings by size
-pca_vec2 <- as.matrix(
-  pc_a$rotation[order(pc_a$rotation[, 2], 
-  decreasing=TRUE), 2])
-colnames(pca_vec2) <- "pca2"
-head(pca_vec2, 3)
-# The option las=3 rotates the names.arg labels
-barplot(as.vector(pca_vec2), 
-        names.arg=rownames(pca_vec2), 
-        las=3, ylab="Loadings", 
-        xlab="Symbol", main="Loadings pca2")
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_plot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{old - Principal Component Vectors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<pca_vec,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(3,1))  # set plot panels
-# get list of principal component vectors
-pca_vecs <- lapply(1:3, function(or_der) {
-  pca_vec <- as.matrix(
-    pc_a$rotation[
-    order(pc_a$rotation[, or_der], 
-    decreasing=TRUE), or_der])
-  colnames(pca_vec) <- paste0("pca", or_der)
-  pca_vec
-})  # end lapply
-names(pca_vecs) <- c("pca1", "pca2", "pca3")
-# The option las=3 rotates the names.arg labels
-for (or_der in 1:3) {
-  barplot(as.vector(pca_vecs[[or_der]]), 
-        names.arg=rownames(pca_vecs[[or_der]]), 
-        las=3, xlab="", ylab="", 
-        main=paste("Loadings", 
-          colnames(pca_vecs[[or_der]])))
-}  # end for
-      @
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_vec-1}
   \end{columns}
 \end{block}
 
@@ -1026,6 +983,215 @@ for (or_der in 1:3) {
 
 %%%%%%%%%%%%%%%
 \section{Factor Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Components} of \protect\emph{S\&P500} Stock Constituents}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{PCA} standard deviations are the volatilities of the \emph{principal component} time series, 
+      \vskip1ex
+      The original time series of returns can be calculated approximately from the first few \emph{principal components} with the largest standard deviations,
+      \vskip1ex
+      The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with \emph{variance} greater than \texttt{1}, 
+      \vskip1ex
+      Another rule of thumb is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns,
+      <<echo=TRUE,eval=FALSE>>=
+# load S&P500 constituent stock prices
+load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
+date_s <- index(price_s)
+# calculate simple returns (not percentage)
+re_turns <- rutils::diff_it(price_s)
+# de-mean (center) and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
+# perform principal component analysis PCA
+pc_a <- prcomp(re_turns, scale=TRUE)
+# find number of components with variance greater than 2
+num_comp <- which(pc_a$sdev^2 < 2)[1]
+# plot standard deviations of principal components
+barplot(pc_a$sdev[1:num_comp], 
+        names.arg=colnames(pc_a$rotation[, 1:num_comp]), 
+        las=3, xlab="", ylab="", 
+        main="Volatilities of S&P500 Principal Components")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_scree.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} \protect\emph{Principal Component} Loadings (Weights)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal component} loadings are the weights of \emph{principal component} portfolios,
+      \vskip1ex
+      The \emph{principal component} portfolios have mutually orthogonal returns
+      represent the different orthogonal modes of the return variance, 
+      <<echo=TRUE,eval=FALSE>>=
+# Principal component loadings (weights)
+# Plot barplots with PCA weights in multiple panels
+n_comps <- 6
+par(mfrow=c(n_comps/2, 2))
+par(mar=c(4, 2, 2, 1), oma=c(0, 0, 0, 0))
+# First principal component weights
+weight_s <- sort(pc_a$rotation[, 1], decreasing=TRUE)
+barplot(weight_s[1:6], 
+        las=3, xlab="", ylab="", main="")
+title(paste0("PC", 1), line=-2.0, 
+      col.main="red")
+for (or_der in 2:n_comps) {
+  weight_s <- sort(pc_a$rotation[, or_der], decreasing=TRUE)
+  barplot(weight_s[c(1:3, 498:500)], 
+        las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, 
+        col.main="red")
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_loadings.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} \protect\emph{Principal Component} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data,
+      \vskip1ex
+      Higher order \emph{principal components} are gradually less volatile,
+      <<echo=TRUE,eval=FALSE>>=
+# principal component time series
+pca_rets <- xts(re_turns %*% pc_a$rotation[, 1:n_comps], 
+                order.by=date_s)
+round(cov(pca_rets), 3)
+pca_ts <- xts:::cumsum.xts(pca_rets)
+# plot principal component time series in multiple panels
+par(mfrow=c(n_comps/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:n_comps) {
+  plot.zoo(pca_ts[, or_der], 
+           ylim=ra_nge, 
+           xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_series.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} Factor Model From \protect\emph{Principal Components}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      By inverting the \emph{PCA} analysis, the \emph{S\&P500} constituent returns can be calculated from the first \texttt{k} \emph{principal components} under a \emph{factor model}: 
+      \begin{displaymath}
+        \mathbf{r}_i = \alpha_i + \sum_{j=1}^k {\beta_{ji} \, \mathbf{F}_j} + \varepsilon_i
+      \end{displaymath}
+      The \emph{principal components} are interpreted as \emph{market factors}: $\mathbf{F}_j = \mathbf{pc}_j$, 
+      \vskip1ex
+      The \emph{market betas} are the inverse of the \emph{principal component loadings}: $\beta_{ji} = w_{ij}$, 
+      \vskip1ex
+      The $\varepsilon_i$ are the \emph{idiosyncratic} returns, which should be mutually independent and uncorrelated to the \emph{market factor} returns,
+      <<echo=(-(1:2)),eval=FALSE>>=
+par(mfrow=c(n_comps/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+# invert principal component time series
+inv_rotation <- solve(pc_a$rotation)
+all.equal(inv_rotation, t(pc_a$rotation))
+sol_ved <- pca_rets %*% inv_rotation[1:n_comps, ]
+sol_ved <- xts::xts(sol_ved, date_s)
+sol_ved <- xts:::cumsum.xts(sol_ved)
+cum_returns <- xts:::cumsum.xts(re_turns)
+# plot the solved returns
+sym_bols <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
+for (sym_bol in sym_bols) {
+  plot.zoo(
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]), 
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topleft", bty="n",
+         legend=paste0(sym_bol, c("", " solved")),
+         title=NULL, inset=0.05, cex=1.0, lwd=6,
+         lty=1, col=c("black", "blue"))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_series_solved.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{S\&P500} \protect\emph{Factor Model} Residuals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The original time series of returns can be calculated exactly from the time series of all the \emph{principal components}, by inverting the loadings matrix, 
+      \vskip1ex
+      The original time series of returns can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimensionality reduction}, 
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      <<echo=(-(1:2)),eval=FALSE>>=
+par(mfrow=c(n_comps/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+# perform ADF unit-root tests on original series and residuals
+sapply(sym_bols, function(sym_bol) {
+  c(series=tseries::adf.test(cum_returns[, sym_bol])$p.value,
+    resid=tseries::adf.test(cum_returns[, sym_bol] - sol_ved[, sym_bol])$p.value)
+})  # end sapply
+# plot the residuals
+for (sym_bol in sym_bols) {
+  plot.zoo(cum_returns[, sym_bol] - sol_ved[, sym_bol], 
+    plot.type="single", col="blue", xlab="", ylab="")
+  legend(x="topleft", bty="n",
+         legend=paste0(sym_bol, " residuals"),
+         title=NULL, inset=0.05, cex=1.0, lwd=6,
+         lty=1, col="blue")
+}  # end for
+# perform ADF unit-root test on principal component time series
+pca_rets <- xts(re_turns %*% pc_a$rotation, 
+                order.by=date_s)
+pca_ts <- xts:::cumsum.xts(pca_rets)
+adf_pvalues <- sapply(1:NCOL(pca_ts), function(or_der)
+  tseries::adf.test(pca_ts[, or_der])$p.value)
+# ADF unit-root test on stationary time series
+tseries::adf.test(rnorm(1e5))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_sp500_residuals.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -1112,9 +1278,152 @@ title("Dendrogram representing hierarchical clustering
 
 \end{frame}
 
+%%%%%%%%%%%%%%%
+\subsection{depr: \protect\emph{Principal Component} Returns Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+\vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+# PC returns from rotation and scaled re_turns
+re_turns_scaled <- apply(re_turns, 2, scale)
+pca_rets <- re_turns_scaled %*% pc_a$rotation
+# "x" matrix contains time series of PC returns
+dim(pc_a$x)
+class(pc_a$x)
+head(pc_a$x[, 1:3], 3)
+# convert PC matrix to xts and rescale to decimals
+pca_rets <- xts(pc_a$x/100, 
+    order.by=index(re_turns))
+      @
+\vspace{-1em}
+      <<pca_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+chart.CumReturns(
+  pca_rets[, 1:3], lwd=2, ylab="", 
+  legend.loc="topright", main="")
+# add title
+title(main="ETF cumulative returns", line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{factorAnalytics}}
+\subsection{depr: \protect\emph{Principal Component} Returns Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+# calculate PC correlation matrix
+cor_mat <- cor(pca_rets)
+colnames(cor_mat) <- colnames(pca_rets)
+rownames(cor_mat) <- colnames(pca_rets)
+cor_mat[1:3, 1:3]
+table.CAPM(Ra=pca_rets[, 1:3], 
+    Rb=re_turns[, "VTI"], scale=252)
+      @
+    \column{0.5\textwidth}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Principal Component Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<pca_plot,echo=(-(1:2)),fig.height=5,fig.show='hide',eval=FALSE>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+### Perform principal component analysis PCA
+re_turns <- na.omit(rutils::env_etf$re_turns)
+pc_a <- prcomp(re_turns, center=TRUE, scale=TRUE)
+barplot(pc_a$sdev[1:10], 
+        names.arg=colnames(pc_a$rotation)[1:10], 
+        las=3, ylab="STDEV", xlab="PCVec", 
+        main="PCA Explain VAR")
+# Show first three principal component loadings
+head(pc_a$rotation[,1:3], 3)
+# Permute second principal component loadings by size
+pca_vec2 <- as.matrix(
+  pc_a$rotation[order(pc_a$rotation[, 2], 
+  decreasing=TRUE), 2])
+colnames(pca_vec2) <- "pca2"
+head(pca_vec2, 3)
+# The option las=3 rotates the names.arg labels
+barplot(as.vector(pca_vec2), 
+        names.arg=rownames(pca_vec2), 
+        las=3, ylab="Loadings", 
+        xlab="Symbol", main="Loadings pca2")
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<pca_vec,echo=(-(1:2)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(3,1))  # set plot panels
+# get list of principal component vectors
+pca_vecs <- lapply(1:3, function(or_der) {
+  pca_vec <- as.matrix(
+    pc_a$rotation[
+    order(pc_a$rotation[, or_der], 
+    decreasing=TRUE), or_der])
+  colnames(pca_vec) <- paste0("pca", or_der)
+  pca_vec
+})  # end lapply
+names(pca_vecs) <- c("pca1", "pca2", "pca3")
+# The option las=3 rotates the names.arg labels
+for (or_der in 1:3) {
+  barplot(as.vector(pca_vecs[[or_der]]), 
+        names.arg=rownames(pca_vecs[[or_der]]), 
+        las=3, xlab="", ylab="", 
+        main=paste("Loadings", 
+          colnames(pca_vecs[[or_der]])))
+}  # end for
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_vec-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Package \protect\emph{factorAnalytics}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1149,7 +1458,7 @@ detach("package:factorAnalytics")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fitting Factor Models Using PCA}
+\subsection{depr: Fitting Factor Models Using PCA}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1182,7 +1491,7 @@ factor_pca$Omega[1:3, 4:6]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Factor Loadings}
+\subsection{depr: Factor Loadings}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1205,7 +1514,7 @@ plot(factor_pca, which.plot.group=3,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Series of Factors}
+\subsection{depr: Time Series of Factors}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1233,7 +1542,7 @@ chart.CumReturns(factor_pca$factors,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Asset Correlations}
+\subsection{depr: Asset Correlations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1256,7 +1565,7 @@ plot(factor_pca, which.plot.group=7,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Time Series of Residuals}
+\subsection{depr: Time Series of Residuals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1282,7 +1591,7 @@ chart.CumReturns(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Residual Returns Histogram}
+\subsection{depr: Residual Returns Histogram}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1307,7 +1616,7 @@ plot(factor_pca, asset.name="VTI",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Residual Returns \texttt{Q-Q} Plot}
+\subsection{depr: Residual Returns \texttt{Q-Q} Plot}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1331,7 +1640,7 @@ plot(factor_pca, asset.name="VTI",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Residuals}
+\subsection{depr: Autocorrelation of Residuals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}

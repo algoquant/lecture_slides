@@ -1,824 +1,407 @@
-# load S&P500 constituent stock prices
-load("C:/Develop/R/lecture_slides/data/sp500.RData")
-price_s <- eapply(env_sp500, quantmod::Cl)
-price_s <- rutils::do_call(cbind, price_s)
-# remove NA values
-price_s <- zoo::na.locf(price_s)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-# calculate time series of static, equal weighted prices of the index components
-n_col <- NCOL(price_s)
-in_dex <- rowSums(zoo::coredata(price_s))/n_col
-in_dex <- in_dex/in_dex[1]
-sd_index <- sd(rutils::diff_it(log(in_dex)))
-in_dex <- xts::xts(in_dex, order.by=index(price_s))
-colnames(in_dex) <- "index"
-# calculate the percentage (log) returns of the S&P500 constituent stocks
-re_turns <- rutils::diff_xts(log(price_s))
-wid_th <- 220
-returns_width <- rutils::diff_xts(log(price_s),
-  lagg=wid_th)
-# calculate rolling variance of S&P500 portfolio
-vari_ance <- roll::roll_var(re_turns, width=wid_th)
-vari_ance <- zoo::na.locf(vari_ance)
-vari_ance[is.na(vari_ance)] <- 0
-# calculate rolling Sharpe of S&P500 portfolio
-weight_s <- returns_width / sqrt(wid_th*vari_ance)
-weight_s[vari_ance==0] <- 0
-weight_s[1:wid_th, ] <- 1
-weight_s[is.na(weight_s)] <- 0
-weight_s <- weight_s/rowSums(abs(weight_s))
-sum(is.na(weight_s))
-# calculate portfolio profits and losses
-pnl_s <- rowSums(rutils::lag_xts(weight_s)*re_turns)
-sd_moment <- sd(pnl_s)
-pnl_s <- sd_index*pnl_s/sd_moment
-pnl_s <- exp(cumsum(pnl_s))
-pnl_s <- xts(pnl_s, order.by=index(re_turns))
-colnames(pnl_s) <- "momentum"
-pnl_s <- cbind(in_dex, pnl_s)
-# plot
-dygraphs::dygraph(pnl_s, main="Momentum PnL")
-# Define all-weather symbols and weights
-sym_bols <- c("VTI", "IEF", "DBC")
-weight_s <- c(0.30, 0.55, 0.15)
-all_weather <-
-  rutils::env_etf$re_turns[, sym_bols] %*% weight_s
-all_weather <- exp(cumsum(all_weather))
-all_weather <- xts(all_weather,
-  index(rutils::env_etf$re_turns))
-colnames(all_weather) <- "all_weather"
-# combine momentum strategy with all-weather
-pnl_s <- cbind(pnl_s, all_weather[index(pnl_s)])
-# calculate strategy annualized Sharpe ratios
-sapply(pnl_s, function(cumu_lative) {
-  re_turns <- na.omit(diff(log(cumu_lative)))
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-})  # end sapply
-# calculate strategy correlations
-cor(na.omit(diff(log(pnl_s))))
-# plot momentum strategy, combined, and all-weather
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue", "green", "violet")
-chart_Series(pnl_s, theme=plot_theme, lwd=2, name="Momentum PnL")
-legend("topleft", legend=colnames(pnl_s),
-  inset=0.1, bg="white", lty=1, lwd=6,
-  col=plot_theme$col$line.col, bty="n")
-options(width=50, dev='pdf')
-str(optimize)
-# objective function with multiple minima
-object_ive <- function(in_put, param1=0.01) {
-  sin(0.25*pi*in_put) + param1*(in_put-1)^2
-}  # end object_ive
-unlist(optimize(f=object_ive, interval=c(-4, 2)))
-unlist(optimize(f=object_ive, interval=c(0, 8)))
-options(width=60, dev='pdf')
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot the objective function
-curve(expr=object_ive, type="l", xlim=c(-8, 9),
-xlab="", ylab="", lwd=2)
-# add title
-title(main="Objective Function", line=-1)
-library(rgl)  # load rgl
-# define function of two variables
-sur_face <- function(x, y) y*sin(x)
-# draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-  col="green", axes=FALSE)
-# draw 3d surface plot of matrix
-x_lim <- seq(from=-5, to=5, by=0.1)
-y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-  xlab="x", ylab="y", zlab="sur_face",
-  col="green")
-# save current view to png file
-rgl.snapshot("surface_plot.png")
-# define function of two variables and two parameters
-sur_face <- function(x, y, par_1=1, par_2=1)
-  sin(par_1*x)*sin(par_2*y)
-# draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-  col="green", axes=FALSE,
-  par_1=1, par_2=2)
-# Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
-  sum(vec_tor^2 - pa_ram*cos(vec_tor))
-}  # end rastri_gin
-vec_tor <- c(pi/6, pi/6)
-rastri_gin(vec_tor=vec_tor)
-# draw 3d surface plot of Rastrigin function
-rgl::persp3d(
-  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
-  xlim=c(-10, 10), ylim=c(-10, 10),
-  col="green", axes=FALSE, zlab="", main="rastri_gin")
-# optimize with respect to vector argument
-op_tim <- optim(par=vec_tor, fn=rastri_gin,
-        method="L-BFGS-B",
-        upper=c(4*pi, 4*pi),
-        lower=c(pi/2, pi/2),
-        pa_ram=1)
-# optimal parameters and value
-op_tim$par
-op_tim$value
-rastri_gin(op_tim$par, pa_ram=1)
-# sample of normal variables
-sam_ple <- rnorm(1000, mean=4, sd=2)
-# objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
-  sum(2*log(pa_r[2]) +
-    ((sam_ple - pa_r[1])/pa_r[2])^2)
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, sam_ple)
-    object_ive(c(mean, sd), sam_ple),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(1, 6, length=50)
-par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd,
-vec_objective, sam_ple=sam_ple)
-objective_min <- which(  # grid search
-  objective_grid==min(objective_grid),
-  arr.ind=TRUE)
-objective_min
-par_mean[objective_min[1]]  # mean
-par_sd[objective_min[2]]  # sd
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-       (objective_min[, 2] + -1:1)]
-par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
-# perspective plot of log-likelihood function
-persp(z=-objective_grid,
-theta=45, phi=30, shade=0.5,
-border="green", zlab="objective",
-main="objective function")
-# interactive perspective plot of log-likelihood function
-library(rgl)  # load package rgl
-par3d(cex=2.0)  # scale text by factor of 2
-persp3d(z=-objective_grid, zlab="objective",
-  col="green", main="objective function")
-# initial parameters
-par_init <- c(mean=0, sd=1)
-# perform optimization using optim()
-optim_fit <- optim(par=par_init,
-  fn=object_ive, # log-likelihood function
-  sam_ple=sam_ple,
-  method="L-BFGS-B", # quasi-Newton method
-  upper=c(10, 10), # upper constraint
-  lower=c(-10, 0.1)) # lower constraint
-# optimal parameters
-optim_fit$par
-# perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
-optim_fit$estimate
-optim_fit$sd
-# plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE,
-     main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_fit$par["mean"],
-           sd=optim_fit$par["sd"]),
-add=TRUE, type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
- leg="optimal parameters",
- lwd=2, bg="white", col="red")
-# sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0),
-             rnorm(100, mean=4, sd=1.0))
-# objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
-  likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
-  if (any(likelihood <= 0)) Inf else
-    -sum(log(likelihood))
-}  # end object_ive
-# vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, sam_ple)
-    object_ive(c(w, m1, s1, mean, sd), sam_ple),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
-# objective function on parameter grid
-par_mean <- seq(3, 5, length=50)
-par_sd <- seq(0.5, 1.5, length=50)
-objective_grid <- outer(par_mean, par_sd,
-    vec_objective, sam_ple=sam_ple,
-    w=0.5, m1=2.0, s1=2.0)
-rownames(objective_grid) <- round(par_mean, 2)
-colnames(objective_grid) <- round(par_sd, 2)
-objective_min <- which(objective_grid==
-  min(objective_grid), arr.ind=TRUE)
-objective_min
-objective_grid[objective_min]
-objective_grid[(objective_min[, 1] + -1:1),
-         (objective_min[, 2] + -1:1)]
-# perspective plot of objective function
-persp(par_mean, par_sd, -objective_grid,
-theta=45, phi=30,
-shade=0.5,
-col=rainbow(50),
-border="green",
-main="objective function")
-# initial parameters
-par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
-# perform optimization
-optim_fit <- optim(par=par_init,
-      fn=object_ive,
-      sam_ple=sam_ple,
-      method="L-BFGS-B",
-      upper=c(1,10,10,10,10),
-      lower=c(0,-10,0.2,-10,0.2))
-optim_fit$par
-# plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
-plot(histo_gram, freq=FALSE,
-     main="histogram of sample")
-fit_func <- function(x, pa_r) {
-  pa_r["weight"] *
-    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
-  (1-pa_r["weight"]) *
-    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
-}  # end fit_func
-curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
-type="l", lwd=2, col="red")
-legend("topright", inset=0.0, cex=0.8, title=NULL,
- leg="optimal parameters",
- lwd=2, bg="white", col="red")
-# Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
-  sum(vec_tor^2 - pa_ram*cos(vec_tor))
-}  # end rastri_gin
-vec_tor <- c(pi/6, pi/6)
-rastri_gin(vec_tor=vec_tor)
-library(DEoptim)
-optimize rastri_gin using DEoptim
-op_tim <-  DEoptim(rastri_gin,
-  upper=c(6, 6), lower=c(-6, -6),
-  DEoptim.control(trace=FALSE, itermax=50))
-# optimal parameters and value
-op_tim$optim$bestmem
-rastri_gin(op_tim$optim$bestmem)
-summary(op_tim)
-plot(op_tim)
-library(quantmod)
-library(Rglpk)
-# vector of symbol names
-sym_bols <- c("VTI", "IEF", "DBC")
-n_weights <- NROW(sym_bols)
-# calculate mean returns
+# sym_bols contains all the symbols in rutils::env_etf$re_turns except for "VXX"
+sym_bols <- colnames(rutils::env_etf$re_turns)
+sym_bols <- sym_bols[!(sym_bols=="VXX")]
+# Extract columns of rutils::env_etf$re_turns and remove NA values
 re_turns <- rutils::env_etf$re_turns[, sym_bols]
-mean_rets <- sapply(re_turns, mean)
-# specify weight constraints
-constraint_s <- matrix(c(rep(1, n_weights),
-                 1, 1, 0),
-                 nc=n_weights, byrow=TRUE)
-rh_s <- c(1, 0)
-direction_s <- c("==", "<=")
-# specify weight bounds (default is c(0, Inf))
-bound_s <-
-  list(lower=list(ind=1:n_weights, val=rep(-1, n_weights)),
- upper=list(ind=1:n_weights, val=rep(1, n_weights)))
-# perform optimization
-op_tim <- Rglpk::Rglpk_solve_LP(
-  obj=mean_rets,
-  mat=constraint_s,
-  rhs=rh_s,
-  dir=direction_s,
-  bounds=bound_s,
-  max=TRUE)
-unlist(op_tim[1:2])
-# define a covariance matrix
-std_devs <- c(asset1=0.3, asset2=0.6)
-cor_rel <- 0.8
-co_var <- matrix(c(1, cor_rel, cor_rel, 1),
-           nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
-# calculate inverse of covariance mat_rix
-in_verse <- solve(a=co_var)
-u_nit <- rep(1, NCOL(co_var))
-# minimum variance weights with constraint
-# weight_s <- solve(a=co_var, b=u_nit)
-weight_s <- in_verse %*% u_nit
-weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
-# minimum variance
-t(weight_s) %*% co_var %*% weight_s
-1/(t(u_nit) %*% in_verse %*% u_nit)
-# calculate excess re_turns
+re_turns <- zoo::na.locf(re_turns)
+re_turns <- na.omit(re_turns)
+# Calculate vector of monthly end points and start points
+look_back <- 12
+end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
+end_points[end_points<2*NCOL(re_turns)] <- 2*NCOL(re_turns)
+len_gth <- NROW(end_points)
+# sliding window
+start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
+# expanding window
+start_points <- rep_len(1, NROW(end_points))
+# risk_free is the daily risk-free rate
 risk_free <- 0.03/260
+# Calculate daily excess returns
 ex_cess <- re_turns - risk_free
-# calculate covariance and inverse matrix
-co_var <- cov(re_turns)
-u_nit <- rep(1, NCOL(co_var))
-in_verse <- solve(a=co_var)
-# calculate mean excess returns
-ex_cess <- sapply(ex_cess, mean)
-# weights of maximum Sharpe portfolio
-# weight_s <- solve(a=co_var, b=re_turns)
-weight_s <- in_verse %*% ex_cess
-weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
-# Sharpe ratios
-sqrt(260)*drop((t(weight_s) %*% ex_cess) /
-  sqrt(t(weight_s) %*% co_var %*% weight_s))
-sapply(re_turns - risk_free,
-  function(x) sqrt(260)*mean(x)/sd(x))
-weights_maxsharpe <- weight_s
-library(quantmod)
-# calculate minimum variance weights
-weight_s <- in_verse %*% u_nit
-weights_minvar <-
-  weight_s / drop(t(u_nit) %*% weight_s)
-# calculate optimal portfolio returns
-optim_rets <- xts(
-  x=cbind(exp(cumsum(re_turns %*% weights_maxsharpe)),
-    exp(cumsum(re_turns %*% weights_minvar))),
-  order.by=index(re_turns))
-colnames(optim_rets) <- c("maxsharpe", "minvar")
-# plot optimal portfolio returns, with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "green")
-x11(width=6, height=5)
-chart_Series(optim_rets, theme=plot_theme,
-       name="Maximum Sharpe and \nMinimum Variance portfolios")
-legend("top", legend=colnames(optim_rets), cex=0.8,
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
- col=plot_theme$col$line.col, bty="n")
-x11(wid_th <- 6, hei_ght <- 6)
-# calculate minimum variance weights
-weight_s <- in_verse %*% u_nit
-weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
-# minimum standard deviation and return
-std_dev <- sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s))
-min_ret <- 260*drop((t(weight_s) %*% mean_rets))
-# calculate maximum Sharpe portfolios
-risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/260
-eff_front <- sapply(risk_free, function(risk_free) {
-  weight_s <- in_verse %*% (mean_rets - risk_free)
-  weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
-  # portfolio return and standard deviation
-  c(return=260*drop((t(weight_s) %*% mean_rets)),
-    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
-})  # end sapply
-eff_front <- cbind(260*risk_free, t(eff_front))
-colnames(eff_front)[1] <- "risk-free"
-eff_front <- eff_front[is.finite(eff_front[, "stddev"]), ]
-eff_front <- eff_front[order(eff_front[, "return"]), ]
-# plot maximum Sharpe portfolios
-plot(x=eff_front[, "stddev"],
-     y=eff_front[, "return"], t="l",
-     xlim=c(0.0*std_dev, 3.0*std_dev),
-     ylim=c(0.0*min_ret, 2.0*min_ret),
-     main="Efficient Frontier and Capital Market Line",
-     xlab="standard deviation", ylab="return")
-points(x=eff_front[, "stddev"], y=eff_front[, "return"],
- col="red", lwd=3)
-# plot minimum variance portfolio
-points(x=std_dev, y=min_ret, col="green", lwd=6)
-text(std_dev, min_ret, labels="minimum \nvariance",
-     pos=4, cex=0.8)
-# draw Capital Market Line
-sor_ted <- sort(eff_front[, 1])
-risk_free <-
-  sor_ted[findInterval(x=0.5*min_ret, vec=sor_ted)]
-points(x=0, y=risk_free, col="blue", lwd=6)
-text(x=0, y=risk_free, labels="risk-free",
-     pos=4, cex=0.8)
-in_dex <- match(risk_free, eff_front[, 1])
-points(x=eff_front[in_dex, "stddev"],
- y=eff_front[in_dex, "return"],
- col="blue", lwd=6)
-text(x=eff_front[in_dex, "stddev"],
-     y=eff_front[in_dex, "return"],
-     labels="market portfolio",
-     pos=2, cex=0.8)
-sharp_e <- (eff_front[in_dex, "return"]-risk_free)/
-  eff_front[in_dex, "stddev"]
-abline(a=risk_free, b=sharp_e, col="blue", lwd=2)
-text(x=0.7*eff_front[in_dex, "stddev"],
-     y=0.7*eff_front[in_dex, "return"]+0.01,
-     labels="Capital Market Line", pos=2, cex=0.8,
-     srt=45*atan(sharp_e*hei_ght/wid_th)/(0.25*pi))
-# calculate random portfolios
-n_portf <- 1000
-ret_sd <- sapply(1:n_portf, function(in_dex) {
-  weight_s <- runif(n_weights-1, min=-0.25, max=1.0)
-  weight_s <- c(weight_s, 1-sum(weight_s))
-  # portfolio return and standard deviation
-  c(return=260*drop((t(weight_s) %*% mean_rets)),
-    stddev=sqrt(260*drop(t(weight_s) %*% co_var %*% weight_s)))
-})  # end sapply
-# plot scatterplot of random portfolios
-x11(wid_th <- 6, hei_ght <- 6)
-plot(x=ret_sd["stddev", ], y=ret_sd["return", ],
-     main="Efficient Frontier and Random Portfolios",
-     xlim=c(0.5*std_dev, 0.8*max(ret_sd["stddev", ])),
-     xlab="standard deviation", ylab="return")
-# plot maximum Sharpe portfolios
-lines(x=eff_front[, "stddev"],
-     y=eff_front[, "return"], lwd=2)
-points(x=eff_front[, "stddev"], y=eff_front[, "return"],
- col="red", lwd=3)
-# plot minimum variance portfolio
-points(x=std_dev, y=min_ret, col="green", lwd=6)
-text(std_dev, min_ret, labels="minimum\nvariance",
-     pos=2, cex=0.8)
-# plot market portfolio
-points(x=eff_front[in_dex, "stddev"],
- y=eff_front[in_dex, "return"], col="green", lwd=6)
-text(x=eff_front[in_dex, "stddev"],
-     y=eff_front[in_dex, "return"],
-     labels="market\nportfolio",
-     pos=2, cex=0.8)
-# plot individual assets
-points(x=sqrt(260*diag(co_var)),
- y=260*mean_rets, col="blue", lwd=6)
-text(x=sqrt(260*diag(co_var)), y=260*mean_rets,
-     labels=names(mean_rets),
-     col="blue", pos=1, cex=0.8)
-risk_free <- 0.03
-re_turns <- c(asset1=0.05, asset2=0.06)
-std_devs <- c(asset1=0.4, asset2=0.5)
-cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
-weight_s <- seq(from=-1, to=2, length.out=31)
-weight_s <- cbind(weight_s, 1-weight_s)
-portf_rets <- weight_s %*% re_turns
-portf_sd <-
-  sqrt(rowSums(weight_s * (weight_s %*% co_var)))
-sharpe_ratios <- (portf_rets-risk_free)/portf_sd
-in_dex <- which.max(sharpe_ratios)
-max_Sharpe <- max(sharpe_ratios)
-# plot efficient frontier
-x11(wid_th <- 6, hei_ght <- 5)
-par(mar=c(3,3,2,1)+0.1, oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(portf_sd, portf_rets, t="l",
- main=paste0("Efficient frontier and CML for two assets\ncorrelation = ", 100*cor_rel, "%"),
- xlab="standard deviation", ylab="return",
- lwd=2, col="orange",
- xlim=c(0, max(portf_sd)),
- ylim=c(0.02, max(portf_rets)))
-# add Market Portfolio (maximum Sharpe ratio portfolio)
-points(portf_sd[in_dex], portf_rets[in_dex],
- col="blue", lwd=3)
-text(x=portf_sd[in_dex], y=portf_rets[in_dex],
-     labels=paste(c("market portfolio\n",
- structure(c(weight_s[in_dex], 1-weight_s[in_dex]),
-         names=names(re_turns))), collapse=" "),
-     pos=2, cex=0.8)
-# plot individual assets
-points(std_devs, re_turns, col="green", lwd=3)
-text(std_devs, re_turns, labels=names(re_turns), pos=4, cex=0.8)
-# add point at risk-free rate and draw Capital Market Line
-points(x=0, y=risk_free, col="blue", lwd=3)
-text(0, risk_free, labels="risk-free\nrate", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, lwd=2, col="blue")
-range_s <- par("usr")
-text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
-     labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-             (range_s[4]-range_s[3])*
-             hei_ght/wid_th)/(0.25*pi))
-# plot portfolios in x11() window
-x11(wid_th <- 6, hei_ght <- 5)
-par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-# vector of symbol names
-sym_bols <- c("VTI", "IEF")
-# matrix of portfolio weights
-weight_s <- seq(from=-1, to=2, length.out=31)
-weight_s <- cbind(weight_s, 1-weight_s)
-# calculate portfolio returns and volatilities
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-ret_sd <- re_turns %*% t(weight_s)
-ret_sd <- cbind(260*colMeans(ret_sd),
-  sqrt(260)*matrixStats::colSds(ret_sd))
-colnames(ret_sd) <- c("returns", "stddev")
-risk_free <- 0.06
-ret_sd <- cbind(ret_sd,
-  (ret_sd[, "returns"]-risk_free)/ret_sd[, "stddev"])
-colnames(ret_sd)[3] <- "Sharpe"
-in_dex <- which.max(ret_sd[, "Sharpe"])
-max_Sharpe <- ret_sd[in_dex, "Sharpe"]
-plot(x=ret_sd[, "stddev"], y=ret_sd[, "returns"],
-     main="Stock and Bond portfolios", t="l",
-     xlim=c(0, 0.7*max(ret_sd[, "stddev"])), ylim=c(0, max(ret_sd[, "returns"])),
-     xlab="standard deviation", ylab="return")
-# add blue point for market portfolio
-points(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"], col="blue", lwd=6)
-text(x=ret_sd[in_dex, "stddev"], y=ret_sd[in_dex, "returns"],
-     labels=paste(c("market portfolio\n", structure(c(weight_s[in_dex, 1], weight_s[in_dex, 2]), names=sym_bols)), collapse=" "),
-     pos=3, cex=0.8)
-# plot individual assets
-mean_rets <- 260*sapply(re_turns, mean)
-std_devs <- sqrt(260)*sapply(re_turns, sd)
-points(std_devs, mean_rets, col="green", lwd=6)
-text(std_devs, mean_rets, labels=names(re_turns), pos=2, cex=0.8)
-# add point at risk-free rate and draw Capital Market Line
-points(x=0, y=risk_free, col="blue", lwd=6)
-text(0, risk_free, labels="risk-free", pos=4, cex=0.8)
-abline(a=risk_free, b=max_Sharpe, col="blue", lwd=2)
-range_s <- par("usr")
-text(max(ret_sd[, "stddev"])/3, 0.75*max(ret_sd[, "returns"]),
-     labels="Capital Market Line", cex=0.8, , pos=3,
-     srt=45*atan(max_Sharpe*(range_s[2]-range_s[1])/
-             (range_s[4]-range_s[3])*
-             hei_ght/wid_th)/(0.25*pi))
-# plot portfolios in x11() window
-x11(wid_th <- 6, hei_ght <- 5)
-# calculate cumulative returns of VTI and IEF
-optim_rets <- lapply(re_turns,
-  function(re_turns) exp(cumsum(re_turns)))
-optim_rets <- rutils::do_call(cbind, optim_rets)
-# calculate market portfolio returns
-optim_rets <- cbind(
-  exp(cumsum(re_turns %*%
-    c(weight_s[in_dex], 1-weight_s[in_dex]))),
-  optim_rets)
-colnames(optim_rets)[1] <- "market"
-# plot market portfolio with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue", "green")
-chart_Series(optim_rets, theme=plot_theme,
-       name="Market portfolio for stocks and bonds")
-legend("top", legend=colnames(optim_rets),
- cex=0.8, inset=0.1, bg="white", lty=c(1, 1),
- lwd=c(6, 6), col=plot_theme$col$line.col, bty="n")
-x11(width=6, height=4)
-par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
+# Perform loop over end_points
+portf_rets <- lapply(2:NROW(end_points),
+  function(i) {
+    # subset the ex_cess returns
+    ex_cess <- ex_cess[start_points[i-1]:end_points[i-1], ]
+    in_verse <- solve(cov(ex_cess))
+    # calculate the maximum Sharpe ratio portfolio weights.
+    weight_s <- in_verse %*% colMeans(ex_cess)
+    weight_s <- drop(weight_s/sum(weight_s^2))
+    # subset the re_turns
+    re_turns <- re_turns[(end_points[i-1]+1):end_points[i], ]
+    # calculate the out-of-sample portfolio returns
+    xts(re_turns %*% weight_s, index(re_turns))
+  }  # end anonymous function
+)  # end lapply
+portf_rets <- rutils::do_call(rbind, portf_rets)
+colnames(portf_rets) <- "portf_rets"
+# Calculate compounded cumulative portfolio returns
+portf_rets <- cumsum(portf_rets)
+quantmod::chart_Series(portf_rets,
+  name="Cumulative Returns of Max Sharpe Portfolio Strategy")
+# create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(runif(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+cor_mat <- cor(mat_rix)
+std_dev <- sqrt(diag(cov_mat))
+# calculate target matrix
+cor_mean <- mean(cor_mat[upper.tri(cor_mat)])
+tar_get <- matrix(cor_mean, nr=NROW(cov_mat), nc=NCOL(cov_mat))
+diag(tar_get) <- 1
+tar_get <- t(t(tar_get * std_dev) * std_dev)
+# calculate shrinkage covariance matrix
+al_pha <- 0.5
+cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
+# calculate inverse matrix
+in_verse <- solve(cov_shrink)
+# create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(runif(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+# perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+# calculate regularized inverse matrix
+max_eigen <- 2
+in_verse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(Ad(rutils::env_etf$VTI)))
-conf_level <- 0.1
-va_r <- quantile(re_turns, conf_level)
-c_var <- mean(re_turns[re_turns < va_r])
-# or
-sort_ed <- sort(as.numeric(re_turns))
-in_dex <- round(conf_level*NROW(re_turns))
-va_r <- sort_ed[in_dex]
-c_var <- mean(sort_ed[1:in_dex])
-# plot histogram of VTI returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# define end points
+end_points <- seq_along(re_turns)
+len_gth <- NROW(end_points)
+look_back <- 51
+# start_points are multi-period lag of end_points
+start_points <- c(rep_len(1, look_back-1),
+    end_points[1:(len_gth-look_back+1)])
+# define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# calculate realized VTI variance in sapply() loop
+vari_ance <- sapply(look_backs,
+  function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+}) / (look_back-1)  # end sapply
+tail(vari_ance)
+class(vari_ance)
+# coerce vari_ance into xts
+vari_ance <- xts(vari_ance, order.by=index(re_turns))
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <-
+  roll::roll_var(re_turns, width=look_back)
+colnames(vari_ance) <- "VTI.variance"
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(look_back-1)] <- 0
+# benchmark calculation of rolling variance
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sapply=sapply(look_backs, function(look_back) {
+    ret_s <- re_turns[look_back]
+    sum((ret_s - mean(ret_s))^2)
+  }),
+  ro_ll=roll::roll_var(re_turns, width=look_back),
+  times=10))[, c(1, 4, 5)]
+# calculate EWMA VTI variance using filter()
+wid_th <- 51
+weight_s <- exp(-0.1*1:wid_th)
+weight_s <- weight_s/sum(weight_s)
+vari_ance <- stats::filter(re_turns^2,
+    filter=weight_s, sides=1)
+vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+class(vari_ance)
+vari_ance <- as.numeric(vari_ance)
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+# plot EWMA standard deviation
+chart_Series(x_ts,
+  name="EWMA standard deviation")
+dygraphs::dygraph(x_ts, main="EWMA standard deviation")
+# calculate VTI variance using package roll
+library(roll)  # load roll
+vari_ance <- roll::roll_var(re_turns,
+  weights=rev(weight_s), width=wid_th)
+colnames(vari_ance) <- "VTI.variance"
+class(vari_ance)
+head(vari_ance)
+sum(is.na(vari_ance))
+vari_ance[1:(wid_th-1)] <- 0
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+# VTI percentage returns
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+# calculate VTI variance using package roll
+look_back <- 22
+vari_ance <-
+  roll::roll_var(re_turns, width=look_back)
+vari_ance[1:(look_back-1)] <- 0
+colnames(vari_ance) <- "VTI.variance"
+# number of look_backs that fit over re_turns
+n_row <- NROW(re_turns)
+num_agg <- n_row %/% look_back
+end_points <- # define end_points with beginning stub
+  n_row-look_back*num_agg + (0:num_agg)*look_back
+len_gth <- NROW(end_points)
+# subset vari_ance to end_points
+vari_ance <- vari_ance[end_points]
+# improved autocorrelation function
+acf_plus(coredata(vari_ance), lag=10, main="")
+title(main="acf of variance", line=-1)
+# partial autocorrelation
+pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
+title(main="pacf of variance", line=-1)
+# define GARCH parameters
+om_ega <- 0.01 ; al_pha <- 0.2
+be_ta <- 0.2 ; len_gth <- 1000
+re_turns <- numeric(len_gth)
+vari_ance <- numeric(len_gth)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+# simulate GARCH model
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
+    be_ta*vari_ance[i-1]
+}  # end for
+x11(width=6, height=4)
+par(mar=c(3, 3, 1, 1), oma=c(0, 0, 0, 0))
+# plot GARCH cumulative returns
+plot(cumsum(re_turns/100), t="l",
+  lwd=2, col="orange", xlab="", ylab="",
+  main="GARCH cumulative returns")
+date_s <- seq.Date(from=Sys.Date()-len_gth+1,
+  to=Sys.Date(), length.out=len_gth)
+x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
+# plot GARCH standard deviation
+plot(sqrt(vari_ance), t="l",
+  col="orange", xlab="", ylab="",
+  main="GARCH standard deviation")
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
+dygraphs::dygraph(x_ts, main="GARCH standard deviation")
+# define GARCH parameters
+om_ega <- 0.0001 ; al_pha <- 0.5
+be_ta <- 0.1 ; len_gth <- 10000
+re_turns <- numeric(len_gth)
+vari_ance <- numeric(len_gth)
+vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
+# simulate GARCH model
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
+  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
+    be_ta*vari_ance[i-1]
+}  # end for
+# calculate kurtosis of GARCH returns
+moments::moment(re_turns, order=4) /
+  moments::moment(re_turns, order=2)^2
+# perform Jarque-Bera test of normality
+tseries::jarque.bera.test(re_turns)
+# plot histogram of GARCH returns
 histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=100, xlim=c(-0.05, 0.01),
+  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
   ylab="frequency", freq=FALSE,
-  main="VTI returns histogram")
-dens_ity <- density(re_turns, adjust=1.5)
-lines(dens_ity, lwd=3, col="blue")
-# add line for VaR
-abline(v=va_r, col="red", lwd=3)
-text(x=va_r, y=20, labels="VaR",
-     lwd=2, srt=90, pos=2)
-# add shading for CVaR
-var_max <- -0.06
-rang_e <- (dens_ity$x < va_r) & (dens_ity$x > var_max)
-polygon(
-  c(var_max, dens_ity$x[rang_e], va_r),
-  c(0, dens_ity$y[rang_e], 0),
-  col=rgb(1, 0, 0,0.5), border=NA)
-text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
-library(quantmod)
-library(Rglpk)
-# vector of symbol names and returns
-sym_bols <- c("VTI", "IEF", "DBC")
-n_weights <- NROW(sym_bols)
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-mean_rets <- colMeans(re_turns)
-conf_level <- 0.05
-r_min <- 0 ; w_min <- 0 ; w_max <- 1
-weight_sum <- 1
-n_col <- ncol(re_turns) # number of assets
-n_row <- nrow(re_turns) # number of scenarios i.e. periods
-# creat objective vector
-object_ive <- c(numeric(n_col), rep(-1/(conf_level*n_row), n_row), -1)
-# specify weight constraints
-constraint_s <- rbind(
-  cbind(rbind(1, mean_rets),
-  matrix(data=0, nrow=2, ncol=(n_row+1))),
-  cbind(coredata(re_turns), diag(n_row), 1))
-rh_s <- c(weight_sum, r_min, rep(0, n_row))
-direction_s <- c("==", ">=", rep(">=", n_row))
-# specify weight bounds
-bound_s <- list(
-  lower=list(ind=1:n_col, val=rep(w_min, n_col)),
-  upper=list(ind=1:n_col, val=rep(w_max, n_col)))
-# perform optimization
-op_tim <- Rglpk_solve_LP(obj=object_ive, mat=constraint_s, dir=direction_s, rhs=rh_s, types=rep("C", NROW(object_ive)), max=T, bounds=bound_s)
-op_tim$solution
-constraint_s %*% op_tim$solution
-object_ive %*% op_tim$solution
-as.numeric(op_tim$solution[1:n_col])
-# calculate daily percentage re_turns
-sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-# create initial vector of portfolio weights
-weight_s <- rep(1, NROW(sym_bols))
-names(weight_s) <- sym_bols
-# objective equal to minus Sharpe ratio
-object_ive <- function(weight_s, re_turns) {
-  portf_rets <- re_turns %*% weight_s
-  if (sd(portf_rets) == 0)
-    return(0)
-  else
-    return(-mean(portf_rets)/sd(portf_rets))
-}  # end object_ive
-# objective for equal weight portfolio
-object_ive(weight_s, re_turns=re_turns)
-op_tim <- unlist(optimize(
-  f=function(weight)
-    object_ive(c(1, 1, weight), re_turns=re_turns),
-  interval=c(-4, 1)))
-# vectorize objective function with respect to third weight
-vec_object <- function(weights) sapply(weights,
-  function(weight) object_ive(c(1, 1, weight),
-    re_turns=re_turns))
-# or
-vec_object <- Vectorize(FUN=function(weight)
-    object_ive(c(1, 1, weight), re_turns=re_turns),
-  vectorize.args="weight")  # end Vectorize
-vec_object(1)
-vec_object(1:3)
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(3, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot objective function with respect to third weight
-curve(expr=vec_object,
-      type="l", xlim=c(-4.0, 1.0),
-      xlab=paste("weight of", names(weight_s[3])),
-      ylab="", lwd=2)
-title(main="Objective Function", line=-1)  # add title
-points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
-text(x=op_tim[1], y=op_tim[2],
-     labels="minimum objective", pos=4, cex=0.8)
+  main="GARCH returns histogram")
+lines(density(re_turns, adjust=1.5),
+lwd=3, col="blue")
+optim_fit <- MASS::fitdistr(re_turns,
+  densfun="t", df=2, lower=c(-1, 1e-7))
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
+  type="l", xlab="", ylab="", lwd=3,
+  col="red", add=TRUE)
+legend("topright", inset=0.05,
+ leg=c("density", "t-distr w/ 2 dof"),
+ lwd=6, lty=c(1, 1),
+ col=c("blue", "red"))
+# use fixed notation instead of exponential notation
+options(scipen=999)
+library(fGarch)
+# fit returns into GARCH
+garch_fit <- fGarch::garchFit(data=re_turns)
+# fitted GARCH parameters
+round(garch_fit@fit$coef, 5)
+# actual GARCH parameters
+round(c(mu=mean(re_turns), omega=om_ega,
+  alpha=al_pha, beta=be_ta), 5)
+# plot GARCH fitted standard deviation
+plot.zoo(sqrt(garch_fit@fit$series$h), t="l",
+  col="orange", xlab="", ylab="",
+  main="GARCH fitted standard deviation")
+# specify GARCH model
+garch_spec <- fGarch::garchSpec(
+  model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
+# simulate GARCH model
+garch_sim <-
+  fGarch::garchSim(spec=garch_spec, n=len_gth)
+re_turns <- as.numeric(garch_sim)
+# calculate kurtosis of GARCH returns
+moments::moment(re_turns, order=4) /
+  moments::moment(re_turns, order=2)^2
+# perform Jarque-Bera test of normality
+tseries::jarque.bera.test(re_turns)
+# plot histogram of GARCH returns
+histo_gram <- hist(re_turns, col="lightgrey",
+  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
+  ylab="frequency", freq=FALSE,
+  main="GARCH returns histogram")
+lines(density(re_turns, adjust=1.5),
+lwd=3, col="blue")
+# fir t-distribution into GARCH returns
+optim_fit <- MASS::fitdistr(re_turns,
+  densfun="t", df=2, lower=c(-1, 1e-7))
+lo_cation <- optim_fit$estimate[1]
+sc_ale <- optim_fit$estimate[2]
+curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
+  type="l", xlab="", ylab="", lwd=3,
+  col="red", add=TRUE)
+legend("topright", inset=0.05,
+ leg=c("density", "t-distr w/ 2 dof"),
+ lwd=6, lty=c(1, 1),
+ col=c("blue", "red"))
+# load package HighFreq
+library(HighFreq)
+head(SPY_TAQ)
+# load package HighFreq
+library(HighFreq)
+head(SPY)
+# install package HighFreq from github
+devtools::install_github(repo="algoquant/HighFreq")
+# load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# load help page
+help(package="HighFreq")
+# list all datasets in "HighFreq"
+data(package="HighFreq")
+# list all objects in "HighFreq"
+ls("package:HighFreq")
+# remove HighFreq from search path
+detach("package:HighFreq")
+# load package HighFreq
+library(HighFreq)
+# you can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# you can see SPY when listing datasets in HighFreq
+data(package="HighFreq")
+# but the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(SPY)
+# load all the datasets in package HighFreq
+data(hf_data)
+# HighFreq datasets are now loaded and in the workspace
+head(SPY)
+library(HighFreq)  # load HighFreq
+# minutely SPY returns (unit per minute) single day
+re_turns <- rutils::diff_xts(log(SPY["2012-02-13", 4]))
+# minutely SPY volatility (unit per minute)
+sd(re_turns)
+# minutely SPY returns (unit per second)
+re_turns <- rutils::diff_xts(log(SPY["2012-02-13", 4])) / 
+  c(1, diff(.index(SPY["2012-02-13"])))
+# minutely SPY volatility scaled to unit per minute
+60*sd(re_turns)
+# minutely SPY returns multiple days no overnight scaling
+re_turns <- rutils::diff_xts(log(SPY[, 4]))
+# minutely SPY volatility (unit per minute)
+sd(re_turns)
+# minutely SPY returns (unit per second)
+re_turns <- rutils::diff_xts(log(SPY[, 4])) / 
+  c(1, diff(.index(SPY)))
+# minutely SPY volatility scaled to unit per minute
+60*sd(re_turns)
+table(c(1, diff(.index(SPY))))
+library(HighFreq)  # load HighFreq
+# daily OHLC SPY prices
+SPY_daily <- 
+  rutils::to_period(oh_lc=SPY, period="days")
+# daily SPY returns and volatility
+sd(rutils::diff_xts(log(SPY_daily[, 4])))
+# minutely SPY returns (unit per minute)
+re_turns <- rutils::diff_xts(log(SPY[, 4]))
+# minutely SPY volatility scaled to daily interval
+sqrt(6.5*60)*sd(re_turns)
 
-#below is simplified code for plotting objective function
-# create vector of DBC weights
-weight_s <- seq(from=-4, to=1, by=0.1)
-obj_val <- sapply(weight_s,
-  function(weight) object_ive(c(1, 1, weight)))
-plot(x=weight_s, y=obj_val, t="l",
-      xlab="weight of DBC", ylab="", lwd=2)
-title(main="Objective Function", line=-1)  # add title
-points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
-text(x=op_tim[1], y=op_tim[2],
-     labels="minimum objective", pos=4, cex=0.8)
-# vectorize function with respect to all weights
-vec_object <- Vectorize(
-  FUN=function(w1, w2, w3)
-    object_ive(c(w1, w2, w3)),
-  vectorize.args=c("w2", "w3"))  # end Vectorize
-# calculate objective on 2-d (w2 x w3) parameter grid
-w2 <- seq(-3, 7, length=50)
-w3 <- seq(-5, 5, length=50)
-grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
-rownames(grid_object) <- round(w2, 2)
-colnames(grid_object) <- round(w3, 2)
-# perspective plot of objective function
-persp(w2, w3, -grid_object,
-theta=45, phi=30, shade=0.5,
-col=rainbow(50), border="green",
-main="objective function")
-# interactive perspective plot of objective function
-library(rgl)
-rgl::persp3d(z=-grid_object, zlab="objective",
-  col="green", main="objective function")
-rgl::persp3d(
-  x=function(w2, w3)
-    -vec_object(w1=1, w2, w3),
-  xlim=c(-3, 7), ylim=c(-5, 5),
-  col="green", axes=FALSE)
-# optimization to find weights with maximum Sharpe ratio
-op_tim <- optim(par=weight_s,
-             fn=object_ive,
-             method="L-BFGS-B",
-             upper=c(1.1, 10, 10),
-             lower=c(0.9, -10, -10))
-# optimal parameters
-op_tim$par
-op_tim$par <- op_tim$par/sum(op_tim$par)
-# optimal Sharpe ratio
--object_ive(op_tim$par)
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 0), mgp=c(2, 1, 0), mar=c(2, 1, 2, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot in two vertical panels
-layout(matrix(c(1,2), 2),
- widths=c(1,1), heights=c(1,3))
-# barplot of optimal portfolio weights
-barplot(op_tim$par, col=c("red", "green", "blue"),
-  main="Optimized portfolio weights")
-# calculate cumulative returns of VTI, IEF, DBC
-cum_rets <- lapply(re_turns,
-  function(re_turns) exp(cumsum(re_turns)))
-cum_rets <- rutils::do_call(cbind, cum_rets)
-# calculate optimal portfolio returns with VTI, IEF, DBC
-optim_rets <- cbind(
-  exp(cumsum(re_turns %*% op_tim$par)),
-  cum_rets)
-colnames(optim_rets)[1] <- "optim_rets"
-# plot optimal returns with VTI, IEF, DBC
+# minutely SPY returns (unit per second)
+re_turns <- rutils::diff_xts(log(SPY[, 4])) / 
+  c(1, diff(.index(SPY)))
+# minutely SPY volatility scaled to daily aggregation interval
+60*sqrt(6.5*60)*sd(re_turns)
+
+# daily SPY volatility
+# including extra time over weekends and holidays
+24*60*60*sd(rutils::diff_xts(log(SPY_daily[, 4])) / 
+    c(1, diff(.index(SPY_daily))))
+table(c(1, diff(.index(SPY_daily))))
+library(HighFreq)  # load HighFreq
+# daily SPY volatility from minutely prices using package TTR
+library(TTR)
+sqrt((6.5*60)*mean(na.omit(
+  TTR::volatility(SPY, N=1,
+          calc="yang.zhang"))^2))
+# SPY volatility using package HighFreq
+60*sqrt((6.5*60)*agg_regate(oh_lc=SPY,
+    weight_ed=FALSE, mo_ment="run_variance",
+    calc_method="yang_zhang"))
+library(HighFreq)  # load HighFreq
+# calculate variance
+var_close <-
+  HighFreq::run_variance(oh_lc=env_etf$VTI,
+                   calc_method="close")
+var_yang_zhang <-
+  HighFreq::run_variance(oh_lc=env_etf$VTI)
+vari_ance <-
+  252*(24*60*60)^2*cbind(var_close, var_yang_zhang)
+colnames(vari_ance) <-
+  c("close var", "Yang-Zhang var")
+# plot
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("black", "red", "green", "blue")
-chart_Series(optim_rets, theme=plot_theme,
-       name="Optimized portfolio performance")
-legend("top", legend=colnames(optim_rets), cex=0.8,
- inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6),
+plot_theme$col$line.col <- c("black", "red")
+x11()
+chart_Series(vari_ance["2011-06/2011-12"],
+  theme=plot_theme, name="Close and YZ variances")
+legend("top", legend=colnames(vari_ance),
+ bg="white", lty=c(1, 1), lwd=c(6, 6),
  col=plot_theme$col$line.col, bty="n")
-# or plot non-compounded (simple) cumulative returns
-PerformanceAnalytics::chart.CumReturns(
-  cbind(re_turns %*% op_tim$par, re_turns),
-  lwd=2, ylab="", legend.loc="topleft", main="")
-risk_free <- 0.03
-re_turns <- c(asset1=0.05, asset2=0.06)
-std_devs <- c(asset1=0.4, asset2=0.5)
-cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
-library(quadprog)
-# minimum variance weights without constraints
-op_tim <- solve.QP(Dmat=2*co_var,
-            dvec=rep(0, 2),
-            Amat=matrix(0, nr=2, nc=1),
-            bvec=0)
-# minimum variance weights sum equal to 1
-op_tim <- solve.QP(Dmat=2*co_var,
-            dvec=rep(0, 2),
-            Amat=matrix(1, nr=2, nc=1),
-            bvec=1)
-# optimal value of objective function
-t(op_tim$solution) %*% co_var %*% op_tim$solution
-perform simple optimization for reference
-# objective function for simple optimization
-object_ive <- function(x) {
-  x <- c(x, 1-x)
-  t(x) %*% co_var %*% x
-}  # end object_ive
-unlist(optimize(f=object_ive, interval=c(-1, 2)))
-# calculate daily percentage re_turns
-sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-# calculate the covariance matrix
-co_var <- cov(re_turns)
-# minimum variance weights, with sum equal to 1
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
-            dvec=numeric(3),
-            Amat=matrix(1, nr=3, nc=1),
-            bvec=1)
-# minimum variance, maximum returns
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
-            dvec=apply(0.1*re_turns, 2, mean),
-            Amat=matrix(1, nr=3, nc=1),
-            bvec=1)
-# minimum variance positive weights, sum equal to 1
-a_mat <- cbind(matrix(1, nr=3, nc=1),
-       diag(3),-diag(3))
-b_vec <- c(1, rep(0, 3), rep(-1, 3))
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
-            dvec=numeric(3),
-            Amat=a_mat,
-            bvec=b_vec,
-            meq=1)
-# calculate daily percentage re_turns
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
-# objective equal to minus Sharpe ratio
-object_ive <- function(weight_s, re_turns) {
-  portf_rets <- re_turns %*% weight_s
-  if (sd(portf_rets) == 0)
-    return(0)
-  else
-    return(-mean(portf_rets)/sd(portf_rets))
-}  # end object_ive
-# perform optimization using DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
-  upper=rep(10, NCOL(re_turns)),
-  lower=rep(-10, NCOL(re_turns)),
-  re_turns=re_turns,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weight_s <- op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
-names(weight_s) <- colnames(re_turns)
-# objective with shrinkage penalty
-object_ive <- function(weight_s, re_turns, lamb_da, al_pha) {
-  portf_rets <- re_turns %*% weight_s
-  if (sd(portf_rets) == 0)
-    return(0)
-  else {
-    penal_ty <- lamb_da*((1-al_pha)*sum(weight_s^2) +
-al_pha*sum(abs(weight_s)))
-    return(-mean(portf_rets)/sd(portf_rets) + penal_ty)
-  }
-}  # end object_ive
-# objective for equal weight portfolio
-weight_s <- rep(1, NROW(sym_bols))
-names(weight_s) <- sym_bols
-lamb_da <- 0.5 ; al_pha <- 0.5
-object_ive(weight_s, re_turns=re_turns,
-  lamb_da=lamb_da, al_pha=al_pha)
-# perform optimization using DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
-  upper=rep(10, NCOL(re_turns)),
-  lower=rep(-10, NCOL(re_turns)),
-  re_turns=re_turns,
-  lamb_da=lamb_da,
-  al_pha=al_pha,
-  control=list(trace=FALSE, itermax=100, parallelType=1))
-weight_s <-
-  op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
-names(weight_s) <- colnames(re_turns)
+# R startup chunk
+# ```{r setup, include=FALSE}
+library(shiny)
+library(quantmod)
+inter_val <- 31
+cl_ose <- quantmod::Cl(rutils::env_etf$VTI)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+# ```
+#end R startup chunk
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+    min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
+renderPlot({
+  # calculate EWMA prices
+  lamb_da <- input$lamb_da
+  weight_s <- exp(-lamb_da*1:inter_val)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+   inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+   col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot

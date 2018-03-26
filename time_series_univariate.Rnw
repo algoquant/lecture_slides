@@ -2671,7 +2671,7 @@ title(main="DAX filtered partial autocorrelations",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Autoregressive Processes}
+\subsection{Simulating Autoregressive Processes Using \texttt{arima.sim()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2728,19 +2728,19 @@ theme(
       The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$,
       \vskip1ex
       Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
-      <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
-ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+      <<echo=TRUE,eval=FALSE>>=
+ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 zoo_arima <- sapply(  # create three AR time series
   ar_coeff, function(phi) {
     set.seed(1121)  # reset random numbers
-    arima.sim(n=729, model=list(ar=phi))
-  } )
+    arima.sim(n=1e3, model=list(ar=phi))
+  } )  # end sapply
+colnames(zoo_arima) <- paste("autocorr", ar_coeff)
+zoo::plot.zoo(zoo_arima, main="AR(1) prices", xlab=NA)
+# plot using ggplot
+library(ggplot)
 zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
-# convert returns to prices
-zoo_arima <- cumsum(zoo_arima)
-colnames(zoo_arima) <-
-  paste("autocorr", ar_coeff)
-autoplot(zoo_arima, main="AR prices",
+autoplot(zoo_arima, main="AR(1) prices",
          facets=Series ~ .) +
     facet_grid(Series ~ ., scales="free_y") +
 xlab("") +
@@ -2754,7 +2754,7 @@ theme(
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_param-1}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_processes.png}
   \end{columns}
 \end{block}
 
@@ -2810,9 +2810,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An autoregressive process is \emph{stationary} if its probability distribution does not change with time,
-      \vskip1ex
-      \emph{Stationary} processes have a constant mean and variance,
+      A process is \emph{stationary} if its probability distribution does not change with time, which means that they have constant mean and variance,
       \vskip1ex
       The \emph{autoregressive} process \emph{AR(p)}:
       $p_i = \varphi_1 p_{i-1} + \varphi_2 p_{i-2} + \ldots + \varphi_p p_{i-p} + \varepsilon_i$
@@ -2822,28 +2820,13 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       \vskip1ex
       An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than \texttt{1},
       \vskip1ex
-      An \emph{AR(1)} process:
-      $p_i = \varphi_1 p_{i-1} + \varepsilon_i$
-      has the following characteristic equation:
-      $1 - \varphi_1 z = 0$,
-      with a root equal to:
-      $z = 1 / \varphi_1$,
-      \vskip1ex
-      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}:
-      $z = 1 / \varphi_1$, and therefore isn't stationary,
-      \vskip1ex
-      The process follows:
-      $p_i = p_{i-1} + \varepsilon_i$,
-      \vskip1ex
-      The above is called a \emph{Wiener} process, and it's a special case of a \emph{unit-root} process,
-      \vskip1ex
-      The variance of a \emph{Wiener} process is proportional to time,
+      If the sum of the autoregressive coefficients is equal to \texttt{1}: $\sum_{i=1}^p (\varphi_i) = 1$, then the process has a root equal to \texttt{1} (it has a \emph{unit root}), so it's not stationary,
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
       \vspace{-4em}
-      <<echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+      <<echo=(-(1:3)),eval=FALSE>>=
 library(zoo)  # load zoo
 library(ggplot2)  # load ggplot2
 set.seed(1121)  # initialize random number generator
@@ -2866,51 +2849,91 @@ legend(x="topleft",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Integrated and Unit-root Processes}
+\subsection{Simulating Autoregressive Processes Using \texttt{filter()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Asset prices are the sum of simple asset returns, hence they follow an \emph{integrated} process with respect to asset returns:
-      \begin{displaymath}
-        p_n = {\sum_{i=1}^n r_i}
-      \end{displaymath}
-      If returns follow an \emph{AR(1)} process:
-      \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varepsilon_i
-      \end{displaymath}
-      Then asset prices follow the process:
-      \begin{displaymath}
-        p_i = (1+\varphi_1) p_{i-1} - \varphi_1 p_{i-2} + \varepsilon_i
-      \end{displaymath}
-      If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes by calling the function \texttt{filter()},
       \vskip1ex
-      A \emph{Wiener} process is a special case of a \emph{unit-root} process,
+      \emph{ARIMA} processes can be simulated by using the function \texttt{filter()} directly, with the argument \texttt{method="recursive"},
       \vskip1ex
-      \emph{Unit-root} processes are not stationary, since their \emph{variance} isn't constant,
+      Simulating stationary \emph{autoregressive} processes requires a \emph{warmup} period, to allow the process to reach its stationary state,
       \vskip1ex
-      If $\varphi_1=0$ (no autocorrelation of returns) then asset prices follow a \emph{Wiener} process (random walk),
+      The required length of the \emph{warmup} period depends on the smallest root of the characteristic equation, with a longer \emph{warmup} period needed for smaller roots, that are closer to \texttt{1},
+      \vskip1ex
+      The \emph{rule of thumb} (heuristic rule, guideline) is for the \emph{warmup} period to be equal to \texttt{6} divided  by the logarithm of the smallest characteristic root plus the number of \emph{AR} coefficients: $\frac{6}{\log(minroot)} + numcoeff$
+    \column{0.5\textwidth}
+      \vspace{-1em}
+    <<echo=TRUE,eval=FALSE>>=
+# define ARIMA coefficients
+co_eff <- c(0.9, 0.09)
+# calculate modulus of roots of characteristic equation
+root_s <- Mod(polyroot(c(1, -co_eff)))
+# calculate warmup period
+warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
+# simulate ARIMA process
+set.seed(1121)
+len_gth <- 1e4
+in_nov <- rnorm(len_gth + warm_up)
+ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+arima_sim <- arima.sim(n=len_gth, model=list(ar=co_eff), 
+  start.innov=in_nov[1:warm_up], 
+  innov=in_nov[(warm_up+1):NROW(in_nov)])
+all.equal(ari_ma[-(1:warm_up)], as.numeric(arima_sim))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Variance of Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR(1)} process:
+      $p_i = \varphi_1 p_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi_1 z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi_1$,
+      \vskip1ex
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root} (and therefore it isn't stationary), and the process follows:
+      $p_i = p_{i-1} + \varepsilon_i$,
+      \vskip1ex
+      The above is called a \emph{Wiener} process (Brownian motion, random walk), and it's an example of a \emph{unit-root} process,
+      \vskip1ex
+      The variance of the \emph{AR(1)} process $p_i = \varphi_1 p_{i-1} + \varepsilon$ is equal to:
+      \begin{displaymath}
+        \sigma^2 = \mathbb{E}[p_i^2] = \frac{\sigma_{\varepsilon}^2}{(1 - \varphi_1^2)}
+      \end{displaymath}
+      If $\varphi_1 = 1$, then its \emph{variance} grows over time and becomes infinite over time, so the process isn't stationary, 
+      \vskip1ex
+      The variance of the \emph{Wiener} process $p_i = p_{i-1} + \varepsilon$ is proportional to time: $\sigma_i^2 = \mathbb{E}[p_i^2] = i \sigma_{\varepsilon}^2$,
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
-      \vspace{-4em}
-      <<stat_unit_root,echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
-library(zoo)  # load zoo
-library(ggplot2)  # load ggplot2
+      \includegraphics[width=0.5\paperwidth]{figure/brownian_var.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# simulate random walks using apply() loops
 set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-                  order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# add legend
-legend(x="topleft",
-       legend=colnames(rand_walk),
-       col=c("black", "red", "blue"), lty=1)
+rand_walks <- matrix(rnorm(1000*100), ncol=1000)
+rand_walks <- apply(rand_walks, 2, cumsum)
+vari_ance <- apply(rand_walks, 1, var)
+# simulate random walks using vectorized functions
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
+vari_ance <- matrixStats::rowVars(rand_walks)
+par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot(vari_ance, xlab="time steps", ylab="", 
+     t="l", col="blue", lwd=2, 
+     main="Variance of Random Walk")
       @
   \end{columns}
 \end{block}
@@ -2927,36 +2950,91 @@ legend(x="topleft",
     \column{0.5\textwidth}
       The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
       \vskip1ex
-      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series exhibits mean reversion:
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series $p_i$ exhibits mean reversion:
       \begin{displaymath}
-        r_i = \gamma p_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+        r_i = \gamma p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
       \end{displaymath}
-      where $p_i = p_{i-1} - r_i$, 
+      where $p_i = p_{i-1} + r_i$, so that:
+      \begin{displaymath}
+        p_i = (1 + \gamma) p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      If the mean reversion parameter $\gamma$ is negative: $\gamma < 0$, then the time series $p_i$ has no \emph{unit root},
       \vskip1ex
-      If the price mean reversion parameter is negative: $\gamma < 0$, then the time series process has no \emph{unit root},
+      The \emph{null hypothesis} is that the price process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the price process is stationary ($\gamma < 0$, mean reversion),
       \vskip1ex
-      The \emph{null hypothesis} is that the process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the process is stationary ($\gamma < 0$, mean reversion),
+      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # load tseries
-# simulate AR(1) process
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+      <<echo=TRUE,eval=FALSE>>=
+len_gth <- 1e4
+# simulate arima with small AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.01))
 tseries::adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
 tseries::adf.test(ari_ma)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(729))
-tseries::adf.test(rand_walk)
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(rnorm(10000))
-tseries::adf.test(rand_walk)
+# simulate arima with different AR coefficients
+coeff_s <- seq(0.99, 1.0, 0.001) - 0.001
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+adf_test <- sapply(coeff_s, function(co_eff) {
+  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
+  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
+})  # end sapply
+plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient", 
+     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
+plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient", 
+     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
       @
-      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
-      \vskip1ex
+      \vspace{-1em}
       The \emph{ADF} test is weak in the sense that it requires a lot of data to identify a \emph{unit root} process,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Integrated and Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset prices follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        p_n = {\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        p_i = (1 + \varphi_1) p_{i-1} - \varphi_1 p_{i-2} + \varepsilon_i
+      \end{displaymath}
+      The above process has a \emph{unit root} for all values of $\varphi_1$, because the sum of its autoregressive coefficients is equal to \texttt{1},
+      \vskip1ex
+      The above process is a \emph{Wiener} process (random walk) for all values of $\varphi_1$,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+# simulate arima with negative AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=-0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+      @
   \end{columns}
 \end{block}
 

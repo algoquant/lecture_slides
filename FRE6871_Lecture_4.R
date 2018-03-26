@@ -1,395 +1,419 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-# calculate random default probabilities
-num_assets <- 100
-default_probs <- runif(num_assets, max=0.05)
-# calculate number of defaults
-uni_form <- runif(num_assets)
-sum(uni_form < default_probs)
-# simulate average number of defaults
-num_simu <- 1000
-de_faults <- numeric(num_simu)
-for (i in 1:num_simu) {  # perform loop
-  uni_form <- runif(num_assets)
-  de_faults[i] <- sum(uni_form < default_probs)
-}  # end for
-mean(de_faults)
-# average defaults using vectorized functions
-uni_form <- matrix(runif(num_simu*num_assets),
-             ncol=num_simu)
-sum(uni_form < default_probs)/num_simu
-# plot Standard Normal distribution
-x11(width=6, height=5)
-curve(expr=dnorm(x),
-type="l", xlim=c(-4, 4),
-xlab="asset value", ylab="", lwd=2,
-col="blue", main="Distribution of Asset Values")
-abline(v=qnorm(0.025), col="red", lwd=2)
-text(x=qnorm(0.025)-0.1, y=0.15,
- labels="default threshold",
- lwd=2, srt=90, pos=3)
-# define correlation parameters
-rh_o <- 0.05
-rho_sqrt <- sqrt(rh_o)
-rho_sqrtm <- sqrt(1-rh_o)
-# calculate default thresholds
-default_thresh <- qnorm(default_probs)
-# calculate vector of systematic factors
-system_atic <- rnorm(num_simu)
-# allocate vector of defaults
-de_faults <- numeric(num_simu)
-# perform loop to calculate de_faults
-for (i in 1:num_simu) {
-  asset_values <-
-    rho_sqrt*system_atic[i] +
-    rho_sqrtm*rnorm(num_assets)
-  de_faults[i] <-
-    sum(asset_values < default_thresh)
-}  # end for
-# define default probability density function
-vasi_cek <- function(x, def_thresh=-2, rh_o=0.08)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) - def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
-vasi_cek(0.03, def_thresh=qnorm(0.025), rh_o=0.1)
-# plot probability distribution of defaults
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.02),
-type="l", xlim=c(0, 0.1), lwd=3,
-xlab="fraction of defaults", ylab="density",
-col="green", main="Distribution of defaults")
-# plot default distribution with higher correlation
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.025), rh_o=0.08),
-type="l", xlim=c(0, 0.1), add=TRUE,
-xlab="default fraction", ylab="", lwd=3,
-col="blue", main="")
-# add legend
-legend(x="topright", legend=c("high correlation", "low correlation"),
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("blue", "green"))
-# add unconditional default probability
-abline(v=0.025, col="red", lwd=3)
-text(x=0.023, y=8,
- labels="default probability",
- lwd=2, srt=90, pos=3)
-# plot default distribution with low correlation
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.01),
-type="l", xlab="default fraction", ylab="",
-lwd=2, col="green", main="Distribution of defaults")
-# plot default distribution with high correlation
-curve(expr=vasi_cek(x, def_thresh=qnorm(0.1), rh_o=0.99),
-type="l", add=TRUE, lwd=2, n=10001,
-xlab="fraction of defaults", ylab="density",
-col="blue", main="")
-# add legend
-legend(x="topright", legend=c("high correlation", "low correlation"),
- title=NULL, inset=0.1, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("blue", "green"))
-# add unconditional default probability
-abline(v=0.1, col="red", lwd=2)
-text(x=0.1, y=10,
- labels="default probability",
- lwd=2, pos=4)
-# define Vasicek loss distribution density function
-portf_loss <- function(x, def_thresh=-2, rh_o=0.08, l_gd=0.4)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
-integrate(portf_loss, low=0, up=0.3, def_thresh=-2, rh_o=0.08, l_gd=0.4)
-# plot probability distribution of losses
-curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
-type="l", xlim=c(0, 0.06),
-xlab="loss fraction", ylab="density", lwd=3,
-col="orange", main="Distribution of Losses")
-# add line for expected loss
-abline(v=0.02, col="red", lwd=3)
-text(x=0.02-0.001, y=10, labels="expected loss",
- lwd=2, srt=90, pos=3)
-# add lines for unexpected loss
-abline(v=0.04, col="blue", lwd=3)
-arrows(x0=0.02, y0=35, x1=0.04, y1=35,
- code=3, lwd=3, cex=0.5)
-text(x=0.03, y=36, labels="unexpected loss",
-     lwd=2, pos=3)
-# add lines for VaR
-abline(v=0.055, col="red", lwd=3)
-arrows(x0=0.0, y0=25, x1=0.055, y1=25,
- code=3, lwd=3, cex=0.5)
-text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
-text(x=0.055-0.001, y=10, labels="VaR",
- lwd=2, srt=90, pos=3)
-# plot probability distribution of losses
-curve(expr=portf_loss(x, def_thresh=qnorm(0.05), rh_o=0.08),
-type="l", xlim=c(0, 0.06),
-xlab="loss fraction", ylab="density", lwd=3,
-col="orange", main="Conditional Value at Risk")
-# add line for expected loss
-abline(v=0.02, col="red", lwd=3)
-text(x=0.02-0.001, y=10, labels="expected loss",
- lwd=2, srt=90, pos=3)
-# add lines for VaR
-abline(v=0.04, col="red", lwd=3)
-text(x=0.04-0.001, y=10, labels="VaR",
- lwd=2, srt=90, pos=3)
-# add shading for CVaR
-v_ar <- 0.04; var_max <- 0.07
-var_s <- seq(v_ar, var_max, length=100)
-dens_ity <- sapply(var_s,
-  portf_loss, def_thresh=qnorm(0.05), rh_o=0.08)
-# draw shaded polygon
-polygon(c(v_ar, var_s, var_max),
-  c(-1, dens_ity, -1), col="red", border=NA)
-text(x=0.045, y=0, labels="CVaR", lwd=2, pos=3)
-# integrate portf_loss() over full range
-integrate(portf_loss, low=0.0, up=0.3,
-    def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
-# calculate expected losses using portf_loss()
-integrate(function(x, ...) x*portf_loss(x, ...),
-    low=0.0, up=0.3,
-    def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)
-# calculate confidence levels corresponding to VaR values
-var_s <- seq(0.04, 0.06, 0.001)
-conf_levels <- sapply(var_s, function(v_ar, ...) {
-  integrate(portf_loss, low=v_ar, up=0.3, ...)
-}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
-conf_levels <- cbind(as.numeric(t(conf_levels)[, 1]), var_s)
-colnames(conf_levels) <- c("conf_levels", "VaRs")
-# calculate 95% confidence level VaR value
-conf_levels[
-  match(TRUE, conf_levels[, "conf_levels"] < 0.05),
-  "VaRs"]
-plot(x=1-conf_levels[, "conf_levels"],
-     y=conf_levels[, "VaRs"],
-     xlab="conf_levels", ylab="VaRs",
-     t="l", main="VaR values and confidence levels")
-# calculate CVaR values
-cvar_s <- sapply(var_s, function(v_ar, ...) {
-  integrate(function(x, ...) x*portf_loss(x, ...),
-      low=v_ar, up=0.3, ...)
-}, def_thresh=qnorm(0.05), rh_o=0.08, l_gd=0.4)  # end sapply
-conf_levels <- cbind(conf_levels, as.numeric(t(cvar_s)[, 1]))
-colnames(conf_levels)[3] <- "CVaRs"
-# divide CVaR by confidence level
-conf_levels[, "CVaRs"] <- conf_levels[, "CVaRs"]/conf_levels[, "conf_levels"]
-# calculate 95% confidence level CVaR value
-conf_levels[
-  match(TRUE, conf_levels[, "conf_levels"] < 0.05),
-  "CVaRs"]
-# plot CVaRs
-plot(x=1-conf_levels[, "conf_levels"],
-     y=conf_levels[, "CVaRs"],
-     t="l", col="red", lwd=2,
-     ylim=range(conf_levels[, c("VaRs", "CVaRs")]),
-     xlab="conf_levels", ylab="CVaRs",
-     main="CVaR values and confidence levels")
-# add VaRs
-lines(x=1-conf_levels[, "conf_levels"],
-y=conf_levels[, "VaRs"], lwd=2)
-# add legend
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("red", "black"))
-# Define model parameters
-num_assets <- 300
-num_simu <- 1000
-l_gd <- 0.4
-# define correlation parameters
-rh_o <- 0.08
-rho_sqrt <- sqrt(rh_o)
-rho_sqrtm <- sqrt(1-rh_o)
-# calculate default probabilities and thresholds
-set.seed(1121)
-default_probs <- runif(num_assets, max=0.1)
-default_thresh <- qnorm(default_probs)
-# calculate vector of systematic factors
-system_atic <- rnorm(num_simu)
-# simulate losses under Vasicek model
-asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
-asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
-loss_es <-
-  l_gd*colSums(asset_values < default_thresh)/num_assets
-# calculate VaRs
-conf_levels <- seq(0.93, 0.99, 0.01)
-var_s <- quantile(loss_es, probs=conf_levels)
-names(var_s) <- round(conf_levels, 3)
-plot(x=conf_levels, y=var_s, t="l",
-     main="Simulated VaR and confidence levels")
-# calculate frequency table of loss_es
-table_losses <- table(loss_es)/num_simu
-# calculate CVaRs
-cvar_s <- sapply(var_s, function(v_ar) {
-  tai_l <- table_losses[v_ar < names(table_losses)]
-  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
-})  # end sapply
-cvar_s <- cbind(cvar_s, var_s)
-# plot CVaRs
-plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"],
-     t="l", col="red", lwd=2,
-     ylim=range(cvar_s),
-     xlab="conf_levels", ylab="CVaRs",
-     main="Simulated CVaR and confidence levels")
-# add VaRs
-lines(x=rownames(cvar_s), y=cvar_s[, "var_s"], lwd=2)
-# add legend
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("red", "black"))
-calc_var <- function(default_probs,
-               l_gd=0.6,
-               rh_o=0.08,
-               num_simu=1000,
-               conf_levels=seq(0.93, 0.99, 0.01)) {
-  # Define model parameters
-  num_assets <- NROW(default_probs)
-  default_thresh <- qnorm(default_probs)
-  # Define correlation parameters
-  rho_sqrt <- sqrt(rh_o)
-  rho_sqrtm <- sqrt(1-rh_o)
-  # Simulate losses under Vasicek model
-  system_atic <- rnorm(num_simu)
-  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
-  asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
-  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
-  # Calculate VaRs
-  var_s <- quantile(loss_es, probs=conf_levels)
-  names(var_s) <- round(conf_levels, 3)
-  # Calculate CVaRs from the frequency table
-  table_losses <- table(loss_es)/num_simu
-  cvar_s <- sapply(var_s, function(v_ar) {
-    tai_l <- table_losses[v_ar < names(table_losses)]
-    tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
-  })  # end sapply
-  names(cvar_s) <- round(conf_levels, 3)
-  c(var_s, cvar_s)
-}  # end calc_var
-# define number of bootstrap simulations
-num_boot <- 500
-num_assets <- NROW(default_probs)
-# perform bootstrap of calc_var
-set.seed(1121)
-boot_strap <- sapply(rep(l_gd, num_boot),
-  calc_var,
-  default_probs=
-    default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end sapply
-boot_strap <- t(boot_strap)
-# calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-# plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="conf_levels", ylab="CVaRs",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("red", "black"))
 library(parallel)  # load package parallel
 num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
-# perform bootstrap of calc_var for Windows
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from time series of ETF returns
+sam_ple <- rutils::env_etf$re_turns[, "VTI"]
+sam_ple <- na.omit(sam_ple)
+len_gth <- NROW(sam_ple)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+vec_tor1 <- rnorm(1000000)
+vec_tor2 <- rnorm(1000000)
+big_vector <- numeric(1000000)
+# sum two vectors in two different ways
+summary(microbenchmark(
+  # sum vectors using "for" loop
+  r_loop=(for (i in 1:NROW(vec_tor1)) {
+    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
+  }),
+  # sum vectors using vectorized "+"
+  vec_torized=(vec_tor1 + vec_tor2),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# allocate memory for cumulative sum
+cum_sum <- numeric(NROW(big_vector))
+cum_sum[1] <- big_vector[1]
+# calculate cumulative sum in two different ways
+summary(microbenchmark(
+# cumulative sum using "for" loop
+  r_loop=(for (i in 2:NROW(big_vector)) {
+    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  }),
+# cumulative sum using "cumsum"
+  vec_torized=cumsum(big_vector),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# calculate row sums two different ways
+summary(microbenchmark(
+  row_sums=rowSums(big_matrix),
+  ap_ply=apply(big_matrix, 1, sum),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(microbenchmark)
+str(pmax)
+# calculate row maximums two different ways
+summary(microbenchmark(
+  p_max=
+    do.call(pmax.int,
+lapply(seq_along(big_matrix[1, ]),
+  function(in_dex) big_matrix[, in_dex])),
+  l_apply=unlist(
+    lapply(seq_along(big_matrix[, 1]),
+  function(in_dex) max(big_matrix[in_dex, ]))),
+  times=10))[, c(1, 4, 5)]
+library(matrixStats)  # load package matrixStats
+# calculate row min values three different ways
+summary(microbenchmark(
+  row_mins=rowMins(big_matrix),
+  p_min=
+    do.call(pmin.int,
+      lapply(seq_along(big_matrix[1, ]),
+             function(in_dex)
+               big_matrix[, in_dex])),
+  as_data_frame=
+    do.call(pmin.int,
+      as.data.frame.matrix(big_matrix)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+summary(microbenchmark(  # assign values to vector three different ways
+# fast vectorized assignment loop performed in C using brackets "[]"
+  brack_ets={vec_tor <- numeric(10)
+    vec_tor[] <- 2},
+# slow because loop is performed in R
+  for_loop={vec_tor <- numeric(10)
+    for (in_dex in seq_along(vec_tor))
+      vec_tor[in_dex] <- 2},
+# very slow because no memory is pre-allocated
+# "vec_tor" is "grown" with each new element
+  grow_vec={vec_tor <- numeric(0)
+    for (in_dex in 1:10)
+# add new element to "vec_tor" ("grow" it)
+      vec_tor[in_dex] <- 2},
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+summary(microbenchmark(  # assign values to vector two different ways
+# fast vectorized assignment loop performed in C using brackets "[]"
+  brack_ets={vec_tor <- numeric(10)
+    vec_tor[4:7] <- rnorm(4)},
+# slow because loop is performed in R
+  for_loop={vec_tor <- numeric(10)
+    for (in_dex in 4:7)
+      vec_tor[in_dex] <- rnorm(1)},
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# define function vectorized automatically
+my_fun <- function(in_put, pa_ram) {
+  pa_ram*in_put
+}  # end my_fun
+# "in_put" is vectorized
+my_fun(in_put=1:3, pa_ram=2)
+# "pa_ram" is vectorized
+my_fun(in_put=10, pa_ram=2:4)
+# define vectors of parameters of rnorm()
+std_devs <-
+  structure(1:3, names=paste0("sd=", 1:3))
+me_ans <-
+  structure(-1:1, names=paste0("mean=", -1:1))
+# "sd" argument of rnorm() isn't vectorized
+rnorm(1, sd=std_devs)
+# "mean" argument of rnorm() isn't vectorized
+rnorm(1, mean=me_ans)
+# sapply produces desired vector output
 set.seed(1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot),
-  fun=calc_var,
-  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end parLapply
-# bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, num_boot),
-  fun=calc_var,
-  default_probs=default_probs[sample.int(num_assets, replace=TRUE)],
-  rh_o=rh_o, num_simu=num_simu,
-  conf_levels=conf_levels)  # end mclapply
-boot_strap <- do.call(rbind, boot_strap)
-stopCluster(clus_ter)  # stop R processes over cluster
-# calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-# plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="conf_levels", ylab="CVaRs",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=c(1, 1), col=c("red", "black"))
-#Perform two-tailed test that sample is
-#from Standard Normal Distribution (mean=0, SD=1)
-# generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1000))
+sapply(std_devs, function(std_dev) rnorm(n=2, sd=std_dev))
+set.seed(1121)
+sapply(std_devs, rnorm, n=2, mean=0)
+set.seed(1121)
+sapply(me_ans,
+ function(me_an) rnorm(n=2, mean=me_an))
+set.seed(1121)
+sapply(me_ans, rnorm, n=2)
+# rnorm() vectorized with respect to "std_dev"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    sapply(sd, rnorm, n=n, mean=mean)
+}  # end vec_rnorm
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+# rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- Vectorize(FUN=rnorm,
+        vectorize.args=c("mean", "sd")
+)  # end Vectorize
+set.seed(1121)
+vec_rnorm(n=2, sd=std_devs)
+set.seed(1121)
+vec_rnorm(n=2, mean=me_ans)
+str(sum)
+# na.rm is bound by name
+mapply(sum, 6:9, c(5, NA, 3), 2:6, na.rm=TRUE)
+str(rnorm)
+# mapply vectorizes both arguments "mean" and "sd"
+mapply(rnorm, n=5, mean=me_ans, sd=std_devs)
+mapply(function(in_put, e_xp) in_put^e_xp,
+ 1:5, seq(from=1, by=0.2, length.out=5))
+# rnorm() vectorized with respect to "mean" and "sd"
+vec_rnorm <- function(n, mean=0, sd=1) {
+  if (NROW(mean)==1 && NROW(sd)==1)
+    rnorm(n=n, mean=mean, sd=sd)
+  else
+    mapply(rnorm, n=n, mean=mean, sd=sd)
+}  # end vec_rnorm
+# call vec_rnorm() on vector of "sd"
+vec_rnorm(n=2, sd=std_devs)
+# call vec_rnorm() on vector of "mean"
+vec_rnorm(n=2, mean=me_ans)
+# create two numeric vectors
+vec_tor1 <- sin(0.25*pi*1:10)
+vec_tor2 <- cos(0.25*pi*1:10)
+# create third vector using 'ifelse'
+vec_tor3 <- ifelse(vec_tor1 > vec_tor2,
+          vec_tor1, vec_tor2)
+# cbind all three together
+vec_tor4 <- cbind(vec_tor1, vec_tor2, vec_tor3)
 
-# significance level, two-tailed test, critical value=2*SD
-signif_level <- 2*(1-pnorm(2))
-signif_level
-# get p-values for all the samples
-test_frame$p_values <-
-  sapply(test_frame$samples, pnorm)
-test_frame$p_values <-
-  2*(0.5-abs(test_frame$p_values-0.5))
-# compare p_values to significance level
-test_frame$result <-
-  test_frame$p_values > signif_level
-# number of null rejections
-sum(!test_frame$result)
-# show null rejections
-head(test_frame[!test_frame$result, ])
-# t-test for single sample
-t.test(rnorm(100))
-# t-test for two samples
-t.test(rnorm(100),
-       rnorm(100, mean=1))
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=0.1))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
+# set plotting parameters
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
+    cex.lab=0.8, cex.axis=0.8, cex.main=0.8,
+    cex.sub=0.5)
+# plot matrix
+matplot(vec_tor4, type="l", lty="solid",
+col=c("green", "blue", "red"),
+lwd=c(2, 2, 2), xlab="", ylab="")
+# add legend
+legend(x="bottomright", legend=colnames(vec_tor4),
+       title="", inset=0.05, cex=0.8, lwd=2,
+       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+# create random real symmetric matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- mat_rix + t(mat_rix)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
+dim(eigen_vec)
+# plot eigenvalues
+barplot(ei_gen$values,
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of a real symmetric matrix")
+# eigenvectors form an orthonormal basis
+round(t(eigen_vec) %*% eigen_vec,
+  digits=4)
+# diagonalize matrix using eigenvector matrix
+round(t(eigen_vec) %*% (mat_rix %*% eigen_vec),
+  digits=4)
+ei_gen$values
+# eigen decomposition of matrix by rotating the diagonal matrix
+eigen_decomp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
+# create diagonal matrix of eigenvalues
+# diago_nal <- diag(ei_gen$values)
+# eigen_decomp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
+all.equal(mat_rix, eigen_decomp)
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+ei_gen$values
+# plot eigenvalues
+barplot(ei_gen$values, las=3,
+  xlab="", ylab="",
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of positive semi-definite matrix")
+# dimensions of left and right matrices
+n_left <- 6 ; n_right <- 4
+# create random positive semi-definite matrix
+left_mat <- matrix(runif(n_left^2), nc=n_left)
+left_mat <- crossprod(left_mat)
+# or
+left_mat <- left_mat %*% t(left_mat)
+# calculate left eigenvectors
+ei_gen <- eigen(left_mat)
+left_mat <- ei_gen$vectors[, 1:n_right]
+# create random positive semi-definite matrix
+right_mat <- matrix(runif(n_right^2), nc=n_right)
+right_mat <- crossprod(right_mat)
+# or
+right_mat <- right_mat %*% t(right_mat)
+# calculate right eigenvectors and singular values
+ei_gen <- eigen(right_mat)
+right_mat <- ei_gen$vectors
+sing_values <- ei_gen$values
+# compose rectangular matrix
+mat_rix <-
+  left_mat %*% (sing_values * t(right_mat))
+# mat_rix <- left_mat %*% diag(sing_values) %*% t(right_mat)
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# compare SVD with inputs
+all.equal(abs(s_vd$u), abs(left_mat))
+all.equal(abs(s_vd$v), abs(right_mat))
+all.equal(s_vd$d, ei_gen$values)
+# create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+# multiply inverse with matrix
+round(in_verse %*% mat_rix, 4)
+round(mat_rix %*% in_verse, 4)
 
-# Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(dax_rets)))
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
 
-# Shapiro-Wilk test for DAX returns
-shapiro.test(dax_rets)
-
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(dax_rets)))
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-library(tseries)  # load package tseries
-
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(dax_rets)))
-
-# Jarque-Bera test for DAX returns
-jarque.bera.test(dax_rets)
-
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(dax_rets)))
+# perform eigen decomposition of inverse
+eigen_inverse <-
+  eigen_vec %*% (t(eigen_vec) / ei_gen$values)
+all.equal(in_verse, eigen_inverse)
+# decompose diagonal matrix with inverse of eigenvalues
+# diago_nal <- diag(1/ei_gen$values)
+# eigen_inverse <-
+#   eigen_vec %*% (diago_nal %*% t(eigen_vec))
+# create random rectangular matrix
+# case when: n_left > n_right
+n_left <- 6 ; n_right <- 4
+mat_rix <- matrix(runif(n_left*n_right),
+  nc=n_right)
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+round(in_verse %*% mat_rix, 4)
+all.equal(mat_rix,
+    mat_rix %*% in_verse %*% mat_rix)
+# create random rectangular matrix
+# case when: n_left < n_right
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right),
+  nc=n_right)
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+round(mat_rix %*% in_verse, 4)
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# calculate generalized inverse from SVD
+svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+all.equal(svd_inverse, in_verse)
+# calculate Moore-Penrose pseudo-inverse
+mp_inverse <-
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+# create random singular matrix
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+# verify inverse of mat_rix
+all.equal(mat_rix,
+  mat_rix %*% in_verse %*% mat_rix)
+# perform singular value decomposition
+s_vd <- svd(mat_rix)
+# set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# check for zero singular values
+s_vd$d
+not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
+# calculate generalized inverse from SVD
+svd_inverse <-
+  s_vd$v[, not_zero] %*%
+  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+all.equal(svd_inverse, in_verse)
+# calculate Moore-Penrose pseudo-inverse
+mp_inverse <-
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+# diagonalize the "unit" matrix
+uni_t <- mat_rix %*% in_verse
+round(uni_t, 4)
+round(mat_rix %*% in_verse, 4)
+round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
+# define a square matrix
+mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
+vec_tor <- c(2, 1)
+# calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+in_verse %*% mat_rix
+# calculate solution using inverse of mat_rix
+solu_tion <- in_verse %*% vec_tor
+mat_rix %*% solu_tion
+# calculate solution of linear system
+solu_tion <- solve(a=mat_rix, b=vec_tor)
+mat_rix %*% solu_tion
+# create large random positive semi-definite matrix
+mat_rix <- matrix(runif(1e4), nc=100)
+mat_rix <- t(mat_rix) %*% mat_rix
+# calculate eigen decomposition
+ei_gen <- eigen(mat_rix)
+eigen_values <- ei_gen$values
+eigen_vec <- ei_gen$vectors
+# set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# if needed convert to positive definite matrix
+not_zero <- (eigen_values > (to_l * eigen_values[1]))
+if (sum(!not_zero) > 0) {
+  eigen_values[!not_zero] <- 2*to_l
+  mat_rix <- eigen_vec %*%
+    (eigen_values * t(eigen_vec))
+}  # end if
+# calculate the Cholesky mat_rix
+choles_ky <- chol(mat_rix)
+choles_ky[1:5, 1:5]
+all.equal(mat_rix, t(choles_ky) %*% choles_ky)
+# calculate inverse from Cholesky
+chol_inverse <- chol2inv(choles_ky)
+all.equal(solve(mat_rix), chol_inverse)
+# compare speed of Cholesky inversion
+library(microbenchmark)
+summary(microbenchmark(
+  sol_ve=solve(mat_rix),
+  choles_ky=chol2inv(chol(mat_rix)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# calculate random covariance matrix
+cov_mat <- matrix(runif(25), nc=5)
+cov_mat <- t(cov_mat) %*% cov_mat
+# calculate the Cholesky mat_rix
+choles_ky <- chol(cov_mat)
+choles_ky
+# simulate random uncorrelated returns
+n_assets <- 5
+n_rows <- 10000
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# calculate correlated returns by applying Cholesky
+corr_returns <- re_turns %*% choles_ky
+# calculate covariance matrix
+cov_returns <- crossprod(corr_returns) / (n_rows-1)
+all.equal(cov_mat, cov_returns)
+# simulate random portfolio returns
+n_assets <- 10
+n_rows <- 100
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# de-mean the returns
+re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
+# calculate covariance matrix
+cov_mat <- crossprod(re_turns) / (n_rows-1)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$values
+barplot(ei_gen$values, # plot eigenvalues
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of covariance matrix")
+# calculate eigenvectors and eigenvalues
+# as function of number of returns
+n_data <- ((n_assets/2):(2*n_assets))
+e_values <- sapply(n_data, function(x) {
+  re_turns <- re_turns[1:x, ]
+  re_turns <- apply(re_turns, MARGIN=2,
+    function(y) (y-mean(y)))
+  cov_mat <- crossprod(re_turns) / (x-1)
+  min(eigen(cov_mat)$values)
+})  # end sapply
+plot(y=e_values, x=n_data, t="l",
+  xlab="", ylab="", lwd=3, col="blue",
+  main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
 # formula of linear model with zero intercept
 lin_formula <- z ~ x + y - 1
 lin_formula
@@ -412,29 +436,26 @@ update(lin_formula, log(.) ~ . + beta)
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
 len_gth <- 100
-explana_tory <- rnorm(len_gth, mean=2)
+ex_plain <- rnorm(len_gth, mean=2)
 noise <- rnorm(len_gth)
 # response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-# solve regression
-be_ta <- (sum(res_ponse*explana_tory) - sum(res_ponse)*sum(explana_tory)/len_gth) / (sum(explana_tory^2) - sum(explana_tory)^2/len_gth)
-al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
+res_ponse <- -3 + ex_plain + noise
+# calculate de-meaned explanatory and response vectors
+explain_zm <- ex_plain - mean(ex_plain)
+response_zm <- res_ponse - mean(res_ponse)
+# solve for regression beta
+be_ta <- sum(explain_zm*response_zm) / sum(explain_zm^2)
+# solve for regression alpha
+al_pha <- mean(res_ponse) - be_ta*mean(ex_plain)
 # specify regression formula
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 class(reg_model)  # regressions have class lm
 attributes(reg_model)
 eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
+reg_model$coeff  # regression coefficients
 coef(reg_model)
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
+c(al_pha, be_ta)
 x11(width=6, height=5)  # open x11 for plotting
 # set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
@@ -444,7 +465,7 @@ title(main="Simple Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 # plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
+points(x=ex_plain, y=reg_model$fitted.values,
        pch=16, col="blue")
 # sum of residuals = 0
 sum(reg_model$residuals)
@@ -452,7 +473,7 @@ x11(width=6, height=5)  # open x11 for plotting
 # set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # extract residuals
-resi_duals <- cbind(explana_tory, reg_model$residuals)
+resi_duals <- cbind(ex_plain, reg_model$residuals)
 colnames(resi_duals) <- c("explanatory variable", "residuals")
 # plot residuals
 plot(resi_duals)
@@ -461,32 +482,32 @@ abline(h=0, lwd=2, col="red")
 reg_model_sum <- summary(reg_model)  # copy regression summary
 reg_model_sum  # print the summary to console
 attributes(reg_model_sum)$names  # get summary elements
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 reg_model_sum$adj.r.squared
 reg_model_sum$fstatistic
 # standard error of beta
 reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
+  coefficients["ex_plain", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(ex_plain)/
   sqrt(unname(reg_model_sum$fstatistic[3]))
 anova(reg_model)
 set.seed(1121)  # initialize random number generator
 # high noise compared to coefficient
-res_ponse <- 3 + explana_tory + rnorm(30, sd=8)
+res_ponse <- 3 + ex_plain + rnorm(30, sd=8)
 reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
+# values of regression coefficients are not
 # statistically significant
 summary(reg_model)
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(std_dev) {  # noisy regression
   set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-  explana_tory <- rnorm(100, mean=2)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(NROW(explana_tory), sd=std_dev)
+  ex_plain <- rnorm(100, mean=2)
+  res_ponse <- 3 + 0.2*ex_plain +
+    rnorm(NROW(ex_plain), sd=std_dev)
 # specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
+  reg_formula <- res_ponse ~ ex_plain
 # perform regression and get summary
   reg_model_sum <- summary(lm(reg_formula))
 # extract regression statistics
@@ -526,10 +547,10 @@ mat_stats <-
   t(sapply(vec_sd, function (std_dev) {
     set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-    explana_tory <- rnorm(100, mean=2)
-    res_ponse <- 3 + 0.2*explana_tory +
-rnorm(NROW(explana_tory), sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
+    ex_plain <- rnorm(100, mean=2)
+    res_ponse <- 3 + 0.2*ex_plain +
+rnorm(NROW(ex_plain), sd=std_dev)
+    reg_stats(data.frame(ex_plain, res_ponse))
     }))
 # plot in loop
 par(mfrow=c(NCOL(mat_stats), 1))
@@ -548,17 +569,161 @@ plot(reg_model, which=2)  # plot just Q-Q
 library(lmtest)  # load lmtest
 # perform Durbin-Watson test
 dwtest(reg_model)
+foo <- env_etf$re_turns[, c("VTI", "VEU")]
+end_points <- endpoints(foo, on="months")
+head(foo)
+tail(foo)
+class(foo)
+dim(foo)
+reg_model <- lm(paste(names(foo), collapse=" ~ "), data=foo)
+reg_model_sum <- summary(reg_model)
+reg_model_sum
+dwtest(reg_model)
+
+# filter over non-overlapping periods
+bar <- names(foo)
+foo <- merge(period.sum(foo[, 1], INDEX=end_points), period.sum(foo[, 2], INDEX=end_points))
+foo <- foo[complete.cases(foo), ]
+names(foo) <- bar
+
+# filter over overlapping periods
+foo <- rollsum(foo, k=11)
+
+
+set.seed(1121)
+library(lmtest)
+# spurious regression in unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
+res_ponse <- cumsum(rnorm(100))
+reg_formula <- res_ponse ~ ex_plain
+reg_model <- lm(reg_formula)  # perform regression
+# summary indicates statistically significant regression
+reg_model_sum <- summary(reg_model)
+reg_model_sum$coeff
+reg_model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(reg_model)
+c(dw_test$statistic[[1]], dw_test$p.value)
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# add regression line
+abline(reg_model, lwd=2, col="red")
+plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
+set.seed(1121)  # initialize random number generator
+# define explanatory variable
+len_gth <- 100
+n_var <- 5
+ex_plain <- matrix(rnorm(n_var*len_gth), nc=n_var)
+noise <- rnorm(len_gth, sd=1.0)
+# response equals linear form plus error terms
+weight_s <- rnorm(n_var)
+res_ponse <- -3 + ex_plain %*% weight_s + noise
+# calculate de-meaned explanatory matrix
+explain_zm <- t(t(ex_plain) - colMeans(ex_plain))
+# explain_zm <- apply(explain_zm, 2, function(x) (x-mean(x)))
+# calculate de-meaned response vector
+response_zm <- res_ponse - mean(res_ponse)
+# solve for regression betas
+beta_s <- MASS::ginv(explain_zm) %*% response_zm
+# solve for regression alpha
+al_pha <- mean(res_ponse) - 
+  sum(colSums(ex_plain)*drop(beta_s))/len_gth
+# multivariate regression using lm()
+reg_model <- lm(res_ponse ~ ex_plain)
+coef(reg_model)
+c(al_pha, beta_s)
+c(-3, weight_s)
+sum(reg_model$residuals * reg_model$fitted.values)
+# calculate fitted values
+fit_ted <- drop(al_pha + ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+# residuals are orthogonal to fitted values
+sum(resid_uals * fit_ted)
+# TSS = ESS + RSS
+t_ss <- (len_gth-1)*var(drop(res_ponse))
+e_ss <- (len_gth-1)*var(fit_ted)
+r_ss <- (len_gth-1)*var(resid_uals)
+all.equal(t_ss, e_ss + r_ss)
+# regression summary
+reg_model_sum <- summary(reg_model)
+# regression R-squared
+r_squared <- e_ss/t_ss
+all.equal(r_squared, reg_model_sum$r.squared)
+# correlation between response and fitted values
+cor_fitted <- drop(cor(res_ponse, fit_ted))
+# squared correlation between response and fitted values
+all.equal(cor_fitted^2, r_squared)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="F-Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
+# F-statistic from lm()
+reg_model_sum$fstatistic
+# degrees of freedom of residuals
+deg_free <- len_gth-n_var-1
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/n_var
+all.equal(f_stat, reg_model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=len_gth-n_var-1, df2=n_var)
+# add intercept column to explanatory
+ex_plain <- cbind(rep(1, NROW(ex_plain)), ex_plain)
+# solve for regression betas
+beta_s <- MASS::ginv(ex_plain) %*% res_ponse
+all.equal(drop(beta_s), coef(reg_model), check.attributes=FALSE)
+# calculate fitted values
+fit_ted <- drop(ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+# degrees of freedom of residuals
+deg_free <- len_gth-NCOL(ex_plain)
+# variance of residuals
+resid_var <- sum(resid_uals^2)/deg_free
+# explanatory matrix squared
+explain_squared <- crossprod(ex_plain)
+# explain_squared <- t(ex_plain) %*% ex_plain
+# calculate covariance matrix of betas
+beta_covar <- resid_var*MASS::ginv(explain_squared)
+beta_sd <- sqrt(diag(beta_covar))
+all.equal(beta_sd, reg_model_sum$coeff[, 2], check.attributes=FALSE)
+# calculate t-values of betas
+beta_tvals <- drop(beta_s)/beta_sd
+all.equal(beta_tvals, reg_model_sum$coeff[, 3], check.attributes=FALSE)
+# calculate two-sided p-values of betas
+beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
+all.equal(beta_pvals, reg_model_sum$coeff[, 4], check.attributes=FALSE)
 library(lmtest)  # load lmtest
 de_sign <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
+  ex_plain=1:30, omit_var=sin(0.2*1:30))
 # response depends on both explanatory variables
 res_ponse <- with(de_sign,
-  0.2*explana_tory + omit_var + 0.2*rnorm(30))
+  0.2*ex_plain + omit_var + 0.2*rnorm(30))
 # mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
+reg_model <- lm(res_ponse ~ ex_plain,
         data=de_sign)
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dwtest(reg_model)$p.value
@@ -571,13 +736,13 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
 res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 # summary indicates statistically significant regression
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- dwtest(reg_model)
@@ -589,11 +754,11 @@ title(main="Spurious Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
+ex_plain <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*ex_plain + rnorm(30)
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
+new_data <- data.frame(ex_plain=0.1*31:40)
 predict_lm <- predict(object=reg_model,
               newdata=new_data, level=0.95,
               interval="confidence")
@@ -604,7 +769,7 @@ plot(reg_formula, xlim=c(1.0, 4.0),
      main="Regression predictions")
 abline(reg_model, col="red")
 with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+  points(x=new_data$ex_plain, y=fit, pch=16, col="blue")
+  lines(x=new_data$ex_plain, y=lwr, lwd=2, col="red")
+  lines(x=new_data$ex_plain, y=upr, lwd=2, col="red")
 })  # end with

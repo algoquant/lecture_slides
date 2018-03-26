@@ -28,6 +28,8 @@ x11(width=6, height=5)
 curve(expr=log_map, type="l", xlim=c(0, 1),
 xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
 main="logistic map")
+lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
+lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
 # calculate uniformly distributed pseudo-random
 # sequence using logistic map function
 uni_form <- function(see_d, len_gth=10) {
@@ -116,6 +118,31 @@ set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
 sam_ple <- rnorm(len_gth)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# Monte Carlo estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+sam_ple[conf_level*len_gth]
+quantile(sam_ple, probs=conf_level)
+# analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
 # sample mean
 mean(sam_ple)
 # sample standard deviation
@@ -123,23 +150,38 @@ sd(sam_ple)
 #Perform two-tailed test that sample is
 #from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1000))
-
+test_frame <- data.frame(samples=rnorm(1e4))
+# get p-values for all the samples
+test_frame$p_values <- sapply(test_frame$samples, 
+        function(x) 2*pnorm(-abs(x)))
 # significance level, two-tailed test, critical value=2*SD
 signif_level <- 2*(1-pnorm(2))
-signif_level
-# get p-values for all the samples
-test_frame$p_values <-
-  sapply(test_frame$samples, pnorm)
-test_frame$p_values <-
-  2*(0.5-abs(test_frame$p_values-0.5))
 # compare p_values to significance level
 test_frame$result <-
   test_frame$p_values > signif_level
 # number of null rejections
-sum(!test_frame$result)
+sum(!test_frame$result) / NROW(test_frame)
 # show null rejections
 head(test_frame[!test_frame$result, ])
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# plot the Normal probability distribution
+curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
+xlab="", ylab="", lwd=3, col="blue")
+title(main="Two-tailed Test", line=0.5)
+# plot tails of the distribution using polygons
+star_t <- 2; e_nd <- 4
+# plot right tail using polygon
+x_var <- seq(star_t, e_nd, length=100)
+y_var <- dnorm(x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=x_var, y=y_var, col="red")
+# plot left tail using polygon
+y_var <- dnorm(-x_var, sd=1)
+y_var[1] <- (-1)
+y_var[NROW(y_var)] <- (-1)
+polygon(x=(-x_var), y=y_var, col="red")
 rm(list=ls())
 par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(ggplot2)  # load ggplot2
@@ -254,24 +296,24 @@ update(lin_formula, log(.) ~ . + beta)
 set.seed(1121)  # initialize random number generator
 # define explanatory variable
 len_gth <- 100
-explana_tory <- rnorm(len_gth, mean=2)
+ex_plain <- rnorm(len_gth, mean=2)
 noise <- rnorm(len_gth)
 # response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
+res_ponse <- -3 + ex_plain + noise
 # calculate de-meaned explanatory and response vectors
-explan_zm <- explana_tory - mean(explana_tory)
+explain_zm <- ex_plain - mean(ex_plain)
 response_zm <- res_ponse - mean(res_ponse)
 # solve for regression beta
-be_ta <- sum(explan_zm*response_zm) / sum(explan_zm^2)
+be_ta <- sum(explain_zm*response_zm) / sum(explain_zm^2)
 # solve for regression alpha
-al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
+al_pha <- mean(res_ponse) - be_ta*mean(ex_plain)
 # specify regression formula
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 class(reg_model)  # regressions have class lm
 attributes(reg_model)
 eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
+reg_model$coeff  # regression coefficients
 coef(reg_model)
 c(al_pha, be_ta)
 x11(width=6, height=5)  # open x11 for plotting
@@ -283,7 +325,7 @@ title(main="Simple Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 # plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
+points(x=ex_plain, y=reg_model$fitted.values,
        pch=16, col="blue")
 # sum of residuals = 0
 sum(reg_model$residuals)
@@ -291,7 +333,7 @@ x11(width=6, height=5)  # open x11 for plotting
 # set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
 # extract residuals
-resi_duals <- cbind(explana_tory, reg_model$residuals)
+resi_duals <- cbind(ex_plain, reg_model$residuals)
 colnames(resi_duals) <- c("explanatory variable", "residuals")
 # plot residuals
 plot(resi_duals)
@@ -300,32 +342,32 @@ abline(h=0, lwd=2, col="red")
 reg_model_sum <- summary(reg_model)  # copy regression summary
 reg_model_sum  # print the summary to console
 attributes(reg_model_sum)$names  # get summary elements
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 reg_model_sum$adj.r.squared
 reg_model_sum$fstatistic
 # standard error of beta
 reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
+  coefficients["ex_plain", "Std. Error"]
+sd(reg_model_sum$residuals)/sd(ex_plain)/
   sqrt(unname(reg_model_sum$fstatistic[3]))
 anova(reg_model)
 set.seed(1121)  # initialize random number generator
 # high noise compared to coefficient
-res_ponse <- 3 + explana_tory + rnorm(30, sd=8)
+res_ponse <- 3 + ex_plain + rnorm(30, sd=8)
 reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
+# values of regression coefficients are not
 # statistically significant
 summary(reg_model)
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(std_dev) {  # noisy regression
   set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-  explana_tory <- rnorm(100, mean=2)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(NROW(explana_tory), sd=std_dev)
+  ex_plain <- rnorm(100, mean=2)
+  res_ponse <- 3 + 0.2*ex_plain +
+    rnorm(NROW(ex_plain), sd=std_dev)
 # specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
+  reg_formula <- res_ponse ~ ex_plain
 # perform regression and get summary
   reg_model_sum <- summary(lm(reg_formula))
 # extract regression statistics
@@ -365,10 +407,10 @@ mat_stats <-
   t(sapply(vec_sd, function (std_dev) {
     set.seed(1121)  # initialize number generator
 # create explanatory and response variables
-    explana_tory <- rnorm(100, mean=2)
-    res_ponse <- 3 + 0.2*explana_tory +
-rnorm(NROW(explana_tory), sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
+    ex_plain <- rnorm(100, mean=2)
+    res_ponse <- 3 + 0.2*ex_plain +
+rnorm(NROW(ex_plain), sd=std_dev)
+    reg_stats(data.frame(ex_plain, res_ponse))
     }))
 # plot in loop
 par(mfrow=c(NCOL(mat_stats), 1))
@@ -411,13 +453,13 @@ foo <- rollsum(foo, k=11)
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
 res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 # summary indicates statistically significant regression
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- dwtest(reg_model)
@@ -433,39 +475,115 @@ set.seed(1121)  # initialize random number generator
 # define explanatory variable
 len_gth <- 100
 n_var <- 5
-explana_tory <- matrix(rnorm(n_var*len_gth), 
-  nc=n_var)
-noise <- rnorm(len_gth, sd=0.5)
+ex_plain <- matrix(rnorm(n_var*len_gth), nc=n_var)
+noise <- rnorm(len_gth, sd=1.0)
 # response equals linear form plus error terms
 weight_s <- rnorm(n_var)
-res_ponse <- 
-  -3 + explana_tory %*% weight_s + noise
+res_ponse <- -3 + ex_plain %*% weight_s + noise
 # calculate de-meaned explanatory matrix
-explan_zm <- t(t(explana_tory) - colSums(explana_tory)/len_gth)
-# or
-explan_zm <- apply(explan_zm, 2, function(x) (x-mean(x)))
+explain_zm <- t(t(ex_plain) - colMeans(ex_plain))
+# explain_zm <- apply(explain_zm, 2, function(x) (x-mean(x)))
 # calculate de-meaned response vector
 response_zm <- res_ponse - mean(res_ponse)
 # solve for regression betas
-beta_s <- MASS::ginv(explan_zm) %*% response_zm
+beta_s <- MASS::ginv(explain_zm) %*% response_zm
 # solve for regression alpha
-al_pha <- mean(res_ponse) - colSums(explana_tory) %*% beta_s / len_gth
+al_pha <- mean(res_ponse) - 
+  sum(colSums(ex_plain)*drop(beta_s))/len_gth
 # multivariate regression using lm()
-reg_model <- lm(res_ponse ~ explana_tory)
+reg_model <- lm(res_ponse ~ ex_plain)
 coef(reg_model)
 c(al_pha, beta_s)
 c(-3, weight_s)
+sum(reg_model$residuals * reg_model$fitted.values)
+# calculate fitted values
+fit_ted <- drop(al_pha + ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+# residuals are orthogonal to fitted values
+sum(resid_uals * fit_ted)
+# TSS = ESS + RSS
+t_ss <- (len_gth-1)*var(drop(res_ponse))
+e_ss <- (len_gth-1)*var(fit_ted)
+r_ss <- (len_gth-1)*var(resid_uals)
+all.equal(t_ss, e_ss + r_ss)
+# regression summary
+reg_model_sum <- summary(reg_model)
+# regression R-squared
+r_squared <- e_ss/t_ss
+all.equal(r_squared, reg_model_sum$r.squared)
+# correlation between response and fitted values
+cor_fitted <- drop(cor(res_ponse, fit_ted))
+# squared correlation between response and fitted values
+all.equal(cor_fitted^2, r_squared)
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+# add title
+title(main="F-Distributions", line=0.5)
+# add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
+# F-statistic from lm()
+reg_model_sum$fstatistic
+# degrees of freedom of residuals
+deg_free <- len_gth-n_var-1
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/n_var
+all.equal(f_stat, reg_model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=len_gth-n_var-1, df2=n_var)
+# add intercept column to explanatory
+ex_plain <- cbind(rep(1, NROW(ex_plain)), ex_plain)
+# solve for regression betas
+beta_s <- MASS::ginv(ex_plain) %*% res_ponse
+all.equal(drop(beta_s), coef(reg_model), check.attributes=FALSE)
+# calculate fitted values
+fit_ted <- drop(ex_plain %*% beta_s)
+all.equal(fit_ted, reg_model$fitted.values, check.attributes=FALSE)
+# calculate residuals
+resid_uals <- drop(res_ponse - fit_ted)
+all.equal(resid_uals, reg_model$residuals, check.attributes=FALSE)
+# degrees of freedom of residuals
+deg_free <- len_gth-NCOL(ex_plain)
+# variance of residuals
+resid_var <- sum(resid_uals^2)/deg_free
+# explanatory matrix squared
+explain_squared <- crossprod(ex_plain)
+# explain_squared <- t(ex_plain) %*% ex_plain
+# calculate covariance matrix of betas
+beta_covar <- resid_var*MASS::ginv(explain_squared)
+beta_sd <- sqrt(diag(beta_covar))
+all.equal(beta_sd, reg_model_sum$coeff[, 2], check.attributes=FALSE)
+# calculate t-values of betas
+beta_tvals <- drop(beta_s)/beta_sd
+all.equal(beta_tvals, reg_model_sum$coeff[, 3], check.attributes=FALSE)
+# calculate two-sided p-values of betas
+beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
+all.equal(beta_pvals, reg_model_sum$coeff[, 4], check.attributes=FALSE)
 library(lmtest)  # load lmtest
 de_sign <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
+  ex_plain=1:30, omit_var=sin(0.2*1:30))
 # response depends on both explanatory variables
 res_ponse <- with(de_sign,
-  0.2*explana_tory + omit_var + 0.2*rnorm(30))
+  0.2*ex_plain + omit_var + 0.2*rnorm(30))
 # mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
+reg_model <- lm(res_ponse ~ ex_plain,
         data=de_sign)
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dwtest(reg_model)$p.value
@@ -478,13 +596,13 @@ plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
 set.seed(1121)
 library(lmtest)
 # spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
+ex_plain <- cumsum(rnorm(100))  # unit root time series
 res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
 # summary indicates statistically significant regression
 reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
+reg_model_sum$coeff
 reg_model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
 dw_test <- dwtest(reg_model)
@@ -496,11 +614,11 @@ title(main="Spurious Regression", line=-1)
 # add regression line
 abline(reg_model, lwd=2, col="red")
 plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
+ex_plain <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
+res_ponse <- 3 + 2*ex_plain + rnorm(30)
+reg_formula <- res_ponse ~ ex_plain
 reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
+new_data <- data.frame(ex_plain=0.1*31:40)
 predict_lm <- predict(object=reg_model,
               newdata=new_data, level=0.95,
               interval="confidence")
@@ -511,9 +629,9 @@ plot(reg_formula, xlim=c(1.0, 4.0),
      main="Regression predictions")
 abline(reg_model, col="red")
 with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
+  points(x=new_data$ex_plain, y=fit, pch=16, col="blue")
+  lines(x=new_data$ex_plain, y=lwr, lwd=2, col="red")
+  lines(x=new_data$ex_plain, y=upr, lwd=2, col="red")
 })  # end with
 par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 lamb_da <- c(0.5, 1, 1.5)

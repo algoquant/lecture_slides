@@ -269,10 +269,10 @@ feels_like <- names(
 names(tempe_ratures) <- feels_like
 tempe_ratures
 library(microbenchmark)
-foo <- sample(0:6) + 0.1
-foo
-cut(x=foo, breaks=c(2, 4, 6, 8))
-rbind(foo, cut(x=foo, breaks=c(2, 4, 6, 8)))
+da_ta <- sample(0:6) + 0.1
+da_ta
+cut(x=da_ta, breaks=c(2, 4, 6, 8))
+rbind(da_ta, cut(x=da_ta, breaks=c(2, 4, 6, 8)))
 # cut() replicates findInterval()
 cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
     right=FALSE)
@@ -285,6 +285,27 @@ summary(microbenchmark(
   cuut=
     cut(x=vec_tor, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# calculate DAX percentage returns
+dax_rets <- diff(log(EuStockMarkets[, 1]))
+# plot histogram
+par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+histo_gram <- hist(dax_rets, breaks=30,
+  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
+  xlab="", ylab="", freq=FALSE)
+# draw kernel density of histogram
+lines(density(dax_rets), col='red', lwd=2)
+# add density of normal distribution
+curve(expr=dnorm(x, mean=mean(dax_rets),
+  sd=sd(dax_rets)), add=TRUE, type="l",
+  lwd=2, col="blue")
+title(main="DAX return distribution", line=0)
+# add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+  leg=c(colnames(EuStockMarkets)[1], "Normal"),
+  lwd=6, bg="white", col=c("red", "blue"))
+# total area under histogram
+diff(histo_gram$breaks) %*% histo_gram$density
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
 mat_rix  # by default matrices are constructed column-wise
 # create a matrix row-wise

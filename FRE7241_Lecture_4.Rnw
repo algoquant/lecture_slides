@@ -65,7 +65,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{February 17, 2018}
+\date{February 20, 2018}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -77,223 +77,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Estimating and Modeling Volatility and Skew}
-
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
-      \begin{align*}
-        r_i = \mu + \sigma_{i-1} \varepsilon_i \\
-        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
-      \end{align*}
-      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$, 
-      \vskip1ex
-      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$,
-      \vskip1ex
-      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance, 
-      \vskip1ex
-      The parameter $\omega$ determines the long-term average level of variance, which is given by:
-      \begin{displaymath}
-        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
-      \end{displaymath}
-      The sum of $\alpha$ plus $\beta$ should be less than \texttt{1}, otherwise the volatility is explosive,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# define GARCH parameters
-om_ega <- 0.01 ; al_pha <- 0.2
-be_ta <- 0.2 ; len_gth <- 1000
-re_turns <- numeric(len_gth)
-vari_ance <- numeric(len_gth)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
-    be_ta*vari_ance[i-1]
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility,
-      \vskip1ex
-      But the decay of volatility in the \emph{GARCH} model is faster than what is observed in practice,
-      <<echo=TRUE,eval=FALSE>>=
-# plot GARCH cumulative returns
-plot(cumsum(re_turns/100), t="l", 
-  lwd=2, col="blue", xlab="", ylab="",
-  main="GARCH cumulative returns")
-date_s <- seq.Date(from=Sys.Date()-len_gth+1, 
-  to=Sys.Date(), length.out=len_gth)
-x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
-# plot GARCH standard deviation
-plot(sqrt(vari_ance), t="l", 
-  lwd=2, col="blue", xlab="", ylab="",
-  main="GARCH standard deviation")
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH standard deviation")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_returns.png}\\
-      \includegraphics[width=0.5\paperwidth]{figure/garch_stdev.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Properties}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The parameter $\alpha$ is the weight of the squared realized returns in the variance, 
-      \vskip1ex
-      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis,
-      <<echo=TRUE,eval=FALSE>>=
-# define GARCH parameters
-om_ega <- 0.0001 ; al_pha <- 0.5
-be_ta <- 0.1 ; len_gth <- 10000
-re_turns <- numeric(len_gth)
-vari_ance <- numeric(len_gth)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
-    be_ta*vari_ance[i-1]
-}  # end for
-# calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) / 
-  moments::moment(re_turns, order=2)^2
-# perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-optim_fit <- MASS::fitdistr(re_turns, 
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-sc_ale <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05,
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=c(1, 1),
-       col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Calibration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{GARCH} models can be calibrated on returns using the \emph{maximum-likelihood} method, but it's a complex optimization procedure,
-      \vskip1ex
-      The package \emph{fGarch} contains functions for applying \emph{GARCH} models,
-      \vskip1ex
-      The function \texttt{garchSpec()} specifies and \texttt{garchSim()} simulates a \emph{GARCH} model
-      \vskip1ex
-      The function \texttt{garchFit()} calibrates a \emph{GARCH} model on a time series of returns,
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-# use fixed notation instead of exponential notation
-options(scipen=999)
-library(fGarch)
-# fit returns into GARCH
-garch_fit <- fGarch::garchFit(data=re_turns)
-# fitted GARCH parameters
-round(garch_fit@fit$coef, 5)
-# actual GARCH parameters
-round(c(mu=mean(re_turns), omega=om_ega, 
-  alpha=al_pha, beta=be_ta), 5)
-# specify and simulate GARCH model
-garch_spec <- fGarch::garchSpec(model=list(omega=om_ega, 
-  alpha=al_pha, beta=be_ta))
-garch_sim <- fGarch::garchSim(spec=garch_spec, n=len_gth)
-re_turns <- as.numeric(garch_sim)
-# calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) / 
-  moments::moment(re_turns, order=2)^2
-# perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-optim_fit <- MASS::fitdistr(re_turns, 
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-sc_ale <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/sc_ale, df=2)/sc_ale,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05,
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=c(1, 1),
-       col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -361,7 +144,7 @@ in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=len_gth, by="30 min")
 price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
   order.by=in_dex)
-price_s <- merge(price_s,
+price_s <- cbind(price_s,
   volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
 # aggregate to daily OHLC data
 oh_lc <- xts::to.daily(price_s)
@@ -522,7 +305,7 @@ ls(env_sp500)
 price_s <- eapply(env_sp500, quantmod::Cl)
 # flatten price_s into a single xts series
 price_s <- rutils::do_call(cbind, price_s)
-# remove NA values
+# carry forward and backward non-NA prices
 price_s <- zoo::na.locf(price_s)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
@@ -604,54 +387,47 @@ plot.zoo(per_centage[-(1:2),],
 
 
 %%%%%%%%%%%%%%%
-\section{Active Investment Strategies}
+\section{Time Series Modeling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Price Technical Indicator}
+\subsection{Autocorrelation Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
       \begin{displaymath}
-        P_i^{EWMA} = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) P_{i-j}
+        \rho_k = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa, 
+      \vskip1ex
+      The function \texttt{acf()} from the base package \emph{stats} calculates and plots the autocorrelation function for a univariate time series,
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console,
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed,
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# select OHLC data
-oh_lc <- rutils::env_etf$VTI["/2011"]
-# calculate close prices
-cl_ose <- Cl(oh_lc)
-# define aggregation interval and decay parameter
-look_back <- 31
-lamb_da <- 0.05
-# calculate EWMA prices
-weight_s <- exp(-lamb_da*1:look_back)
-weight_s <- weight_s/sum(weight_s)
-ew_ma <- stats::filter(cl_ose, filter=rev(weight_s), sides=1)
-ew_ma[1:(look_back-1)] <- ew_ma[look_back]
-ew_ma <- xts(cbind(cl_ose, ew_ma), 
-             order.by=index(oh_lc))
-colnames(ew_ma) <- c("VTI", "VTI EWMA")
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(EuStockMarkets[, 1]))
+# acf() autocorrelation from package stats
+acf(zoo::coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
       @
+      \vspace{-1em}
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      The function \texttt{coredata} extracts the core underlying data from a complex object,
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(ew_ma, theme=plot_theme, 
-             name="EWMA prices")
-legend("top", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
+      The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
+      \vskip1ex
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
   \end{columns}
 \end{block}
 
@@ -659,50 +435,46 @@ legend("top", legend=colnames(ew_ma),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating The \protect\emph{EWMA} Crossover Strategy}
+\subsection{Ljung-Box Test of Autocorrelation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In a trend-following \emph{EWMA Crossover} strategy, the risk position switches depending if the current price is above or below the \emph{EWMA},
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
       \vskip1ex
-      If the current price crosses above the \emph{EWMA}, then the strategy switches its risk position to a fixed unit of long risk, and if it crosses below, to a fixed unit of short risk, 
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
       \vskip1ex
-      The strategy holds the same position until the \emph{EWMA} crosses over the current price (either from above or below), and then it switches its position,
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
       \vskip1ex
-      The strategy is therefore always either in a long risk, or in a short risk position,
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# determine dates right after EWMA has crossed prices
-in_dic <- sign(cl_ose - ew_ma[, 2])
-trade_dates <- (rutils::diff_xts(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
-# calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(cl_ose))
-position_s[1] <- 0
-position_s[trade_dates] <- 
-  rutils::lag_xts(in_dic)[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
-      @
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with position shading
-chart_Series(ew_ma, theme=plot_theme, 
-             name="EWMA prices")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
-@
+      <<echo=(-(1:4))>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
   \end{columns}
 \end{block}
 
@@ -710,50 +482,44 @@ legend("top", legend=colnames(ew_ma),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of \protect\emph{EWMA} Crossover Strategy}
+\subsection{Improved Autocorrelation Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The strategy trades at the \emph{Open} price on the next day after prices cross the \emph{EWMA}, since in practice it may not be possible to trade immediately, 
-      \vskip1ex
-      The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position, 
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# calculate open and lagged prices
-op_en <- Op(oh_lc)
-prices_lag <- rutils::lag_xts(cl_ose)
-position_lagged <- rutils::lag_xts(position_s)
-# calculate daily profits and losses
-re_turns <- position_lagged*(cl_ose - prices_lag)
-re_turns[trade_dates] <- 
-  position_lagged[trade_dates] * 
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# calculate annualized Sharpe ratio of strategy returns
-sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-pnl_s <- cumsum(re_turns)
-pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
+library(zoo)  # load package zoo
+dax_acf <- acf(coredata(re_turns), plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_pnl.png}
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# plot EWMA PnL with position shading
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pnl_s), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      <<eval=FALSE>>=
+acf_plus <- function (ts_data, plot=TRUE,
+                      xlab="Lag", ylab="",
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plot) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+              max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+         ylim=ylim, main=main, ci=0)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
       @
   \end{columns}
 \end{block}
@@ -762,52 +528,602 @@ legend("top", legend=colnames(pnl_s),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function for \protect\emph{EWMA} Crossover Strategy}
+\subsection{Autocorrelation of DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# improved autocorrelation function
+acf_plus(coredata(re_turns), lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Squared DAX Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Squared DAX returns do have statistically significant autocorrelations,
+      \vskip1ex
+      But squared random returns are not autocorrelated,
+      <<dax_squared_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(coredata(re_turns)^2,
+         lag=10, main="")
+title(main="acf of squared DAX returns",
+      line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+         lag=10, main="")
+title(main="acf of squared random returns",
+      line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_squared_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{U.S. Macroeconomic Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data,
+      \vskip1ex
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter),
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+          Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_data-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Econometric Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most econometric data displays a high degree of autocorrelation,
+      \vskip1ex
+      But time series of tradeable prices display very low autocorrelation,
+      <<macro_corr,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+         lag=10)
+title(main="quarterly unemployment rate",
+      line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+         lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_corr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- cbind(as.zoo(dax_ts),
+                  as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+                   start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Filtered Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering a time series creates autocorrelations,
+      <<dax_filter_acf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(re_turns[, 1]), lag=10,
+         xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+         xlab="")
+title(main="DAX filtered", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Partial Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3,...}, which may obscure higher order autocorrelations,
+      \vskip1ex
+      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
+      \vskip1ex
+      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation,
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1,..., k-1} have been removed,
+        <<eustx_pacf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} time series process \emph{AR(p)} of order \emph{p} is defined as:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      Where the $\varepsilon_i$ are independent random variables with zero mean and constant variance,
+      \vskip1ex
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process,
+      \vskip1ex
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes,
+      \vspace{-1em}
+    <<ar_process,echo=(-(1:3)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+in_dex <- Sys.Date() + 0:728  # two year daily series
+set.seed(1121)  # reset random numbers
+zoo_arima <- zoo(  # AR time series of returns
+  x=arima.sim(n=729, model=list(ar=0.2)),
+  order.by=in_dex)  # zoo_arima
+zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
+colnames(zoo_arima) <- c("AR returns", "AR prices")
+autoplot(object=zoo_arima, # ggplot AR process
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_process-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$,
+      \vskip1ex
+      Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
+      <<ar_param,eval=FALSE,fig.height=5,fig.show='hide'>>=
+ar_coeff <- c(-0.8, 0.01, 0.8)  # AR coefficients
+zoo_arima <- sapply(  # create three AR time series
+  ar_coeff, function(phi) {
+    set.seed(1121)  # reset random numbers
+    arima.sim(n=729, model=list(ar=phi))
+  } )
+zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
+# convert returns to prices
+zoo_arima <- cumsum(zoo_arima)
+colnames(zoo_arima) <-
+  paste("autocorr", ar_coeff)
+autoplot(zoo_arima, main="AR prices",
+         facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_param-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} process of order \emph{one} \emph{AR(1)} is defined by the formula: $r_i = \varphi_1 r_{i-1} + \varepsilon_i$
+      \vskip1ex
+      An \emph{AR(1)} process can be simulated recursively as follows:\\
+      \hskip1em$r_1 = \varepsilon_1$\\
+      \hskip1em$r_2 = \varphi_1 r_1 + \varepsilon_2=\varepsilon_2 + \varphi_1 \varepsilon_1$\\
+      \hskip1em$r_3 = \varepsilon_3 + \varphi_1 \varepsilon_2 + \varphi_1^2 \varepsilon_1$\\
+      \hskip1em$r_4 = \varepsilon_4 + \varphi_1 \varepsilon_3 + \varphi_1^2 \varepsilon_2 + \varphi_1^3 \varepsilon_1$
+      \vskip1ex
+      If $\varphi_1 < 1.0$ then the influence of any single shock $\varepsilon_i$ decays exponentially,
+      \vskip1ex
+      If $\varphi_1 = 1.0$ then the influence of any single shock $\varepsilon_i$ persists forever, and the variance of $r_i$ increases linearly with time,
+      \vskip1ex
+      An \emph{AR(1)} process has an exponentially declining ACF and a non-zero PACF at lag one,
+      \vspace{-1em}
+      <<ar_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
+         main="ACF of AR(1) process")
+# PACF of AR(1) process
+pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stationary Processes and Their Characteristic Equations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A process is \emph{stationary} if its probability distribution does not change with time,
+      \vskip1ex
+      \emph{Stationary} processes have a constant mean and variance,
+      \vskip1ex
+      The \emph{autoregressive} process \emph{AR(p)}:
+      $p_i = \varphi_1 p_{i-1} + \varphi_2 p_{i-2} + \ldots + \varphi_p p_{i-p} + \varepsilon_i$
+      \vskip1ex
+      Has the following characteristic equation:
+      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
+      \vskip1ex
+      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than \texttt{1},
+      \vskip1ex
+      An \emph{AR(1)} process:
+      $p_i = \varphi_1 p_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi_1 z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi_1$,
+      \vskip1ex
+      If $\varphi_1 = 1$, then the characteristic equation has a \emph{unit root}: $z = 1 / \varphi_1$, and therefore isn't stationary, and the process follows:
+      $p_i = p_{i-1} + \varepsilon_i$,
+      \vskip1ex
+      The above is called a \emph{Wiener} process (Brownian motion, random walk), and it's an example of a \emph{unit-root} process,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Integrated and Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The variance of the \emph{AR(1)} process $p_i = \varphi_1 p_{i-1} + \varepsilon$ is equal to:
+      \begin{displaymath}
+        \sigma^2 = \mathbb{E}[p_i^2] = \frac{\sigma_{\varepsilon}^2}{(1 - \varphi_1^2)}
+      \end{displaymath}
+      If $\varphi_1 = 1$, then the process becomes a \emph{Wiener} process, which has a \emph{unit-root}, with its \emph{variance} growing infinite over time, so the process isn't stationary, 
+      \vskip1ex
+      The variance of the \emph{Wiener} process $p_i = p_{i-1} + \varepsilon$ is proportional to time: $\sigma_i^2 = \mathbb{E}[p_i^2] = i \sigma_{\varepsilon}^2$,
+      \vskip1ex
+      Asset prices follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        p_n = {\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        p_i = (1+\varphi_1) p_{i-1} - \varphi_1 p_{i-2} + \varepsilon_i
+      \end{displaymath}
+      If $\varphi_1=0$ then asset prices follow a \emph{Wiener} process (random walk),
+      \vskip1ex
+      A \emph{Wiener} process is an example of a \emph{unit-root} process,
+      \vskip1ex
+      If $\varphi_1=0$ (no autocorrelation of returns) then asset prices follow a \emph{Wiener} process (random walk),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<stat_unit_root,echo=(-(1:3)),eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dickey-Fuller Test for Unit-roots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
+      \vskip1ex
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series exhibits mean reversion:
+      \begin{displaymath}
+        r_i = \gamma p_{i-1} + \varphi_2 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      where $p_i = p_{i-1} + r_i$, so that:
+      \begin{displaymath}
+        p_i = (1 + \gamma) p_{i-1} + \varphi_2 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      If the mean reversion parameter is negative: $\gamma < 0$, then the time series of prices has no \emph{unit root},
+      \vskip1ex
+      The \emph{null hypothesis} is that the price process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the price process is stationary ($\gamma < 0$, mean reversion),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # load tseries
+# simulate AR(1) process
+set.seed(1121)
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+set.seed(1121)
+ari_ma <- arima.sim(n=10000, model=list(ar=0.8))
+tseries::adf.test(ari_ma)
+# simulate Brownian motion
+
+rand_walk <- cumsum(rnorm(729))
+tseries::adf.test(rand_walk)
+set.seed(1121)
+rand_walk <- cumsum(rnorm(10000))
+tseries::adf.test(rand_walk)
+      @
+      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
+      \vskip1ex
+      The \emph{ADF} test is weak in the sense that it requires a lot of data to identify a \emph{unit root} process,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Identification of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR}(3) process of order \emph{three} is defined by the formula:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \varepsilon_i
+      \end{displaymath}
+      Autoregressive processes \emph{AR(p)} of order \emph{p} have an exponentially declining ACF and a non-zero PACF up to lag \emph{p},
+      <<ar_pacf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+ar3_zoo <- zoo(  # AR(3) time series of returns
+  x=arima.sim(n=365,
+          model=list(ar=c(0.1, 0.5, 0.1))),
+  order.by=in_dex)  # zoo_arima
+# ACF of AR(3) process
+acf_plus(ar3_zoo, lag=10,
+       xlab="", ylab="", main="ACF of AR(3) process")
+
+# PACF of AR(3) process
+pacf(ar3_zoo, lag=10,
+     xlab="", ylab="", main="PACF of AR(3) process")
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fitting Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The \emph{EWMA} strategy can be performed by a single function, which allows the analysis of its performance depending on its parameters,
+      The function \texttt{arima()} from the base package \emph{stats} fits a specified ARIMA model to a univariate time series,
       \vskip1ex
-      The function \texttt{simu\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$, 
-      \vskip1ex
-      The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series, 
+      The function \texttt{auto.arima()} from the package \emph{forecast} automatically fits an ARIMA model to a univariate time series,
     \column{0.6\textwidth}
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-simu_ewma <- function(oh_lc, lamb_da=0.05, look_back=31) {
-  # calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:look_back)
-  weight_s <- weight_s/sum(weight_s)
-  cl_ose <- Cl(oh_lc)
-  ew_ma <- stats::filter(as.numeric(cl_ose), filter=rev(weight_s), sides=1)
-  ew_ma[1:(look_back-1)] <- ew_ma[look_back]
-  # determine dates right after EWMA has crossed prices
-  in_dic <- xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
-  trade_dates <- (rutils::diff_xts(in_dic) != 0)
-  trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
-  # calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(cl_ose))
-  position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
-  position_s <- xts(na.locf(position_s), order.by=index(oh_lc))
-  op_en <- Op(oh_lc)
-  prices_lag <- rutils::lag_xts(cl_ose)
-  position_lagged <- rutils::lag_xts(position_s)
-  # calculate daily profits and losses
-  re_turns <- position_lagged*(cl_ose - prices_lag)
-  re_turns[trade_dates] <- 
-    position_lagged[trade_dates] * 
-    (op_en[trade_dates] - prices_lag[trade_dates]) +
-    position_s[trade_dates] * 
-    (cl_ose[trade_dates] - op_en[trade_dates])
-  out_put <- cbind(position_s, re_turns)
-  colnames(out_put) <- c("position_s", "re_turns")
-  out_put
-}  # end simu_ewma
+      \vspace{-1em}
+      <<echo=TRUE>>=
+ar3_zoo <- arima.sim(n=1000,
+            model=list(ar=c(0.1, 0.3, 0.1)))
+arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+library(forecast)  # load forecast
+auto.arima(ar3_zoo)  # fit ARIMA model
       @
   \end{columns}
 \end{block}
@@ -816,312 +1132,49 @@ simu_ewma <- function(oh_lc, lamb_da=0.05, look_back=31) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Multiple \protect\emph{EWMA} Strategies}
+\subsection{Ornstein-Uhlenbeck Process}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The performance of the trend-following \emph{EWMA} strategy depends on the decay parameter $\lambda$, 
+      Under the \emph{Ornstein-Uhlenbeck} process, the percentage returns $\mathrm{d} \log{P}$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $P_t$:
+      \begin{displaymath}
+        \mathrm{d} \log{P_t} = \theta ( \mu - P_t ) \mathrm{d} t + \sigma \mathrm{d} W_t
+      \end{displaymath}
+      Where $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility,
       \vskip1ex
-      The best performing strategy can be found by performing an \texttt{sapply()} loop over a vector of $\lambda$ parameters,
+      The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
       <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.001, 0.03, 0.001)
-sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
-  re_turns <- simu_ewma(oh_lc=oh_lc, 
-              lamb_da=lamb_da)[, 2]
-  # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-})  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA trend-following strategies 
-     as function of the decay parameter lambda")
-      @
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; vol_at <- 0.01
+the_ta <- 0.01; len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+@
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_trending.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Trend-following \protect\emph{EWMA} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The best performing trend-following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading, 
-      <<echo=TRUE,eval=FALSE>>=
-# simulate best performing strategy
-ewma_trend <- simu_ewma(oh_lc=oh_lc, 
-        lamb_da=lamb_das[which.max(sharpe_ratios)])
-position_s <- ewma_trend[, 1]
-pnl_s <- cumsum(ewma_trend[, 2])
-pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL with position shading
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pnl_s), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_best_trend.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Mean-reverting \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The trend-following \emph{EWMA} strategy experiences losses for large values of the decay parameter $\lambda$ (for our data sample - for different data this may not be true), 
-      \vskip1ex
-      Reverting the rules of the trend-following \emph{EWMA} strategy creates a mean-reverting strategy,
-      <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.05, 0.12, 0.01)
-sharpe_ratios <- sapply(lamb_das, function(lamb_da) {
-  re_turns <- -simu_ewma(oh_lc=oh_lc, 
-              lamb_da=lamb_da)[, 2]
-  # calculate annualized Sharpe ratio of strategy returns
-  sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-})  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA mean-reverting strategies 
-     as function of the decay parameter lambda")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_reverting.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Mean-reverting \protect\emph{EWMA} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The best performing mean-reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading, 
-      <<echo=TRUE,eval=FALSE>>=
-# simulate best performing strategy
-ewma_revert <- -simu_ewma(oh_lc=oh_lc, 
-        lamb_da=lamb_das[which.max(sharpe_ratios)])
-position_s <- ewma_revert[, 1]
-pnl_s <- cumsum(ewma_revert[, 2])
-pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL with position shading
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pnl_s), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_best_revert.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Combining Trend-following and Mean-reverting Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The returns of trend-following and mean-reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk, 
-      <<echo=TRUE,eval=FALSE>>=
-# calculate correlation between trend-following and mean-reverting strategies
-trend_ing <- ewma_trend[, 2]
-colnames(trend_ing) <- "trend"
-revert_ing <- ewma_revert[, 2]
-colnames(revert_ing) <- "revert"
-corr_matrix <- cor(cbind(trend_ing, revert_ing))
-corr_matrix
-# calculate combined strategy
-re_turns <- trend_ing + revert_ing
-# calculate annualized Sharpe ratio of strategy returns
-sapply(cbind(rutils::diff_xts(cl_ose), 
-    trend_ing, revert_ing, re_turns), 
-      function(re_turns) {
-        sqrt(260)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-      })  # end sapply
-pnl_s <- cumsum(re_turns)
-pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA combined PnL")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_combined.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_proc.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of EWMA Strategies")
-add_TA(cumsum(trend_ing), on=1, lwd=2, col="green")
-add_TA(cumsum(revert_ing), on=1, lwd=2, col="magenta2")
-legend("topleft", legend=c(colnames(pnl_s), "trending", "reverting"), 
-       inset=0.05, bg="white", lty=rep(1, 4), lwd=rep(4, 4), 
-       col=c(plot_theme$col$line.col, "green", "magenta2"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ensemble of \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instead of selecting the best performing \emph{EWMA} strategy, one can choose a weighted average of strategies (ensemble), which corresponds to allocating positions according to the weights, 
-      \vskip1ex
-      The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies, 
-      <<echo=TRUE,eval=FALSE>>=
-lamb_das <- seq(0.001, 0.03, 0.001)
-re_turns <- lapply(lamb_das, function(lamb_da) {
-  simu_ewma(oh_lc=oh_lc, lamb_da=lamb_da)[, 2]
-})  # end sapply
-re_turns <- do.call(merge, re_turns)
-weight_s <- sharpe_ratios/sum(sharpe_ratios)
-re_turns <- re_turns %*% weight_s
-re_turns <- xts(re_turns, order.by=index(oh_lc))
-pnl_s <- cumsum(re_turns)
-pnl_s <- cbind(cl_ose-as.numeric(cl_ose[1, ]), 
-              pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL without position shading
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-legend("top", legend=colnames(pnl_s), 
-       inset=0.05, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_ensemble.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Moving Average Technical Indicators}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes, 
-      \vskip1ex
-      Moving averages (such as \emph{VWAP}) are often used to define technical indicators (trading signals), 
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# calculate open, close, and lagged prices
-op_en <- Op(rutils::env_etf$VTI)
-cl_ose <- Cl(rutils::env_etf$VTI)
-prices_lag <- rutils::lag_xts(cl_ose)
-# define aggregation interval and calculate VWAP
-look_back <- 150
-VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI, 
-            look_back=look_back)
-# calculate VWAP indicator
-in_dic <- sign(cl_ose - VTI_vwap)
-# determine dates right after VWAP has crossed prices
-trade_dates <- (rutils::diff_xts(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_indic.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot prices and VWAP
-chart_Series(x=cl_ose, 
-  name="VTI prices", col="orange")
-add_TA(VTI_vwap, on=1, lwd=2, col="blue")
-legend("top", legend=c("VTI", "VWAP"), 
-bg="white", lty=c(1, 1), lwd=c(6, 6), 
-col=c("orange", "blue"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Moving Average Crossover Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In a trend-following \emph{Moving Average Crossover} strategy, when the current price crosses above the \emph{VWAP}, then the strategy switches its position to long risk, and vice versa, 
-      \vskip1ex
-      The strategy trades at the \emph{Open} price in the next period after prices cross the \emph{VWAP}, to reflect that in practice it's impossible to trade immediately, 
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# calculate positions, either: -1, 0, or 1
-position_s <- NA*numeric(NROW(rutils::env_etf$VTI))
-position_s[1] <- 0
-position_s[trade_dates] <- in_dic[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index((rutils::env_etf$VTI)))
-position_lagged <- rutils::lag_xts(position_s)
-# calculate daily profits and losses
-pnl_s <- position_lagged*(cl_ose - prices_lag)
-pnl_s[trade_dates] <- position_lagged[trade_dates] * 
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# calculate annualized Sharpe ratio of strategy returns
-sqrt(260)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# plot prices and VWAP
-pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::env_etf$VTI)))
-chart_Series(x=(cl_ose-as.numeric(cl_ose[1, ])), name="VTI prices", col="orange")
-add_TA(pnl_s, on=1, lwd=2, col="blue")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=c("VTI", "VWAP strategy"), 
-       inset=0.1, bg="white", lty=c(1, 1), lwd=c(6, 6), 
-       col=c("orange", "blue"), bty="n")
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="Ornstein-Uhlenbeck process")
+legend("topright",
+       title=paste(c(paste0("vol_at = ", vol_at),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8,
+       inset=0.1, bg="white", bty="n")
 @
   \end{columns}
 \end{block}
@@ -1129,156 +1182,40 @@ legend("top", legend=c("VTI", "VWAP strategy"),
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{Rcpp} for Running \protect\emph{C++} Programs}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{Rcpp} for Calling \protect\emph{C++} Programs from \texttt{R}}
+\subsection{Ornstein-Uhlenbeck Process Mean Reversion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{Rcpp} allows calling \emph{C++} programs from \texttt{R}, by compiling the \emph{C++} code and creating \texttt{R} functions,
-      \vskip1ex
-      \emph{Rcpp} functions are \texttt{R} functions that were compiled from \emph{C++} code using package \emph{Rcpp},
-      \vskip1ex
-      \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
-      \vskip1ex
-      The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \emph{C++} code: \\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}\\
-      \vskip1ex
-      You can learn more about the package \emph{Rcpp} here: \\
-      \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
-      \hskip1em\url{http://www.rcpp.org/}\\
-      \hskip1em\url{http://gallery.rcpp.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# load package Rcpp
-library(Rcpp)
-# get documentation for package Rcpp
-# get short description
-packageDescription("Rcpp")
-# load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# remove Rcpp from search path
-detach("package:Rcpp")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function \texttt{cppFunction()} for Compiling \protect\emph{C++} code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cppFunction()} compiles \emph{C++} code into an \texttt{R} function,
-      \vskip1ex
-      The function \texttt{cppFunction()} creates an \texttt{R} function only for the current \texttt{R} session, and it must be recompiled for every new \texttt{R} session,
-      \vskip1ex
-      The function \texttt{sourceCpp()} compiles \emph{C++} code contained in a file, into \texttt{R} functions,
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices,
       <<echo=TRUE,eval=FALSE>>=
-# define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# run Rcpp function
-times_two(3)
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
-# multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
-# multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Loops in \protect\emph{Rcpp Sugar}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
+# define Ornstein-Uhlenbeck parameters
+eq_price <- 5.0; the_ta <- 0.05
+len_gth <- 1000
+# simulate Ornstein-Uhlenbeck process
+re_turns <- numeric(len_gth)
+price_s <- numeric(len_gth)
+price_s[1] <- 5.0
+set.seed(1121)  # reset random numbers
+for (i in 2:len_gth) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
+    vol_at*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+re_turns <- rutils::diff_it(log(price_s))
+lag_price <- rutils::lag_it(price_s)
+lag_price[1] <- lag_price[2]
+for_mula <- re_turns ~ lag_price
+l_m <- lm(for_mula)
+summary(l_m)
+# plot regression
+plot(for_mula, main="returns versus lagged prices")
+abline(l_m, lwd=2, col="red")
+@
     \column{0.5\textwidth}
-      Loops in \emph{Rcpp} can be two orders of magnitude faster than loops in \texttt{R}!
-      \vskip1ex
-      \emph{Rcpp Sugar} allows using \texttt{R}-style vectorized syntax in \emph{Rcpp} code,
-      <<echo=TRUE,eval=FALSE>>=
-# define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-      total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-      to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/ornstein_uhlenbeck_scatter.png}
   \end{columns}
 \end{block}
 
@@ -1344,51 +1281,45 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\section{Linear Algebra}
+\section{Asset Pricing Models}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Eigenvectors and Eigenvalues of Matrices}
+\subsection{Linear Regression of Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{A}$, if it satisfies the \emph{eigenvalue} equation:
-      \begin{displaymath}
-        \mathbb{A} \, w = \lambda \, w
-      \end{displaymath}
-      Where $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$,
+      The returns of \emph{XLP} and \emph{VTI} are highly correlated because they are driven by common market factors of returns, 
       \vskip1ex
-      The number of \emph{eigenvalues} of a matrix is equal to its dimension,
+      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
       \vskip1ex
-      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other,
-      \vskip1ex
-      The \emph{eigenvectors} can be normalized to \texttt{1},
-      \vskip1ex
-      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal,
-      \vskip1ex
-      The function \texttt{eigen()} calculates the \emph{eigenvectors} and \emph{eigenvalues} of numeric matrices,
-      \vskip1ex
-      An excellent interactive visualization of \emph{eigenvectors} and \emph{eigenvalues} is available here:\\
-      \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
+      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic, or more extreme values,
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(HighFreq)
+# specify formula and perform regression
+reg_formula <- XLP ~ VTI
+reg_model <- lm(reg_formula, 
+                data=rutils::env_etf$re_turns)
+# get regression coefficients
+coef(summary(reg_model))
+# Durbin-Watson test of autocorrelation of residuals
+lmtest::dwtest(reg_model)
+      @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/reg_rets.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# create random real symmetric matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- mat_rix + t(mat_rix)
-# calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-eigen_vec <- ei_gen$vectors
-dim(eigen_vec)
-# plot eigenvalues
-barplot(ei_gen$values, 
-  xlab="", ylab="", las=3, 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
-  main="Eigenvalues of a real symmetric matrix")
+# plot scatterplot of returns with aspect ratio 1
+plot(reg_formula, data=rutils::env_etf$re_turns,
+     xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1), 
+     asp=1, main="Regression XLP ~ VTI")
+# add regression line and perpendicular line
+abline(reg_model, lwd=2, col="red")
+abline(a=0, b=-1/coef(summary(reg_model))[2, 1], 
+       lwd=2, col="blue")
       @
   \end{columns}
 \end{block}
@@ -1397,91 +1328,45 @@ barplot(ei_gen$values,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Eigen Decomposition of Matrices}
+\subsection{Linear Regression Summary Statistics}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other,
-      \vskip1ex
-      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
-      \begin{displaymath}
-        \mathbb{D} = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
-      \end{displaymath}
-      Where $\mathbb{D}$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors},
-      \vskip1ex
-      Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{O} \, \mathbb{D} \, \mathbb{O}^T
-      \end{displaymath}
-      The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation,
-    \column{0.5\textwidth}
+    \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# eigenvectors form an orthonormal basis
-round(t(eigen_vec) %*% eigen_vec, 
-  digits=4)
-# diagonalize matrix using eigenvector matrix
-round(t(eigen_vec) %*% (mat_rix %*% eigen_vec), 
-  digits=4)
-ei_gen$values
-# eigen decomposition of matrix by rotating the diagonal matrix
-eigen_decomp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
-# create diagonal matrix of eigenvalues
-# diago_nal <- diag(ei_gen$values)
-# eigen_decomp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
-all.equal(mat_rix, eigen_decomp)
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+re_turns <- na.omit(rutils::env_etf$re_turns)
+# perform regressions and collect statistics
+etf_reg_stats <- sapply(colnames(re_turns)[-1], 
+                        function(etf_name) {
+# specify regression formula
+  reg_formula <- as.formula(
+    paste(etf_name, "~ VTI"))
+# perform regression
+  reg_model <- lm(reg_formula, data=re_turns)
+# get regression summary
+  reg_model_sum <- summary(reg_model)
+# collect regression statistics
+  etf_reg_stats <- with(reg_model_sum, 
+    c(alpha=coefficients[1, 1], 
+      p_alpha=coefficients[1, 4], 
+      beta=coefficients[2, 1], 
+      p_beta=coefficients[2, 4]))
+  etf_reg_stats <- c(etf_reg_stats, 
+               p_dw=lmtest::dwtest(reg_model)$p.value)
+  etf_reg_stats
+})  # end sapply
+etf_reg_stats <- t(etf_reg_stats)
+# sort by p_alpha
+etf_reg_stats <- etf_reg_stats[
+  order(etf_reg_stats[, "p_alpha"]), ]
       @
-      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$, 
-      \vskip1ex
-      The \emph{diagonal} matrix $\mathbb{D}$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues},
-      \vskip1ex
-      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
-      \vskip1ex
-      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Positive Definite} Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Matrices with positive \emph{eigenvalues} are called \emph{positive definite} matrices,
-      \vskip1ex
-      Matrices with non-negative \emph{eigenvalues} are called \emph{positive semi-definite} matrices (some of their \emph{eigenvalues} may be zero),
-      \vskip1ex
-      An example of \emph{positive definite} matrices are the covariance matrices of linearly independent variables, 
-      \vskip1ex
-      But the covariance matrices of linearly dependent variables have some \emph{eigenvalues} equal to zero, in which case they are \emph{singular}, and only \emph{positive semi-definite},
-      \vskip1ex
-      All covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution,
-      \vskip1ex
-      Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices, 
-      \vskip1ex
-      For any real matrix $\mathbb{A}$, the matrix $\mathbb{A}^T \mathbb{A}$ is \emph{positive semi-definite},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}\\
+    \column{0.45\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
-# calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-ei_gen$values
-# plot eigenvalues
-barplot(ei_gen$values, las=3, 
-  xlab="", ylab="", 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
-  main="Eigenvalues of positive semi-definite matrix")
+etf_reg_stats[, 1:3]
       @
   \end{columns}
 \end{block}
@@ -1490,389 +1375,50 @@ barplot(ei_gen$values, las=3,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Singular Value Decomposition (\protect\emph{SVD}) of Matrices}
+\subsection{Rolling Beta Regressions Over Time}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization of the \emph{eigen decomposition} of \emph{positive semi-definite} matrices, 
+      The function \texttt{rollapply()} allows performing regressions over a rolling window, 
       \vskip1ex
-      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ with dimensions \texttt{m} rows and \texttt{n} columns is defined as the factorization:
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
-      \end{displaymath}
-      If (\texttt{m > n}), then $\mathbb{U}$ is an (\texttt{m x n}) rectangular matrix, $\Sigma$ is an (\texttt{n x n}) diagonal matrix containing the \emph{singular values}, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, and vice versa if (\texttt{m < n}),
-      \vskip1ex
-      The (\texttt{m x n}) rectangular matrix $\mathbb{U}$ consists of \texttt{n} columns of \emph{orthonormal} left-\emph{singular} vectors, with $\mathbb{U}^T \mathbb{U} = \mathbbm{1}$,
-      \vskip1ex
-      The columns of the \emph{orthogonal} matrix $\mathbb{V}$ consist of \texttt{n} \emph{orthonormal} right-\emph{singular} vectors, with $\mathbb{V}^T \mathbb{V} = \mathbbm{1}$,
-      \vskip1ex
-      The \emph{singular} vectors are only defined up to a reflection (sign), i.e. if \texttt{vec} is a \emph{singular} vector, then so is \texttt{-vec},
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      The function \texttt{roll\_lm()} from package \emph{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}, 
       <<echo=TRUE,eval=FALSE>>=
-# dimensions of left and right matrices
-n_left <- 6 ; n_right <- 4
-# create random positive semi-definite matrix
-left_mat <- matrix(runif(n_left^2), nc=n_left)
-left_mat <- crossprod(left_mat)
-# or
-left_mat <- left_mat %*% t(left_mat)
-# calculate left eigenvectors
-ei_gen <- eigen(left_mat)
-left_mat <- ei_gen$vectors[, 1:n_right]
-# create random positive semi-definite matrix
-right_mat <- matrix(runif(n_right^2), nc=n_right)
-right_mat <- crossprod(right_mat)
-# or
-right_mat <- right_mat %*% t(right_mat)
-# calculate right eigenvectors and singular values
-ei_gen <- eigen(right_mat)
-right_mat <- ei_gen$vectors
-sing_values <- ei_gen$values
-# compose rectangular matrix
-mat_rix <- 
-  left_mat %*% (sing_values * t(right_mat))
-# mat_rix <- left_mat %*% diag(sing_values) %*% t(right_mat)
-      @
-      \vspace{-1em}
-      In the special case when $\mathbb{A}$ is a \emph{positive semi-definite} matrix, the \emph{SVD} reduces to the \emph{eigen decomposition}, with $\mathbb{U} = \mathbb{V}$,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Singular Value Decomposition Using Function \texttt{svd()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ with dimensions \texttt{m} rows and \texttt{n} columns is defined as the factorization:
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
-      \end{displaymath}
-      The (\texttt{m x n}) rectangular matrix $\mathbb{U}$ consists of \texttt{n} columns of \emph{orthonormal} left-\emph{singular} vectors, with $\mathbb{U}^T \mathbb{U} = \mathbbm{1}$,
-      \vskip1ex
-      The left-\emph{singular} vectors are the \emph{eigenvectors} of the matrix $\mathbb{A} \mathbb{A}^T$, 
-      \vskip1ex
-      The columns of the \emph{orthogonal} matrix $\mathbb{V}$ consist of \texttt{n} \emph{orthonormal} right-\emph{singular} vectors, with $\mathbb{V}^T \mathbb{V} = \mathbbm{1}$,
-      \vskip1ex
-      The right-\emph{singular} vectors are the \emph{eigenvectors} of the matrix $\mathbb{A}^T \mathbb{A}$, 
-      \vskip1ex
-      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
-      \begin{displaymath}
-        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# perform singular value decomposition
-s_vd <- svd(mat_rix)
-# compare SVD with inputs
-all.equal(abs(s_vd$u), abs(left_mat))
-all.equal(abs(s_vd$v), abs(right_mat))
-all.equal(s_vd$d, ei_gen$values)
-      @
-      The function \texttt{svd()} performs \emph{Singular Value Decomposition} (\emph{SVD}) of a rectangular matrix, and returns a list of three elements: the \emph{singular values}, and the matrices of left-\emph{singular} vectors and the right-\emph{singular} vectors,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Inverse of Square Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The inverse of a square matrix $\mathbb{A}$ is defined as a square matrix $\mathbb{A}^{-1}$ that satisfies the equation:
-      \begin{displaymath}
-        \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
-      \end{displaymath}
-      Where $\mathbbm{1}$ is the identity matrix, 
-      \vskip1ex
-      The inverse $\mathbb{A}^{-1}$ matrix can also be expressed as a product of the inverse of its \emph{eigenvalues} ($\mathbb{D}$) and its \emph{eigenvectors} ($\mathbb{O}$):
-      \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
-      \end{displaymath}
-      But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse,
-      \vskip1ex
-      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
-# calculate the inverse of mat_rix
-in_verse <- solve(a=mat_rix)
-# multiply inverse with matrix
-round(in_verse %*% mat_rix, 4)
-round(mat_rix %*% in_verse, 4)
-
-# calculate eigenvectors and eigenvalues
-ei_gen <- eigen(mat_rix)
-eigen_vec <- ei_gen$vectors
-
-# perform eigen decomposition of inverse
-eigen_inverse <- 
-  eigen_vec %*% (t(eigen_vec) / ei_gen$values)
-all.equal(in_verse, eigen_inverse)
-# decompose diagonal matrix with inverse of eigenvalues
-# diago_nal <- diag(1/ei_gen$values)
-# eigen_inverse <-
-#   eigen_vec %*% (diago_nal %*% t(eigen_vec))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generalized Inverse of Rectangular Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
-      \begin{displaymath}
-        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}
-      \end{displaymath}
-      The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
-      \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
-      \end{displaymath}
-      The generalized inverse $\mathbb{A}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
-      \begin{displaymath}
-        \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
-      \end{displaymath}
-      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
-      \vskip1ex
-      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create random rectangular matrix
-# case when: n_left > n_right
-n_left <- 6 ; n_right <- 4
-mat_rix <- matrix(runif(n_left*n_right), 
-  nc=n_right)
-# calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-round(in_verse %*% mat_rix, 4)
-all.equal(mat_rix, 
-          mat_rix %*% in_verse %*% mat_rix)
-# create random rectangular matrix
-# case when: n_left < n_right
-n_left <- 4 ; n_right <- 6
-mat_rix <- matrix(runif(n_left*n_right), 
-  nc=n_right)
-# calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-round(mat_rix %*% in_verse, 4)
-# perform singular value decomposition
-s_vd <- svd(mat_rix)
-# calculate generalized inverse from SVD
-svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
-all.equal(svd_inverse, in_verse)
-# calculate Moore-Penrose pseudo-inverse
-mp_inverse <- 
-  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
-all.equal(mp_inverse, in_verse)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generalized Inverse of Singular Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$,
-      \vskip1ex
-      But if the \emph{singular values} that are equal to zero are removed, then a generalized inverse for \emph{singular} matrices can be specified by:
-      \begin{displaymath}
-        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
-      \end{displaymath}
-      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with rows and columns corresponding to zero \emph{singular values} removed, 
-      <<echo=TRUE,eval=FALSE>>=
-# create random singular matrix
-n_left <- 4 ; n_right <- 6
-mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
-mat_rix <- t(mat_rix) %*% mat_rix
-# calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-# verify inverse of mat_rix
-all.equal(mat_rix, 
-  mat_rix %*% in_verse %*% mat_rix)
+library(HighFreq)
+# specify regression formula
+reg_formula <- XLP ~ VTI
+# perform rolling beta regressions every month
+beta_s <- rollapply(rutils::env_etf$re_turns, width=252, 
+  FUN=function(de_sign) 
+  coef(lm(reg_formula, data=de_sign))[2],
+  by=22, by.column=FALSE, align="right")
+beta_s <- na.omit(beta_s)
+# plot beta_s in x11() window
+x11(width=(wid_th <- 6), height=(hei_ght <- 4))
+chart_Series(x=beta_s[, "VTI"], 
+  name=paste("rolling betas", format(reg_formula)))
+# perform daily rolling beta regressions in parallel
+library(roll)
+beta_s <- roll_lm(x=rutils::env_etf$re_turns[, "VTI"], 
+                  y=rutils::env_etf$re_turns[, "XLP"],
+                  width=252)$coefficients
       @
     \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/rolling_betas.png}\\
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# perform singular value decomposition
-s_vd <- svd(mat_rix)
-# set tolerance for determining zero singular values
-to_l <- sqrt(.Machine$double.eps)
-# check for zero singular values
-s_vd$d
-not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
-# calculate generalized inverse from SVD
-svd_inverse <- 
-  s_vd$v[, not_zero] %*% 
-  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
-all.equal(svd_inverse, in_verse)
-# calculate Moore-Penrose pseudo-inverse
-mp_inverse <- 
-  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
-all.equal(mp_inverse, in_verse)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Diagonalizing Generalized Inverse of Singular Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
-      \begin{displaymath}
-        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
-      \end{displaymath}
-      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{A}$ is diagonal, then we have:
-      \begin{displaymath}
-        \mathbb{U}^T (\mathbb{A}^{-1} \mathbb{A}) \, \mathbb{V} = \mathbbm{1}_n
-      \end{displaymath}
-      So that $\mathbb{A}^{-1} \mathbb{A}$ is diagonal in the same coordinate system where $\mathbb{A}$ is diagonal, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# diagonalize the "unit" matrix
-uni_t <- mat_rix %*% in_verse
-round(uni_t, 4)
-round(mat_rix %*% in_verse, 4)
-round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Solving Linear Equations Using \texttt{solve()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A system of linear equations can be defined as: 
-      \begin{displaymath}
-        \mathbb{A} \, x = b
-      \end{displaymath}
-      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector, 
-      \vskip1ex
-      The solution of the system of linear equations is equal to: 
-      \begin{displaymath}
-        x = \mathbb{A}^{-1} b
-      \end{displaymath}
-      Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$,
-      \vskip1ex
-      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
-      \vskip1ex
-      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
-      \vskip1ex
-      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# define a square matrix
-mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
-vec_tor <- c(2, 1)
-# calculate the inverse of mat_rix
-in_verse <- solve(a=mat_rix)
-in_verse %*% mat_rix
-# calculate solution using inverse of mat_rix
-solu_tion <- in_verse %*% vec_tor
-mat_rix %*% solu_tion
-# calculate solution of linear system
-solu_tion <- solve(a=mat_rix, b=vec_tor)
-mat_rix %*% solu_tion
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Cholesky Decomposition}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
-      \begin{displaymath}
-        \mathbb{A} = \mathbb{L}^T \mathbb{L}
-      \end{displaymath}
-      Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements,
-      \vskip1ex
-      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$,
-      \vskip1ex
-      The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite},
-      \vskip1ex
-      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix, 
-      \vskip1ex
-      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create large random positive semi-definite matrix
-mat_rix <- matrix(runif(1e4), nc=100)
-mat_rix <- t(mat_rix) %*% mat_rix
-# calculate eigen decomposition
-ei_gen <- eigen(mat_rix)
-eigen_values <- ei_gen$values
-eigen_vec <- ei_gen$vectors
-# set tolerance for determining zero singular values
-to_l <- sqrt(.Machine$double.eps)
-# if needed convert to positive definite matrix
-not_zero <- (eigen_values > (to_l * eigen_values[1]))
-if (sum(!not_zero) > 0) {
-  eigen_values[!not_zero] <- 2*to_l
-  mat_rix <- eigen_vec %*% 
-    (eigen_values * t(eigen_vec))
-}  # end if
-# calculate the Cholesky mat_rix
-choles_ky <- chol(mat_rix)
-choles_ky[1:5, 1:5]
-all.equal(mat_rix, t(choles_ky) %*% choles_ky)
-# calculate inverse from Cholesky
-chol_inverse <- chol2inv(choles_ky)
-all.equal(solve(mat_rix), chol_inverse)
-# compare speed of Cholesky inversion
+# compare speed of rollapply() versus roll_lm()
 library(microbenchmark)
+da_ta <- rutils::env_etf$re_turns["2012", c("VTI", "XLP")]
 summary(microbenchmark(
-  sol_ve=solve(mat_rix),
-  choles_ky=chol2inv(chol(mat_rix)),
+  rollapply=rollapply(da_ta, width=22, 
+      FUN=function(de_sign) 
+      coef(lm(reg_formula, data=de_sign))[2],
+        by.column=FALSE, align="right"), 
+  roll_lm=roll_lm(x=da_ta[, "VTI"], 
+                  y=da_ta[, "XLP"],
+                  width=22)$coefficients, 
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -1882,38 +1428,363 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating Correlated Returns Using Cholesky Matrix}
+\subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Cholesky} decomposition of a covariance matrix can be used to simulate correlated \emph{Normal} returns following the given covariance matrix: $\mathbb{C} = \mathbb{L}^T \mathbb{L}$
-      \vskip1ex
-      Let $\mathbb{R}$ be a matrix with columns of \emph{uncorrelated} returns following the \emph{Standard Normal} distribution,
-      \vskip1ex
-      The \emph{correlated} returns $\mathbb{R}_c$ can be calculated from the \emph{uncorrelated} returns $\mathbb{R}$ by multilying them by the \emph{Cholesky} matrix $\mathbb{L}$:
+      The \emph{Capital Asset Pricing Model} decomposes asset returns into \emph{systematic} returns (proportional to the market returns) and \emph{idiosyncratic} returns (uncorrelated to market returns):
       \begin{displaymath}
-        \mathbb{R}_c = \mathbb{L}^T \mathbb{R}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + {\varepsilon}
       \end{displaymath}
+      Where $R_m$ are the market returns, and $R_f$ are the risk-free returns,
+      \vskip1ex
+      The \emph{systematic} risk and returns are proportional to $\beta$, 
+      \vskip1ex
+      $\beta$ can be obtained from linear regression, and is proportional to the correlation of returns between the asset and the market:
+      \begin{displaymath}
+        \beta = \frac{\sum_{i=1}^n (R_i-\bar{R}) (R_{i,m}-\bar{R_m})} {\sum_{i=1}^n (R_{i,m}-\bar{R_m})^2}
+      \end{displaymath}
+      The \emph{CAPM} model states that if an asset has higher $\beta$ risk, then it should earn higher \emph{systematic} returns,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# calculate random covariance matrix
-cov_mat <- matrix(runif(25), nc=5)
-cov_mat <- t(cov_mat) %*% cov_mat
-# calculate the Cholesky mat_rix
-choles_ky <- chol(cov_mat)
-choles_ky
-# simulate random uncorrelated returns
-n_assets <- 5
-n_rows <- 10000
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
-# calculate correlated returns by applying Cholesky
-corr_returns <- re_turns %*% choles_ky
-# calculate covariance matrix
-cov_returns <- crossprod(corr_returns) / (n_rows-1)
-all.equal(cov_mat, cov_returns)
+library(PerformanceAnalytics)
+CAPM.beta(Ra=re_turns[, "XLP"], 
+          Rb=re_turns[, "VTI"])
+CAPM.beta.bull(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.beta.bear(Ra=re_turns[, "XLP"], 
+  Rb=re_turns[, "VTI"])
+CAPM.alpha(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
+      @
+      The \emph{idiosyncratic} returns are equal to the sum of $\alpha$ plus $\varepsilon$,
+      \vskip1ex
+      \emph{Alpha} ($\alpha$) are the returns in excess of \emph{systematic} returns, that can be attributed to portfolio selection or active manager performance,
+      \vskip1ex
+      The \emph{idiosyncratic} risk (equal to $\varepsilon$) is uncorrelated to the \emph{systematic} risk, and can be reduced through portfolio diversification,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Security Market Line}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      According to the \emph{CAPM} model, assets should earn a \emph{systematic} return proportional to their \emph{systematic} risk ($\beta$),
+      \vskip1ex
+      The \emph{Security Market Line} (SML) represents the linear relationship between \emph{systematic} risk ($\beta$) and return, for different stocks, 
+      <<capm_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
+library(PerformanceAnalytics)
+etf_betas <- sapply(
+  re_turns[, colnames(re_turns)!="VXX"], 
+  CAPM.beta, Rb=re_turns[, "VTI"])
+etf_annrets <- sapply(
+  re_turns[, colnames(re_turns)!="VXX"], 
+  Return.annualized)
+# plot scatterplot
+plot(etf_annrets ~ etf_betas, xlab="betas", 
+            ylab="ann. rets", xlim=c(-0.25, 1.6))
+points(x=1, y=etf_annrets["VTI"], col="red", 
+       lwd=3, pch=21)
+abline(a=0, b=etf_annrets["VTI"])
+label_names <- rownames(etf_reg_stats)[1:13]
+# add labels
+text(x=1, y=etf_annrets["VTI"], labels="VTI", 
+     pos=2)
+text(x=etf_betas[label_names], 
+     y=etf_annrets[label_names], 
+     labels=label_names, pos=2, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-3em}
+      \includegraphics[width=0.5\paperwidth]{figure/capm_scatter-1}\\
+    \vspace{-2em}
+      A scatterplot of asset returns versus their $\beta$ shows which assets earn a positive $\alpha$, and which don't,
+      \vskip1ex
+      If an asset lies on the \emph{SML}, then its returns are mostly \emph{systematic}, and its $\alpha$ is equal to zero,
+      \vskip1ex
+      Assets above the \emph{SML} have a positive $\alpha$), and those below have a negative $\alpha$),
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Risk-adjusted Performance Measurement}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Treynor} ratio measures the excess returns per unit of \emph{systematic} risk ($\beta$), and is equal to the excess returns (over a risk-free return) divided by the $\beta$:
+      \begin{displaymath}
+        T_r=\frac{E[R-R_f]}{\beta}
+      \end{displaymath}
+      The \emph{Treynor} ratio is similar to the \emph{Sharpe} ratio, with the difference that its denominator represents only \emph{systematic} risk, not total risk,
+      \vskip1ex
+      The \emph{Information} ratio is equal to the excess returns (over a benchmark) divided by the \emph{tracking error} (standard deviation of excess returns):
+      \begin{displaymath}
+        I_r = \frac{E[R-R_b]} {\sqrt{\sum_{i=1}^n (R_i-R_{i,b})^2}}
+      \end{displaymath}
+      The \emph{Information} ratio measures the amount of outperformance versus the benchmark, and the consistency of outperformance,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(PerformanceAnalytics)
+TreynorRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
+
+InformationRatio(Ra=re_turns[, "XLP"], 
+           Rb=re_turns[, "VTI"])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CAPM} Summary Statistics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(PerformanceAnalytics)
+table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+           Rb=re_turns[, "VTI"], scale=252)
+      @
+      \vspace{-2em}
+      <<eval=FALSE,echo=(-1)>>=
+library(PerformanceAnalytics)
+capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"], 
+              Rb=re_turns[, "VTI"], scale=252)
+colnames(capm_stats) <- 
+  sapply(colnames(capm_stats), 
+  function (str) {strsplit(str, split=" ")[[1]][1]})
+capm_stats <- as.matrix(capm_stats)
+capm_stats <- t(capm_stats)
+capm_stats <- capm_stats[
+  order(capm_stats[, "Annualized Alpha"], 
+        decreasing=TRUE), ]
+# copy capm_stats into env_etf and save to .RData file
+assign("capm_stats", capm_stats, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+      @
+    \column{0.45\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE,echo=TRUE>>=
+capm_stats[, c("Information Ratio", "Annualized Alpha")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Principal Component Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Covariance Matrix of ETF Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The covariance matrix $\mathbb{C}$, of the return matrix $r$, is given by:
+      \begin{displaymath}
+        \mathbb{C} = \frac{r^T r} {n-1}
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+# Select ETF symbols
+sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
+# calculate ETF prices and simple returns (not percentage)
+price_s <- rutils::env_etf$price_s[, sym_bols]
+price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+in_dex <- index(price_s)
+re_turns <- rutils::diff_it(price_s)
+# de-mean and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, in_dex)
+# alternative de-mean and scale the returns
+# re_turns <- rutils::diff_it(price_s)
+# re_turns <- scale(re_turns, center=TRUE, scale=TRUE)
+# re_turns <- xts(re_turns, in_dex)
+# or
+# re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
+# re_turns <- rutils::do_call(cbind, re_turns)
+# re_turns <- apply(re_turns, 2, scale)
+# covariance matrix and variance vector of returns
+cov_mat <- cov(re_turns)
+vari_ance <- diag(cov_mat)
+cor_mat <- cor(re_turns)
+# cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
+# cor_mat <- cov_mat / sqrt(vari_ance)
+# cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
+# reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat, 
+              order="hclust", 
+              hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+# plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="ETF Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
+    method="square", col=col_ors(8), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
+                method="complete", col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/corr_etf.png}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
+    method="square", col=col_ors(NCOL(cor_mat)), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2, 
+                method="complete", col="red")
+      @
+
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal components} are linear combinations of the \texttt{k} return vectors $\mathbf{r}_i$:
+      \begin{displaymath}
+        \mathbf{pc}_j = \sum_{i=1}^k {w_{ij} \, \mathbf{r}_i}
+      \end{displaymath}
+      Where $\mathbf{w}_j$ is a vector of weights (loadings) of the \emph{principal component} \texttt{j}, with $\mathbf{w}_j^T \mathbf{w}_j = 1$,
+      \vskip1ex
+      The weights $\mathbf{w}_j$ are chosen to maximize the variance of the \emph{principal components}, under the condition that they are orthogonal:
+      \begin{align*}
+        \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
+        \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
+      \end{align*}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# compare speed of vector multiplication methods
+summary(microbenchmark(
+  trans_pose=(t(re_turns[, 1]) %*% re_turns[, 1]),
+  s_um=sum(re_turns[, 1]^2),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load1.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(10.0, n_weights),
+                   lower=rep(-10.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# plot first principal component weights
+barplot(weight_s, names.arg=names(weight_s), 
+        xlab="", ylab="", 
+        main="First Principal Component Weights")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Order Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}, 
+      \vskip1ex
+      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}, 
+      <<echo=TRUE,eval=FALSE>>=
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2 + 
+    1e9*(sum(pc_1*portf_rets))^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(10.0, n_weights),
+                   lower=rep(-10.0, n_weights))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load2.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="Second Principal Component Loadings")
       @
   \end{columns}
 \end{block}
@@ -1928,103 +1799,82 @@ all.equal(cov_mat, cov_returns)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If $\mathbb{R}$ is a matrix of returns (with zero mean) for a portfolio of \texttt{k} assets (columns), over \texttt{n} time periods (rows), then the sample covariance matrix is equal to:
+      The portfolio variance: $w^T \, \mathbb{C} \, w$ can be maximized under the constraint $w^T w = 1$, by maximizing the \emph{Lagrangian}:
       \begin{displaymath}
-        \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
+        \mathcal{L} = w^T \, \mathbb{C} \, w \, - \, \lambda \, (w^T w - 1)
       \end{displaymath}
-      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero), 
+      Where $\lambda$ is a \emph{Lagrange multiplier}, 
       \vskip1ex
-      The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster,
+      The weights corresponding to the maximum portfolio variance can be found by differentiating $\mathcal{L}$ with respect to $w$ and setting it to zero:
+      \begin{displaymath}
+        \mathbb{C} \, w = \lambda \, w
+      \end{displaymath}
+      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$,
+      \vskip1ex
+      The optimal weights $w$ form an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$, 
+      \vskip1ex
+      The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the return variances:
+      \begin{displaymath}
+        \sum_{i=1}^k \lambda_i = \sum_{i=1}^k r_i^T r_i
+      \end{displaymath}
+      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix,
+    \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_eigenvalues.png}
+      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# simulate random portfolio returns
-n_assets <- 10
-n_rows <- 100
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
-# de-mean the returns
-re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
-# calculate covariance matrix
-cov_mat <- crossprod(re_turns) / (n_rows-1)
 # calculate eigenvectors and eigenvalues
 ei_gen <- eigen(cov_mat)
-ei_gen$values
+ei_gen$vectors
+weights_1
+weights_2
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
 barplot(ei_gen$values, # plot eigenvalues
-  xlab="", ylab="", las=3, 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
-  main="Eigenvalues of covariance matrix")
+  names.arg=paste0("PC", 1:n_weights), 
+  las=3, xlab="", ylab="", main="Principal Component Variances")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component Analysis} of ETF Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/eigen_covmat.png}\\
-      \vspace{-2em}
+      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimensionality reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series,
+      \vskip1ex
+      The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimensionality reduction}, so that more information is retained by the first few \emph{principal component} time series,
+      \vskip1ex
+      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as an object of class \texttt{prcomp}, 
+      \vskip1ex
+      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_scree.png}
+      A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}, 
       <<echo=TRUE,eval=FALSE>>=
-# calculate eigenvectors and eigenvalues
-# as function of number of returns
-n_data <- ((n_assets/2):(2*n_assets))
-e_values <- sapply(n_data, function(x) {
-  re_turns <- re_turns[1:x, ]
-  re_turns <- apply(re_turns, MARGIN=2, 
-    function(y) (y-mean(y)))
-  cov_mat <- crossprod(re_turns) / (x-1)
-  min(eigen(cov_mat)$values)
-})  # end sapply
-plot(y=e_values, x=n_data, t="l", 
-  xlab="", ylab="", lwd=3, col="blue",
-  main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Regression Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Formula Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Formulas in \texttt{R} are defined using the "\textasciitilde{}" operator followed by a series of terms separated by the \texttt{"+"} operator,
-      \vskip1ex
-      Formulas can be defined as separate objects, manipulated, and passed to functions,
-      \vskip1ex
-      The formula "\texttt{z} \textasciitilde{} \texttt{x}" means the response variable \texttt{z} is explained by the explanatory variable \texttt{x},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x + y}" represents a linear model: \texttt{z = ax  + by + c},
-      \vskip1ex
-      The formula "\texttt{z \textasciitilde{} x - 1}" or "\texttt{z \textasciitilde{} x + 0}" represents a linear model with zero intercept: $z = ax$,
-      \vskip1ex
-      The function \texttt{update()} modifies existing \texttt{formulas},
-      \vskip1ex
-      The \texttt{"."} symbol represents either all the remaining data, or the variable that was in this part of the formula,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<>>=
-# formula of linear model with zero intercept
-lin_formula <- z ~ x + y - 1
-lin_formula
-
-# collapse vector of strings into single text string
-paste0("x", 1:5)
-paste(paste0("x", 1:5), collapse="+")
-
-# create formula from text string
-lin_formula <- as.formula(
-  # coerce text strings to formula
-  paste("z ~ ",
-        paste(paste0("x", 1:5), collapse="+")
-  )  # end paste
-)  # end as.formula
-class(lin_formula)
-lin_formula
-# modify the formula using "update"
-update(lin_formula, log(.) ~ . + beta)
+# perform principal component analysis PCA
+pc_a <- prcomp(re_turns, scale=TRUE)
+# plot standard deviations of principal components
+barplot(pc_a$sdev, 
+        names.arg=colnames(pc_a$rotation), 
+        las=3, xlab="", ylab="", 
+        main="Scree Plot: Volatilities of Principal Components 
+  of Stock Returns")
       @
   \end{columns}
 \end{block}
@@ -2033,337 +1883,30 @@ update(lin_formula, log(.) ~ . + beta)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simple \protect\emph{Linear Regression}}
+\subsection{\protect\emph{Principal Component} Loadings (Weights)}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A Simple Linear Regression is a linear model between a response variable \texttt{z} and a single explanatory variable \texttt{x}, defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \beta x_i + \varepsilon_i
-      \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown regression coefficients,
+      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns,
       \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary,
-      \vskip1ex
-      In the Ordinary Least Squares method (\emph{OLS}), the regression parameters are estimated by minimizing the sum of squared residuals, also called the residual sum of squares (\emph{RSS}):
-      \begin{align*}
-        RSS = \sum_{i=1}^n {\varepsilon_i^2} = \sum_{i=1}^n {(z_i - \alpha - \beta x_i)^2}\\ = (z - \alpha \mathbbm{1} - \beta x)^T (z - \alpha \mathbbm{1} - \beta x)
-      \end{align*}
-      Where $\mathbbm{1}$ is the unit vector, with $\mathbbm{1}^T \mathbbm{1} = n$ and $\mathbbm{1}^T x = x^T \mathbbm{1} = \sum_{i=1}^n {x_i}$
-      \vskip1ex
-      The data consists of \texttt{n} pairs of observations $(x_i, z_i)$ of the response and explanatory variables, with the index \texttt{i} ranging from \texttt{1} to \texttt{n},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_scatter_plot.png}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-len_gth <- 100
-explana_tory <- rnorm(len_gth, mean=2)
-noise <- rnorm(len_gth)
-# response equals linear form plus error terms
-res_ponse <- -3 + explana_tory + noise
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Solution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The regression coefficients can be found by equating the \emph{RSS} derivatives to zero:
-      \begin{align*}
-        RSS_\alpha = -2 (z - \alpha \mathbbm{1} - \beta x)^T \mathbbm{1} = 0\\
-        RSS_\beta = -2 (z - \alpha \mathbbm{1} - \beta x)^T x = 0
-      \end{align*}
-      The solution for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = \bar{z} - \beta \bar{x}
-      \end{align*}
-      The solution for $\beta$ is given by:
-      \begin{flalign*}
-        & (z - (\bar{z} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((z - \bar{z} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((z - \bar{z} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & (z - \bar{z} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & \beta = \frac {(z - \bar{z} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} {(x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} = \frac {\sigma_z}{\sigma_x} \rho_{zx}
-      \end{flalign*}
-      $\beta$ is proportional to the correlation coefficient $\rho_{zx}$ between the response and explanatory variables,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# calculate de-meaned explanatory and response vectors
-explan_zm <- explana_tory - mean(explana_tory)
-response_zm <- res_ponse - mean(res_ponse)
-# solve for regression beta
-be_ta <- sum(explan_zm*response_zm) / sum(explan_zm^2)
-# solve for regression alpha
-al_pha <- mean(res_ponse) - be_ta * mean(explana_tory)
-      @
-      If the response and explanatory variables have zero mean, then $\alpha=0$ and $\beta=\frac {z^T x} {x^T x}$,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Using Function \texttt{lm()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let the data generating process for the response variable be given as: $z = \alpha_{lat} + \beta_{lat} x + \varepsilon_{lat}$
-      \vskip1ex
-      Where $\alpha_{lat}$ and $\beta_{lat}$ are latent (unknown) coefficients, and $\varepsilon_{lat}$ is an unknown vector of random noise (error terms),
-      \vskip1ex
-      The error terms are the difference between the measured values of the response minus the (unknown) actual response values,
-      \vskip1ex
-      The function \texttt{lm()} fits a linear model into a set of data, and returns an object of class \texttt{"lm"}, which is a list containing the results of fitting the model:
-      \begin{itemize}
-        \item call - the model formula,
-        \item coefficients - the fitted model coefficients ($\alpha$, $\beta_j$),
-        \item residuals - the model residuals (response minus fitted values),
-      \end{itemize}
-      The regression residuals are not the same as the error terms, because the regression coefficients are not equal to the coefficients of the data generating process,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# specify regression formula
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-class(reg_model)  # regressions have class lm
-attributes(reg_model)
-eval(reg_model$call$formula)  # regression formula
-reg_model$coefficients  # regression coefficients
-coef(reg_model)
-c(al_pha, be_ta)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Scatterplot}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
-      \vskip1ex
-      \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
-      \vskip1ex
-      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
-        <<echo=TRUE,eval=FALSE>>=
-x11(width=6, height=5)  # open x11 for plotting
-# set plot parameters to reduce whitespace around plot
-par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
-# plot scatterplot using formula
-plot(reg_formula)
-title(main="Simple Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-# plot fitted (predicted) response values
-points(x=explana_tory, y=reg_model$fitted.values,
-       pch=16, col="blue")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_scatter_plot.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Residuals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{residuals} of a \emph{linear regression} are defined as the response variable minus the regression fitted values:
-      \begin{displaymath}
-        res_i = z_i - (\alpha + \beta x_i)
-      \end{displaymath}
-      The \emph{residuals} are the error terms associated with a particular realization of the response and explanatory variables,
-      \vskip1ex
-      The fitted (predicted) values are the values of the response variable obtained from applying the regression model to the explanatory variables,
-        <<echo=TRUE,eval=FALSE>>=
-# sum of residuals = 0 
-sum(reg_model$residuals)
-x11(width=6, height=5)  # open x11 for plotting
-# set plot parameters to reduce whitespace around plot
-par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
-# extract residuals
-resi_duals <- cbind(explana_tory, reg_model$residuals)
-colnames(resi_duals) <- c("explanatory variable", "residuals")
-# plot residuals
-plot(resi_duals)
-title(main="Residuals of the Linear Regression", line=-1)
-abline(h=0, lwd=2, col="red")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_residuals.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Summary}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{summary.lm()} produces a list of regression model diagnostic statistics:
-      \begin{itemize}
-        \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
-        \item r.squared: fraction of response variance explained by the model (correlation between response and explanatory),
-        \item adj.r.squared: r.squared adjusted for higher model complexity,
-        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
-      \end{itemize}
-      The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
-      \vskip1ex
-      The \emph{t}-statistic (\emph{t}-value) is the ratio of the estimated value divided by its standard error,
-      \vskip1ex
-      The \emph{p}-value is the probability of obtaining the observed value of the \emph{t}-statistic (and even more extreme values), under the \emph{null} hypothesis,
-      \vskip1ex
-      A small \emph{p}-value is often interpreted as meaning that the regression coefficients are very unlikely to be zero (given the data),
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-reg_model_sum <- summary(reg_model)  # copy regression summary
-reg_model_sum  # print the summary to console
-attributes(reg_model_sum)$names  # get summary elements
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Regression Coefficients}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The regression \texttt{summary} is a list, and its elements can be accessed individually,
-      \vskip1ex
-      The standard errors of the regression are the standard deviations of the coefficient estimators, given the residuals as the source of error,
-      \vskip1ex
-      The standard error of $\beta$ in a simple regression is given by: ${\sigma_\beta}^2 = \frac {1} {(n-2)} \frac {E[(\varepsilon^T x)^2]} {(x^T x)^2} = \frac {1} {(n-2)} \frac {E[\varepsilon^2]} {(x^T x)} = \frac {1} {(n-2)} \frac {{\sigma_\varepsilon}^2} {{\sigma_x}^2}$
-      \vskip1ex
-      The key assumption in the above formula for the standard error and the \emph{p}-value is that the residuals are normally distributed, independent, and stationary,
-      \vskip1ex
-      If the residuals are not normally distributed, independent, and stationary, then the standard error and the \emph{p}-value may be much bigger than reported by \texttt{summary.lm()}, and therefore the regression may not be statistically significant,
-      \vskip1ex
-      Market return time series are very far from normal, so the small \emph{p}-values shouldn't be automatically interpreted as meaning that the regression is statistically significant,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-reg_model_sum$adj.r.squared
-reg_model_sum$fstatistic
-# standard error of beta
-reg_model_sum$
-  coefficients["explana_tory", "Std. Error"]
-sd(reg_model_sum$residuals)/sd(explana_tory)/
-  sqrt(unname(reg_model_sum$fstatistic[3]))
-anova(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Weak Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the relationship between the response and explanatory variables is weak compared to the error terms (noise), then the regression will have low statistical significance,
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- 3 + explana_tory + rnorm(30, sd=8)
-reg_model <- lm(reg_formula)  # perform regression
-# estimate of regression coefficient is not
-# statistically significant
-summary(reg_model)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-    \vspace{-2em}
-      <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
-  set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-  explana_tory <- rnorm(100, mean=2)
-  res_ponse <- 3 + 0.2*explana_tory +
-    rnorm(NROW(explana_tory), sd=std_dev)
-# specify regression formula
-  reg_formula <- res_ponse ~ explana_tory
-# perform regression and get summary
-  reg_model_sum <- summary(lm(reg_formula))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <- t(sapply(vec_sd, reg_stats))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
+      The \emph{principal component} portfolios represent the different orthogonal modes of the return variance, 
+      <<echo=TRUE,eval=FALSE>>=
+# principal component loadings (weights)
+pc_a$rotation
+# Plot barplots with PCA weights in multiple panels
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:n_weights) {
+  barplot(pc_a$rotation[, or_der], 
+        las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, 
+        col.main="red")
 }  # end for
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_noise-1}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_loadings.png}
   \end{columns}
 \end{block}
 
@@ -2371,51 +1914,35 @@ for (in_dex in 1:NCOL(mat_stats)) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Influence of Noise on Regression Another Method}
+\subsection{\protect\emph{Principal Component} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \vspace{-2em}
+      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data,
+      \vskip1ex
+      Higher order \emph{principal components} are gradually less volatile,
       <<echo=TRUE,eval=FALSE>>=
-reg_stats <- function(da_ta) {  # get regression
-# perform regression and get summary
-  col_names <- colnames(da_ta)
-  reg_formula <-
-    paste(col_names[2], col_names[1], sep="~")
-  reg_model_sum <- summary(lm(reg_formula,
-                              data=da_ta))
-# extract regression statistics
-  with(reg_model_sum, c(pval=coefficients[2, 4],
-         adj_rsquared=adj.r.squared,
-         fstat=fstatistic[1]))
-}  # end reg_stats
-# apply reg_stats() to vector of std dev values
-vec_sd <- seq(from=0.1, to=0.5, by=0.1)
-names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function (std_dev) {
-    set.seed(1121)  # initialize number generator
-# create explanatory and response variables
-    explana_tory <- rnorm(100, mean=2)
-    res_ponse <- 3 + 0.2*explana_tory +
-      rnorm(NROW(explana_tory), sd=std_dev)
-    reg_stats(data.frame(explana_tory, res_ponse))
-    }))
-# plot in loop
-par(mfrow=c(NCOL(mat_stats), 1))
-for (in_dex in 1:NCOL(mat_stats)) {
-  plot(mat_stats[, in_dex], type="l",
-       xaxt="n", xlab="", ylab="", main="")
-  title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
+# principal component time series
+pca_rets <- xts(re_turns %*% pc_a$rotation, 
+                order.by=in_dex)
+round(cov(pca_rets), 3)
+all.equal(unname(coredata(pca_rets)), unname(pc_a$x))
+pca_ts <- xts:::cumsum.xts(pca_rets)
+# plot principal component time series in multiple panels
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:n_weights) {
+  plot.zoo(pca_ts[, or_der], 
+           ylim=ra_nge, 
+           xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
 }  # end for
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_noise-1}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series.png}
   \end{columns}
 \end{block}
 
@@ -2423,47 +1950,46 @@ for (in_dex in 1:NCOL(mat_stats)) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Linear Regression} Diagnostic Plots}
+\subsection{Time Series from the \protect\emph{Principal Components}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{plot()} produces diagnostic scatterplots for the residuals, when called on the regression object,
+      The original time series of returns can be calculated exactly from the time series of all the \emph{principal components}, by inverting the loadings matrix, 
       \vskip1ex
-      {\scriptsize
-      The diagnostic scatterplots allow for visual inspection to determine the quality of the regression fit,
+      The original time series of returns can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimensionality reduction}, 
       \vskip1ex
-      "Residuals vs Fitted" is a scatterplot of the residuals vs. the predicted responses,
+      The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with \emph{variance} greater than \texttt{1}, 
       \vskip1ex
-      "Scale-Location" is a scatterplot of the square root of the standardized residuals vs. the predicted responses,
+      Another rule is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns,
       \vskip1ex
-      The residuals should be randomly distributed around the horizontal line representing zero residual error,
-      \vskip1ex
-      A pattern in the residuals indicates that the model was not able to capture the relationship between the variables, or that the variables don't follow the statistical assumptions of the regression model,
-      \vskip1ex
-      "Normal Q-Q" is the standard Q-Q plot, and the points should fall on the diagonal line, indicating that the residuals are normally distributed,
-      \vskip1ex
-      "Residuals vs Leverage" is a scatterplot of the residuals vs. their leverage,
-      \vskip1ex
-      Leverage measures the amount by which the predicted response would change if the observed response were shifted by a small amount,
-      \vskip1ex
-      Cook's distance measures the influence of a single observation on the predicted values, and is proportional to the sum of the squared differences between predictions made with all observations and predictions made without the observation,
-      \vskip1ex
-      Points with large leverage, or a Cook's distance greater than 1 suggest the presence of an outlier or a poor model,
-      }
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<plot_reg,eval=FALSE,echo=(-(1:2)),fig.show='hide'>>=
-# set plot paramaters - margins and font scale
-par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2, 2))  # plot 2x2 panels
-plot(reg_model)  # plot diagnostic scatterplots
-plot(reg_model, which=2)  # plot just Q-Q
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      <<echo=(-(1:2)),eval=FALSE>>=
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+# invert all the principal component time series
+pca_rets <- re_turns %*% pc_a$rotation
+sol_ved <- pca_rets %*% solve(pc_a$rotation)
+all.equal(re_turns, sol_ved)
+# invert first 3 principal component time series
+sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
+sol_ved <- xts::xts(sol_ved, in_dex)
+sol_ved <- xts:::cumsum.xts(sol_ved)
+cum_returns <- xts:::cumsum.xts(re_turns)
+# plot the solved returns
+for (sym_bol in sym_bols) {
+  plot.zoo(
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]), 
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topleft", bty="n",
+         legend=paste0(sym_bol, c("", " solved")),
+         title=NULL, inset=0.0, cex=1.0, lwd=6,
+         lty=1, col=c("black", "blue"))
+}  # end for
       @
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/plot_reg-1}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series_solved.png}
   \end{columns}
 \end{block}
 
@@ -2471,264 +1997,42 @@ plot(reg_model, which=2)  # plot just Q-Q
 
 
 %%%%%%%%%%%%%%%
-\subsection{Durbin-Watson Test of Autocorrelation of Residuals}
+\subsection{\protect\emph{Principal Component Analysis} Versus \protect\emph{Eigen Decomposition}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression residuals are equal to zero,
+      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the covariance or the correlation matrix,
       \vskip1ex
-      The test statistic is equal to:
-      \begin{displaymath}
-        DW = \frac {\sum_{i=2}^n (\varepsilon_i - \varepsilon_{i-1})^2} {\sum_{i=1}^n \varepsilon_i^2}
-      \end{displaymath}
-      Where $\varepsilon_i$ are the regression residuals,
+      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the covariance matrix,
       \vskip1ex
-      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
+      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the correlation matrix,
       \vskip1ex
-      The \emph{DW} is close to two for autocorrelations close to zero,
-      \vskip1ex
-      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression residuals are uncorrelated,
+      Scaling the input time series improves the accuracy of the \emph{PCA dimensionality reduction}, allowing a smaller number of \emph{principal components} to more accurately capture the data contained in the input time series,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-library(lmtest)  # load lmtest
-# perform Durbin-Watson test
-dwtest(reg_model)
+      <<echo=TRUE,eval=FALSE>>=
+# eigen decomposition of covariance matrix
+re_turns <- rutils::diff_it(price_s)
+cov_mat <- cov(re_turns)
+ei_gen <- eigen(cov_mat)
+# perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(unname(ei_gen$vectors)), 
+          abs(unname(pc_a$rotation)))
+# eigen decomposition of correlation matrix
+cor_mat <- cor(re_turns)
+ei_gen <- eigen(cor_mat)
+# perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(unname(ei_gen$vectors)), 
+          abs(unname(pc_a$rotation)))
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multivariate \protect\emph{Linear Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A multivariate \emph{linear regression} model with \texttt{k} explanatory variables $\{x_j\}$, is defined by the formula:
-      \begin{displaymath}
-        z_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      Or in vector notation:
-      \begin{displaymath}
-        z = \alpha + \beta \mathbb{X} + \varepsilon
-      \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length \texttt{k},
-      \vskip1ex
-      $\varepsilon_i$ are the residuals, assumed to be normally distributed, independent, and stationary, with $\varepsilon$ a vector of length \texttt{k},
-      \vskip1ex
-      The response variable $z$ and the \texttt{k} explanatory variables $\{x_j\}$ each contain \texttt{n} observations, and they form the columns of matrix $\mathbb{X}$,
-      \vskip1ex
-      The response variable $z$ is a vector of length \texttt{n}, and the explanatory variable $\mathbb{X}$ is a $(n,k)$-dimensional matrix,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
-# define explanatory variable
-len_gth <- 100
-n_var <- 5
-explana_tory <- matrix(rnorm(n_var*len_gth), 
-  nc=n_var)
-noise <- rnorm(len_gth, sd=0.5)
-# response equals linear form plus error terms
-weight_s <- rnorm(n_var)
-res_ponse <- 
-  -3 + explana_tory %*% weight_s + noise
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multivariate \protect\emph{Linear Regression} Solution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{OLS} estimate for $\alpha$ is given by:
-      \begin{align*}
-        \alpha = \bar{z} - \beta \bar{\mathbb{X}}
-      \end{align*}
-      Where $\bar{\mathbb{X}}$ is a vector of column means of the explanatory matrix $\mathbb{X}$,
-      \vskip1ex
-      The \emph{OLS} estimate for the $\beta$ vector is given by equating the \emph{RSS} derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = - 2 (\hat{z} - \beta \hat{\mathbb{X}})^T \hat{\mathbb{X}} = 0\\
-        & \hat{\mathbb{X}}^T \hat{z} - \beta \hat{\mathbb{X}}^T \hat{\mathbb{X}} = 0\\
-        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{z}
-      \end{flalign*}
-      Where $\hat{z} = z - \bar{z}$ and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ are the de-meaned variables,
-      \vskip1ex
-      The matrix $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is known as the \emph{Moore-Penrose pseudo-inverse} of the matrix $\mathbb{X}$,
-      \vskip1ex
-      In the special case when the inverse matrix $\mathbb{X}^{-1}$ does exist, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{X}^{-1} (\mathbb{X}^T)^{-1} \mathbb{X}^T = \mathbb{X}^{-1}$
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# calculate de-meaned explanatory matrix
-explan_zm <- t(t(explana_tory) - colSums(explana_tory)/len_gth)
-# or
-explan_zm <- apply(explan_zm, 2, function(x) (x-mean(x)))
-# calculate de-meaned response vector
-response_zm <- res_ponse - mean(res_ponse)
-# solve for regression betas
-beta_s <- MASS::ginv(explan_zm) %*% response_zm
-# solve for regression alpha
-al_pha <- mean(res_ponse) - colSums(explana_tory) %*% beta_s / len_gth
-# multivariate regression using lm()
-reg_model <- lm(res_ponse ~ explana_tory)
-coef(reg_model)
-c(al_pha, beta_s)
-c(-3, weight_s)
-      @
-      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (k-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Omitted Variable Bias}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Omitted Variable Bias} occurs in a regression model that omits important predictors,
-      \vskip1ex
-      The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
-      \vskip1ex
-      But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=FALSE>>=
-library(lmtest)  # load lmtest
-de_sign <- data.frame(  # design matrix
-  explana_tory=1:30, omit_var=sin(0.2*1:30))
-# response depends on both explanatory variables
-res_ponse <- with(de_sign,
-          0.2*explana_tory + omit_var + 0.2*rnorm(30))
-# mis-specified regression only one explanatory
-reg_model <- lm(res_ponse ~ explana_tory,
-                data=de_sign)
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dwtest(reg_model)$p.value
-      @
-      \vspace{-2em}
-        <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, data=de_sign)
-abline(reg_model, lwd=2, col="red")
-title(main="OVB Regression", line=-1)
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ovb_reg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Spurious Time Series Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Regression of non-stationary time series creates \emph{spurious} regressions,
-      \vskip1ex
-      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
-      \vskip1ex
-      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
-      \vskip1ex
-      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-set.seed(1121)
-library(lmtest)
-# spurious regression in unit root time series
-explana_tory <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-# summary indicates statistically significant regression
-reg_model_sum <- summary(reg_model)
-reg_model_sum$coefficients
-reg_model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(reg_model)
-c(dw_test$statistic[[1]], dw_test$p.value)
-      @
-      \vspace{-2em}
-        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-plot(reg_formula, xlab="", ylab="")  # plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# add regression line
-abline(reg_model, lwd=2, col="red")
-plot(reg_model, which=2, ask=FALSE)  # plot just Q-Q
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/spur_reg-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Predictions From \protect\emph{Linear Regression} Models}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{predict()} is a generic function for forecasting based on a given model,
-      \vskip1ex
-      \texttt{predict.lm()} is the predict method for linear models (regressions),
-      \vspace{-1em}
-        <<predict_lm,echo=TRUE,fig.show='hide'>>=
-explana_tory <- seq(from=0.1, to=3.0, by=0.1)  # explanatory variable
-res_ponse <- 3 + 2*explana_tory + rnorm(30)
-reg_formula <- res_ponse ~ explana_tory
-reg_model <- lm(reg_formula)  # perform regression
-new_data <- data.frame(explana_tory=0.1*31:40)
-predict_lm <- predict(object=reg_model,
-                      newdata=new_data, level=0.95,
-                      interval="confidence")
-predict_lm <- as.data.frame(predict_lm)
-head(predict_lm, 2)
-plot(reg_formula, xlim=c(1.0, 4.0),
-     ylim=range(res_ponse, predict_lm),
-     main="Regression predictions")
-abline(reg_model, col="red")
-with(predict_lm, {
-  points(x=new_data$explana_tory, y=fit, pch=16, col="blue")
-  lines(x=new_data$explana_tory, y=lwr, lwd=2, col="red")
-  lines(x=new_data$explana_tory, y=upr, lwd=2, col="red")
-})  # end with
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/predict_lm-1}
   \end{columns}
 \end{block}
 

@@ -100,9 +100,10 @@ calc_skew <- function(time_series=rnorm(1000)) {
 calc_skew(time_series=dax_rets)  # bind arguments by name
 calc_skew(dax_rets)  # bind arguments by position
 calc_skew()  # use default value of arguments
-calc_skew  # show the function code
-
-getAnywhere(calc_skew)  # display function
+# show the function code
+plot.default
+# display function
+getAnywhere(plot.default)
 # sum() is a compiled primitive function
 sum
 # mean() is a generic function

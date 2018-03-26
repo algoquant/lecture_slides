@@ -1,271 +1,220 @@
-# create list of vectors
-li_st <- lapply(1:3, function(x) sample(6))
-# bind list elements into matrix - doesn't work
-rbind(li_st)
-# bind list elements into matrix - tedious
-rbind(li_st[[1]], li_st[[2]], li_st[[3]])
-# bind list elements into matrix - works!
-do.call(rbind, li_st)
-# create numeric list
-li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # returns single column matrix
-do.call(cbind, li_st)  # returns single row matrix
-# recycling rule applied
-do.call(cbind, list(1:2, 3:5))
-# NULL element is skipped
-do.call(cbind, list(1, NULL, 3, 4))
-# NA element isn't skipped
-do.call(cbind, list(1, NA, 3, 4))
-library(microbenchmark)
-list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(li_st) {
-  while (length(li_st) > 1) {
-# index of odd list elements
-    odd_index <- seq(from=1, to=length(li_st), by=2)
-# bind odd and even elements, and divide li_st by half
-    li_st <- lapply(odd_index, function(in_dex) {
-if (in_dex==length(li_st)) return(li_st[[in_dex]])
-rbind(li_st[[in_dex]], li_st[[in_dex+1]])
-    })  # end lapply
-  }  # end while
-# li_st has only one element - return it
-  li_st[[1]]
-}  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
-library(microbenchmark)
-airquality[(airquality$Solar.R>320 &
-        !is.na(airquality$Solar.R)), ]
-subset(x=airquality, subset=(Solar.R>320))
-summary(microbenchmark(
-    subset=subset(x=airquality, subset=(Solar.R>320)),
-    brackets=airquality[(airquality$Solar.R>320 &
-            !is.na(airquality$Solar.R)), ],
-times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-unique(iris$Species)  # Species has three distinct values
-# split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
-# split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
-unique(mtcars$cyl)  # cyl has three unique values
-# split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
-names(split_cars)
-# mean mpg for each cylinder group
-sapply(split_cars, function(x) mean(x$mpg))
-# function aggregate() performs split-apply-combine
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
-# aggregate() all columns
-aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
-# mean mpg for each cylinder group
-tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
-# using with() environment
-with(mtcars,
-     tapply(X=mpg, INDEX=cyl, FUN=mean))
-# function sapply() instead of tapply()
-with(mtcars,
-     sapply(sort(unique(cyl)), function(x) {
-       structure(mean(mpg[x==cyl]), names=x)
-       }, USE.NAMES=TRUE))  # end with
-
-# function by() instead of tapply()
-with(mtcars,
-     by(data=mpg, INDICES=cyl, FUN=mean))
-# get several mpg stats for each cylinder group
-data_cars <- sapply(split_cars,
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
-data_cars  # sapply produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
-is.list(data_cars)  # lapply produces a list
-# do.call flattens list into a matrix
-do.call(cbind, data_cars)
-# ?options  # get info on global options
-getOption("warn")  # global option for "warn"
-options("warn")  # global option for "warn"
-getOption("error")  # global option for "error"
-sqrt_safe <- function(in_put) {
-# returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
-  } else {
-    sqrt(in_put)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
-# function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
-# check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put=", in_put)
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# print the call stack
-traceback()
-vali_date <- function(in_put) {
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-      is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
-# check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # even more robust
-# check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-      !missing(in_put2))
-# check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-      is.numeric(in_put2)) {
-    in_put1 + in_put2  # both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
-# flag "vali_date" for debugging
-debug(vali_date)
-# calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
-vali_date <- function(in_put) {
-  browser()  # pause and invoke browser
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-      is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # invokes debugger
-options("error")  # show default NULL "error" option
-options(error=recover)  # set "error" option to "recover"
-options(error=NULL)  # set back to default "error" option
-str(tryCatch)  # get arguments of tryCatch()
-tryCatch(  # without error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-tryCatch(  # with error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  # error handler captures error condition
-  error=function(error_cond) {
-    print(paste("error handler: ", error_cond))
-  },  # end error handler
-  # warning handler captures warning condition
-  warning=function(warning_cond) {
-    print(paste("warning handler: ", warning_cond))
-  },  # end warning handler
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
 rm(list=ls())
-# apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    stopifnot(num_var != 3)  # check for error
-    # broadcast message to console
-    cat("(cat) num_var =", num_var, "\n")
-    # return a value
-    paste("(return) num_var =", num_var)
-  }  # end anonymous function
-)  # end apply
-# apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    tryCatch(  # with error handler
-{  # body
-  stopifnot(num_var != 3)  # check for error
-  # broadcast message to console
-  cat("(cat) num_var =", num_var, "\t")
-  # return a value
-  paste("(return) num_var =", num_var)
-},
-# error handler captures error condition
-error=function(error_cond)
-  paste("handler: ", error_cond),
-finally=print(paste("(finally) num_var =", num_var))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
+# get base environment
+baseenv()
+# get global environment
+globalenv()
+# get current environment
+environment()
+# get environment class
+class(environment())
+# define variable in current environment
+glob_var <- 1
+# get objects in current environment
+ls(environment())
+# create new environment
+new_env <- new.env()
+# get calling environment of new environment
+parent.env(new_env)
+# assign Value to Name
+assign("new_var1", 3, envir=new_env)
+# create object in new environment
+new_env$new_var2 <- 11
+# get objects in new environment
+ls(new_env)
+# get objects in current environment
+ls(environment())
+# environments are subset like lists
+new_env$new_var1
+# environments are subset like lists
+new_env[["new_var1"]]
+search()  # get search path for R objects
+my_list <- 
+  list(flowers=c("rose", "daisy", "tulip"), 
+       trees=c("pine", "oak", "maple"))
+my_list$trees
+attach(my_list)
+trees
+search()  # get search path for R objects
+detach(my_list)
+head(trees)  # "trees" is in datasets base package
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- do.call(merge,
+  as.list(rutils::env_etf)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- do.call(merge,
+  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+# same, but works only for OHLC series
+price_s <- do.call(merge,
+  eapply(rutils::env_etf, Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <-
+  sapply(colnames(price_s),
+    function(col_name)
+strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s,
+     file='etf_series.csv', sep=",")
+# copy price_s into env_etf and save to .RData file
+assign("price_s", price_s, envir=env_etf)
+save(env_etf, file='etf_data.RData')
+# "trees" is in datasets base package
+head(trees, 3)
+colnames(trees)
+mean(Girth)
+mean(trees$Girth)
+with(trees, 
+     c(mean(Girth), mean(Height), mean(Volume)))
+my_var <- 1  # create new object
+assign(x="my_var", value=2)  # assign value to existing object
+my_var
+rm(my_var)  # remove my_var
+assign(x="my_var", value=3)  # create new object from name
+my_var
+# create new object in new environment
+new_env <- new.env()  # create new environment
+assign("my_var", 3, envir=new_env)  # assign value to name
+ls(new_env)  # list objects in "new_env"
+new_env$my_var
+rm(list=ls())  # delete all objects
+sym_bol <- "my_var"  # define symbol containing string "my_var"
+assign(sym_bol, 1)  # assign value to "my_var"
+ls()
+my_var
+assign("sym_bol", "new_var")
+assign(sym_bol, 1)  # assign value to "new_var"
+ls()
+sym_bol <- 10
+assign(sym_bol, 1)  # can't assign to non-string
+rm(list=ls())  # delete all objects
+# create individual vectors from column names of EuStockMarkets
+for (col_name in colnames(EuStockMarkets)) {
+# assign column values to column names
+  assign(col_name, EuStockMarkets[, col_name])
+}  # end for
+ls()
+head(DAX)
+head(EuStockMarkets[, "DAX"])
+identical(DAX, EuStockMarkets[, "DAX"])
+# create new environment
+test_env <- new.env()
+# pass string as name to create new object
+assign("my_var1", 2, envir=test_env)
+# create new object using $ string referencing
+test_env$my_var2 <- 1
+# list objects in new environment
+ls(test_env)
+# reference an object by name
+test_env$my_var1
+# reference an object by string name using get
+get("my_var1", envir=test_env)
+# retrieve and assign value to object
+assign("my_var1",
+ 2*get("my_var1", envir=test_env),
+ envir=test_env)
+get("my_var1", envir=test_env)
+# return all objects in an environment
+mget(ls(test_env), envir=test_env)
+# delete environment
+rm(test_env)
+getOption("repos")  # get default package source
+.libPaths()  # get package save directory
+install.packages("AER")  # install "AER" from CRAN
+# install "PerformanceAnalytics" from R-Forge
+install.packages(
+  pkgs="PerformanceAnalytics",  # name
+  lib="C:/Users/Jerzy/Downloads",  # directory
+  repos="http://R-Forge.R-project.org")  # source
+# install devtools from CRAN
+install.packages("devtools")
+# load devtools
+library(devtools)
+# install package "babynames" from GitHub
+install_github(repo="hadley/babynames")
+# install package "PortfolioAnalytics" from source
+install.packages("PortfolioAnalytics",
+  type="source",
+  repos="http://r-forge.r-project.org")
+# download files for package "PortfolioAnalytics"
+download.packages(pkgs = "PortfolioAnalytics",
+  destdir = ".",  # download to cwd
+  type = "source",
+  repos="http://r-forge.r-project.org")
+# install "PortfolioAnalytics" from local tar source
+install.packages(
+  "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
+  repos=NULL, type="source")
+getOption("defaultPackages")
+pack_info <- installed.packages()  # matrix of packages
+# get a few package names and their versions
+pack_info[sample(x=1:100, 5), c("Package", "Version")]
+t(pack_info["xts", ])  # get info for package "xts"
+# list directories in "PortfolioAnalytics" sub-directory
+gsub(
+  "C:/Users/Jerzy/Documents/R/win-library/3.1",
+  "~",
+  list.dirs(
+    file.path(
+      .libPaths()[1],
+      "PortfolioAnalytics")))
+# load package, produce error if can't be loaded
+library(MASS)
+# load package, return TRUE if loaded successfully
+require(MASS)
+# load quietly
+library(MASS, quietly=TRUE)
+# load without any messages
+suppressMessages(library(MASS))
+# remove package from search path
+detach(MASS)
+# install package if it can't be loaded successfully
+if (!require("xts")) install.packages("xts")
+# calculate VTI volume-weighted average price
+v_wap <- TTR::VWAP(
+  price=quantmod::Ad(rutils::env_etf$VTI),
+  volume=quantmod::Vo(rutils::env_etf$VTI), n=10)
+library()  # list all packages installed on the system
+search()  # list all loaded packages on search path
+
+# get documentation for package "Ecdat"
+packageDescription("Ecdat")  # get short description
+help(package="Ecdat")  # load help page
+library(Ecdat)  # load package "Ecdat"
+data(package="Ecdat")  # list all datasets in "Ecdat"
+ls("package:Ecdat")  # list all objects in "Ecdat"
+browseVignettes("Ecdat")  # view package vignette
+detach("package:Ecdat")  # remove Ecdat from search path
+library(Ecdat)  # load econometric data sets
+class(Garch)  # Garch is a data frame from "Ecdat"
+dim(Garch)  # daily currency prices
+head(Garch[, -2])  # col 'dm' is Deutsch Mark
+detach("package:Ecdat")  # remove Ecdat from search path
+rm(list=ls())
+search()  # get search path for R objects
+library(MASS)  # load package "MASS"
+head(ls("package:MASS"))  # list some objects in "MASS"
+detach("package:MASS")  # remove "MASS" from search path
+loadedNamespaces()  # get names of loaded namespaces
+
+search()  # get search path for R objects
+# get session info,
+# including packages not attached to the search path
+sessionInfo()
+plot.xts  # package xts isn't loaded and attached
+head(xts::plot.xts, 3)
+methods("cbind")  # get all methods for function "cbind"
+stats::cbind.ts  # cbind isn't exported from package stats
+stats:::cbind.ts  # view the non-visible function
+getAnywhere("cbind.ts")
+library(MASS)  # load package 'MASS'
+select  # code of primitive function from package 'MASS'
+getAnywhere("cbind.ts")
 setwd("C:/Develop/R/lecture_slides/data")
 cat("Enter\ttab")  # cat() interprets backslash escape sequences
 print("Enter\ttab")
@@ -773,73 +722,3 @@ cbind.ts  # can't view non-visible method
 stats::cbind.ts  # can't view non-visible method
 stats:::cbind.ts  # display non-visible method
 getAnywhere(cbind.ts)  # display non-visible method
-rm(list=ls())
-new_zoo <- zoo(rnorm(10), order.by=(Sys.Date() + 0:9))
-# coerce "zoo" object to new class "zoo_xtra"
-class(new_zoo) <- "zoo_xtra"
-class(new_zoo)
-methods(generic.function="length")
-length  # primitive function
-# define "length" method for class "zoo_xtra"
-length.zoo_xtra <- function(in_ts) {
-  cat("length of zoo_xtra object:\n")
-# unclass object, then calculate length
-  length(unclass(in_ts))
-}  # end length.zoo_xtra
-length(new_zoo)  # apply "length" method to "zoo_xtra" object
-methods(generic.function="length")
-# define "last" method for class "zoo_xtra"
-last.zoo_xtra <- function(in_ts) {
-  in_ts[length(in_ts)]
-}  # end last.zoo_xtra
-last(new_zoo)  # doesn't work
-last.zoo_xtra(new_zoo)  # works
-# define a generic function
-last <- function (a, b, ...) {
-  UseMethod("last")
-}  # end last
-last(new_zoo)  # now works
-# define generic "string" class converter
-as.string <- function (str_ing, ...)
-  UseMethod("as.string")
-# default "string" class converter
-as.string.default <- function (str_ing, ...)
-  structure(str_ing, class="string", ...)
-# numeric "string" class converter
-as.string.numeric <- function (str_ing, ...)
-  structure(as.character(str_ing), class="string", ...)
-# "string" class checker
-is.string <- function (str_ing)
-  inherits(x=str_ing, what="string")
-# define "string" object
-obj_string <- as.string("how are you today?")
-obj_string
-is.string(obj_string)
-is.string("hello")
-as.string(123)
-is.string(as.string(123))
-rm(list=ls())
-library(xts)
-new_xts <- xts(rnorm(10), order.by=(Sys.Date() + 0:9))
-class(new_xts)  # class attribute is a vector
-# "last" is a generic function from package "xts"
-last
-methods(generic.function="last")
-last(new_xts)  # apply "last" method from "xts" class
-# derive object "xts_xtra" from "xts" object
-class(new_xts) <- c("xts_xtra", class(new_xts))
-class(new_xts)  # class attribute is a vector
-# "xts_xtra" object inherits "last" method from "xts" class
-last(new_xts)
-# define new "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(in_ts[length(in_ts), ])
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class
-# define "last" method for class "xts_xtra"
-last.xts_xtra <- function(in_ts) {
-  cat("last element of xts_xtra object:\n")
-  drop(NextMethod())
-}  # end last.xts_xtra
-last(new_xts)  # apply "last" from "xts_xtra" class

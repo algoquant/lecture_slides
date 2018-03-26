@@ -77,7 +77,9 @@ sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # calculate mean returns
 re_turns <- rutils::env_etf$re_turns[, sym_bols]
-mean_rets <- sapply(re_turns, mean)
+re_turns <- zoo::na.locf(re_turns)
+re_turns <- na.omit(re_turns)
+mean_rets <- colMeans(re_turns)
 # specify weight constraints
 constraint_s <- matrix(c(rep(1, n_weights),
                  1, 1, 0),
@@ -97,44 +99,117 @@ op_tim <- Rglpk::Rglpk_solve_LP(
   bounds=bound_s,
   max=TRUE)
 unlist(op_tim[1:2])
-# define a covariance matrix
-std_devs <- c(asset1=0.3, asset2=0.6)
-cor_rel <- 0.8
-co_var <- matrix(c(1, cor_rel, cor_rel, 1),
-           nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
-# calculate inverse of covariance mat_rix
-in_verse <- solve(a=co_var)
-u_nit <- rep(1, NCOL(co_var))
+# calculate covariance matrix of returns and its inverse
+cov_mat <- cov(re_turns)
+cov_inv <- solve(a=cov_mat)
+u_nit <- rep(1, NCOL(cov_mat))
 # minimum variance weights with constraint
-# weight_s <- solve(a=co_var, b=u_nit)
-weight_s <- in_verse %*% u_nit
+# weight_s <- solve(a=cov_mat, b=u_nit)
+weight_s <- cov_inv %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
 # minimum variance
-weight_s %*% co_var %*% weight_s
-1/(t(u_nit) %*% in_verse %*% u_nit)
+t(weight_s) %*% cov_mat %*% weight_s
+1/(t(u_nit) %*% cov_inv %*% u_nit)
+# calculate vector of mean returns
+mean_rets <- colMeans(re_turns)
+# specify the target return
+tar_get <- 1.5*mean(re_turns)
+# products of inverse with mean returns and unit vector
+f_mat <- matrix(c(
+  t(u_nit) %*% cov_inv %*% u_nit,
+  t(u_nit) %*% cov_inv %*% mean_rets,
+  t(mean_rets) %*% cov_inv %*% u_nit,
+  t(mean_rets) %*% cov_inv %*% mean_rets), nc=2)
+# solve for the Lagrange multipliers
+multipli_ers <-
+  solve(a=f_mat, b=c(2, 2*tar_get))
+# calculate weights
+weight_s <- drop(0.5*cov_inv %*%
+  cbind(u_nit, mean_rets) %*% multipli_ers)
+# calculate constraints
+all.equal(1, sum(weight_s))
+all.equal(tar_get, sum(mean_rets*weight_s))
+# calculate portfolio return and standard deviation
+portf_rets <- drop(re_turns %*% weight_s)
+c(return=mean(portf_rets), sd=sd(portf_rets))
+all.equal(mean(portf_rets), tar_get)
+# calculate portfolio variance
+uu <- c(1, tar_get)
+f_inv <- solve(f_mat)
+all.equal(var(portf_rets), drop(t(uu) %*% f_inv %*% uu))
+# calculate vertex of variance parabola
+weight_s <- drop(cov_inv %*% u_nit /
+  drop(t(u_nit) %*% cov_inv %*% u_nit))
+portf_rets <- drop(re_turns %*% weight_s)
+v_rets <-
+  drop(t(u_nit) %*% cov_inv %*% mean_rets /
+  t(u_nit) %*% cov_inv %*% u_nit)
+all.equal(mean(portf_rets), v_rets)
+var_min <-
+  drop(1/t(u_nit) %*% cov_inv %*% u_nit)
+all.equal(var(portf_rets), var_min)
+# calculate efficient frontier
+target_s <- v_rets*(1+seq(from=-1, to=1, by=0.1))
+eff_front <- sapply(target_s, function(tar_get) {
+  uu <- c(1, tar_get)
+  sqrt(drop(t(uu) %*% f_inv %*% uu))
+})  # end sapply
+# plot efficient frontier
+x11(width=6, height=5)
+plot(x=eff_front, y=target_s, t="l", col="blue", lwd=2,
+     main="Efficient Frontier and Minimum Variance Portfolio",
+     xlab="standard deviation", ylab="return")
+points(x=sqrt(var_min), y=v_rets, col="green", lwd=6)
+text(x=sqrt(var_min), y=v_rets, labels="minimum \nvariance",
+     pos=4, cex=0.8)
+# calculate portfolio standard deviation
+std_dev <- sqrt(drop(t(uu) %*% f_inv %*% uu))
+# calculate the slope of the tangent line
+slop_e <- (std_dev*det(f_mat))/(f_mat[1, 1]*tar_get-f_mat[1, 2])
+# calculate the risk-free rate as intercept of the tangent line
+risk_free <- tar_get - slop_e*std_dev
+# calculate the risk-free rate from target return
+risk_free <- (tar_get*f_mat[1, 2]-f_mat[2, 2]) /
+  (tar_get*f_mat[1, 1]-f_mat[1, 2])
+# plot efficient frontier
+plot(x=eff_front, y=target_s, t="l", col="blue", lwd=2,
+     xlim=c(0.0, max(eff_front)),
+     main="Efficient Frontier and Tangency Portfolio",
+     xlab="standard deviation", ylab="return")
+# plot minimum variance
+points(x=sqrt(var_min), y=v_rets, col="green", lwd=6)
+text(x=sqrt(var_min), y=v_rets, labels="minimum \nvariance",
+     pos=4, cex=0.8)
+# plot tangent point
+points(x=std_dev, y=tar_get, col="red", lwd=6)
+text(x=std_dev, y=tar_get, labels="tangency\nportfolio", pos=2, cex=0.8)
+# plot risk-free point
+points(x=0, y=risk_free, col="red", lwd=6)
+text(x=0, y=risk_free, labels="risk-free", pos=4, cex=0.8)
+# plot tangent line
+abline(a=risk_free, b=slop_e, lwd=2, col="green")
 # calculate excess re_turns
 risk_free <- 0.03/252
 ex_cess <- re_turns - risk_free
 # calculate covariance and inverse matrix
-co_var <- cov(re_turns)
-u_nit <- rep(1, NCOL(co_var))
-in_verse <- solve(a=co_var)
+cov_mat <- cov(re_turns)
+u_nit <- rep(1, NCOL(cov_mat))
+cov_inv <- solve(a=cov_mat)
 # calculate mean excess returns
 ex_cess <- sapply(ex_cess, mean)
 # weights of maximum Sharpe portfolio
-# weight_s <- solve(a=co_var, b=re_turns)
-weight_s <- in_verse %*% ex_cess
+# weight_s <- solve(a=cov_mat, b=re_turns)
+weight_s <- cov_inv %*% ex_cess
 weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
 # Sharpe ratios
 sqrt(252)*sum(weight_s * ex_cess) /
-  sqrt(drop(weight_s %*% co_var %*% weight_s))
+  sqrt(drop(weight_s %*% cov_mat %*% weight_s))
 sapply(re_turns - risk_free,
   function(x) sqrt(252)*mean(x)/sd(x))
 weights_maxsharpe <- weight_s
 library(quantmod)
 # calculate minimum variance weights
-weight_s <- in_verse %*% u_nit
+weight_s <- cov_inv %*% u_nit
 weights_minvar <-
   weight_s / drop(t(u_nit) %*% weight_s)
 # calculate optimal portfolio returns
@@ -154,19 +229,19 @@ legend("top", legend=colnames(optim_rets), cex=0.8,
  col=plot_theme$col$line.col, bty="n")
 x11(wid_th <- 6, hei_ght <- 6)
 # calculate minimum variance weights
-weight_s <- in_verse %*% u_nit
+weight_s <- cov_inv %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
 # minimum standard deviation and return
-std_dev <- sqrt(252*drop(weight_s %*% co_var %*% weight_s))
+std_dev <- sqrt(252*drop(weight_s %*% cov_mat %*% weight_s))
 min_ret <- 252*sum(weight_s * mean_rets)
 # calculate maximum Sharpe portfolios
 risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/252
 eff_front <- sapply(risk_free, function(risk_free) {
-  weight_s <- in_verse %*% (mean_rets - risk_free)
+  weight_s <- cov_inv %*% (mean_rets - risk_free)
   weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
   # portfolio return and standard deviation
   c(return=252*sum(weight_s * mean_rets),
-    stddev=sqrt(252*drop(weight_s %*% co_var %*% weight_s)))
+    stddev=sqrt(252*drop(weight_s %*% cov_mat %*% weight_s)))
 })  # end sapply
 eff_front <- cbind(252*risk_free, t(eff_front))
 colnames(eff_front)[1] <- "risk-free"
@@ -214,7 +289,7 @@ ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- c(weight_s, 1-sum(weight_s))
   # portfolio return and standard deviation
   c(return=252*sum(weight_s * mean_rets),
-    stddev=sqrt(252*drop(weight_s %*% co_var %*% weight_s)))
+    stddev=sqrt(252*drop(weight_s %*% cov_mat %*% weight_s)))
 })  # end sapply
 # plot scatterplot of random portfolios
 x11(wid_th <- 6, hei_ght <- 6)
@@ -239,9 +314,9 @@ text(x=eff_front[in_dex, "stddev"],
      labels="market\nportfolio",
      pos=2, cex=0.8)
 # plot individual assets
-points(x=sqrt(252*diag(co_var)),
+points(x=sqrt(252*diag(cov_mat)),
  y=252*mean_rets, col="blue", lwd=6)
-text(x=sqrt(252*diag(co_var)), y=252*mean_rets,
+text(x=sqrt(252*diag(cov_mat)), y=252*mean_rets,
      labels=names(mean_rets),
      col="blue", pos=1, cex=0.8)
 # vector of symbol names
@@ -262,22 +337,22 @@ plot(x=ret_sd[2, ], y=ret_sd[1, ], xlim=c(0, max(ret_sd[2, ])),
      ylim=c(min(0, min(ret_sd[1, ])), max(ret_sd[1, ])),
      xlab=rownames(ret_sd)[2], ylab=rownames(ret_sd)[1])
 # plot individual assets
-points(x=sqrt(252*diag(co_var)),
+points(x=sqrt(252*diag(cov_mat)),
  y=252*mean_rets, col="blue", lwd=6)
-text(x=sqrt(252*diag(co_var)), y=252*mean_rets,
+text(x=sqrt(252*diag(cov_mat)), y=252*mean_rets,
      labels=names(mean_rets),
      col="blue", pos=1, cex=0.8)
 risk_free <- 0.03
 re_turns <- c(asset1=0.05, asset2=0.06)
 std_devs <- c(asset1=0.4, asset2=0.5)
 cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
+cov_mat <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
+cov_mat <- t(t(std_devs*cov_mat)*std_devs)
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
 portf_rets <- weight_s %*% re_turns
 portf_sd <-
-  sqrt(rowSums(weight_s * (weight_s %*% co_var)))
+  sqrt(rowSums(weight_s * (weight_s %*% cov_mat)))
 sharpe_ratios <- (portf_rets-risk_free)/portf_sd
 in_dex <- which.max(sharpe_ratios)
 max_Sharpe <- max(sharpe_ratios)
@@ -628,40 +703,40 @@ risk_free <- 0.03
 re_turns <- c(asset1=0.05, asset2=0.06)
 std_devs <- c(asset1=0.4, asset2=0.5)
 cor_rel <- 0.6
-co_var <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
-co_var <- t(t(std_devs*co_var)*std_devs)
+cov_mat <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
+cov_mat <- t(t(std_devs*cov_mat)*std_devs)
 library(quadprog)
 # minimum variance weights without constraints
-op_tim <- solve.QP(Dmat=2*co_var,
+op_tim <- solve.QP(Dmat=2*cov_mat,
             dvec=rep(0, 2),
             Amat=matrix(0, nr=2, nc=1),
             bvec=0)
 # minimum variance weights sum equal to 1
-op_tim <- solve.QP(Dmat=2*co_var,
+op_tim <- solve.QP(Dmat=2*cov_mat,
             dvec=rep(0, 2),
             Amat=matrix(1, nr=2, nc=1),
             bvec=1)
 # optimal value of objective function
-t(op_tim$solution) %*% co_var %*% op_tim$solution
+t(op_tim$solution) %*% cov_mat %*% op_tim$solution
 perform simple optimization for reference
 # objective function for simple optimization
 object_ive <- function(x) {
   x <- c(x, 1-x)
-  t(x) %*% co_var %*% x
+  t(x) %*% cov_mat %*% x
 }  # end object_ive
 unlist(optimize(f=object_ive, interval=c(-1, 2)))
 # calculate daily percentage re_turns
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- rutils::env_etf$re_turns[, sym_bols]
 # calculate the covariance matrix
-co_var <- cov(re_turns)
+cov_mat <- cov(re_turns)
 # minimum variance weights, with sum equal to 1
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
+op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             dvec=numeric(3),
             Amat=matrix(1, nr=3, nc=1),
             bvec=1)
 # minimum variance, maximum returns
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
+op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             dvec=apply(0.1*re_turns, 2, mean),
             Amat=matrix(1, nr=3, nc=1),
             bvec=1)
@@ -669,7 +744,7 @@ op_tim <- quadprog::solve.QP(Dmat=2*co_var,
 a_mat <- cbind(matrix(1, nr=3, nc=1),
        diag(3), -diag(3))
 b_vec <- c(1, rep(0, 3), rep(-1, 3))
-op_tim <- quadprog::solve.QP(Dmat=2*co_var,
+op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             dvec=numeric(3),
             Amat=a_mat,
             bvec=b_vec,
@@ -1153,7 +1228,14 @@ sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
 # calculate daily rates changes
 rate_s <- zoo::na.locf(rutils::do_call(cbind,
     as.list(env_rates)[sym_bols]))
-re_turns <- rutils::diff_xts(rate_s)
+rate_s <- zoo::na.locf(rate_s)
+rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
+re_turns <- rutils::diff_it(rate_s)
+date_s <- index(re_turns)
+# de-mean (center) and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
 # correlation matrix of Treasury rates
 cor_mat <- cor(re_turns)
 # reorder correlation matrix based on clusters
@@ -1179,22 +1261,22 @@ names(weight_s) <- sym_bols
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets*portf_rets) +
-    1000*(1 - sum(weight_s*weight_s))^2
+    1e7*(1 - sum(weight_s*weight_s))^2
 }  # end object_ive
 # objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # compare speed of vector multiplication methods
 summary(microbenchmark(
-  trans_pose=t(portf_rets) %*% portf_rets,
-  s_um=sum(portf_rets*portf_rets),
+  trans_pose=t(re_turns) %*% re_turns,
+  s_um=sum(re_turns*re_turns),
   times=10))[, c(1, 4, 5)]
 # find weights with maximum variance
 optim_run <- optim(par=weight_s,
-             fn=object_ive,
-             re_turns=re_turns,
-             method="L-BFGS-B",
-             upper=rep(1.0, n_weights),
-             lower=rep(-1.0, n_weights))
+  fn=object_ive,
+  re_turns=re_turns,
+  method="L-BFGS-B",
+  upper=rep(1.0, n_weights),
+  lower=rep(-1.0, n_weights))
 # optimal weights and maximum variance
 weight_s <- optim_run$par
 -object_ive(weight_s, re_turns)
@@ -1209,8 +1291,8 @@ pc_1 <- re_turns %*% weights_1
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets*portf_rets) +
-    1000*(1 - sum(weight_s*weight_s))^2 +
-    1000*sum(pc_1*portf_rets)^2
+    1e7*(1 - sum(weight_s*weight_s))^2 +
+    1e7*sum(pc_1*portf_rets)^2
 }  # end object_ive
 # find second principal component weights
 optim_run <- optim(par=weight_s,
@@ -1227,6 +1309,26 @@ sum(pc_1*pc_2)
 barplot(weights_2, names.arg=names(weights_2),
   xlab="", ylab="",
   main="second principal component loadings")
+# covariance matrix and variance vector of returns
+cov_mat <- cov(re_turns)
+vari_ance <- diag(cov_mat)
+cor_mat <- cor(re_turns)
+# calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$vectors
+weights_1
+weights_2
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # plot eigenvalues
+  names.arg=paste0("PC", 1:n_weights),
+  las=3, xlab="", ylab="", main="Principal Component Variances")
 # perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # plot standard deviations
@@ -1264,8 +1366,8 @@ for (or_der in 1:NCOL(pca_ts)) {
 library(quantmod)  # load quantmod
 library(RQuantLib)  # load RQuantLib
 # specify curve parameters
-curve_params <- list(tradeDate=as.Date("2017-01-17"),
-               settleDate=as.Date("2017-01-19"),
+curve_params <- list(tradeDate=as.Date("2018-01-17"),
+               settleDate=as.Date("2018-01-19"),
                dt=0.25,
                interpWhat="discount",
                interpHow="loglinear")
@@ -1281,7 +1383,7 @@ market_data <- list(d3m=0.0363,
 # specify dates for calculating the zero rates
 disc_dates <- seq(0, 10, 0.25)
 # specify the evaluation (as of) date
-setEvaluationDate(as.Date("2017-01-17"))
+setEvaluationDate(as.Date("2018-01-17"))
 # calculate the zero rates
 disc_curves <- DiscountCurve(params=curve_params,
                        tsQuotes=market_data,
@@ -1392,7 +1494,7 @@ dim(asset_values) <- c(num_simu, num_assets)
 de_faults <- t(t(asset_values) < default_thresh)
 # calculate correlations between defaults
 cor(de_faults)
-# calculate averaage number of defaults and compare to default_prob
+# calculate average number of defaults and compare to default_prob
 colSums(de_faults) / num_simu
 default_prob
 # define cumulative default probability function
@@ -1598,17 +1700,17 @@ plot(x=conf_levels, y=var_s, t="l", lwd=2,
      main="Simulated VaR and confidence levels")
 # calculate CVaRs
 cvar_s <- sapply(var_s, function(va_r) {
-  mean(loss_es[loss_es>va_r])
+  mean(loss_es[loss_es >=va_r])
 })  # end sapply
 cvar_s <- cbind(cvar_s, var_s)
 # alternative CVaR calculation using frequency table
 # first calculate frequency table of loss_es
-table_losses <- table(loss_es)/num_simu
+# table_losses <- table(loss_es)/num_simu
 # calculate CVaRs from frequency table
-cvar_s <- sapply(var_s, function(va_r) {
-  tai_l <- table_losses[names(table_losses) > va_r]
-  tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
-})  # end sapply
+# cvar_s <- sapply(var_s, function(va_r) {
+#   tai_l <- table_losses[names(table_losses) > va_r]
+#   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+# })  # end sapply
 # plot CVaRs
 plot(x=rownames(cvar_s), y=cvar_s[, "cvar_s"],
      t="l", col="red", lwd=2,
@@ -1637,9 +1739,10 @@ calc_var <- function(default_thresh,
   # Calculate VaRs and CVaRs
   var_s <- quantile(loss_es, probs=conf_levels)
   cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es>va_r])
+    mean(loss_es[loss_es >=va_r])
   })  # end sapply
-  names(cvar_s) <- names(var_s)
+  names(var_s) <- conf_levels
+  names(cvar_s) <- conf_levels
   c(var_s, cvar_s)
 }  # end calc_var
 # define number of bootstrap simulations
@@ -1679,13 +1782,15 @@ clus_ter <- makeCluster(num_cores)  # initialize compute cluster
 # perform bootstrap of calc_var for Windows
 set.seed(1121)
 boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot),
-  fun=calc_var, default_probs=default_probs,
-  rh_o=rh_o, num_simu=num_simu,
+  fun=calc_var, default_thresh=default_thresh,
+  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
   conf_levels=conf_levels)  # end parLapply
 # bootstrap under Mac-OSX or Linux
 boot_strap <- mclapply(rep(l_gd, num_boot),
-  FUN=calc_var, default_probs=default_probs,
-  rh_o=rh_o, num_simu=num_simu,
+  FUN=calc_var, default_thresh=default_thresh,
+  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
+  num_simu=num_simu,
   conf_levels=conf_levels)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 stopCluster(clus_ter)  # stop R processes over cluster
