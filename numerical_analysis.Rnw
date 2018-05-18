@@ -435,15 +435,101 @@ microbenchmark(sqrt(foo), foo^0.5, times=10)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} Functions}
+\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R},
+      How to write fast \texttt{R} code:
+      \begin{itemize}
+        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets,
+        \item Use \emph{compiled} \texttt{C++} \texttt{R} functions instead of using interpreted \texttt{R} code for the same task,
+        \item Write functions in \texttt{C++} and compile them using \emph{Rcpp} and \emph{RcppArmadillo},
+        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler},
+        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them),
+        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function),
+        \item Use \emph{function methods} directly instead of using \emph{generic functions},
+        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate the square root of a vector
+vec_tor <- runif(1e6)
+all.equal(sqrt(vec_tor), vec_tor^0.5)
+# microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  sqrt(vec_tor), 
+  vec_tor^0.5, 
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: How to Write Fast \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
+      \begin{itemize}
+        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task,
+        \item call function methods directly instead of calling generic functions,
+        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
+        \item write your own \texttt{C++} functions, compile them using RcppArmadillo, and call them from \texttt{R},
+        \item pre-allocate memory for new vectors,
+        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops,
+        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function),
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+vec_tor <- runif(1e6)
+system.time(vec_tor^0.5)
+summary(
+  microbenchmark(sqrt(vec_tor), vec_tor^0.5, times=10)
+  )[, c(1, 4, 5)]
+      @
+      \hspace*{-1em}
+      \scriptsize{
+\begin{tabular}{ | c || p{2.1cm} | p{2.1cm} | }
+ \hline
+ \textbf{Task} & \textbf{Low-performance R} & \textbf{High-performance R} \\
+ \hline
+ \textbf{Loops} & for() or apply() loops & C-compiled and vectorized functions \\
+ \hline
+ \textbf{Memory} & Automatic R memory allocation & User memory allocation \\
+ \hline
+ \textbf{Dispatch} & Generic functions & Class methods \\
+ \hline
+ \textbf{Code} & Verbose R code & Rcpp code \\
+ \hline
+\end{tabular}
+      }
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} \texttt{C++} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Compiled} \texttt{C++} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R},
       \vskip1ex
-      This makes \emph{compiled} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
+      This makes \emph{compiled} \texttt{C++} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R},
       \vskip1ex
       \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function,
       \vskip1ex
@@ -542,21 +628,21 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
+mat_rix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
-row_sums <- numeric(NROW(big_matrix))
+row_sums <- numeric(NROW(mat_rix))
 summary(microbenchmark(
-  row_sums=rowSums(big_matrix),  # end row_sums
-  ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
+  row_sums=rowSums(mat_rix),  # end row_sums
+  ap_ply=apply(mat_rix, 1, sum),  # end apply
+  l_apply=lapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ]),
     FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for (i in 1:NROW(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
+  s_apply=sapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end sapply
+  for_loop=for (i in 1:NROW(mat_rix)) {
+    row_sums[i] <- sum(mat_rix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -622,52 +708,171 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{How to Write Fast \texttt{R} Code}
+\subsection{\protect\emph{Byte Compilation} of \texttt{R} Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} code can be very fast, provided that the user understands the best ways of writing fast \texttt{R} code:
-      \begin{itemize}
-        \item call \emph{compiled} functions instead of writing \texttt{R} code for the same task,
-        \item call function methods directly instead of calling generic functions,
-        \item create specialized functions by extracting only the essential \texttt{R} code from function methods,
-        \item write your own \texttt{C} functions, compile them, and call them from \texttt{R},
-        \item pre-allocate memory for new vectors,
-        \item use \texttt{vapply()} and \texttt{lapply()} instead of \texttt{apply()} and \texttt{for()} loops,
-        \item avoid writing too many \texttt{R} function calls (remember that every command in \texttt{R} is a function),
-      \end{itemize}
+      The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted by a \emph{byte code interpreter} much faster. 
+      \vskip1ex
+      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about \texttt{2} to \texttt{5} times.  
+      \vskip1ex
+      The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation}, 
+      \vskip1ex
+      The function \texttt{compiler::cmpfun()} performs \emph{byte-compilation} of a function,
+      \vskip1ex
+      When a function is passed into some functionals (like \texttt{microbenchmark()}) it is automatically \emph{byte-compiled} \emph{just-in-time} (JIT), so that when it's run the second time it runs faster,
+      \vskip1ex
+      The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation}, 
+      \vskip1ex
+      \emph{JIT} is disabled if the \texttt{level} argument is equal to \texttt{0}, with greater \texttt{level} values forcing more extensive compilation,
+      \vskip1ex
+      The default \emph{JIT} \texttt{level} is \texttt{3},
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
+        <<echo=TRUE,eval=FALSE>>=
+# disable JIT
+jit_level <- compiler::enableJIT(0)
+# create inefficient function
+my_mean <- function(x) {
+  out_put <- 0; n_elem <- NROW(x)
+  for(it in 1:n_elem)
+    out_put <- out_put + x[it]/n_elem
+  out_put
+}  # end my_mean
+# byte-compile function and inspect it
+mymean_comp <- compiler::cmpfun(my_mean)
+mymean_comp
+# test function
+vec_tor <- runif(1e3)
+all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
+# microbenchmark byte-compile function
+summary(microbenchmark(
+  mean(vec_tor), 
+  mymean_comp(vec_tor), 
+  my_mean(vec_tor),
+  times=10))[, c(1, 4, 5)]
+# create another inefficient function
+sapply2 <- function(x, FUN, ...) {
+  out_put <- vector(length=NROW(x))
+  for (it in seq_along(x))
+    out_put[it] <- FUN(x[it], ...)
+  out_put
+}  # end sapply2
+sapply2_comp <- compiler::cmpfun(sapply2)
+all.equal(sqrt(vec_tor), 
+          sapply2(vec_tor, sqrt), 
+          sapply2_comp(vec_tor, sqrt))
+summary(microbenchmark(
+  sqrt(vec_tor),
+  sapply2_comp(vec_tor, sqrt),
+  sapply2(vec_tor, sqrt),
+  times=10))[, c(1, 4, 5)]
+# enable JIT
+compiler::enableJIT(jit_level)
       @
-      \hspace*{-1em}
-      \scriptsize{
-\begin{tabular}{ | c || p{2.1cm} | p{2.1cm} | }
- \hline
- \textbf{Task} & \textbf{Low-performance R} & \textbf{High-performance R} \\
- \hline
- \textbf{Loops} & for() or apply() loops & C-compiled and vectorized functions \\
- \hline
- \textbf{Memory} & Automatic R memory allocation & User memory allocation \\
- \hline
- \textbf{Dispatch} & Generic functions & Class methods \\
- \hline
- \textbf{Code} & Verbose R code & Rcpp code \\
- \hline
-\end{tabular}
-      }
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Profiling} the Performance of \texttt{R} Expressions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Profiling} of a computer program means measuring the amount of memory and time used for the execution of its different components.
+      \vskip1ex
+      \emph{Profiling} can be implemented by polling a computer program in fixed time intervals, and writing the information (like the call stack) to a file.  
+      \vskip1ex
+      The command \texttt{Rprof(file\_name)} turns on the profiling of \texttt{R} expressions, and saves the profiling data into the file \texttt{file\_name}. 
+      \vskip1ex
+      If an \texttt{R} expression is executed after profiling is enabled, then its profiling data is written to the file \texttt{file\_name}. 
+      \vskip1ex
+      The command \texttt{Rprof(NULL)} turns off profiling.
+      \vskip1ex
+      The function \texttt{summaryRprof()} compiles a summary of the profiling data from a file.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# define functions for profiling
+out_er <- function() {fa_st(); sl_ow()}
+fa_st <- function() Sys.sleep(0.1)
+sl_ow <- function() Sys.sleep(0.2)
+# turn on profiling
+Rprof(filename="C:/Develop/data_def/profile.out")
+# run code for profiling
+replicate(n=10, out_er())
+# turn off profiling
+Rprof(NULL)
+# compile summary of profiling from file
+summaryRprof("C:/Develop/data_def/profile.out")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{profvis} for Interactive Visualizations of \protect\emph{Profiling}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{profvis} creates interactive visualizations of \emph{profiling} data produced by function \texttt{Rprof()}: \\
+      \hskip1em\url{https://rstudio.github.io/profvis/}
+      \vskip1ex
+      The function \texttt{profvis::profvis()} profiles an \texttt{R} expression and creates an interactive \emph{flame graph} visualization: \\
+      \hskip1em\url{https://rstudio.github.io/profvis/examples.html}
+      \vskip1ex
+      \emph{Profiling} of different types of loops over the columns of \emph{matrices} and \emph{data frames} shows that \texttt{colMeans()} is the fastest for \emph{matrices}, while \texttt{lapply()} is the fastest for \emph{data frames}.
+      \vskip1ex
+      \texttt{profvis::profvis()} can also profile \emph{shiny apps}.
+      \vskip1ex
+      \emph{Profiling} can also be launched using the \emph{Profile} menu in \emph{RStudio}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# profile plotting of regression
+profvis::profvis({
+  plot(price ~ carat, data=ggplot2::diamonds)
+  reg_model <- lm(price ~ carat, data=ggplot2::diamonds)
+  abline(reg_model, col="red")
+})  # end profvis
+# four methods of calculating matrix column means
+mat_rix <- matrix(rnorm(1e5), ncol=5e4)
+profvis::profvis({
+  mean_s <- apply(mat_rix, 2, mean)
+  mean_s <- colMeans(mat_rix)
+  mean_s <- lapply(mat_rix, mean)
+  mean_s <- vapply(mat_rix, mean, numeric(1))
+})  # end profvis
+# four methods of calculating data frame column means
+data_frame <- as.data.frame(mat_rix)
+profvis::profvis({
+  mean_s <- apply(data_frame, 2, mean)
+  mean_s <- colMeans(data_frame)
+  mean_s <- lapply(data_frame, mean)
+  mean_s <- vapply(data_frame, mean, numeric(1))
+})  # end profvis
+# profile a shiny app
+profvis::profvis(
+  shiny::runExample(example="06_tabsets", 
+                    display.mode="normal")
+)  # end profvis
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -750,10 +955,14 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
         <<eval=FALSE>>=
+# matrix with 5,000 rows
+mat_rix <- matrix(rnorm(10000), ncol=2)
 # calculate row sums two different ways
+all.equal(rowSums(mat_rix), 
+  apply(mat_rix, 1, sum))
 summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
+  row_sums=rowSums(mat_rix),
+  ap_ply=apply(mat_rix, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -787,11 +996,11 @@ str(pmax)
 summary(microbenchmark(
   p_max=
     do.call(pmax.int,
-      lapply(seq_along(big_matrix[1, ]),
-        function(in_dex) big_matrix[, in_dex])),
+      lapply(seq_along(mat_rix[1, ]),
+        function(in_dex) mat_rix[, in_dex])),
   l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]),
-        function(in_dex) max(big_matrix[in_dex, ]))),
+    lapply(seq_along(mat_rix[, 1]),
+        function(in_dex) max(mat_rix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -824,15 +1033,15 @@ summary(microbenchmark(
 library(matrixStats)  # load package matrixStats
 # calculate row min values three different ways
 summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
+  row_mins=rowMins(mat_rix),
   p_min=
     do.call(pmin.int,
-            lapply(seq_along(big_matrix[1, ]),
+            lapply(seq_along(mat_rix[1, ]),
                    function(in_dex)
-                     big_matrix[, in_dex])),
+                     mat_rix[, in_dex])),
   as_data_frame=
     do.call(pmin.int,
-            as.data.frame.matrix(big_matrix)),
+            as.data.frame.matrix(mat_rix)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
@@ -902,7 +1111,7 @@ summary(microbenchmark(  # assign values to vector two different ways
     \column{0.5\textwidth}
       Functions which use vectorized operations and functions are automatically \emph{vectorized} themselves,
       \vskip1ex
-      Functions which only call other compiled \texttt{C} vectorized functions, are also very fast,
+      Functions which only call other compiled \texttt{C++} vectorized functions, are also very fast,
       \vskip1ex
       But not all functions are vectorized, or they're not vectorized with respect to their \emph{parameters},
       \vskip1ex
@@ -1549,11 +1758,11 @@ sqrt(2)*sd(boot_strap)
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
-ex_plain <- rnorm(100, mean=2)
+predic_tor <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- -3 + ex_plain + noise
+res_ponse <- -3 + predic_tor + noise
 # define design matrix and regression formula
-de_sign <- data.frame(res_ponse, ex_plain)
+de_sign <- data.frame(res_ponse, predic_tor)
 reg_formula <- paste(colnames(de_sign)[1],
   paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
@@ -1590,10 +1799,10 @@ apply(boot_strap, MARGIN=1,
 reg_model <- lm(reg_formula, data=de_sign)
 reg_model$coefficients
 summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["ex_plain", ]),
+plot(density(boot_strap["predic_tor", ]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["ex_plain", ]),
+abline(v=mean(boot_strap["predic_tor", ]),
        lwd=2, col="red")
       @
     \column{0.5\textwidth}
@@ -1658,10 +1867,10 @@ boot_strap <- rutils::do_call(rbind, boot_strap)
 apply(boot_strap, MARGIN=2,
       function(x) c(mean=mean(x), sd=sd(x)))
 x11(width=6, height=6)
-plot(density(boot_strap[, "ex_plain"]),
+plot(density(boot_strap[, "predic_tor"]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "ex_plain"]),
+abline(v=mean(boot_strap[, "predic_tor"]),
        lwd=2, col="red")
       @
   \end{columns}
@@ -2642,7 +2851,7 @@ summary(microbenchmark(
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck function in R
-ou_proc <- function(len_gth=1000, eq_price=5.0,
+sim_ou <- function(len_gth=1000, eq_price=5.0,
                     vol_at=0.01, the_ta=0.01) {
   re_turns <- numeric(len_gth)
   price_s <- numeric(len_gth)
@@ -2652,35 +2861,43 @@ ou_proc <- function(len_gth=1000, eq_price=5.0,
     price_s[i] <- price_s[i-1] * exp(re_turns[i])
   }  # end for
   price_s
-}  # end ou_proc
-# simulate Ornstein-Uhlenbeck process
+}  # end sim_ou
+# simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; vol_at <- 0.01
 the_ta <- 0.01; len_gth <- 1000
 set.seed(1121)  # reset random numbers
-price_s <- ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
+price_s <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector rcpp_ou_proc(int len_gth, double eq_price, double vol_at, double the_ta, NumericVector r_norm) {
+NumericVector sim_ou_rcpp(double eq_price, 
+                      double vol_at, 
+                      double the_ta, 
+                      NumericVector in_nov) {
+  int len_gth = in_nov.size();
   NumericVector price_s(len_gth);
   NumericVector re_turns(len_gth);
   price_s[0] = eq_price;
-  for (int i = 1; i < len_gth; ++i) {
-    re_turns[i] = the_ta*(eq_price - price_s[i-1]) + vol_at*r_norm[i-1];
-    price_s[i] = price_s[i-1] * exp(re_turns[i]);
-  }
+  for (int it = 1; it < len_gth; it++) {
+    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
+    price_s[it] = price_s[it-1] * exp(re_turns[it]);
+  }  // end for
   return price_s;
 }")  # end cppFunction
 set.seed(1121)  # reset random numbers
-price_s <- rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth))
+# simulate Ornstein-Uhlenbeck process in Rcpp
+price_s <- sim_ou_rcpp(eq_price=eq_price, 
+  vol_at=vol_at, 
+  the_ta=the_ta, 
+  in_nov=rnorm(len_gth))
 # compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
-  r_cpp=rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth)),
+  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, in_nov=rnorm(len_gth)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}

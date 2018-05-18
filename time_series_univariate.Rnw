@@ -2081,9 +2081,9 @@ path_s <- 10
 price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
     dri_ft - vol_at^2/2, nc=path_s)
 price_s <- exp(matrixStats::colCumsums(price_s))
-# create zoo time series
-price_s <- zoo(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
-# plot zoo time series
+# create xts time series
+price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# plot xts time series
 col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
 col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
@@ -2118,9 +2118,9 @@ price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
 price_s <- exp(matrixStats::colCumsums(price_s))
 # calculate percentage of paths below the expected value
 per_centage <- rowSums(price_s < 1.0) / path_s
-# create zoo time series of percentage of paths below the expected value
-per_centage <- zoo(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
-# plot zoo time series of percentage of paths below the expected value
+# create xts time series of percentage of paths below the expected value
+per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# plot xts time series of percentage of paths below the expected value
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
 plot.zoo(per_centage, main="Percentage of GBM paths below mean",
          xlab=NA, ylab=NA, col="blue")
@@ -2255,9 +2255,9 @@ num_stocks[1] <- NCOL(price_s)
 in_dex <- rowSums(price_s * val_id) / num_stocks
 # calculate percentage of stock prices below the average price
 per_centage <- rowSums((price_s < in_dex) & val_id) / num_stocks
-# create zoo time series of average stock prices
-in_dex <- zoo(in_dex, order.by=index(price_s))
-# plot zoo time series of average stock prices
+# create xts time series of average stock prices
+in_dex <- xts(in_dex, order.by=index(price_s))
+# plot xts time series of average stock prices
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
 plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
@@ -2637,40 +2637,6 @@ title(main="DAX filtered", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Partial Autocorrelation Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3,...}, which may obscure higher order autocorrelations,
-      \vskip1ex
-      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
-      \vskip1ex
-      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation,
-      \vskip1ex
-      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1,..., k-1} have been removed,
-        <<eustx_pacf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
-# autocorrelation from "stats"
-acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered autocorrelations", line=-1)
-# partial autocorrelation
-pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
-title(main="DAX filtered partial autocorrelations",
-      line=-1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/eustx_pacf-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Simulating Autoregressive Processes Using \texttt{arima.sim()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2693,12 +2659,12 @@ library(ggplot2)  # load ggplot2
 library(gridExtra)  # load gridExtra
 in_dex <- Sys.Date() + 0:728  # two year daily series
 set.seed(1121)  # reset random numbers
-zoo_arima <- zoo(  # AR time series of returns
+ari_ma <- xts(  # AR time series of returns
   x=arima.sim(n=729, model=list(ar=0.2)),
-  order.by=in_dex)  # zoo_arima
-zoo_arima <- cbind(zoo_arima, cumsum(zoo_arima))
-colnames(zoo_arima) <- c("AR returns", "AR prices")
-autoplot(object=zoo_arima, # ggplot AR process
+  order.by=in_dex)
+ari_ma <- cbind(ari_ma, cumsum(ari_ma))
+colnames(ari_ma) <- c("AR returns", "AR prices")
+autoplot(object=ari_ma, # ggplot AR process
      facets="Series ~ .",
      main="Autoregressive process (phi=0.2)") +
   facet_grid("Series ~ .", scales="free_y") +
@@ -2730,17 +2696,17 @@ theme(
       Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa,
       <<echo=TRUE,eval=FALSE>>=
 ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
-zoo_arima <- sapply(  # create three AR time series
-  ar_coeff, function(phi) {
-    set.seed(1121)  # reset random numbers
-    arima.sim(n=1e3, model=list(ar=phi))
-  } )  # end sapply
-colnames(zoo_arima) <- paste("autocorr", ar_coeff)
-zoo::plot.zoo(zoo_arima, main="AR(1) prices", xlab=NA)
-# plot using ggplot
+# Create three AR time series
+ari_ma <- sapply(ar_coeff, function(phi) {
+  set.seed(1121)  # reset random numbers
+  arima.sim(n=NROW(in_dex), model=list(ar=phi))
+})  # end sapply
+colnames(ari_ma) <- paste("autocorr", ar_coeff)
+plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
+# Or plot using ggplot
+ari_ma <- xts(x=ari_ma, order.by=in_dex)
 library(ggplot)
-zoo_arima <- zoo(x=zoo_arima, order.by=in_dex)
-autoplot(zoo_arima, main="AR(1) prices",
+autoplot(ari_ma, main="AR(1) prices",
          facets=Series ~ .) +
     facet_grid(Series ~ ., scales="free_y") +
 xlab("") +
@@ -3042,7 +3008,41 @@ tseries::adf.test(cumsum(ari_ma))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Identification of Autoregressive Processes}
+\subsection{Partial Autocorrelation Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An autocorrelation of lag \texttt{1} creates autocorrelations of lag \texttt{2, 3, ...}, which may obscure higher order autocorrelations,
+      \vskip1ex
+      A linear combination of a time series and its lag can be created, such that its lag \texttt{1} autocorrelation is zero,
+      \vskip1ex
+      The lag \texttt{2} autocorrelation of this new series is called the \emph{partial autocorrelation} of lag \texttt{2}, and represents the true second order autocorrelation,
+      \vskip1ex
+      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation lag \texttt{k}, after all the autocorrelations of lag \texttt{1, ..., k-1} have been removed,
+        <<eustx_pacf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation from "stats"
+acf_plus(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered autocorrelations", line=-1)
+# partial autocorrelation
+pacf(re_turns[, 2], lag=10, xlab=NA, ylab=NA)
+title(main="DAX filtered partial autocorrelations",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_pacf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{dev: Identification of Autoregressive Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3056,17 +3056,16 @@ tseries::adf.test(cumsum(ari_ma))
       <<ar_pacf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
-ar3_zoo <- zoo(  # AR(3) time series of returns
-  x=arima.sim(n=365,
-          model=list(ar=c(0.1, 0.5, 0.1))),
-  order.by=in_dex)  # zoo_arima
+# Simulate AR(3) time series of returns
+ari_ma <- arima.sim(n=1e6, 
+  model=list(ar=c(0.1, 0.5, 0.1)))
 # ACF of AR(3) process
-acf_plus(ar3_zoo, lag=10,
-       xlab="", ylab="", main="ACF of AR(3) process")
-
+acf_plus(ari_ma, lag=10,
+  xlab="", ylab="", main="ACF of AR(3) process")
+# wipp: pacf() doesn't return the correct first AR coefficient
 # PACF of AR(3) process
-pacf(ar3_zoo, lag=10,
-     xlab="", ylab="", main="PACF of AR(3) process")
+pacf(ari_ma, lag=10,
+  xlab="", ylab="", main="PACF of AR(3) process")
       @
     \column{0.5\textwidth}
       \vspace{-2em}
@@ -3090,11 +3089,11 @@ pacf(ar3_zoo, lag=10,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE>>=
-ar3_zoo <- arima.sim(n=1000,
+ari_ma <- arima.sim(n=1000,
             model=list(ar=c(0.1, 0.3, 0.1)))
-arima(ar3_zoo, order = c(5,0,0))  # fit AR(5) model
+arima(ari_ma, order = c(5,0,0))  # fit AR(5) model
 library(forecast)  # load forecast
-auto.arima(ar3_zoo)  # fit ARIMA model
+auto.arima(ari_ma)  # fit ARIMA model
       @
   \end{columns}
 \end{block}

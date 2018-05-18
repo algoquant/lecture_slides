@@ -1625,6 +1625,107 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 
 %%%%%%%%%%%%%%%
+\section{Estimating and Filtering Data}
+
+% wipp
+%%%%%%%%%%%%%%%
+\subsection{dev: State Space Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{state space model} is a stochastic process for a \emph{state variable} $\theta$, which is subject to \emph{measurement error}. 
+      \vskip1ex
+      The \emph{state variable} $\theta$ is latent (not directly observable), and its value is only measured by observing the \emph{measurement variable} $y_t$.
+      \vskip1ex
+      A simple \emph{state space model} can be written as a \emph{transition equation} and a \emph{measurement equation}:
+      \begin{align*}
+        \theta_t = g_t \theta_{t-1} + w_t \\
+        y_t = f_t \theta_t + v_t
+      \end{align*}
+      Where $w_t$ and $v_t$ follow the normal distributions \emph{N(0, $\sigma_t^w$)} and \emph{N(0, $\sigma_t^v$)}.
+      \vskip1ex
+      The system variables (matrices) $g_t$ and $f_t$ are deterministic functions of time.
+      \vskip1ex
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance, 
+      \vskip1ex
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      \vskip1ex
+      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate EWMA VTI variance using filter()
+wid_th <- 51
+weight_s <- exp(-0.1*1:wid_th)
+weight_s <- weight_s/sum(weight_s)
+vari_ance <- stats::filter(re_turns^2, 
+    filter=weight_s, sides=1)
+vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+class(vari_ance)
+vari_ance <- as.numeric(vari_ance)
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+# plot EWMA standard deviation
+chart_Series(x_ts, 
+  name="EWMA standard deviation")
+dygraphs::dygraph(x_ts, main="EWMA standard deviation")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{dev: Rolling \protect\emph{EWMA} Realized Variance Estimator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator, 
+      \vskip1ex
+      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
+      \begin{displaymath}
+        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
+      \end{displaymath}
+      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance, 
+      \vskip1ex
+      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
+      \vskip1ex
+      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# calculate EWMA VTI variance using filter()
+wid_th <- 51
+weight_s <- exp(-0.1*1:wid_th)
+weight_s <- weight_s/sum(weight_s)
+vari_ance <- stats::filter(re_turns^2, 
+    filter=weight_s, sides=1)
+vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+class(vari_ance)
+vari_ance <- as.numeric(vari_ance)
+x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+# plot EWMA standard deviation
+chart_Series(x_ts, 
+  name="EWMA standard deviation")
+dygraphs::dygraph(x_ts, main="EWMA standard deviation")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Estimating and Modeling Volatility and Skew}
 
 
@@ -1641,8 +1742,8 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
       \vskip1ex
       The rolling realized variance of a \emph{time series} is a vector given by the estimator:
       \begin{align*}
-        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
-        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
+        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
+        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
       \end{align*}
       Where \texttt{k} is the \emph{look-back interval} for performing aggregations over the past, 
       \vskip1ex
@@ -1781,8 +1882,8 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
     \column{0.5\textwidth}
       If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
       \begin{align*}
-        \sigma_i^2=\frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
-        \bar{r_i}=\frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
+        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
+        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
       \end{align*}
       Where $w_j$ is the vector of weights:
       \begin{displaymath}
@@ -1870,7 +1971,7 @@ title(main="pacf of variance", line=-1)
       \vskip1ex
       The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance, 
       \vskip1ex
-      The parameter $\omega$ determines the long-term average level of variance, which is given by:
+      The parameter $\omega$ is proportional to the long-term average level of variance, which is given by:
       \begin{displaymath}
         \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
       \end{displaymath}
@@ -2155,7 +2256,7 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
       \begin{displaymath}
         d \ln S = ( \mu - \frac{\sigma^2}{2} ) dt + \sigma \sqrt{dt} \epsilon
       \end{displaymath}
-      Where $\epsilon$ is a random process following the standard normal distribution, 
+      Where $\epsilon$ is a random process following the standard normal distribution \emph{N(0, 1)}. 
       \vskip1ex
       The convexity correction $-\frac{\sigma^2}{2}$ ensures that the expected value of prices grows as $\mu t$, (in accordance with Ito's lemma), 
       \vskip1ex
@@ -2481,7 +2582,7 @@ chart_Series(re_turns^2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Standard Errors of Volatility Estimators Using Bootstrap}
+\subsection{depr: Standard Errors of Volatility Estimators Using Bootstrap}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2499,20 +2600,21 @@ chart_Series(re_turns^2,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# standard errors of TTR variance estimators using bootstrap
-boot_strap <- sapply(1:100, function(x) {
-# create random OHLC
+# standard errors of variance estimators using bootstrap
+boot_strap <- sapply(1:1e2, function(x) {
+  # create random OHLC
   oh_lc <- HighFreq::random_ohlc()
-# calculate variance estimate
-  sqrt((6.5*60)*mean(na.omit(
-    TTR::volatility(oh_lc, N=1, 
-                    calc="yang.zhang"))^2))
+  # calculate variance estimate
+  c(var=var(oh_lc[, 4]),
+    yang_zhang=HighFreq::calc_variance(
+      oh_lc, calc_method="yang_zhang", sca_le=FALSE))
 })  # end sapply
 # analyze bootstrapped variance
+boot_strap <- t(boot_strap)
 head(boot_strap)
-sum(is.na(boot_strap))
-apply(boot_strap, MARGIN=2, mean)
-apply(boot_strap, MARGIN=2, sd)
+colMeans(boot_strap)
+apply(boot_strap, MARGIN=2, sd) /
+  colMeans(boot_strap)
       @
   \end{columns}
 \end{block}
