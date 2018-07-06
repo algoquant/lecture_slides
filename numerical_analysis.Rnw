@@ -843,8 +843,8 @@ summaryRprof("C:/Develop/data_def/profile.out")
 # profile plotting of regression
 profvis::profvis({
   plot(price ~ carat, data=ggplot2::diamonds)
-  reg_model <- lm(price ~ carat, data=ggplot2::diamonds)
-  abline(reg_model, col="red")
+  mod_el <- lm(price ~ carat, data=ggplot2::diamonds)
+  abline(mod_el, col="red")
 })  # end profvis
 # four methods of calculating matrix column means
 mat_rix <- matrix(rnorm(1e5), ncol=5e4)
@@ -1313,11 +1313,11 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
 # plot matrix
 matplot(vec_tor4, type="l", lty="solid",
         col=c("green", "blue", "red"),
-        lwd=c(2, 2, 2), xlab="", ylab="")
+        lwd=2, xlab="", ylab="")
 # add legend
 legend(x="bottomright", legend=colnames(vec_tor4),
        title="", inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+       lty=1, col=c("green", "blue", "red"))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/func_ifelse-1}
@@ -1758,21 +1758,21 @@ sqrt(2)*sd(boot_strap)
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
-predic_tor <- rnorm(100, mean=2)
+de_sign <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- -3 + predic_tor + noise
+res_ponse <- -3 + de_sign + noise
 # define design matrix and regression formula
-de_sign <- data.frame(res_ponse, predic_tor)
-reg_formula <- paste(colnames(de_sign)[1],
+de_sign <- data.frame(res_ponse, de_sign)
+for_mula <- paste(colnames(de_sign)[1],
   paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
 # bootstrap the regression
 boot_strap <- sapply(1:100, function(x) {
   boot_sample <- sample.int(dim(de_sign)[1],
                             replace=TRUE)
-  reg_model <- lm(reg_formula,
+  mod_el <- lm(for_mula,
                 data=de_sign[boot_sample, ])
-  reg_model$coefficients
+  mod_el$coefficients
 })  # end sapply
       @
   \end{columns}
@@ -1796,13 +1796,13 @@ x11(width=6, height=6)
 apply(boot_strap, MARGIN=1,
       function(x) c(mean=mean(x), sd=sd(x)))
 # means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=de_sign)
-reg_model$coefficients
-summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["predic_tor", ]),
+mod_el <- lm(for_mula, data=de_sign)
+mod_el$coefficients
+summary(mod_el)$coefficients[, "Std. Error"]
+plot(density(boot_strap["de_sign", ]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["predic_tor", ]),
+abline(v=mean(boot_strap["de_sign", ]),
        lwd=2, col="red")
       @
     \column{0.5\textwidth}
@@ -1844,21 +1844,21 @@ num_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
 # bootstrap the regression under Windows
 boot_strap <- parLapply(clus_ter, 1:1000,
-  function(x, reg_formula, de_sign) {
+  function(x, for_mula, de_sign) {
     boot_sample <-
       sample.int(dim(de_sign)[1], replace=TRUE)
-    reg_model <- lm(reg_formula,
+    mod_el <- lm(for_mula,
       data=de_sign[boot_sample, ])
-    reg_model$coefficients
+    mod_el$coefficients
   },
-  reg_formula=reg_formula,
+  for_mula=for_mula,
   de_sign=de_sign)  # end parLapply
 # bootstrap the regression under Mac-OSX or Linux
 boot_strap <- mclapply(1:1000,
   function(x) {
     boot_sample <-
       sample.int(dim(de_sign)[1], replace=TRUE)
-    lm(reg_formula,
+    lm(for_mula,
       data=de_sign[boot_sample, ])$coefficients
   }, mc.cores=num_cores)  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
@@ -1867,10 +1867,10 @@ boot_strap <- rutils::do_call(rbind, boot_strap)
 apply(boot_strap, MARGIN=2,
       function(x) c(mean=mean(x), sd=sd(x)))
 x11(width=6, height=6)
-plot(density(boot_strap[, "predic_tor"]),
+plot(density(boot_strap[, "de_sign"]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "predic_tor"]),
+abline(v=mean(boot_strap[, "de_sign"]),
        lwd=2, col="red")
       @
   \end{columns}
