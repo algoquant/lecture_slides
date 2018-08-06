@@ -437,7 +437,7 @@ title(main="wealth of multiperiod betting", line=0.1)
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(rutils)
 library(PerformanceAnalytics)
-ts_rets <- rutils::env_etf$re_turns[, "VTI"]
+ts_rets <- rutils::etf_env$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
 sapply(frac, function (fract) sum(log(1+fract*r)))
@@ -482,7 +482,7 @@ title(main="utility", line=-2)
       <<eval=FALSE,echo=(-(1:3))>>=
 par(mar=c(5, 2, 2, 2), mgp=c(1.5, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(PerformanceAnalytics)
-ts_rets <- rutils::env_etf$re_turns[, "VTI"]
+ts_rets <- rutils::etf_env$re_turns[, "VTI"]
 PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
       @
 %    \vspace{-1em}
@@ -499,7 +499,7 @@ PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
 
 
 %%%%%%%%%%%%%%%
-\subsection{dev: Identifying Managers With Skill}
+\subsection{draft: Identifying Managers With Skill}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -562,7 +562,7 @@ print(xtable(binbet_table), comment=FALSE)
 library(rutils)  # load package rutils
 # Calculate ETF returns
 re_turns <- 
-  rutils::env_etf$re_turns[, c("IEF", "VTI")]
+  rutils::etf_env$re_turns[, c("IEF", "VTI")]
 re_turns <- na.omit(re_turns)
 re_turns <- cbind(re_turns, 
   0.6*re_turns[, "IEF"]+0.4*re_turns[, "VTI"])
@@ -607,7 +607,7 @@ dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # load package rutils
 # Get close prices and calculate close-to-close returns
-# price_s <- quantmod::Cl(rutils::env_etf$VTI)
+# price_s <- quantmod::Cl(rutils::etf_env$VTI)
 price_s <- quantmod::Cl(HighFreq::SPY)
 colnames(price_s) <- rutils::get_name(colnames(price_s))
 re_turns <- TTR::ROC(price_s)
@@ -662,13 +662,13 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_points], lwd=c(2, 2, 2),
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # load package rutils
 # calculate open, close, and lagged prices
-op_en <- Op(rutils::env_etf$VTI)
-cl_ose <- Cl(rutils::env_etf$VTI)
+op_en <- Op(rutils::etf_env$VTI)
+cl_ose <- Cl(rutils::etf_env$VTI)
 close_adj <- (cl_ose - as.numeric(cl_ose[1, ]))
 prices_lag <- rutils::lag_it(cl_ose)
 # define aggregation interval and calculate VWAP
 look_back <- 150
-VTI_vwap <- HighFreq::roll_vwap(rutils::env_etf$VTI, 
+VTI_vwap <- HighFreq::roll_vwap(rutils::etf_env$VTI, 
               look_back=look_back)
 # calculate VWAP indicator
 in_dic <- sign(cl_ose - VTI_vwap)
@@ -709,11 +709,11 @@ legend("top", legend=c("VTI", "VWAP"),
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # load package rutils
 # calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(rutils::env_etf$VTI))
+position_s <- rep(NA_integer_, NROW(rutils::etf_env$VTI))
 position_s[1] <- 0
 position_s[trade_dates] <- in_dic[trade_dates]
 position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index((rutils::env_etf$VTI)))
+position_s <- xts(position_s, order.by=index((rutils::etf_env$VTI)))
 pos_lagged <- rutils::lag_it(position_s)
 # calculate daily profits and losses
 pnl_s <- pos_lagged*(cl_ose - prices_lag)
@@ -730,7 +730,7 @@ sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # plot prices and VWAP
-pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::env_etf$VTI)))
+pnl_s <- xts(cumsum(pnl_s), order.by=index((rutils::etf_env$VTI)))
 close_adj <- (cl_ose - as.numeric(cl_ose[1, ]))
 chart_Series(x=close_adj, name="VTI prices", col="orange")
 add_TA(pnl_s, on=1, lwd=2, col="blue")
@@ -764,7 +764,7 @@ legend("top", legend=c("VTI", "VWAP strategy"),
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # load package rutils
 # select OHLC data
-oh_lc <- rutils::env_etf$VTI
+oh_lc <- rutils::etf_env$VTI
 # calculate close prices
 cl_ose <- quantmod::Cl(oh_lc)
 close_adj <- (cl_ose - as.numeric(cl_ose[1, ]))
@@ -1538,7 +1538,7 @@ legend("top", legend=c("VTI", "EWMA"),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate ETF prices and simple returns
 sym_bols <- c("VTI", "IEF", "DBC")
-price_s <- rutils::env_etf$price_s[, sym_bols]
+price_s <- rutils::etf_env$price_s[, sym_bols]
 price_s <- zoo::na.locf(price_s)
 price_s <- na.omit(price_s)
 re_turns <- rutils::diff_it(price_s)
@@ -1596,7 +1596,7 @@ cost_s <- rowSums(cost_s)
 pnl_s <- (pnl_s - cost_s)
 pnl_s <- cumsum(pnl_s)
 # plot momentum strategy with VTI
-cl_ose <- Cl(rutils::env_etf$VTI[index(end_prices)])
+cl_ose <- Cl(rutils::etf_env$VTI[index(end_prices)])
 zoo::plot.zoo(cbind(cl_ose, pnl_s, weight_s), 
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1), nc=1,
   xlab=NULL, main="ETF Momentum Strategy")
@@ -1716,7 +1716,7 @@ look_back <- look_backs[which.max(pro_files)]
 pnl_s <- back_test_ep(re_turns=re_turns, price_s=price_s, 
   re_balance="weeks", look_back=look_back, agg_fun=agg_fun,
   with_weights=TRUE)
-cl_ose <- Cl(rutils::env_etf$VTI[index(pnl_s)])
+cl_ose <- Cl(rutils::etf_env$VTI[index(pnl_s)])
 # bind model returns with VTI
 da_ta <- as.numeric(cl_ose[1, ])
 da_ta <- cbind(cl_ose, da_ta*pnl_s[, 1]+da_ta)
@@ -1849,9 +1849,9 @@ legend("topleft", legend=colnames(da_ta),
       The \emph{momentum} strategy market beta can be calculated by multiplying the \emph{ETF} betas by the \emph{ETF} portfolio weights, 
       <<echo=TRUE,eval=FALSE>>=
 # calculate betas
-beta_s <- c(1, rutils::env_etf$capm_stats[
+beta_s <- c(1, rutils::etf_env$capm_stats[
   match(sym_bols[-1], 
-        rownames(rutils::env_etf$capm_stats)), 
+        rownames(rutils::etf_env$capm_stats)), 
   "Beta"])
 names(beta_s)[1] <- sym_bols[1]
 # weights times betas
@@ -1997,11 +1997,11 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       \end{enumerate}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# sym_bols contains all the symbols in rutils::env_etf$re_turns except for "VXX"
-sym_bols <- colnames(rutils::env_etf$re_turns)
+# sym_bols contains all the symbols in rutils::etf_env$re_turns except for "VXX"
+sym_bols <- colnames(rutils::etf_env$re_turns)
 sym_bols <- sym_bols[!(sym_bols=="VXX")]
-# Extract columns of rutils::env_etf$re_turns and remove NA values
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+# Extract columns of rutils::etf_env$re_turns and remove NA values
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 re_turns <- zoo::na.locf(re_turns)
 re_turns <- na.omit(re_turns)
 # Calculate vector of monthly end points and start points
@@ -2097,9 +2097,9 @@ n_col <- NCOL(price_s)
 in_dex <- xts(rowSums(price_s)/n_col, index(price_s))
 colnames(in_dex) <- "index"
 # rescale to VTI
-in_dex <- as.numeric(first(env_etf$VTI)[, 4])*in_dex / 
-  as.numeric((in_dex[start(env_etf$VTI)]))
-da_ta <- cbind(in_dex[index(env_etf$VTI)], env_etf$VTI[, 4])
+in_dex <- as.numeric(first(etf_env$VTI)[, 4])*in_dex / 
+  as.numeric((in_dex[start(etf_env$VTI)]))
+da_ta <- cbind(in_dex[index(etf_env$VTI)], etf_env$VTI[, 4])
 col_names <- c("index", "VTI")
 colnames(da_ta) <- col_names
 # plot with VTI
@@ -2159,7 +2159,7 @@ cost_s <- rowSums(cost_s)
 pnl_s <- (pnl_s - cost_s)
 pnl_s <- cumsum(pnl_s)
 pnl_s <- xts(pnl_s, order.by=index(price_s))
-pnl_s <- cbind(rutils::env_etf$VTI[, 4], pnl_s)
+pnl_s <- cbind(rutils::etf_env$VTI[, 4], pnl_s)
 pnl_s <- na.omit(pnl_s)
 colnames(pnl_s) <- c("VTI", "momentum")
 col_names <- colnames(pnl_s)
@@ -2372,7 +2372,7 @@ re_balance <- "weeks"
 # look-back interval is multiple of re_balance
 look_back <- 41
 # create index of rebalancing period end points
-end_points <- xts::endpoints(rutils::env_etf$re_turns, 
+end_points <- xts::endpoints(rutils::etf_env$re_turns, 
                              on=re_balance)
 # start_points are multi-period lag of end_points
 len_gth <- NROW(end_points)
@@ -2416,7 +2416,7 @@ sym_bols <- c("VTI", "IEF", "DBC")
 risk_stats <- lapply(look_backs, 
   function(look_back) {
     x_ts <- 
-      rutils::env_etf$re_turns[look_back, sym_bols]
+      rutils::etf_env$re_turns[look_back, sym_bols]
     t(sapply(x_ts, 
       function(col_umn)
         c(return=mean(col_umn), risk=mad(col_umn))
@@ -2428,7 +2428,7 @@ risk_stats <- lapply(look_backs,
 # calculate non-overlapping returns in interval
 re_turns <-sapply(2:len_gth, 
     function(it_er) {
-    sapply(rutils::env_etf$re_turns[
+    sapply(rutils::etf_env$re_turns[
       (end_points[it_er-1]+1):end_points[it_er], 
       sym_bols], sum)
   })  # end sapply

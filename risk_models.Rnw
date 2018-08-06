@@ -25,6 +25,9 @@ knit_theme$set(thm)
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -102,7 +105,7 @@ knit_theme$set(thm)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::etf_env$VTI)))
 # number of observations
 n_row <- NROW(re_turns)
 # mean of VTI returns
@@ -441,7 +444,7 @@ object_ive(c(1, 0.5), 2, 2:5)
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::etf_env$VTI)))
 # initial parameters
 par_init <- c(mean=0, scale=0.01)
 # fit distribution using optim()
@@ -687,13 +690,13 @@ ks.test(as.numeric(re_turns), sam_ple)
     \column{0.6\textwidth}
       \vspace{-1em}
       <<TRUE,eval=FALSE>>=
-price_s <- Cl(rutils::env_etf$VTI)
+price_s <- Cl(rutils::etf_env$VTI)
 end_points <- seq_along(price_s)  # define end points
-len_gth <- NROW(end_points)
+n_row <- NROW(end_points)
 look_back <- 22  # number of data points per look-back interval
 # start_points are multi-period lag of end_points
 start_points <- c(rep_len(1, look_back-1), 
-    end_points[1:(len_gth-look_back+1)])
+    end_points[1:(n_row-look_back+1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -799,10 +802,10 @@ legend("top", legend=colnames(agg_regations),
 roll_agg <- function(x_ts, look_back, FUN, ...) {
 # define end points at every period
   end_points <- seq_along(x_ts)
-  len_gth <- NROW(end_points)
+  n_row <- NROW(end_points)
 # define starting points as lag of end_points
   start_points <- c(rep_len(1, look_back-1), 
-    end_points[1:(len_gth-look_back+1)])
+    end_points[1:(n_row-look_back+1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -996,14 +999,113 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# library(TTR)  # load package TTR
-# benchmark the speed of TTR::runSum
+# calculate the rolling maximum and minimum over a vector of data
+roll_maxminr <- function(vec_tor, look_back) {
+  n_row <- NROW(vec_tor)
+  max_min <- matrix(numeric(2*n_row), nc=2)
+  # loop over periods
+  for (it in 1:n_row) {
+    sub_vec <- vec_tor[max(1, it-look_back+1):it]
+    max_min[it, 1] <- max(sub_vec)
+    max_min[it, 2] <- min(sub_vec)
+  }  # end for
+  return(max_min)
+}  # end roll_maxminr
+max_minr <- roll_maxminr(price_s, look_back)
+max_minr <- xts::xts(max_minr, index(price_s))
+library(TTR)  # load package TTR
+max_min <- cbind(TTR::runMax(x=price_s, n=look_back),
+                 TTR::runMin(x=price_s, n=look_back))
+all.equal(max_min[-(1:look_back), ], max_minr[-(1:look_back), ], check.attributes=FALSE)
+# benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  cum_sum=cumsum(coredata(price_s)), 
-  roll_sum=rutils::roll_sum(price_s, win_dow=look_back),
-  run_sum=TTR::runSum(price_s, n=look_back),
+  pure_r=roll_maxminr(price_s, look_back), 
+  ttr=TTR::runMax(price_s, n=look_back),
   times=10))[, c(1, 4, 5)]
+# benchmark the speed of TTR::runSum
+summary(microbenchmark(
+  vector_r=cumsum(coredata(price_s)), 
+  rutils=rutils::roll_sum(price_s, look_back=look_back),
+  ttr=TTR::runSum(price_s, n=look_back),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Rolling Aggregations Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RcppArmadillo} functions for calculating rolling aggregations are often the fastest.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
+
+// export the function roll_maxmin() to R
+// [[Rcpp::export]]
+arma::mat roll_maxmin(const arma::vec& vec_tor, 
+                      const arma::uword& look_back) {
+  arma::uword num_rows = vec_tor.size();
+  arma::mat max_min(num_rows, 2);
+  arma::vec sub_vec;
+  // startup period
+  max_min(0, 0) = vec_tor[0];
+  max_min(0, 1) = vec_tor[0];
+  for (uword it = 1; it < look_back; it++) {
+    sub_vec = vec_tor.subvec(0, it);
+    max_min(it, 0) = sub_vec.max();
+    max_min(it, 1) = sub_vec.min();
+  }  // end for
+  // remaining periods
+  for (uword it = look_back; it < num_rows; it++) {
+    sub_vec = vec_tor.subvec(it-look_back+1, it);
+    max_min(it, 0) = sub_vec.max();
+    max_min(it, 1) = sub_vec.min();
+  }  // end for
+  return max_min;
+}  // end roll_maxmin
+    \end{lstlisting}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/rolling_maxmin.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Compile Rcpp functions
+Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/roll_maxmin.cpp")
+max_minarma <- roll_maxmin(price_s, look_back)
+max_minarma <- xts::xts(max_minr, index(price_s))
+max_min <- cbind(TTR::runMax(x=price_s, n=look_back),
+                 TTR::runMin(x=price_s, n=look_back))
+all.equal(max_min[-(1:look_back), ], max_minarma[-(1:look_back), ], check.attributes=FALSE)
+# benchmark the speed of TTR::runMax
+library(microbenchmark)
+summary(microbenchmark(
+  arma=roll_maxmin(price_s, look_back), 
+  ttr=TTR::runMax(price_s, n=look_back),
+  times=10))[, c(1, 4, 5)]
+# dygraphs plot with max_min lines
+da_ta <- cbind(price_s, max_minarma)
+colnames(da_ta)[2:3] <- c("max", "min")
+col_ors <- c("blue", "red", "green")
+dygraphs::dygraph(da_ta, main=paste(colnames(price_s), "max and min lines")) %>%
+  dyOptions(colors=col_ors)
+# standard plot with max_min lines
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+quantmod::chart_Series(da_ta["2008/2009"], theme=plot_theme, 
+  name=paste(colnames(price_s), "max and min lines"))
+legend(x="topright", title=NULL, legend=colnames(da_ta),
+       inset=0.1, cex=0.9, bg="white", bty="n",
+       lwd=6, lty=1, col=col_ors)
       @
   \end{columns}
 \end{block}
@@ -1034,24 +1136,22 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(RcppRoll)  # load package RcppRoll
-wid_th <- 22  # number of data points per look-back interval
-# calculate rolling sum using rutils
-prices_mean <- 
-  rutils::roll_sum(price_s, win_dow=wid_th)
 # calculate rolling sum using RcppRoll
-prices_mean <- RcppRoll::roll_sum(price_s, 
-                    align="right", n=wid_th)
+sum_roll_rcpp <- RcppRoll::roll_sum(price_s, align="right", n=look_back)
+# calculate rolling sum using rutils
+sum_roll <- rutils::roll_sum(price_s, look_back=look_back)
+all.equal(sum_roll_rcpp, coredata(sum_roll[-(1:(look_back-1))]), check.attributes=FALSE)
 # benchmark the speed of RcppRoll::roll_sum
 library(microbenchmark)
 summary(microbenchmark(
   cum_sum=cumsum(coredata(price_s)), 
-  rcpp_roll_sum=RcppRoll::roll_sum(price_s, n=wid_th),
-  roll_sum=rutils::roll_sum(price_s, win_dow=wid_th),
+  RcppRoll=RcppRoll::roll_sum(price_s, n=look_back),
+  rutils=rutils::roll_sum(price_s, look_back=look_back),
   times=10))[, c(1, 4, 5)]
 # calculate EWMA sum using RcppRoll
-weight_s <- exp(0.1*1:wid_th)
+weight_s <- exp(0.1*1:look_back)
 prices_mean <- RcppRoll::roll_mean(price_s, 
-      align="right", n=wid_th, weights=weight_s)
+      align="right", n=look_back, weights=weight_s)
 prices_mean <- cbind(price_s, 
   rbind(coredata(price_s[1:(look_back-1), ]), prices_mean))
 colnames(prices_mean) <- c("SPY", "SPY EWMA")
@@ -1080,7 +1180,7 @@ legend("top", legend=colnames(prices_mean),
     \column{0.5\textwidth}
       The package \emph{caTools} contains functions for calculating rolling interval aggregations over a \texttt{vector} of data:
       \begin{itemize}
-        \item \texttt{runmin} and \texttt{runmax} for rolling minima and maxima, 
+        \item \texttt{runmin()} and \texttt{runmax()} for rolling minima and maxima, 
         \item \texttt{runsd()} for rolling standard deviations,
         \item \texttt{runmad()} for rolling Median Absolute Deviations (MAD),
         \item \texttt{runquantile()} for rolling quantiles,
@@ -1136,7 +1236,7 @@ quan_tiles <- runquantile(x=price_s,
       <<chart_Series_endp,echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # load package HighFreq
 # extract daily closing VTI prices
-price_s <- Cl(rutils::env_etf$VTI)
+price_s <- Cl(rutils::etf_env$VTI)
 # define number of data points per interval
 look_back <- 22
 # number of look_backs that fit over price_s
@@ -1229,9 +1329,9 @@ head(price_s[end_points, ])
 # library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   n_row-look_back*num_agg + (0:num_agg)*look_back
-len_gth <- NROW(end_points)
+n_row <- NROW(end_points)
 # start_points are single-period lag of end_points
-start_points <- c(1, end_points[1:(len_gth-1)])
+start_points <- c(1, end_points[1:(n_row-1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -1335,9 +1435,9 @@ legend("top", legend=colnames(agg_regations),
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations over end_points
 roll_agg <- function(x_ts, end_points, FUN, ...) {
-  len_gth <- NROW(end_points)
+  n_row <- NROW(end_points)
 # start_points are single-period lag of end_points
-  start_points <- c(1, end_points[1:(len_gth-1)])
+  start_points <- c(1, end_points[1:(n_row-1)])
 # perform aggregations over look_backs list
   agg_regations <- lapply(look_backs, 
     function(look_back) FUN(x_ts[look_back], ...))  # end lapply
@@ -1423,11 +1523,11 @@ head(agg_regations)
 library(HighFreq)  # load package HighFreq
 end_points <- # define end_points with beginning stub
   n_row-look_back*num_agg + (0:num_agg)*look_back
-len_gth <- NROW(end_points)
+n_row <- NROW(end_points)
 num_points <- 4  # number of end points in look-back interval
 # start_points are multi-period lag of end_points
 start_points <- c(rep_len(1, num_points-1), 
-  end_points[1:(len_gth-num_points+1)])
+  end_points[1:(n_row-num_points+1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -1629,7 +1729,7 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 % wipp
 %%%%%%%%%%%%%%%
-\subsection{dev: State Space Models}
+\subsection{draft: State Space Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1660,12 +1760,12 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate EWMA VTI variance using filter()
-wid_th <- 51
-weight_s <- exp(-0.1*1:wid_th)
+look_back <- 51
+weight_s <- exp(-0.1*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 vari_ance <- stats::filter(re_turns^2, 
     filter=weight_s, sides=1)
-vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+vari_ance[1:(look_back-1)] <- vari_ance[look_back]
 class(vari_ance)
 vari_ance <- as.numeric(vari_ance)
 x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
@@ -1681,7 +1781,7 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
 
 
 %%%%%%%%%%%%%%%
-\subsection{dev: Rolling \protect\emph{EWMA} Realized Variance Estimator}
+\subsection{draft: Rolling \protect\emph{EWMA} Realized Variance Estimator}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1704,12 +1804,12 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate EWMA VTI variance using filter()
-wid_th <- 51
-weight_s <- exp(-0.1*1:wid_th)
+look_back <- 51
+weight_s <- exp(-0.1*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 vari_ance <- stats::filter(re_turns^2, 
     filter=weight_s, sides=1)
-vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+vari_ance[1:(look_back-1)] <- vari_ance[look_back]
 class(vari_ance)
 vari_ance <- as.numeric(vari_ance)
 x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
@@ -1752,14 +1852,14 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::etf_env$VTI)))
 # define end points
 end_points <- seq_along(re_turns)
-len_gth <- NROW(end_points)
+n_row <- NROW(end_points)
 look_back <- 51
 # start_points are multi-period lag of end_points
 start_points <- c(rep_len(1, look_back-1), 
-    end_points[1:(len_gth-look_back+1)])
+    end_points[1:(n_row-look_back+1)])
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -1853,12 +1953,12 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate EWMA VTI variance using filter()
-wid_th <- 51
-weight_s <- exp(-0.1*1:wid_th)
+look_back <- 51
+weight_s <- exp(-0.1*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 vari_ance <- stats::filter(re_turns^2, 
     filter=weight_s, sides=1)
-vari_ance[1:(wid_th-1)] <- vari_ance[wid_th]
+vari_ance[1:(look_back-1)] <- vari_ance[look_back]
 class(vari_ance)
 vari_ance <- as.numeric(vari_ance)
 x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
@@ -1896,12 +1996,12 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
 # calculate VTI variance using package roll
 library(roll)  # load roll
 vari_ance <- roll::roll_var(re_turns, 
-  weights=rev(weight_s), width=wid_th)
+  weights=rev(weight_s), width=look_back)
 colnames(vari_ance) <- "VTI.variance"
 class(vari_ance)
 head(vari_ance)
 sum(is.na(vari_ance))
-vari_ance[1:(wid_th-1)] <- 0
+vari_ance[1:(look_back-1)] <- 0
       @
   \end{columns}
 \end{block}
@@ -1921,7 +2021,7 @@ vari_ance[1:(wid_th-1)] <- 0
 x11(width=6, height=4)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::env_etf$VTI)))
+re_turns <- rutils::diff_xts(log(quantmod::Cl(rutils::etf_env$VTI)))
 # calculate VTI variance using package roll
 look_back <- 22
 vari_ance <- 
@@ -1933,7 +2033,7 @@ n_row <- NROW(re_turns)
 num_agg <- n_row %/% look_back
 end_points <- # define end_points with beginning stub
   n_row-look_back*num_agg + (0:num_agg)*look_back
-len_gth <- NROW(end_points)
+n_row <- NROW(end_points)
 # subset vari_ance to end_points
 vari_ance <- vari_ance[end_points]
 # improved autocorrelation function
@@ -1981,14 +2081,14 @@ title(main="pacf of variance", line=-1)
       <<echo=TRUE,eval=FALSE>>=
 # define GARCH parameters
 om_ega <- 0.01 ; al_pha <- 0.2
-be_ta <- 0.2 ; len_gth <- 1000
-re_turns <- numeric(len_gth)
-vari_ance <- numeric(len_gth)
+be_ta <- 0.2 ; n_row <- 1000
+re_turns <- numeric(n_row)
+vari_ance <- numeric(n_row)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
 re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
 # simulate GARCH model
 set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
+for (i in 2:n_row) {
   re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
     be_ta*vari_ance[i-1]
@@ -2017,8 +2117,8 @@ par(mar=c(3, 3, 1, 1), oma=c(0, 0, 0, 0))
 plot(cumsum(re_turns/100), t="l", 
   lwd=2, col="orange", xlab="", ylab="",
   main="GARCH cumulative returns")
-date_s <- seq.Date(from=Sys.Date()-len_gth+1, 
-  to=Sys.Date(), length.out=len_gth)
+date_s <- seq.Date(from=Sys.Date()-n_row+1, 
+  to=Sys.Date(), length.out=n_row)
 x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
 dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
 # plot GARCH standard deviation
@@ -2051,14 +2151,14 @@ dygraphs::dygraph(x_ts, main="GARCH standard deviation")
       <<echo=TRUE,eval=FALSE>>=
 # define GARCH parameters
 om_ega <- 0.0001 ; al_pha <- 0.5
-be_ta <- 0.1 ; len_gth <- 10000
-re_turns <- numeric(len_gth)
-vari_ance <- numeric(len_gth)
+be_ta <- 0.1 ; n_row <- 10000
+re_turns <- numeric(n_row)
+vari_ance <- numeric(n_row)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
 re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
 # simulate GARCH model
 set.seed(1121)  # reset random numbers
-for (i in 2:len_gth) {
+for (i in 2:n_row) {
   re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
     be_ta*vari_ance[i-1]
@@ -2157,7 +2257,7 @@ garch_spec <- fGarch::garchSpec(
   model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
 # simulate GARCH model
 garch_sim <- 
-  fGarch::garchSim(spec=garch_spec, n=len_gth)
+  fGarch::garchSim(spec=garch_spec, n=n_row)
 re_turns <- as.numeric(garch_sim)
 # calculate kurtosis of GARCH returns
 moments::moment(re_turns, order=4) / 
@@ -2222,19 +2322,19 @@ legend("topright", inset=0.05,
 library(HighFreq)  # load HighFreq
 # calculate variance for each period
 vari_ance <- 252*(24*60*60)^2*
-  HighFreq::run_variance(oh_lc=env_etf$VTI)
+  HighFreq::run_variance(oh_lc=etf_env$VTI)
 # calculate EWMA VTI variance using RcppRoll
 library(RcppRoll)  # load RcppRoll
-wid_th <- 51
-weight_s <- exp(0.1*1:wid_th)
+look_back <- 51
+weight_s <- exp(0.1*1:look_back)
 var_ewma <- RcppRoll::roll_mean(vari_ance, 
-    align="right", n=wid_th, weights=weight_s)
+    align="right", n=look_back, weights=weight_s)
 var_ewma <- xts(var_ewma, 
-    order.by=index(env_etf$VTI[-(1:(wid_th-1)), ]))
+    order.by=index(etf_env$VTI[-(1:(look_back-1)), ]))
 colnames(var_ewma) <- "VTI variance"
 # plot EWMA variance with custom line colors
 x11()
-chart_Series(env_etf$VTI["2010-01/2010-10"], 
+chart_Series(etf_env$VTI["2010-01/2010-10"], 
    name="VTI EWMA variance with May 6, 2010 Flash Crash")
 # add variance in extra panel
 add_TA(var_ewma["2010-01/2010-10"], col="black")
@@ -2263,7 +2363,7 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
       The prices at any point in time follow the \emph{Log-normal} distribution, which is the exponential of the normal (\emph{Gaussian}) distribution, 
       <<echo=TRUE,eval=FALSE>>=
 # extract time index from VTI
-in_dex <- index(rutils::env_etf$VTI)
+in_dex <- index(rutils::etf_env$VTI)
 n_row <- NROW(in_dex)
 half_length <- n_row %/% 2
 # simulate returns with random volatility
@@ -2477,10 +2577,10 @@ sqrt((6.5*60)*mean(na.omit(
 library(HighFreq)  # load HighFreq
 # calculate variance
 var_close <- 
-  HighFreq::run_variance(oh_lc=env_etf$VTI, 
+  HighFreq::run_variance(oh_lc=etf_env$VTI, 
                          calc_method="close")
 var_yang_zhang <- 
-  HighFreq::run_variance(oh_lc=env_etf$VTI)
+  HighFreq::run_variance(oh_lc=etf_env$VTI)
 vari_ance <- 
   252*(24*60*60)^2*cbind(var_close, var_yang_zhang)
 colnames(vari_ance) <- 
@@ -2517,9 +2617,9 @@ legend("top", legend=colnames(vari_ance),
       The range logarithm fits better into the normal distribution than the range percentage, 
       <<echo=TRUE,eval=FALSE>>=
 re_turns <- 
-  ifelse(env_etf$VTI[, 2] > env_etf$VTI[, 3], 
-  log((env_etf$VTI[, 2] - env_etf$VTI[, 3]) / 
-    (env_etf$VTI[, 2] + env_etf$VTI[, 3])), 0)
+  ifelse(etf_env$VTI[, 2] > etf_env$VTI[, 3], 
+  log((etf_env$VTI[, 2] - etf_env$VTI[, 3]) / 
+    (etf_env$VTI[, 2] + etf_env$VTI[, 3])), 0)
 # perform normality tests
 shapiro.test(coredata(re_turns))
 tseries::jarque.bera.test(re_turns)
@@ -2644,8 +2744,8 @@ pacf(var_yang_zhang, lag=10, xlab=NA, ylab=NA)
 title(main="VTI YZ variance partial autocorrelations")
 
 # Squared range partial autocorrelations
-re_turns <- log(rutils::env_etf$VTI[,2] /
-                  rutils::env_etf$VTI[,3])
+re_turns <- log(rutils::etf_env$VTI[,2] /
+                  rutils::etf_env$VTI[,3])
 pacf(re_turns^2, lag=10, xlab=NA, ylab=NA)
 title(main="VTI squared range partial autocorrelations")
       @
@@ -2767,7 +2867,7 @@ charts.PerformanceSummary(ham_1,
       <<etf_cum_returns,echo=(-1),eval=FALSE,fig.width=7,fig.height=6,fig.show="hide">>=
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 chart.CumReturns(
-  env_etf$re_turns[, c("XLF", "DBC", "IEF")], lwd=2, 
+  etf_env$re_turns[, c("XLF", "DBC", "IEF")], lwd=2, 
   ylab="", legend.loc="topleft", main="")
 # add title
 title(main="ETF cumulative returns", line=-1)
@@ -2792,14 +2892,14 @@ title(main="ETF cumulative returns", line=-1)
       <<drawdown_plot,eval=FALSE,echo=(-(1:1)),fig.width=7,fig.height=6,fig.show="hide">>=
 options(width=200)
 library(PerformanceAnalytics)
-chart.Drawdown(env_etf$re_turns[, "VTI"], ylab="", 
+chart.Drawdown(etf_env$re_turns[, "VTI"], ylab="", 
                main="VTI drawdowns")
       @
       \vskip27ex
       <<eval=FALSE,echo=(-(1:2))>>=
 options(width=200)
 library(PerformanceAnalytics)
-table.Drawdowns(env_etf$re_turns[, "VTI"])
+table.Drawdowns(etf_env$re_turns[, "VTI"])
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -2820,11 +2920,11 @@ table.Drawdowns(env_etf$re_turns[, "VTI"])
       \vspace{-1em}
       <<returns_hist,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
 library(PerformanceAnalytics)
-chart.Histogram(env_etf$re_turns[, 1], main="", 
+chart.Histogram(etf_env$re_turns[, 1], main="", 
   xlim=c(-0.06, 0.06), 
   methods = c("add.density", "add.normal"))
 # add title
-title(main=paste(colnames(env_etf$re_turns[, 1]), 
+title(main=paste(colnames(etf_env$re_turns[, 1]), 
                  "density"), line=-1)
       @
     \column{0.5\textwidth}
@@ -2846,7 +2946,7 @@ title(main=paste(colnames(env_etf$re_turns[, 1]),
       \vspace{-1em}
       <<returns_box,echo=(-1),eval=FALSE,fig.width=6,fig.height=6,fig.show="hide">>=
 library(PerformanceAnalytics)
-chart.Boxplot(env_etf$re_turns[, 
+chart.Boxplot(etf_env$re_turns[, 
   c("VTI", "IEF", "IVW", "VYM", "IWB", "DBC", "VXX")])
       @
     \column{0.5\textwidth}
@@ -2868,9 +2968,9 @@ chart.Boxplot(env_etf$re_turns[,
       \vspace{-1em}
       <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
-tail(table.Stats(env_etf$re_turns[, 
+tail(table.Stats(etf_env$re_turns[, 
   c("VTI", "IEF", "DBC", "VXX")]), 4)
-risk_return <- table.Stats(env_etf$re_turns)
+risk_return <- table.Stats(etf_env$re_turns)
 class(risk_return)
 # Transpose the data frame
 risk_return <- as.data.frame(t(risk_return))
@@ -2936,7 +3036,7 @@ risk_return[, c("Name", "Skewness", "Kurtosis")]
       <<risk_return_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
 library(PerformanceAnalytics)
 chart.RiskReturnScatter(
-  env_etf$re_turns[, colnames(env_etf$re_turns)!="VXX"], 
+  etf_env$re_turns[, colnames(etf_env$re_turns)!="VXX"], 
   Rf=0.01/12)
       @
     \column{0.5\textwidth}
@@ -2972,7 +3072,7 @@ chart.RiskReturnScatter(
       \vspace{-1em}
       <<echo=(-1)>>=
 library(PerformanceAnalytics)
-vti_ief <- env_etf$re_turns[, c("VTI", "IEF")]
+vti_ief <- etf_env$re_turns[, c("VTI", "IEF")]
 SharpeRatio(vti_ief)
 
 SortinoRatio(vti_ief)

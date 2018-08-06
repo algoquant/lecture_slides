@@ -265,7 +265,7 @@ library(Rglpk)
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # calculate mean returns
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 re_turns <- zoo::na.locf(re_turns)
 re_turns <- na.omit(re_turns)
 mean_rets <- colMeans(re_turns)
@@ -1095,7 +1095,7 @@ n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights, min=0, max=10)
   weight_s <- weight_s/sum(weight_s)
-  portf_rets <- env_etf$re_turns[, sym_bols] %*% weight_s
+  portf_rets <- etf_env$re_turns[, sym_bols] %*% weight_s
   100*c(ret=mean(portf_rets), sd=sd(portf_rets))
 })  # end sapply
 # plot scatterplot of random portfolios
@@ -1251,7 +1251,7 @@ sym_bols <- c("VTI", "IEF")
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
 # calculate portfolio returns and volatilities
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 ret_sd <- re_turns %*% t(weight_s)
 ret_sd <- cbind(252*colMeans(ret_sd), 
   sqrt(252)*matrixStats::colSds(ret_sd))
@@ -1360,7 +1360,7 @@ legend("top", legend=colnames(optim_rets),
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(Ad(rutils::env_etf$VTI)))
+re_turns <- rutils::diff_xts(log(Ad(rutils::etf_env$VTI)))
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
@@ -1426,7 +1426,7 @@ library(Rglpk)
 # vector of symbol names and returns
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
-re_turns <- rutils::env_etf$re_turns[((NROW(re_turns)-6):NROW(re_turns)), sym_bols]
+re_turns <- rutils::etf_env$re_turns[((NROW(re_turns)-6):NROW(re_turns)), sym_bols]
 mean_rets <- colMeans(re_turns)
 conf_level <- 0.05
 r_min <- 0 ; w_min <- 0 ; w_max <- 1
@@ -1473,7 +1473,7 @@ as.numeric(op_tim$solution[1:n_col])
         <<echo=(-(1:3)),eval=FALSE>>=
 # calculate daily percentage re_turns
 sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # create initial vector of portfolio weights
 weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
@@ -1631,7 +1631,7 @@ text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 # objective function equal to minus Sharpe ratio
 risk_free <- 0.03
 object_ive <- function(weight_s) {
-  portf_rets <- 100*env_etf$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
+  portf_rets <- 100*etf_env$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
   -mean(portf_rets-risk_free)/sd(portf_rets)
 }  # end object_ive
 # perform portfolio optimization
@@ -1920,7 +1920,7 @@ unlist(optimize(f=object_ive, interval=c(-1, 2)))
         <<echo=TRUE,eval=FALSE>>=
 # calculate daily percentage re_turns
 sym_bols <- c("VTI", "IEF", "DBC")
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # calculate the covariance matrix
 cov_mat <- cov(re_turns)
 # minimum variance weights, with sum equal to 1
@@ -1962,7 +1962,7 @@ op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # calculate daily percentage re_turns
-re_turns <- rutils::env_etf$re_turns[, sym_bols]
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # objective equal to minus Sharpe ratio
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
@@ -2182,7 +2182,7 @@ load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
+  R=etf_env$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -2226,7 +2226,7 @@ chart.RiskReward(maxSR_DEOpt,
   return.col="mean")
 
 # plot risk/ret points in portfolio scatterplot
-risk_ret_points <- function(rets=env_etf$re_turns,
+risk_ret_points <- function(rets=etf_env$re_turns,
         risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
   risk <- match.arg(risk)  # match to arg list
   if (risk=="ETL") {
@@ -2267,7 +2267,7 @@ risk_ret_points()
       <<optim_portf_SR_vis,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 library(PortfolioAnalytics)
 plot_portf <- function(portfolio,
-            rets_data=env_etf$re_turns) {
+            rets_data=etf_env$re_turns) {
   weight_s <- portfolio$weights
   portf_names <- names(weight_s)
   # calculate xts of portfolio
@@ -2357,7 +2357,7 @@ load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
+  R=etf_env$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSRN,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -2506,7 +2506,7 @@ load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
+  R=etf_env$re_turns[, portf_names],  # specify returns
   portfolio=portf_maxSTARR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSTARR=TRUE,  # maximize STARR
@@ -2677,7 +2677,7 @@ load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # perform optimization of weights
 minES_ROI <- optimize.portfolio(
-  R=env_etf$re_turns[, portf_names],  # specify returns
+  R=etf_env$re_turns[, portf_names],  # specify returns
   portfolio=portf_minES,  # specify portfolio
   optimize_method="ROI", # use ROI
   trace=TRUE, traceDE=0)
@@ -2785,7 +2785,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns["/2011", portf_names],
+  R=etf_env$re_turns["/2011", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -2819,7 +2819,7 @@ library(PortfolioAnalytics)
 options(width=50)
 # perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
-  R=env_etf$re_turns["2011/", portf_names],
+  R=etf_env$re_turns["2011/", portf_names],
   portfolio=portf_maxSR,  # specify portfolio
   optimize_method="DEoptim", # use DEoptim
   maxSR=TRUE,  # maximize Sharpe
@@ -3600,7 +3600,7 @@ cor(de_faults)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Default correlation is defined as the correlation between the \emph{Boolean} vectors of default events, 
+      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events, 
       \vskip1ex
       The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values},
       \vskip1ex
