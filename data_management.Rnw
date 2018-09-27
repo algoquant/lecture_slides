@@ -62,7 +62,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Data Management]{Data Management}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -395,37 +395,50 @@ mat_read  # a matrix without row names
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed,
+      There are several ways of reading and writing matrices from \emph{csv} files, with tradeoffs between simplicity, data size, and speed.
       \vskip1ex
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names,
+      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names.
       \vskip1ex
-      \texttt{write.matrix()} is part of package \emph{MASS},
+      \texttt{write.matrix()} is part of package \emph{MASS}.
       \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily,
+      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily.
       \vskip1ex
-      Removing row names simplifies the reading and writing of matrices,
+      Removing row names simplifies the reading and writing of matrices.
       \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings,
+      The function \texttt{readLines} reads whole lines and returns them as single strings.
       \vskip1ex
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression,
+      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+setwd("C:/Develop/R/lecture_slides/data")
 library(MASS)  # load package "MASS"
 # write to CSV file by row - it's very SLOW!!!
-write.matrix(mat_rix, file="matrix.csv", sep=",")
-system.time(  # scan reads faster - skip first line with colnames
-  mat_read <- scan(file="matrix.csv", sep=",", 
-                  skip=1, what=numeric()))
-col_names <- readLines(con="matrix.csv", n=1)  # read colnames
+MASS::write.matrix(mat_rix, 
+  file="matrix.csv", sep=",")
+# read using scan() and skip first line with colnames
+mat_read <- scan(file="matrix.csv", 
+  sep=",", skip=1, what=numeric())
+# read colnames
+col_names <- readLines(con="matrix.csv", n=1)
 col_names  # this is a string!
-col_names <- strsplit(col_names, s=",")[[1]]  # convert to char vector
+# convert to char vector
+col_names <- strsplit(col_names, 
+  s=",")[[1]]
 mat_read  # mat_read is a vector, not matrix!
 # coerce by row to matrix
-mat_read <- matrix(mat_read, ncol=length(col_names), 
-                  byrow=TRUE)
-colnames(mat_read) <- col_names  # restore colnames
+mat_read <- matrix(mat_read, 
+  ncol=NROW(col_names), byrow=TRUE)
+# restore colnames
+colnames(mat_read) <- col_names
 mat_read
+# scan() is a little faster than read.csv()
+library(microbenchmark)
+summary(microbenchmark(
+  read_csv=read.csv("matrix.csv"),
+  scan=scan(file="matrix.csv", sep=",", 
+    skip=1, what=numeric()),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -440,27 +453,31 @@ mat_read
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Very often data that is read from external sources contains elements with bad data,
+      Very often data that is read from external sources contains elements with bad data.
       \vskip1ex
-      An example of bad data are \texttt{character} strings in \texttt{numeric} data,
+      An example of bad data are \texttt{character} strings in \texttt{numeric} data.
       \vskip1ex
-      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()},
+      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()}.
       \vskip1ex
-      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values,
+      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
+      \vskip1ex
+      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv", row.names=1,
-                     stringsAsFactors=FALSE)
+mat_rix <- read.csv(file="matrix_bad.csv", 
+  row.names=1, stringsAsFactors=FALSE)
 mat_rix
 class(mat_rix)
 # columns with bad data are character or factor
 sapply(mat_rix, class)
-row_names <- row.names(mat_rix)  # copy row names
+# copy row names
+row_names <- row.names(mat_rix)
 # sapply loop over columns and coerce to numeric
 mat_rix <- sapply(mat_rix, as.numeric)
-row.names(mat_rix) <- row_names  # restore row names
+# restore row names
+row.names(mat_rix) <- row_names
 # replace NAs with zero
 mat_rix[is.na(mat_rix)] <- 0
 # matrix without NAs
@@ -547,7 +564,7 @@ library(zoo)  # load package zoo
 # create zoo with POSIXct date-time index
 in_dex <- seq(from=as.POSIXct("2013-06-15"), 
                   by="hour", length.out=1000)
-zoo_series <- zoo(cumsum(rnorm(length(in_dex))), 
+zoo_series <- zoo(cumsum(rnorm(NROW(in_dex))), 
                   order.by=in_dex)
 # write zoo series to text file, and then read it back
 write.zoo(zoo_series, file="zoo_series.txt")
@@ -1245,7 +1262,7 @@ etf_names <- sapply(etf_list$Name,
                     function(name) {
   name_split <- strsplit(name, split=" ")[[1]]
   name_split <-
-    name_split[c(-1, -length(name_split))]
+    name_split[c(-1, -NROW(name_split))]
   name_match <- match("Select", name_split)
   if (!is.na(name_match))
     name_split <- name_split[-name_match]
@@ -1370,7 +1387,7 @@ save(zoo_series, file='zoo_series.RData')
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 etf_env <- new.env()  # new environment for data
 # download data for sym_bols into etf_env from Alpha Vantage
 getSymbols.av(sym_bols, adjust=TRUE, env=etf_env, 
@@ -1379,7 +1396,7 @@ getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
       @
       \vspace{-2em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 ls(etf_env)  # list files in etf_env
 # get class of object in etf_env
 class(get(x=sym_bols[1], envir=etf_env))
@@ -1419,7 +1436,7 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # check of object is an OHLC time series
 is.OHLC(etf_env$VTI)
 # adjust single OHLC object using its name
@@ -1469,7 +1486,7 @@ for (sym_bol in ls(etf_env)) {
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # extract and cbind all data, subset by symbols
 price_s <- rutils::do_call(cbind,
   as.list(etf_env)[sym_bols])
@@ -1603,6 +1620,177 @@ assign("price_s", rutils::do_call(cbind,
 
 
 %%%%%%%%%%%%%%%
+\subsection{Downloading Stock Time Series From \protect\emph{Tiingo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \vskip1ex
+      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
+      \vskip1ex
+      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
+      \vskip1ex
+      Users must first obtain an \emph{Tiingo} API key, and then pass it in \texttt{getSymbols.tiingo()} calls:\\
+      https://www.tiingo.com/
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# Load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+sym_bols <- sp_500$co_tic
+# Get duplicate sym_bols
+ta_ble <- table(sym_bols)
+ta_ble[ta_ble>1]
+sym_bols <- unique(sym_bols)
+# Remove "BRK.B" and later download separately
+sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
+env_sp500 <- new.env()  # new environment for data
+# Download in while loop from Tiingo and copy into environment
+down_loaded <- sym_bols %in% ls(env_sp500)
+it_er <- 0
+while (((sum(!down_loaded)) > 0) & (it_er<10)) {
+  # Boolean vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  # download data and copy it into environment
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("processing: ", sym_bol, "\n")
+    tryCatch(  # with error handler
+      getSymbols(sym_bol, src="tiingo", adjust=TRUE, 
+        from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+      # error handler captures error condition
+      error=function(error_cond) {
+        print(paste("error handler: ", error_cond))
+      },  # end error handler
+      finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  it_er <- it_er + 1
+  Sys.sleep(2*60)
+}  # end while
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Stock Symbols and Adjusting \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The column names for symbol \texttt{"LOW"} (Lowe's company) must be renamed for the extractor (accessor) function \texttt{Lo()} to work properly.
+      \vskip1ex
+      The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
+      <<echo=TRUE,eval=FALSE>>=
+# Rename "LOW" colnames to "LO_WES"
+colnames(env_sp500$LOW) <- 
+  sapply(colnames(env_sp500$LOW),
+    function(col_name) {
+      col_name <- strsplit(col_name, split="[.]")[[1]]
+      paste("LO_WES", col_name[2], sep=".")
+    })
+env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
+rm(LOW, envir=env_sp500)
+# Download "BRK.B" separately
+BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
+colnames(BRK_B) <- paste("BRK_B", sapply(strsplit(colnames(BRK_B), split="[.]"), function(x) x[2]), sep=".")
+env_sp500$BRK_B <- BRK_B
+# Rename "BF-B" colnames to "BF_B"
+colnames(env_sp500$"BF-B") <- 
+  sapply(colnames(env_sp500$"BF-B"),
+    function(col_name) {
+      col_name <- strsplit(col_name, split="[.]")[[1]]
+      paste("BF_B", col_name[2], sep=".")
+    })
+env_sp500$BF_B <- env_sp500$"BF-B"
+names(colnames(env_sp500$BF_B)) <- NULL
+rm("BF-B", envir=env_sp500)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/lowes_stock.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce the time indices from class POSIXct to class Date
+for (sym_bol in ls(env_sp500)) {
+  x_ts <- get(sym_bol, envir=env_sp500)
+  index(x_ts) <- as.Date(index(x_ts))
+  assign(sym_bol, x_ts, envir=env_sp500)
+}  # end for
+save(env_sp500, 
+  file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$LO_WES["2017-06/"], 
+  TA="add_Vo()", name="LOWES stock")
+      @
+
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Stock Time Series From \protect\emph{Alpha Vantage}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \vskip1ex
+      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
+      \vskip1ex
+      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()}.
+      \vskip1ex
+      Users must first obtain an \emph{Alpha Vantage} API key, and then pass it in \texttt{getSymbols.av()} calls:\\
+      https://www.alphavantage.co/
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# remove all files from environment(if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# download in while loop from Alpha Vantage and copy into environment
+down_loaded <- sym_bols %in% ls(env_sp500)
+it_er <- 0
+while (((sum(!down_loaded)) > 0) & (it_er<10)) {
+  # Boolean vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  # download data and copy it into environment
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("processing: ", sym_bol, "\n")
+    tryCatch(  # with error handler
+      getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500, 
+                 output.size="full", api.key="T7JPW54ES8G75310"),
+      # error handler captures error condition
+      error=function(error_cond) {
+        print(paste("error handler: ", error_cond))
+      },  # end error handler
+      finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  it_er <- it_er + 1
+  Sys.sleep(2*60)
+}  # end while
+# Adjust all OHLC prices in environment
+for (sym_bol in ls(env_sp500)) {
+  assign(sym_bol, 
+    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE), 
+    envir=env_sp500)
+}  # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1623,7 +1811,7 @@ assign("price_s", rutils::do_call(cbind,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # assign name SP500 to ^GSPC symbol
 setSymbolLookup(
   SP500=list(name="^GSPC", src="yahoo"))
@@ -1663,7 +1851,7 @@ chart_Series(x=etf_env$SP500["2016/"],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # assign name DJIA to ^DJI symbol
 setSymbolLookup(
   DJIA=list(name="^DJI", src="yahoo"))
@@ -1708,7 +1896,7 @@ chart_Series(x=etf_env$DJIA["2016/"],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # create name corresponding to "^GSPC" symbol
 setSymbolLookup(
   SP500=list(name="^GSPC", src="yahoo"))
@@ -1750,7 +1938,7 @@ chart_Series(x=etf_env$SP500["2016/"],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 library(RCurl)  # load package RCurl
 library(XML)  # load package XML
 # download text data from URL
@@ -1828,114 +2016,6 @@ chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data From \protect\emph{Alpha Vantage}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices,
-      \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does,
-      \vskip1ex
-      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()},
-      \vskip1ex
-      Users must first obtain an \emph{Alpha Vantage} API key, and then pass it in \texttt{getSymbols.av()} calls:\\
-      https://www.alphavantage.co/
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
-sym_bols <- sp_500$co_tic
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# download in while loop from Alpha Vantage and copy into environment
-down_loaded <- sym_bols %in% ls(env_sp500)
-it_er <- 0
-while (((NROW(down_loaded) - sum(down_loaded)) > 0) & (it_er<10)) {
-  # Boolean vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
-  # download data and copy it into environment
-  for (sym_bol in sym_bols[!down_loaded]) {
-    cat("processing: ", sym_bol, "\n")
-    tryCatch(  # with error handler
-        getSymbols(sym_bol, adjust=TRUE, env=env_sp500, 
-                   output.size="full", api.key="T7JPW54ES8G75310"),
-      # error handler captures error condition
-      error=function(error_cond) {
-        print(paste("error handler: ", error_cond))
-      },  # end error handler
-      finally=print(paste("sym_bol=", sym_bol))
-    )  # end tryCatch
-  }  # end for
-  it_er <- it_er + 1
-  Sys.sleep(2*60)
-}  # end while
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Managing Stock Symbols and Adjusting \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The column names for symbol \texttt{"LOW"} (Lowe's company) must be renamed for the extractor (accessor) function \texttt{Lo()} to work properly.
-      \vskip1ex
-      The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# rename "LOW" colnames to "L_OWES"
-colnames(env_sp500$LOW) <- 
-  sapply(colnames(env_sp500$LOW),
-    function(col_name) {
-      col_name <- strsplit(col_name, split="[.]")[[1]]
-      paste("L_OWES", col_name[2], sep=".")
-    })
-assign("L_OWES", env_sp500$LOW, envir=env_sp500)
-rm(LOW, envir=env_sp500)
-# rename "BRK.B" colnames to "BRK_B"
-colnames(env_sp500$BRK.B) <- 
-  sapply(colnames(env_sp500$BRK.B),
-         function(col_name) {
-           col_name <- strsplit(col_name, split="[.]")[[1]]
-           paste("BRK_B", col_name[3], sep=".")
-         })
-assign("BRK_B", env_sp500$BRK.B, envir=env_sp500)
-rm(BRK.B, envir=env_sp500)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/lowes_stock.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# adjust all OHLC in environment using vector of strings
-for (sym_bol in ls(env_sp500)) {
-  assign(sym_bol, 
-    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE), 
-    envir=env_sp500)
-}  # end for
-save(env_sp500, 
-  file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$L_OWES["2017-06/"], 
-  TA="add_Vo()", name="LOWES stock")
-      @
-
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Downloading \protect\emph{FRED} Time Series Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1992,7 +2072,7 @@ chart_Series(unemp_rate["1990/"],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 install.packages("devtools")
 library(devtools)
 # install package Quandl from github
@@ -2027,7 +2107,7 @@ detach("package:Quandl")
       \vskip1ex
       The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
       \vskip1ex
-      \emph{Quandl} datasets have a unique \emph{Quandl Code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
+      \emph{Quandl} datasets have a unique \emph{Quandl code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
       \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
       \vskip1ex
       \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
@@ -2042,7 +2122,7 @@ detach("package:Quandl")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # download EOD AAPL prices from WIKI free database
 price_s <- Quandl(code="WIKI/AAPL",
                   type="xts", start_date="1990-01-01")
@@ -2090,7 +2170,7 @@ chart_Series(price_s["2016/", 1],
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # load S&P500 stock Quandl codes
 sp_500 <- read.csv(
   file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
@@ -2128,7 +2208,7 @@ tick_ers <- do_call_rbind(
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 env_sp500 <- new.env()  # new environment for data
 # remove all files (if necessary)
 rm(list=ls(env_sp500), envir=env_sp500)
@@ -2147,6 +2227,157 @@ for (tick_er in tick_ers[!down_loaded]) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
              name="XOM stock")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Futures Time Series from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Quandl} provides the 
+      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} of time series of prices for \texttt{600} different futures contracts.
+      \vskip1ex
+      The 
+      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} contains daily \emph{OHLC} prices for continuous futures contracts.
+      \vskip1ex
+      A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
+      \vskip1ex
+      The data is curated by the \emph{Quandl} community from data provided by the \emph{CME}, \emph{ICE}, \emph{LIFFE}, and other exchanges. 
+      \vskip1ex
+      The \emph{Quandl codes} are specified as \texttt{CHRIS/\{EXCHANGE\}\_\{CODE\}\{DEPTH\}}, where \texttt{\{DEPTH\}} is the depth of the chained contract. 
+      \vskip1ex
+      The chained front month contracts have depth \texttt{1}, the back month contracts have depth \texttt{2}, etc.
+      \vskip1ex
+      The continuous front and back month contracts allow building continuous futures curves.
+      \vskip1ex
+      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+library(Quandl)
+# register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# download E-mini S&P500 futures prices
+price_s <- Quandl(code="CHRIS/CME_ES1",
+  type="xts", start_date="1990-01-01")
+price_s <- price_s[, c("Open", "High", "Low", "Last", "Volume")]
+colnames(price_s)[4] <- "Close"
+# plot the prices
+x11(width=5, height=4)  # open x11 for plotting
+chart_Series(x=price_s["2008-06/2009-06"],
+             TA="add_Vo()",
+             name="S&P500 Futures")
+# plot dygraph
+dygraphs::dygraph(price_s["2008-06/2009-06", -5], 
+  main="S&P500 Futures") %>% 
+  dyCandlestick()
+      @
+      \vspace{-1em}
+      For example, the \emph{Quandl code} for the continuous \emph{E-mini S\&P500} front month futures is \texttt{CHRIS/CME\_ES1}, while for the back month it's \texttt{CHRIS/CME\_ES2}, for the second back month it's \texttt{CHRIS/CME\_ES3}, etc.
+      \vskip1ex
+      The \emph{Quandl code} for the \emph{E-mini Oil} futures is \texttt{CHRIS/CME\_QM1}, for the \emph{E-mini euro FX} futures is \texttt{CHRIS/CME\_E71}, etc.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{VIX} Futures Files from CBOE}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The CFE (CBOE Futures Exchange) provides daily \href{https://markets.cboe.com/us/futures/market_statistics/historical_data/}{CBOE Historical Data for Volatility Futures}, including the \emph{VIX} futures.
+      \vskip1ex
+      The CBOE data incudes \emph{OHLC} prices and also the \emph{settlement} price (in column \texttt{"Settle"}).
+      \vskip1ex
+      The \emph{settlement} price is usually defined as the weighted average price (\emph{WAP}) or the midpoint price, and is different from the \emph{Close} price.
+      \vskip1ex
+      The \emph{settlement} price is used for calculating the daily \emph{mark to market} (value) of the futures contract.
+      \vskip1ex
+      Futures exchanges require that counterparties exchange (settle) the \emph{mark to market} value of the futures contract daily, to reduce counterparty default risk. 
+      \vskip1ex
+      The function \texttt{download.file()} downloads files from the internet.
+      \vskip1ex
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv", 
+  stringsAsFactors=FALSE, row.names=1)
+data_dir <- "C:/Develop/data/vix_data"
+dir.create(data_dir)
+sym_bols <- rownames(date_s)
+file_names <- file.path(data_dir, paste0(sym_bols, ".csv"))
+log_file <- file.path(data_dir, "log_file.txt")
+cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
+url_s <- paste0(cboe_url, date_s[, 1])
+# Download files in loop
+for (it in seq_along(url_s)) {
+    tryCatch(  # warning and error handler
+        download.file(url_s[it], 
+                destfile=file_names[it], quiet=TRUE),
+      # warning handler captures warning condition
+      warning=function(warning_cond) {
+        cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
+      },  # end warning handler
+      # error handler captures error condition
+      error=function(error_cond) {
+        cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
+      },  # end error handler
+      finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
+    )  # end tryCatch
+}  # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{VIX} Futures Data Into an Environment}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{quantmod::getSymbols()} with the parameter \texttt{src="cfe"} downloads CFE data into the specified \emph{environment}. (But this requires first loading the package \emph{qmao}.)
+      \vskip1ex
+      Currently \texttt{quantmod::getSymbols()} doesn't download the most recent data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create new environment for data
+vix_env <- new.env()
+# Download VIX data for the months 6, 7, and 8 in 2018
+library(qmao)
+quantmod::getSymbols("VX", Months=1:12, 
+  Years=2018, src="cfe", env=vix_env)
+# or
+qmao::getSymbols.cfe(Symbols="VX", 
+  Months=6:8, Years=2018, env=vix_env, 
+  verbose=FALSE, auto.assign=TRUE)
+# Calculate the classes of all the objects 
+# in the environment vix_env
+unlist(eapply(vix_env, 
+  function(x) {class(x)[1]}))
+class(vix_env$VX_M18)
+colnames(vix_env$VX_M18)
+# Save the data to a binary file called "vix_cboe.RData". 
+save(vix_env, 
+  file="C:/Develop/data/vix_data/vix_cboe.RData")
       @
   \end{columns}
 \end{block}
@@ -2178,7 +2409,7 @@ chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
       \vskip1ex
       Symbols of futures contracts are obtained by combining the contract code with the month code and the year.
       \vskip1ex
-      For example, \emph{ESU8} is the symbol for the \emph{S\&P500} index emini futures expiring in September 2018. 
+      For example, \emph{ESU8} is the symbol for the \emph{S\&P500} index \emph{E-mini} futures expiring in September 2018. 
     \column{0.5\textwidth}
     \vspace{-1em}
     \begin{table}[htb]
@@ -2192,7 +2423,8 @@ future_s <- rbind(c("S&P500 index", "ES"),
                   c("Gold", "GC"),
                   c("Oil", "CL"),
                   c("Euro FX", "EC"),
-                  c("Swiss franc", "SF"))
+                  c("Swiss franc", "SF"),
+                  c("Japanese Yen", "JY"))
 colnames(future_s) <- c("Futures contract", "Code")
 print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
 @
@@ -2213,7 +2445,55 @@ print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.row
       \vspace{-1em}
       Interactive Brokers offers more information about futures contracts:\\
       \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=463}{IB Contract and Symbol Database}\\
-      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}
+      \vskip1ex
+      List of 
+      \href{https://www.purefinancialacademy.com/futures-markets}{Popular Futures Contracts}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{E-mini} Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{E-mini} futures are contracts with smaller notionals and tick values, which are more suitable for retail investors.
+      \vskip1ex
+      For example, the \emph{E-mini} 
+      \href{https://www.cmegroup.com/trading/energy/crude-oil/emini-crude-oil.html}{\emph{QM} oil futures}
+      notional is \texttt{500} barrels, while the standard 
+      \href{https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude_quotes_globex.html}{\emph{CL} oil futures}
+      notional is \texttt{1,000} barrels.
+      \vskip1ex
+      The tick value is the change in the dollar value of the contract due to a one tick change in the underlying price. 
+      \vskip1ex
+      For example, the tick value of the \emph{S\&P500} \emph{E-mini} future is \texttt{\$12.50}, and one tick is 0.25.
+      \vskip1ex
+      So if the \emph{S\&P500} index changes by one tick (0.25), then the contract value changes by \texttt{\$12.50}.
+      \vskip1ex
+      In other words, if the \emph{S\&P500} index changes by one unit, then the \emph{E-mini} contract value changes by \texttt{\$50}, while the standard contract value changes by \texttt{\$250}.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    \begin{table}[htb]
+    <<echo=FALSE,eval=TRUE,results='asis'>>=
+# futures contracts codes
+future_s <- rbind(c("S&P500 index", "SP", "ES"), 
+                  c("10yr Treasury", "ZN", "ZN"),
+                  c("VIX index", "VX", "delisted"),
+                  c("Gold", "GC", "YG"),
+                  c("Oil", "CL", "QM"),
+                  c("Euro FX", "EC", "E7"),
+                  c("Swiss franc", "SF", "MSF"),
+                  c("Japanese Yen", "JY", "J7"))
+colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
+print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
+@
+      \end{table}
   \end{columns}
 \end{block}
 
@@ -2336,7 +2616,7 @@ legend("topleft", legend=colnames(vol_ume), col=col_ors,
     \column{0.5\textwidth}
       Chaining futures means splicing together prices from several consecutive futures contracts. 
       \vskip1ex
-      A continuous futures contract is a time series of prices obtained by chaining futures prices.
+      A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
       \vskip1ex
       The price of the continuous contract is equal to the most liquid contract times a scaling factor.
       \vskip1ex
@@ -2402,11 +2682,11 @@ vix_index <- xts(vix_index[, -1],
   order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
 colnames(vix_index) <- c("Open", "High", "Low", "Close")
 # Save the VIX data to binary file
-load(file="C:/Develop/data/ib_data/vix_ibrokers.RData")
+load(file="C:/Develop/data/ib_data/vix_cboe.RData")
 ls(vix_env)
 vix_env$vix_index <- vix_index
 ls(vix_env)
-save(vix_env, file="C:/Develop/data/ib_data/vix_ibrokers.RData")
+save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
 # plot OHLC data in x11 window
 chart_Series(x=vix_index["2018"], name="VIX Index")
 # plot dygraph
@@ -2431,7 +2711,9 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
     \column{0.5\textwidth}
       \emph{VIX} futures are cash-settled futures contracts on the \emph{VIX} Index.
       \vskip1ex
-      The most liquid \emph{VIX} futures are with monthly expiration dates, but weekly \emph{VIX} futures are also traded.
+      The most liquid \emph{VIX} futures are with monthly expiration dates (\href{http://www.cboe.com/framed/pdfframed?content=/aboutcboe/xcal2018.pdf&section=SEC_RESOURCES&title=2018+Cboe+Expiration+Calendar}{CBOE Expiration Calendar}), but weekly \emph{VIX} futures are also traded.
+      \vskip1ex
+      These are the \href{http://www.macroption.com/vix-expiration-calendar/}{VIX Futures Monthly Expiration Dates} from 2004 to 2019.
       \vskip1ex
       \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange):\\
       \hskip1em\url{http://cfe.cboe.com/}\\
@@ -2443,24 +2725,26 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load VIX data from binary file
-load(file="C:/Develop/data/ib_data/vix_ibrokers.RData")
-# Get all VIX futures for 2018 except January
-sym_bols <- ls(vix_env)
-sym_bols <- sym_bols[grep("*8", sym_bols)]
-sym_bols <- sym_bols[-1]
-# Specify dates for curves
-low_vol <- as.Date("2018-01-11")
-hi_vol <- as.Date("2018-02-05")
-# Extract all VIX futures prices on the dates
-curve_s <- lapply(sym_bols, function(sym_bol) {
-  x_ts <- get(x=sym_bol, envir=vix_env)
-  Cl(x_ts[c(low_vol, hi_vol)])
-})  # end lapply
-curve_s <- rutils::do_call(cbind, curve_s)
-colnames(curve_s) <- sym_bols
-curve_s <- t(coredata(curve_s))
-colnames(curve_s) <- c("Contango 01/11/2018", "Backwardation 02/05/2018")
+# Read CBOE monthly futures expiration dates
+date_s <- read.csv(
+  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates.csv", 
+  stringsAsFactors=FALSE)
+date_s <- as.Date(date_s[, 1])
+year_s <- format(date_s, format="%Y")
+year_s <- substring(year_s, 4)
+# monthly futures contract codes
+month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
+sym_bols <- paste0("VX", month_codes, year_s)
+date_s <- as.data.frame(date_s)
+colnames(date_s) <- "monthly_expiration_dates"
+rownames(date_s) <- sym_bols
+# write dates to CSV file, with row names
+write.csv(date_s, row.names=TRUE, 
+  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv")
+# read back CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv", 
+  stringsAsFactors=FALSE, row.names=1)
+date_s[, 1] <- as.Date(date_s[, 1])
       @
   \end{columns}
 \end{block}
@@ -2481,84 +2765,20 @@ colnames(curve_s) <- c("Contango 01/11/2018", "Backwardation 02/05/2018")
       \vskip1ex
       The \emph{VIX} futures curve is not the same as the \emph{VIX} index term structure.
       \vskip1ex
-      When prices are \emph{low} then the futures curve is usually \emph{upward sloping}, known as \emph{contango}.
-      \vskip1ex
-      Futures prices are in \emph{contango} most of the time.
-      \vskip1ex
-      When prices are \emph{high} then the curve is usually \emph{downward sloping}, known as \emph{backwardation}.
-      \vskip1ex
       More information about the \emph{VIX} Index and the \emph{VIX} futures curve:\\
       \hskip1em\href{http://www.macroption.com/vix-futures/}{VIX Futures}\\
       \hskip1em\href{http://www.macroption.com/vix-futures-historical-data/}{VIX Futures Data}\\
-      \hskip1em\href{http://www.macroption.com/vix-expiration-calendar/}{VIX Futures Expiration Calendar}\\
       \hskip1em\href{http://www.macroption.com/vix-futures-curve/}{VIX Futures Curve}\\
       \hskip1em\href{http://www.macroption.com/vix-term-structure/}{VIX Index Term Structure}
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_curves.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0))
-plot(curve_s[, 1], type="l", lty=1, col="blue", lwd=3,
-     xaxt="n", xlab="", ylab="", ylim=range(curve_s),
-     main="VIX Futures Curves")
-axis(1, at=(1:NROW(curve_s)), labels=rownames(curve_s))
-lines(curve_s[, 2], lty=1, lwd=3, col="red")
-legend(x="topright", legend=colnames(curve_s), 
-       inset=0.05, cex=0.9, bty="n",
-       col=c("blue", "red"), lwd=6, lty=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Futures Prices at Constant Maturity}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Futures prices at a constant maturity (expiry) date are obtained by interpolating the prices of contracts with neighboring expiration dates.
-      \vskip1ex
-      The constant maturity Treasury rates are yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds, 
-      A continuous futures contract is a synthetic
-time series of prices, created by splicing together
-prices from several futures contracts with
-different expiration dates.
-calculates
-      \vskip1ex
-      \emph{VIX} futures are cash-settled futures contracts on the \emph{VIX} Index.
-      \vskip1ex
-      The most liquid \emph{VIX} futures are with monthly expiration dates, but weekly \emph{VIX} futures are also traded.
-      \vskip1ex
-      \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange):\\
-      \hskip1em\url{http://cfe.cboe.com/}\\
-      \hskip1em\url{http://www.cboe.com/vix}
-      \vskip1ex
-      \emph{VIX} Contract Specifications:\\
-      \hskip1em\href{http://cfe.cboe.com/cfe-products/vx-cboe-volatility-index-vix-futures/contract-specifications}{VIX Contract Specifications}\\
-      \hskip1em\href{http://www.macroption.com/vix-expiration-calendar/}{VIX Expiration Calendar}
-    \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load VIX data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
-# Get symbols starting with VX*, for VIX futures
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/ib_data/vix_cboe.RData")
+# Get all VIX futures for 2018 except January
 sym_bols <- ls(vix_env)
-sym_bols <- sym_bols[grep("VX*", sym_bols)]
-# Get end dates for VIX futures
-date_s <- as.Date(sapply(as.list(vix_env)[sym_bols], end))
-# Order the end dates
-date_s <- sort(date_s)
-# Order the end dates
-
-da_te
-
-# wipp
-
+sym_bols <- sym_bols[grep("*8", sym_bols)]
+sym_bols <- sym_bols[-1]
 # Specify dates for curves
 low_vol <- as.Date("2018-01-11")
 hi_vol <- as.Date("2018-02-05")
@@ -2570,7 +2790,88 @@ curve_s <- lapply(sym_bols, function(sym_bol) {
 curve_s <- rutils::do_call(cbind, curve_s)
 colnames(curve_s) <- sym_bols
 curve_s <- t(coredata(curve_s))
-colnames(curve_s) <- c("Contango 01/11/2018", "Backwardation 02/05/2018")
+colnames(curve_s) <- c("Contango 01/11/2018", 
+                       "Backwardation 02/05/2018")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Contango} and \protect\emph{Backwardation} of \protect\emph{VIX} Futures Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      When prices are \emph{low} then the futures curve is usually \emph{upward sloping}, known as \emph{contango}.
+      \vskip1ex
+      Futures prices are in \emph{contango} most of the time.
+      \vskip1ex
+      When prices are \emph{high} then the curve is usually \emph{downward sloping}, known as \emph{backwardation}.
+      <<echo=TRUE,eval=FALSE>>=
+x11()
+par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0))
+plot(curve_s[, 1], type="l", lty=1, col="blue", lwd=3,
+     xaxt="n", xlab="", ylab="", ylim=range(curve_s),
+     main="VIX Futures Curves")
+axis(1, at=(1:NROW(curve_s)), labels=rownames(curve_s))
+lines(curve_s[, 2], lty=1, lwd=3, col="red")
+legend(x="topright", legend=colnames(curve_s), 
+       inset=0.05, cex=0.9, bty="n",
+       col=c("blue", "red"), lwd=6, lty=1)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_curves.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Futures Prices at Constant Maturity}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A constant maturity futures price is the price of a hypothetical futures contract with an expiration date at a fixed number of days in the future.
+      \vskip1ex
+      Futures prices at a constant maturity can be calculated by interpolating the prices of contracts with neighboring expiration dates.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv", 
+  stringsAsFactors=FALSE, row.names=1)
+sym_bols <- rownames(date_s)
+expiration_dates <- as.Date(date_s[, 1])
+to_day <- as.Date("2018-05-07")
+maturi_ty <- to_day + 30
+# Find neighboring futures contracts
+in_deks <- match(TRUE, expiration_dates > maturi_ty)
+# in_deks <- min(which(expiration_dates > to_day))
+expiration_dates[in_deks-1]
+expiration_dates[in_deks]
+front_symbol <- sym_bols[in_deks-1]
+back_symbol <- sym_bols[in_deks]
+front_date <- expiration_dates[in_deks-1]
+back_date <- expiration_dates[in_deks]
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+front_price <- get(x=front_symbol, envir=vix_env)
+# front_price <- vix_env$front_symbol
+front_price <- as.numeric(Cl(front_price[to_day]))
+back_price <- get(x=back_symbol, envir=vix_env)
+back_price <- as.numeric(Cl(back_price[to_day]))
+# Calculate the constant maturity 30-day futures price
+fra_c <- as.numeric(maturi_ty - front_date) / 
+  as.numeric(back_date - front_date)
+pric_e <- (fra_c*back_price + 
+  (1-fra_c)*front_price)
       @
   \end{columns}
 \end{block}
@@ -2603,8 +2904,8 @@ colnames(curve_s) <- c("Contango 01/11/2018", "Backwardation 02/05/2018")
       <<echo=(-(1:4)),eval=FALSE>>=
 library(HighFreq)
 x11(width=5, height=3)  # open x11 for plotting
-# Load the VIX data from binary file
-load(file="C:/Develop/data/ib_data/vix_ibrokers.RData")
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/ib_data/vix_cboe.RData")
 # plot VIX and SVXY data in x11 window
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
@@ -2650,86 +2951,6 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vix_historical3.png}
       \includegraphics[width=0.5\paperwidth]{figure/vix_svxy2.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{VIX} Futures Data from CBOE}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The CFE (CBOE Futures Exchange) provides daily \href{https://markets.cboe.com/us/futures/market_statistics/historical_data/}{CBOE Historical Data for Volatility Futures}, including the \emph{VIX} futures.
-      \vskip1ex
-      The CBOE data incudes \emph{OHLC} prices and also the \emph{settlement} price (in column \texttt{"Settle"}).
-      \vskip1ex
-      The \emph{settlement} price is usually defined as the weighted average price (\emph{WAP}) or the midpoint price, and is different from the \emph{Close} price.
-      \vskip1ex
-      The \emph{settlement} price is used for calculating the daily \emph{mark to market} (value) of the futures contract.
-      \vskip1ex
-      Futures exchanges require that counterparties exchange (settle) the \emph{mark to market} value of the futures contract daily, to reduce counterparty default risk. 
-      \vskip1ex
-      The function \texttt{quantmod::getSymbols()} with the parameter \texttt{src="cfe"} downloads CFE data into the specified \emph{environment}. (But this requires first loading the package \emph{qmao}.)
-      \vskip1ex
-      Currently \texttt{quantmod::getSymbols()} doesn't download the most recent data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# read cboe futures expiry calendar
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/cboe_calendar.csv", 
-                   stringsAsFactors=FALSE)
-date_s <- as.Date(date_s[, 1])
-year_s <- format(date_s, format="%Y")
-year_s <- substring(year_s, 4)
-# monthly futures contract codes
-month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
-data_dir <- "C:/Develop/data/vix_data"
-file_names <- paste0("VX", month_codes, year_s, ".csv")
-file_names <- file.path(data_dir, file_names)
-log_file <- "C:/Develop/data/vix_data/log_file.txt"
-cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
-url_s <- paste0(cboe_url, date_s)
-# Download files in loop
-for (it in seq_along(url_s)) {
-    tryCatch(  # with error handler
-        download.file(url_s[it], 
-                destfile=file_names[it], quiet=TRUE),
-      # warning handler captures warning condition
-      warning=function(warning_cond) {
-        cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
-      },  # end warning handler
-      # error handler captures error condition
-      error=function(error_cond) {
-        cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
-      },  # end error handler
-      finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
-    )  # end tryCatch
-}  # end for
-# Or download in loop to environment
-# Create new environment for data
-vix_env <- new.env()
-# Download VIX data for the months 6, 7, and 8 in 2018
-library(qmao)
-quantmod::getSymbols("VX", Months=1:12, 
-  Years=2018, src="cfe", env=vix_env)
-# or
-qmao::getSymbols.cfe(Symbols="VX", 
-  Months=6:8, Years=2018, env=vix_env, 
-  verbose=FALSE, auto.assign=TRUE)
-# Calculate the classes of all the objects 
-# in the environment vix_env
-unlist(eapply(vix_env, 
-  function(x) {class(x)[1]}))
-class(vix_env$VX_M18)
-colnames(vix_env$VX_M18)
-# Save the data to a binary file called "vix_cboe.RData". 
-save(vix_env, 
-  file="C:/Develop/data/vix_data/vix_cboe.RData")
-      @
   \end{columns}
 \end{block}
 
@@ -2879,7 +3100,7 @@ Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
 # download RAYMOND metadata
 # https://www.quandl.com/data/RAYMOND-Raymond/documentation/metadata
 
-# download S&P 500 Index sonstituents
+# download S&P500 Index sonstituents
 # https://s3.amazonaws.com/static.quandl.com/tickers/SP500.csv
 
 # download AAPL gross profits from RAYMOND
@@ -2967,7 +3188,7 @@ viewFinancials(funda_mentals)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 install.packages("devtools")
 library(devtools)
 # install package WRDS from github
@@ -3004,7 +3225,7 @@ detach("package:WRDS")
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 env_sp500 <- new.env()  # new environment for data
 # remove all files (if necessary)
 rm(list=ls(env_sp500), envir=env_sp500)
@@ -3049,7 +3270,7 @@ chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
+library(HighFreq)  # load package HighFreq
 # download Fama-French factors from KFRENCH database
 fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
         start_date="2001-01-01", type="xts")
@@ -3317,12 +3538,13 @@ detach("package:IBrokers")
       \vskip1ex
       You can \href{https://www.interactivebrokers.com/en/index.php?f=16040}{Download the TWS} and install it.
       \vskip1ex
-      The functions \texttt{twsConnect()} and \texttt{ibgConnect()} open a connection to the Interactive Brokers API, either via the \emph{TWS} or the \emph{IBG}.
+      The functions \texttt{twsConnect()} and \texttt{ibgConnect()} open a connection to the Interactive Brokers API, via either the \emph{TWS} or the \emph{IBG}.
+      \vskip1ex
+      The parameter \texttt{port} should be assigned to the value of the \emph{socket port} displayed in \emph{TWS} or \emph{IBG}.
       \vskip1ex
       The function \texttt{twsDisconnect()} closes the Interactive Brokers API connection.
       \vskip1ex
       The function \texttt{reqAccountUpdates()} returns a list with Interactive Brokers account information. 
-
       \vskip1ex
       Interactive Brokers offers extensive 
       \href{http://interactivebrokers.github.io/tws-api/}{API Documentation}
@@ -3332,9 +3554,9 @@ detach("package:IBrokers")
       \vspace{-3em}
       <<echo=TRUE,eval=FALSE>>=
 # connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
+ib_connect <- twsConnect(port=7497)
 # or connect to IB Gateway
-# ib_connect <- ibgConnect()
+# ib_connect <- ibgConnect(port=4002)
 # check connection
 isConnected(ib_connect)
 # download Interactive Brokers account information
@@ -3408,7 +3630,7 @@ reqContractDetails(conn=ib_connect, Contract=con_tract)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Defining \emph{VIX} Futures Contracts}
+\subsection{Defining \protect\emph{VIX} Futures Contracts}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3418,9 +3640,9 @@ reqContractDetails(conn=ib_connect, Contract=con_tract)
       \vskip1ex
       In order to uniquely specify a \emph{VIX} futures contract, the parameter \texttt{"local"} should be passed into the function \texttt{twsFuture()}, with the local security name.
       \vskip1ex
-      For example, \emph{VXQ8} is the local security name (symbol) for the monthly \emph{VIX} futures contract expiring in August 2018. 
+      For example, \emph{VXV8} is the local security name (symbol) for the monthly \emph{VIX} futures contract expiring on October 17th, 2018. 
       \vskip1ex
-      \emph{VX32Q8} is the local security name (symbol) for the weekly \emph{VIX} futures contract expiring on August 8th 2018. 
+      \emph{VX40V8} is the local security name (symbol) for the weekly \emph{VIX} futures contract expiring on October 3rd, 2018. 
       \vskip1ex
       The function \texttt{reqContractDetails()} returns a list with information on the IB instrument. 
       \vskip1ex
@@ -3428,17 +3650,19 @@ reqContractDetails(conn=ib_connect, Contract=con_tract)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# define VIX monthly and weekly futures August 2018 contract
+# define VIX monthly and weekly futures October 2018 contract
+sym_bol <- "VIX"
 con_tract <- twsFuture(symbol=sym_bol, 
-  exch="CFE", expiry="201808")
-# define VIX monthly futures August 2018 contract
-con_tract <- twsFuture(symbol=sym_bol, local="VXQ8", 
-  exch="CFE", expiry="201808")
-# define VIX weekly futures August 8th 2018 contract
-con_tract <- twsFuture(symbol=sym_bol, local="VX32Q8", 
-  exch="CFE", expiry="201808")
+  exch="CFE", expiry="201810")
+# define VIX monthly futures October 2018 contract
+con_tract <- twsFuture(symbol=sym_bol, 
+  local="VXV8", exch="CFE", expiry="201810")
+# define VIX weekly futures October 3rd 2018 contract
+con_tract <- twsFuture(symbol=sym_bol, 
+  local="VX40V8", exch="CFE", expiry="201810")
 # download list with instrument information
-reqContractDetails(conn=ib_connect, Contract=con_tract)
+reqContractDetails(conn=ib_connect, 
+  Contract=con_tract)
       @
   \end{columns}
 \end{block}
@@ -3467,12 +3691,13 @@ reqContractDetails(conn=ib_connect, Contract=con_tract)
 sym_bol <- "ES"
 con_tract <- twsFuture(symbol=sym_bol, 
   exch="GLOBEX", expiry="201809")
-# connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
 # open file for data download
 data_dir <- "C:/Develop/data/ib_data"
+dir.create(data_dir)
 file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
 file_connect <- file(file_name, open="w")
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
 # download historical data to file
 reqHistoricalData(conn=ib_connect, 
   Contract=con_tract, 
@@ -3492,13 +3717,13 @@ twsDisconnect(ib_connect)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Historical Data for Expired Futures}
+\subsection{Downloading Historical Data for Expired Futures Contracts}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Historical data for expired futures can be downloaded using \texttt{reqHistoricalData()} with the appropriate \texttt{expiry} date, and the parameter \texttt{include\_expired="1"}.
+      Historical data for expired futures contracts can be downloaded using \texttt{reqHistoricalData()} with the appropriate \texttt{expiry} date, and the parameter \texttt{include\_expired="1"}.
       \vskip1ex
       For example, \emph{ESM8} is the symbol for the \emph{S\&P500} emini futures expiring in June 2018. 
       <<echo=TRUE,eval=FALSE>>=
@@ -3507,11 +3732,11 @@ sym_bol <- "ES"
 con_tract <- twsFuture(symbol=sym_bol, 
   include_expired="1",
   exch="GLOBEX", expiry="201806")
-# connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
 # open file for ESM8 data download
 file_name <- file.path(data_dir, paste0(sym_bol, "M8.csv"))
 file_connect <- file(file_name, open="w")
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
 # download historical data to file
 reqHistoricalData(conn=ib_connect, 
   Contract=con_tract, 
@@ -3587,12 +3812,13 @@ sym_bol <- "ES"
 con_tract <- twsFuture(symbol=sym_bol, 
   include_expired="1",
   exch="GLOBEX", expiry="201806")
-# connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
 # open file for data download
 data_dir <- "C:/Develop/data/ib_data"
+dir.create(data_dir)
 file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
 file_connect <- file(file_name, open="w")
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
 # download historical data to file
 reqHistoricalData(conn=ib_connect, 
   Contract=con_tract, 
@@ -3634,12 +3860,13 @@ twsDisconnect(ib_connect)
 sym_bol <- "ES"
 con_tract <- twsFuture(symbol=sym_bol, 
   exch="GLOBEX", expiry="201809")
-# connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
 # open file for data download
 data_dir <- "C:/Develop/data/ib_data"
+# dir.create(data_dir)
 file_name <- file.path(data_dir, paste0(sym_bol, "_taq_live.csv"))
 file_connect <- file(file_name, open="w")
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
 # download live data to file
 reqMktData(conn=ib_connect, 
            Contract=con_tract, 
@@ -3673,16 +3900,17 @@ twsDisconnect(ib_connect)
 sym_bol <- "ES"
 con_tract <- twsFuture(symbol=sym_bol, 
   exch="GLOBEX", expiry="201809")
-# connect to Interactive Brokers TWS
-ib_connect <- twsConnect()
 # open file for data download
 data_dir <- "C:/Develop/data/ib_data"
+# dir.create(data_dir)
 file_name <- file.path(data_dir, paste0(sym_bol, "_ohlc_live.csv"))
 file_connect <- file(file_name, open="w")
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
 # download live data to file
 reqRealTimeBars(conn=ib_connect, 
            Contract=con_tract, 
-           barSize = "1",
+           barSize="1",
            eventWrapper=eWrapper.RealTimeBars.CSV(1),
            file=file_connect)
 # close data file
@@ -3716,6 +3944,232 @@ twsDisconnect(ib_connect)
       The \texttt{character} strings are then parsed by \texttt{processMsg()}, and copied to the data environment of the \emph{eWrapper} object. 
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/market_event_processing.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Downloading Live \protect\emph{TAQ} Data and Replaying It}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Note: The script downloads the raw data, but doesn't replay the bar data properly.
+      \vskip1ex
+      The function \texttt{reqMktData()} downloads live (real-time) trades and quotes (\emph{TAQ}) data from Interactive Brokers.
+      \vskip1ex
+      The function \texttt{eWrapper()} formats the real-time market events (trades and quotes), so they can be displayed or saved to a file.
+      \vskip1ex
+      The method \texttt{eWrapper.MktData.CSV()} formats the real-time \emph{TAQ} data so it can be saved to a \emph{csv} file.
+      \vskip1ex
+      The real-time \emph{TAQ} data fields are \emph{BidSize, BidPrice, AskPrice, AskSize, Last, LastSize, Volume}.
+      \vskip1ex
+      \emph{BidPrice} is the quoted bid price, \emph{AskPrice} is the quoted offer price, and \emph{Last} is the most recent traded price.
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define S&P Emini futures December 2018 contract
+snp_contract <- twsFuture(symbol="ES", 
+  exch="GLOBEX", expiry="201812")
+# define VIX futures December 2018 contract
+vix_contract <- twsFuture(symbol="VIX", 
+  local="VXZ8", exch="CFE", expiry="201812")
+# define 10yr Treasury futures December 2018 contract
+trs_contract <- twsFuture(symbol="ZN", 
+  exch="ECBOT", expiry="201812")
+# define Emini gold futures December 2018 contract
+gold_contract <- twsFuture(symbol="YG", 
+  exch="NYSELIFFE", expiry="201812")
+# define euro currency future December 2018 contract
+euro_contract <- twsFuture(symbol="EUR", 
+  exch="GLOBEX", expiry="201812")
+reqContractDetails(conn=ib_connect, Contract=euro_contract)
+
+# define data directory
+data_dir <- "C:/Develop/data/ib_data"
+# dir.create(data_dir)
+
+# open file for error messages
+file_root <- "replay"
+file_name <- file.path(data_dir, paste0(file_root, "_error.csv"))
+error_connect <- file(file_name, open="w")
+
+# open file for raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- file(file_name, open="w")
+
+# create empty eWrapper to redirect error messages to error file
+error_ewrapper <- eWrapper(debug=NULL, errfile=error_connect)
+
+# create eWrapper for raw data
+raw_ewrapper <- eWrapper(debug=TRUE)
+
+# redirect error messages to error eWrapper (error_ewrapper), 
+# by replacing handler function errorMessage() in raw_ewrapper
+raw_ewrapper$errorMessage <- error_ewrapper$errorMessage
+
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
+
+# download raw data for multiple contracts for replay
+reqMktData(ib_connect, 
+  list(snp_contract, vix_contract, trs_contract, gold_contract, euro_contract), 
+  eventWrapper=raw_ewrapper, file=raw_connect)
+
+# close the Interactive Brokers API connection
+twsDisconnect(ib_connect)
+
+# close data files
+close(raw_connect)
+close(error_connect)
+
+## replay the raw data
+
+# open file with raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- twsConnect(file_name)
+class(raw_connect) <- c("twsPlayback", class(raw_connect))
+# replay the raw data
+reqMktData(raw_connect, list(snp_contract, vix_contract))
+
+# open file for data
+file_connect <- file(file.path(data_dir, "temp.csv"), open="w")
+# download TAQ data to file
+reqMktData(conn=raw_connect, 
+           Contract=snp_contract, 
+           eventWrapper=eWrapper.MktData.CSV(1),
+           file=file_connect)
+
+# download bar to file
+reqRealTimeBars(conn=raw_connect, 
+                Contract=snp_contract, 
+                barSize="1",
+                eventWrapper=eWrapper.RealTimeBars.CSV(1),
+                file=file_connect)
+
+# close file for bar data
+close(file_connect)
+# close file with raw data
+twsDisconnect(raw_connect)
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Placing and Cancelling Trade Orders on \protect\emph{TWS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{placeOrder()} downloads live (real-time) trades and quotes (\emph{TAQ}) data from Interactive Brokers.
+      \vskip1ex
+      The function \texttt{eWrapper()} formats the real-time market events (trades and quotes), so they can be displayed or saved to a file.
+      \vskip1ex
+      The method \texttt{eWrapper.MktData.CSV()} formats the real-time \emph{TAQ} data so it can be saved to a \emph{csv} file.
+      \vskip1ex
+      The real-time \emph{TAQ} data fields are \emph{BidSize, BidPrice, AskPrice, AskSize, Last, LastSize, Volume}.
+      \vskip1ex
+      \emph{BidPrice} is the quoted bid price, \emph{AskPrice} is the quoted offer price, and \emph{Last} is the most recent traded price.
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# define S&P Emini futures December 2018 contract
+snp_contract <- twsFuture(symbol="ES", 
+  exch="GLOBEX", expiry="201812")
+# define VIX futures December 2018 contract
+vix_contract <- twsFuture(symbol="VIX", 
+  local="VXZ8", exch="CFE", expiry="201812")
+# define 10yr Treasury futures December 2018 contract
+trs_contract <- twsFuture(symbol="ZN", 
+  exch="ECBOT", expiry="201812")
+# define Emini gold futures December 2018 contract
+gold_contract <- twsFuture(symbol="YG", 
+  exch="NYSELIFFE", expiry="201812")
+# define euro currency future December 2018 contract
+euro_contract <- twsFuture(symbol="EUR", 
+  exch="GLOBEX", expiry="201812")
+reqContractDetails(conn=ib_connect, Contract=euro_contract)
+
+# define data directory
+data_dir <- "C:/Develop/data/ib_data"
+# dir.create(data_dir)
+
+# open file for error messages
+file_root <- "replay"
+file_name <- file.path(data_dir, paste0(file_root, "_error.csv"))
+error_connect <- file(file_name, open="w")
+
+# open file for raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- file(file_name, open="w")
+
+# create empty eWrapper to redirect error messages to error file
+error_ewrapper <- eWrapper(debug=NULL, errfile=error_connect)
+
+# create eWrapper for raw data
+raw_ewrapper <- eWrapper(debug=TRUE)
+
+# redirect error messages to error eWrapper (error_ewrapper), 
+# by replacing handler function errorMessage() in raw_ewrapper
+raw_ewrapper$errorMessage <- error_ewrapper$errorMessage
+
+# connect to Interactive Brokers TWS
+ib_connect <- twsConnect(port=7497)
+
+# download raw data for multiple contracts for replay
+reqMktData(ib_connect, 
+  list(snp_contract, vix_contract, trs_contract, gold_contract, euro_contract), 
+  eventWrapper=raw_ewrapper, file=raw_connect)
+
+# close the Interactive Brokers API connection
+twsDisconnect(ib_connect)
+
+# close data files
+close(raw_connect)
+close(error_connect)
+
+## replay the raw data
+
+# open file with raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- twsConnect(file_name)
+class(raw_connect) <- c("twsPlayback", class(raw_connect))
+# replay the raw data
+reqMktData(raw_connect, list(snp_contract, vix_contract))
+
+# open file for data
+file_connect <- file(file.path(data_dir, "temp.csv"), open="w")
+# download TAQ data to file
+reqMktData(conn=raw_connect, 
+           Contract=snp_contract, 
+           eventWrapper=eWrapper.MktData.CSV(1),
+           file=file_connect)
+
+# download bar to file
+reqRealTimeBars(conn=raw_connect, 
+                Contract=snp_contract, 
+                barSize="1",
+                eventWrapper=eWrapper.RealTimeBars.CSV(1),
+                file=file_connect)
+
+# close file for bar data
+close(file_connect)
+# close file with raw data
+twsDisconnect(raw_connect)
+
+      @
   \end{columns}
 \end{block}
 

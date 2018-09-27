@@ -1,9 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 # display documentation on function "getwd"
 help(getwd)
 ?getwd  # equivalent to "help(getwd)"
@@ -52,13 +46,13 @@ library(HighFreq)  # load package HighFreq
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
 # extract and merge all data, subset by sym_bols
 price_s <- do.call(merge,
-  as.list(rutils::env_etf)[sym_bols])
+  as.list(rutils::etf_env)[sym_bols])
 # extract and merge adjusted prices, subset by sym_bols
 price_s <- do.call(merge,
-  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
 # same, but works only for OHLC series
 price_s <- do.call(merge,
-  eapply(rutils::env_etf, Ad)[sym_bols])
+  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
 # drop ".Adjusted" from colnames
 colnames(price_s) <-
   sapply(colnames(price_s),
@@ -71,9 +65,9 @@ unlist(eapply(globalenv(), is.xts))
 # save xts to csv file
 write.zoo(price_s,
      file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# copy price_s into etf_env and save to .RData file
+assign("price_s", price_s, envir=etf_env)
+save(etf_env, file='etf_data.RData')
 # "trees" is in datasets base package
 head(trees, 3)
 colnames(trees)
@@ -135,8 +129,8 @@ detach(MASS)
 if (!require("xts")) install.packages("xts")
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Ad(rutils::env_etf$VTI),
-  volume=quantmod::Vo(rutils::env_etf$VTI), n=10)
+  price=quantmod::Ad(rutils::etf_env$VTI),
+  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 
@@ -192,203 +186,6 @@ attributes(date_time) <- list(class="Date")
 date_time  # "Date" object
 structure(0, class="Date")  # "Date" object
 structure(10000.25, class="Date")
-date_time <- Sys.time()  # get today's date and time
-date_time
-class(date_time)  # POSIXct object
-# POSIXct stored as integer moment of time
-as.numeric(date_time)
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-date_time <- as.POSIXct("2014-07-14 13:30:10")
-# different time zones can have same clock time
-as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
-as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# format argument allows parsing different date-time string formats
-as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
-     tz="America/New_York")
-# same moment of time corresponds to different clock times
-time_ny <- as.POSIXct("2014-07-14 13:30:10",
-     tz="America/New_York")
-time_ldn <- as.POSIXct("2014-07-14 13:30:10",
-     tz="UTC")
-# add five hours to POSIXct
-time_ny + 5*60*60
-# subtract POSIXct
-time_ny - time_ldn
-class(time_ny - time_ldn)
-# compare POSIXct
-time_ny > time_ldn
-# create vector of POSIXct times during trading hours
-trading_times <- seq(
-  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
-  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
-  by="10 min")
-head(trading_times, 3)
-tail(trading_times, 3)
-# POSIXct is stored as integer moment of time
-int_time <- as.numeric(date_time)
-# same moment of time corresponds to different clock times
-as.POSIXct(int_time, origin="1970-01-01",
-     tz="America/New_York")
-as.POSIXct(int_time, origin="1970-01-01",
-     tz="UTC")
-# same clock time corresponds to different moments of time
-as.POSIXct("2014-07-14 13:30:10",
-     tz="America/New_York") -
-  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# add 20 seconds to POSIXct
-date_time + 20
-date_time  # POSIXct date and time
-# parse POSIXct to string representing the clock time
-format(date_time)
-class(format(date_time))  # character string
-# get clock times in different time zones
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# format with custom format strings
-format(date_time, "%m/%Y")
-format(date_time, "%m-%d-%Y %H hours")
-# trunc to hour
-format(date_time, "%m-%d-%Y %H:00:00")
-# Date converted to midnight UTC moment of time
-as.POSIXct(Sys.Date())
-as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
-     origin="1970-01-01",
-     tz="UTC")
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2014-07-14 18:30:10")
-date_time
-class(date_time)  # POSIXlt object
-as.POSIXct(date_time)  # coerce to POSIXct object
-# extract internal list representation to vector
-unlist(date_time)
-date_time + 20  # add 20 seconds
-class(date_time + 20)  # implicit coercion to POSIXct
-trunc(date_time, units="hours")  # truncate to closest hour
-trunc(date_time, units="days")  # truncate to closest day
-methods(trunc)  # trunc methods
-trunc.POSIXt
-Sys.timezone()  # get time-zone
-Sys.setenv(TZ="UTC")  # set time-zone to UTC
-Sys.timezone()  # get time-zone
-# Standard Time in effect
-as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-# Daylight Savings Time in effect
-as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
-date_time <- Sys.time()  # today's date and time
-# convert to character in different TZ
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# parse back to POSIXct
-as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between New_York time and UTC
-as.POSIXct(format(Sys.time(), tz="UTC")) -
-  as.POSIXct(format(Sys.time(), tz="America/New_York"))
-# set time-zone to New York
-Sys.setenv(TZ="America/New_York")
-library(lubridate)  # load lubridate
-# parse strings into date-times
-as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
-date_time <- mdy("07-14-2014", tz="America/New_York")
-date_time
-class(date_time)  # POSIXct object
-dmy("14.07.2014", tz="America/New_York")
-
-# parse numeric into date-times
-as.POSIXct(as.character(14072014), format="%d%m%Y",
-                  tz="America/New_York")
-dmy(14072014, tz="America/New_York")
-
-# parse decimal to date-times
-decimal_date(date_time)
-date_decimal(2014.25, tz="America/New_York")
-date_decimal(decimal_date(date_time), tz="America/New_York")
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010,
-               tz="America/New_York")
-date_time
-
-# get same moment of time in "UTC" time zone
-with_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
-
-# get same clock time in "UTC" time zone
-force_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="America/New_York"),
-     tz="UTC")
-
-# same moment of time
-date_time - with_tz(date_time, "UTC")
-
-# different moments of time
-date_time - force_tz(date_time, "UTC")
-library(lubridate)  # load lubridate
-# Daylight Savings Time handling periods vs durations
-date_time <- as.POSIXct("2013-03-09 11:00:00",
-                  tz="America/New_York")
-date_time
-date_time + ddays(1)  # add duration
-date_time + days(1)  # add period
-
-leap_year(2012)  # leap year
-date_time <- dmy(01012012, tz="America/New_York")
-date_time
-date_time + dyears(1)  # add duration
-date_time + years(1)  # add period
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, tz="America/New_York")
-date_time
-# add periods to a date-time
-c(date_time + seconds(1), date_time + minutes(1),
-date_time + days(1), date_time + months(1))
-
-# create vectors of dates
-date_time <- ymd(20140714, tz="America/New_York")
-date_time + 0:2 * months(1)  # monthly dates
-date_time + months(0:2)
-date_time + 0:2 * months(2)  # bi-monthly dates
-date_time + seq(0, 5, by=2) * months(1)
-seq(date_time, length=3, by="2 months")
-library(lubridate)  # load lubridate
-# adding monthly periods can create invalid dates
-date_time <- ymd(20120131, tz="America/New_York")
-date_time + 0:2 * months(1)
-date_time + months(1)
-date_time + months(2)
-
-# create vector of end-of-month dates
-date_time %m-% months(13:1)
-library(zoo)  # load zoo
-library(RQuantLib)  # load RQuantLib
-
-# create daily date series of class 'Date'
-in_dex <- Sys.Date() + -5:2
-in_dex
-
-# create Boolean vector of business days
-is_busday <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", in_dex)
-
-# create daily series of business days
-bus_index <- in_dex[is_busday]
-bus_index
-library(zoo)  # load package zoo
-date_time <- Sys.Date()  # create date series of class 'Date'
-in_dex <- date_time + 0:365  # daily series over one year
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y")  # print first few dates
-# create daily date-time series of class 'POSIXct'
-in_dex <- seq(Sys.time(), by="days", length.out=365)
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
-# create series of monthly dates of class 'zoo'
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # print first few dates
-# create series of quarterly dates of class 'zoo'
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # print first few dates
-# parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(TZ="UTC")
-as.POSIXct(head(qrtly_index, 4))
 library(lubridate)  # load lubridate
 set.seed(1121)  # reset random number generator
 # create daily time series ending today
@@ -581,7 +378,7 @@ mat_rix <- matrix(mat_rix, nc=3)
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
 # get time series of prices
-price_s <- mget(c("VTI", "VXX"), envir=rutils::env_etf)
+price_s <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
 price_s <- lapply(price_s, quantmod::Ad)
 price_s <- rutils::do_call(cbind, price_s)
 sum(is.na(price_s))
@@ -590,11 +387,11 @@ price_s <- zoo::na.locf(price_s)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
 # remove whole rows containing NA returns
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 sum(is.na(re_turns))
 re_turns <- na.omit(re_turns)
 # or carry forward non-NA returns (preferred)
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns)
 sum(is.na(re_turns))
@@ -662,6 +459,33 @@ in_dex <- seq(from=start(zoo_series),
 index(zoo_series) <- in_dex
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
+# get documentation for package tseries
+packageDescription("tseries")  # get short description
+
+help(package="tseries")  # load help page
+
+library(tseries)  # load package tseries
+
+data(package="tseries")  # list all datasets in "tseries"
+
+ls("package:tseries")  # list all objects in "tseries"
+
+detach("package:tseries")  # remove tseries from search path
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT",
+           start=Sys.Date()-365,
+           end=Sys.Date(),
+           origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
 set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series of random returns
@@ -680,12 +504,11 @@ indexTZ(x_ts)
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_stx)
 dim(st_ox)
 head(st_ox[, 1:4], 4)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.xts method
-plot(st_ox[, "AdjClose"], xlab="", ylab="", main="")
+xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # add title
 library(xts)  # load xts
 library(lubridate)  # load lubridate
@@ -718,11 +541,13 @@ legend("topleft", legend=colnames(EuStockMarkets),
  lwd=3, col=col_ors, bg="white")
 library(rutils)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, 1]
+price_s <- na.omit(price_s)
 # create ggplot object
-etf_gg <- qplot(x=index(rutils::env_etf$price_s[, 1]),
-          y=as.numeric(rutils::env_etf$price_s[, 1]),
+etf_gg <- qplot(x=index(price_s),
+          y=as.numeric(price_s),
           geom="line",
-          main=names(rutils::env_etf$price_s[, 1])) +
+          main=names(price_s)) +
   xlab("") + ylab("") +
   theme(  # add legend and title
     legend.position=c(0.1, 0.5),
@@ -734,10 +559,11 @@ etf_gg
 library(rutils)  # load xts time series data
 library(reshape2)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -752,21 +578,23 @@ ggplot(data=data_frame,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(dygraphs)))
-x_ts <- rutils::env_etf$price_s[, c("VTI", "IEF")]
+# load rutils which contains etf_env dataset
+library(rutils)
+library(dygraphs)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # plot dygraph with date range selector
-dygraph(x_ts, main="VTI and IEF prices") %>%
+dygraph(price_s, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(plotly)))
+# load rutils which contains etf_env dataset
+library(rutils)
+library(plotly)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # plotly syntax using pipes
 data_frame %>%
   plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
@@ -780,71 +608,80 @@ p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines"
 p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
-library(xts)  # load package xts
 # subset xts using a date range string
-stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
-first(stox_sub)
-last(stox_sub)
+price_s <- rutils::etf_env$price_s
+sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset Nov 2014 using a date string
-stox_sub <- st_ox["2014-11", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset all data after Nov 2014
-stox_sub <- st_ox["2014-11/", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11/", 1:4]
+first(sub_prices)
+last(sub_prices)
 # comma after date range not necessary
-identical(st_ox["2014-11", ], st_ox["2014-11"])
-# benchmark the speed of subsetting
+all.equal(price_s["2014-11", ], price_s["2014-11"])
+# .subset_xts() is faster than the bracket []
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=sapply(500,
-  function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
-  subset=sapply(500,
-  function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
+  bracket=price_s[10:20, ],
+  subset=xts::.subset_xts(price_s, 10:20),
   times=10))[, c(1, 4, 5)]
-library(xts)  # load package xts
-# vector of 1-minute times (ticks)
-min_ticks <- seq.POSIXt(
-  from=as.POSIXct("2015-04-14", tz="America/New_York"),
-  to=as.POSIXct("2015-04-16"),
-  by="min")
-# xts of 1-minute times (ticks) of random returns
-x_ts <- xts(rnorm(length(min_ticks)),
-               order.by=min_ticks)
+# specify string representing a date
+dat_e <- "2014-10-15"
+# subset price_s in two different ways
+price_s <- rutils::etf_env$price_s
+all.equal(price_s[index(price_s) >= dat_e],
+    price_s[paste0(dat_e, "/")])
+# boolean subsetting is slower because coercing string into date
+library(microbenchmark)
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# coerce string into a date
+dat_e <- as.Date("2014-10-15")
+# boolean subsetting is faster than using date string
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+price_s <- HighFreq::SPY["2012-04"]
 # subset recurring time interval using "T notation",
-x_ts <- x_ts["T09:30:00/T16:00:00"]
-first(x_ts["2015-04-15"])  # first element of day
-last(x_ts["2015-04-15"])  # last element of day
+price_s <- price_s["T10:30:00/T15:00:00"]
+first(price_s["2012-04-16"])  # first element of day
+last(price_s["2012-04-16"])  # last element of day
 # suppress timezone warning messages
 options(xts_check_tz=FALSE)
-library(xts)  # load package xts
-str(st_ox)  # display structure of xts
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+str(price_s)  # display structure of xts
 # subsetting zoo to single column drops dim attribute
-dim(zoo_stx_adj)
-dim(zoo_stx_adj[, 1])
+zoo_prices <- as.zoo(price_s)
+dim(zoo_prices)
+dim(zoo_prices[, 1])
 # zoo with single column are vectors not matrices
-c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
+c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
 # xts always have a dim attribute
-rbind(base=dim(st_ox), subs=dim(st_ox[, 1]))
-c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
-library(xts)  # load package xts
+rbind(base=dim(price_s), subs=dim(price_s[, 1]))
+c(is.matrix(price_s), is.matrix(price_s[, 1]))
 # lag of zoo shortens it by one row
-rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
+rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
 # lag of xts doesn't shorten it
-rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
+rbind(base=dim(price_s), lag=dim(lag(price_s)))
 # lag of zoo is in opposite direction from xts
-head(lag(zoo_stx_adj), 4)
-head(lag(st_ox), 4)
+head(lag(zoo_prices, -1), 4)
+head(lag(price_s), 4)
 # library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
 end_points <- endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
-library(xts)  # load package xts
 # lower the periodicity to months
-xts_monthly <- to.period(x=st_ox,
+xts_monthly <- to.period(x=price_s,
              period="months", name="MSFT")
 # convert colnames to standard OHLC format
 colnames(xts_monthly)
@@ -865,12 +702,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_prices)
 # subset xts using a date
 stox_sub <- st_ox["2014-11", 1:4]
 
 # plot OHLC using plot.xts method
-plot(stox_sub, type="candles", main="")
+xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
@@ -880,726 +717,268 @@ library(xts)
 st_ox <- as.xts(zoo_stx)
 class(st_ox)
 tail(st_ox[, 1:4])
-# get documentation for package tseries
-packageDescription("tseries")  # get short description
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(as.numeric(EuStockMarkets[, 1])))
+# acf() autocorrelation from package stats
+acf(re_turns, lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
 
-help(package="tseries")  # load help page
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+   lag=10, type="Ljung")
 
-library(tseries)  # load package tseries
-
-data(package="tseries")  # list all datasets in "tseries"
-
-ls("package:tseries")  # list all objects in "tseries"
-
-detach("package:tseries")  # remove tseries from search path
-library(tseries)  # load package tseries
-# download MSFT data in ts format
-ts_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    retclass="ts",
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate price adjustment vector
-adj_vector <-
-  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
-# adjust OHLC prices
-ts_stx_adj <- ts_stx
-ts_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * ts_stx[, c("Open","High","Low","Close")]
-# inspect the data
-tsp(ts_stx_adj)  # frequency=1
-head(time(ts_stx_adj))
-head(ts_stx_adj)
-tail(ts_stx_adj)
-library(tseries)  # load package tseries
-# download MSFT data
-zoo_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-class(zoo_stx)
-dim(zoo_stx)
-head(zoo_stx, 4)
-library(tseries)  # load package tseries
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate price adjustment vector
-adj_vector <-
-  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
-head(adj_vector, 5)
-tail(adj_vector, 5)
-# adjust OHLC prices
-zoo_stx_adj <- zoo_stx
-zoo_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
-head(zoo_stx_adj)
-tail(zoo_stx_adj)
-library(tseries)  # load package tseries
-# download EUR/USD data
-zoo_eurusd <- suppressWarnings(
-  get.hist.quote(
-    instrument="EUR/USD",
-    provider="oanda",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# bind and scrub data
-zoo_stxeur <- cbind(zoo_eurusd,
-               zoo_stx[, "AdjClose"])
-colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
-zoo_stxeur <-
-  zoo_stxeur[complete.cases(zoo_stxeur),]
-save(zoo_stx, zoo_stx_adj,
-     ts_stx, ts_stx_adj,
-     zoo_eurusd, zoo_stxeur,
-     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# inspect the data
-class(zoo_eurusd)
-tail(zoo_eurusd, 4)
-library(tseries)  # load package tseries
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
-  "IVW", "IWB", "IWD", "IWF")
-# download price and volume data for sym_bols into list of zoo objects
-zoo_series <- suppressWarnings(
-  lapply(sym_bols, # loop for loading data
-   get.hist.quote,
-   quote=c("AdjClose", "Volume"),
-   start=Sys.Date()-3650,
-   end=Sys.Date(),
-   origin="1970-01-01")
-)  # end suppressWarnings
-# flatten list of zoo objects into a single zoo object
-zoo_series <- do.call(merge, zoo_series)
-# or
-zoo_series <- rutils::do_call(cbind, zoo_series)
-# assign names in format "symbol.Close", "symbol.Volume"
-names(zoo_series) <-
-  as.vector(sapply(sym_bols,
-             paste, c("Close", "Volume"), sep="."))
-# save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file='zoo_series.csv', sep=",")
-# save zoo_series to a binary .RData file
-save(zoo_series, file='zoo_series.RData')
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# get start and end dates
-in_dex <- time(ts_stx_adj)
-e_nd <- in_dex[length(in_dex)]
-st_art <- round((4*e_nd + in_dex[1])/5)
-# plot using plotOHLC
-plotOHLC(window(ts_stx_adj,
-          start=st_art,
-          end=e_nd)[, 1:4],
-   xlab="", ylab="")
-title(main="MSFT OHLC Prices")
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+   lag=10, type="Ljung")
 library(zoo)  # load package zoo
-library(lubridate)  # load lubridate
-# get start and end dates of zoo_series
-start_date <- decimal_date(start(zoo_stx))
-end_date <- decimal_date(end(zoo_stx))
-# calculate frequency of zoo_stx
-fre_quency <- length(zoo_stx)/(end_date-start_date)
-# extract data from zoo_stx
-da_ta <- coredata(
-  window(zoo_stx, start=as.Date("2015-01-01"),
-   end=end(zoo_stx)))
-# create ts object using ts()
-ts_stx <- ts(data=da_ta, start=decimal_date(as.Date("2015-01-01")),
-          frequency=fre_quency)
-seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
-title(main="MSFT Open and Close Prices", line=-1)
-library(tseries)  # load package tseries
+dax_acf <- acf(re_turns, plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
+acf_plus <- function (ts_data, plo_t=TRUE,
+                xlab="Lag", ylab="",
+                main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plo_t) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+        max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+   ylim=ylim, main="", ci=0)
+    title(main=main, line=0.5)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate maximum drawdown
-maxdrawdown(zoo_stx_adj[, "AdjClose"])
-max_drawd <- maxdrawdown(zoo_stx_adj[, "AdjClose"])
-index(zoo_stx_adj)[max_drawd$from]
-index(zoo_stx_adj)[max_drawd$to]
-# calculate Sharpe ratio
-sharpe(zoo_stx_adj[, "AdjClose"])
-# calculate Sterling ratio
-sterling(as.numeric(zoo_stx_adj[, "AdjClose"]))
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
+# improved autocorrelation function
+acf_plus(re_turns, lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(re_turns^2,
+   lag=10, main="")
+title(main="acf of squared DAX returns",
+line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+   lag=10, main="")
+title(main="acf of squared random returns",
+line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+    Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
 
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
+acf_plus(coredata(macro_diff[, "unemprate"]),
+   lag=10)
+title(main="quarterly unemployment rate",
+line=-1)
 
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+   lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- cbind(as.zoo(dax_ts),
+            as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+             start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
 
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-# load package quantmod
-library(quantmod)
-# get documentation for package quantmod
-# get short description
-packageDescription("quantmod")
-# load help page
-help(package="quantmod")
-# list all datasets in "quantmod"
-data(package="quantmod")
-# list all objects in "quantmod"
-ls("package:quantmod")
-# remove quantmod from search path
-detach("package:quantmod")
-library(xtable)
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
-  "IVW", "IWB", "IWD", "IWF")
-# read etf database into data frame
-etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
-         stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# shorten names
-etf_names <- sapply(etf_list$Name,
-              function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -length(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
+acf_plus(coredata(re_turns[, 1]), lag=10,
+   xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+   xlab="")
+title(main="DAX filtered", line=-1)
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+set.seed(1121)  # reset random numbers
+in_dex <- Sys.Date() + 0:728  # two year daily series
+ari_ma <- xts(  # AR time series of returns
+  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
+  order.by=in_dex)
+ari_ma <- cbind(ari_ma, cumsum(ari_ma))
+colnames(ari_ma) <- c("AR returns", "AR prices")
+autoplot(object=ari_ma, # ggplot AR process
+ facets="Series ~ .",
+ main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
+# Create three AR time series
+ari_ma <- sapply(ar_coeff, function(phi) {
+  set.seed(1121)  # reset random numbers
+  arima.sim(n=NROW(in_dex), model=list(ar=phi))
 })  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list[c(1, 2)]
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf
-getSymbols(sym_bols, env=env_etf, adjust=TRUE,
-    from="2007-01-03")
-library(quantmod)  # load package quantmod
-ls(env_etf)  # list files in env_etf
-# get class of object in env_etf
-class(get(x=sym_bols[1], envir=env_etf))
-# another way
-class(env_etf$VTI)
-colnames(env_etf$VTI)
-head(env_etf$VTI, 3)
-# get class of all objects in env_etf
-eapply(env_etf, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-library(quantmod)  # load package quantmod
-# check of object is an OHLC time series
-is.OHLC(env_etf$VTI)
-# adjust single OHLC object using its name
-env_etf$VTI <- adjustOHLC(env_etf$VTI,
-                     use.Adjusted=TRUE)
-
-# adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=env_etf),
-    use.Adjusted=TRUE),
-  envir=env_etf)
-
-# adjust objects in environment using vector of strings
-for (sym_bol in sym_bols) {
-  assign(sym_bol,
-   adjustOHLC(get(sym_bol, envir=env_etf),
-              use.Adjusted=TRUE),
-   envir=env_etf)
-}  # end for
-library(quantmod)  # load package quantmod
-# extract and merge all data, subset by symbols
-price_s <- do.call(merge,
-  as.list(env_etf)[sym_bols])
-# or
-price_s <- rutils::do_call(cbind,
-  as.list(env_etf)[sym_bols])
-# extract and merge adjusted prices, subset by symbols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(env_etf)[sym_bols], Ad))
-# same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(env_etf, Ad)[sym_bols])
-# drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
-    function(col_name)
-strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-# which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-# save xts to csv file
-write.zoo(price_s,
-  file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
-library(quantmod)
-# remove rows with NA values
-# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
-# colnames(price_s)
-# calculate returns from adjusted prices
-re_turns <- lapply(env_etf$price_s, function(x_ts) {
-# dailyReturn returns single xts with bad colname
-  daily_return <- dailyReturn(x_ts)
-  colnames(daily_return) <- names(x_ts)
-  daily_return
-})  # end lapply
-
-# "re_turns" is a list of xts
-class(re_turns)
-class(re_turns[[1]])
-
-# flatten list of xts into a single xts
-re_turns <- do.call(merge, re_turns)
-class(re_turns)
-dim(re_turns)
-head(re_turns[, 1:3])
-# copy re_turns into env_etf and save to .RData file
-assign("re_turns", re_turns, envir=env_etf)
-save(env_etf, file='etf_data.RData')
-library(quantmod)
-start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# subset all objects in environment and return as environment
-new_env <- as.environment(eapply(env_etf, "[",
-            paste(start_date, end_date, sep="/")))
-# subset only sym_bols in environment and return as environment
-new_env <- as.environment(
-  lapply(as.list(env_etf)[sym_bols], "[",
-   paste(start_date, end_date, sep="/")))
-# extract and merge adjusted prices and return to environment
-assign("price_s", do.call(merge,
-         lapply(ls(env_etf), function(sym_bol) {
-           x_ts <- Ad(get(sym_bol, env_etf))
-           colnames(x_ts) <- sym_bol
-           x_ts
-         })), envir=new_env)
-# get sizes of OHLC xts series in env_etf
-sapply(mget(sym_bols, envir=env_etf), object.size)
-# extract and merge adjusted prices and return to environment
-col_name <- function(x_ts)
-  strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", do.call(merge,
-         lapply(mget(env_etf$sym_bols, envir=env_etf),
-                function(x_ts) {
-                  x_ts <- Ad(x_ts)
-                  colnames(x_ts) <- col_name(x_ts)
-                  x_ts
-         })), envir=new_env)
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2014-11"],
-      name="VTI",
-      theme=chartTheme("white"))
-# plot OHLC bar chart with volume
-chartSeries(env_etf$VTI["2014-11"],
-      type="bars",
-      name="VTI",
-      theme=chartTheme("white"))
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2008-11/2009-04"],
-      name="VTI")
-# redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02",
-  theme=chartTheme("white"))
-library(quantmod)
-# candlechart with Bollinger Bands
-chartSeries(env_etf$VTI["2014"],
-      TA="addBBands(): addBBands(draw='percent'): addVo()",
-      name="VTI with Bollinger Bands",
-      theme=chartTheme("white"))
-# candlechart with two Moving Averages
-chartSeries(env_etf$VTI["2014"],
-      TA="addVo(): addEMA(10): addEMA(30)",
-      name="VTI with Moving Averages",
-      theme=chartTheme("white"))
-# candlechart with Commodity Channel Index
-chartSeries(env_etf$VTI["2014"],
-      TA="addVo(): addBBands(): addCCI()",
-      name="VTI with Technical Indicators",
-      theme=chartTheme("white"))
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
-# calculate volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=VTI_adj,
-volume=VTI_vol, n=10)
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP",
-      theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP shaded",
-      theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-# add background shading of areas
-addTA((VTI_adj-VTI_vwap) > 0, on=-1,
-col="lightgreen", border="lightgreen")
-addTA((VTI_adj-VTI_vwap) < 0, on=-1,
-col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines at VTI_vwap minimum
-addLines(v=which.min(VTI_vwap), col='red')
-addLines(h=min(VTI_vwap), col='red')
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# OHLC candlechart VWAP in main plot,
-chart_Series(x=oh_lc, # volume in extra panel
-       TA="add_Vo(); add_TA(VTI_vwap, on=1)",
-       name="VTI plus VWAP shaded")
-# add price minus VWAP in extra panel
-add_TA(VTI_adj-VTI_vwap, col='red')
-# add background shading of areas
-add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
-col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
-col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines
-abline(v=which.min(VTI_vwap), col='red')
-abline(h=min(VTI_vwap), col='red')
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-# extract plot object
-ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
-class(ch_ob)
-ls(ch_ob)
-class(ch_ob$get_ylim)
-class(ch_ob$set_ylim)
-# ls(ch_ob$Env)
-class(ch_ob$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
-# extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
-# create plot object
-ch_ob <- chart_Series(x=oh_lc,
-                theme=plot_theme, plot=FALSE)
-# extract ylim using accessor function
-y_lim <- ch_ob$get_ylim()
-y_lim[[2]] <- structure(
-  range(Ad(oh_lc)) + c(-1, 1),
-  fixed=TRUE)
-# modify plot object to reduce y-axis range
-ch_ob$set_ylim(y_lim)  # use setter function
-# render the plot
-plot(ch_ob)
-library(HighFreq)
-# calculate VTI and XLF volume-weighted average price
-VTI_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$VTI),
-      volume=Vo(rutils::env_etf$VTI), n=10)
-XLF_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$XLF),
-      volume=Vo(rutils::env_etf$XLF), n=10)
-# open graphics device, and define
-# plot area with two horizontal panels
-x11(); par(mfrow=c(2, 1))
-ch_ob <- chart_Series(  # plot in top panel
-  x=env_etf$VTI["2009-02/2009-04"],
-  name="VTI", plot=FALSE)
-add_TA(VTI_vwap["2009-02/2009-04"],
- lwd=2, on=1, col='blue')
-ch_ob <- chart_Series(  # plot in bottom panel
-  x=env_etf$XLF["2009-02/2009-04"],
-  name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"],
- lwd=2, on=1, col='blue')
-library(dygraphs)
-# calculate volume-weighted average price
-oh_lc <- rutils::env_etf$VTI
-VTI_vwap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
-    volume=quantmod::Vo(oh_lc), n=20)
-# add VWAP to OHLC  data
-oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-         VTI_vwap)["2009-02/2009-04"]
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc)
-# convert dygraphs object to candlestick plot
-dy_graph <- dygraphs::dyCandlestick(dy_graph)
-# render candlestick plot
-dy_graph
-# candlestick plot using pipes syntax
-dygraphs::dygraph(oh_lc) %>% dyCandlestick()
-# candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
-# create candlestick plot with background shading
-in_dex <- index(oh_lc)
-in_dic <-
-  rutils::diff_xts(oh_lc[, 4] > oh_lc[, "VWAP"])
-in_dic <- rbind(cbind(which(in_dic==1), 1),
-  cbind(which(in_dic==(-1)), -1))
-in_dic <- in_dic[order(in_dic[, 1]), ]
-in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
-  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
-in_dic <-
-  data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc) %>%
-  dyCandlestick()
-# add shading
-for (i in 1:(NROW(in_dic)-1)) {
-  if (in_dic[i, 2] == 1)
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
-  else
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
-}  # end for
-# render plot
-dy_graph
-library(dygraphs)
-# prepare VTI and IEF prices
-price_s <- cbind(Ad(rutils::env_etf$VTI),
-           Ad(rutils::env_etf$IEF))
-col_names <- rutils::get_name(colnames(price_s))
-colnames(price_s) <- col_names
-
-# dygraphs plot with two y-axes
-library(dygraphs)
-dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
-library(quantmod)  # load package quantmod
-# assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download S&P500 prices into env_etf
-getSymbols("SP500", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$SP500["2016/"],
-       TA="add_Vo()",
-       name="S&P500 index")
-library(quantmod)  # load package quantmod
-# assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download DJIA prices into env_etf
-getSymbols("DJIA", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$DJIA["2016/"],
-       TA="add_Vo()",
-       name="DJIA index")
-library(quantmod)  # load package quantmod
-library(RCurl)  # load package RCurl
-library(XML)  # load package XML
-# download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-              stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
-write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-  row.names=FALSE)
-library(HighFreq)  # load package HighFreq
-# load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])),
-    names=sp_500$names[in_dex]))
-}  # end for
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
-# or download in loop
-for (sym_bol in sp_500$names) {
-  cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
-       name="BRK-B stock")
-library(quantmod)
-# download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-            auto.assign=FALSE,
-            src="FRED")
-# plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-      name="U.S. unemployment rate")
-library(quantmod)  # load package quantmod
-install.packages("devtools")
-library(devtools)
-# install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # load package Quandl
-# register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("Quandl")
-# load help page
-help(package="Quandl")
-# remove Quandl from search path
-detach("package:Quandl")
-library(quantmod)  # load package quantmod
-# download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL",
-            type="xts", start_date="1990-01-01")
-x11(width=14, height=7)
-chart_Series(price_s["2016", 1:4],
-    name="AAPL OHLC prices")
-# add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# download euro currency rates
-price_s <- Quandl(code="BNP/USDEUR",
-    start_date="2013-01-01",
-    end_date="2013-12-01", type="xts")
-# download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-    start_date="2013-01-01", type="xts")
-# download AAPL gross profits
-prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
-    type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST",
-    start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1],
-       name="AAPL Hurst")
-library(quantmod)  # load package quantmod
-# load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# replace "-" with "_" in symbols
-sp_500$free_code <-
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
-# or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"),
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
-# or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-library(quantmod)  # load package quantmod
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-            start_date="1990-01-01",
-            type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-       name="XOM stock")
+colnames(ari_ma) <- paste("autocorr", ar_coeff)
+plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
+# Or plot using ggplot
+ari_ma <- xts(x=ari_ma, order.by=in_dex)
+library(ggplot)
+autoplot(ari_ma, main="AR(1) prices",
+   facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+            order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+ legend=colnames(rand_walk),
+ col=c("black", "red", "blue"), lty=1)
+# define ARIMA coefficients
+co_eff <- c(0.9, 0.09)
+# calculate modulus of roots of characteristic equation
+root_s <- Mod(polyroot(c(1, -co_eff)))
+# calculate warmup period
+warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
+# simulate ARIMA process
+set.seed(1121)
+len_gth <- 1e4
+in_nov <- rnorm(len_gth + warm_up)
+ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+arima_sim <- arima.sim(n=len_gth, model=list(ar=co_eff),
+  start.innov=in_nov[1:warm_up],
+  innov=in_nov[(warm_up+1):NROW(in_nov)])
+all.equal(ari_ma[-(1:warm_up)], as.numeric(arima_sim))
+# simulate random walks using apply() loops
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrix(rnorm(1000*100), ncol=1000)
+rand_walks <- apply(rand_walks, 2, cumsum)
+vari_ance <- apply(rand_walks, 1, var)
+# simulate random walks using vectorized functions
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
+vari_ance <- matrixStats::rowVars(rand_walks)
+par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot(vari_ance, xlab="time steps", ylab="",
+     t="l", col="blue", lwd=2,
+     main="Variance of Random Walk")
+len_gth <- 1e4
+# simulate arima with small AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.01))
+tseries::adf.test(ari_ma)
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# simulate arima with different AR coefficients
+coeff_s <- seq(0.99, 1.0, 0.001) - 0.001
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+adf_test <- sapply(coeff_s, function(co_eff) {
+  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
+  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
+})  # end sapply
+plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient",
+     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
+plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient",
+     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+# simulate arima with negative AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=-0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+x11(width=5, height=3.5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+ac_f <- acf_plus(ari_ma, lag=10, xlab="", ylab="",
+   main="ACF of AR(1) process")
+ac_f$acf[1:5]
+# PACF of AR(1) process
+pac_f <- pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+pac_f <- drop(pac_f$acf)
+pac_f[1:5]

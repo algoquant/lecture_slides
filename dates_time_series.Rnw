@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Date and Time Series Objects]{Date and Time Series Objects}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -681,7 +681,7 @@ start_date <- decimal_date(Sys.Date()-6)
 end_date <- decimal_date(Sys.Date())
 # create vector of geometric Brownian motion
 da_ta <- exp(cumsum(rnorm(6)/100))
-fre_quency <- length(da_ta)/(end_date-start_date)
+fre_quency <- NROW(da_ta)/(end_date-start_date)
 ts_series <- ts(data=da_ta,
                 start=start_date,
                 frequency=fre_quency)
@@ -965,7 +965,7 @@ set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo time series of random returns
 in_dex <- Sys.Date() + 0:3
-zoo_series <- zoo(rnorm(length(in_dex)),
+zoo_series <- zoo(rnorm(NROW(in_dex)),
                order.by=in_dex)
 zoo_series
 attributes(zoo_series)
@@ -1099,7 +1099,7 @@ in_dex <- seq(from=as.Date("2014-07-14"),
                   by="day", length.out=1000)
 # create vector of geometric Brownian motion
 zoo_data <-
-  exp(cumsum(rnorm(length(in_dex))/100))
+  exp(cumsum(rnorm(NROW(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
       @
@@ -1165,12 +1165,12 @@ library(zoo)  # load package zoo
 in_dex1 <- seq(Sys.Date(), by="days",
                    length.out=365)
 # create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(length(in_dex1)),
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
                  order.by=in_dex1)
 # create another zoo time series of random returns
 in_dex2 <- seq(Sys.Date()+350, by="days",
                    length.out=365)
-zoo_series2 <- zoo(rnorm(length(in_dex2)),
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
                  order.by=in_dex2)
 # rbind the two time series - ts1 supersedes ts2
 zoo_series3 <- rbind(zoo_series1,
@@ -1210,11 +1210,11 @@ title(main="Random Prices", line=-1)  # add title
 # create daily date series of class 'Date'
 in_dex1 <- Sys.Date() + -3:1
 # create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(length(in_dex1)),
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
                order.by=in_dex1)
 # create another zoo time series of random returns
 in_dex2 <- Sys.Date() + -1:3
-zoo_series2 <- zoo(rnorm(length(in_dex2)),
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
                order.by=in_dex2)
 merge(zoo_series1, zoo_series2)  # union of dates
 # intersection of dates
@@ -1233,20 +1233,20 @@ merge(zoo_series1, zoo_series2, all=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Binding two time series that don't share the same time index produces \texttt{NA} values,
+      Binding two time series that don't share the same time index produces \texttt{NA} values.
       \vskip1ex
       There are two dedicated functions for managing \texttt{NA} values in time series:
       \begin{itemize}
-        \item \texttt{stats::na.omit()} removes whole rows of data containing \texttt{NA} values,
-        \item \texttt{zoo::na.locf()} copies the last non-\texttt{NA} values onto future \texttt{NA} values (\emph{locf} stands for \emph{last observation carry forward}),
+        \item \texttt{stats::na.omit()} removes whole rows of data containing \texttt{NA} values.
+        \item \texttt{zoo::na.locf()} copies the last non-\texttt{NA} values onto future \texttt{NA} values (\emph{locf} stands for \emph{last observation carry forward}).
       \end{itemize}
-      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data,
+      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data.
       \vskip1ex
-      But copying values forward requires initializing the first row of data, to guarantee that initial \texttt{NA} values are also over-written, 
+      But copying values forward requires initializing the first row of data, to guarantee that initial \texttt{NA} values are also over-written.
       \vskip1ex
-      The initial \texttt{NA} \emph{prices} can be initialized to the first non-\texttt{NA} price, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE},
+      The initial \texttt{NA} \emph{prices} can be initialized to the first non-\texttt{NA} price, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE}.
       \vskip1ex
-      But the initial \texttt{NA} \emph{return} values should be initialized to \emph{zero}, to avoid data \emph{snooping},
+      But the initial \texttt{NA} \emph{return} values should be initialized to \emph{zero}, to avoid data \emph{snooping}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1275,6 +1275,37 @@ re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns)
 sum(is.na(re_turns))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing \texttt{NA} Values in \texttt{"xts"} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{na.locf.xts()} from package \emph{xts} is faster than \texttt{zoo::na.locf()}, but it only operates on time series of class \texttt{"xts"}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Replace NAs in xts time series
+se_ries <- rutils::etf_env$price_s[, 1]
+head(se_ries)
+sum(is.na(se_ries))
+library(quantmod)
+series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
+all.equal(series_zoo, series_xts, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1348,7 +1379,7 @@ set.seed(1121)  # reset random number generator
 in_dex <- seq(from=as.Date("2014-07-14"),
                   by="day", length.out=1000)
 # create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(length(in_dex))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(in_dex))/100))
 # create zoo time series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data,
                   order.by=in_dex)
@@ -1360,7 +1391,7 @@ tsp(ts_series)  # frequency=1
 start_date <- decimal_date(start(zoo_series))
 end_date <- decimal_date(end(zoo_series))
 # calculate frequency of zoo_series
-fre_quency <- length(zoo_series)/(end_date-start_date)
+fre_quency <- NROW(zoo_series)/(end_date-start_date)
 da_ta <- coredata(zoo_series)  # extract data from zoo_series
 # create ts object using ts()
 ts_series <- ts(data=da_ta, start=start_date,
@@ -1405,7 +1436,7 @@ head(ts_series, 7)
 # create vector of regular dates, including weekends
 in_dex <- seq(from=start(zoo_series),
                   by="day",
-                  length.out=length(zoo_series))
+                  length.out=NROW(zoo_series))
 index(zoo_series) <- in_dex
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
@@ -1447,7 +1478,7 @@ set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series of random returns
 in_dex <- Sys.Date() + 0:3
-x_ts <- xts(rnorm(length(in_dex)),
+x_ts <- xts(rnorm(NROW(in_dex)),
                order.by=in_dex)
 names(x_ts) <- "random"
 x_ts

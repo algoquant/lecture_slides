@@ -54,12 +54,12 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#1]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#1, Spring 2018}
+\subtitle{Lecture\#1, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{January 23, 2018}
+\date{September 4, 2018}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -89,15 +89,16 @@ The course will apply the \texttt{R} programming language to \emph{momentum trad
 
 \begin{block}{Course Objectives}
 Students will learn through \texttt{R} coding exercises how to:\\
-\hskip1em - download data from external sources, and to scrub and format it,\\
-\hskip1em - estimate time series parameters, and fit models such as \texttt{ARIMA}, \texttt{GARCH}, and factor models,\\
-\hskip1em - optimize portfolios under different constraints and risk-return objectives,\\
-\hskip1em - backtest active portfolio management strategies and evaluate their performance,\\
+\hskip1em - download data from external sources, and to scrub and format it.\\
+\hskip1em - estimate time series parameters, and fit models such as \texttt{ARIMA}, \texttt{GARCH}, and factor models.\\
+\hskip1em - optimize portfolios under different constraints and risk-return objectives.\\
+\hskip1em - backtest active portfolio management strategies and evaluate their performance.\\
+\hskip1em - paper-trade strategies in Interactive Brokers.
 \end{block}
 \pause
 
 \begin{block}{Course Prerequisites}
-  FRE6123 Financial Risk Management and Asset Pricing.  The \texttt{R} language is considered to be challenging, so this course requires some programming experience with other languages such as \texttt{C++} or \texttt{Python}.  Students with less programming experience are encouraged to first take \emph{FRE6871 R in Finance}.  Students should also have knowledge of basic statistics (random variables, estimators, hypothesis testing, regression, etc.)
+  FRE6123 Financial Risk Management and Asset Pricing.  The \texttt{R} language is considered to be challenging, so this course requires programming experience with other languages such as \texttt{C++} or \texttt{Python}.  Students with less programming experience are encouraged to first take \emph{FRE6871 R in Finance}.  Students should also have knowledge of basic statistics (random variables, estimators, hypothesis testing, regression, etc.)
 \end{block}
 
 \end{frame}
@@ -126,7 +127,7 @@ Homeworks will also include reading assignments designed to help prepare for tes
 \pause
 
 \begin{block}{Graduate Assistant}
-The graduate assistant (GA) will be Zhenyu (Lucy) Yin \href{zy944@nyu.edu}{zy944@nyu.edu}.\\
+The graduate assistant (GA) will be announced.\\
 The GA will answer questions during office hours, or via \emph{NYU Classes} forums, not via emails.  Please send emails regarding lecture matters from \emph{NYU Classes} (not personal emails).
 \end{block}
 
@@ -643,19 +644,19 @@ Romain is an \texttt{R} Enthusiast and \texttt{Rcpp} Hero\\
 
 
 %%%%%%%%%%%%%%%
-\subsection{Installing \texttt{R} and \protect\emph{RStudio}}
+\subsection{Installing \texttt{R}, \texttt{Rtools}, and \protect\emph{RStudio}}
 \begin{frame}[t]{\subsecname}
 
 \begin{block}{}
-  Students will be required to bring their laptop computers to all the lectures, and to run the \texttt{R} Interpreter and \textbf{RStudio} RStudio during the lecture,
+  Students will be required to bring their laptop computers to all the lectures, and to run the \texttt{R} Interpreter and \textbf{RStudio} RStudio during the lecture.
   \vskip1ex
-  Laptop computers will be necessary for following the lectures, and for performing tests,
+  Laptop computers will be necessary for following the lectures, and for performing tests.
 \end{block}
 
 \begin{block}{}
   \begin{columns}[T]
     \column{0.7\textwidth}
-      Students will be required to install and to become proficient with the \texttt{R} Interpreter,\\
+      Students will be required to install the the 64-bit versions of \texttt{R} and \texttt{Rtools}, and to become proficient with the \texttt{R} Interpreter.\\
       Students can download the \texttt{R} Interpreter from \texttt{CRAN} (Comprehensive \texttt{R} Archive Network):\\
       \hskip1em\url{http://cran.r-project.org/}
       \vskip1ex
@@ -825,14 +826,14 @@ library(HighFreq)  # load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
 # extract and merge all data, subset by sym_bols
-price_s <- do.call(merge, 
-  as.list(rutils::env_etf)[sym_bols])
+price_s <- rutils::do_call(cbind, # do.call(merge
+  as.list(rutils::etf_env)[sym_bols])
 # extract and merge adjusted prices, subset by sym_bols
-price_s <- do.call(merge, 
-  lapply(as.list(rutils::env_etf)[sym_bols], Ad))
+price_s <- rutils::do_call(cbind, 
+  lapply(as.list(rutils::etf_env)[sym_bols], Ad))
 # same, but works only for OHLC series
-price_s <- do.call(merge, 
-  eapply(rutils::env_etf, Ad)[sym_bols])
+price_s <- rutils::do_call(cbind, 
+  eapply(rutils::etf_env, Ad)[sym_bols])
 # drop ".Adjusted" from colnames
 colnames(price_s) <- 
   sapply(colnames(price_s), 
@@ -845,9 +846,9 @@ unlist(eapply(globalenv(), is.xts))
 # save xts to csv file
 write.zoo(price_s, 
      file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# copy price_s into etf_env and save to .RData file
+assign("price_s", price_s, envir=etf_env)
+save(etf_env, file='etf_data.RData')
       @
   \end{columns}
 \end{block}
@@ -1223,8 +1224,8 @@ if (!require("xts")) install.packages("xts")
         <<echo=TRUE,eval=FALSE>>=
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Ad(rutils::env_etf$VTI), 
-  volume=quantmod::Vo(rutils::env_etf$VTI), n=10)
+  price=quantmod::Ad(rutils::etf_env$VTI), 
+  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
       @
   \end{columns}
 \end{block}
@@ -1423,7 +1424,7 @@ getAnywhere("cbind.ts")
 
 
 %%%%%%%%%%%%%%%
-\section{Date and Time Objects}
+\section{Time Series Objects}
 
 
 %%%%%%%%%%%%%%%
@@ -1471,534 +1472,6 @@ structure(10000.25, class="Date")
 \end{block}
 
 \end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXct} Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{POSIXct} class in \texttt{R} represents \emph{date-time} objects, that can store both the date and time,
-      \vskip1ex
-      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local \emph{time zone},
-      \vskip1ex
-      The \emph{moment of time} is the \emph{clock time} in the \texttt{UTC} \emph{time zone},
-      \vskip1ex
-      \texttt{POSIXct} objects are stored as the number of seconds that have elapsed since the \emph{epoch} (January 1, 1970) in the \texttt{UTC} \emph{time zone},
-      \vskip1ex
-      \texttt{POSIXct} objects are stored as the \emph{moment of time}, but are printed out as the \emph{clock time} in the local \emph{time zone},
-      \vskip1ex
-      A \emph{clock time} together with a \emph{time zone} uniquely specifies a \emph{moment of time},
-      \vskip1ex
-      The function \texttt{as.POSIXct()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXct} object,
-      \vskip1ex
-      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-date_time <- Sys.time()  # get today's date and time
-date_time
-class(date_time)  # POSIXct object
-# POSIXct stored as integer moment of time
-as.numeric(date_time)
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
-date_time <- as.POSIXct("2014-07-14 13:30:10")
-# different time zones can have same clock time
-as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
-as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# format argument allows parsing different date-time string formats
-as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
-           tz="America/New_York")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Operations on \texttt{POSIXct} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{"+"} and \texttt{"-"} arithmetic operators are overloaded to allow addition and subtraction operations on \texttt{POSIXct} objects,
-      \vskip1ex
-      The \texttt{"<"} and \texttt{">"} logical comparison operators are also overloaded to allow direct comparisons between \texttt{POSIXct} objects,
-      \vskip1ex
-      Operations on \texttt{POSIXct} objects are equivalent to the same operations on the internal integer representation of \texttt{POSIXct} (number of seconds since the \emph{epoch}),
-      \vskip1ex
-      Subtracting \texttt{POSIXct} objects creates a time interval object of class \texttt{difftime},
-      \vskip1ex
-      The method \texttt{seq.POSIXt} creates a vector of \texttt{POSIXct} \emph{date-times},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# same moment of time corresponds to different clock times
-time_ny <- as.POSIXct("2014-07-14 13:30:10",
-           tz="America/New_York")
-time_ldn <- as.POSIXct("2014-07-14 13:30:10",
-           tz="UTC")
-# add five hours to POSIXct
-time_ny + 5*60*60
-# subtract POSIXct
-time_ny - time_ldn
-class(time_ny - time_ldn)
-# compare POSIXct
-time_ny > time_ldn
-# create vector of POSIXct times during trading hours
-trading_times <- seq(
-  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
-  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
-  by="10 min")
-head(trading_times, 3)
-tail(trading_times, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Moment of Time and Clock Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{as.POSIXct()} can also coerce \texttt{integer} objects into \texttt{POSIXct}, given an \texttt{origin} in time,
-      \vskip1ex
-      The same \emph{moment of time} corresponds to different \emph{clock times} in different \emph{time zones},
-      \vskip1ex
-      The same \emph{clock times} in different \emph{time zones} correspond to different \emph{moments of time},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# POSIXct is stored as integer moment of time
-int_time <- as.numeric(date_time)
-# same moment of time corresponds to different clock times
-as.POSIXct(int_time, origin="1970-01-01",
-           tz="America/New_York")
-as.POSIXct(int_time, origin="1970-01-01",
-           tz="UTC")
-# same clock time corresponds to different moments of time
-as.POSIXct("2014-07-14 13:30:10",
-           tz="America/New_York") -
-  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
-# add 20 seconds to POSIXct
-date_time + 20
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Methods for Manipulating \texttt{POSIXct} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The generic function \texttt{format()} formats \texttt{R} objects for printing and display,
-      \vskip1ex
-      The method \texttt{format.POSIXct()} parses \texttt{POSIXct} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone},
-      \vskip1ex
-      The method \texttt{as.POSIXct.Date()} parses \texttt{Date} objects into \texttt{POSIXct}, and assigns to them the \emph{moment of time} corresponding to midnight \texttt{UTC},
-      \vskip1ex
-      \texttt{POSIX} is an acronym for "Portable Operating System Interface",
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-date_time  # POSIXct date and time
-# parse POSIXct to string representing the clock time
-format(date_time)
-class(format(date_time))  # character string
-# get clock times in different time zones
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# format with custom format strings
-format(date_time, "%m/%Y")
-format(date_time, "%m-%d-%Y %H hours")
-# trunc to hour
-format(date_time, "%m-%d-%Y %H:00:00")
-# Date converted to midnight UTC moment of time
-as.POSIXct(Sys.Date())
-as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
-           origin="1970-01-01",
-           tz="UTC")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{POSIXlt} Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{POSIXlt} class in \texttt{R} represents \emph{date-time} objects, that are stored internally as a list,
-      \vskip1ex
-      The function \texttt{as.POSIXlt()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXlt} object,
-      \vskip1ex
-      The method \texttt{format.POSIXlt()} parses \texttt{POSIXlt} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone},
-      \vskip1ex
-      The function \texttt{as.POSIXlt()} can also parse a \texttt{POSIXct} object into a \texttt{POSIXlt} object, and \texttt{as.POSIXct()} can perform the reverse,
-      \vskip1ex
-      Adding a number to \texttt{POSIXlt} causes implicit coercion to \texttt{POSIXct},
-      \vskip1ex
-      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes from the \texttt{POSIXt} class,
-      \vskip1ex
-      The methods \texttt{round.POSIXt()} and \texttt{trunc.POSIXt()} round and truncate \texttt{POSIXt} objects, and return \texttt{POSIXlt} objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-# parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
-date_time <- as.POSIXlt("2014-07-14 18:30:10")
-date_time
-class(date_time)  # POSIXlt object
-as.POSIXct(date_time)  # coerce to POSIXct object
-# extract internal list representation to vector
-unlist(date_time)
-date_time + 20  # add 20 seconds
-class(date_time + 20)  # implicit coercion to POSIXct
-trunc(date_time, units="hours")  # truncate to closest hour
-trunc(date_time, units="days")  # truncate to closest day
-methods(trunc)  # trunc methods
-trunc.POSIXt
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Zones and Date-time Conversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{date-time} objects require a \emph{time zone} to be uniquely specified,
-      \vskip1ex
-      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time,
-      \vskip1ex
-      \texttt{EST} stands for "Eastern Standard Time", and is \texttt{UTC} - 5 hours,
-      \vskip1ex
-      \texttt{EDT} stands for "Eastern Daylight Time", and is \texttt{UTC} - 4 hours,
-      \vskip1ex
-      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone}, but the environment variable \texttt{"TZ"} must be capitalized,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<>>=
-Sys.timezone()  # get time-zone
-Sys.setenv(TZ="UTC")  # set time-zone to UTC
-Sys.timezone()  # get time-zone
-# Standard Time in effect
-as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
-# Daylight Savings Time in effect
-as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
-date_time <- Sys.time()  # today's date and time
-# convert to character in different TZ
-format(date_time, tz="America/New_York")
-format(date_time, tz="UTC")
-# parse back to POSIXct
-as.POSIXct(format(date_time, tz="America/New_York"))
-# difference between New_York time and UTC
-as.POSIXct(format(Sys.time(), tz="UTC")) -
-  as.POSIXct(format(Sys.time(), tz="America/New_York"))
-# set time-zone to New York
-Sys.setenv(TZ="America/New_York")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Manipulating Date-time Objects Using \protect\emph{lubridate}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package \emph{lubridate} contains functions for manipulating \texttt{POSIXct} date-time objects,
-      \vskip1ex
-      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
-      \vskip1ex
-      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components,
-      \vskip1ex
-      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates,
-      \vskip1ex
-      The function \texttt{date\_decimal()} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-library(lubridate)  # load lubridate
-# parse strings into date-times
-as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
-date_time <- mdy("07-14-2014", tz="America/New_York")
-date_time
-class(date_time)  # POSIXct object
-dmy("14.07.2014", tz="America/New_York")
-
-# parse numeric into date-times
-as.POSIXct(as.character(14072014), format="%d%m%Y",
-                        tz="America/New_York")
-dmy(14072014, tz="America/New_York")
-
-# parse decimal to date-times
-decimal_date(date_time)
-date_decimal(2014.25, tz="America/New_York")
-date_decimal(decimal_date(date_time), tz="America/New_York")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Zones Using \protect\emph{lubridate}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{lubridate} simplifies \emph{time zone} calculations,
-      \vskip1ex
-      \emph{lubridate} uses the \emph{UTC} \emph{time zone} as default,
-      \vskip1ex
-      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different \emph{time zone},
-      \vskip1ex
-      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different \emph{time zone},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010,
-                     tz="America/New_York")
-date_time
-
-# get same moment of time in "UTC" time zone
-with_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
-
-# get same clock time in "UTC" time zone
-force_tz(date_time, "UTC")
-as.POSIXct(format(date_time, tz="America/New_York"),
-           tz="UTC")
-
-# same moment of time
-date_time - with_tz(date_time, "UTC")
-
-# different moments of time
-date_time - force_tz(date_time, "UTC")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{lubridate} Time Span Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{lubridate} has two time span classes: \texttt{durations} and \texttt{periods},
-      \vskip1ex
-      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
-      \vskip1ex
-      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects,
-      \vskip1ex
-      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
-      \vskip1ex
-      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years,
-      \vskip1ex
-      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(lubridate)  # load lubridate
-# Daylight Savings Time handling periods vs durations
-date_time <- as.POSIXct("2013-03-09 11:00:00",
-                        tz="America/New_York")
-date_time
-date_time + ddays(1)  # add duration
-date_time + days(1)  # add period
-
-leap_year(2012)  # leap year
-date_time <- dmy(01012012, tz="America/New_York")
-date_time
-date_time + dyears(1)  # add duration
-date_time + years(1)  # add period
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding Time Spans to Date-time Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(lubridate)  # load lubridate
-date_time <- ymd_hms(20140714142010, tz="America/New_York")
-date_time
-# add periods to a date-time
-c(date_time + seconds(1), date_time + minutes(1),
-date_time + days(1), date_time + months(1))
-
-# create vectors of dates
-date_time <- ymd(20140714, tz="America/New_York")
-date_time + 0:2 * months(1)  # monthly dates
-date_time + months(0:2)
-date_time + 0:2 * months(2)  # bi-monthly dates
-date_time + seq(0, 5, by=2) * months(1)
-seq(date_time, length=3, by="2 months")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{End-of-month Dates}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Adding monthly \texttt{periods} can create invalid dates,
-      \vskip1ex
-      The operators \texttt{\%m+\%} and \texttt{\%m-\%} add or subtract monthly \texttt{periods} to account for the varible number of days per month,
-      \vskip1ex
-      This allows creating vectors of end-of-month dates,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-library(lubridate)  # load lubridate
-# adding monthly periods can create invalid dates
-date_time <- ymd(20120131, tz="America/New_York")
-date_time + 0:2 * months(1)
-date_time + months(1)
-date_time + months(2)
-
-# create vector of end-of-month dates
-date_time %m-% months(13:1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{RQuantLib} Calendar Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package
-      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
-      is an interface to the
-      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
-      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options,
-      \vskip1ex
-      The
-      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
-      library also contains calendar functions for determining holidays and business days in many different jurisdictions,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-library(zoo)  # load zoo
-library(RQuantLib)  # load RQuantLib
-
-# create daily date series of class 'Date'
-in_dex <- Sys.Date() + -5:2
-in_dex
-
-# create Boolean vector of business days
-is_busday <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", in_dex)
-
-# create daily series of business days
-bus_index <- in_dex[is_busday]
-bus_index
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Review of Date-time Classes in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.3\textwidth}
-      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series,
-      \vskip1ex
-      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series,
-      \vskip1ex
-      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \emph{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series,
-    \column{0.7\textwidth}
-      \vspace{-2em}
-      <<echo=(-1)>>=
-library(zoo)  # load package zoo
-date_time <- Sys.Date()  # create date series of class 'Date'
-in_dex <- date_time + 0:365  # daily series over one year
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y")  # print first few dates
-# create daily date-time series of class 'POSIXct'
-in_dex <- seq(Sys.time(), by="days", length.out=365)
-head(in_dex, 4)  # print first few dates
-format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # print first few dates
-# create series of monthly dates of class 'zoo'
-monthly_index <- yearmon(2010+0:36/12)
-head(monthly_index, 4)  # print first few dates
-# create series of quarterly dates of class 'zoo'
-qrtly_index <- yearqtr(2010+0:16/4)
-head(qrtly_index, 4)  # print first few dates
-# parse quarterly 'zoo' dates to POSIXct
-Sys.setenv(TZ="UTC")
-as.POSIXct(head(qrtly_index, 4))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Time Series Objects}
 
 
 %%%%%%%%%%%%%%%
@@ -2314,7 +1787,7 @@ boxplot(x=diff(log(EuStockMarkets)))
       The \emph{zoo} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:2))>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo time series of random returns
@@ -2486,7 +1959,7 @@ title(main="Random Prices", line=-1)  # add title
       In addition, \emph{zoo} time series can be subset using \texttt{Date} objects,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # load package zoo
 # subset zoo as matrix
 zoo_series[459:463, 1]
@@ -2598,9 +2071,9 @@ merge(zoo_series1, zoo_series2, all=FALSE)
       \vskip1ex
       But copying values forward requires initializing the first row of data, to guarantee that initial \texttt{NA} values are also over-written, 
       \vskip1ex
-      Initial \texttt{NA} prices should be initialized to the first non-\texttt{NA} price, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE},
+      The initial \texttt{NA} \emph{prices} can be initialized to the first non-\texttt{NA} price, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE},
       \vskip1ex
-      Initial \texttt{NA} returns should be initialized to \texttt{zero}, 
+      But the initial \texttt{NA} \emph{return} values should be initialized to \emph{zero}, to avoid data \emph{snooping},
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2612,7 +2085,7 @@ mat_rix <- matrix(mat_rix, nc=3)
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
 # get time series of prices
-price_s <- mget(c("VTI", "VXX"), envir=rutils::env_etf)
+price_s <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
 price_s <- lapply(price_s, quantmod::Ad)
 price_s <- rutils::do_call(cbind, price_s)
 sum(is.na(price_s))
@@ -2621,11 +2094,11 @@ price_s <- zoo::na.locf(price_s)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
 # remove whole rows containing NA returns
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 sum(is.na(re_turns))
 re_turns <- na.omit(re_turns)
 # or carry forward non-NA returns (preferred)
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns)
 sum(is.na(re_turns))
@@ -2770,6 +2243,86 @@ head(ts_series, 7)
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{tseries} for Time Series Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for time series analysis and computational finance, such as:
+      \begin{itemize}
+        \item downloading historical data,
+        \item plotting time series,
+        \item calculating risk and performance measures,
+        \item statistical \emph{hypothesis testing},
+        \item fitting models to time series,
+        \item portfolio optimization,
+      \end{itemize}
+      Package \emph{tseries} accepts time series objects of class \texttt{"ts"} and \texttt{"zoo"}, and also has its own class \texttt{"irts"} for irregular spaced time-series objects,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# get documentation for package tseries
+packageDescription("tseries")  # get short description
+
+help(package="tseries")  # load help page
+
+library(tseries)  # load package tseries
+
+data(package="tseries")  # list all datasets in "tseries"
+
+ls("package:tseries")  # list all objects in "tseries"
+
+detach("package:tseries")  # remove tseries from search path
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hypothesis Testing Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{tseries} contains functions for testing statistical hypothesis on time series:
+      \begin{itemize}
+        \item \texttt{jarque.bera.test()} \emph{Jarque-Bera} test for normality of distribution of returns,
+        \item \texttt{adf.test()} \emph{Augmented Dickey-Fuller} test for existence of unit roots,
+        \item \texttt{pp.test()} \emph{Phillips-Perron} test for existence of unit roots,
+        \item \texttt{kpss.test()} \emph{KPSS} test for stationarity,
+        \item \texttt{po.test()} \emph{Phillips-Ouliaris} test for cointegration,
+        \item \texttt{bds.test()} \emph{BDS} test for randomness,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+zoo_stx <- suppressWarnings(  # load MSFT data
+  get.hist.quote(instrument="MSFT",
+                 start=Sys.Date()-365,
+                 end=Sys.Date(),
+                 origin="1970-01-01")
+)  # end suppressWarnings
+class(zoo_stx)
+dim(zoo_stx)
+tail(zoo_stx, 4)
+
+# calculate Sharpe ratio
+sharpe(zoo_stx[, "Close"], r=0.01)
+# add title
+plot(zoo_stx[, "Close"], xlab="", ylab="")
+title(main="MSFT Close Prices", line=-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{\protect\emph{xts} Time Series Objects}
@@ -2796,7 +2349,7 @@ head(ts_series, 7)
       The \emph{xts} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series of random returns
@@ -2831,23 +2384,19 @@ indexTZ(x_ts)
       \texttt{as.xts()} preserves the \emph{index} attributes of the original time series,
       \vskip1ex
       \emph{xts} can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.xts()} method,
-      <<echo=(-(1:1))>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_stx)
 dim(st_ox)
 head(st_ox[, 1:4], 4)
-      @
-      \vspace{-2em}
-      <<xts_plot,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.xts method
-plot(st_ox[, "AdjClose"], xlab="", ylab="", main="")
+xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # add title
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/xts_plot-2}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_plot2.png}
   \end{columns}
 \end{block}
 
@@ -2919,11 +2468,13 @@ legend("topleft", legend=colnames(EuStockMarkets),
       <<xts_ggplot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
 library(rutils)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, 1]
+price_s <- na.omit(price_s)
 # create ggplot object
-etf_gg <- qplot(x=index(rutils::env_etf$price_s[, 1]),
-                y=as.numeric(rutils::env_etf$price_s[, 1]),
+etf_gg <- qplot(x=index(price_s),
+                y=as.numeric(price_s),
                 geom="line",
-                main=names(rutils::env_etf$price_s[, 1])) +
+                main=names(price_s)) +
   xlab("") + ylab("") +
   theme(  # add legend and title
     legend.position=c(0.1, 0.5),
@@ -2956,10 +2507,11 @@ etf_gg
 library(rutils)  # load xts time series data
 library(reshape2)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -2997,12 +2549,13 @@ ggplot(data=data_frame,
       \vskip1ex
       The function \texttt{dyRangeSelector()} adds a date range selector to the bottom of a \emph{dygraphs} plot,
       <<echo=TRUE,eval=FALSE>>=
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(dygraphs)))
-x_ts <- rutils::env_etf$price_s[, c("VTI", "IEF")]
+# load rutils which contains etf_env dataset
+library(rutils)
+library(dygraphs)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # plot dygraph with date range selector
-dygraph(x_ts, main="VTI and IEF prices") %>%
+dygraph(price_s, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
       @
@@ -3033,14 +2586,16 @@ dygraph(x_ts, main="VTI and IEF prices") %>%
       The function \texttt{add\_trace()} adds elements to a \emph{plotly} plot,
       \vskip1ex
       The function \texttt{layout()} modifies the layout of a \emph{plotly} plot,
+      \vspace{-1em}
       <<time_series_plotly,echo=TRUE,eval=FALSE>>=
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(plotly)))
+# load rutils which contains etf_env dataset
+library(rutils)
+library(plotly)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # plotly syntax using pipes
 data_frame %>%
   plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
@@ -3070,41 +2625,80 @@ p_lot
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{xts} time series can be subset in similar ways to \emph{zoo},
+      \emph{xts} time series can be subset in similar ways as \emph{zoo} time series.
       \vskip1ex
-      In addition, \emph{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2014-10-15/2015-01-10"]},
+      In addition, \emph{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2014-10-15/2015-01-10"]}.
       \vskip1ex
-      \emph{xts} time series can be subset by year, week, days, or even seconds,
+      \emph{xts} time series can be subset by year, week, days, or even seconds.
       \vskip1ex
-      If only the date is subset, then a comma \texttt{","} after the date range isn't necessary,
+      If only the date is subset, then a comma \texttt{","} after the date range isn't necessary.
       \vskip1ex
-      The function \texttt{.subset\_xts()} allows fast subsetting of \emph{xts} time series, which for large datasets can be much faster than the bracket \texttt{"[]"} notation,
+      The function \texttt{.subset\_xts()} allows fast subsetting of \emph{xts} time series, which for large datasets can be faster than the bracket \texttt{"[]"} notation.
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
+      <<echo=TRUE,eval=FALSE>>=
 # subset xts using a date range string
-stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
-first(stox_sub)
-last(stox_sub)
+price_s <- rutils::etf_env$price_s
+sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset Nov 2014 using a date string
-stox_sub <- st_ox["2014-11", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset all data after Nov 2014
-stox_sub <- st_ox["2014-11/", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11/", 1:4]
+first(sub_prices)
+last(sub_prices)
 # comma after date range not necessary
-identical(st_ox["2014-11", ], st_ox["2014-11"])
-# benchmark the speed of subsetting
+all.equal(price_s["2014-11", ], price_s["2014-11"])
+# .subset_xts() is faster than the bracket []
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=sapply(500,
-        function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
-  subset=sapply(500,
-        function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
+  bracket=price_s[10:20, ],
+  subset=xts::.subset_xts(price_s, 10:20),
   times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Subsetting of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Subsetting of \emph{xts} time series can be made much faster if the right operations are used.
+      \vskip1ex
+      Subsetting \emph{xts} time series using \texttt{Boolean} vectors is usually faster than using date strings.
+      \vskip1ex
+      But the speed of subsetting can be reduced by additional operations, like coercing strings into dates.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# specify string representing a date
+dat_e <- "2014-10-15"
+# subset price_s in two different ways
+price_s <- rutils::etf_env$price_s
+all.equal(price_s[index(price_s) >= dat_e], 
+          price_s[paste0(dat_e, "/")])
+# boolean subsetting is slower because coercing string into date
+library(microbenchmark)
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# coerce string into a date
+dat_e <- as.Date("2014-10-15")
+# boolean subsetting is faster than using date string
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -3119,29 +2713,21 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      A \emph{recurring time interval} is the same time interval every day,
+      A \emph{recurring time interval} is the same time interval every day, for example the time interval from 9:30AM to 4:00PM every day.
       \vskip1ex
-      \emph{xts} can be subset on recurring time intervals using the \texttt{"T"} notation,
+      \emph{xts} series can be subset on recurring time intervals using the \texttt{"T"} notation.
       \vskip1ex
       For example, to subset the time interval from 9:30AM to 4:00PM every day: \texttt{["T09:30:00/T16:00:00"]}
       \vskip1ex
       Warning messages that "timezone of object is different than current timezone" can be suppressed by calling the function options() with argument \texttt{"xts\_check\_tz=FALSE"}
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
-# vector of 1-minute times (ticks)
-min_ticks <- seq.POSIXt(
-  from=as.POSIXct("2015-04-14", tz="America/New_York"),
-  to=as.POSIXct("2015-04-16"),
-  by="min")
-# xts of 1-minute times (ticks) of random returns
-x_ts <- xts(rnorm(length(min_ticks)),
-                     order.by=min_ticks)
+      <<echo=TRUE,eval=FALSE>>=
+price_s <- HighFreq::SPY["2012-04"]
 # subset recurring time interval using "T notation",
-x_ts <- x_ts["T09:30:00/T16:00:00"]
-first(x_ts["2015-04-15"])  # first element of day
-last(x_ts["2015-04-15"])  # last element of day
+price_s <- price_s["T10:30:00/T15:00:00"]
+first(price_s["2012-04-16"])  # first element of day
+last(price_s["2012-04-16"])  # last element of day
 # suppress timezone warning messages
 options(xts_check_tz=FALSE)
       @
@@ -3158,26 +2744,28 @@ options(xts_check_tz=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{xts} series always have a \texttt{dim} attribute, unlike \emph{zoo},
+      \emph{xts} series always have a \texttt{dim} attribute, unlike \emph{zoo}, which have no \texttt{dim} attribute when they only have one column of data.
       \vskip1ex
-      \emph{zoo} series with multiple columns have a \texttt{dim} attribute, and are therefore matrices,
+      \emph{zoo} series with multiple columns have a \texttt{dim} attribute, and are therefore matrices.
       \vskip1ex
-      But \emph{zoo} with a single column don't, and are therefore vectors not matrices,
+      But \emph{zoo} with a single column don't, and are therefore vectors not matrices.
       \vskip1ex
-      When a \emph{zoo} is subset to a single column, the \texttt{dim} attribute is dropped, which can create errors,
+      When a \emph{zoo} is subset to a single column, the \texttt{dim} attribute is dropped, which can create errors.
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
-str(st_ox)  # display structure of xts
+      <<echo=TRUE,eval=FALSE>>=
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+str(price_s)  # display structure of xts
 # subsetting zoo to single column drops dim attribute
-dim(zoo_stx_adj)
-dim(zoo_stx_adj[, 1])
+zoo_prices <- as.zoo(price_s)
+dim(zoo_prices)
+dim(zoo_prices[, 1])
 # zoo with single column are vectors not matrices
-c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
+c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
 # xts always have a dim attribute
-rbind(base=dim(st_ox), subs=dim(st_ox[, 1]))
-c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
+rbind(base=dim(price_s), subs=dim(price_s[, 1]))
+c(is.matrix(price_s), is.matrix(price_s[, 1]))
       @
   \end{columns}
 \end{block}
@@ -3201,15 +2789,14 @@ c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
       By default, the \texttt{lag()} and \texttt{diff()} operations on \emph{xts} retain the same number of rows, but substitute \texttt{NAs} for missing data,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
+      <<echo=TRUE,eval=FALSE>>=
 # lag of zoo shortens it by one row
-rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
+rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
 # lag of xts doesn't shorten it
-rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
+rbind(base=dim(price_s), lag=dim(lag(price_s)))
 # lag of zoo is in opposite direction from xts
-head(lag(zoo_stx_adj), 4)
-head(lag(st_ox), 4)
+head(lag(zoo_prices, -1), 4)
+head(lag(price_s), 4)
       @
   \end{columns}
 \end{block}
@@ -3249,7 +2836,7 @@ head(price_s[end_points, ])
 
 
 %%%%%%%%%%%%%%%
-\subsection{Converting \protect\emph{xts} to Lower Periodicity}
+\subsection{Converting \protect\emph{xts} Time Series to Lower Periodicity}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3262,10 +2849,9 @@ head(price_s[end_points, ])
       \texttt{to.period()} converts both univariate and \emph{OHLC} time series to a lower periodicity,
     \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1))>>=
-library(xts)  # load package xts
+      <<echo=TRUE,eval=FALSE>>=
 # lower the periodicity to months
-xts_monthly <- to.period(x=st_ox,
+xts_monthly <- to.period(x=price_s,
                    period="months", name="MSFT")
 # convert colnames to standard OHLC format
 colnames(xts_monthly)
@@ -3290,7 +2876,7 @@ head(xts_yearly)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using \protect\emph{xts}}
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{plot.xts()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3302,12 +2888,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_prices)
 # subset xts using a date
 stox_sub <- st_ox["2014-11", 1:4]
 
 # plot OHLC using plot.xts method
-plot(stox_sub, type="candles", main="")
+xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
       @
     \column{0.5\textwidth}
@@ -3357,42 +2943,47 @@ tail(st_ox[, 1:4])
 
 
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{tseries} for Time Series Analysis}
+\section{Time Series Modeling}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{tseries} for Time Series Analysis}
+\subsection{Autocorrelation Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for time series analysis and computational finance, such as:
-      \begin{itemize}
-        \item downloading historical data,
-        \item plotting time series,
-        \item calculating risk and performance measures,
-        \item statistical \emph{hypothesis testing},
-        \item fitting models to time series,
-        \item portfolio optimization,
-      \end{itemize}
-      Package \emph{tseries} accepts time series objects of class \texttt{"ts"} and \texttt{"zoo"}, and also has its own class \texttt{"irts"} for irregular spaced time-series objects,
+      The \emph{Autocorrelation Function} is the correlation coefficient of a time series with its lagged values:
+      \begin{displaymath}
+        \rho_k = \frac{1}{(n-k)\sigma^2} {\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}
+      \end{displaymath}
+      \vskip1ex
+      The function \texttt{acf()} from the base package \emph{stats} calculates and plots the autocorrelation function for a univariate time series.
+      \vskip1ex
+      \texttt{acf()} returns the \texttt{acf} data invisibly - the return value isn't automatically printed to the console.
+      \vskip1ex
+      The \texttt{acf()} return data can be assigned to a variable, and then printed.
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
+library(zoo)
+re_turns <- diff(log(as.numeric(EuStockMarkets[, 1])))
+# acf() autocorrelation from package stats
+acf(re_turns, lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+      @
+      \vspace{-1em}
+      The package \emph{zoo} is designed for managing \emph{time series} and ordered objects,
+      \vskip1ex
+      The function \texttt{coredata} extracts the core underlying data from a complex object,
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# get documentation for package tseries
-packageDescription("tseries")  # get short description
-
-help(package="tseries")  # load help page
-
-library(tseries)  # load package tseries
-
-data(package="tseries")  # list all datasets in "tseries"
-
-ls("package:tseries")  # list all objects in "tseries"
-
-detach("package:tseries")  # remove tseries from search path
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
+      The horizontal dashed lines are confidence intervals of the autocorrelation estimator (at 95\% significance level),
+      \vskip1ex
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      The function \texttt{acf()} has the drawback that it plots the lag-zero autocorrelation (which is simply \texttt{1}),
   \end{columns}
 \end{block}
 
@@ -3400,268 +2991,46 @@ detach("package:tseries")  # remove tseries from search path
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading \texttt{ts} Data From \protect\emph{Yahoo} Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{get.hist.quote()} can download daily historical data in \texttt{ts} format using the argument \texttt{"retclass="ts"},
-      \vskip1ex
-      \texttt{get.hist.quote()} returns a \texttt{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates,
-      \vskip1ex
-      The \texttt{ts} contains \texttt{NA} values for weekends and holidays,
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # load package tseries
-# download MSFT data in ts format
-ts_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    retclass="ts",
-    quote=c("Open","High","Low","Close",
-            "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-      @
-    \column{0.6\textwidth}
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate price adjustment vector
-adj_vector <-
-  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
-# adjust OHLC prices
-ts_stx_adj <- ts_stx
-ts_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * ts_stx[, c("Open","High","Low","Close")]
-# inspect the data
-tsp(ts_stx_adj)  # frequency=1
-head(time(ts_stx_adj))
-head(ts_stx_adj)
-tail(ts_stx_adj)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{zoo} Data From \protect\emph{Yahoo} Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{get.hist.quote()} downloads historical data from online sources,
-      \vskip1ex
-      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
-      \vskip1ex
-      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
-      \vskip1ex
-      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
-      \vskip1ex
-      The \texttt{"AdjClose"} data field is for the \emph{close} price adjusted for stock splits and dividends,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # load package tseries
-# download MSFT data
-zoo_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    quote=c("Open","High","Low","Close",
-            "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-class(zoo_stx)
-dim(zoo_stx)
-head(zoo_stx, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adjusting \protect\emph{OHLC} Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Stock prices experience jumps due to stock splits and dividends,
-      \vskip1ex
-      \emph{Adjusted} stock prices are stock prices that have been adjusted so they don't have jumps,
-      \vskip1ex
-      \emph{OHLC} data can be adjusted for stock splits and dividends,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(tseries)  # load package tseries
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate price adjustment vector
-adj_vector <-
-  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
-head(adj_vector, 5)
-tail(adj_vector, 5)
-# adjust OHLC prices
-zoo_stx_adj <- zoo_stx
-zoo_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
-head(zoo_stx_adj)
-tail(zoo_stx_adj)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Data From \protect\emph{Oanda} Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Oanda} is a foreign exchange broker that also provides free historical currency rates data,
-      \vskip1ex
-      The function \texttt{get.hist.quote()} downloads historical data from online sources,
-      \vskip1ex
-      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
-      \vskip1ex
-      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
-      \vskip1ex
-      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # load package tseries
-# download EUR/USD data
-zoo_eurusd <- suppressWarnings(
-  get.hist.quote(
-    instrument="EUR/USD",
-    provider="oanda",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# bind and scrub data
-zoo_stxeur <- cbind(zoo_eurusd,
-                     zoo_stx[, "AdjClose"])
-colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
-zoo_stxeur <-
-  zoo_stxeur[complete.cases(zoo_stxeur),]
-save(zoo_stx, zoo_stx_adj,
-     ts_stx, ts_stx_adj,
-     zoo_eurusd, zoo_stxeur,
-     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# inspect the data
-class(zoo_eurusd)
-tail(zoo_eurusd, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Data for Multiple Symbols Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data for multiple symbols can be downloaded in an \texttt{lapply} loop,
-      \vskip1ex
-      \texttt{lapply} returns a \emph{list} of \emph{zoo} objects,
-      \vskip1ex
-      The list of \emph{zoo} objects can be flattened into a single \emph{zoo} object using functions \texttt{do.call()} and \texttt{cbind()},
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # load package tseries
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
-  "IVW", "IWB", "IWD", "IWF")
-# download price and volume data for sym_bols into list of zoo objects
-zoo_series <- suppressWarnings(
-  lapply(sym_bols, # loop for loading data
-         get.hist.quote,
-         quote=c("AdjClose", "Volume"),
-         start=Sys.Date()-3650,
-         end=Sys.Date(),
-         origin="1970-01-01")
-)  # end suppressWarnings
-# flatten list of zoo objects into a single zoo object
-zoo_series <- do.call(merge, zoo_series)
-# or
-zoo_series <- rutils::do_call(cbind, zoo_series)
-# assign names in format "symbol.Close", "symbol.Volume"
-names(zoo_series) <-
-  as.vector(sapply(sym_bols,
-                   paste, c("Close", "Volume"), sep="."))
-# save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file='zoo_series.csv', sep=",")
-# save zoo_series to a binary .RData file
-save(zoo_series, file='zoo_series.RData')
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{tseries}}
+\subsection{Ljung-Box Test of Autocorrelation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for plotting time series:
-      \begin{itemize}
-        \item \texttt{seqplot.ts()} for plotting two time series in same panel,
-        \item \texttt{plotOHLC()} for plotting \emph{OHLC} time series,
-      \end{itemize}
-      The function \texttt{plotOHLC()} from package \emph{tseries} plots \emph{OHLC} time series,
-      <<tseries_OHLC,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# get start and end dates
-in_dex <- time(ts_stx_adj)
-e_nd <- in_dex[length(in_dex)]
-st_art <- round((4*e_nd + in_dex[1])/5)
-# plot using plotOHLC
-plotOHLC(window(ts_stx_adj,
-                start=st_art,
-                end=e_nd)[, 1:4],
-         xlab="", ylab="")
-title(main="MSFT OHLC Prices")
-      @
+      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      \vskip1ex
+      The test statistic is:
+      \begin{displaymath}
+        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
+      \end{displaymath}
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      \vskip1ex
+      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/tseries_OHLC-1}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(Ecdat)  # load Ecdat
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+macro_diff <- na.omit(diff(macro_zoo))
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
+
+# changes in 3 month T-bill rate are autocorrelated
+Box.test(macro_diff[, "3mTbill"],
+         lag=10, type="Ljung")
+
+# changes in unemployment rate are autocorrelated
+Box.test(macro_diff[, "unemprate"],
+         lag=10, type="Ljung")
+      @
   \end{columns}
 \end{block}
 
@@ -3669,39 +3038,46 @@ title(main="MSFT OHLC Prices")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Two Time Series Using \protect\emph{tseries}}
+\subsection{Improved Autocorrelation Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{seqplot.ts()} from package \emph{tseries} plots two time series in same panel,
-      \vskip1ex
-      A \emph{ts} time series can be created from a \emph{zoo} using the function \emph{ts()}, after extracting the data and date attributes from \emph{zoo},
-      \vskip1ex
-      The function \texttt{decimal\_date()} from package \emph{lubridate} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates,
-      <<tseries_seqplot,echo=(-(1:3)),eval=FALSE,fig.show='hide'>>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # load package zoo
-library(lubridate)  # load lubridate
-# get start and end dates of zoo_series
-start_date <- decimal_date(start(zoo_stx))
-end_date <- decimal_date(end(zoo_stx))
-# calculate frequency of zoo_stx
-fre_quency <- length(zoo_stx)/(end_date-start_date)
-# extract data from zoo_stx
-da_ta <- coredata(
-  window(zoo_stx, start=as.Date("2015-01-01"),
-         end=end(zoo_stx)))
-# create ts object using ts()
-ts_stx <- ts(data=da_ta, start=decimal_date(as.Date("2015-01-01")),
-                frequency=fre_quency)
-seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
-title(main="MSFT Open and Close Prices", line=-1)
+dax_acf <- acf(re_turns, plot=FALSE)
+summary(dax_acf)  # get the structure of the "acf" object
+# print(dax_acf)  # print acf data
+dim(dax_acf$acf)
+dim(dax_acf$lag)
+head(dax_acf$acf)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/tseries_seqplot-1}
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      <<echo=TRUE,eval=FALSE>>=
+acf_plus <- function (ts_data, plo_t=TRUE,
+                      xlab="Lag", ylab="",
+                      main="", ...) {
+  acf_data <- acf(x=ts_data, plot=FALSE, ...)
+# remove first element of acf data
+  acf_data$acf <-  array(data=acf_data$acf[-1],
+          dim=c((dim(acf_data$acf)[1]-1), 1, 1))
+  acf_data$lag <-  array(data=acf_data$lag[-1],
+          dim=c((dim(acf_data$lag)[1]-1), 1, 1))
+  if (plo_t) {
+    ci <- qnorm((1+0.95)/2)*sqrt(1/length(ts_data))
+    ylim <- c(min(-ci, range(acf_data$acf[-1])),
+              max(ci, range(acf_data$acf[-1])))
+    plot(acf_data, xlab=xlab, ylab=ylab,
+         ylim=ylim, main="", ci=0)
+    title(main=main, line=0.5)
+    abline(h=c(-ci, ci), col="blue", lty=2)
+  }
+  invisible(acf_data)  # return invisibly
+}  # end acf_plus
+      @
   \end{columns}
 \end{block}
 
@@ -3709,76 +3085,27 @@ title(main="MSFT Open and Close Prices", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Risk and Performance Estimation Using \protect\emph{tseries}}
+\subsection{Autocorrelation of DAX Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for calculating risk and performance:
-      \begin{itemize}
-        \item \texttt{maxdrawdown()} for calculating the maximum drawdown,
-        \item \texttt{sharpe()} for calculating the \emph{Sharpe} ratio (defined as the excess return divided by the standard deviation),
-        \item \texttt{sterling()} for calculating the \emph{Sterling} ratio (defined as the return divided by the maximum drawdown),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-library(tseries)  # load package tseries
+      The DAX time series of returns does not appear to have statistically significant autocorrelations,
+      \vskip1ex
+      But the \texttt{acf} plot alone is not enough to test whether autocorrelations are statistically significant or not,
+        <<dax_acf,echo=(-(1:2)),eval=FALSE,fig.width=4,fig.height=3.5,fig.show='hide'>>=
+par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# calculate maximum drawdown
-maxdrawdown(zoo_stx_adj[, "AdjClose"])
-max_drawd <- maxdrawdown(zoo_stx_adj[, "AdjClose"])
-index(zoo_stx_adj)[max_drawd$from]
-index(zoo_stx_adj)[max_drawd$to]
-# calculate Sharpe ratio
-sharpe(zoo_stx_adj[, "AdjClose"])
-# calculate Sterling ratio
-sterling(as.numeric(zoo_stx_adj[, "AdjClose"]))
+# improved autocorrelation function
+acf_plus(re_turns, lag=10, main="")
+title(main="acf of DAX returns", line=-1)
+# Ljung-Box test for DAX returns
+Box.test(re_turns, lag=10, type="Ljung")
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hypothesis Testing Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for testing statistical hypothesis on time series:
-      \begin{itemize}
-        \item \texttt{jarque.bera.test()} \emph{Jarque-Bera} test for normality of distribution of returns,
-        \item \texttt{adf.test()} \emph{Augmented Dickey-Fuller} test for existence of unit roots,
-        \item \texttt{pp.test()} \emph{Phillips-Perron} test for existence of unit roots,
-        \item \texttt{kpss.test()} \emph{KPSS} test for stationarity,
-        \item \texttt{po.test()} \emph{Phillips-Ouliaris} test for cointegration,
-        \item \texttt{bds.test()} \emph{BDS} test for randomness,
-      \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/dax_acf-1}
   \end{columns}
 \end{block}
 
@@ -3786,120 +3113,75 @@ title(main="MSFT Close Prices", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fitting Time Series Models Using \protect\emph{tseries}}
+\subsection{Autocorrelation of Squared DAX Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for fitting models to time series:
-      \begin{itemize}
-        \item \texttt{garch()} for fitting \texttt{GARCH} volatility models,
-        \item \texttt{arma()} for fitting \texttt{ARMA} models,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{tseries} contains functions for miscellaneous functions:
+      Squared DAX returns do have statistically significant autocorrelations,
       \vskip1ex
-      \texttt{portfolio.optim()} for calculating mean-variance efficient portfolios,
+      But squared random returns are not autocorrelated,
+      <<dax_squared_acf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+# autocorrelation of squared DAX returns
+acf_plus(re_turns^2,
+         lag=10, main="")
+title(main="acf of squared DAX returns",
+      line=-1)
+# autocorrelation of squared random returns
+acf_plus(rnorm(length(re_turns))^2,
+         lag=10, main="")
+title(main="acf of squared random returns",
+      line=-1)
+# Ljung-Box test for squared DAX returns
+Box.test(re_turns^2, lag=10, type="Ljung")
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(tseries)  # load package tseries
-zoo_stx <- suppressWarnings(  # load MSFT data
-  get.hist.quote(instrument="MSFT",
-                 start=Sys.Date()-365,
-                 end=Sys.Date(),
-                 origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/dax_squared_acf-1}
   \end{columns}
 \end{block}
 
 \end{frame}
 
 
-
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+\subsection{U.S. Macroeconomic Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
+      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data,
       \vskip1ex
-      \emph{quantmod} uses time series objects of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
-      \begin{itemize}
-        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
-        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
-        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
-        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# load package quantmod
-library(quantmod)
-# get documentation for package quantmod
-# get short description
-packageDescription("quantmod")
-# load help page
-help(package="quantmod")
-# list all datasets in "quantmod"
-data(package="quantmod")
-# list all objects in "quantmod"
-ls("package:quantmod")
-# remove quantmod from search path
-detach("package:quantmod")
+      \texttt{"lhur"} is the unemployment rate (average of months in quarter),
+      \vskip1ex
+      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
+      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+library(zoo)  # load package zoo
+library(Ecdat)  # load Ecdat
+colnames(Macrodat)  # United States Macroeconomic Time Series
+macro_zoo <- as.zoo(  # coerce to "zoo"
+          Macrodat[, c("lhur", "fygm3")])
+colnames(macro_zoo) <- c("unemprate", "3mTbill")
+# ggplot2 in multiple panes
+autoplot(  # generic ggplot2 for "zoo"
+  object=macro_zoo, main="US Macro",
+  facets=Series ~ .) + # end autoplot
+  xlab("") +
+theme(  # modify plot theme
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank()
+)  # end theme
       @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_data-1}
   \end{columns}
 \end{block}
 
@@ -3907,58 +3189,197 @@ detach("package:quantmod")
 
 
 %%%%%%%%%%%%%%%
-\subsection{ETF Dataset}
+\subsection{Autocorrelation of Econometric Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(xtable)
-# ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
-  "IVW", "IWB", "IWD", "IWF")
-# read etf database into data frame
-etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
-               stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# shorten names
-etf_names <- sapply(etf_list$Name,
-                    function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -length(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
+      Most econometric data displays a high degree of autocorrelation,
+      \vskip1ex
+      But time series of tradeable prices display very low autocorrelation,
+      <<macro_corr,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # set plot panels
+macro_diff <- na.omit(diff(macro_zoo))
+
+acf_plus(coredata(macro_diff[, "unemprate"]),
+         lag=10)
+title(main="quarterly unemployment rate",
+      line=-1)
+
+acf_plus(coredata(macro_diff[, "3mTbill"]),
+         lag=10)
+title(main="3 month T-bill EOQ", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/macro_corr-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+# extract DAX time series
+dax_ts <- EuStockMarkets[, 1]
+# filter past values only (sides=1)
+dax_filt <- filter(dax_ts,
+    filter=rep(1/5,5), sides=1)
+# coerce to zoo and merge the time series
+dax_filt <- cbind(as.zoo(dax_ts),
+                  as.zoo(dax_filt))
+colnames(dax_filt) <- c("DAX", "DAX filtered")
+dax_data <- window(dax_filt,
+                   start=1997, end=1998)
+autoplot(  # plot ggplot2
+    dax_data, main="Filtered DAX",
+    facets=NULL) +  # end autoplot
+xlab("") + ylab("") +
+theme(  # modify plot theme
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+    plot.background=element_blank(),
+    axis.text.y=element_blank()
+    )  # end theme
+# end ggplot2
+      @
+    \column{0.5\textwidth}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autocorrelation Function of Filtered Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Filtering a time series creates autocorrelations,
+      <<dax_filter_acf,echo=(-(1:1)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+re_turns <- na.omit(diff(log(dax_filt)))
+par(mfrow=c(2,1))  # set plot panels
+
+acf_plus(coredata(re_turns[, 1]), lag=10,
+         xlab="")
+title(main="DAX", line=-1)
+
+acf_plus(coredata(re_turns[, 2]), lag=10,
+         xlab="")
+title(main="DAX filtered", line=-1)
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/dax_filter_acf-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive \protect\emph{ARIMA} Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} time series process \emph{AR(p)} of order \emph{p} is defined as:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      Where the $\varepsilon_i$ are the random and independent \emph{innovations}, with zero mean and constant variance.
+      \vskip1ex
+      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process, and is simply called an \emph{ARIMA} process.
+      \vskip1ex
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes.
+      \vspace{-1em}
+    <<ar_process,echo=(-(1:4)),eval=FALSE,fig.height=5,fig.show='hide'>>=
+# ARIMA processes
+library(ggplot2)  # load ggplot2
+library(gridExtra)  # load gridExtra
+set.seed(1121)  # reset random numbers
+in_dex <- Sys.Date() + 0:728  # two year daily series
+ari_ma <- xts(  # AR time series of returns
+  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
+  order.by=in_dex)
+ari_ma <- cbind(ari_ma, cumsum(ari_ma))
+colnames(ari_ma) <- c("AR returns", "AR prices")
+autoplot(object=ari_ma, # ggplot AR process
+     facets="Series ~ .",
+     main="Autoregressive process (phi=0.2)") +
+  facet_grid("Series ~ .", scales="free_y") +
+  xlab("") + ylab("") +
+theme(legend.position=c(0.1, 0.5),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_process-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Examples of Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"model"} argument contains a \texttt{list} of \emph{ARIMA} coefficients $\{\varphi_i\}$.
+      \vskip1ex
+      Positive coefficient values cause positive \emph{autocorrelation}, and vice cersa.
+      <<echo=TRUE,eval=FALSE>>=
+ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
+# Create three AR time series
+ari_ma <- sapply(ar_coeff, function(phi) {
+  set.seed(1121)  # reset random numbers
+  arima.sim(n=NROW(in_dex), model=list(ar=phi))
 })  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+colnames(ari_ma) <- paste("autocorr", ar_coeff)
+plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
+# Or plot using ggplot
+ari_ma <- xts(x=ari_ma, order.by=in_dex)
+library(ggplot)
+autoplot(ari_ma, main="AR(1) prices",
+         facets=Series ~ .) +
+    facet_grid(Series ~ ., scales="free_y") +
+xlab("") +
+theme(
+  legend.position=c(0.1, 0.5),
+  plot.title=element_text(vjust=-2.0),
+  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
+  plot.background=element_blank(),
+  axis.text.y=element_blank())
       @
     \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=FALSE,size="tiny">>=
-etf_list[c(1, 2)]
-      @
-      <<eval=TRUE,results='asis',echo=FALSE>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
       \vspace{-1em}
-      ETFs with names \emph{X*} represent industry sector funds,
-      \vskip1ex
-      ETFs with names \emph{I*} represent style funds (value, growth),
-      \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund,
-      \vskip1ex
-      \emph{VXX} is the VIX volatility fund,
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_processes.png}
   \end{columns}
 \end{block}
 
@@ -3966,46 +3387,136 @@ print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data Using Package \protect\emph{quantmod}}
+\subsection{Stationary Processes and Their Characteristic Equations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      A process is \emph{stationary} if its probability distribution does not change with time, which means that it has constant mean and variance.
       \vskip1ex
-      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
+      The \emph{autoregressive} process \emph{AR(p)}:
+      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \varepsilon_i$
       \vskip1ex
-      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
+      Has the following characteristic equation:
+      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
       \vskip1ex
-      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
+      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than \texttt{1}.
       \vskip1ex
-      The method \texttt{getSymbols.yahoo} accepts arguments \texttt{"from"} and \texttt{"to"} which specify the date range for the data,
-      \vskip1ex
-      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
+      If the sum of the autoregressive coefficients is equal to \texttt{1}: $\sum_{i=1}^p \varphi_i = 1$, then the process has a root equal to \texttt{1} (it has a \emph{unit root}), so it's not stationary.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf
-getSymbols(sym_bols, env=env_etf, adjust=TRUE,
-    from="2007-01-03")
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
+      \vspace{-4em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+library(zoo)  # load zoo
+library(ggplot2)  # load ggplot2
+set.seed(1121)  # initialize random number generator
+rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
+                  order.by=(Sys.Date()+0:99)))
+colnames(rand_walk) <-
+  paste("rand_walk", 1:3, sep="_")
+plot(rand_walk, main="Random walks",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue"))
+# add legend
+legend(x="topleft",
+       legend=colnames(rand_walk),
+       col=c("black", "red", "blue"), lty=1)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Autoregressive Processes Using \texttt{filter()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes by calling the function \texttt{filter()}.
+      \vskip1ex
+      \emph{ARIMA} processes can be simulated by using the function \texttt{filter()} directly, with the argument \texttt{method="recursive"}.
+      \vskip1ex
+      Simulating stationary \emph{autoregressive} processes requires a \emph{warmup} period, to allow the process to reach its stationary state.
+      \vskip1ex
+      The required length of the \emph{warmup} period depends on the smallest root of the characteristic equation, with a longer \emph{warmup} period needed for smaller roots, that are closer to \texttt{1}.
+      \vskip1ex
+      The \emph{rule of thumb} (heuristic rule, guideline) is for the \emph{warmup} period to be equal to \texttt{6} divided  by the logarithm of the smallest characteristic root plus the number of \emph{AR} coefficients: $\frac{6}{\log(minroot)} + numcoeff$
+    \column{0.5\textwidth}
+      \vspace{-1em}
+    <<echo=TRUE,eval=FALSE>>=
+# define ARIMA coefficients
+co_eff <- c(0.9, 0.09)
+# calculate modulus of roots of characteristic equation
+root_s <- Mod(polyroot(c(1, -co_eff)))
+# calculate warmup period
+warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
+# simulate ARIMA process
+set.seed(1121)
+len_gth <- 1e4
+in_nov <- rnorm(len_gth + warm_up)
+ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+arima_sim <- arima.sim(n=len_gth, model=list(ar=co_eff), 
+  start.innov=in_nov[1:warm_up], 
+  innov=in_nov[(warm_up+1):NROW(in_nov)])
+all.equal(ari_ma[-(1:warm_up)], as.numeric(arima_sim))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Variance of Unit-root Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{AR(1)} process:
+      $r_i = \varphi r_{i-1} + \varepsilon_i$
+      has the following characteristic equation:
+      $1 - \varphi z = 0$,
+      with a root equal to:
+      $z = 1 / \varphi$,
+      \vskip1ex
+      If $\varphi = 1$, then the characteristic equation has a \emph{unit root} (and therefore it isn't stationary), and the process follows:
+      $r_i = r_{i-1} + \varepsilon_i$
+      \vskip1ex
+      The above is called a \emph{Wiener} process (Brownian motion, random walk), and it's an example of a \emph{unit-root} process.
+      \vskip1ex
+      The variance of the \emph{AR(1)} process $r_i = \varphi r_{i-1} + \varepsilon$ is equal to:
+      \begin{displaymath}
+        \sigma^2 = \mathbb{E}[r_i^2] = \frac{\sigma_{\varepsilon}^2}{(1 - \varphi^2)}
+      \end{displaymath}
+      If $\varphi = 1$, then its \emph{variance} grows over time and becomes infinite over time, so the process isn't stationary.
+      \vskip1ex
+      The variance of the \emph{Wiener} process $r_i = r_{i-1} + \varepsilon$ is proportional to time: $\sigma_i^2 = \mathbb{E}[r_i^2] = i \sigma_{\varepsilon}^2$
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/brownian_var.png}
       \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-ls(env_etf)  # list files in env_etf
-# get class of object in env_etf
-class(get(x=sym_bols[1], envir=env_etf))
-# another way
-class(env_etf$VTI)
-colnames(env_etf$VTI)
-head(env_etf$VTI, 3)
-# get class of all objects in env_etf
-eapply(env_etf, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
+      <<echo=TRUE,eval=FALSE>>=
+# simulate random walks using apply() loops
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrix(rnorm(1000*100), ncol=1000)
+rand_walks <- apply(rand_walks, 2, cumsum)
+vari_ance <- apply(rand_walks, 1, var)
+# simulate random walks using vectorized functions
+set.seed(1121)  # initialize random number generator
+rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
+vari_ance <- matrixStats::rowVars(rand_walks)
+par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot(vari_ance, xlab="time steps", ylab="", 
+     t="l", col="blue", lwd=2, 
+     main="Variance of Random Walk")
       @
   \end{columns}
 \end{block}
@@ -4014,198 +3525,55 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Adjusting Stock Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
-      \vskip1ex
-      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices,
-      \vskip1ex
-      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-      \vskip1ex
-      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
-      \vskip1ex
-      If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# check of object is an OHLC time series
-is.OHLC(env_etf$VTI)
-# adjust single OHLC object using its name
-env_etf$VTI <- adjustOHLC(env_etf$VTI,
-                           use.Adjusted=TRUE)
-
-# adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=env_etf),
-    use.Adjusted=TRUE),
-  envir=env_etf)
-
-# adjust objects in environment using vector of strings
-for (sym_bol in sym_bols) {
-  assign(sym_bol,
-         adjustOHLC(get(sym_bol, envir=env_etf),
-                    use.Adjusted=TRUE),
-         envir=env_etf)
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting Prices Using Package \protect\emph{quantmod}}
+\subsection{Dickey-Fuller Test for Unit-roots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
+      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root},
       \vskip1ex
-      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
+      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits the following regression model, designed to determine if the time series $p_i$ exhibits mean reversion:
+      \begin{displaymath}
+        r_i = \gamma p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      where $p_i = p_{i-1} + r_i$, so that:
+      \begin{displaymath}
+        p_i = (1 + \gamma) p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
+      \end{displaymath}
+      If the mean reversion parameter $\gamma$ is negative: $\gamma < 0$, then the time series $p_i$ has no \emph{unit root},
       \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      The \emph{null hypothesis} is that the price process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the price process is stationary ($\gamma < 0$, mean reversion),
       \vskip1ex
-      The function \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
-      \vskip1ex
-      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
-      \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# extract and merge all data, subset by symbols
-price_s <- do.call(merge,
-  as.list(env_etf)[sym_bols])
-# or
-price_s <- rutils::do_call(cbind,
-  as.list(env_etf)[sym_bols])
-# extract and merge adjusted prices, subset by symbols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(env_etf)[sym_bols], Ad))
-# same, but works only for OHLC series
-price_s <- rutils::do_call(cbind, 
-  eapply(env_etf, Ad)[sym_bols])
-# drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
-    function(col_name)
-      strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-# which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-# save xts to csv file
-write.zoo(price_s,
-  file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating Returns from Adjusted Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-library(quantmod)
-# remove rows with NA values
-# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
-# colnames(price_s)
-# calculate returns from adjusted prices
-re_turns <- lapply(env_etf$price_s, function(x_ts) {
-# dailyReturn returns single xts with bad colname
-  daily_return <- dailyReturn(x_ts)
-  colnames(daily_return) <- names(x_ts)
-  daily_return
-})  # end lapply
-
-# "re_turns" is a list of xts
-class(re_turns)
-class(re_turns[[1]])
-
-# flatten list of xts into a single xts
-re_turns <- do.call(merge, re_turns)
-      @
+      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows its own distribution, different from the \texttt{t}-distribution),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-class(re_turns)
-dim(re_turns)
-head(re_turns[, 1:3])
-# copy re_turns into env_etf and save to .RData file
-assign("re_turns", re_turns, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+len_gth <- 1e4
+# simulate arima with small AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.01))
+tseries::adf.test(ari_ma)
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# simulate arima with different AR coefficients
+coeff_s <- seq(0.99, 1.0, 0.001) - 0.001
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+adf_test <- sapply(coeff_s, function(co_eff) {
+  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
+  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
+})  # end sapply
+plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient", 
+     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
+plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient", 
+     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Managing Data Inside Environments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.environment()} coerces objects (lists) into an environment,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-      \vskip1ex
-      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
-    \column{0.6\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# subset all objects in environment and return as environment
-new_env <- as.environment(eapply(env_etf, "[",
-                  paste(start_date, end_date, sep="/")))
-# subset only sym_bols in environment and return as environment
-new_env <- as.environment(
-  lapply(as.list(env_etf)[sym_bols], "[",
-         paste(start_date, end_date, sep="/")))
-# extract and merge adjusted prices and return to environment
-assign("price_s", do.call(merge,
-               lapply(ls(env_etf), function(sym_bol) {
-                 x_ts <- Ad(get(sym_bol, env_etf))
-                 colnames(x_ts) <- sym_bol
-                 x_ts
-               })), envir=new_env)
-# get sizes of OHLC xts series in env_etf
-sapply(mget(sym_bols, envir=env_etf), object.size)
-# extract and merge adjusted prices and return to environment
-col_name <- function(x_ts)
-  strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", do.call(merge,
-               lapply(mget(env_etf$sym_bols, envir=env_etf),
-                      function(x_ts) {
-                        x_ts <- Ad(x_ts)
-                        colnames(x_ts) <- col_name(x_ts)
-                        x_ts
-               })), envir=new_env)
-      @
+      The \emph{ADF} test is weak in the sense that it requires a lot of data to identify a \emph{unit root} process,
   \end{columns}
 \end{block}
 
@@ -4213,68 +3581,43 @@ assign("price_s", do.call(merge,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{chartSeries()}}
+\subsection{Integrated and Unit-root Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chartSeries()} from package \emph{quantmod} can produce a variety of plots for \emph{OHLC} time series, including candlestick plots, bar plots, and line plots,
+      Asset prices follow an \emph{integrated} process with respect to asset returns:
+      \begin{displaymath}
+        p_n = {\sum_{i=1}^n r_i}
+      \end{displaymath}
+      If returns follow an \emph{AR(1)} process:
+      \begin{displaymath}
+        r_i = \varphi r_{i-1} + \varepsilon_i
+      \end{displaymath}
+      Then asset prices follow the process:
+      \begin{displaymath}
+        p_i = (1 + \varphi) p_{i-1} - \varphi p_{i-2} + \varepsilon_i
+      \end{displaymath}
+      The above process has a \emph{unit root} for all values of $\varphi$, because the sum of its autoregressive coefficients is equal to \texttt{1},
       \vskip1ex
-      The argument \texttt{"type"} determines the type of plot (candlesticks, bars, or lines),
-      \vskip1ex
-      Argument \texttt{"theme"} accepts a \texttt{"chart.theme"} object, containing parameters that determine the plot appearance (colors, size, fonts),
-      \vskip1ex
-      \texttt{chartSeries()} automatically plots the volume data in a separate panel,
-      \vskip1ex
-      \emph{Candlestick} plots are designed to visualize \emph{OHLC} time series,
-      <<chartSeries_basic,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2014-11"],
-            name="VTI",
-            theme=chartTheme("white"))
-# plot OHLC bar chart with volume
-chartSeries(env_etf$VTI["2014-11"],
-            type="bars",
-            name="VTI",
-            theme=chartTheme("white"))
-      @
+      The above process is a \emph{Wiener} process (random walk) for all values of $\varphi$,
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_basic-1}\\
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices,
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Redrawing Plots Using \texttt{reChart()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{reChart()} redraws plots using the same data set, but using additional parameters that control the plot appearance,
-      \vskip1ex
-      The argument \texttt{"subset"} allows subsetting the data to a smaller range of dates,
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# plot OHLC candlechart with volume
-chartSeries(env_etf$VTI["2008-11/2009-04"],
-            name="VTI")
-# redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02",
-        theme=chartTheme("white"))
+      <<echo=TRUE,eval=FALSE>>=
+# simulate arima with large AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
+# simulate arima with negative AR coefficient
+set.seed(1121)
+ari_ma <- arima.sim(n=len_gth, model=list(ar=-0.99))
+tseries::adf.test(ari_ma)
+# integrated series has unit root
+tseries::adf.test(cumsum(ari_ma))
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/Rplot01.png}\\
-      \includegraphics[width=0.5\paperwidth]{figure/Rplot02.png}
   \end{columns}
 \end{block}
 
@@ -4282,216 +3625,40 @@ reChart(subset="2009-02",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Technical Indicators Using \texttt{chartSeries()}}
+\subsection{Autocorrelation of Autoregressive \protect\emph{ARIMA} Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The argument \texttt{"TA"} allows adding technical indicators to the plot,
+      The autocorrelation $\rho_i$ of an \emph{AR(1)} process (defined as $r_i = \varphi r_{i-1} + \varepsilon_i$), satisfies the recursive equation: $\rho_i = \varphi \rho_{i-1}$, with $\rho_1 = \varphi$.
       \vskip1ex
-      The technical indicators are functions provided by the package \emph{TTR},
+      Therefore \emph{AR(1)} processes have exponentially decaying autocorrelation functions (ACF): $\rho_i = \varphi^i$.
       \vskip1ex
-      The function \texttt{newTA()} allows defining new technical indicators,
-      <<chartSeries_TA,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-# candlechart with Bollinger Bands
-chartSeries(env_etf$VTI["2014"],
-            TA="addBBands(): addBBands(draw='percent'): addVo()",
-            name="VTI with Bollinger Bands",
-            theme=chartTheme("white"))
-# candlechart with two Moving Averages
-chartSeries(env_etf$VTI["2014"],
-            TA="addVo(): addEMA(10): addEMA(30)",
-            name="VTI with Moving Averages",
-            theme=chartTheme("white"))
-# candlechart with Commodity Channel Index
-chartSeries(env_etf$VTI["2014"],
-            TA="addVo(): addBBands(): addCCI()",
-            name="VTI with Technical Indicators",
-            theme=chartTheme("white"))
-      @
+      The \emph{AR(1)} process can be solved recursively:
+      \begin{align*}
+        r_1 &= \varepsilon_1\\
+        r_2 &= \varphi r_1 + \varepsilon_2 = \varepsilon_2 + \varphi \varepsilon_1\\
+        r_3 &= \varepsilon_3 + \varphi \varepsilon_2 + \varphi^2 \varepsilon_1\\
+        r_4 &= \varepsilon_4 + \varphi \varepsilon_3 + \varphi^2 \varepsilon_2 + \varphi^3 \varepsilon_1
+      \end{align*}
+      The \emph{AR(1)} process can be expressed as a \emph{moving average} (\emph{MA}) of the \emph{innovations} $\varepsilon_i$: $r_i = \sum_{i=1}^n {\varphi^{i-1} \varepsilon_i}$.
+      \vskip1ex
+      If $\varphi < 1.0$ then the influence of the innovation $\varepsilon_i$ decays exponentially.
+      \vskip1ex
+      If $\varphi = 1.0$ then the influence of $\varepsilon_i$ persists indefinitely, and the variance of $r_i$ increases linearly with time.
     \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_TA-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding Indicators and Lines Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{addTA()} adds indicators and lines to plots, and allows plotting lines representing a single vector of data,
-      \vskip1ex
-      The \texttt{addTA()} function argument \texttt{"on"} determines on which plot panel (subplot) the indicator is drawn,
-      \vskip1ex
-      \texttt{"on=NA"} is the default, and draws in a new plot panel below the existing plot,
-      \vskip1ex
-      \texttt{"on=1"} draws in the foreground of the main plot panel, and \texttt{"on=-1"} draws in the background,
-      <<chartSeries_addTA,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
-# calculate volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=VTI_adj,
-      volume=VTI_vol, n=10)
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP",
-            theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_addTA-3}\\
-      The function \texttt{VWAP()} from package \emph{TTR} calculates the Volume Weighted Average Price as the average of past prices multiplied by their trading volumes, divided by the total volume,
-      \vskip1ex
-      The argument \texttt{"n"} represents the number of look-back periods used for averaging,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Shading Plots Using \texttt{addTA()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{addTA()} accepts Boolean vectors for shading of plots,
-      \vskip1ex
-      The function \texttt{addLines()} draws vertical or horizontal lines in plots,
-      <<chartSeries_addTA_shade,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# plot OHLC candlechart with volume
-chartSeries(oh_lc, name="VTI plus VWAP shaded",
-            theme=chartTheme("white"))
-# add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
-# add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
-# add background shading of areas
-addTA((VTI_adj-VTI_vwap) > 0, on=-1,
-      col="lightgreen", border="lightgreen")
-addTA((VTI_adj-VTI_vwap) < 0, on=-1,
-      col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines at VTI_vwap minimum
-addLines(v=which.min(VTI_vwap), col='red')
-addLines(h=min(VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chartSeries_addTA_shade-7}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Time Series Using \texttt{chart\_Series()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics,
-      \vskip1ex
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()},
-      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# OHLC candlechart VWAP in main plot,
-chart_Series(x=oh_lc, # volume in extra panel
-             TA="add_Vo(); add_TA(VTI_vwap, on=1)",
-             name="VTI plus VWAP shaded")
-# add price minus VWAP in extra panel
-add_TA(VTI_adj-VTI_vwap, col='red')
-# add background shading of areas
-add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
-      col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
-      col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines
-abline(v=which.min(VTI_vwap), col='red')
-abline(h=min(VTI_vwap), col='red')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_shaded}\\
-      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
-      \vskip1ex
-      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly},
-      \vskip1ex
-      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot,
-      \vskip1ex
-      A plot can be rendered by calling, plotting, or printing the \emph{plot object},
-      \vskip1ex
-      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts),
-      \vskip1ex
-      The function \texttt{chart\_theme()} returns the \emph{theme object},
-      \vskip1ex
-      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
-      \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions,
-      \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_acf.png}
+      \vspace{-2em}
       <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-# extract plot object
-ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
-class(ch_ob)
-ls(ch_ob)
-class(ch_ob$get_ylim)
-class(ch_ob$set_ylim)
-# ls(ch_ob$Env)
-class(ch_ob$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
+x11(width=5, height=3.5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
+# simulate AR(1) process
+ari_ma <- arima.sim(n=729, model=list(ar=0.8))
+# ACF of AR(1) process
+ac_f <- acf_plus(ari_ma, lag=10, xlab="", ylab="",
+         main="ACF of AR(1) process")
+ac_f$acf[1:5]
       @
   \end{columns}
 \end{block}
@@ -4500,598 +3667,35 @@ ls(plot_theme)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Customizing \texttt{chart\_Series()} Plots}
+\subsection{Partial Autocorrelations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects,
+      If two random variables are both correlated to a third variable, then they are indirectly correlated to each other.
       \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions,
+      The indirect correlation can be removed by defining new variables with no correlation to the third variable.
       \vskip1ex
-      A plot is rendered by calling, plotting, or printing the plot object,
+      The \emph{partial correlation} is the correlation after the correlations to the common variables are removed.
       \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
-      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
-# extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
-# create plot object
-ch_ob <- chart_Series(x=oh_lc,
-                      theme=plot_theme, plot=FALSE)
-# extract ylim using accessor function
-y_lim <- ch_ob$get_ylim()
-y_lim[[2]] <- structure(
-  range(Ad(oh_lc)) + c(-1, 1),
-  fixed=TRUE)
-# modify plot object to reduce y-axis range
-ch_ob$set_ylim(y_lim)  # use setter function
-# render the plot
-plot(ch_ob)
-      @
+      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(1)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
+      \begin{align*}
+        \varrho_1 &= \rho_1\\
+        \varrho_2 &= \rho_2 - \varrho_1 \rho_1\\
+        \varrho_3 &= \rho_3 - \varrho_1 \rho_2 - \varrho_2 \rho_1
+      \end{align*}
+      The function \texttt{pacf()} calculates and plots the \emph{partial autocorrelations}, but it performs regressions instead of using the Durbin-Levinson algorithm.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_custom_axis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels,
-      \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements,
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)
-# calculate VTI and XLF volume-weighted average price
-VTI_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$VTI),
-            volume=Vo(rutils::env_etf$VTI), n=10)
-XLF_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$XLF),
-            volume=Vo(rutils::env_etf$XLF), n=10)
-# open graphics device, and define
-# plot area with two horizontal panels
-x11(); par(mfrow=c(2, 1))
-ch_ob <- chart_Series(  # plot in top panel
-  x=env_etf$VTI["2009-02/2009-04"],
-  name="VTI", plot=FALSE)
-add_TA(VTI_vwap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
-ch_ob <- chart_Series(  # plot in bottom panel
-  x=env_etf$XLF["2009-02/2009-04"],
-  name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_panels.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{dygraphs}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series,
-      \vskip1ex
-      The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines,
+      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf.png}
+      \vspace{-2em}
+      The \emph{AR(1)} process has an exponentially decaying ACF and a non-zero PACF at lag one.
       <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# calculate volume-weighted average price
-oh_lc <- rutils::env_etf$VTI
-VTI_vwap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
-    volume=quantmod::Vo(oh_lc), n=20)
-# add VWAP to OHLC  data
-oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-               VTI_vwap)["2009-02/2009-04"]
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc)
-# convert dygraphs object to candlestick plot
-dy_graph <- dygraphs::dyCandlestick(dy_graph)
-# render candlestick plot
-dy_graph
-# candlestick plot using pipes syntax
-dygraphs::dygraph(oh_lc) %>% dyCandlestick()
-# candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}\\
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices,
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} \protect\emph{OHLC} Plots With Background Shading}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object,
-      <<echo=TRUE,eval=FALSE>>=
-# create candlestick plot with background shading
-in_dex <- index(oh_lc)
-in_dic <-
-  rutils::diff_xts(oh_lc[, 4] > oh_lc[, "VWAP"])
-in_dic <- rbind(cbind(which(in_dic==1), 1),
-  cbind(which(in_dic==(-1)), -1))
-in_dic <- in_dic[order(in_dic[, 1]), ]
-in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
-  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
-in_dic <-
-  data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc) %>%
-  dyCandlestick()
-# add shading
-for (i in 1:(NROW(in_dic)-1)) {
-  if (in_dic[i, 2] == 1)
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
-  else
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
-}  # end for
-# render plot
-dy_graph
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}\\
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} Plots With Two \texttt{"y"} Axes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dyAxis()} from package \emph{dygraphs} adds customized axes to a \emph{dygraphs} plot object,
-      \vskip1ex
-      The function \texttt{dySeries()} adds a time series to a \emph{dygraphs} plot object,
-      <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# prepare VTI and IEF prices
-price_s <- cbind(Ad(rutils::env_etf$VTI),
-                 Ad(rutils::env_etf$IEF))
-col_names <- rutils::get_name(colnames(price_s))
-colnames(price_s) <- col_names
-
-# dygraphs plot with two y-axes
-library(dygraphs)
-dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Downloading Time Series Data}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization,
-      \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}),
-      \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
-      \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}GSPC} for the \emph{S\&P500} stock market index isn't a valid name in \texttt{R},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download S&P500 prices into env_etf
-getSymbols("SP500", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$SP500["2016/"],
-             TA="add_Vo()",
-             name="S&P500 index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{DJIA} Index Time Series From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Dow Jones Industrial Average (\emph{DJIA}) stock market index is a price-weighted average of the 30 largest U.S. companies (same number of shares per company),
-      \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{DJIA} index (symbol \emph{\textasciicircum{}DJI}), and for the \emph{DJITR} total return index (symbol \emph{DJITR}),
-      \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
-      \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}DJI} for the \emph{DJIA} stock market index isn't a valid name in \texttt{R},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# download DJIA prices into env_etf
-getSymbols("DJIA", env=env_etf,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=env_etf$DJIA["2016/"],
-             TA="add_Vo()",
-             name="DJIA index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Scraping \protect\emph{S\&P500} Stock Index Constituents From Websites}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} index constituents change over time, and \emph{Standard \& Poor's} replaces companies that have decreased in capitalization with ones that have increased,
-      \vskip1ex
-      The \emph{S\&P500} index may contain more than 500 stocks because some companies have several share classes of stock,
-      \vskip1ex
-      The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages,
-      \vskip1ex
-      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{HTML} text data from a \texttt{URL},
-      \vskip1ex
-      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices,
-      \vskip1ex
-      \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-library(RCurl)  # load package RCurl
-library(XML)  # load package XML
-# download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-                    stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
-write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-  row.names=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{S\&P500} Time Series Data From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Before time series data for S\&P500 constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R},
-      \vskip1ex
-      For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])),
-    names=sp_500$names[in_dex]))
-}  # end for
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
-# or download in loop
-for (sym_bol in sp_500$names) {
-  cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
-             name="BRK-B stock")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{FRED} Time Series Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
-      \hskip1em\url{http://research.stlouisfed.org/fred2/}
-      \vskip1ex
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
-      \vskip1ex
-      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
-      \vskip1ex
-      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fred_unemp_rate.png}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-                  auto.assign=FALSE,
-                  src="FRED")
-# plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-            name="U.S. unemployment rate")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Quandl} Database}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets,
-      \vskip1ex
-      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license,
-      \vskip1ex
-      \emph{Quandl} offers online help and a guide to its datasets:\\
-      \hskip1em\url{https://www.quandl.com/help/r}\\
-      \hskip1em\url{https://www.quandl.com/browse}\\
-      \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
-      \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
-      \vskip1ex
-      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
-      \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-install.packages("devtools")
-library(devtools)
-# install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # load package Quandl
-# register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("Quandl")
-# load help page
-help(package="Quandl")
-# remove Quandl from search path
-detach("package:Quandl")
-      @
-      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R},
-      \vskip1ex
-      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()},
-      \vskip1ex
-      The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
-      \vskip1ex
-      \emph{Quandl} datasets have a unique \emph{Quandl Code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
-      \vskip1ex
-      \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI}
-      \vskip1ex
-      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized),\\
-      \hskip1em\url{https://www.quandl.com/data/SEC}
-      \vskip1ex
-      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond}
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond?keyword=aapl}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL",
-                  type="xts", start_date="1990-01-01")
-x11(width=14, height=7)
-chart_Series(price_s["2016", 1:4],
-    name="AAPL OHLC prices")
-# add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# download euro currency rates
-price_s <- Quandl(code="BNP/USDEUR",
-    start_date="2013-01-01",
-    end_date="2013-12-01", type="xts")
-# download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-    start_date="2013-01-01", type="xts")
-# download AAPL gross profits
-prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
-    type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST",
-    start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1],
-             name="AAPL Hurst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Stock Index and Instrument Metadata on \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
-      \vskip1ex
-      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
-      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
-      \vskip1ex
-      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# replace "-" with "_" in symbols
-sp_500$free_code <-
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
-# or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"),
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
-# or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Multiple Time Series from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl},
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-env_sp500 <- new.env()  # new environment for data
-# remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-                  start_date="1990-01-01",
-                  type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-             name="XOM stock")
+# PACF of AR(1) process
+pac_f <- pacf(ari_ma, lag=10, xlab="", ylab="",
+     main="PACF of AR(1) process")
+pac_f <- drop(pac_f$acf)
+pac_f[1:5]
       @
   \end{columns}
 \end{block}

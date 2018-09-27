@@ -1242,99 +1242,124 @@ jarque.bera.test(dax_rets)
 
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(dax_rets)))
-# verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# load package Rcpp
-library(Rcpp)
-# get documentation for package Rcpp
-# get short description
-packageDescription("Rcpp")
-# load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# remove Rcpp from search path
-detach("package:Rcpp")
-# define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# run Rcpp function
-times_two(3)
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
-# multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
-# multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
-# define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-# define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# compare speed of Rcpp and R
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# Monte Carlo estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+sam_ple[conf_level*len_gth]
+quantile(sam_ple, probs=conf_level)
+# analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
-# calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
-  out_put[1] <- see_d
-  for (i in 2:len_gth) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
-  }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
-
-# source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
-# microbenchmark Rcpp code
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+ (pa_th[in_dex - 1] < bar_rier)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses bar_rier
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+# simulate path of Brownian motion
+pa_th <- cumsum(rnorm(len_gth))
+# find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# fill remaining pa_th after it crosses bar_rier
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):len_gth] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+     start=c(2011, 1))
+# create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows

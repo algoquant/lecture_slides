@@ -1,9 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -277,7 +271,13 @@ glob_var
 # standard infix operator call syntax
 2 + 3
 # infix operator applied using prefix syntax
-'+' (2, 3)
+"+"(2, 3)
+# standard bracket operator
+vec_tor <- c(4, 3, 5, 6)
+vec_tor[2]
+# bracket operator applied using prefix syntax
+"["(vec_tor, 2)
+
 # define infix operator that returns string
 '%+%' <- function(a, b) paste(a, b, sep=" + ")
 2 %+% 3

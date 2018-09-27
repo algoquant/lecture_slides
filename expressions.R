@@ -1,9 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -67,10 +61,10 @@ which(vec_tor == 5)
 which(vec_tor > 5)
 # find indices of TRUE elements of Boolean matrix
 which((mat_rix == 5)|(mat_rix == 6),
-      arr.ind=TRUE)
+arr.ind=TRUE)
 # equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
- dim(mat_rix), dimnames(mat_rix))
+   dim(mat_rix), dimnames(mat_rix))
 which.max(vec_tor)
 # equivalent but slower than above
 which(vec_tor == max(vec_tor))
@@ -164,8 +158,8 @@ test_env$my_var1
 get("my_var1", envir=test_env)
 # retrieve and assign value to object
 assign("my_var1",
- 2*get("my_var1", envir=test_env),
- envir=test_env)
+       2*get("my_var1", envir=test_env),
+       envir=test_env)
 get("my_var1", envir=test_env)
 # return all objects in an environment
 mget(ls(test_env), envir=test_env)
@@ -195,7 +189,7 @@ ne_w
 quote(sym_bol + ne_w)
 # substitute objects in an expression
 ex_pression <- substitute(sym_bol + ne_w,
-                env=list(sym_bol=1, ne_w=2))
+          env=list(sym_bol=1, ne_w=2))
 ex_pression
 eval(ex_pression)  # evaluate expression
 make_expression <- function(in_put) {
@@ -212,7 +206,7 @@ deparse(my_var)
 deparse(quote(my_var))
 # substitute object with value from named list
 deparse(substitute(sym_bol + ne_w,
-             env=list(ne_w=2)))
+       env=list(ne_w=2)))
 # capture name of input argument
 deparse_name <- function(in_put) {
   names(in_put) <- deparse(substitute(in_put))
@@ -375,7 +369,7 @@ class(mat_rix)  # get its class
 c(is.vector(mat_rix), is.matrix(mat_rix))
 # assign dimnames attribute
 dimnames(mat_rix) <- list(rows=c("row1", "row2"),
-                  columns=c("col1", "col2", "col3"))
+            columns=c("col1", "col2", "col3"))
 mat_rix
 mat_rix <- matrix(1:10, 2, 5)  # create matrix
 mat_rix
@@ -524,16 +518,30 @@ names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
 unique(mtcars$cyl)  # cyl has three unique values
+# split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
 # split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
-# mean mpg for each cylinder group
+# aggregate the mean mpg over split mtcars data frame
 sapply(split_cars, function(x) mean(x$mpg))
-# function aggregate() performs split-apply-combine
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(formula=(mpg ~ cyl), data=mtcars,
+    FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg,
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg),
+  by=list(cyl=mtcars$cyl), FUN=mean)
 # aggregate() all columns
-aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars,
+  by=list(cyl=mtcars$cyl), FUN=mean)
 # mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -542,69 +550,104 @@ with(mtcars,
 # function sapply() instead of tapply()
 with(mtcars,
      sapply(sort(unique(cyl)), function(x) {
-       structure(mean(mpg[x==cyl]), names=x)
-       }, USE.NAMES=TRUE))  # end with
+ structure(mean(mpg[x==cyl]), names=x)
+ }, USE.NAMES=TRUE))  # end with
 
 # function by() instead of tapply()
 with(mtcars,
      by(data=mpg, INDICES=cyl, FUN=mean))
 # get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
+        function(x) {
+          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+        }  # end anonymous function
+        )  # end sapply
 data_cars  # sapply produces a matrix
 data_cars <- lapply(split_cars,  # now same using lapply
-      function(x) {
-        c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-      }  # end anonymous function
-      )  # end sapply
+        function(x) {
+          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+        }  # end anonymous function
+        )  # end sapply
 is.list(data_cars)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, data_cars)
-data(ChickWeight)
-# ?ChickWeight
-
-# get grouping variables
-sapply(ChickWeight, function(x) length(unique(x)))
-
-# mean weight of the chickens
-tapply(ChickWeight$weight, ChickWeight$Diet, mean)
-
-# access individual groups
-# create list of my.splits corresponding to individual Diet values
-my.splits = split(ChickWeight, ChickWeight$Diet)
-length(my.splits)
-names(my.splits)
-head(my.splits[[1]])
-
-# apply is passing each element to a function - performs for loop "under the hood"
-# get all the chicks from each group that weigh less that 40 grams
-my.results.lapply = lapply(my.splits, subset, weight <= 40)
-# longer way with anonymous function:
-my.results.lapply = lapply(my.splits, function(x) subset(x, weight <= 40) )
-
-# fold back into a data frame
-my.df = do.call(rbind, my.results.lapply)
-my.df
-
-# a different way:
-sorted.chickens = ChickWeight[order(ChickWeight$Diet), ]
-(sorted.chickens = subset(sorted.chickens, weight <= 40))
-
-# same with for-loop:
-my.results.for = list()
-for (ii in 1:length(my.splits)) {
-     my.results.for[[ii]] = subset(my.splits[[ii]], weight <= 40)
-}
-names(my.results.for) = names(my.splits)
-all.equal(my.results.lapply, my.results.for) # Should be equal to my.results.lapply
-
-# or in one line:
-lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)
-# or
-(do.call(rbind, lapply(split(ChickWeight, ChickWeight$Diet), subset, weight <= 40)))
+# Download CRSPpanel.txt from NYU Classes
+# Read the file using read.table() with header and sep arguments
+panel_data <- read.table(file="C:/Develop/R/lecture_slides/data/CRSPpanel.txt",
+                   header=TRUE, sep="\t")
+# split panel_data based on Industry column
+split_panel <- split(panel_data, panel_data$Industry)
+# number of companies in each Industry
+sapply(split_panel, NROW)
+# number of Sectors that each Industry belongs to
+sapply(split_panel, function(x) {
+  NROW(unique(x$Sector))
+})  # end sapply
+# Or
+aggregate(formula=(Sector ~ Industry),
+  data=panel_data, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(formula=(Sector ~ Industry),
+  data=panel_data, FUN=unique)
+# Or
+with(panel_data, aggregate(x=Sector,
+  by=list(Industry), FUN=unique))
+# Or
+with(panel_data, sapply(levels(Industry),
+  function(x) {
+    Sector[match(x, Industry)]
+  }))  # end sapply
+# split panel_data based on Sector column
+split_panel <- split(panel_data, panel_data$Sector)
+# number of companies in each Sector
+sapply(split_panel, NROW)
+# Industries belonging to each Sector (jagged array)
+sec_ind <- sapply(split_panel,
+  function(x) unique(as.vector(x$Industry)))
+# Or use aggregate() (returns a data frame)
+sec_ind2 <- aggregate(formula=(Industry ~ Sector),
+  data=panel_data, FUN=function(x) unique(as.vector(x)))
+# Or use aggregate() with "by" argument
+sec_ind2 <- with(panel_data,
+  aggregate(x=Industry, by=list(Sector),
+    FUN=function(x) as.vector(unique(x))))
+# coerce sec_ind2 into a jagged array
+name_s <- as.vector(sec_ind2[, 1])
+sec_ind2 <- sec_ind2[, 2]
+names(sec_ind2) <- name_s
+all.equal(sec_ind2, sec_ind)
+# Or use tapply() (returns an array)
+sec_ind2 <- with(panel_data,
+  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
+# coerce sec_ind2 into a jagged array
+sec_ind2 <- drop(as.matrix(sec_ind2))
+all.equal(sec_ind2, sec_ind)
+# average ROE in each Industry
+with(panel_data,
+  sapply(split(ROE, Industry), mean))
+# average, min, and max ROE in each Industry
+t(with(panel_data,
+  sapply(split(ROE, Industry),
+    FUN=function(x)
+c(mean=mean(x), max=max(x), min=min(x)))))
+# split panel_data based on Industry column
+split_panel <- split(panel_data,
+  panel_data$Industry)
+# average ROE and EPS in each Industry
+t(sapply(split_panel, FUN=function(x)
+  c(mean_roe=mean(x$ROE),
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split panel_data based on Industry column
+split_panel <-
+  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
+  panel_data$Industry)
+# average ROE and EPS in each Industry
+t(sapply(split_panel,
+  FUN=function(x) sapply(x, mean)))
+# average ROE and EPS using aggregate()
+aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
+  by=list(panel_data$Industry),
+  FUN=mean)
 library(plyr)
 one <- ozone[1, 1, ]
 month <- ordered(rep(1:12, length72))
@@ -717,7 +760,7 @@ traceback()
 vali_date <- function(in_put) {
 # check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
-      is.numeric(in_put))
+        is.numeric(in_put))
   2*in_put
 }  # end vali_date
 vali_date(3)
@@ -734,10 +777,10 @@ vali_date("a")
 sum_two <- function(in_put1, in_put2) {  # even more robust
 # check if at least one argument is not missing
   stopifnot(!missing(in_put1) &&
-      !missing(in_put2))
+        !missing(in_put2))
 # check if arguments are valid and return sum
   if (is.numeric(in_put1) &&
-      is.numeric(in_put2)) {
+is.numeric(in_put2)) {
     in_put1 + in_put2  # both valid
   } else if (is.numeric(in_put1)) {
     cat("in_put2 is not numeric\n")
@@ -764,7 +807,7 @@ vali_date <- function(in_put) {
   browser()  # pause and invoke browser
 # check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
-      is.numeric(in_put))
+        is.numeric(in_put))
   2*in_put
 }  # end vali_date
 vali_date()  # invokes debugger

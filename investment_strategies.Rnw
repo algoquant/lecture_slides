@@ -51,7 +51,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Investment Strategies]{Investment Strategies}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -664,7 +664,6 @@ library(rutils)  # load package rutils
 # calculate open, close, and lagged prices
 op_en <- Op(rutils::etf_env$VTI)
 cl_ose <- Cl(rutils::etf_env$VTI)
-close_adj <- (cl_ose - as.numeric(cl_ose[1, ]))
 prices_lag <- rutils::lag_it(cl_ose)
 # define aggregation interval and calculate VWAP
 look_back <- 150
@@ -1398,10 +1397,8 @@ back_aggs <- sapply(1:(len_gth-1), function(it_er) {
   sapply(re_turns[start_points[it_er]:end_points[it_er]], agg_fun)
 })  # end sapply
 back_aggs <- t(back_aggs)
-# define forward (future) endpoints
-fwd_points <- end_points[c(2:len_gth, len_gth)]
 fwd_rets <- sapply(1:(len_gth-1), function(it_er) {
-  sapply(re_turns[(end_points[it_er]+1):fwd_points[it_er]], sum)
+  sapply(re_turns[(end_points[it_er]+1):end_points[it_er+1]], sum)
 })  # end sapply
 fwd_rets <- t(fwd_rets)
       @
@@ -1545,23 +1542,22 @@ re_turns <- rutils::diff_it(price_s)
 # Define look-back and look-forward intervals
 end_points <- rutils::calc_endpoints(re_turns, 
   inter_val="months")
-n_col <- NCOL(re_turns)
+n_cols <- NCOL(re_turns)
 len_gth <- NROW(end_points)
 look_back <- 12
 start_points <- c(rep_len(1, look_back-1), 
   end_points[1:(len_gth-look_back+1)])
-fwd_points <- end_points[c(2:len_gth, len_gth)]
 # Perform loop over end-points and calculate aggregations
 agg_fun <- 
   function(re_turns) sum(re_turns)/sd(re_turns)
 agg_s <- sapply(1:(len_gth-1), function(it_er) {
   c(back_aggs=sapply(re_turns[start_points[it_er]:end_points[it_er]], agg_fun),
-    fwd_rets=sapply(re_turns[(end_points[it_er]+1):fwd_points[it_er]], sum))
+    fwd_rets=sapply(re_turns[(end_points[it_er]+1):end_points[it_er+1]], sum))
 })  # end sapply
 agg_s <- t(agg_s)
 # Select look-back and look-forward aggregations
-back_aggs <- agg_s[, 1:n_col]
-fwd_rets <- agg_s[, n_col+1:n_col]
+back_aggs <- agg_s[, 1:n_cols]
+fwd_rets <- agg_s[, n_cols+1:n_cols]
       @
   \end{columns}
 \end{block}
@@ -1623,19 +1619,18 @@ back_test_ep <- function(re_turns, price_s, agg_fun=sum,
     with_weights=FALSE, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Define look-back and look-forward intervals
-  n_col <- NCOL(re_turns)
+  n_cols <- NCOL(re_turns)
   len_gth <- NROW(end_points)
   start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
-  fwd_points <- end_points[c(2:len_gth, len_gth)]
   # Perform loop over end-points and calculate aggregations
   agg_s <- sapply(1:(len_gth-1), function(it_er) {
     c(back_aggs=sapply(re_turns[start_points[it_er]:end_points[it_er]], agg_fun, ...),  # end sapply
-    fwd_rets=sapply(re_turns[(end_points[it_er]+1):fwd_points[it_er]], sum))  # end sapply
+    fwd_rets=sapply(re_turns[(end_points[it_er]+1):end_points[it_er+1]], sum))  # end sapply
   })  # end sapply
   agg_s <- t(agg_s)
   # Select look-back and look-forward aggregations
-  back_aggs <- agg_s[, 1:n_col]
-  fwd_rets <- agg_s[, n_col+1:n_col]
+  back_aggs <- agg_s[, 1:n_cols]
+  fwd_rets <- agg_s[, n_cols+1:n_cols]
   # Calculate portfolio weights equal to number of shares
   end_prices <- price_s[end_points[-len_gth]]
   weight_s <- back_aggs/rowSums(abs(back_aggs))/end_prices
@@ -1986,14 +1981,14 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over a vector of end points: 
       \setlength{\leftmargini}{1.0em}
       \begin{enumerate}
-        \item Calculate the maximum Sharpe ratio portfolio weights at each end point, 
-        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns, 
+        \item Calculate the maximum Sharpe ratio portfolio weights at each end point.
+        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
       \end{enumerate}
       The parameters of this strategy are:
       \begin{enumerate}
         \item Rebalancing frequency (annual, monthly, etc.)
-        \item Length of look-back interval (sliding or expanding), 
-        \item Scaling of the weights (sum or sum-of-squares), 
+        \item Length of look-back interval (sliding or expanding).
+        \item Scaling of weights (sum or sum-of-squares).
       \end{enumerate}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -2056,7 +2051,7 @@ quantmod::chart_Series(portf_rets,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2007}, so we'll select only the data after \texttt{2007},
+      The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2000}, so we'll mostly use the data after \texttt{2000}.
       <<echo=TRUE,eval=FALSE>>=
 # load S&P500 constituent stock prices
 load("C:/Develop/R/lecture_slides/data/sp500.RData")
@@ -2067,13 +2062,15 @@ price_s <- zoo::na.locf(price_s)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 colnames(price_s) <- sapply(colnames(price_s),
   function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-# calculate the simple (dollar) returns of the S&P500 constituent stocks
+# Calculate the simple (dollar) returns of the S&P500 constituent stocks
 re_turns <- rutils::diff_it(price_s)
-da_ta <- rowSums(re_turns==0)
-da_ta <- xts::xts(da_ta, order.by=index(price_s))
-dygraphs::dygraph(da_ta, main="Number of S&P 500 Constituents Without Prices")
 save(price_s, re_turns,
   file="C:/Develop/R/lecture_slides/data/sp500_prices.RData")
+# Calculate number of constituents without prices
+da_ta <- rowSums(rutils::roll_sum(re_turns, 4)==0)
+da_ta <- xts::xts(da_ta, order.by=index(price_s))
+dygraphs::dygraph(da_ta, main="Number of S&P 500 Constituents Without Prices") %>%
+  dyAxis("y", valueRange=c(0, 300))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
@@ -2090,24 +2087,23 @@ save(price_s, re_turns,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF},
+      The price-weighted index of \emph{S\&P500} constituents closely follows the VTI \emph{ETF}.
       <<echo=TRUE,eval=FALSE>>=
-# calculate price weighted index of constituent
-n_col <- NCOL(price_s)
-in_dex <- xts(rowSums(price_s)/n_col, index(price_s))
+# Calculate price weighted index of constituent
+n_cols <- NCOL(price_s)
+in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
 colnames(in_dex) <- "index"
-# rescale to VTI
-in_dex <- as.numeric(first(etf_env$VTI)[, 4])*in_dex / 
-  as.numeric((in_dex[start(etf_env$VTI)]))
+# Combine index with VTI
 da_ta <- cbind(in_dex[index(etf_env$VTI)], etf_env$VTI[, 4])
 col_names <- c("index", "VTI")
 colnames(da_ta) <- col_names
-# plot with VTI
+# Plot index with VTI
 dygraphs::dygraph(da_ta, 
   main="S&P 500 Price-weighted Index and VTI") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("orange", "blue"))
+  dySeries(name=col_names[1], axis="y", col="red") %>%
+  dySeries(name=col_names[2], axis="y2", col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/sp500_portfolio_index.png}
@@ -2167,7 +2163,8 @@ col_names <- colnames(pnl_s)
 dygraphs::dygraph(pnl_s, main=paste(col_names, collapse=" and ")) %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("blue", "red"))
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red")
       @
   \end{columns}
 \end{block}
@@ -2187,7 +2184,7 @@ back_test_rolling <- function(re_turns, price_s,
     wid_th=252, bid_offer=0.001, tre_nd=1, ...) {
   stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
   # Define look-back and look-forward intervals
-  n_col <- NCOL(re_turns)
+  n_cols <- NCOL(re_turns)
   vari_ance <- roll::roll_var(re_turns, width=wid_th)
   vari_ance <- zoo::na.locf(vari_ance)
   vari_ance[is.na(vari_ance)] <- 0
@@ -2305,9 +2302,9 @@ legend("bottomleft", legend=colnames(pro_files),
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)
 load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
-n_col <- NCOL(price_s)
+n_cols <- NCOL(price_s)
 date_s <- index(price_s)
-in_dex <- xts(rowSums(price_s)/n_col, index(price_s))
+in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
 colnames(in_dex) <- "index"
 # define end_points
 end_points <- rutils::calc_endpoints(price_s, inter_val="months")
@@ -2315,12 +2312,10 @@ end_points <- end_points[end_points>50]
 len_gth <- NROW(end_points)
 look_back <- 12
 start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
-# compile backtest function
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_test6.cpp")
 # run backtest function
 al_pha <- 0.01
-max_eigen <- 2
-strat_rets_arma <- roll_portf(re_turns,
+max_eigen <- 3
+strat_rets_arma <- HighFreq::roll_portf(re_turns,
   re_turns,
   start_points-1,
   end_points-1,
@@ -2334,14 +2329,14 @@ strat_rets_arma <- roll_portf(re_turns,
 # plot strategy
 strat_rets_arma <- cumsum(strat_rets_arma)
 strat_rets_arma <- xts(strat_rets_arma, date_s)
-library(dygraphs)
 strat_rets_arma <- cbind(strat_rets_arma, in_dex)
 col_names <- c("Strategy", "Index")
 colnames(strat_rets_arma) <- col_names
 dygraphs::dygraph(strat_rets_arma, main=paste(col_names, collapse=" and ")) %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
+  dySeries(name=col_names[1], axis="y", col="red") %>%
+  dySeries(name=col_names[2], axis="y2", col="blue")
       @
   \end{columns}
 \end{block}

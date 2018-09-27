@@ -60,7 +60,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Probability and Statistics]{Probability and Statistics}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
@@ -443,7 +443,8 @@ sum(sam_ple<1)/len_gth
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
-sam_ple[conf_level*len_gth]
+cut_off <- conf_level*len_gth
+sam_ple[cut_off]
 quantile(sam_ple, probs=conf_level)
 # analyze the source code of quantile()
 stats:::quantile.default
@@ -452,7 +453,7 @@ library(microbenchmark)
 summary(microbenchmark(
   sam_ple=sam_ple[cut_off],
   quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1017,18 +1018,19 @@ res_ponse <- (1 + de_sign + noise)
         RSS_\beta = -2 (y - \alpha \mathbbm{1} - \beta x)^T x = 0
       \end{align*}
       The solution for $\alpha$ is given by:
-      \begin{align*}
+      \begin{displaymath}
         \alpha = \bar{y} - \beta \bar{x}
-      \end{align*}
-      The solution for $\beta$ is given by:
+      \end{displaymath}
+      The solution for $\beta$ can be obtained by manipulating the equation for $RSS_\beta$ as follows:
       \begin{flalign*}
-        & (y - (\bar{y} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & (y - \bar{y} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1}) = 0\\
-        & \beta = \frac {(y - \bar{y} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} {(x - \bar{x} \mathbbm{1})^T (x - \bar{x} \mathbbm{1})} = \frac {\sigma_y}{\sigma_x} \rho_{xy}
+        & (y - (\bar{y} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) =\\
+        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) =\\
+        & (\hat{y} - \beta \hat{x})^T \hat{x} = \hat{y}^T \hat{x} - \beta \hat{x}^T \hat{x} = 0
       \end{flalign*}
-      $\beta$ is proportional to the correlation coefficient $\rho_{xy}$ between the response and predictor variables,
+      Where $\hat{x} = x - \bar{x} \mathbbm{1}$ and $\hat{y} = y - \bar{y} \mathbbm{1}$ are  the de-meaned variables.  Then $\beta$ is given by:
+      \begin{displaymath}
+        \beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}} = \frac {\sigma_y}{\sigma_x} \rho_{xy}
+      \end{displaymath}
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -1040,6 +1042,8 @@ be_ta <- sum(design_zm*response_zm) / sum(design_zm^2)
 # solve for the regression alpha
 al_pha <- mean(res_ponse) - be_ta*mean(de_sign)
       @
+      $\beta$ is proportional to the correlation coefficient $\rho_{xy}$ between the response and predictor variables,
+      \vskip1ex
       If the response and predictor variables have zero mean, then $\alpha=0$ and $\beta=\frac {y^T x} {x^T x}$.
       \vskip1ex
       The \emph{residuals} $\varepsilon = y - \alpha \mathbbm{1} - \beta x$ have zero mean: $RSS_\alpha = -2 \varepsilon^T \mathbbm{1} = 0$.
@@ -1142,9 +1146,9 @@ legend(x="topleft", # add legend
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{residuals} of a \emph{linear regression} are defined as the \emph{response vector} minus the regression fitted values:
+      The \emph{residuals} $\varepsilon_i$ of a \emph{linear regression} are defined as the \emph{response vector} minus the regression fitted values:
       \begin{displaymath}
-        res_i = y_i - (\alpha + \beta x_i)
+        \varepsilon_i = y_i - (\alpha + \beta x_i)
       \end{displaymath}
       The \emph{residuals} are the error terms associated with a particular realization of the response and predictor variables,
       \vskip1ex
@@ -1442,7 +1446,7 @@ plot(mod_el, which=2)  # plot just Q-Q
       <<echo=TRUE,eval=TRUE>>=
 library(lmtest)  # load lmtest
 # perform Durbin-Watson test
-dwtest(mod_el)
+lmtest::dwtest(mod_el)
       @
   \end{columns}
 \end{block}
@@ -1607,11 +1611,11 @@ res_ponse <- (-1 + de_sign %*% weight_s + noise)
       The solutions for $\alpha$ and $\beta$ are given by:
       \begin{flalign*}
         & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
-        & RSS_\beta = -2 (y_{zm} - \mathbb{X}_{zm} \beta)^T \mathbb{X}_{zm} = 0\\
-        & \mathbb{X}^T_{zm} y_{zm} - \mathbb{X}^T_{zm} \mathbb{X}_{zm} \beta = 0\\
-        & \beta = (\mathbb{X}^T_{zm} \mathbb{X}_{zm})^{-1} \mathbb{X}^T_{zm} y_{zm} = \mathbb{X}^{inv}_{zm} y_{zm}
+        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
+        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
+        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
       \end{flalign*}
-      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\mathbb{X}_{zm} = \mathbb{X} - \bar{\mathbb{X}}$ and $y_{zm} = y - \bar{y} = \mathbb{X}_{zm} \beta + \varepsilon$ are the de-meaned variables
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -1633,9 +1637,9 @@ all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
 # compare with actual coefficients
 all.equal(c(-1, weight_s), c(al_pha, beta_s), check.attributes=FALSE)
       @
-      The matrix $\mathbb{X}^{inv}_{zm}$ is the generalized inverse of the de-meaned \emph{design matrix} $\mathbb{X}_{zm}$.
+      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the de-meaned \emph{design matrix} $\hat{\mathbb{X}}$.
       \vskip1ex
-      The matrix $\mathbb{C} = \mathbb{X}^T_{zm} \mathbb{X}_{zm} / (n-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
+      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the covariance matrix of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
   \end{columns}
 \end{block}
 
@@ -1703,7 +1707,7 @@ all.equal(sum(resid_uals*fit_ted), target=0)
       The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with de-meaned response and design matrix:
       \begin{flalign*}
         & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
-        & y_{zm} = \mathbb{X}_{zm} \beta + \varepsilon
+        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
       \end{flalign*}
       The de-meaned regression model produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
     \column{0.5\textwidth}
@@ -1849,9 +1853,9 @@ all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # define transformation matrix
-n_col <- NCOL(de_sign)
-trans_mat <- matrix(runif(n_col^2, min=(-1), max=1), 
-                    ncol=n_col)
+n_cols <- NCOL(de_sign)
+trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), 
+                    ncol=n_cols)
 # calculate linear combinations of design columns
 design_trans <- de_sign %*% trans_mat
 # calculate the influence matrix
@@ -2256,9 +2260,9 @@ legend(x="topleft", # add legend
     \column{0.5\textwidth}
       The transformed regression model with a de-meaned \emph{response vector} and \emph{design matrix} can be written as:
       \begin{displaymath}
-        y_{zm} = \mathbb{X}_{zm} \beta + \varepsilon
+        \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
       \end{displaymath}
-      We will drop the $zm$ subscript: $y_{zm} = y ; \mathbb{X}_{zm} = \mathbb{X}$, and write the de-meaned regression model simply as: $y = \mathbb{X} \beta + \varepsilon$.
+      We can assume that the data has been de-meaned, so that: $\hat{y} = y ; \hat{\mathbb{X}} = \mathbb{X}$, and write the regression model simply as: $y = \mathbb{X} \beta + \varepsilon$.
       \vskip1ex
       \emph{Principal Component Regression} (\emph{PCR} or \emph{PCA}) consists of mulltiplying the \emph{design matrix} $\mathbb{X}$ by a \emph{PCA rotation matrix} $\mathbb{W}$:
       \begin{displaymath}
@@ -2267,7 +2271,6 @@ legend(x="topleft", # add legend
       The columns of the \emph{PCA rotation matrix} $\mathbb{W}$ are vectors of weights (loadings) $\mathbf{w}_j$, chosen so that the columns of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ are orthogonal to each other.
       \vskip1ex
       The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
-      % wipp
     \column{0.5\textwidth}
         <<echo=TRUE,eval=TRUE>>=
 # perform PCA

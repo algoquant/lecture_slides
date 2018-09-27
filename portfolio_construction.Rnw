@@ -56,7 +56,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Portfolio Construction]{Portfolio Construction}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -266,7 +266,7 @@ sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # calculate mean returns
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-re_turns <- zoo::na.locf(re_turns)
+re_turns <- xts:::na.locf.xts(re_turns)
 re_turns <- na.omit(re_turns)
 mean_rets <- colMeans(re_turns)
 # specify weight constraints
@@ -1360,7 +1360,7 @@ legend("top", legend=colnames(optim_rets),
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-re_turns <- rutils::diff_xts(log(Ad(rutils::etf_env$VTI)))
+re_turns <- rutils::diff_it(log(Ad(rutils::etf_env$VTI)))
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
@@ -1431,27 +1431,27 @@ mean_rets <- colMeans(re_turns)
 conf_level <- 0.05
 r_min <- 0 ; w_min <- 0 ; w_max <- 1
 weight_sum <- 1
-n_col <- NCOL(re_turns) # number of assets
-n_row <- NROW(re_turns) # number of rows
+n_cols <- NCOL(re_turns) # number of assets
+n_rows <- NROW(re_turns) # number of rows
 # creat objective vector
-obj_vector <- c(numeric(n_col), rep(-1/(conf_level*n_row), n_row), -1)
+obj_vector <- c(numeric(n_cols), rep(-1/(conf_level*n_rows), n_rows), -1)
 # specify weight constraints
 constraint_s <- rbind(
   cbind(rbind(1, mean_rets), 
-        matrix(data=0, nrow=2, ncol=(n_row+1))), 
-  cbind(coredata(re_turns), diag(n_row), 1))
-rh_s <- c(weight_sum, r_min, rep(0, n_row))
-direction_s <- c("==", ">=", rep(">=", n_row))
+        matrix(data=0, nrow=2, ncol=(n_rows+1))), 
+  cbind(coredata(re_turns), diag(n_rows), 1))
+rh_s <- c(weight_sum, r_min, rep(0, n_rows))
+direction_s <- c("==", ">=", rep(">=", n_rows))
 # specify weight bounds
 bound_s <- list(
-  lower=list(ind=1:n_col, val=rep(w_min, n_col)), 
-  upper=list(ind=1:n_col, val=rep(w_max, n_col)))
+  lower=list(ind=1:n_cols, val=rep(w_min, n_cols)), 
+  upper=list(ind=1:n_cols, val=rep(w_max, n_cols)))
 # perform optimization
 op_tim <- Rglpk_solve_LP(obj=obj_vector, mat=constraint_s, dir=direction_s, rhs=rh_s, types=rep("C", NROW(obj_vector)), max=T, bounds=bound_s)
 op_tim$solution
 constraint_s %*% op_tim$solution
 obj_vector %*% op_tim$solution
-as.numeric(op_tim$solution[1:n_col])
+as.numeric(op_tim$solution[1:n_cols])
       @
   \end{columns}
 \end{block}
@@ -3010,10 +3010,10 @@ load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
 # calculate daily rates changes
-rate_s <- zoo::na.locf(rutils::do_call(cbind, 
+rate_s <- xts:::na.locf.xts(rutils::do_call(cbind, 
     as.list(env_rates)[sym_bols]))
-rate_s <- zoo::na.locf(rate_s)
-rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
+rate_s <- xts:::na.locf.xts(rate_s)
+rate_s <- xts:::na.locf.xts(rate_s, fromLast=TRUE)
 re_turns <- rutils::diff_it(rate_s)
 date_s <- index(re_turns)
 # de-mean (center) and scale the returns
@@ -3414,26 +3414,26 @@ plot(x=disc_curves$zerorates, t="l", main="zerorates")
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate random default probabilities
-num_assets <- 100
-default_probs <- runif(num_assets, max=0.2)
+n_assets <- 100
+default_probs <- runif(n_assets, max=0.2)
 mean(default_probs)
 # calculate number of defaults
-uni_form <- runif(num_assets)
+uni_form <- runif(n_assets)
 sum(uni_form < default_probs)
 # simulate average number of defaults
-num_simu <- 1000
-de_faults <- numeric(num_simu)
+n_simu <- 1000
+de_faults <- numeric(n_simu)
 # simulate using for() loop (inefficient way)
-for (i in 1:num_simu) {  # perform loop
-  uni_form <- runif(num_assets)
+for (i in 1:n_simu) {  # perform loop
+  uni_form <- runif(n_assets)
   de_faults[i] <- sum(uni_form < default_probs)
 }  # end for
 # calculate average number of defaults
 mean(de_faults)
 # simulate using vectorized functions  (efficient way)
-uni_form <- matrix(runif(num_simu*num_assets), 
-                   ncol=num_simu)
-sum(uni_form < default_probs)/num_simu
+uni_form <- matrix(runif(n_simu*n_assets), 
+                   ncol=n_simu)
+sum(uni_form < default_probs)/n_simu
       @
   \end{columns}
 \end{block}
@@ -3505,33 +3505,33 @@ text(x=qnorm(0.025)-0.1, y=0.15,
 # define correlation parameters
 rh_o <- 0.2
 rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
-num_assets <- 5 ; num_simu <- 10000
+n_assets <- 5 ; n_simu <- 10000
 # calculate vector of systematic factors
-system_atic <- rnorm(num_simu)
+system_atic <- rnorm(n_simu)
 # simulate asset values using vectorized functions (efficient way)
 asset_values <- rho_sqrt*system_atic + 
-  rho_sqrtm*rnorm(num_simu*num_assets)
-dim(asset_values) <- c(num_simu, num_assets)
+  rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_values) <- c(n_simu, n_assets)
 # calculate correlations between asset values
 cor(asset_values)
 # simulate asset values using for() loop (inefficient way)
 # allocate matrix of assets
-asset_values <- matrix(nr=num_simu, nc=num_assets)
+asset_values <- matrix(nr=n_simu, nc=n_assets)
 # simulate asset values using for() loop
-for (i in 1:num_simu) {  # perform loop
+for (i in 1:n_simu) {  # perform loop
   asset_values[i, ] <- 
     rho_sqrt*system_atic[i] + 
-    rho_sqrtm*rnorm(num_assets)
+    rho_sqrtm*rnorm(n_assets)
 }  # end for
 cor(asset_values)
 # benchmark the speed of the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  for_loop={for (i in 1:num_simu) {
+  for_loop={for (i in 1:n_simu) {
     rho_sqrt*system_atic[i] + 
-    rho_sqrtm*rnorm(num_assets)}},
+    rho_sqrtm*rnorm(n_assets)}},
   vector_ized={rho_sqrt*system_atic + 
-              rho_sqrtm*rnorm(num_simu*num_assets)},
+              rho_sqrtm*rnorm(n_simu*n_assets)},
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -3563,8 +3563,8 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # calculate random default probabilities
-num_assets <- 5
-default_probs <- runif(num_assets, max=0.2)
+n_assets <- 5
+default_probs <- runif(n_assets, max=0.2)
 mean(default_probs)
 # calculate default thresholds
 default_thresh <- qnorm(default_probs)
@@ -3572,17 +3572,17 @@ default_thresh <- qnorm(default_probs)
 # calculate vector of number of defaults
 de_faults <- 
   colSums(t(t(asset_values) < default_thresh))
-de_faults / num_simu
+de_faults / n_simu
 default_probs
 # calculate number of defaults using for() loop (inefficient way)
 # allocate matrix of de_faults
-de_faults <- matrix(nr=num_simu, nc=num_assets)
+de_faults <- matrix(nr=n_simu, nc=n_assets)
 # simulate asset values using for() loop
-for (i in 1:num_simu) {  # perform loop
+for (i in 1:n_simu) {  # perform loop
   de_faults[i, ] <- 
     (asset_values[i, ] < default_thresh)
 }  # end for
-colSums(de_faults) / num_simu
+colSums(de_faults) / n_simu
 default_probs
 # calculate correlations between defaults
 cor(de_faults)
@@ -3600,40 +3600,40 @@ cor(de_faults)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events, 
+      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events.
       \vskip1ex
-      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values},
+      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values}.
       \vskip1ex
-      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well,
+      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well.
       \vskip1ex
-      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk, 
+      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk.
       \vskip1ex
-      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions,
+      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions.
       \vskip1ex
-      Default correlations are usually much lower than the corresponding asset correlations,
+      Default correlations are usually much lower than the corresponding asset correlations.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # define default probabilities
-num_assets <- 2
+n_assets <- 2
 default_prob <- 0.2
 default_thresh <- qnorm(default_prob)
 # define correlation parameters
 rh_o <- 0.2
 rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
 # calculate vector of systematic factors
-num_simu <- 1000
-system_atic <- rnorm(num_simu)
+n_simu <- 1000
+system_atic <- rnorm(n_simu)
 # simulate asset values using vectorized functions
 asset_values <- rho_sqrt*system_atic + 
-  rho_sqrtm*rnorm(num_simu*num_assets)
-dim(asset_values) <- c(num_simu, num_assets)
+  rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_values) <- c(n_simu, n_assets)
 # calculate number of defaults using vectorized functions
 de_faults <- t(t(asset_values) < default_thresh)
 # calculate correlations between defaults
 cor(de_faults)
 # calculate average number of defaults and compare to default_prob
-colSums(de_faults) / num_simu
+colSums(de_faults) / n_simu
 default_prob
       @
   \end{columns}
@@ -4051,8 +4051,8 @@ loss given default = 40%",
       In that case the portfolio losses and \emph{VaR} must be simulated,
       <<echo=TRUE,eval=FALSE>>=
 # Define model parameters
-num_assets <- 300
-num_simu <- 1000
+n_assets <- 300
+n_simu <- 1000
 l_gd <- 0.4
 # define correlation parameters
 rh_o <- 0.2
@@ -4060,15 +4060,15 @@ rho_sqrt <- sqrt(rh_o)
 rho_sqrtm <- sqrt(1-rh_o)
 # calculate default probabilities and thresholds
 set.seed(1121)
-default_probs <- runif(num_assets, max=0.2)
+default_probs <- runif(n_assets, max=0.2)
 default_thresh <- qnorm(default_probs)
 # calculate vector of systematic factors
-system_atic <- rnorm(num_simu)
+system_atic <- rnorm(n_simu)
 # simulate losses under Vasicek model
-asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+asset_values <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
 asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
 loss_es <- 
-  l_gd*colSums(asset_values < default_thresh)/num_assets
+  l_gd*colSums(asset_values < default_thresh)/n_assets
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_simu.png}
@@ -4104,7 +4104,7 @@ cvar_s <- sapply(var_s, function(va_r) {
 cvar_s <- cbind(cvar_s, var_s)
 # alternative CVaR calculation using frequency table
 # first calculate frequency table of loss_es
-# table_losses <- table(loss_es)/num_simu
+# table_losses <- table(loss_es)/n_simu
 # calculate CVaRs from frequency table
 # cvar_s <- sapply(var_s, function(va_r) {
 #   tai_l <- table_losses[names(table_losses) > va_r]
@@ -4150,15 +4150,15 @@ calc_var <- function(default_thresh,
                      l_gd=0.6, 
                      rho_sqrt,
                      rho_sqrtm,
-                     num_simu=1000,
+                     n_simu=1000,
                      conf_levels=seq(0.93, 0.99, 0.01)) {
   # Define model parameters
-  num_assets <- NROW(default_thresh)
+  n_assets <- NROW(default_thresh)
   # Simulate losses under Vasicek model
-  system_atic <- rnorm(num_simu)
-  asset_values <- matrix(rnorm(num_simu*num_assets), ncol=num_simu)
+  system_atic <- rnorm(n_simu)
+  asset_values <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
   asset_values <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_values))
-  loss_es <- l_gd*colSums(asset_values < default_thresh)/num_assets
+  loss_es <- l_gd*colSums(asset_values < default_thresh)/n_assets
   # Calculate VaRs and CVaRs
   var_s <- quantile(loss_es, probs=conf_levels)
   cvar_s <- sapply(var_s, function(va_r) {
@@ -4185,16 +4185,16 @@ calc_var <- function(default_thresh,
       The \emph{scaled} standard errors of \emph{VaR} and \emph{CVaR} increase with the confidence level, making them much less reliable at very high confidence levels,
       <<echo=TRUE,eval=FALSE>>=
 # define number of bootstrap simulations
-num_boot <- 500
-num_assets <- NROW(default_probs)
+n_boot <- 500
+n_assets <- NROW(default_probs)
 # perform bootstrap of calc_var
 set.seed(1121)
-boot_strap <- sapply(rep(l_gd, num_boot), 
+boot_strap <- sapply(rep(l_gd, n_boot), 
   calc_var, 
   default_thresh=qnorm(default_probs),
   rho_sqrt=rho_sqrt,
   rho_sqrtm=rho_sqrtm,
-  num_simu=num_simu,
+  n_simu=n_simu,
   conf_levels=conf_levels)  # end sapply
 boot_strap <- t(boot_strap)
 # calculate vectors of standard errors of VaR and CVaR from boot_strap data
@@ -4239,20 +4239,20 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
 # perform bootstrap of calc_var for Windows
 set.seed(1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, num_boot), 
+boot_strap <- parLapply(clus_ter, rep(l_gd, n_boot), 
   fun=calc_var, default_thresh=default_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  num_simu=num_simu,
+  n_simu=n_simu,
   conf_levels=conf_levels)  # end parLapply
 # bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, num_boot), 
+boot_strap <- mclapply(rep(l_gd, n_boot), 
   FUN=calc_var, default_thresh=default_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  num_simu=num_simu,
+  n_simu=n_simu,
   conf_levels=conf_levels)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 stopCluster(clus_ter)  # stop R processes over cluster

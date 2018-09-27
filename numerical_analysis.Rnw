@@ -59,7 +59,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Numerical Analysis]{Numerical Analysis}
-\subtitle{FRE6871 \& FRE7241, Spring 2018}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -590,9 +590,9 @@ mat_rix <- matrix(1:9, ncol=3, # create matrix
                 paste0("col", 1:3)))
 # create specialized function
 matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for (in_dex in 1:n_col)  # populate vector
+  n_cols <- ncol(mat_rix)
+  dframe <- vector("list", n_cols)  # empty vector
+  for (in_dex in 1:n_cols)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
     .set_row_names(NROW(mat_rix))
@@ -1355,29 +1355,30 @@ legend(x="bottomright", legend=colnames(vec_tor4),
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
 # sample mean - MC estimate
-mean(sam_ple)
+mean(r_norm)
 # sample standard deviation - MC estimate
-sd(sam_ple)
+sd(r_norm)
 # Monte Carlo estimate of cumulative probability
-sam_ple <- sort(sam_ple)
+r_norm <- sort(r_norm)
 pnorm(1)
-sum(sam_ple<1)/len_gth
+sum(r_norm<1)/n_rows
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
-sam_ple[conf_level*len_gth]
-quantile(sam_ple, probs=conf_level)
+cut_off <- conf_level*n_rows
+r_norm[cut_off]
+quantile(r_norm, probs=conf_level)
 # analyze the source code of quantile()
 stats:::quantile.default
 # microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  sam_ple=sam_ple[cut_off],
-  quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  r_norm=r_norm[cut_off],
+  quan_tile=quantile(r_norm, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1401,11 +1402,11 @@ x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
+n_rows <- 1000  # number of simulation steps
+pa_th <- numeric(n_rows)  # allocate path vector
 pa_th[1] <- 0  # initialize path
 in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
+while ((in_dex <= n_rows) &&
          (pa_th[in_dex - 1] < bar_rier)) {
 # simulate next step
   pa_th[in_dex] <-
@@ -1413,8 +1414,8 @@ while ((in_dex <= len_gth) &&
   in_dex <- in_dex + 1  # advance in_dex
 }  # end while
 # fill remaining pa_th after it crosses bar_rier
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+if (in_dex <= n_rows)
+  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
 # create daily time series starting 2011
 ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 plot(ts_path, type="l", col="black",
@@ -1447,14 +1448,14 @@ x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
+n_rows <- 1000  # number of simulation steps
 # simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
+pa_th <- cumsum(rnorm(n_rows))
 # find index when pa_th crosses bar_rier
 cro_ss <- which(pa_th > bar_rier)
 # fill remaining pa_th after it crosses bar_rier
 if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
+  pa_th[(cro_ss[1]+1):n_rows] <-
     pa_th[cro_ss[1]]
 }  # end if
 # create daily time series starting 2011
@@ -1500,22 +1501,22 @@ title(main="Brownian motion crossing a barrier level",
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
 # sample mean
-mean(sam_ple)
+mean(r_norm)
 # sample standard deviation
-sd(sam_ple)
+sd(r_norm)
 # bootstrap of sample mean and median
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(n_rows,
                                     replace=TRUE)]
   c(mean=mean(boot_sample),
     median=median(boot_sample))
 })  # end sapply
 boot_strap[, 1:3]
 # standard error from formula
-sd(sam_ple)/sqrt(len_gth)
+sd(r_norm)/sqrt(n_rows)
 # standard error of mean from bootstrap
 sd(boot_strap["mean", ])
 # standard error of median from bootstrap
@@ -1534,50 +1535,119 @@ sd(boot_strap["median", ])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
       \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
       \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
       \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores.
       \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
       \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument.
       \vskip1ex
-      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
       \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
 # bootstrap mean and median under Windows
 boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  function(x, r_norm, n_rows) {
+  boot_sample <- r_norm[sample.int(n_rows, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+  }, r_norm=r_norm, n_rows=n_rows)  # end parLapply
 # bootstrap mean and median under Mac-OSX or Linux
 boot_strap <- mclapply(1:10000,
   function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  boot_sample <- r_norm[sample.int(n_rows, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), sd=sd(x)))
+      function(x) c(mean=mean(x), std_error=sd(x)))
 # standard error from formula
-sd(sam_ple)/sqrt(len_gth)
+sd(r_norm)/sqrt(n_rows)
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Bootstrapping of the \protect\emph{Median Absolute Deviation}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median instead of the mean:
+      \begin{displaymath}
+        MAD = median(abs(C_i - median(C_i)))
+      \end{displaymath}
+      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
+      \vskip1ex
+      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
+      \vskip1ex
+      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
+sd(r_norm)
+mad(r_norm)
+median(abs(r_norm - median(r_norm)))
+median(abs(r_norm - median(r_norm)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    r_norm[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+# Analyze bootstrapped variance
+head(boot_strap)
+sum(is.na(boot_strap))
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # load package parallel
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_strap <- parLapply(clus_ter, 1:10000, 
+  function(x, r_norm) {
+    boot_sample <- r_norm[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, r_norm=r_norm)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000, 
+  function(x) {
+    boot_sample <- r_norm[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2, 
+      function(x) c(mean=mean(x), std_error=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1592,47 +1662,47 @@ stopCluster(clus_ter)  # stop R processes over cluster under Windows
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Bootstrapping is usually performed by resampling from an observed (empirical) dataset,
+      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
       \vskip1ex
-      Resampling consists of randomly selecting data from an existing dataset, with replacement,
+      Resampling consists of randomly selecting data from an existing dataset, with replacement.
       \vskip1ex
-      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset,
+      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values,
+      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
       \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error,
+      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
       \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# sample from time series of ETF returns
-sam_ple <- rutils::etf_env$re_turns[, "VTI"]
-sam_ple <- na.omit(sam_ple)
-len_gth <- NROW(sam_ple)
-# bootstrap mean and median under Windows
+# Sample from time series of ETF returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Bootstrap sd and MAD under Windows
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
 clusterSetRNGStream(clus_ter, 1121)  # reset random number generator in all cores
-num_boot <- 1e4
-boot_strap <- parLapply(clus_ter, 1:num_boot,
-  function(x, sam_ple, len_gth) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+n_boot <- 1e4
+boot_strap <- parLapply(clus_ter, 1:n_boot,
+  function(x, re_turns, n_rows) {
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:num_boot,
+  }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
+# Bootstrap sd and MAD under Mac-OSX or Linux
+boot_strap <- mclapply(1:n_boot,
   function(x) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-    c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), sd=sd(x)))
+      function(x) c(mean=mean(x), std_error=sd(x)))
 # standard error assuming normal distribution of returns
-sd(sam_ple)/sqrt(num_boot)
+sd(re_turns)/sqrt(n_boot)
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
       @
   \end{columns}
@@ -1650,44 +1720,43 @@ stopCluster(clus_ter)  # stop R processes over cluster under Windows
     \column{0.5\textwidth}
       Bootstrapping from a time series of prices requires first converting the prices to percentage returns, then bootstrapping the returns, and finally converting them back to prices,
       <<echo=TRUE,eval=FALSE>>=
-# load time series of ETF prices
-sam_ple <- rutils::etf_env$VTI[, 4]
-len_gth <- NROW(sam_ple)
-# calculate percentage returns
-sam_ple <- rutils::diff_it(log(sam_ple))
-# define barrier level with respect to sam_ple
-bar_rier <- 0.8*max(exp(cumsum(sam_ple)))
+# Load time series of ETF percentage returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Define barrier level with respect to re_turns
+bar_rier <- 0.8*max(exp(cumsum(re_turns)))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-num_boot <- 1e4
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
+n_boot <- 1e4
 # perform parallel bootstrap under Windows
 set.seed(1121)  # reset random number generator
-boot_strap <- parLapply(clus_ter, 1:num_boot,
-  function(x, sam_ple, len_gth, bar_rier) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+boot_strap <- parLapply(clus_ter, 1:n_boot,
+  function(x, re_turns, n_rows, bar_rier) {
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
     # calculate prices from percentage returns
     boot_sample <- exp(cumsum(boot_sample))
     # calculate payout
     sum(boot_sample > bar_rier) > 0
-  }, sam_ple=sam_ple, len_gth=len_gth, bar_rier=bar_rier)  # end parLapply
+  }, re_turns=re_turns, n_rows=n_rows, bar_rier=bar_rier)  # end parLapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 # perform parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:num_boot,
+boot_strap <- mclapply(1:n_boot,
   function(x) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
     # calculate prices from percentage returns
     boot_sample <- exp(cumsum(boot_sample))
     # calculate payout
     sum(boot_sample > bar_rier) > 0
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # calculate probability of crossing barrier
-sum(boot_strap)/num_boot
+sum(boot_strap)/n_boot
       @
   \end{columns}
 \end{block}
@@ -1716,18 +1785,18 @@ sum(boot_strap)/num_boot
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
 # estimate the 95% quantile
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(n_rows,
                                     replace=TRUE)]
   quantile(boot_sample, 0.95)
 })  # end sapply
 sd(boot_strap)
 # estimate the 95% quantile using antithetic sampling
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(n_rows,
                                     replace=TRUE)]
   quantile(c(boot_sample, -boot_sample), 0.95)
 })  # end sapply
@@ -1794,7 +1863,7 @@ par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=
 x11(width=6, height=6)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=1,
-      function(x) c(mean=mean(x), sd=sd(x)))
+      function(x) c(mean=mean(x), std_error=sd(x)))
 # means and standard errors from regression summary
 mod_el <- lm(for_mula, data=de_sign)
 mod_el$coefficients
@@ -1840,8 +1909,8 @@ abline(v=mean(boot_strap["de_sign", ]),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
 # bootstrap the regression under Windows
 boot_strap <- parLapply(clus_ter, 1:1000,
   function(x, for_mula, de_sign) {
@@ -1860,12 +1929,12 @@ boot_strap <- mclapply(1:1000,
       sample.int(dim(de_sign)[1], replace=TRUE)
     lm(for_mula,
       data=de_sign[boot_sample, ])$coefficients
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), sd=sd(x)))
+      function(x) c(mean=mean(x), std_error=sd(x)))
 x11(width=6, height=6)
 plot(density(boot_strap[, "de_sign"]),
      lwd=2, xlab="regression slopes",
@@ -1967,17 +2036,17 @@ ls("package:parallel")
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
   x
 }  # end paws
 # perform parallel loop under Mac-OSX or Linux
-paw_s <- mclapply(1:10, paws, mc.cores=num_cores,
+paw_s <- mclapply(1:10, paws, mc.cores=n_cores,
                 sleep_time=0.01)
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # perform parallel loop under Windows
 paw_s <- parLapply(clus_ter, 1:10, paws,
                  sleep_time=0.01)
@@ -2011,9 +2080,9 @@ stopCluster(clus_ter)
       <<echo=(-(1:10)),eval=FALSE>>=
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
@@ -2074,9 +2143,9 @@ legend(x="topleft", legend=colnames(compute_times),
       <<echo=(-(1:5)),eval=FALSE>>=
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # define large matrix
 mat_rix <- matrix(rnorm(7*10^5), ncol=7)
 # define aggregation function over column of matrix
@@ -2122,9 +2191,9 @@ stopCluster(clus_ter)
       <<echo=(-(1:5)),eval=FALSE>>=
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 ba_se <- 2
 # fails because child processes don't know ba_se:
 parLapply(clus_ter, 2:4,
@@ -2181,9 +2250,9 @@ stopCluster(clus_ter)
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # set seed for cluster under Windows
 # doesn't work: set.seed(1121)
 clusterSetRNGStream(clus_ter, 1121)
@@ -2193,7 +2262,7 @@ sum(unlist(out_put))
 # stop R processes over cluster under Windows
 stopCluster(clus_ter)
 # perform parallel loop under Mac-OSX or Linux
-out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
       @
   \end{columns}
 \end{block}
@@ -2366,23 +2435,23 @@ rastri_gin(op_tim$par, pa_ram=1)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # sample of normal variables
-sam_ple <- rnorm(1000, mean=4, sd=2)
+r_norm <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
+object_ive <- function(pa_r, r_norm) {
   sum(2*log(pa_r[2]) +
-    ((sam_ple - pa_r[1])/pa_r[2])^2)
+    ((r_norm - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, sam_ple)
-    object_ive(c(mean, sd), sam_ple),
+  FUN=function(mean, sd, r_norm)
+    object_ive(c(mean, sd), r_norm),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
 objective_grid <- outer(par_mean, par_sd,
-        vec_objective, sam_ple=sam_ple)
+        vec_objective, r_norm=r_norm)
 objective_min <- which(  # grid search
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
@@ -2453,21 +2522,21 @@ par_init <- c(mean=0, sd=1)
 # perform optimization using optim()
 optim_fit <- optim(par=par_init,
   fn=object_ive, # log-likelihood function
-  sam_ple=sam_ple,
+  r_norm=r_norm,
   method="L-BFGS-B", # quasi-Newton method
   upper=c(10, 10), # upper constraint
   lower=c(-10, 0.1)) # lower constraint
 # optimal parameters
 optim_fit$par
 # perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit <- MASS::fitdistr(r_norm, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
       @
 \vspace{-2em}
       <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
+histo_gram <- hist(r_norm, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_fit$par["mean"],
@@ -2496,27 +2565,27 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
 \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0),
-                   rnorm(100, mean=4, sd=1.0))
+r_norm <- c(rnorm(100, sd=1.0),
+            rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
+object_ive <- function(pa_r, r_norm) {
   likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
+  dnorm((r_norm-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((r_norm-pa_r[4])/pa_r[5])
   if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, sam_ple)
-    object_ive(c(w, m1, s1, mean, sd), sam_ple),
+  FUN=function(mean, sd, w, m1, s1, r_norm)
+    object_ive(c(w, m1, s1, mean, sd), r_norm),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
 objective_grid <- outer(par_mean, par_sd,
-          vec_objective, sam_ple=sam_ple,
+          vec_objective, r_norm=r_norm,
           w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
 colnames(objective_grid) <- round(par_sd, 2)
@@ -2560,7 +2629,7 @@ par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
 optim_fit <- optim(par=par_init,
             fn=object_ive,
-            sam_ple=sam_ple,
+            r_norm=r_norm,
             method="L-BFGS-B",
             upper=c(1,10,10,10,10),
             lower=c(0,-10,0.2,-10,0.2))
@@ -2569,7 +2638,7 @@ optim_fit$par
 \vspace{-2em}
       <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
+histo_gram <- hist(r_norm, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {
@@ -2760,13 +2829,13 @@ Rcpp::cppFunction("
 # run Rcpp function
 times_two(3)
 # source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
 # multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
+mult_rcpp(2, 3)
+mult_rcpp(1:3, 6:4)
 # multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
+mult_vec_rcpp(2, 3)
+mult_vec_rcpp(1:3, 6:4)
       @
   \end{columns}
 \end{block}
@@ -2908,7 +2977,7 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Compiling \texttt{C++} Code Using \protect\emph{Rcpp Attributes}}
+\subsection{\protect\emph{Rcpp Attributes}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3050,7 +3119,8 @@ static const double pi = 3.14159265;
     \column{0.5\textwidth}
       The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library,
       \vskip1ex
-      \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab},       \vskip1ex
+      \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
+      \vskip1ex
       \emph{RcppArmadillo} functions are often faster than even compiled \texttt{R} functions, because they use better optimized \texttt{C++} code:\\
       \url{http://arma.sourceforge.net/speed.html}\\
       \vskip1ex
@@ -3203,6 +3273,123 @@ double inv_mat(arma::mat& mat_rix){
   return mat_rix.n_cols;
 }  // end inv_mat
     \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{ARIMA} Processes Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ARIMA} processes can be simulated using \protect\emph{RcppArmadillo} even faster than by using the function \texttt{filter()}.
+      <<echo=TRUE,eval=FALSE>>=
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
+# define AR(2) coefficients
+co_eff <- c(0.9, 0.09)
+len_gth <- 1e4
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+# simulate ARIMA using filter()
+arima_filter <- filter(x=in_nov, 
+  filter=co_eff, method="recursive")
+# simulate ARIMA using sim_arima()
+ari_ma <- sim_arima(in_nov, rev(co_eff))
+all.equal(drop(ari_ma), 
+  as.numeric(arima_filter))
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
+  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    \column{0.5\textwidth}
+      % \vspace{-2em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
+
+//' @export
+// [[Rcpp::export]]
+arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
+  uword len_gth = in_nov.n_elem;
+  uword look_back = co_eff.n_elem;
+  arma::vec ari_ma(len_gth);
+
+  // startup period
+  ari_ma(0) = in_nov(0);
+  ari_ma(1) = in_nov(1) + co_eff(look_back-1) * ari_ma(0);
+  for (uword it = 2; it < look_back-1; it++) {
+    ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
+  }  // end for
+  
+  // remaining periods
+  for (uword it = look_back; it < len_gth; it++) {
+    ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
+  }  // end for
+  
+  return ari_ma;
+}  // end sim_arima
+    \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{reticulate} for Running \texttt{Python} Programs}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Package \protect\emph{reticulate} for Calling \texttt{Python} from \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{reticulate} allows calling \texttt{Python} functions and scripts from \texttt{R}.
+      \vskip1ex
+      \emph{reticulate} functions are \texttt{R} functions that were compiled from \texttt{Python} code using package \emph{reticulate},
+      \vskip1ex
+      \emph{reticulate} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
+      \vskip1ex
+      The package \emph{reticulate} relies on \texttt{Python} for interpreting the \texttt{Python} code: \\
+      \hskip1em\url{https://conda.io/docs/user-guide/install/index.html}
+      \vskip1ex
+      by compiling the \texttt{Python} code and creating \texttt{R} functions.
+      \vskip1ex
+      You can learn more about the package \emph{reticulate} here: \\
+      \hskip1em\url{https://rstudio.github.io/reticulate/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# wipp
+# install package reticulate
+install.packages("reticulate")
+# load package reticulate
+library(reticulate)
+# get documentation for package reticulate
+# get short description
+packageDescription("reticulate")
+# load help page
+help(package="reticulate")
+# list all datasets in "reticulate"
+data(package="reticulate")
+# list all objects in "reticulate"
+ls("package:reticulate")
+# remove reticulate from search path
+detach("package:reticulate")
+      @
   \end{columns}
 \end{block}
 
