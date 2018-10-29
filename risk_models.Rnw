@@ -76,34 +76,205 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Aggregations Over Look-back Intervals}
+\subsection{Defining Look-back Time Intervals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A time \emph{period} is defined as the time between two neighboring points in time, 
+      A time \emph{period} is the time between two neighboring points in time.
       \vskip1ex
-      A time \emph{interval} is defined as the time spanned by one or more neighboring time \emph{periods}, 
+      A time \emph{interval} is the time spanned by one or more time \emph{periods}.
       \vskip1ex
-      A \emph{look-back interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}, 
+      A \emph{look-back interval} is a time \emph{interval} for performing aggregations over the past, starting from a \emph{startpoint} and ending at an \emph{endpoint}.
       \vskip1ex
-      The \emph{startpoints} are the \emph{endpoints} lagged by the interval width (number of periods in the interval), 
+      The \emph{startpoints} are the \emph{endpoints} lagged by the \emph{look-back interval}.
       \vskip1ex
-      The look-back \emph{intervals} may or may not \emph{overlap} with their neighboring intervals, 
+      The look-back \emph{intervals} may or may not \emph{overlap} with their neighboring intervals.
     \column{0.5\textwidth}
-      A rolling aggregation is specified by a vector of look-back \emph{intervals} at each point in time, 
+      A \emph{rolling aggregation} is specified by \emph{endpoints} at each point in time.
       \vskip1ex
-      An example of a rolling aggregation are moving average prices, 
+      An example of a rolling aggregation are moving average prices.
       \vskip1ex
-      An interval aggregation is specified by a vector of look-back \emph{intervals} attached at \emph{endpoints} spanning multiple time \emph{periods}, 
+      An \emph{interval aggregation} is specified by \emph{endpoints} separated by many time \emph{periods}.
       \vskip1ex
-      An example of a non-overlapping interval aggregation are monthly asset returns, 
-      \vskip1ex
-      An example of an overlapping interval aggregation are trailing 12-month asset returns calculated monthly, 
+      Examples of interval aggregations are monthly asset returns, or trailing 12-month asset returns calculated every month.
   \end{columns}
     \vspace{-2em}
-    \includegraphics[width=0.9\paperwidth]{figure/rolling_intervals.png}\\
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_overlapping.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining \protect\emph{Rolling} Look-back Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{rolling aggregation} is specified by \emph{endpoints} at each point in time.
+      \vskip1ex
+      The \emph{startpoints} are the \emph{endpoints} lagged by the \emph{look-back interval}.
+      \vskip1ex
+      An example of a rolling aggregation are moving average prices.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+oh_lc <- rutils::etf_env$VTI
+# Number of data points
+n_rows <- NROW(oh_lc["2018-06/"])
+# Define end_points at each point in time
+end_points <- 1:n_rows
+# Number of data points in look_back interval
+look_back <- 22
+# start_points are end_points lagged by look_back
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(n_rows-look_back+1)])
+# Or
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0, 
+  start_points, 1)
+      @
+  \end{columns}
+    \vspace{-2em}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_rolling.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining Equally Spaced \protect\emph{Endpoints} of a Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The neighboring \emph{endpoints} may be separated by a fixed number of time periods, equal to \texttt{n\_points}.
+      \vskip1ex
+      If the total number of data points is not an integer multiple of \texttt{n\_points}, then a stub interval must be added either at the beginning or at the end of \emph{endpoints}.
+      \vskip1ex
+      The function \texttt{xts::endpoints()} extracts the indices of the last observations in each calendar period of an \emph{xts} series.
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+price_s <- Cl(oh_lc["2018/"])
+n_rows <- NROW(price_s)
+# Number of periods between endpoints
+n_points <- 22
+# Number of n_points that fit over n_rows
+n_agg <- n_rows %/% n_points
+# if n_rows==n_points*n_agg then whole number 
+end_points <- (1:n_agg)*n_points
+# else stub interval at beginning
+end_points <- 
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+# else stub interval at end
+end_points <- c((1:n_agg)*n_points, n_rows)
+# Or use xts::endpoints()
+end_points <- xts::endpoints(price_s, on="months")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/intervals_end_points.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot data and endpoints as vertical lines
+plot.xts(price_s, col="blue", lwd=2, xlab="", ylab="",
+         main="Prices with Endpoints as Vertical Lines")
+addEventLines(xts(rep("endpoint", NROW(end_points)), index(price_s)[end_points]), 
+              col="red", lwd=2, pos=4)
+# Or
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- "blue"
+chart_Series(price_s, theme=plot_theme, 
+  name="prices with endpoints as vertical lines")
+abline(v=end_points, col="red", lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining \protect\emph{Overlapping} Look-back Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Overlapping} time intervals can be defined if the \emph{startpoints} are equal to the \emph{endpoints} lagged by the \emph{look-back interval}.
+      \vskip1ex
+      An example of an overlapping interval aggregation are trailing 12-month asset returns calculated every month.
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+n_rows <- NROW(rutils::etf_env$VTI["2017/"])
+# Number of n_points that fit over n_rows
+n_points <- 22
+n_agg <- n_rows %/% n_points
+# end_points with stub interval at beginning
+end_points <- 
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+      @
+    \column{0.5\textwidth}
+      The length of the \emph{look-back interval} can be defined either as the number of data points, or as the number of \emph{endpoints} to look back over.
+      <<echo=TRUE,eval=FALSE>>=
+# look_back defined as number of data points
+look_back <- 252
+# start_points are end_points lagged by look_back
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0, 
+  start_points, 1)
+cbind(start_points, end_points)
+# look_back defined as number of end_points
+look_back <- 12
+start_points <- c(rep_len(1, look_back-1), 
+    end_points[1:(NROW(end_points)-look_back+1)])
+      @
+  \end{columns}
+    \vspace{-2em}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_overlapping.png}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining \protect\emph{Non-overlapping} Look-back Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    % wippp
+      \emph{Non-overlapping} time intervals can be defined if \emph{startpoints} are equal to the previous \emph{endpoints}.
+      \vskip1ex
+      In that case the look-back \emph{intervals} are non-overlapping and \emph{contiguous} (each \emph{startpoint} is the \emph{endpoint} of the previous interval).
+      \vskip1ex
+      If the \emph{startpoints} are defined as the previous \emph{endpoints} plus \texttt{1}, then the \emph{intervals} are \emph{exclusive}.
+      \vskip1ex
+      \emph{Exclusive intervals} are essential for calculating \emph{out-of-sample} aggregations over future intervals.
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of data points
+n_rows <- NROW(rutils::etf_env$VTI["2017/"])
+# Number of data points per interval
+look_back <- 22
+# Number of look_backs that fit over n_rows
+n_agg <- n_rows %/% look_back
+# Define end_points with beginning stub
+end_points <- 
+  n_rows-look_back*n_agg + (0:n_agg)*look_back
+# Define contiguous start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)])
+# Define exclusive start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)]+1)
+      @
+  \end{columns}
+    \vspace{-2em}
+    \includegraphics[width=0.9\paperwidth]{figure/intervals_non_overlapping.png}
 \end{block}
 
 \end{frame}
@@ -642,7 +813,7 @@ data(package="caTools")  # list all datasets in "caTools"
 ls("package:caTools")  # list all objects in "caTools"
 detach("package:caTools")  # remove caTools from search path
 # median filter
-look_back <- 11
+look_back <- 2
 price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 med_ian <- runmed(x=price_s, k=look_back)
 # vector of rolling volatility
@@ -661,115 +832,29 @@ quan_tiles <- runquantile(x=price_s,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Defining Equally Spaced \protect\emph{Endpoints} of a Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Endpoints} are a vector of indices that divide a time series into non-overlapping intervals,  
-      \vskip1ex
-      \emph{Endpoints} may be specified as integers or as date-time objects, 
-      \vspace{-1em}
-      <<chart_Series_endp,echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
-# extract daily closing VTI prices
-price_s <- Cl(rutils::etf_env$VTI)
-# define number of data points per interval
-look_back <- 22
-# number of look_backs that fit over price_s
-n_rows <- NROW(price_s)
-n_agg <- n_rows %/% look_back
-# if n_rows==look_back*n_agg then whole number 
-# of look_backs fit over price_s
-end_points <- (1:n_agg)*look_back
-# if (n_rows > look_back*n_agg) 
-# then stub interval at beginning
-end_points <- 
-  n_rows-look_back*n_agg + (0:n_agg)*look_back
-# stub interval at end
-end_points <- c((1:n_agg)*look_back, n_rows)
-# plot data and endpoints as vertical lines
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- "blue"
-chart_Series(price_s, theme=plot_theme, 
-  name="prices with endpoints as vertical lines")
-abline(v=end_points, col="red")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_endp.png}\\
-      \vskip1ex
-      \emph{Endpoints} may be equally spaced, with a fixed number of data points between neighboring \emph{endpoints}, 
-      \vskip1ex
-      \emph{Endpoints} start at \texttt{0} to allow the same number of data points in each equally spaced interval, 
-      \vskip1ex
-      If all the data points don't fit into a whole number of intervals, then a stub interval is needed to fit the remaining data points, 
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Determining Calendar \protect\emph{Endpoints} of \protect\emph{xts} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{endpoints()} from package \emph{xts} extracts the indices of the last observations in each calendar period of time of an \emph{xts} series,
+      The function \texttt{xts::endpoints()} extracts the indices of the last observations in each calendar period of an \emph{xts} series.
       \vskip1ex
       For example:\\ \-\ \texttt{endpoints(x, on="hours")}\\
-      extracts the indices of the last observations in each hour,
+      extracts the indices of the last observations in each hour.
       \vskip1ex
-      The \emph{endpoints} calculated by \texttt{endpoints()} aren't always equally spaced, and aren't the same as those calculated from fixed intervals, 
+      The \emph{endpoints} calculated by \texttt{endpoints()} aren't always equally spaced, and aren't the same as those calculated from fixed intervals.
       \vskip1ex
-      For example, the last observations in each day aren't equally spaced due to weekends and holidays, 
+      For example, the last observations in each day aren't equally spaced due to weekends and holidays.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-# library(HighFreq)  # load package HighFreq
+library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
 end_points <- xts::endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Defining Non-overlapping Time Intervals}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Non-overlapping \emph{intervals} can be defined by a vector of \emph{endpoints} and a vector of \emph{startpoints}.
-      \vskip1ex
-      If the \emph{startpoints} are defined as the single-period lag of \emph{endpoints}, then the \emph{intervals} are \emph{contiguous} (each \emph{startpoint} is the \emph{endpoint} of the previous interval).
-      \vskip1ex
-      If the \emph{startpoints} are defined as the single-period lag of \emph{endpoints} plus \texttt{1}, then the \emph{intervals} are \emph{exclusive} (each \emph{startpoint} is the previous \emph{endpoint} plus \texttt{1}).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of data points
-n_rows <- NROW(rutils::etf_env$VTI)
-# Number of data points per interval
-look_back <- 22
-# Number of look_backs that fit over n_rows
-n_agg <- n_rows %/% look_back
-# Define end_points with beginning stub
-end_points <- 
-  n_rows-look_back*n_agg + (0:n_agg)*look_back
-n_rows <- NROW(end_points)
-# Define contiguous start points as single-period lag of end_points
-start_points <- c(1, end_points[1:(n_rows-1)])
-# Define exclusive start points as single-period lag of end_points plus 1
-start_points <- c(1, end_points[1:(n_rows-1)]+1)
       @
   \end{columns}
 \end{block}
@@ -784,23 +869,35 @@ start_points <- c(1, end_points[1:(n_rows-1)]+1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{apply()} functionals allow for applying a function over intervals of an \emph{xts} series defined by a vector of \emph{endpoints},
+      The \texttt{apply()} functionals allow for applying a function over intervals of an \emph{xts} series defined by a vector of \emph{endpoints}.
       \vskip1ex
-      The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series,
+      The \texttt{sapply()} functional by default returns a vector or matrix, not an \emph{xts} series.
       \vskip1ex
-      The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series,
+      The vector or matrix returned by \texttt{sapply()} therefore needs to be coerced into an \emph{xts} series.
       \vskip1ex
-      The function \texttt{chart\_Series()} from package \emph{quantmod} can produce a variety of time series plots, 
+      The function \texttt{chart\_Series()} from package \emph{quantmod} can produce a variety of time series plots.
       \vskip1ex
-      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
+      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects}.
       \vskip1ex
-      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts),
+      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts).
       \vskip1ex
-      The function \texttt{chart\_theme()} returns the theme object, 
+      The function \texttt{chart\_theme()} returns the theme object.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# define list of look-back intervals for aggregations over past
+price_s <- Cl(rutils::etf_env$VTI)
+# Number of data points
+n_rows <- NROW(price_s)
+# Number of data points per interval
+look_back <- 22
+# Number of look_backs that fit over n_rows
+n_agg <- n_rows %/% look_back
+# Define end_points with beginning stub
+end_points <- 
+  n_rows-look_back*n_agg + (0:n_agg)*look_back
+# Define contiguous start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)])
+# Define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
     start_points[in_dex]:end_points[in_dex]
@@ -987,15 +1084,20 @@ head(agg_regations)
       The variable \texttt{look\_back} is equal to the number of end points in the \emph{look-back interval}, while (\texttt{look\_back - 1}) is equal to the number of intervals in the look-back, 
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load package HighFreq
+      <<echo=TRUE,eval=FALSE>>=
+# wippp
+# Number of n_points that fit over n_rows
+n_points <- 22
+n_agg <- n_rows %/% n_points
+# end_points with stub interval at beginning
 end_points <- # define end_points with beginning stub
-  n_rows-look_back*n_agg + (0:n_agg)*look_back
-n_rows <- NROW(end_points)
-n_points <- 4  # number of end points in look-back interval
-# start_points are multi-period lag of end_points
-start_points <- c(rep_len(1, n_points-1), 
-  end_points[1:(n_rows-n_points+1)])
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+# Number of data points in look_back interval
+look_back <- 252
+# start_points are end_points lagged by look_back
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0, 
+  start_points, 1)
 # define list of look-back intervals for aggregations over past
 look_backs <- lapply(seq_along(end_points), 
   function(in_dex) {
@@ -2622,8 +2724,9 @@ sqrt((6.5*60)*mean(na.omit(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Is this correct? \\
       The \emph{range} volatility estimators have much lower variability (standard errors) than the standard \emph{Close-to-Close} estimator.
+      \vskip1ex
+      Is the above correct?  Because the plot shows otherwise.
       \vskip1ex
       The \emph{range} volatility estimators follow the standard \emph{Close-to-Close} estimator, except in intervals of high intra-period volatility.
       \vskip1ex
@@ -2679,32 +2782,43 @@ lines(density(foo[, 2]), col='red', lwd=2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Alternative \protect\emph{Range} Volatility Estimators}
+\subsection{draft: \protect\emph{Log-range} Volatility Proxies}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An alternative \emph{range} volatility estimator can be created by calculating the logarithm of the range, (as opposed to the range percentage, or the logarithm of the price ratios), 
+    % wipppp
+      To-do: plot time series of \emph{intra-day range} volatility estimator and standard close-to-close volatility estimator.  Emphasize flash-crash of 2010.
+      \vskip1ex
+      An alternative \emph{range} volatility estimator can be created by calculating the logarithm of the range, (as opposed to the range percentage, or the logarithm of the price ratios).
+      \vskip1ex
+      To-do: plot scatterplot of \emph{intra-day range} volatility estimator and standard close-to-close volatility estimator.  
+      \vskip1ex
+      Emphasize the two are different: the intra-day range volatility estimator captures volatility events which aren't captured by close-to-close volatility estimator, and vice versa.
       \begin{displaymath}
         \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} \log(\frac{H_i - L_i}{H_i + L_i})^2
       \end{displaymath}
-      The range logarithm fits better into the normal distribution than the range percentage, 
+      The range logarithm fits better into the normal distribution than the range percentage.
       <<echo=TRUE,eval=FALSE>>=
-re_turns <- 
-  ifelse(etf_env$VTI[, 2] > etf_env$VTI[, 3], 
-  log((etf_env$VTI[, 2] - etf_env$VTI[, 3]) / 
-    (etf_env$VTI[, 2] + etf_env$VTI[, 3])), 0)
-# perform normality tests
+oh_lc <- rutils::etf_env$VTI
+re_turns <- log((oh_lc[, 2] - oh_lc[, 3]) / (oh_lc[, 2] + oh_lc[, 3]))
+foo <- rutils::diff_it(log(oh_lc[, 4]))
+plot(as.numeric(foo)^2, as.numeric(re_turns)^2)
+bar <- lm(re_turns ~ foo)
+summary(bar)
+
+
+# Perform normality tests
 shapiro.test(coredata(re_turns))
 tseries::jarque.bera.test(re_turns)
 # Fit VTI returns using MASS::fitdistr()
 optim_fit <- MASS::fitdistr(re_turns, 
                   densfun="t", df=2)
 optim_fit$estimate; optim_fit$sd
-# calculate moments of standardized returns
+# Calculate moments of standardized returns
 sapply(3:4, moments::moment, 
-       x=(re_turns - mean(re_turns))/sd(re_turns))
+  x=(re_turns - mean(re_turns))/sd(re_turns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2725,7 +2839,7 @@ title(main="VTI logarithm of range",
       cex.main=1.3, line=-1)
 legend("topright", inset=0.05, 
   legend=c("density", "normal", "t-distr"),
-  lwd=2, lty=c(1, 1, 1), col=col_ors[2:4])
+  lwd=6, lty=1, col=col_ors[2:4], bty="n")
       @
   \end{columns}
 \end{block}

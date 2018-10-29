@@ -1,3 +1,9 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
@@ -57,7 +63,7 @@ mat_rix <- matrix(vec_tor, ncol=3)
 vec_tor
 which(vec_tor == 5)
 # equivalent but slower than above
-(1:length(vec_tor))[vec_tor == 5]
+(1:NROW(vec_tor))[vec_tor == 5]
 which(vec_tor > 5)
 # find indices of TRUE elements of Boolean matrix
 which((mat_rix == 5)|(mat_rix == 6),
@@ -482,12 +488,12 @@ list_vectors <- lapply(1:5, rnorm, n=10)
 mat_rix <- do.call(rbind, list_vectors)
 dim(mat_rix)
 do_call_rbind <- function(li_st) {
-  while (length(li_st) > 1) {
+  while (NROW(li_st) > 1) {
 # index of odd list elements
-    odd_index <- seq(from=1, to=length(li_st), by=2)
+    odd_index <- seq(from=1, to=NROW(li_st), by=2)
 # bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
-if (in_dex==length(li_st)) return(li_st[[in_dex]])
+if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
 rbind(li_st[[in_dex]], li_st[[in_dex+1]])
     })  # end lapply
   }  # end while

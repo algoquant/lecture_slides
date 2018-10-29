@@ -38,6 +38,9 @@ knit_theme$set(thm)
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -69,7 +72,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{March 5, 2018}
+\date{October 15, 2018}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -83,238 +86,88 @@ knit_theme$set(thm)
 \maketitle
 
 
+
 %%%%%%%%%%%%%%%
-\section{Recursive Data Objects}
+\section{Publishing Interactive Plots}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Lists}
+\subsection{Dynamic Documents Using \protect\emph{R markdown}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists are a type of vector that contain elements of different \emph{types},
+    \column{0.5\textwidth}
+      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{HTML},
       \vskip1ex
-      Lists are recursive object types, meaning each list element can contain other vectors or lists,
+      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them,
       \vskip1ex
-      The function \texttt{list()} creates a list from a list of vectors,
-      \vskip1ex
-      \texttt{list()} creates a named list from a list of symbol-value pairs,
-      \vskip1ex
-      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise,
-      \vskip1ex
-      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create a list with two elements
-list_var <- list(c('a', 'b'), 1:4)
-list_var
-c(typeof(list_var), mode(list_var), class(list_var))
-# lists are also vectors
-c(is.vector(list_var), is.list(list_var))
-length(list_var)
-# create named list
-list_var <- list(first=c('a', 'b'), second=1:4)
-list_var
-names(list_var)
-unlist(list_var)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists can be subset (indexed) using:
+      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing:
       \begin{itemize}
-        \item the \texttt{"["} operator (returns sublist),
-        \item the \texttt{"[["} operator (returns an element),
-        \item the \texttt{"\$"} operator (for named lists only),
+        \item A \emph{YAML} header,
+        \item Text in \emph{R Markdown} code format,
+        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
+        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code),
       \end{itemize}
-      \vskip1ex
-      Partial name matching allows subsetting with partial name, as long as it can be resolved,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-list_var[2]  # extract second element as sublist
-list_var[[2]]  # extract second element
-list_var[[2]][3]  # extract third element of second element
-list_var[[c(2, 3)]]  # third element of second element
-list_var$second  # extract second element
-list_var$s  # extract second element - partial name matching
-list_var$second[3]  # third element of second element
-list_var <- list()  # empty list
-list_var$a <- 1
-list_var[2] <- 2
-list_var
-names(list_var)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.list()} coerces vectors and other objects into lists,
-      \vskip1ex
-      \texttt{as.list()} returns a list with the same elements as the vector,
-      \vskip1ex
-      \texttt{list()} called on a vector returns a single element equal to the vector,
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.list(c(1,2,3))
-list(c(1,2,3))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Data Frames}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types},
-      \vskip1ex
-      Data frames can be thought of as lists of vectors of the same length,
-      \vskip1ex
-      The function \texttt{data.frame()} creates a \texttt{data frame} from vectors assigned to column names,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0)
-                    )  # end data.frame
-data_frame
-dim(data_frame)  # get dimension attribute
-colnames(data_frame)  # get the colnames attribute
-rownames(data_frame)  # get the rownames attribute
-class(data_frame)  # get object class
-typeof(data_frame)  # data frames are lists
-is.data.frame(data_frame)
-
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames can be subset in a similar way to lists and matrices,
-      \vskip1ex
-      Depending on how a data frame is subset, the result can be either a data frame or a vector,
-      \vskip1ex
-      Extracting a single column from a data frame produces a vector,
-      \vskip1ex
-      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"},
-      \vskip1ex
-      Extracting a single row from a data frame produces a data frame,
-      \vskip1ex
-      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame[, 3]  # extract third column as vector
-data_frame[[3]]  # extract third column as vector
-data_frame[3]  # extract third column as data frame
-data_frame[, 3, drop=FALSE]  # extract third column as data frame
-data_frame[[3]][2]  # second element from third column
-data_frame$price[2]  # second element from 'price' column
-is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[2, ]  # extract second row
-data_frame[2, ][3]  # third element from second column
-data_frame[2, 3]  # third element from second column
-unlist(data_frame[2, ])  # coerce to vector
-is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()},
-      \vskip1ex
-      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results,
-      \vskip1ex
-      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0),
-                      row.names=c('flower1', 'flower2', 'flower3'),
-                      stringsAsFactors=FALSE
-                    )  # end data.frame
-data_frame
-class(data_frame$type)  # get column class
-class(data_frame$price)  # get column class
-# set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
-options("stringsAsFactors")
-default.stringsAsFactors()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Exploring \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{str()} displays the structure of an \texttt{R} object,
-      \vskip1ex
-      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object,
+      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{HTML}, or \emph{MS Word} documents,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-str(data_frame)  # display the object structure
-dim(cars)  # the cars data frame has 50 rows
-head(cars, n=5)  # get first five rows
-tail(cars, n=5)  # get last five rows
-      @
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+---
+title: "My First R Markdown Document"
+author: Jerzy Pawlowski
+date: '`r format(Sys.time(), "%m/%d/%Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install package quantmod if it can't be loaded successfully
+if (!require("quantmod"))
+  install.packages("quantmod")
+```
+
+### R Markdown
+This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
+
+One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
+
+You can read more about publishing documents using *R* here:
+https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
+
+You can read more about using *R* to create *HTML* documents with interactive plots here:
+https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
+
+Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
+
+Example of an *R* code chunk:
+```{r cars}
+summary(cars)
+```
+
+### Plots in *R Markdown* documents
+
+Plots can also be embeded, for example:
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Math formulas in *R Markdown* documents
+Math formulas can also be embeded in *R Markdown* documents.
+
+For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
+Or display formulas (the Cauchy-Schwarz inequality):
+
+$$
+  \left( \sum_{k=1}^n a_k b_k \right)^2
+  \leq
+  \left( \sum_{k=1}^n a_k^2 \right)
+  \left( \sum_{k=1}^n b_k^2 \right)
+$$
+
+    \end{lstlisting}
   \end{columns}
 \end{block}
 
@@ -322,254 +175,58 @@ tail(cars, n=5)  # get last five rows
 
 
 %%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Sorting Vectors and \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{sort()} returns a vector sorted into ascending order,
-      \vskip1ex
-      A permutation is a re-ordering of the elements of a vector, 
-      \vskip1ex
-      The permutation index specifies how the elements are re-ordered in a permutation,
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order,
-      \vskip1ex
-      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the permutation index to sort the vector from ascending order into its unsorted (original) order,
-      \vskip1ex
-      So the permutation index produced by: \texttt{order(order())} is the reverse of the permutation index produced by: \texttt{order()},
-      \vskip1ex
-      \texttt{order()} can take several vectors as input, to break any ties,
-      \vskip1ex
-      Data frames can be sorted on any column,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create a named vector
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
-# sort the vector into ascending order
-sort(stu_dents)
-# calculate index to sort into ascending order
-order(stu_dents)
-# sort the vector into ascending order
-stu_dents[order(stu_dents)]
-# calculate the sorted (ordered) vector
-sort_ed <- stu_dents[order(stu_dents)]
-# calculate index to sort into unsorted (original) order
-order(order(stu_dents))
-sort_ed[order(order(stu_dents))]
-stu_dents
-# create a data frame of stu_dents and their ranks
-ra_nks <- c("first", "second", "third", "fourth", "fifth")
-data.frame(students=stu_dents, rank=ra_nks[order(order(stu_dents))])
-# permute data_frame of flowers on price column
-order(data_frame$price)
-# sort data_frame on price
-data_frame[order(data_frame$price), ]
-# sort data_frame on color
-data_frame[order(data_frame$color), ]
-order(c(2, 1:4))  # there's a tie
-order(c(2, 1:4), 1:5)  # there's a tie
-# read the Examples for sort()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.matrix()} coerces vectors and data frames into matrices,
-      \vskip1ex
-      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character},
-      \vskip1ex
-      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames,
-      \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames,
-      \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch,
-      \vskip1ex
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch,
-      \vskip1ex
-      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()},
-      \vskip1ex
-      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:3))>>=
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # colnames attribute
-library(microbenchmark)
-# call method instead of generic function
-as.data.frame.matrix(mat_rix)
-# a few methods for generic function as.data.frame()
-sample(methods(as.data.frame), size=4)
-# function method is faster than generic function
-summary(microbenchmark(
-  as_data_frame_matrix=
-    as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Matrices can be coerced into lists in at least two different ways,
-      \vskip1ex
-      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()},
-      \vskip1ex
-      Matrices can be directly coerced into a list using function \texttt{lapply()},
-      \vskip1ex
-      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function,
-    \column{0.5\textwidth}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# lapply is faster than coercion function
-summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
-           function(in_dex) mat_rix[, in_dex]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{iris} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{iris} data frame is included in the \texttt{datasets} base package,
-      \vskip1ex
-      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris,
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object,
-      \vskip1ex
-      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector,
-      \vskip1ex
-      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R},
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?iris  # get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # list of unique elements of iris
-class(unique(iris$Species))
-# find which columns of iris are numeric
-sapply(iris, is.numeric)
-# calculate means of iris columns
-sapply(iris, mean)  # returns NA for Species
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{mtcars} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles,
-      \vskip1ex
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?mtcars  # mtcars data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp	 Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # extract list of car cylinders
-sapply(mtcars, mean)  # calculate means of mtcars columns
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Cars93} Data Frame}
+\subsection{Interactive Charts Using Package \protect\emph{shiny}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles,
+      The package \emph{shiny} creates interactive plots that display the outputs of live models running in \texttt{R},
       \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly,
+      The function \texttt{inputPanel()} creates a panel for user input of model parameters,
       \vskip1ex
-      The parameter \texttt{breaks} is the number of cells of the histogram,
+      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R},
       \vskip1ex
-      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
-        <<Cars93_hist,fig.show='hide'>>=
-library(MASS)
-# ?Cars93  # get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # extract list of car types
-# sapply(Cars93, mean)  # calculate means of Cars93 columns
-# plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1",
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+      To create a shiny plot, you can first create an \texttt{.Rmd} file, embed the \emph{shiny} code in an \texttt{R} chunk, and then compile the \texttt{.Rmd} file into an \emph{HTML} document, using the \emph{knitr} package,
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# R startup chunk
+# ```{r setup, include=FALSE}
+library(shiny)
+library(quantmod)
+inter_val <- 31
+cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+# ```
+### end R startup chunk
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+    min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/Cars93_hist-1}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_shiny.pdf}
+      \vspace{-5em}
+      <<echo=TRUE,eval=FALSE>>=
+renderPlot({
+  # calculate EWMA prices
+  lamb_da <- input$lamb_da
+  weight_s <- exp(-lamb_da*1:inter_val)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+         inset=0.1, bg="white", lty=1, lwd=2,
+         col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot
+      @
   \end{columns}
 \end{block}
 
@@ -578,165 +235,110 @@ hist(Cars93$MPG.highway, col="lightblue1",
 
 
 %%%%%%%%%%%%%%%
-\section{Data Management and Analysis}
+\section{Credit Portfolio Models}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bad Data}
-\begin{frame}[fragile,t]{Types of \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Possible sources of bad data are: imported data, class coercion, numeric overflow,
-      \vskip1ex
-      Types of bad data:
-      \begin{itemize}
-        \item \texttt{NA} (not available) is a logical constant indicating missing data,
-        \item \texttt{NaN} means Not a Number data,
-        \item \texttt{Inf} means numeric overflow - divide by zero,
-      \end{itemize}
-      \vskip1ex
-      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error},
-      \vskip1ex
-      \texttt{NA} or \texttt{NaN} values are not \emph{errors},
-      \vskip1ex
-      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values,
-      \vskip1ex
-      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-as.numeric(c(1:3, "a"))  # NA from coercion
-0/0  # NaN from ambiguous math
-1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
-NA*1:4  # create vector of Nas
-# create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # delete the NA values
-sum(!is.na(da_ta))  # count non-NA values
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# airquality data has some NAs
-head(airquality)
-dim(airquality)
-# number of NAs
-sum(!complete.cases(airquality))
-# display rows containing NAs
-head(airquality[!complete.cases(airquality), ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Rows containing bad data may be either removed or replaced with an estimated value,
-      \vskip1ex
-      The function \texttt{na.locf()} from package \emph{zoo} replaces NAs with most recent non-NA prior to it,
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
-# create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
-# replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{NULL} Values}
+\subsection{Collateralized Debt Obligations (\protect\emph{CDOs})}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{NULL} represents a null object, and is a legitimate value, not bad data,
+      Collateralized Debt Obligations (cash \emph{CDOs}) are securities (bonds) collateralized by other debt assets.
       \vskip1ex
-      \texttt{NULL} is often returned by functions whose value is undefined,
+      The \emph{CDO} assets can be debt instruments like bonds, loans, and mortgages.
       \vskip1ex
-      \texttt{NULL} can also be used to initialize vectors,
+      The \emph{CDO} liabilities are \emph{CDO} tranches, which receive cashflows from the \emph{CDO} assets, and are exposed to their defaults.
       \vskip1ex
-      \texttt{NULL} is not the same as \texttt{NA} values or zero-length (empty) vectors,
+      \emph{CDO} tranches have an attachment point (subordination, i.e. the percentage of asset default losses at which the tranche starts absorbing those losses), and a detachment point when the tranche is wiped out (suffers \texttt{100\%} losses).
       \vskip1ex
-      The functions \texttt{numeric()} and \texttt{character()} return empty (zero-length) vectors of the specified \emph{type},
+      The \emph{equity tranche} is the most junior tranche, and is the first to absorb default losses.
       \vskip1ex
-      The function \texttt{is.null()} tests for \texttt{NULL} values,
+      The \emph{mezzanine tranches} are senior to the \emph{equity tranche} and absorb losses ony after the \emph{equity tranche} is wiped out.
       \vskip1ex
-      Very often variables are initialized to \texttt{NULL} before the start of iteration,
-      \vskip1ex
-      A more efficient way to perform iteration is by pre-allocating the vector,
+      The \emph{senior tranche} is the most senior tranche, and is the last to absorb losses.
     \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/CDO2.jpg}
+      \vskip1ex
+      \vskip1ex
+      \includegraphics[width=0.5\paperwidth]{figure/CDO.jpg}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CDO} Tranche Losses}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Single-tranche (synthetic) \emph{CDOs} are credit default swaps which reference credit portfolios.
+      \vskip1ex
+      The expected loss \emph{EL} on a \emph{CDO} tranche is: 
+      \begin{displaymath}
+        EL = \frac{1}{d - a} \int_{a}^{d} {(x-a) \, f(x) \, \mathrm{d}x} + \int_{d}^{\infty} {f(x) \, \mathrm{d}x}
+      \end{displaymath}
+      Where $f(x)$ is the density of portfolio losses, and \emph{a} and \emph{d} are the tranche attachment (subordination) and detachment points.
+      \vskip1ex
+      The difference $(d-a)$ is the tranche \emph{thickness}, so that $EL$ is the expected loss as a percentage of the tranche notional.
+      \vskip1ex
+      A single-tranche \emph{CDO} can be thought of as a short option spread on the asset defaults, struck at the attachment and detachment points.
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# NULL values have no mode or type
-c(mode(NULL), mode(NA))
-c(typeof(NULL), typeof(NA))
-c(length(NULL), length(NA))
-# check for NULL values
-is.null(NULL)
-# NULL values are ignored when combined into a vector
-c(1, 2, NULL, 4, 5)
-# But NA value isn't ignored
-c(1, 2, NA, 4, 5)
-# vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# initialize empty vector
-vec_tor <- numeric()
-# grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# allocate vector
-vec_tor <- numeric(5)
-# assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+# Define cumulative default probability function
+cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
+  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
+# Define Vasicek loss distribution density function 
+# (vectorized version with error handling for x)
+portf_loss <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
+  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
+}  # end portf_loss
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/cdo_tranche.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+def_prob <- 0.2; def_thresh <- qnorm(def_prob)
+rh_o <- 0.1; l_gd <- 0.4
+at_tach <- 0.15; de_tach <- 0.2
+# Expected tranche loss is sum of two terms
+tranche_loss <- 
+  # Loss between at_tach and de_tach
+  integrate(function(x, at_tach) (x-at_tach)*portf_loss(x, 
+      def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd), 
+      low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) + 
+  # Loss in excess of de_tach
+        (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
+# Plot probability distribution of losses
+curve(expr=portf_loss(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 3*l_gd*def_prob), 
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="CDO Tranche Losses")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+# Add lines for attach and detach
+abline(v=at_tach, col="blue", lwd=3)
+text(x=at_tach-0.001, y=4, labels="attach",
+       lwd=2, srt=90, pos=3)
+abline(v=de_tach, col="green", lwd=3)
+text(x=de_tach-0.001, y=4, labels="detach",
+       lwd=2, srt=90, pos=3)
+# Add shading for CDO tranche
+var_s <- seq(at_tach, de_tach, length=100)
+dens_ity <- sapply(var_s, portf_loss, 
+  def_thresh=def_thresh, rh_o=rh_o)
+# Draw shaded polygon
+polygon(c(at_tach, var_s, de_tach), density=20,
+  c(-1, dens_ity, -1), col="red", border=NA)
+text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
       @
   \end{columns}
 \end{block}
@@ -763,7 +365,7 @@ for (in_dex in 1:5)
       If the list contains a \texttt{NULL} element, that element is skipped,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # create list of vectors
 li_st <- lapply(1:3, function(x) sample(6))
 # bind list elements into matrix - doesn't work
@@ -816,12 +418,12 @@ list_vectors <- lapply(1:5, rnorm, n=10)
 mat_rix <- do.call(rbind, list_vectors)
 dim(mat_rix)
 do_call_rbind <- function(li_st) {
-  while (length(li_st) > 1) {
+  while (NROW(li_st) > 1) {
 # index of odd list elements
-    odd_index <- seq(from=1, to=length(li_st), by=2)
+    odd_index <- seq(from=1, to=NROW(li_st), by=2)
 # bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
-      if (in_dex==length(li_st)) return(li_st[[in_dex]])
+      if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
       rbind(li_st[[in_dex]], li_st[[in_dex+1]])
     })  # end lapply
   }  # end while
@@ -843,13 +445,13 @@ identical(mat_rix, do_call_rbind(list_vectors))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Filtering} means extracting rows from a data frame that satisfy a logical condition,
+      \emph{Filtering} means extracting rows from a \emph{data frame} that satisfy a logical condition,
       \vskip1ex
-      Data frames can be filtered using Boolean vectors and brackets \texttt{"[]"} operators,
+      \emph{Data frames} can be filtered using Boolean vectors and brackets \texttt{"[]"} operators,
       \vskip1ex
-      The function \texttt{subset()} filters data frames, by applying logical conditions to its columns, using the column names,
+      The function \texttt{subset()} filters \emph{data frames}, by applying logical conditions to its columns, using the column names,
       \vskip1ex
-      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using Boolean vectors and brackets \texttt{"[]"} operators,
+      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using \texttt{Boolean} vectors and brackets \texttt{"[]"} operators,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)), eval=FALSE>>=
@@ -881,7 +483,7 @@ times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       The list's \texttt{names} attribute is equal to the \texttt{factor} levels,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 unique(iris$Species)  # Species has three distinct values
 # split into separate data frames by hand
 set_osa <- iris[iris$Species=="setosa", ]
@@ -911,17 +513,19 @@ head(split_iris$setosa, 2)
     \column{0.5\textwidth}
       The \emph{split-apply-combine} procedure consists of:
       \begin{itemize}
-        \item dividing an object into a list, according to a factor (attribute),
-        \item applying a function to each list element,
-        \item combining the results,
+        \item dividing an object into a list, according to a factor (attribute).
+        \item applying a function to each list element.
+        \item combining the results.
       \end{itemize}
-      The \emph{split-apply-combine} procedure is similar to \emph{pivot tables} in Excel,
+      The \emph{split-apply-combine} procedure is also called the \emph{map-reduce} procedure, or simply \emph{data pivoting}, and it's similar to \emph{pivot tables} in \emph{Excel}.
       \vskip1ex
-      The \emph{split-apply-combine} procedure, by Hadley Wickham:\\
+      \emph{Data pivoting} can be performed \emph{data frames}, by aggregating its columns based on categorical data stored in one of its columns.
+      \vskip1ex
+      You can read more about the \emph{split-apply-combine} procedure in Hadley Wickham's paper:\\
       \url{http://www.jstatsoft.org/v40/i01/paper}
       \vskip1ex
     \column{0.5\textwidth}
-      \hskip1em\includegraphics[width=0.5\paperwidth]{image/splitapply.png}
+      \hskip1em\includegraphics[width=0.45\paperwidth]{figure/split_apply_combine_procedure.png}
   \end{columns}
 \end{block}
 
@@ -929,31 +533,53 @@ head(split_iris$setosa, 2)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{split-apply-combine} Procedure Example}
+\subsection{\protect\emph{Data Pivoting} Example}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{split-apply-combine} procedure can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()},
+      \emph{Data pivoting} can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()}.
       \vskip1ex
-      The \texttt{aggregate()} functional performs the \emph{split-apply-combine} procedure, by applying a function to groups of an object,
+      A \emph{data frame} can be \emph{pivoted} either by first splitting it into a list of \emph{data frames} and then aggregating, or by splitting just a single column and aggregating it.
       \vskip1ex
-      \texttt{aggregate()} returns a data frame containing the names of the groups,
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
+      \vskip1ex
+      The list's \texttt{names} attribute is equal to the \texttt{factor} levels.
+      \vskip1ex
+      The functional \texttt{aggregate()} \emph{pivots} the columns of a \emph{data frame}.
+      \vskip1ex
+      \texttt{aggregate()} can accept a \texttt{"formula"} argument with the column names, or it can accept \texttt{"x"} and \texttt{"by"} arguments with the columns.
+      \vskip1ex
+      \texttt{aggregate()} returns a \emph{data frame} containing the names of the groups (\texttt{factor} levels).
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 unique(mtcars$cyl)  # cyl has three unique values
+# split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
 # split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
-# mean mpg for each cylinder group
+# aggregate the mean mpg over split mtcars data frame
 sapply(split_cars, function(x) mean(x$mpg))
-# function aggregate() performs split-apply-combine
-aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(formula=(mpg ~ cyl), data=mtcars, 
+          FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg), 
+  by=list(cyl=mtcars$cyl), FUN=mean)
 # aggregate() all columns
-aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
       @
   \end{columns}
 \end{block}
@@ -968,22 +594,22 @@ aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \texttt{tapply()} functional is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array},
+      The functional \texttt{tapply()} is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array}.
       \vskip1ex
-      A \emph{jagged array} is a list consisting of elements which are vectors (or matrices) of different lengths,
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
       \vskip1ex
-      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"},
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
       \vskip1ex
-      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a jagged array, and then applies \texttt{"FUN"} to each element of the jagged array,
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
       \vskip1ex
-      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs the whole \emph{split-apply-combine} procedure in a single function call,
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
       \vskip1ex
-      The \texttt{by()} function is a wrapper for \texttt{tapply()},
+      The \texttt{by()} function is a wrapper for \texttt{tapply()}.
       \vskip1ex
       The \texttt{with()} function evaluates an expression in an environment constructed from the data,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
@@ -1006,24 +632,24 @@ with(mtcars,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{split-apply-combine} Returning Matrices Example}
+\subsection{\protect\emph{Data Pivoting} Returning a Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Sometimes the \emph{split-apply-combine} procedure returns a list of vectors,
+      Sometimes \emph{data pivoting} returns a list of vectors.
       \vskip1ex
-      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()},
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
       \vskip1ex
-     The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
       \vskip1ex
       \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
       \texttt{do.call(fun, list)=
       fun(list[[1]], list[[2]], \ldots)}
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
               function(x) {
@@ -1039,6 +665,157 @@ data_cars <- lapply(split_cars,  # now same using lapply
 is.list(data_cars)  # lapply produces a list
 # do.call flattens list into a matrix
 do.call(cbind, data_cars)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} of Panel Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{data frame} \texttt{panel\_data} contains fundamental financial data for \emph{S\&P500} stocks.
+      \vskip1ex
+      The \texttt{Industry} column has \texttt{22} unique elements, while the \texttt{Sector} column has \texttt{10} unique elements. 
+      \vskip1ex
+      Each \texttt{Industry} belongs to a single \texttt{Sector}, but each \texttt{Sector} may have several \texttt{Industries} that belong to it.
+      \vskip1ex
+      The functional \texttt{aggregate()} allows aggregating over the \texttt{Industry} column, by perforing \emph{data pivoting}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# Download CRSPpanel.txt from NYU Classes
+# Read the file using read.table() with header and sep arguments
+panel_data <- read.table(file="C:/Develop/R/lecture_slides/data/CRSPpanel.txt", 
+                         header=TRUE, sep="\t")
+# split panel_data based on Industry column
+split_panel <- split(panel_data, panel_data$Industry)
+# number of companies in each Industry
+sapply(split_panel, NROW)
+# number of Sectors that each Industry belongs to
+sapply(split_panel, function(x) {
+  NROW(unique(x$Sector))
+})  # end sapply
+# Or
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=unique)
+# Or
+with(panel_data, aggregate(x=Sector, 
+  by=list(Industry), FUN=unique))
+# Or
+with(panel_data, sapply(levels(Industry), 
+  function(x) {
+    Sector[match(x, Industry)]
+  }))  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Returning a \protect\emph{Jagged Array}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
+      \vskip1ex
+      The functional \texttt{aggregate()} returns a \emph{data frame}, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
+      \vskip1ex
+      The functional \texttt{tapply()} returns an array, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
+      \vskip1ex
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# split panel_data based on Sector column
+split_panel <- split(panel_data, panel_data$Sector)
+# number of companies in each Sector
+sapply(split_panel, NROW)
+# Industries belonging to each Sector (jagged array)
+sec_ind <- sapply(split_panel, 
+  function(x) unique(as.vector(x$Industry)))
+# Or use aggregate() (returns a data frame)
+sec_ind2 <- aggregate(formula=(Industry ~ Sector), 
+  data=panel_data, FUN=function(x) unique(as.vector(x)))
+# Or use aggregate() with "by" argument
+sec_ind2 <- with(panel_data, 
+  aggregate(x=Industry, by=list(Sector), 
+    FUN=function(x) as.vector(unique(x))))
+# coerce sec_ind2 into a jagged array
+name_s <- as.vector(sec_ind2[, 1])
+sec_ind2 <- sec_ind2[, 2]
+names(sec_ind2) <- name_s
+all.equal(sec_ind2, sec_ind)
+# Or use tapply() (returns an array)
+sec_ind2 <- with(panel_data, 
+  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
+# coerce sec_ind2 into a jagged array
+sec_ind2 <- drop(as.matrix(sec_ind2))
+all.equal(sec_ind2, sec_ind)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Over Multiple Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data pivoting} over multiple columns can be performed by splitting the \emph{data frame} and then performing an sapply() loop using an anonymous function.
+      \vskip1ex
+      Splitting the \emph{data frame} allows aggregations over multiple columns.
+      \vskip1ex
+      An anonymous function allows applying different aggregations on the same column.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# average ROE in each Industry
+with(panel_data, 
+  sapply(split(ROE, Industry), mean))
+# average, min, and max ROE in each Industry
+t(with(panel_data, 
+  sapply(split(ROE, Industry), 
+    FUN=function(x) 
+      c(mean=mean(x), max=max(x), min=min(x)))))
+# split panel_data based on Industry column
+split_panel <- split(panel_data, 
+  panel_data$Industry)
+# average ROE and EPS in each Industry
+t(sapply(split_panel, FUN=function(x) 
+  c(mean_roe=mean(x$ROE), 
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split panel_data based on Industry column
+split_panel <- 
+  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  panel_data$Industry)
+# average ROE and EPS in each Industry
+t(sapply(split_panel, 
+  FUN=function(x) sapply(x, mean)))
+# average ROE and EPS using aggregate()
+aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  by=list(panel_data$Industry), 
+  FUN=mean)
       @
   \end{columns}
 \end{block}
@@ -1074,7 +851,7 @@ do.call(cbind, data_cars)
       The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # ?options  # get info on global options
 getOption("warn")  # global option for "warn"
 options("warn")  # global option for "warn"
@@ -1127,7 +904,7 @@ sqrt_safe()
       The function \texttt{return()} returns its argument and terminates futher function execution,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # function vali_date validates its arguments
 vali_date <- function(in_put=NULL) {
 # check if argument is valid and return double
@@ -1177,7 +954,7 @@ vali_date()
       \texttt{cat()} statements inside the function body provide information about the state of its variables,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+            <<echo=TRUE,eval=FALSE>>=
 # vali_date() validates its arguments and assertions
 vali_date <- function(in_put) {
 # check if argument is valid and return double
@@ -1221,7 +998,7 @@ traceback()
       \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 vali_date <- function(in_put) {
 # check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
@@ -1261,7 +1038,7 @@ vali_date("a")
       \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error},
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # sum_two() returns the sum of its two arguments
 sum_two <- function(in_put1, in_put2) {  # even more robust
 # check if at least one argument is not missing
@@ -1317,7 +1094,7 @@ sum_two()
       The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<eval=FALSE>>=
+      <<eval=FALSE>>=
 # flag "vali_date" for debugging
 debug(vali_date)
 # calling "vali_date" starts debugger
@@ -1351,7 +1128,7 @@ undebug(vali_date)
       Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 vali_date <- function(in_put) {
   browser()  # pause and invoke browser
 # check argument using long form '&&' operator
@@ -1402,20 +1179,20 @@ options(error=NULL)  # set back to default "error" option
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{tryCatch()} can be used as a wrapper around functions or expressions, to handle conditions produced when they are evaluated,
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
       \vskip1ex
-      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument,
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
       \vskip1ex
-      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression,
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
       \vskip1ex
-      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition},
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
       \vskip1ex
-      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console,
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
       \vskip1ex
-      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument,
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 str(tryCatch)  # get arguments of tryCatch()
 tryCatch(  # without error handler
   {  # evaluate expressions
@@ -1524,44 +1301,53 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
 
 
 %%%%%%%%%%%%%%%
-\section{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+\section{Operators}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{quantmod} for Quantitative Financial Modeling}
+\subsection{The \texttt{assign()} Function}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{quantmod} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
       \vskip1ex
-      \emph{quantmod} uses time series objects of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
-      \begin{itemize}
-        \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
-        \item \texttt{getFinancials()} for downloading financial statements,
-        \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
-        \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
-        \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
-        \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
-      \end{itemize}
+      \texttt{assign()} can be used to either assign values to existing variables, or to create new variables,
+      \vskip1ex
+      \texttt{assign()} looks for the object name in the specified \emph{environment}, and assigns a value to it,
+      \vskip1ex
+      If \texttt{assign()} can't find the object name, then it creates it,
+      \vskip1ex
+      \texttt{assign()} expects a character string as its argument,
+      \vskip1ex
+      If a object name is passsed to \texttt{assign()}, then it evaluates that object to get the string it contains,
+      \vskip1ex
+      If the object doesn't contain a string, then \texttt{assign()} produces an error,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-# load package quantmod
-library(quantmod)
-# get documentation for package quantmod
-# get short description
-packageDescription("quantmod")
-# load help page
-help(package="quantmod")
-# list all datasets in "quantmod"
-data(package="quantmod")
-# list all objects in "quantmod"
-ls("package:quantmod")
-# remove quantmod from search path
-detach("package:quantmod")
+            <<echo=TRUE,eval=FALSE>>=
+my_var <- 1  # create new object
+assign(x="my_var", value=2)  # assign value to existing object
+my_var
+rm(my_var)  # remove my_var
+assign(x="my_var", value=3)  # create new object from name
+my_var
+# create new object in new environment
+new_env <- new.env()  # create new environment
+assign("my_var", 3, envir=new_env)  # assign value to name
+ls(new_env)  # list objects in "new_env"
+new_env$my_var
+rm(list=ls())  # delete all objects
+sym_bol <- "my_var"  # define symbol containing string "my_var"
+assign(sym_bol, 1)  # assign value to "my_var"
+ls()
+my_var
+assign("sym_bol", "new_var")
+assign(sym_bol, 1)  # assign value to "new_var"
+ls()
+sym_bol <- 10
+assign(sym_bol, 1)  # can't assign to non-string
       @
   \end{columns}
 \end{block}
@@ -1570,21 +1356,489 @@ detach("package:quantmod")
 
 
 %%%%%%%%%%%%%%%
-\subsection{ETF Dataset}
+\subsection{Applying \texttt{assign()} to Lists of Names}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      \texttt{assign()} allows creating new objects from lists or vectors of names (character strings), such as column names,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+rm(list=ls())  # delete all objects
+# create individual vectors from column names of EuStockMarkets
+for (col_name in colnames(EuStockMarkets)) {
+# assign column values to column names
+  assign(col_name, EuStockMarkets[, col_name])
+}  # end for
+ls()
+head(DAX)
+head(EuStockMarkets[, "DAX"])
+identical(DAX, EuStockMarkets[, "DAX"])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Retrieving Objects Using \texttt{get()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{get()} accepts a character string and returns the value of the corresponding object in a specified \emph{environment},
+      \vskip1ex
+      \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
+      \vskip1ex
+      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
+      \vskip1ex
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# create new environment
+test_env <- new.env()
+# pass string as name to create new object
+assign("my_var1", 2, envir=test_env)
+# create new object using $ string referencing
+test_env$my_var2 <- 1
+# list objects in new environment
+ls(test_env)
+# reference an object by name
+test_env$my_var1
+# reference an object by string name using get
+get("my_var1", envir=test_env)
+# retrieve and assign value to object
+assign("my_var1",
+       2*get("my_var1", envir=test_env),
+       envir=test_env)
+get("my_var1", envir=test_env)
+# return all objects in an environment
+mget(ls(test_env), envir=test_env)
+# delete environment
+rm(test_env)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Environments in \texttt{R}}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\secname}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
+      \vskip1ex
+      There are three system environments:
+      \begin{itemize}
+        \item \texttt{globalenv()} the user's workspace,
+        \item \texttt{baseenv()} the environment of the base package,
+        \item \texttt{emptyenv()} the only environment without an enclosure,
+      \end{itemize}
+      Environments form a tree structure of successive enclosures, with the empty environment at its root,
+      \vskip1ex
+      Packages have their own environments,
+      \vskip1ex
+      The enclosure of the base package is the empty environment,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+rm(list=ls())
+# get base environment
+baseenv()
+# get global environment
+globalenv()
+# get current environment
+environment()
+# get environment class
+class(environment())
+# define variable in current environment
+glob_var <- 1
+# get objects in current environment
+ls(environment())
+# create new environment
+new_env <- new.env()
+# get calling environment of new environment
+parent.env(new_env)
+# assign Value to Name
+assign("new_var1", 3, envir=new_env)
+# create object in new environment
+new_env$new_var2 <- 11
+# get objects in new environment
+ls(new_env)
+# get objects in current environment
+ls(environment())
+# environments are subset like lists
+new_env$new_var1
+# environments are subset like lists
+new_env[["new_var1"]]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Search Path}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} evaluates variables using the search path, a series of environments:
+      \begin{itemize}
+        \item global environment,
+        \item package environments,
+        \item base environment,
+      \end{itemize}
+      The function \texttt{search()} returns the search path for \texttt{R} objects,
+      \vskip1ex
+      The function \texttt{attach()} attaches objects to the search path,
+      \vskip1ex
+      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
+      \vskip1ex
+      The function \texttt{detach()} detaches objects from the search path,
+      \vskip1ex
+      The function \texttt{find()} finds where objects are located on the search path,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=TRUE>>=
+search()  # get search path for R objects
+my_list <- 
+  list(flowers=c("rose", "daisy", "tulip"), 
+       trees=c("pine", "oak", "maple"))
+my_list$trees
+attach(my_list)
+trees
+search()  # get search path for R objects
+detach(my_list)
+head(trees)  # "trees" is in datasets base package
+      @
+      \begin{block}{\color{red}{Rule of Thumb}}
+        Be very careful with using \texttt{attach()},
+        \vskip1ex
+        Make sure to \texttt{detach()} objects once they're not needed,
+      \end{block}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Extracting Time Series from Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
+      \vskip1ex
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load package HighFreq
+# ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# extract and merge all data, subset by sym_bols
+price_s <- rutils::do_call(cbind, # do.call(merge
+  as.list(rutils::etf_env)[sym_bols])
+# extract and merge adjusted prices, subset by sym_bols
+price_s <- rutils::do_call(cbind, 
+  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
+# same, but works only for OHLC series
+price_s <- rutils::do_call(cbind, 
+  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
+# drop ".Adjusted" from colnames
+colnames(price_s) <- 
+  sapply(colnames(price_s), 
+    function(col_name) 
+      strsplit(col_name, split="[.]")[[1]])[1, ]
+tail(price_s[, 1:2], 3)
+# which objects in global environment are class xts?
+unlist(eapply(globalenv(), is.xts))
+
+# save xts to csv file
+write.zoo(price_s, 
+     file='etf_series.csv', sep=",")
+# copy price_s into etf_env and save to .RData file
+assign("price_s", price_s, envir=etf_env)
+save(etf_env, file='etf_data.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Referencing Object Components Using \texttt{with()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{with()} evaluates an expression in an environment constructed from the data, 
+      \vskip1ex
+      \texttt{with()} allows referencing object components by their names alone,
+      \vskip1ex
+      It's often better to use \texttt{with()} instead of \texttt{attach()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<eval=TRUE>>=
+# "trees" is in datasets base package
+head(trees, 3)
+colnames(trees)
+mean(Girth)
+mean(trees$Girth)
+with(trees, 
+     c(mean(Girth), mean(Height), mean(Volume)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\section{Downloading Time Series Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{ts} Time Series Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{get.hist.quote()} can download daily historical data in \emph{ts} format using the argument \texttt{"retclass="ts"},
+      \vskip1ex
+      \texttt{get.hist.quote()} returns a \emph{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates,
+      \vskip1ex
+      The \emph{ts} contains \texttt{NA} values for weekends and holidays,
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # Load package tseries
+# Download MSFT data in ts format
+ts_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    retclass="ts",
+    quote=c("Open","High","Low","Close",
+            "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
+      @
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+# Calculate price adjustment vector
+adj_vector <-
+  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
+# Adjust OHLC prices
+ts_stx_adj <- ts_stx
+ts_stx_adj[, c("Open","High","Low","Close")] <-
+  adj_vector * ts_stx[, c("Open","High","Low","Close")]
+# Inspect the data
+tsp(ts_stx_adj)  # frequency=1
+head(time(ts_stx_adj))
+head(ts_stx_adj)
+tail(ts_stx_adj)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{zoo} Time Series Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The function \texttt{get.hist.quote()} downloads historical data from online sources,
+      \vskip1ex
+      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
+      \vskip1ex
+      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
+      \vskip1ex
+      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
+      \vskip1ex
+      The \texttt{"AdjClose"} data field is for the \emph{close} price adjusted for stock splits and dividends,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # Load package tseries
+# Download MSFT data
+zoo_stx <- suppressWarnings(
+  get.hist.quote(
+    instrument="MSFT",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    quote=c("Open","High","Low","Close",
+            "AdjClose","Volume"),
+    origin="1970-01-01")
+)  # end suppressWarnings
+      @
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+class(zoo_stx)
+dim(zoo_stx)
+head(zoo_stx, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adjusting \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Stock prices experience jumps due to stock splits and dividends,
+      \vskip1ex
+      \emph{Adjusted} stock prices are stock prices that have been adjusted so they don't have jumps,
+      \vskip1ex
+      \emph{OHLC} data can be adjusted for stock splits and dividends,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(tseries)  # Load package tseries
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+# Calculate price adjustment vector
+adj_vector <-
+  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
+head(adj_vector, 5)
+tail(adj_vector, 5)
+# Adjust OHLC prices
+zoo_stx_adj <- zoo_stx
+zoo_stx_adj[, c("Open","High","Low","Close")] <-
+  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
+head(zoo_stx_adj)
+tail(zoo_stx_adj)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Data From \protect\emph{Oanda} Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Oanda} is a foreign exchange broker that also provides free historical currency rates data.
+      \vskip1ex
+      The function \texttt{get.hist.quote()} downloads historical data from online sources.
+      \vskip1ex
+      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")}.
+      \vskip1ex
+      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")}.
+      \vskip1ex
+      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")}.
+      \vskip1ex
+      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # Load package tseries
+# Download EUR/USD data
+zoo_eurusd <- suppressWarnings(
+  get.hist.quote(
+    instrument="EUR/USD",
+    provider="oanda",
+    start=Sys.Date()-3*365,
+    end=Sys.Date(),
+    origin="1970-01-01")
+)  # end suppressWarnings
+# bind and scrub data
+zoo_stxeur <- cbind(zoo_eurusd,
+                     zoo_stx[, "AdjClose"])
+colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
+zoo_stxeur <-
+  zoo_stxeur[complete.cases(zoo_stxeur),]
+save(zoo_stx, zoo_stx_adj,
+     ts_stx, ts_stx_adj,
+     zoo_eurusd, zoo_stxeur,
+     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+      @
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+# Inspect the data
+class(zoo_eurusd)
+tail(zoo_eurusd, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{ETF Portfolio for Investment Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We will define a portfolio of \emph{ETFs} for illustrating various investment strategies.
+      \vskip1ex
+      The portfolio contains \emph{ETFs} representing different \emph{investment styles} (value, growth, size), and \emph{industry sectors} (energy, financial, etc.)
+      \vskip1ex
+      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds}.
+      \vskip1ex
+      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
+      \vskip1ex
+      \emph{IWB} is the Russell 1000 small-cap fund.
+      \vskip1ex
+      The portfolio also contains the \emph{VXX} and \emph{SVXY} \emph{VIX} volatility funds.
+    \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=(-(1:1)),eval=TRUE>>=
 library(xtable)
-# ETF symbols for asset allocation
+# Define ETF symbols for asset allocation
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "VXX", "XLY", "XLP", "XLE", "XLF",
-  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM",
-  "IVW", "IWB", "IWD", "IWF")
-# read etf database into data frame
+  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
+  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
+  "IWB", "IWD", "IWF", "VXX", "SVXY")
+# Read etf database into data frame
 etf_list <- read.csv(
   file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
                stringsAsFactors=FALSE)
@@ -1596,7 +1850,7 @@ etf_names <- sapply(etf_list$Name,
                     function(name) {
   name_split <- strsplit(name, split=" ")[[1]]
   name_split <-
-    name_split[c(-1, -length(name_split))]
+    name_split[c(-1, -NROW(name_split))]
   name_match <- match("Select", name_split)
   if (!is.na(name_match))
     name_split <- name_split[-name_match]
@@ -1605,23 +1859,8 @@ etf_names <- sapply(etf_list$Name,
 etf_list$Name <- etf_names
 etf_list["IEF", "Name"] <- "Treasury Bond Fund"
 etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etf_list["SVXY", "Name"] <- "Short VIX Futures"
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=FALSE,size="tiny">>=
-etf_list[c(1, 2)]
-      @
-      <<eval=TRUE,results='asis',echo=FALSE>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
-      \vspace{-1em}
-      ETFs with names \emph{X*} represent industry sector funds,
-      \vskip1ex
-      ETFs with names \emph{I*} represent style funds (value, growth),
-      \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund,
-      \vskip1ex
-      \emph{VXX} is the VIX volatility fund,
   \end{columns}
 \end{block}
 
@@ -1629,7 +1868,90 @@ print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data Using Package \protect\emph{quantmod}}
+\subsection{ETF and ETN Mechanics}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ETNs} are similar to \emph{ETFs}, with the main difference that \emph{ETFs} are equity shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
+      \vskip1ex
+      \emph{ETNs} don't own the underlying assets and have additional counterparty credit risk to the \emph{ETN} issuer.
+      \vskip1ex
+      \emph{DBC} is a commodity \emph{ETF}, providing the return on an index of 14 commodity futures. 
+      \vskip1ex
+      There are several exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}) which are linked to \emph{VIX} futures, providing an easy way to invest in \emph{VIX} futures.
+      \vskip1ex
+      \emph{VXX} is an \emph{ETN} providing the total return of a \emph{long VIX} futures contract (specifically the \emph{S\&P} VIX Short-Term Futures Index).
+      \vskip1ex
+      \emph{SVXY} is an \emph{ETF} providing the total return of a \emph{short VIX} futures contract.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=FALSE,eval=TRUE,results='asis'>>=
+print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+      @
+      Standard and Poor's provides a document explaining the calculation of the total return on \emph{VIX} futures indices:\\
+      \hskip1em\href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Stock Prices Using \protect\emph{tseries}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Data for multiple symbols can be downloaded in an \texttt{lapply()} loop, which calls the function \texttt{tseries::get.hist.quote}.
+      \vskip1ex
+      If the body of an \texttt{apply()} loop returns a \emph{zoo} or \emph{xts} series, then the loop will produce an error, because \texttt{apply()} attempts to coerce its output into a vector or matrix.
+      \vskip1ex
+      So \texttt{lapply()} should be used instead of \texttt{apply()}.
+      \vskip1ex
+      The functional \texttt{lapply()} applies a function to a list of objects and returns a list of objects.
+      \vskip1ex
+      The list of \emph{zoo} series can be flattened into a single \emph{zoo} series using functions \texttt{do.call()} and \texttt{cbind()}.
+      \vskip1ex
+      The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
+      \vskip1ex
+      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(tseries)  # Load package tseries
+# Download price and volume data for sym_bols into list of zoo objects
+zoo_series <- suppressWarnings(
+  lapply(sym_bols, # Loop for loading data
+         get.hist.quote,
+         quote=c("AdjClose", "Volume"),
+         start=Sys.Date()-3650,
+         end=Sys.Date(),
+         origin="1970-01-01")  # end lapply
+)  # end suppressWarnings
+# flatten list of zoo objects into a single zoo object
+zoo_series <- rutils::do_call(cbind, zoo_series)
+# Or
+# zoo_series <- do.call(cbind, zoo_series)
+# Assign names in format "symbol.Close", "symbol.Volume"
+names(zoo_series) <-
+  as.vector(sapply(sym_bols,
+    paste, c("Close", "Volume"), sep="."))
+# save zoo_series to a comma-separated CSV file
+write.zoo(zoo_series, file='zoo_series.csv', sep=",")
+# save zoo_series to a binary .RData file
+save(zoo_series, file='zoo_series.RData')
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Stock Prices Using Package \protect\emph{quantmod}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1653,25 +1975,25 @@ print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # load package quantmod
-env_etf <- new.env()  # new environment for data
-# download data for sym_bols into env_etf from Alpha Vantage
-getSymbols.av(sym_bols, adjust=TRUE, env=env_etf, 
+library(HighFreq)  # Load package HighFreq
+etf_env <- new.env()  # new environment for data
+# Download data for sym_bols into etf_env from Alpha Vantage
+getSymbols.av(sym_bols, adjust=TRUE, env=etf_env, 
   output.size="full", api.key="T7JPW54ES8G75310")
-# getSymbols(sym_bols, env=env_etf, adjust=TRUE, from="2005-01-03")
+# getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
       @
       \vspace{-2em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-ls(env_etf)  # list files in env_etf
-# get class of object in env_etf
-class(get(x=sym_bols[1], envir=env_etf))
-# another way
-class(env_etf$VTI)
-colnames(env_etf$VTI)
-head(env_etf$VTI, 3)
-# get class of all objects in env_etf
-eapply(env_etf, class)
+library(HighFreq)  # Load package HighFreq
+ls(etf_env)  # List files in etf_env
+# get class of object in etf_env
+class(get(x=sym_bols[1], envir=etf_env))
+# Another way
+class(etf_env$VTI)
+colnames(etf_env$VTI)
+head(etf_env$VTI, 3)
+# get class of all objects in etf_env
+eapply(etf_env, class)
 # get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
       @
@@ -1687,7 +2009,7 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
       \vskip1ex
       The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices,
@@ -1699,28 +2021,28 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
       The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
       \vskip1ex
       If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# check of object is an OHLC time series
-is.OHLC(env_etf$VTI)
-# adjust single OHLC object using its name
-env_etf$VTI <- adjustOHLC(env_etf$VTI,
-                           use.Adjusted=TRUE)
+library(HighFreq)  # Load package HighFreq
+# Check of object is an OHLC time series
+is.OHLC(etf_env$VTI)
+# Adjust single OHLC object using its name
+etf_env$VTI <- adjustOHLC(etf_env$VTI,
+                          use.Adjusted=TRUE)
 
-# adjust OHLC object using string as name
+# Adjust OHLC object using string as name
 assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=env_etf),
+    get(x=sym_bols[1], envir=etf_env),
     use.Adjusted=TRUE),
-  envir=env_etf)
+  envir=etf_env)
 
-# adjust objects in environment using vector of strings
-for (sym_bol in sym_bols) {
+# Adjust objects in environment using vector of strings
+for (sym_bol in ls(etf_env)) {
   assign(sym_bol,
-         adjustOHLC(get(sym_bol, envir=env_etf),
+         adjustOHLC(get(sym_bol, envir=etf_env),
                     use.Adjusted=TRUE),
-         envir=env_etf)
+         envir=etf_env)
 }  # end for
       @
   \end{columns}
@@ -1736,6 +2058,8 @@ for (sym_bol in sym_bols) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
+      \vskip1ex
       Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
       \vskip1ex
       A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
@@ -1746,39 +2070,38 @@ for (sym_bol in sym_bols) {
       \vskip1ex
       The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory, 
       \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)  # load package quantmod
-# extract and merge all data, subset by symbols
-price_s <- do.call(merge,
-  as.list(env_etf)[sym_bols])
-# or
+library(HighFreq)  # Load package HighFreq
+# extract and cbind all data, subset by symbols
 price_s <- rutils::do_call(cbind,
-  as.list(env_etf)[sym_bols])
-# extract and merge adjusted prices, subset by symbols
+  as.list(etf_env)[sym_bols])
+# Or
+# price_s <- do.call(cbind,
+#   as.list(etf_env)[sym_bols])
+# extract and cbind adjusted prices, subset by symbols
 price_s <- rutils::do_call(cbind,
-  lapply(as.list(env_etf)[sym_bols], Ad))
+  lapply(as.list(etf_env)[sym_bols], Ad))
 # same, but works only for OHLC series
 price_s <- rutils::do_call(cbind, 
-  eapply(env_etf, Ad)[sym_bols])
-# drop ".Adjusted" from colnames
+  eapply(etf_env, Ad)[sym_bols])
+# Drop ".Adjusted" from colnames
 colnames(price_s) <-
   sapply(colnames(price_s),
     function(col_name)
-      strsplit(col_name, split="[.]")[[1]])[1, ]
+      strsplit(col_name, split="[.]")[[1]], 
+    USE.NAMES=FALSE)[1, ]
 tail(price_s[, 1:2], 3)
 # which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # save xts to csv file
 write.zoo(price_s,
   file='etf_series.csv', sep=",")
-# copy price_s into env_etf and save to .RData file
-assign("price_s", price_s, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# Copy price_s into etf_env and save to .RData file
+assign("price_s", price_s, envir=etf_env)
+save(etf_env, file='etf_data.RData')
       @
   \end{columns}
 \end{block}
@@ -1787,42 +2110,46 @@ save(env_etf, file='etf_data.RData')
 
 
 %%%%%%%%%%%%%%%
-\subsection{Calculating Returns from Adjusted Prices}
+\subsection{Calculating Percentage Returns from Adjusted Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-library(quantmod)
-# remove rows with NA values
-# price_s <- env_etf$price_s[complete.cases(env_etf$price_s)]
-# colnames(price_s)
-# calculate returns from adjusted prices
-re_turns <- lapply(env_etf$price_s, function(x_ts) {
-# dailyReturn returns single xts with bad colname
-  daily_return <- dailyReturn(x_ts)
-  colnames(daily_return) <- names(x_ts)
-  daily_return
+      The function \texttt{quantmod::dailyReturn()} calculates the percentage daily returns from the adjusted prices.
+      \vskip1ex
+      The \texttt{lapply()} and \texttt{sapply()} functionals perform a loop over the columns of \emph{zoo} and \emph{xts} series.
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# extract VTI prices
+vt_i <- etf_env$price_s[ ,"VTI"]
+vt_i <- na.omit(vt_i)
+# Calculate percentage returns "by hand"
+vti_lag <- as.numeric(vt_i)
+vti_lag <- c(vti_lag[1], vti_lag[-NROW(vti_lag)])
+vti_lag <- xts(vti_lag, index(vt_i))
+vti_returns <- (vt_i-vti_lag)/vti_lag
+# Calculate percentage returns using dailyReturn()
+daily_returns <- quantmod::dailyReturn(vt_i)
+head(cbind(daily_returns, vti_returns))
+all.equal(daily_returns, vti_returns, check.attributes=FALSE)
+# Calculate returns for all prices in etf_env$price_s
+re_turns <- lapply(etf_env$price_s, function(x_ts) {
+  daily_returns <- quantmod::dailyReturn(x_ts)
+  colnames(daily_returns) <- names(x_ts)
+  daily_returns
 })  # end lapply
-
 # "re_turns" is a list of xts
 class(re_turns)
 class(re_turns[[1]])
-
 # flatten list of xts into a single xts
 re_turns <- rutils::do_call(cbind, re_turns)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
 class(re_turns)
 dim(re_turns)
-head(re_turns[, 1:3])
-# copy re_turns into env_etf and save to .RData file
-assign("re_turns", re_turns, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# Copy re_turns into etf_env and save to .RData file
+assign("re_turns", re_turns, envir=etf_env)
+save(etf_env, file='etf_data.RData')
       @
   \end{columns}
 \end{block}
@@ -1848,26 +2175,26 @@ save(env_etf, file='etf_data.RData')
 library(quantmod)
 start_date <- "2012-05-10"; end_date <- "2013-11-20"
 # subset all objects in environment and return as environment
-new_env <- as.environment(eapply(env_etf, "[",
+new_env <- as.environment(eapply(etf_env, "[",
                   paste(start_date, end_date, sep="/")))
 # subset only sym_bols in environment and return as environment
 new_env <- as.environment(
-  lapply(as.list(env_etf)[sym_bols], "[",
+  lapply(as.list(etf_env)[sym_bols], "[",
          paste(start_date, end_date, sep="/")))
-# extract and merge adjusted prices and return to environment
-assign("price_s", do.call(merge,
-               lapply(ls(env_etf), function(sym_bol) {
-                 x_ts <- Ad(get(sym_bol, env_etf))
+# extract and cbind adjusted prices and return to environment
+assign("price_s", rutils::do_call(cbind,
+               lapply(ls(etf_env), function(sym_bol) {
+                 x_ts <- Ad(get(sym_bol, etf_env))
                  colnames(x_ts) <- sym_bol
                  x_ts
                })), envir=new_env)
-# get sizes of OHLC xts series in env_etf
-sapply(mget(sym_bols, envir=env_etf), object.size)
-# extract and merge adjusted prices and return to environment
+# get sizes of OHLC xts series in etf_env
+sapply(mget(sym_bols, envir=etf_env), object.size)
+# extract and cbind adjusted prices and return to environment
 col_name <- function(x_ts)
   strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", do.call(merge,
-               lapply(mget(env_etf$sym_bols, envir=env_etf),
+assign("price_s", rutils::do_call(cbind,
+               lapply(mget(etf_env$sym_bols, envir=etf_env),
                       function(x_ts) {
                         x_ts <- Ad(x_ts)
                         colnames(x_ts) <- col_name(x_ts)
@@ -1881,46 +2208,57 @@ assign("price_s", do.call(merge,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plotting Time Series Using \texttt{chart\_Series()}}
+\subsection{Downloading Stock Time Series From \protect\emph{Tiingo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} from package \emph{quantmod} is an improved version of \texttt{chartSeries()}, with better aesthetics,
+    \column{0.4\textwidth}
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package in \texttt{R}, so that standard plotting functions can be used in conjunction with \texttt{chart\_Series()},
-      <<chart_Series_shaded,echo=(-(1:9)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
-library(quantmod)
-library(TTR)
-oh_lc <- rutils::env_etf$VTI
-VTI_adj <- Ad(oh_lc)
-VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
-VTI_adj <- VTI_adj["2009-02/2009-03"]
-oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
-# OHLC candlechart VWAP in main plot,
-chart_Series(x=oh_lc, # volume in extra panel
-             TA="add_Vo(); add_TA(VTI_vwap, on=1)",
-             name="VTI plus VWAP shaded")
-# add price minus VWAP in extra panel
-add_TA(VTI_adj-VTI_vwap, col='red')
-# add background shading of areas
-add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
-      col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
-      col="lightgrey", border="lightgrey")
-# add vertical and horizontal lines
-abline(v=which.min(VTI_vwap), col='red')
-abline(h=min(VTI_vwap), col='red')
+      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
+      \vskip1ex
+      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
+      \vskip1ex
+      Users must first obtain an \emph{Tiingo} API key, and then pass it in \texttt{getSymbols.tiingo()} calls:\\
+      https://www.tiingo.com/
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+# Load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+sym_bols <- sp_500$co_tic
+# Get duplicate sym_bols
+ta_ble <- table(sym_bols)
+ta_ble[ta_ble>1]
+sym_bols <- unique(sym_bols)
+# Remove "BRK.B" and later download separately
+sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
+env_sp500 <- new.env()  # new environment for data
+# Download in while loop from Tiingo and copy into environment
+down_loaded <- sym_bols %in% ls(env_sp500)
+it_er <- 0
+while (((sum(!down_loaded)) > 0) & (it_er<10)) {
+  # Boolean vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  # Download data and copy it into environment
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("processing: ", sym_bol, "\n")
+    tryCatch(  # with error handler
+      getSymbols(sym_bol, src="tiingo", adjust=TRUE, 
+        from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+      # error handler captures error condition
+      error=function(error_cond) {
+        print(paste("error handler: ", error_cond))
+      },  # end error handler
+      finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  it_er <- it_er + 1
+  Sys.sleep(2*60)
+}  # end while
       @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_shaded}\\
-      \texttt{chart\_Series()} also has its own functions for adding indicators: \texttt{add\_TA()}, \texttt{add\_BBands()}, etc.
-      \vskip1ex
-      Note that functions associated with \texttt{chart\_Series()} contain an underscore in their name,
   \end{columns}
 \end{block}
 
@@ -1928,43 +2266,111 @@ abline(h=min(VTI_vwap), col='red')
 
 
 %%%%%%%%%%%%%%%
-\subsection{Plot and Theme Objects of \texttt{chart\_Series()}}
+\subsection{Managing Stock Symbols and Adjusting \protect\emph{OHLC} Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{chart\_Series()} creates a \emph{plot object} and returns it \emph{invisibly},
+      The column names for symbol \texttt{"LOW"} (Lowe's company) must be renamed for the extractor (accessor) function \texttt{Lo()} to work properly.
       \vskip1ex
-      A \emph{plot object} is an environment of class \emph{replot}, containing parameters specifying a plot,
-      \vskip1ex
-      A plot can be rendered by calling, plotting, or printing the \emph{plot object},
-      \vskip1ex
-      A plot \emph{theme object} is a list containing parameters that determine the plot appearance (colors, size, fonts),
-      \vskip1ex
-      The function \texttt{chart\_theme()} returns the \emph{theme object},
-      \vskip1ex
-      \texttt{chart\_Series()} plots can be modified by modifying \emph{plot objects} or \emph{theme objects},
-      \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions,
-      \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
+      The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
+      <<echo=TRUE,eval=FALSE>>=
+# Rename "LOW" colnames to "LO_WES"
+colnames(env_sp500$LOW) <- 
+  sapply(colnames(env_sp500$LOW),
+    function(col_name) {
+      col_name <- strsplit(col_name, split="[.]")[[1]]
+      paste("LO_WES", col_name[2], sep=".")
+    })
+env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
+rm(LOW, envir=env_sp500)
+# Download "BRK.B" separately
+BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
+colnames(BRK_B) <- paste("BRK_B", sapply(strsplit(colnames(BRK_B), split="[.]"), function(x) x[2]), sep=".")
+env_sp500$BRK_B <- BRK_B
+# Rename "BF-B" colnames to "BF_B"
+colnames(env_sp500$"BF-B") <- 
+  sapply(colnames(env_sp500$"BF-B"),
+    function(col_name) {
+      col_name <- strsplit(col_name, split="[.]")[[1]]
+      paste("BF_B", col_name[2], sep=".")
+    })
+env_sp500$BF_B <- env_sp500$"BF-B"
+names(colnames(env_sp500$BF_B)) <- NULL
+rm("BF-B", envir=env_sp500)
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2009-02/2009-03"]
-# extract plot object
-ch_ob <- chart_Series(x=oh_lc, plot=FALSE)
-class(ch_ob)
-ls(ch_ob)
-class(ch_ob$get_ylim)
-class(ch_ob$set_ylim)
-# ls(ch_ob$Env)
-class(ch_ob$Env$actions)
-plot_theme <- chart_theme()
-class(plot_theme)
-ls(plot_theme)
+      \includegraphics[width=0.5\paperwidth]{figure/lowes_stock.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce the time indices from class POSIXct to class Date
+for (sym_bol in ls(env_sp500)) {
+  x_ts <- get(sym_bol, envir=env_sp500)
+  index(x_ts) <- as.Date(index(x_ts))
+  assign(sym_bol, x_ts, envir=env_sp500)
+}  # end for
+save(env_sp500, 
+  file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$LO_WES["2017-06/"], 
+  TA="add_Vo()", name="LOWES stock")
+      @
+
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Stock Time Series From \protect\emph{Alpha Vantage}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \vskip1ex
+      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
+      \vskip1ex
+      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()}.
+      \vskip1ex
+      Users must first obtain an \emph{Alpha Vantage} API key, and then pass it in \texttt{getSymbols.av()} calls:\\
+      https://www.alphavantage.co/
+    \column{0.6\textwidth}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Remove all files from environment(if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Download in while loop from Alpha Vantage and copy into environment
+down_loaded <- sym_bols %in% ls(env_sp500)
+it_er <- 0
+while (((sum(!down_loaded)) > 0) & (it_er<10)) {
+  # Boolean vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  # Download data and copy it into environment
+  for (sym_bol in sym_bols[!down_loaded]) {
+    cat("processing: ", sym_bol, "\n")
+    tryCatch(  # with error handler
+      getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500, 
+                 output.size="full", api.key="T7JPW54ES8G75310"),
+      # error handler captures error condition
+      error=function(error_cond) {
+        print(paste("error handler: ", error_cond))
+      },  # end error handler
+      finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  it_er <- it_er + 1
+  Sys.sleep(2*60)
+}  # end while
+# Adjust all OHLC prices in environment
+for (sym_bol in ls(env_sp500)) {
+  assign(sym_bol, 
+    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE), 
+    envir=env_sp500)
+}  # end for
       @
   \end{columns}
 \end{block}
@@ -1973,123 +2379,214 @@ ls(plot_theme)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Customizing \texttt{chart\_Series()} Plots}
+\subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots can be customized by modifying the plot and theme objects,
+      The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization,
       \vskip1ex
-      Plot and theme objects can be modified directly, or by using accessor and setter functions,
+      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}),
       \vskip1ex
-      A plot is rendered by calling, plotting, or printing the plot object,
+      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
       \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows modifying \emph{plot objects},
-      <<chart_Series_custom_axis,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.height=4,fig.show='hide'>>=
-library(quantmod)
-oh_lc <- rutils::env_etf$VTI["2010-04/2010-05"]
-# extract, modify theme, format tick marks "%b %d"
-plot_theme <- chart_theme()
-plot_theme$format.labels <- "%b %d"
-# create plot object
-ch_ob <- chart_Series(x=oh_lc,
-                      theme=plot_theme, plot=FALSE)
-# extract ylim using accessor function
-y_lim <- ch_ob$get_ylim()
-y_lim[[2]] <- structure(
-  range(Ad(oh_lc)) + c(-1, 1),
-  fixed=TRUE)
-# modify plot object to reduce y-axis range
-ch_ob$set_ylim(y_lim)  # use setter function
-# render the plot
-plot(ch_ob)
-      @
+      For example, the symbol \emph{\textasciicircum{}GSPC} for the \emph{S\&P500} stock market index isn't a valid name in \texttt{R},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
+      \vskip1ex
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices,
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_custom_axis-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \texttt{chart\_Series()} in Multiple Panels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{chart\_Series()} plots are compatible with the base \texttt{graphics} package, allowing easy plotting in multiple panels,
-      \vskip1ex
-      The parameter \texttt{"plot=FALSE"} suppresses plotting and allows adding extra plot elements,
+      \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)
-# calculate VTI and XLF volume-weighted average price
-VTI_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$VTI),
-            volume=Vo(rutils::env_etf$VTI), n=10)
-XLF_vwap <-
-  TTR::VWAP(price=Ad(rutils::env_etf$XLF),
-            volume=Vo(rutils::env_etf$XLF), n=10)
-# open graphics device, and define
-# plot area with two horizontal panels
-x11(); par(mfrow=c(2, 1))
-ch_ob <- chart_Series(  # plot in top panel
-  x=env_etf$VTI["2009-02/2009-04"],
-  name="VTI", plot=FALSE)
-add_TA(VTI_vwap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
-ch_ob <- chart_Series(  # plot in bottom panel
-  x=env_etf$XLF["2009-02/2009-04"],
-  name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
+library(HighFreq)  # Load package HighFreq
+# Assign name SP500 to ^GSPC symbol
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download S&P500 prices into etf_env
+getSymbols("SP500", env=etf_env,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=etf_env$SP500["2016/"],
+             TA="add_Vo()",
+             name="S&P500 index")
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading The \protect\emph{DJIA} Index Time Series From \protect\emph{Yahoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Dow Jones Industrial Average (\emph{DJIA}) stock market index is a price-weighted average of the 30 largest U.S. companies (same number of shares per company),
+      \vskip1ex
+      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{DJIA} index (symbol \emph{\textasciicircum{}DJI}), and for the \emph{DJITR} total return index (symbol \emph{DJITR}),
+      \vskip1ex
+      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
+      \vskip1ex
+      For example, the symbol \emph{\textasciicircum{}DJI} for the \emph{DJIA} stock market index isn't a valid name in \texttt{R},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+# Assign name DJIA to ^DJI symbol
+setSymbolLookup(
+  DJIA=list(name="^DJI", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download DJIA prices into etf_env
+getSymbols("DJIA", env=etf_env,
+    adjust=TRUE, from="1990-01-01")
+chart_Series(x=etf_env$DJIA["2016/"],
+             TA="add_Vo()",
+             name="DJIA index")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Scraping \protect\emph{S\&P500} Stock Index Constituents From Websites}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{S\&P500} index constituents change over time, and \emph{Standard \& Poor's} replaces companies that have decreased in capitalization with ones that have increased,
+      \vskip1ex
+      The \emph{S\&P500} index may contain more than 500 stocks because some companies have several share classes of stock,
+      \vskip1ex
+      The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages,
+      \vskip1ex
+      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{HTML} text data from a \texttt{URL},
+      \vskip1ex
+      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{HTML} text data or from a remote \texttt{URL}, and returns them as a list of data frames or matrices,
+      \vskip1ex
+      \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+library(RCurl)  # Load package RCurl
+library(XML)  # Load package XML
+# Download text data from URL
+sp_500 <- getURL(
+  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+# extract tables from the text data
+sp_500 <- readHTMLTable(sp_500,
+                    stringsAsFactors=FALSE)
+str(sp_500)
+# extract colnames of data frames
+lapply(sp_500, colnames)
+# extract S&P500 constituents
+sp_500 <- sp_500[[1]]
+head(sp_500)
+# Create valid R names from symbols containing "-" or "."characters
+sp_500$names <- gsub("-", "_", sp_500$Ticker)
+sp_500$names <- gsub("[.]", "_", sp_500$names)
+# write data frame of S&P500 constituents to CSV file
+write.csv(sp_500,
+  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+  row.names=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{S\&P500} Time Series Data From \protect\emph{Yahoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Before time series data for the \emph{S\&P500} index constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"},
+      \vskip1ex
+      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R},
+      \vskip1ex
+      For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+# Load data frame of S&P500 constituents from CSV file
+sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+     stringsAsFactors=FALSE)
+# Register symbols corresponding to R names
+for (in_dex in 1:NROW(sp_500)) {
+  cat("processing: ", sp_500$Ticker[in_dex], "\n")
+  setSymbolLookup(structure(
+    list(list(name=sp_500$Ticker[in_dex])),
+    names=sp_500$names[in_dex]))
+}  # end for
+env_sp500 <- new.env()  # new environment for data
+# Remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Download data and copy it into environment
+rutils::get_symbols(sp_500$names,
+   env_out=env_sp500, start_date="1990-01-01")
+# Or download in loop
+for (sym_bol in sp_500$names) {
+  cat("processing: ", sym_bol, "\n")
+  rutils::get_symbols(sym_bol,
+   env_out=env_sp500, start_date="1990-01-01")
+}  # end for
+save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
+             name="BRK-B stock")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{FRED} Time Series Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
+      \hskip1em\url{http://research.stlouisfed.org/fred2/}
+      \vskip1ex
+      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
+      \vskip1ex
+      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
+      \vskip1ex
+      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chart_Series_panels.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting \protect\emph{OHLC} Time Series Using Package \protect\emph{dygraphs}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series,
-      \vskip1ex
-      The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines,
-      <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# calculate volume-weighted average price
-oh_lc <- rutils::env_etf$VTI
-VTI_vwap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
-    volume=quantmod::Vo(oh_lc), n=20)
-# add VWAP to OHLC  data
-oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-               VTI_vwap)["2009-02/2009-04"]
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc)
-# convert dygraphs object to candlestick plot
-dy_graph <- dygraphs::dyCandlestick(dy_graph)
-# render candlestick plot
-dy_graph
-# candlestick plot using pipes syntax
-dygraphs::dygraph(oh_lc) %>% dyCandlestick()
-# candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
+      \includegraphics[width=0.5\paperwidth]{figure/fred_unemp_rate.png}
+    \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)
+# Download U.S. unemployment rate data
+unemp_rate <- getSymbols("UNRATE",
+                  auto.assign=FALSE,
+                  src="FRED")
+# plot U.S. unemployment rate data
+chart_Series(unemp_rate["1990/"],
+            name="U.S. unemployment rate")
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}\\
-      Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices,
-      \vskip1ex
-      The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
   \end{columns}
 \end{block}
 
@@ -2097,40 +2594,183 @@ dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} \protect\emph{OHLC} Plots With Background Shading}
+\subsection{The \protect\emph{Quandl} Database}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object,
+      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets,
+      \vskip1ex
+      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license,
+      \vskip1ex
+      \emph{Quandl} offers online help and a guide to its datasets:\\
+      \hskip1em\url{https://www.quandl.com/help/r}\\
+      \hskip1em\url{https://www.quandl.com/browse}\\
+      \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
+      \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
+      \vskip1ex
+      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+install.packages("devtools")
+library(devtools)
+# Install package Quandl from github
+install_github("quandl/R-package")
+library(Quandl)  # Load package Quandl
+# Register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# get short description
+packageDescription("Quandl")
+# Load help page
+help(package="Quandl")
+# Remove Quandl from search path
+detach("package:Quandl")
+      @
+      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R},
+      \vskip1ex
+      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Time Series Data from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()},
+      \vskip1ex
+      The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
+      \vskip1ex
+      \emph{Quandl} datasets have a unique \emph{Quandl code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
+      \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
+      \vskip1ex
+      \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
+      \hskip1em\url{https://www.quandl.com/data/WIKI}
+      \vskip1ex
+      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized),\\
+      \hskip1em\url{https://www.quandl.com/data/SEC}
+      \vskip1ex
+      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond}
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond?keyword=aapl}
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# create candlestick plot with background shading
-in_dex <- index(oh_lc)
-in_dic <-
-  rutils::diff_xts(oh_lc[, 4] > oh_lc[, "VWAP"])
-in_dic <- rbind(cbind(which(in_dic==1), 1),
-  cbind(which(in_dic==(-1)), -1))
-in_dic <- in_dic[order(in_dic[, 1]), ]
-in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
-  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
-in_dic <-
-  data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
-# create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc) %>%
-  dyCandlestick()
-# add shading
-for (i in 1:(NROW(in_dic)-1)) {
-  if (in_dic[i, 2] == 1)
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
-  else
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
+library(HighFreq)  # Load package HighFreq
+# Download EOD AAPL prices from WIKI free database
+price_s <- Quandl(code="WIKI/AAPL",
+                  type="xts", start_date="1990-01-01")
+x11(width=14, height=7)
+chart_Series(price_s["2016", 1:4],
+    name="AAPL OHLC prices")
+# Add trade volume in extra panel
+add_TA(price_s["2016", 5])
+# Download euro currency rates
+price_s <- Quandl(code="BNP/USDEUR",
+    start_date="2013-01-01",
+    end_date="2013-12-01", type="xts")
+# Download multiple time series
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+    start_date="2013-01-01", type="xts")
+# Download AAPL gross profits
+prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
+    type="xts")
+chart_Series(prof_it, name="AAPL gross profits")
+# Download Hurst time series
+price_s <- Quandl(code="PE/AAPL_HURST",
+    start_date="2013-01-01", type="xts")
+chart_Series(price_s["2016/", 1],
+             name="AAPL Hurst")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Stock Index and Instrument Metadata on \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
+      \vskip1ex
+      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
+      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
+      \vskip1ex
+      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+# Load S&P500 stock Quandl codes
+sp_500 <- read.csv(
+  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
+  stringsAsFactors=FALSE)
+# Replace "-" with "_" in symbols
+sp_500$free_code <-
+  gsub("-", "_", sp_500$free_code)
+head(sp_500)
+# vector of symbols in sp_500 frame
+tick_ers <- gsub("-", "_", sp_500$ticker)
+# Or
+tick_ers <- matrix(unlist(
+  strsplit(sp_500$free_code, split="/"),
+  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
+# Or
+tick_ers <- do_call_rbind(
+  strsplit(sp_500$free_code, split="/"))[, 2]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Multiple Time Series from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl},
+      \vskip1ex
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+env_sp500 <- new.env()  # new environment for data
+# Remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Boolean vector of symbols already downloaded
+down_loaded <- tick_ers %in% ls(env_sp500)
+# Download data and copy it into environment
+for (tick_er in tick_ers[!down_loaded]) {
+  cat("processing: ", tick_er, "\n")
+  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
+                  start_date="1990-01-01",
+                  type="xts")[, -(1:7)]
+  colnames(da_ta) <- paste(tick_er,
+    c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  assign(tick_er, da_ta, envir=env_sp500)
 }  # end for
-# render plot
-dy_graph
+save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
+             name="XOM stock")
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}\\
   \end{columns}
 \end{block}
 
@@ -2138,32 +2778,150 @@ dy_graph
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{dygraphs} Plots With Two \texttt{"y"} Axes}
+\subsection{Downloading Futures Time Series from \protect\emph{Quandl}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{dyAxis()} from package \emph{dygraphs} adds customized axes to a \emph{dygraphs} plot object,
+      \emph{Quandl} provides the 
+      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} of time series of prices for \texttt{600} different futures contracts.
       \vskip1ex
-      The function \texttt{dySeries()} adds a time series to a \emph{dygraphs} plot object,
-      <<echo=TRUE,eval=FALSE>>=
-library(dygraphs)
-# prepare VTI and IEF prices
-price_s <- cbind(Ad(rutils::env_etf$VTI),
-                 Ad(rutils::env_etf$IEF))
-col_names <- rutils::get_name(colnames(price_s))
-colnames(price_s) <- col_names
-
-# dygraphs plot with two y-axes
-library(dygraphs)
-dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(col_names[2], axis="y2", col=c("red", "blue"))
-      @
+      The 
+      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} contains daily \emph{OHLC} prices for continuous futures contracts.
+      \vskip1ex
+      A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
+      \vskip1ex
+      The data is curated by the \emph{Quandl} community from data provided by the \emph{CME}, \emph{ICE}, \emph{LIFFE}, and other exchanges. 
+      \vskip1ex
+      The \emph{Quandl codes} are specified as \texttt{CHRIS/\{EXCHANGE\}\_\{CODE\}\{DEPTH\}}, where \texttt{\{DEPTH\}} is the depth of the chained contract. 
+      \vskip1ex
+      The chained front month contracts have depth \texttt{1}, the back month contracts have depth \texttt{2}, etc.
+      \vskip1ex
+      The continuous front and back month contracts allow building continuous futures curves.
+      \vskip1ex
+      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+library(Quandl)
+# Register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# Download E-mini S&P500 futures prices
+price_s <- Quandl(code="CHRIS/CME_ES1",
+  type="xts", start_date="1990-01-01")
+price_s <- price_s[, c("Open", "High", "Low", "Last", "Volume")]
+colnames(price_s)[4] <- "Close"
+# plot the prices
+x11(width=5, height=4)  # Open x11 for plotting
+chart_Series(x=price_s["2008-06/2009-06"],
+             TA="add_Vo()",
+             name="S&P500 Futures")
+# plot dygraph
+dygraphs::dygraph(price_s["2008-06/2009-06", -5], 
+  main="S&P500 Futures") %>% 
+  dyCandlestick()
+      @
+      \vspace{-1em}
+      For example, the \emph{Quandl code} for the continuous \emph{E-mini S\&P500} front month futures is \texttt{CHRIS/CME\_ES1}, while for the back month it's \texttt{CHRIS/CME\_ES2}, for the second back month it's \texttt{CHRIS/CME\_ES3}, etc.
+      \vskip1ex
+      The \emph{Quandl code} for the \emph{E-mini Oil} futures is \texttt{CHRIS/CME\_QM1}, for the \emph{E-mini euro FX} futures is \texttt{CHRIS/CME\_E71}, etc.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{VIX} Futures Files from CBOE}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The CFE (CBOE Futures Exchange) provides daily \href{https://markets.cboe.com/us/futures/market_statistics/historical_data/}{CBOE Historical Data for Volatility Futures}, including the \emph{VIX} futures.
+      \vskip1ex
+      The CBOE data incudes \emph{OHLC} prices and also the \emph{settlement} price (in column \texttt{"Settle"}).
+      \vskip1ex
+      The \emph{settlement} price is usually defined as the weighted average price (\emph{WAP}) or the midpoint price, and is different from the \emph{Close} price.
+      \vskip1ex
+      The \emph{settlement} price is used for calculating the daily \emph{mark to market} (value) of the futures contract.
+      \vskip1ex
+      Futures exchanges require that counterparties exchange (settle) the \emph{mark to market} value of the futures contract daily, to reduce counterparty default risk. 
+      \vskip1ex
+      The function \texttt{download.file()} downloads files from the internet.
+      \vskip1ex
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv", 
+  stringsAsFactors=FALSE, row.names=1)
+data_dir <- "C:/Develop/data/vix_data"
+dir.create(data_dir)
+sym_bols <- rownames(date_s)
+file_names <- file.path(data_dir, paste0(sym_bols, ".csv"))
+log_file <- file.path(data_dir, "log_file.txt")
+cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
+url_s <- paste0(cboe_url, date_s[, 1])
+# Download files in loop
+for (it in seq_along(url_s)) {
+    tryCatch(  # warning and error handler
+        download.file(url_s[it], 
+                destfile=file_names[it], quiet=TRUE),
+      # warning handler captures warning condition
+      warning=function(warning_cond) {
+        cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
+      },  # end warning handler
+      # error handler captures error condition
+      error=function(error_cond) {
+        cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
+      },  # end error handler
+      finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
+    )  # end tryCatch
+}  # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{VIX} Futures Data Into an Environment}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{quantmod::getSymbols()} with the parameter \texttt{src="cfe"} downloads CFE data into the specified \emph{environment}. (But this requires first loading the package \emph{qmao}.)
+      \vskip1ex
+      Currently \texttt{quantmod::getSymbols()} doesn't download the most recent data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create new environment for data
+vix_env <- new.env()
+# Download VIX data for the months 6, 7, and 8 in 2018
+library(qmao)
+quantmod::getSymbols("VX", Months=1:12, 
+  Years=2018, src="cfe", env=vix_env)
+# Or
+qmao::getSymbols.cfe(Symbols="VX", 
+  Months=6:8, Years=2018, env=vix_env, 
+  verbose=FALSE, auto.assign=TRUE)
+# Calculate the classes of all the objects 
+# In the environment vix_env
+unlist(eapply(vix_env, 
+  function(x) {class(x)[1]}))
+class(vix_env$VX_M18)
+colnames(vix_env$VX_M18)
+# Save the data to a binary file called "vix_cboe.RData". 
+save(vix_env, 
+  file="C:/Develop/data/vix_data/vix_cboe.RData")
+      @
   \end{columns}
 \end{block}
 

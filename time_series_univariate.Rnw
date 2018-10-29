@@ -2496,7 +2496,7 @@ tail(cbind(in_nov, residual_s))
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/ar_forecast.png}
-      Accurate forecasting requires knowing the order of the \emph{AR(p)} process and its coefficients.
+      Accurate forecasting requires knowing the order \texttt{p} of the \emph{AR(p)} process and its coefficients.
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
 plot.default(se_ries, 
@@ -2514,16 +2514,84 @@ legend(x="topright", legend=c("series","forecasts"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Forecasting Using Autoregressive Models}
+\subsection{draft: The Standard Errors of Forecasts from Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The coefficients of the \emph{AR(p)} process can be calculated over a rolling look-back interval, and then used for forecasting.
+      The one step ahead \emph{forecast} $\hat{r}_i$ of the time series $r_i$ using the process \emph{AR(p)} is defined as:
+      \begin{displaymath}
+        \hat{r}_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
+      \end{displaymath}
+      The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the convolution of a vector with a filter.
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-len_gth <- 1e3
+len_gth <- 1e2
 # Simulate AR(3) time series using filter()
+co_eff <- c(0.1, 0.39, 0.5)
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+se_ries <- filter(x=in_nov, 
+  filter=co_eff, method="recursive")
+# Forecast using AR(3) ARIMA
+fore_casts <- numeric(NROW(se_ries))
+fore_casts[2] <- co_eff[1]*se_ries[1]
+fore_casts[3] <- co_eff[1]*se_ries[2] + 
+  co_eff[2]*se_ries[1]
+for (it in 4:NROW(fore_casts)) {
+  fore_casts[it] <- 
+    se_ries[(it-1):(it-3)] %*% co_eff
+}  # end for
+# Forecast using filter()
+forecasts_filter <- filter(x=se_ries, sides=1,
+  filter=co_eff, method="convolution")
+class(forecasts_filter)
+all.equal(fore_casts[-(1:4)], 
+  forecasts_filter[-c(1:3, NROW(forecasts_filter))], 
+  check.attributes=FALSE)
+# Compare residuals with innovations
+residual_s <- (se_ries-fore_casts)
+tail(cbind(in_nov, residual_s))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_forecast.png}
+      Accurate forecasting requires knowing the order \texttt{p} of the \emph{AR(p)} process and its coefficients.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot with legend
+plot.default(se_ries, 
+  main="Forecasting Using AR(3) Model",
+  xlab="", ylab="", type="l")
+lines(fore_casts, col="orange", lwd=3)
+legend(x="topright", legend=c("series","forecasts"),
+       col=c("black", "orange"), lty=1, lwd=6, 
+       cex=0.9, bg="white", bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting the Autoregressive Forecasting Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Backtesting} is the testing of the accuracy of a forecasting model using simulation on historical data.
+      \vskip1ex
+      The Autoregressive forecasting model can be \emph{backtested} by calculating forecasts over a rolling look-back interval.
+      \vskip1ex
+      The coefficients of the \emph{AR(p)} process can be calculated over a rolling look-back interval, and then used for calculating out-of-sample forecasts.
+      \vskip1ex
+      The accuracy of the \emph{AR(p)} forecasting model depends on the two \emph{meta-parameters}: \texttt{look\_back} (the length of look-back interval) and \texttt{p} (the order of the \emph{AR(p)} process).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate AR(3) time series using filter()
+len_gth <- 1e3
 co_eff <- c(0.1, 0.39, 0.5)
 set.seed(1121)
 se_ries <- filter(x=rnorm(len_gth), 
@@ -2540,20 +2608,41 @@ start_points <- c(rep_len(1, look_back-1),
     end_points[1:(n_rows-look_back+1)])
 # Perform rolling forecasting
 fore_casts <- sapply(end_points[-(1:2)], function(it) {
-      de_sign <- de_sign[start_points[it]:end_points[it], ]
-      # AR(3) coefficients
-      design_inv <- MASS::ginv(de_sign[, -1])
-      co_eff <- drop(design_inv %*% de_sign[, 1])
-      de_sign[(NROW(de_sign)-2):NROW(de_sign), 1] %*% co_eff
-      }
-)  # end sapply
+  de_sign <- de_sign[start_points[it]:end_points[it], ]
+  # calculate AR(3) coefficients
+  design_inv <- MASS::ginv(de_sign[, -1])
+  co_eff <- drop(design_inv %*% de_sign[, 1])
+  de_sign[(NROW(de_sign)-2):NROW(de_sign), 1] %*% co_eff
+})  # end sapply
 fore_casts <- c(rep(fore_casts[1], 2), fore_casts)
+# Lag the forecasts to push them out-of-sample
+fore_casts <- rutils::lag_it(fore_casts)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Mean Squared Error of Forecasting Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared differences between the forecasts minus the actual values.
+      \vskip1ex
+      The accuracy of the \emph{AR(p)} forecasting model depends on the two \emph{meta-parameters}: \texttt{look\_back} (the length of look-back interval) and \texttt{p} (the order of the \emph{AR(p)} process).
+      \vskip1ex
+      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
+      <<echo=TRUE,eval=FALSE>>=
 # Mean squared error
-ms_e <- mean(fore_casts-se_ries)^2
+ms_e <- mean((fore_casts-se_ries)^2)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_forecast_rolling.png}
-      The mean squared error (MSE) of a forecasting is the average of the squared differences between the forecasts minus the actual values.
+      \includegraphics[width=0.5\paperwidth]{figure/ar_forecast_rolling.png}\\
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
 plot.default(se_ries, 

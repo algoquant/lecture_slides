@@ -6,41 +6,41 @@ thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(HighFreq)
 # specify formula and perform regression
-reg_formula <- XLP ~ VTI
-reg_model <- lm(reg_formula, 
-          data=rutils::env_etf$re_turns)
+for_mula <- XLP ~ VTI
+mod_el <- lm(for_mula, 
+          data=rutils::etf_env$re_turns)
 # get regression coefficients
-coef(summary(reg_model))
+coef(summary(mod_el))
 # Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(reg_model)
+lmtest::dwtest(mod_el)
 # plot scatterplot of returns with aspect ratio 1
-plot(reg_formula, data=rutils::env_etf$re_turns,
+plot(for_mula, data=rutils::etf_env$re_turns,
      xlim=c(-0.1, 0.1), ylim=c(-0.1, 0.1),
      asp=1, main="Regression XLP ~ VTI")
 # add regression line and perpendicular line
-abline(reg_model, lwd=2, col="red")
-abline(a=0, b=-1/coef(summary(reg_model))[2, 1],
+abline(mod_el, lwd=2, col="red")
+abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
  lwd=2, col="blue")
 library(HighFreq)  # load HighFreq
-re_turns <- na.omit(rutils::env_etf$re_turns)
+re_turns <- na.omit(rutils::etf_env$re_turns)
 # perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(re_turns)[-1],
                   function(etf_name) {
 # specify regression formula
-  reg_formula <- as.formula(
+  for_mula <- as.formula(
     paste(etf_name, "~ VTI"))
 # perform regression
-  reg_model <- lm(reg_formula, data=re_turns)
+  mod_el <- lm(for_mula, data=re_turns)
 # get regression summary
-  reg_model_sum <- summary(reg_model)
+  model_sum <- summary(mod_el)
 # collect regression statistics
-  etf_reg_stats <- with(reg_model_sum,
+  etf_reg_stats <- with(model_sum,
     c(alpha=coefficients[1, 1],
 p_alpha=coefficients[1, 4],
 beta=coefficients[2, 1],
 p_beta=coefficients[2, 4]))
   etf_reg_stats <- c(etf_reg_stats,
-         p_dw=lmtest::dwtest(reg_model)$p.value)
+         p_dw=lmtest::dwtest(mod_el)$p.value)
   etf_reg_stats
 })  # end sapply
 etf_reg_stats <- t(etf_reg_stats)
@@ -50,29 +50,29 @@ etf_reg_stats <- etf_reg_stats[
 etf_reg_stats[, 1:3]
 library(HighFreq)
 # specify regression formula
-reg_formula <- XLP ~ VTI
+for_mula <- XLP ~ VTI
 # perform rolling beta regressions every month
-beta_s <- rollapply(rutils::env_etf$re_turns, width=252,
+beta_s <- rollapply(rutils::etf_env$re_turns, width=252,
   FUN=function(de_sign)
-  coef(lm(reg_formula, data=de_sign))[2],
+  coef(lm(for_mula, data=de_sign))[2],
   by=22, by.column=FALSE, align="right")
 beta_s <- na.omit(beta_s)
 # plot beta_s in x11() window
 x11(width=(wid_th <- 6), height=(hei_ght <- 4))
 chart_Series(x=beta_s[, "VTI"],
-  name=paste("rolling betas", format(reg_formula)))
+  name=paste("rolling betas", format(for_mula)))
 # perform daily rolling beta regressions in parallel
 library(roll)
-beta_s <- roll_lm(x=rutils::env_etf$re_turns[, "VTI"],
-            y=rutils::env_etf$re_turns[, "XLP"],
+beta_s <- roll_lm(x=rutils::etf_env$re_turns[, "VTI"],
+            y=rutils::etf_env$re_turns[, "XLP"],
             width=252)$coefficients
 # compare speed of rollapply() versus roll_lm()
 library(microbenchmark)
-da_ta <- rutils::env_etf$re_turns["2012", c("VTI", "XLP")]
+da_ta <- rutils::etf_env$re_turns["2012", c("VTI", "XLP")]
 summary(microbenchmark(
   rollapply=rollapply(da_ta, width=22,
 FUN=function(de_sign)
-coef(lm(reg_formula, data=de_sign))[2],
+coef(lm(for_mula, data=de_sign))[2],
   by.column=FALSE, align="right"),
   roll_lm=roll_lm(x=da_ta[, "VTI"],
             y=da_ta[, "XLP"],
@@ -117,7 +117,7 @@ library(PerformanceAnalytics)
 table.CAPM(Ra=re_turns[, c("XLP", "XLF")],
      Rb=re_turns[, "VTI"], scale=252)
 library(PerformanceAnalytics)
-capm_stats <- table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"],
+capm_stats <- PerformanceAnalytics::table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"],
         Rb=re_turns[, "VTI"], scale=252)
 colnames(capm_stats) <-
   sapply(colnames(capm_stats),
@@ -127,14 +127,14 @@ capm_stats <- t(capm_stats)
 capm_stats <- capm_stats[
   order(capm_stats[, "Annualized Alpha"],
   decreasing=TRUE), ]
-# copy capm_stats into env_etf and save to .RData file
-assign("capm_stats", capm_stats, envir=env_etf)
-save(env_etf, file='etf_data.RData')
+# copy capm_stats into etf_env and save to .RData file
+assign("capm_stats", capm_stats, envir=etf_env)
+save(etf_env, file='etf_data.RData')
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
 re_turns <-
-  scale(na.omit(rutils::env_etf$re_turns
-          [, as.character(reg_formula)[-1]]))
-(t(re_turns) %*% re_turns) / NROW(re_turns)
+  scale(na.omit(rutils::etf_env$re_turns
+          [, as.character(for_mula)[-1]]))
+crossprod(re_turns) / NROW(re_turns)
 w_1 <- sqrt(0.5); w_2 <- w_1
 foo <- matrix(c(w_1, w_2, -w_2, w_1), nc=2)
 t(foo) %*% foo
@@ -150,7 +150,7 @@ cov_mat <- function(re_turns, an_gle=0) {
 }  # end cov_mat
 
 bar <- cov_mat(re_turns, an_gle=pi/4)
-(t(re_turns) %*% re_turns) / NROW(re_turns)
+crossprod(re_turns) / NROW(re_turns)
 (t(bar) %*% bar) / NROW(bar)
 
 angle_s <- seq(0, pi/2, by=pi/24)
@@ -175,9 +175,9 @@ compo_nents <- re_turns %*% t(mat_rix)
 plot(x=compo_nents[, 1], y=compo_nents[, 2],
      xlim=c(-10, 10), ylim=c(-10, 10))
 
-reg_model <- lm(reg_formula, data=re_turns)
+mod_el <- lm(for_mula, data=re_turns)
 # get regression coefficients
-coef(summary(reg_model))
+coef(summary(mod_el))
 
 foo <- cbind(rnorm(1000, sd=0.2), rnorm(1000)) %*% t(mat_rix)
 (t(foo) %*% foo) / NROW(foo)
@@ -200,19 +200,19 @@ foo <- matrix(c(s_1^2, s_1*s_2*w_1, s_1*s_2*w_1, s_2^2), nc=2)
 eigen(foo)
 
 # Durbin-Watson test of autocorrelation of residuals
-lmtest::dwtest(reg_model)
+lmtest::dwtest(mod_el)
 # plot scatterplot of returns
-plot(reg_formula, data=rutils::env_etf$re_turns,
+plot(for_mula, data=rutils::etf_env$re_turns,
      main="Regression XLP ~ VTI")
 # add regression line
-abline(reg_model, lwd=2, col="red")
+abline(mod_el, lwd=2, col="red")
 library(HighFreq)
 # Select ETF symbols
 sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
 # calculate ETF prices and simple returns (not percentage)
-price_s <- rutils::env_etf$price_s[, sym_bols]
-price_s <- zoo::na.locf(price_s)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+price_s <- rutils::etf_env$price_s[, sym_bols]
+price_s <- xts:::na.locf.xts(price_s)
+price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
 date_s <- index(price_s)
 re_turns <- rutils::diff_it(price_s)
 # de-mean (center) and scale the returns
@@ -230,7 +230,7 @@ re_turns <- xts(re_turns, date_s)
 cov_mat <- cov(re_turns)
 vari_ance <- diag(cov_mat)
 cor_mat <- cor(re_turns)
-# cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
+# cov_mat <- crossprod(re_turns) / (NROW(re_turns)-1)
 # cor_mat <- cov_mat / sqrt(vari_ance)
 # cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
 # reorder correlation matrix based on clusters
@@ -378,7 +378,7 @@ for (or_der in 1:n_weights) {
 pca_rets <- xts(re_turns %*% pc_a$rotation,
           order.by=date_s)
 round(cov(pca_rets), 3)
-all.equal(unname(coredata(pca_rets)), unname(pc_a$x))
+all.equal(coredata(pca_rets), pc_a$x, check.attributes=FALSE)
 pca_ts <- xts:::cumsum.xts(pca_rets)
 # plot principal component time series in multiple panels
 par(mfrow=c(n_weights/2, 2))
@@ -419,8 +419,8 @@ ei_gen <- eigen(cov_mat)
 pc_a <- prcomp(re_turns, scale=FALSE)
 # compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(unname(ei_gen$vectors)),
-    abs(unname(pc_a$rotation)))
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+    check.attributes=FALSE)
 # eigen decomposition of correlation matrix
 cor_mat <- cor(re_turns)
 ei_gen <- eigen(cor_mat)
@@ -428,8 +428,8 @@ ei_gen <- eigen(cor_mat)
 pc_a <- prcomp(re_turns, scale=TRUE)
 # compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(unname(ei_gen$vectors)),
-    abs(unname(pc_a$rotation)))
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+    check.attributes=FALSE)
 # load S&P500 constituent stock prices
 load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
 date_s <- index(price_s)
@@ -442,10 +442,10 @@ re_turns <- xts(re_turns, date_s)
 # perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # find number of components with variance greater than 2
-num_comp <- which(pc_a$sdev^2 < 2)[1]
+n_comp <- which(pc_a$sdev^2 < 2)[1]
 # plot standard deviations of principal components
-barplot(pc_a$sdev[1:num_comp],
-  names.arg=colnames(pc_a$rotation[, 1:num_comp]),
+barplot(pc_a$sdev[1:n_comp],
+  names.arg=colnames(pc_a$rotation[, 1:n_comp]),
   las=3, xlab="", ylab="",
   main="Volatilities of S&P500 Principal Components")
 # Principal component loadings (weights)
@@ -584,7 +584,7 @@ table.CAPM(Ra=pca_rets[, 1:3],
 par(oma=c(1,0,1,0), mgp=c(2,1,0), mar=c(2,1,2,1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
 #Perform principal component analysis PCA
-re_turns <- na.omit(rutils::env_etf$re_turns)
+re_turns <- na.omit(rutils::etf_env$re_turns)
 pc_a <- prcomp(re_turns, center=TRUE, scale=TRUE)
 barplot(pc_a$sdev[1:10],
   names.arg=colnames(pc_a$rotation)[1:10],
@@ -639,7 +639,7 @@ ls("package:factorAnalytics")
 detach("package:factorAnalytics")
 library(factorAnalytics)
 # fit a three-factor model using PCA
-factor_pca <- fitSfm(rutils::env_etf$re_turns, k=3)
+factor_pca <- fitSfm(rutils::etf_env$re_turns, k=3)
 head(factor_pca$loadings, 3)  # factor loadings
 # factor realizations (time series)
 head(factor_pca$factors)

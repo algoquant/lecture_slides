@@ -1,3 +1,9 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
 # single numbers are vectors of length 1
 1
 # character strings are vectors of length 1
@@ -106,7 +112,7 @@ str_var
 str_var[1]
 str_var[2]
 
-length(str_var)  # length of vector
+NROW(str_var)  # length of vector
 nchar(str_var)  # length of string
 
 # concatenate and echo to console
@@ -152,8 +158,8 @@ c('a', letters[5:10])  # combine two vectors of letters
 vector()  # create empty vector
 vector(mode="numeric", length=10)  # numeric vector of zeros
 seq(10)  # sequence from 1 to 10
-seq(along=(-5:5))  # instead of 1:length(obj)
-seq_along(c("a", "b", "c"))  # instead of 1:length(obj)
+seq(along=(-5:5))  # instead of 1:NROW(obj)
+seq_along(c("a", "b", "c"))  # instead of 1:NROW(obj)
 seq(from=0, to=1, len=11)  # decimals from 0 to 1.0
 seq(from=0, to=1, by=0.1)  # decimals from 0 to 1.0
 seq(-2,2, len=11)  # 10 numbers from -2 to 2
@@ -299,7 +305,6 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
   lwd=6, bg="white", col=c("red", "blue"))
 # total area under histogram
 diff(histo_gram$breaks) %*% histo_gram$density
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # create a matrix
 mat_rix  # by default matrices are constructed column-wise
 # create a matrix row-wise
@@ -342,7 +347,7 @@ list_var
 c(typeof(list_var), mode(list_var), class(list_var))
 # lists are also vectors
 c(is.vector(list_var), is.list(list_var))
-length(list_var)
+NROW(list_var)
 # create named list
 list_var <- list(first=c('a', 'b'), second=1:4)
 list_var
@@ -522,15 +527,28 @@ good_air <- airquality[complete.cases(airquality), ]
 dim(good_air)
 head(good_air)  # NAs removed
 library(zoo)  # load package zoo
-# replace NAs
+# Replace NAs
 good_air <- zoo::na.locf(airquality)
 dim(good_air)
 head(good_air)  # NAs replaced
-# create vector containing NA values
+# Create vector containing NA values
 vec_tor <- sample(22)
 vec_tor[sample(NROW(vec_tor), 4)] <- NA
-# replace NA values with the most recent non-NA values
+# Replace NA values with the most recent non-NA values
 zoo::na.locf(vec_tor)
+# Replace NAs in xts time series
+se_ries <- rutils::etf_env$price_s[, 1]
+head(se_ries)
+sum(is.na(se_ries))
+library(quantmod)
+series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
+all.equal(series_zoo, series_xts, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # NULL values have no mode or type
 c(mode(NULL), mode(NA))
 c(typeof(NULL), typeof(NA))

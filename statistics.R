@@ -1,3 +1,9 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(digits=3)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
 set.seed(1121)  # reset random number generator
 runif(3)  # three numbers from uniform distribution
 runif(3)  # produce another three numbers
@@ -86,27 +92,27 @@ rm(list=ls())
 # DAX returns
 re_turns <- diff(log(EuStockMarkets[, 1]))
 # number of observations
-len_gth <- NROW(re_turns)
+n_rows <- NROW(re_turns)
 # mean of DAX returns
 mean_rets <- mean(re_turns)
 # standard deviation of DAX returns
 sd_rets <- sd(re_turns)
 # skew of DAX returns
-len_gth/((len_gth-1)*(len_gth-2))*
+n_rows/((n_rows-1)*(n_rows-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of DAX returns
-len_gth*(len_gth+1)/((len_gth-1)^3)*
+n_rows*(n_rows+1)/((n_rows-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
 # random normal returns
-re_turns <- rnorm(len_gth, sd=2)
+re_turns <- rnorm(n_rows, sd=2)
 # mean and standard deviation of random normal returns
 mean_rets <- mean(re_turns)
 sd_rets <- sd(re_turns)
 # skew of random normal returns
-len_gth/((len_gth-1)*(len_gth-2))*
+n_rows/((n_rows-1)*(n_rows-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
 # kurtosis of random normal returns
-len_gth*(len_gth+1)/((len_gth-1)^3)*
+n_rows*(n_rows+1)/((n_rows-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
@@ -123,7 +129,8 @@ sum(sam_ple<1)/len_gth
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
-sam_ple[conf_level*len_gth]
+cut_off <- conf_level*len_gth
+sam_ple[cut_off]
 quantile(sam_ple, probs=conf_level)
 # analyze the source code of quantile()
 stats:::quantile.default
@@ -132,7 +139,7 @@ library(microbenchmark)
 summary(microbenchmark(
   sam_ple=sam_ple[cut_off],
   quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
@@ -429,7 +436,7 @@ plot(mod_el)  # plot diagnostic scatterplots
 plot(mod_el, which=2)  # plot just Q-Q
 library(lmtest)  # load lmtest
 # perform Durbin-Watson test
-dwtest(mod_el)
+lmtest::dwtest(mod_el)
 foo <- etf_env$re_turns[, c("VTI", "VEU")]
 end_points <- endpoints(foo, on="months")
 head(foo)
@@ -474,19 +481,19 @@ abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # plot just Q-Q
 set.seed(1121)  # initialize random number generator
 # define design matrix
-len_gth <- 100
-n_var <- 5
-de_sign <- sapply(1:n_var, function(col_umn) {
-  sin(pi*col_umn*((1:len_gth)-(len_gth+1)/2)/len_gth)
+n_rows <- 100
+n_cols <- 5
+de_sign <- sapply(1:n_cols, function(col_umn) {
+  sin(pi*col_umn*((1:n_rows)-(n_rows+1)/2)/n_rows)
 })  # end sapply
 # add column names
-colnames(de_sign) <- paste0("predict", 1:n_var)
+colnames(de_sign) <- paste0("col", 1:n_cols)
 # plot design matrix
 # matplot(de_sign, type="l", lty="solid", lwd=3)
 # define the design weights
-weight_s <- runif(n_var, min=(-10), max=10)
+weight_s <- runif(n_cols, min=(-10), max=10)
 # response equals linear form plus random noise
-noise <- rnorm(len_gth, sd=0.1)
+noise <- rnorm(n_rows, sd=0.1)
 res_ponse <- (-1 + de_sign %*% weight_s + noise)
 # calculate de-meaned design matrix
 design_zm <- t(t(de_sign) - colMeans(de_sign))
@@ -494,11 +501,11 @@ design_zm <- t(t(de_sign) - colMeans(de_sign))
 # design_zm <- apply(design_zm, 2, function(x) (x-mean(x)))
 # calculate de-meaned response vector
 response_zm <- res_ponse - mean(res_ponse)
-# calculate the regression coefficients
+# Calculate the regression coefficients
 beta_s <- MASS::ginv(design_zm) %*% response_zm
-# solve for the regression alpha
+# Solve for the regression alpha
 al_pha <- mean(res_ponse) - 
-  sum(colSums(de_sign)*drop(beta_s))/len_gth
+  sum(colSums(de_sign)*drop(beta_s))/n_rows
 # perform multivariate regression using lm()
 mod_el <- lm(res_ponse ~ de_sign)
 # compare with coefficients from lm()
@@ -534,10 +541,10 @@ de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
 colnames(de_sign)[1] <- "intercept"
 # calculate generalized inverse of the design matrix
 design_inv <- MASS::ginv(de_sign)
-# add define design weight for intercept
+# add weight for intercept
 weight_s <- c(-1, weight_s)
 # response equals linear form plus random noise
-# noise <- rnorm(len_gth, sd=0.1)
+# noise <- rnorm(n_rows, sd=0.1)
 res_ponse <- de_sign %*% weight_s + noise
 # calculate the regression coefficients
 beta_s <- design_inv %*% res_ponse
@@ -556,9 +563,9 @@ all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 resid_uals <- drop(res_ponse - fit_ted)
 all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
 # define transformation matrix
-n_col <- NCOL(de_sign)
-trans_mat <- matrix(runif(n_col^2, min=(-1), max=1), 
-            ncol=n_col)
+n_cols <- NCOL(de_sign)
+trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), 
+            ncol=n_cols)
 # calculate linear combinations of design columns
 design_trans <- de_sign %*% trans_mat
 # calculate the influence matrix
@@ -575,7 +582,7 @@ all.equal(influ_ence, influence_trans)
 # regression model summary
 model_sum <- summary(mod_el)
 # degrees of freedom of residuals
-deg_free <- (len_gth - NCOL(de_sign))
+deg_free <- (n_rows - NCOL(de_sign))
 all.equal(deg_free, model_sum$df[2])
 # variance of residuals
 resid_var <- sum(resid_uals^2)/deg_free
@@ -607,7 +614,7 @@ x11(width=5, height=4)  # open x11 for plotting
 # set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # univariate regression with linear predictor
-de_sign <- cbind(rep(1, len_gth), 1:len_gth/len_gth)
+de_sign <- cbind(rep(1, n_rows), 1:n_rows/n_rows)
 # calculate generalized inverse of the design matrix
 design_inv <- MASS::ginv(de_sign)
 # calculate the influence matrix
@@ -624,7 +631,7 @@ res_ponse <- de_sign %*% weight_s
 # perform loop over different realizations of random noise
 fit_ted <- lapply(1:50, function(it) {
   # add random noise to response
-  res_ponse <- res_ponse + rnorm(len_gth, sd=1.0)
+  res_ponse <- res_ponse + rnorm(n_rows, sd=1.0)
   # calculate fitted values using influence matrix
   influ_ence %*% res_ponse
 })  # end lapply
@@ -644,25 +651,31 @@ legend(x="topleft", # add legend
        title=NULL, inset=0.05, cex=0.8, lwd=6,
        lty=1, col=c("red", "blue"))
 # univariate regression with linear predictor
-de_sign <- cbind(rep(1, len_gth), 1:len_gth/len_gth)
-res_ponse <- de_sign %*% weight_s + rnorm(len_gth, sd=0.3)
+de_sign <- cbind(rep(1, n_rows), 1:n_rows/n_rows)
+res_ponse <- de_sign %*% weight_s + rnorm(n_rows, sd=0.3)
 design_inv <- MASS::ginv(de_sign)
 influ_ence <- de_sign %*% design_inv
 beta_s <- design_inv %*% res_ponse
 fit_ted <- drop(de_sign %*% beta_s)
 resid_uals <- drop(res_ponse - fit_ted)
-deg_free <- (len_gth - NCOL(de_sign))
-resid_sd <- sqrt(sum(resid_uals^2)/deg_free)
-# inverse of design matrix squared
+deg_free <- (n_rows - NCOL(de_sign))
+r_ss <- sqrt(sum(resid_uals^2)/deg_free)
+# Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
-# perform loop over out-of-sample predictors
-new_predictors <- (max(de_sign[, 2]) + 10*(1:5)/len_gth)
+# Define new predictors
+new_predictors <- (max(de_sign[, 2]) + 10*(1:5)/n_rows)
+# Calculate the predicted values and standard errors
+new_design <- cbind(rep(1, NROW(new_predictors)), new_predictors)
+predic_tions <- cbind(
+  predicted=drop(new_design %*% beta_s),
+  stddev=diag(r_ss*sqrt(new_design %*% design_2 %*% t(new_design))))
+# OR: Perform loop over new_predictors
 predic_tions <- sapply(new_predictors, function(predic_tor) {
   predic_tor <- cbind(1, predic_tor)
   # calculate predicted values
   predic_ted <- predic_tor %*% beta_s
   # calculate standard deviation
-  predict_sd <- resid_sd*sqrt(predic_tor %*% design_2 %*% t(predic_tor))
+  predict_sd <- r_ss*sqrt(predic_tor %*% design_2 %*% t(predic_tor))
   c(predicted=predic_ted, stddev=predict_sd)
 })  # end sapply
 predic_tions <- t(predic_tions)
@@ -736,9 +749,9 @@ all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
 # residuals are orthogonal to fitted values
 all.equal(sum(resid_uals*fit_ted), target=0)
 # TSS = ESS + RSS
-t_ss <- (len_gth-1)*var(drop(res_ponse))
-e_ss <- (len_gth-1)*var(fit_ted)
-r_ss <- (len_gth-1)*var(resid_uals)
+t_ss <- (n_rows-1)*var(drop(res_ponse))
+e_ss <- (n_rows-1)*var(fit_ted)
+r_ss <- (n_rows-1)*var(resid_uals)
 all.equal(t_ss, e_ss + r_ss)
 # regression summary
 model_sum <- summary(mod_el)
@@ -770,12 +783,12 @@ legend("topright", inset=0.05, title="degrees of freedom",
 # F-statistic from lm()
 model_sum$fstatistic
 # degrees of freedom of residuals
-deg_free <- len_gth-n_var-1
+deg_free <- (n_rows - n_cols - 1)
 # F-statistic from RSS
-f_stat <- e_ss*deg_free/r_ss/n_var
+f_stat <- e_ss*deg_free/r_ss/n_cols
 all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
 # p-value of F-statistic
-1-pf(q=f_stat, df1=len_gth-n_var-1, df2=n_var)
+1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
 library(lmtest)  # load lmtest
 de_sign <- data.frame(  # design matrix
   de_sign=1:30, omit_var=sin(0.2*1:30))
@@ -819,12 +832,12 @@ abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # plot just Q-Q
 par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 lamb_da <- c(0.5, 1, 1.5)
-col_ors <- c("red", "black", "blue")
+col_ors <- c("red", "blue", "green")
 # plot three curves in loop
 for (in_dex in 1:3) {
   curve(expr=plogis(x, scale=lamb_da[in_dex]),
 xlim=c(-4, 4), type="l",
-xlab="", ylab="", lwd=2,
+xlab="", ylab="", lwd=4,
 col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
 # add title
@@ -832,8 +845,8 @@ title(main="Logistic function", line=0.5)
 # add legend
 legend("topleft", title="Scale parameters",
        paste("lambda", lamb_da, sep="="),
-       inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=col_ors)
+       inset=0.05, cex=0.8, lwd=6, bty="n",
+       lty=1, col=col_ors)
 set.seed(1121)
 # simulate overlapping scores data
 scores_1 <- runif(100, max=0.6)
@@ -842,29 +855,31 @@ scores_2 <- runif(100, min=0.4)
 wilcox.test(scores_1, scores_2)
 # combine scores and add categorical variable
 score_s <- c(scores_1, scores_2)
-ac_tive <- c(logical(100), !logical(100))
+res_ponse <- c(logical(100), !logical(100))
 # perform logit regression
-g_lm <- glm(ac_tive ~ score_s, family=binomial(logit))
+g_lm <- glm(res_ponse ~ score_s, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
+x11(width=7, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(score_s)
 plot(x=score_s[or_der], y=g_lm$fitted.values[or_der],
-     type="l", lwd=3,
-     main="Category densities and logistic function",
-     xlab="score", ylab="probability")
-den_sity <- density(score_s[ac_tive])
+     type="l", lwd=4, col="orange",
+     main="Category Densities and Logistic Function",
+     xlab="score", ylab="density")
+den_sity <- density(score_s[res_ponse])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="red")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
-den_sity <- density(score_s[!ac_tive])
+den_sity <- density(score_s[!res_ponse])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="blue")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # add legend
-legend(x="top", bty="n", lty=c(1, NA, NA), lwd=c(3, NA, NA), pch=c(NA, 15, 15),
- legend=c("logistic fit", "active", "non-active"),
- col=c("black", "red", "blue"),
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
+ lwd=c(6, NA, NA), pch=c(NA, 15, 15),
+ legend=c("logistic fit", "TRUE", "FALSE"),
+ col=c("orange", "red", "blue"),
  text.col=c("black", "red", "blue"))
 library(ISLR)  # load package ISLR
 # get documentation for package tseries
@@ -890,18 +905,18 @@ y_lim <- range(income)
 # plot data points for non-defaulters
 default_ed <- (default=="Yes")
 plot(income ~ balance,
-     main="Default dataset from package ISLR",
+     main="Default Dataset from Package ISLR",
      xlim=x_lim, ylim=y_lim,
      data=Default[!default_ed, ],
      pch=4, col="blue")
 # plot data points for defaulters
 points(income ~ balance,
  data=Default[default_ed, ],
- pch=4, col="red")
+ pch=4, lwd=2, col="red")
 # add legend
 legend(x="topright", bty="n",
  legend=c("non-defaulters", "defaulters"),
- col=c("blue", "red"), lty=1, pch=4)
+ col=c("blue", "red"), lty=1, lwd=6, pch=4)
 default_ed <- (default=="Yes")
 # Wilcoxon test for balance predictor
 wilcox.test(balance[default_ed], balance[!default_ed])
@@ -924,14 +939,14 @@ g_lm <- glm(default ~ balance,
 class(g_lm)
 summary(g_lm)
 plot(x=balance, y=default_ed,
-     main="Logistic regression of credit defaults", col="orange",
+     main="Logistic Regression of Credit Defaults", col="orange",
      xlab="credit balance", ylab="defaults")
 or_der <- order(balance)
 lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
-col="blue", lwd=2)
-legend(x="topleft", inset=0.1,
+col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n",
  legend=c("defaults", "logit fitted values"),
- col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
 library(ISLR)  # load package ISLR
 attach(Default)  # load credit default data
 # calculate cumulative defaults
@@ -947,14 +962,14 @@ g_lm <- glm(
   family=binomial(logit))
 summary(g_lm)
 plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
-     main="Cumulative defaults versus balance",
+     main="Cumulative Defaults Versus Balance",
      xlab="credit balance", ylab="cumulative defaults")
 or_der <- order(balance)
 lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
-col="blue", lwd=2)
-legend(x="topleft", inset=0.1,
+col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n",
  legend=c("cumulative defaults", "fitted values"),
- col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=c(3, 3))
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
 library(ISLR)  # load package ISLR
 attach(Default)  # load credit default data
 # fit multifactor logistic regression model
@@ -995,49 +1010,53 @@ legend(x="topleft", bty="n",
 boxplot(formula=balance ~ student,
   col="lightgrey",
   main="balance", xlab="student")
-# fit full logistic regression model
+# fit multifactor logistic regression model
+col_names <- colnames(Default)
 for_mula <- as.formula(paste(col_names[1],
   paste(col_names[-1], collapse="+"), sep=" ~ "))
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
 fore_casts <- predict(g_lm, type="response")
 fore_casts[1:6]
-identical(g_lm$fitted.values, fore_casts)
+all.equal(g_lm$fitted.values, fore_casts)
 # discrimination threshold
 thresh_old <- 0.05
 # calculate confusion matrix
 table(default_ed, (fore_casts>thresh_old))
 sum(default_ed)
+sum(Default$default=="Yes")
 # fit logistic regression over training data
 set.seed(1121)  # reset random number generator
-sam_ple <- sample(x=1:NROW(Default), size=NROW(Default)/2)
+n_rows <- NROW(Default)
+sam_ple <- sample.int(n=n_rows, size=n_rows/2)
 train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 # forecast over test data
 test_data <- Default[-sam_ple, ]
 fore_casts <- predict(g_lm, newdata=test_data, type="response")
 # calculate confusion matrix
-table(test_data$default=="Yes",
-(fore_casts>thresh_old))
+table(test_data$default=="No",
+(fore_casts<thresh_old))
 # FALSE positive (type I error)
-sum(test_data$default=="Yes" & (fore_casts<thresh_old))
-# FALSE negative (type II error)
 sum(test_data$default=="No" & (fore_casts>thresh_old))
+# FALSE negative (type II error)
+sum(test_data$default=="Yes" & (fore_casts<thresh_old))
 detach(Default)
 library(ISLR)  # load package ISLR
 attach(Default)  # load credit default data
 col_names <- colnames(Default)
 for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
 set.seed(1121)  # reset random number generator
-sam_ple <- sample(x=1:NROW(Default), size=NROW(Default)/2)
+n_rows <- NROW(Default)
+sam_ple <- sample(x=1:n_rows, size=n_rows/2)
 train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 test_data <- Default[-sam_ple, ]
 fore_casts <- predict(g_lm, newdata=test_data, type="response")
 thresh_old <- 0.05
 # calculate confusion matrix
-confu_sion <- table(test_data$default=="Yes",
-              (fore_casts>thresh_old))
-dimnames(confu_sion) <- list(hypothesis=rownames(confu_sion),
+confu_sion <- table(test_data$default=="No",
+              (fore_casts<thresh_old))
+dimnames(confu_sion) <- list(actual=rownames(confu_sion),
   forecast=colnames(confu_sion))
 confu_sion
 confu_sion <- confu_sion / rowSums(confu_sion)
@@ -1045,7 +1064,7 @@ c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
 # below is an unsuccessful attempt to draw confusion matrix using xtable
 confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
 dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
-                             hypothesis=c("FALSE", "TRUE"))
+                             actual=c("FALSE", "TRUE"))
 print(xtable::xtable(confusion_matrix,
 caption="Confusion Matrix"),
 caption.placement="top",
@@ -1055,30 +1074,103 @@ include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
 # confusion matrix as function of thresh_old
 con_fuse <- function(res_ponse, fore_casts, thresh_old) {
-    confu_sion <- table(res_ponse, (fore_casts>thresh_old))
+    confu_sion <- table(res_ponse, (fore_casts<thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$default=="Yes", fore_casts, thresh_old=thresh_old)
+con_fuse(test_data$default=="No", fore_casts, thresh_old=thresh_old)
 # define vector of discrimination thresholds
 threshold_s <- seq(0.01, 0.95, by=0.01)^2
 # calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  res_ponse=(test_data$default=="Yes"),
+  res_ponse=(test_data$default=="No"),
   fore_casts=fore_casts)  # end sapply
 error_rates <- t(error_rates)
 # calculate area under ROC curve (AUC)
-(1 - error_rates[, "typeII"]) %*%
+(error_rates[, "typeII"] - 1) %*%
   rutils::diff_it(error_rates[, "typeI"])
 # or
 type_two <- (error_rates[, "typeII"] +
   rutils::lag_it(error_rates[, "typeII"]))/2
-(1 - type_two) %*% rutils::diff_it(error_rates[, "typeI"])
-# plot ROC curve for defaults
+(type_two - 1) %*% rutils::diff_it(error_rates[, "typeI"])
+# plot ROC Curve for Defaults
 plot(x=error_rates[, "typeI"],
      y=1-error_rates[, "typeII"],
-     xlab="false positive rate",
-     ylab="true positive rate",
-     main="ROC curve for defaults",
-     type="l", lwd=2, col="blue")
-abline(a=0.0, b=1.0)
+     xlab="FALSE positive rate",
+     ylab="TRUE positive rate",
+     main="ROC Curve for Defaults",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+# Define explanatory (design) and response data
+res_ponse <- ISLR::Default[, 1]
+de_sign <- ISLR::Default[, -1]
+head(de_sign)
+class(de_sign)
+sapply(de_sign, class)
+# Coerce factor to numerical
+de_sign[, 1] <- as.numeric(de_sign[, 1])
+# Normalize the design data
+de_sign <- sapply(de_sign, scale)
+head(de_sign)
+class(de_sign)
+apply(de_sign, 2, class)
+
+# Define training test data
+set.seed(1121)  # reset random number generator
+sam_ple <- sample(x=1:NROW(de_sign), size=NROW(de_sign)/2)
+da_ta <- cbind(res_ponse, de_sign)
+train_data <- da_ta[sam_ple, ]
+test_data <- da_ta[-sam_ple, ]
+
+foo <- knn(train=train_data[, -1], test=test_data[, -1], cl=train_data[, 1], k=1)
+
+
+
+# wippp
+
+# response equals linear form plus random noise
+
+def_ault <- ISLR::Default
+head(def_ault)
+
+
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
+set.seed(1121)  # reset random number generator
+sam_ple <- sample(x=1:n_rows, size=n_rows/2)
+train_data <- Default[sam_ple, ]
+g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
+test_data <- Default[-sam_ple, ]
+fore_casts <- predict(g_lm, newdata=test_data, type="response")
+thresh_old <- 0.05
+
+
+# fit full logistic regression model
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
+fore_casts <- predict(g_lm, type="response")
+fore_casts[1:6]
+all.equal(g_lm$fitted.values, fore_casts)
+# discrimination threshold
+thresh_old <- 0.05
+# calculate confusion matrix
+table(default_ed, (fore_casts>thresh_old))
+sum(default_ed)
+sum(Default$default=="Yes")
+# fit logistic regression over training data
+set.seed(1121)  # reset random number generator
+sam_ple <- sample(x=1:n_rows, size=n_rows/2)
+train_data <- Default[sam_ple, ]
+g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
+# forecast over test data
+test_data <- Default[-sam_ple, ]
+fore_casts <- predict(g_lm, newdata=test_data, type="response")
+# calculate confusion matrix
+table(test_data$default=="No",
+(fore_casts<thresh_old))
+# FALSE positive (type I error)
+sum(test_data$default=="No" & (fore_casts>thresh_old))
+# FALSE negative (type II error)
+sum(test_data$default=="Yes" & (fore_casts<thresh_old))
+detach(Default)

@@ -2,33 +2,36 @@
 
 # library(HighFreq)  # load package HighFreq
 
-# simulate single EWMA model using historical oh_lc data
+# Simulate single EWMA model using historical oh_lc data,
+# and return percentage returns.
 simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
-  # calculate EWMA prices
+  # Calculate EWMA prices
   weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- quantmod::Cl(oh_lc)
   ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-  # determine dates right after EWMA has crossed prices
+  # Determine dates right after EWMA has crossed prices
   in_dic <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
   trade_dates <- (rutils::diff_it(in_dic) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
-  # calculate positions, either: -1, 0, or 1
+  # Calculate positions, either: -1, 0, or 1
   position_s <- rep(NA_integer_, NROW(cl_ose))
   position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
+  position_s[trade_dates] <- rutils::lag_it(in_dic)[trade_dates]
   position_s <- xts::xts(na.locf(position_s), order.by=index(oh_lc))
   op_en <- quantmod::Op(oh_lc)
-  prices_lag <- rutils::lag_xts(cl_ose)
-  position_lagged <- rutils::lag_xts(position_s)
-  # calculate transaction costs
+  prices_lag <- rutils::lag_it(cl_ose)
+  position_lagged <- rutils::lag_it(position_s)
+  # Calculate transaction costs
   cost_s <- 0.0*position_s
   cost_s[trade_dates] <- 0.5*bid_offer*abs(position_lagged[trade_dates] - position_s[trade_dates])*op_en[trade_dates]
-  # calculate daily profits and losses
+  # Calculate daily profits and losses
   re_turns <- position_lagged*(cl_ose - prices_lag)
   re_turns[trade_dates] <- position_lagged[trade_dates] * (op_en[trade_dates] - prices_lag[trade_dates]) + position_s[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
+  # Calculate percentage returns
+  re_turns <- re_turns/cl_ose
   out_put <- cbind(position_s, re_turns)
   colnames(out_put) <- c("positions", "returns")
   out_put
@@ -48,7 +51,7 @@ simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, wid_th=51) {
   # adjust close price to start at zero
   op_en <- op_en - as.numeric(cl_ose[1, ])
   cl_ose <- cl_ose - as.numeric(cl_ose[1, ])
-  prices_lag <- rutils::lag_xts(cl_ose)
+  prices_lag <- rutils::lag_it(cl_ose)
   # filter the prices using weights
   ewma_1 <- filter(cl_ose, filter=weights_1, sides=1)
   ewma_1[1:(wid_th-1)] <- ewma_1[wid_th]
@@ -62,9 +65,9 @@ simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, wid_th=51) {
   # calculate positions, either: -1, 0, or 1
   position_s <- rep(NA_integer_, NROW(cl_ose))
   position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_xts(in_dic)[trade_dates]
+  position_s[trade_dates] <- rutils::lag_it(in_dic)[trade_dates]
   position_s <- xts(na.locf(position_s), order.by=index(oh_lc))
-  position_lagged <- rutils::lag_xts(position_s)
+  position_lagged <- rutils::lag_it(position_s)
   # calculate daily profits and losses
   re_turns <- position_lagged*(cl_ose - prices_lag)
   re_turns[trade_dates] <- 

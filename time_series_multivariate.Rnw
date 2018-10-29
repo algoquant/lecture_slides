@@ -406,7 +406,7 @@ capm_stats[, c("Information Ratio", "Annualized Alpha")]
 re_turns <- 
   scale(na.omit(rutils::etf_env$re_turns
                 [, as.character(for_mula)[-1]]))
-(t(re_turns) %*% re_turns) / NROW(re_turns)
+crossprod(re_turns) / NROW(re_turns)
 w_1 <- sqrt(0.5); w_2 <- w_1
 foo <- matrix(c(w_1, w_2, -w_2, w_1), nc=2)
 t(foo) %*% foo
@@ -422,7 +422,7 @@ cov_mat <- function(re_turns, an_gle=0) {
 }  # end cov_mat
 
 bar <- cov_mat(re_turns, an_gle=pi/4)
-(t(re_turns) %*% re_turns) / NROW(re_turns)
+crossprod(re_turns) / NROW(re_turns)
 (t(bar) %*% bar) / NROW(bar)
 
 angle_s <- seq(0, pi/2, by=pi/24)
@@ -498,9 +498,9 @@ abline(mod_el, lwd=2, col="red")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The covariance matrix $\mathbb{C}$, of the return matrix $r$, is given by:
+      The covariance matrix $\mathbb{C}$, of the return matrix $\mathbf{r}$, is given by:
       \begin{displaymath}
-        \mathbb{C} = \frac{r^T r} {n-1}
+        \mathbb{C} = \frac{\mathbf{r}^T \mathbf{r}} {n-1}
       \end{displaymath}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -528,7 +528,7 @@ re_turns <- xts(re_turns, date_s)
 cov_mat <- cov(re_turns)
 vari_ance <- diag(cov_mat)
 cor_mat <- cor(re_turns)
-# cov_mat <- (t(re_turns) %*% re_turns) / (NROW(re_turns)-1)
+# cov_mat <- crossprod(re_turns) / (NROW(re_turns)-1)
 # cor_mat <- cov_mat / sqrt(vari_ance)
 # cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
 # reorder correlation matrix based on clusters
@@ -690,25 +690,23 @@ barplot(weights_2, names.arg=names(weights_2),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The portfolio variance: $w^T \, \mathbb{C} \, w$ can be maximized under the constraint $w^T w = 1$, by maximizing the \emph{Lagrangian}:
+      The portfolio variance: $\mathbf{w}^T \mathbb{C} \, \mathbf{w}$ can be maximized under the \emph{quadratic} weights constraint $\mathbf{w}^T \mathbf{w} = 1$, by maximizing the \emph{Lagrangian} $\mathcal{L}$:
       \begin{displaymath}
-        \mathcal{L} = w^T \, \mathbb{C} \, w \, - \, \lambda \, (w^T w - 1)
+        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} \, - \, \lambda \, (\mathbf{w}^T \mathbf{w} - 1)
       \end{displaymath}
-      Where $\lambda$ is a \emph{Lagrange multiplier}, 
+      Where $\lambda$ is a \emph{Lagrange multiplier}.
       \vskip1ex
-      The weights corresponding to the maximum portfolio variance can be found by differentiating $\mathcal{L}$ with respect to $w$ and setting it to zero:
+      The maximum variance portfolio weights can be found by differentiating $\mathcal{L}$ with respect to $\mathbf{w}$ and setting it to zero:
       \begin{displaymath}
-        \mathbb{C} \, w = \lambda \, w
+        \mathbb{C} \, \mathbf{w} = \lambda \, \mathbf{w}
       \end{displaymath}
-      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$,
-      \vskip1ex
-      The optimal weights $w$ form an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$, 
+      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$, with the optimal weights $\mathbf{w}$ forming an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $\mathbf{w}$.
       \vskip1ex
       The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the return variances:
       \begin{displaymath}
-        \sum_{i=1}^k \lambda_i = \sum_{i=1}^k r_i^T r_i
+        \sum_{i=1}^k \lambda_i = \frac{1}{1-k} \sum_{i=1}^k {\mathbf{r}_i^T \mathbf{r}_i}
       \end{displaymath}
-      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix,
+      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/pca_etf_eigenvalues.png}
@@ -744,9 +742,9 @@ barplot(ei_gen$values, # plot eigenvalues
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The highest order \emph{principal component}, with the smallest eigenvalue, has the lowest possible variance, under the constraint that the sum of the squared weights is equal to \texttt{1}: $\mathbf{w}^T \mathbf{w} = 1$,
+      The highest order \emph{principal component}, with the smallest eigenvalue, has the lowest possible variance, under the \emph{quadratic} weights constraint: $\mathbf{w}^T \mathbf{w} = 1$.
       \vskip1ex
-      So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio},
+      So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
       <<echo=TRUE,eval=FALSE>>=
 # redefine objective function to minimize variance
 object_ive <- function(weight_s, re_turns) {
@@ -1277,6 +1275,7 @@ title("Dendrogram representing hierarchical clustering
 \end{block}
 
 \end{frame}
+
 
 %%%%%%%%%%%%%%%
 \subsection{depr: \protect\emph{Principal Component} Returns Time Series}

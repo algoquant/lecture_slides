@@ -8,23 +8,23 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 library(quantmod)
-some_cars <- mtcars[sample(NROW(mtcars), 10), ]
+car_s <- mtcars[sample(NROW(mtcars), 10), ]
 # plot scatterplot horsepower vs miles per gallon
-plot(some_cars[, "hp"], some_cars[, "mpg"],
+plot(car_s[, "hp"], car_s[, "mpg"],
      xlab="horsepower", ylab="miles per gallon",
      main="miles per gallon vs horsepower")
 # add a solid red point (pch=16) for the last car
-points(x=some_cars[NROW(some_cars), "hp"],
- y=some_cars[NROW(some_cars), "mpg"],
+points(x=car_s[NROW(car_s), "hp"],
+ y=car_s[NROW(car_s), "mpg"],
  col="red", pch=16)
 # add labels with the car names
-text(x=some_cars[, "hp"], y=some_cars[, "mpg"],
-     labels=rownames(some_cars[, ]),
+text(x=car_s[, "hp"], y=car_s[, "mpg"],
+     labels=rownames(car_s[, ]),
      pos=1, cex=0.8)
-# or add labels using wordcloud, to prevent overlaps
+# labels using wordcloud, to prevent overlaps
 library(wordcloud)
-textplot(x=some_cars[, "hp"], y=some_cars[, "mpg"],
-   words=rownames(some_cars))
+textplot(x=car_s[, "hp"], y=car_s[, "mpg"],
+   words=rownames(car_s))
 # plot the tree Height
 plot(trees[, "Height"],
      type="l",
@@ -39,7 +39,7 @@ lines(trees[, "Volume"], lwd=2, col="green")
 # add legend
 legend(x="left", legend=c("Height", "Volume"),
  inset=0.1, cex=1.0, bg="white",
- lwd=2, lty=c(1, 1), col=c("blue", "green"))
+ lwd=2, lty=1, col=c("blue", "green"))
 x_var <- seq(-2*pi, 2*pi, len=100)  # x values
 
 # open Windows graphics device
@@ -55,15 +55,15 @@ title(main="sine and cosine functions", line=0.1)
 # add legend
 legend(x="topright", legend=c("sine", "cosine"),
  title="legend", inset=0.1, cex=1.0, bg="white",
- lwd=2, lty=c(1, 1), col=c("red", "blue"))
+ lwd=2, lty=1, col=c("red", "blue"))
 graphics.off()  # close all graphics devices
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-3, 3),
+curve(expr=dnorm, xlim=c(-3, 3),
 xlab="", ylab="", lwd=2, col="blue")
 # add shifted Normal probability distribution
 curve(expr=dnorm(x, mean=1), add=TRUE,
-type="l", lwd=2, col="red")
+lwd=2, col="red")
 
 # add title
 title(main="Normal probability distribution functions",
@@ -71,7 +71,7 @@ line=0.1)
 # add legend
 legend(x="topright", legend=c("Normal", "shifted"),
  title="legend", inset=0.05, cex=0.8, bg="white",
- lwd=2, lty=c(1, 1), col=c("blue", "red"))
+ lwd=2, lty=1, col=c("blue", "red"))
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # load zoo
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
@@ -137,7 +137,7 @@ mtext(col_names[2], side=4, adj=1.5, col="red")
 title(main=paste0(col_names, collapse=" and "),
 line=0.5)
 legend("top", legend=col_names,
-  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  bg="white", lty=1, lwd=6,
   col=c("black", "red"), bty="n")
 slightly different method using par("usr")
 par(las=1)  # set text printing to horizontal
@@ -153,7 +153,7 @@ mtext(col_names[2], side=4, adj=1.5, col="red")
 title(main=paste0(col_names, collapse=" and "),
 line=0.5)
 legend("top", legend=col_names,
-  bg="white", lty=c(1, 1), lwd=c(6, 6),
+  bg="white", lty=1, lwd=6,
   col=c("black", "red"), bty="n")
 graph_params <- par()  # get existing parameters
 par("mar")  # get plot margins
@@ -191,7 +191,7 @@ col_ors <- c("red", "black", "blue", "green")
 lab_els <- paste("sigma", sig_mas, sep="=")
 for (in_dex in 1:4) {  # plot four curves
 curve(expr=dnorm(x, sd=sig_mas[in_dex]),
-type="l", xlim=c(-4, 4),
+xlim=c(-4, 4),
 xlab="", ylab="", lwd=2,
 col=col_ors[in_dex],
 add=as.logical(in_dex-1))
@@ -200,7 +200,7 @@ add=as.logical(in_dex-1))
 title(main="Normal Distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05, title="Sigmas",
- lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+ lab_els, cex=0.8, lwd=2, lty=1,
  col=col_ors)
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -221,7 +221,7 @@ for (in_dex in 1:4) {
 }  # end for
 # add legend
 legend("topright", inset=0.05, title="Sigmas",
- lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
+ lab_els, cex=0.8, lwd=2, lty=1,
  col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -232,7 +232,7 @@ col_ors <- c("red", "black", "blue", "green")
 lab_els <- paste("df", deg_free, sep="=")
 for (in_dex in 1:4) {  # plot four curves
 curve(expr=dchisq(x, df=deg_free[in_dex]),
-      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
+      xlim=c(0, 20), ylim=c(0, 0.3),
       xlab="", ylab="", lwd=2,
       col=col_ors[in_dex],
       add=as.logical(in_dex-1))
@@ -242,7 +242,7 @@ title(main="Chi-squared Distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       cex=0.8, lwd=6, lty=1,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -265,7 +265,7 @@ title(main="Chi-squared Distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       cex=0.8, lwd=6, lty=1,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -273,11 +273,11 @@ deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
 lab_els <- c("normal", paste("df", deg_free, sep="="))
 # plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-4, 4),
+curve(expr=dnorm, xlim=c(-4, 4),
       xlab="", ylab="", lwd=2)
 for (in_dex in 1:3) {  # plot three t-distributions
 curve(expr=dt(x, df=deg_free[in_dex]),
-      type="l", xlab="", ylab="", lwd=2,
+      xlab="", ylab="", lwd=2,
       col=col_ors[in_dex+1], add=TRUE)
 }  # end for
 # add title
@@ -285,7 +285,7 @@ title(main="t-distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
        title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       cex=0.8, lwd=6, lty=1,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -305,7 +305,7 @@ title(main="t-distributions", line=0.5)
 # add legend
 legend("topright", inset=0.05,
        title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
+       cex=0.8, lwd=6, lty=1,
        col=col_ors)
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -314,7 +314,7 @@ col_ors <- c("black", "red", "blue", "green")
 lab_els <- paste0("df1=", deg_free, ", df2=3")
 for (in_dex in 1:NROW(deg_free)) {  # plot four curves
 curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      type="l", xlim=c(0, 4),
+      xlim=c(0, 4),
       xlab="", ylab="", lwd=2,
       col=col_ors[in_dex],
       add=as.logical(in_dex-1))
@@ -350,7 +350,7 @@ barplot(pois_table, col="lightgrey",
 # create histogram of Poisson variables
 histo_gram <- hist(pois_counts, col="lightgrey", xlab="count",
      ylab="frequency", freq=FALSE, main="Poisson histogram")
-lines(density(pois_counts, adjust=1.5), type="l", lwd=2, col="blue")
+lines(density(pois_counts, adjust=1.5), lwd=2, col="blue")
 # Poisson probability distribution function
 poisson_func <- function(x, lambda)
   {exp(-lambda)*lambda^x/factorial(x)}
@@ -358,7 +358,7 @@ curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), add=TRUE, lwd=2, col="red")
 # add legend
 legend("topright", inset=0.05, title="Poisson histogram",
  c("histogram density", "probability"), cex=0.8, lwd=2,
- lty=c(1, 1), col=c("blue", "red"))
+ lty=1, col=c("blue", "red"))
 # total area under histogram
 diff(histo_gram$breaks) %*% histo_gram$density
 # boxplot of Poisson count data
@@ -373,7 +373,7 @@ boxplot(formula=mpg ~ cyl, data=mtcars,
 library(shiny)
 library(quantmod)
 inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::env_etf$VTI)
+cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 # ```
@@ -395,7 +395,7 @@ renderPlot({
   ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
   plot(ch_ob)
   legend("top", legend=colnames(ew_ma),
-   inset=0.1, bg="white", lty=c(1, 1), lwd=c(2, 2),
+   inset=0.1, bg="white", lty=1, lwd=2,
    col=plot_theme$col$line.col, bty="n")
 })  # end renderPlot
 library(zoo)  # load zoo

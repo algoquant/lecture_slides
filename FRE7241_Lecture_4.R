@@ -280,8 +280,8 @@ lines(fore_casts, col="orange", lwd=3)
 legend(x="topright", legend=c("series","forecasts"),
  col=c("black", "orange"), lty=1, lwd=6,
  cex=0.9, bg="white", bty="n")
-len_gth <- 1e3
 # Simulate AR(3) time series using filter()
+len_gth <- 1e3
 co_eff <- c(0.1, 0.39, 0.5)
 set.seed(1121)
 se_ries <- filter(x=rnorm(len_gth),
@@ -298,14 +298,15 @@ start_points <- c(rep_len(1, look_back-1),
     end_points[1:(n_rows-look_back+1)])
 # Perform rolling forecasting
 fore_casts <- sapply(end_points[-(1:2)], function(it) {
-de_sign <- de_sign[start_points[it]:end_points[it], ]
-# AR(3) coefficients
-design_inv <- MASS::ginv(de_sign[, -1])
-co_eff <- drop(design_inv %*% de_sign[, 1])
-de_sign[(NROW(de_sign)-2):NROW(de_sign), 1] %*% co_eff
-}
-)  # end sapply
+  de_sign <- de_sign[start_points[it]:end_points[it], ]
+  # calculate AR(3) coefficients
+  design_inv <- MASS::ginv(de_sign[, -1])
+  co_eff <- drop(design_inv %*% de_sign[, 1])
+  de_sign[(NROW(de_sign)-2):NROW(de_sign), 1] %*% co_eff
+})  # end sapply
 fore_casts <- c(rep(fore_casts[1], 2), fore_casts)
+# Lag the forecasts to push them out-of-sample
+fore_casts <- rutils::lag_it(fore_casts)
 # Mean squared error
 ms_e <- mean(fore_casts-se_ries)^2
 # Plot with legend

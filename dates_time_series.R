@@ -227,7 +227,7 @@ start_date <- decimal_date(Sys.Date()-6)
 end_date <- decimal_date(Sys.Date())
 # create vector of geometric Brownian motion
 da_ta <- exp(cumsum(rnorm(6)/100))
-fre_quency <- length(da_ta)/(end_date-start_date)
+fre_quency <- NROW(da_ta)/(end_date-start_date)
 ts_series <- ts(data=da_ta,
           start=start_date,
           frequency=fre_quency)
@@ -311,7 +311,7 @@ set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo time series of random returns
 in_dex <- Sys.Date() + 0:3
-zoo_series <- zoo(rnorm(length(in_dex)),
+zoo_series <- zoo(rnorm(NROW(in_dex)),
          order.by=in_dex)
 zoo_series
 attributes(zoo_series)
@@ -353,7 +353,7 @@ in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
 # create vector of geometric Brownian motion
 zoo_data <-
-  exp(cumsum(rnorm(length(in_dex))/100))
+  exp(cumsum(rnorm(NROW(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -376,12 +376,12 @@ library(zoo)  # load package zoo
 in_dex1 <- seq(Sys.Date(), by="days",
              length.out=365)
 # create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(length(in_dex1)),
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
            order.by=in_dex1)
 # create another zoo time series of random returns
 in_dex2 <- seq(Sys.Date()+350, by="days",
              length.out=365)
-zoo_series2 <- zoo(rnorm(length(in_dex2)),
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
            order.by=in_dex2)
 # rbind the two time series - ts1 supersedes ts2
 zoo_series3 <- rbind(zoo_series1,
@@ -395,11 +395,11 @@ title(main="Random Prices", line=-1)  # add title
 # create daily date series of class 'Date'
 in_dex1 <- Sys.Date() + -3:1
 # create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(length(in_dex1)),
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
          order.by=in_dex1)
 # create another zoo time series of random returns
 in_dex2 <- Sys.Date() + -1:3
-zoo_series2 <- zoo(rnorm(length(in_dex2)),
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
          order.by=in_dex2)
 merge(zoo_series1, zoo_series2)  # union of dates
 # intersection of dates
@@ -412,7 +412,7 @@ mat_rix <- matrix(mat_rix, nc=3)
 zoo::na.locf(mat_rix)
 rutils::na_locf(mat_rix)
 # get time series of prices
-price_s <- mget(c("VTI", "VXX"), envir=rutils::env_etf)
+price_s <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
 price_s <- lapply(price_s, quantmod::Ad)
 price_s <- rutils::do_call(cbind, price_s)
 sum(is.na(price_s))
@@ -421,14 +421,27 @@ price_s <- zoo::na.locf(price_s)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
 # remove whole rows containing NA returns
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 sum(is.na(re_turns))
 re_turns <- na.omit(re_turns)
 # or carry forward non-NA returns (preferred)
-re_turns <- rutils::env_etf$re_turns
+re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns)
 sum(is.na(re_turns))
+# Replace NAs in xts time series
+se_ries <- rutils::etf_env$price_s[, 1]
+head(se_ries)
+sum(is.na(se_ries))
+library(quantmod)
+series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
+all.equal(series_zoo, series_xts, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # methods(as.zoo)  # many methods of coercing into zoo
@@ -452,7 +465,7 @@ set.seed(1121)  # reset random number generator
 in_dex <- seq(from=as.Date("2014-07-14"),
             by="day", length.out=1000)
 # create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(length(in_dex))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(in_dex))/100))
 # create zoo time series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data,
             order.by=in_dex)
@@ -464,7 +477,7 @@ tsp(ts_series)  # frequency=1
 start_date <- decimal_date(start(zoo_series))
 end_date <- decimal_date(end(zoo_series))
 # calculate frequency of zoo_series
-fre_quency <- length(zoo_series)/(end_date-start_date)
+fre_quency <- NROW(zoo_series)/(end_date-start_date)
 da_ta <- coredata(zoo_series)  # extract data from zoo_series
 # create ts object using ts()
 ts_series <- ts(data=da_ta, start=start_date,
@@ -489,7 +502,7 @@ head(ts_series, 7)
 # create vector of regular dates, including weekends
 in_dex <- seq(from=start(zoo_series),
             by="day",
-            length.out=length(zoo_series))
+            length.out=NROW(zoo_series))
 index(zoo_series) <- in_dex
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
@@ -497,7 +510,7 @@ set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series of random returns
 in_dex <- Sys.Date() + 0:3
-x_ts <- xts(rnorm(length(in_dex)),
+x_ts <- xts(rnorm(NROW(in_dex)),
          order.by=in_dex)
 names(x_ts) <- "random"
 x_ts
@@ -511,12 +524,11 @@ indexTZ(x_ts)
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_stx)
 dim(st_ox)
 head(st_ox[, 1:4], 4)
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.xts method
-plot(st_ox[, "AdjClose"], xlab="", ylab="", main="")
+xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # add title
 library(xts)  # load xts
 library(lubridate)  # load lubridate
@@ -549,11 +561,13 @@ legend("topleft", legend=colnames(EuStockMarkets),
  lwd=3, col=col_ors, bg="white")
 library(rutils)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, 1]
+price_s <- na.omit(price_s)
 # create ggplot object
-etf_gg <- qplot(x=index(rutils::env_etf$price_s[, 1]),
-          y=as.numeric(rutils::env_etf$price_s[, 1]),
+etf_gg <- qplot(x=index(price_s),
+          y=as.numeric(price_s),
           geom="line",
-          main=names(rutils::env_etf$price_s[, 1])) +
+          main=names(price_s)) +
   xlab("") + ylab("") +
   theme(  # add legend and title
     legend.position=c(0.1, 0.5),
@@ -565,10 +579,11 @@ etf_gg
 library(rutils)  # load xts time series data
 library(reshape2)
 library(ggplot2)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # reshape data into a single column
 data_frame <-
   reshape2::melt(data_frame, id="dates")
@@ -583,21 +598,23 @@ ggplot(data=data_frame,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(dygraphs)))
-x_ts <- rutils::env_etf$price_s[, c("VTI", "IEF")]
+# load rutils which contains etf_env dataset
+library(rutils)
+library(dygraphs)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # plot dygraph with date range selector
-dygraph(x_ts, main="VTI and IEF prices") %>%
+dygraph(price_s, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
-# load rutils which contains env_etf dataset
-suppressMessages(suppressWarnings(library(rutils)))
-suppressMessages(suppressWarnings(library(plotly)))
+# load rutils which contains etf_env dataset
+library(rutils)
+library(plotly)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
 # create data frame of time series
-data_frame <-
-  data.frame(dates=index(rutils::env_etf$price_s),
-    coredata(rutils::env_etf$price_s[, c("VTI", "IEF")]))
+data_frame <- data.frame(dates=index(price_s),
+    coredata(price_s))
 # plotly syntax using pipes
 data_frame %>%
   plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
@@ -611,71 +628,80 @@ p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines"
 p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
-library(xts)  # load package xts
 # subset xts using a date range string
-stox_sub <- st_ox["2014-10-15/2015-01-10", 1:4]
-first(stox_sub)
-last(stox_sub)
+price_s <- rutils::etf_env$price_s
+sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset Nov 2014 using a date string
-stox_sub <- st_ox["2014-11", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11", 1:4]
+first(sub_prices)
+last(sub_prices)
 # subset all data after Nov 2014
-stox_sub <- st_ox["2014-11/", 1:4]
-first(stox_sub)
-last(stox_sub)
+sub_prices <- price_s["2014-11/", 1:4]
+first(sub_prices)
+last(sub_prices)
 # comma after date range not necessary
-identical(st_ox["2014-11", ], st_ox["2014-11"])
-# benchmark the speed of subsetting
+all.equal(price_s["2014-11", ], price_s["2014-11"])
+# .subset_xts() is faster than the bracket []
 library(microbenchmark)
 summary(microbenchmark(
-  bracket=sapply(500,
-  function(in_dex) max(st_ox[in_dex:(in_dex+10), ])),
-  subset=sapply(500,
-  function(in_dex) max(xts::.subset_xts(st_ox, in_dex:(in_dex+10)))),
+  bracket=price_s[10:20, ],
+  subset=xts::.subset_xts(price_s, 10:20),
   times=10))[, c(1, 4, 5)]
-library(xts)  # load package xts
-# vector of 1-minute times (ticks)
-min_ticks <- seq.POSIXt(
-  from=as.POSIXct("2015-04-14", tz="America/New_York"),
-  to=as.POSIXct("2015-04-16"),
-  by="min")
-# xts of 1-minute times (ticks) of random returns
-x_ts <- xts(rnorm(length(min_ticks)),
-               order.by=min_ticks)
+# specify string representing a date
+dat_e <- "2014-10-15"
+# subset price_s in two different ways
+price_s <- rutils::etf_env$price_s
+all.equal(price_s[index(price_s) >= dat_e],
+    price_s[paste0(dat_e, "/")])
+# boolean subsetting is slower because coercing string into date
+library(microbenchmark)
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# coerce string into a date
+dat_e <- as.Date("2014-10-15")
+# boolean subsetting is faster than using date string
+summary(microbenchmark(
+  boolean=(price_s[index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+price_s <- HighFreq::SPY["2012-04"]
 # subset recurring time interval using "T notation",
-x_ts <- x_ts["T09:30:00/T16:00:00"]
-first(x_ts["2015-04-15"])  # first element of day
-last(x_ts["2015-04-15"])  # last element of day
+price_s <- price_s["T10:30:00/T15:00:00"]
+first(price_s["2012-04-16"])  # first element of day
+last(price_s["2012-04-16"])  # last element of day
 # suppress timezone warning messages
 options(xts_check_tz=FALSE)
-library(xts)  # load package xts
-str(st_ox)  # display structure of xts
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+str(price_s)  # display structure of xts
 # subsetting zoo to single column drops dim attribute
-dim(zoo_stx_adj)
-dim(zoo_stx_adj[, 1])
+zoo_prices <- as.zoo(price_s)
+dim(zoo_prices)
+dim(zoo_prices[, 1])
 # zoo with single column are vectors not matrices
-c(is.matrix(zoo_stx_adj), is.matrix(zoo_stx_adj[, 1]))
+c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
 # xts always have a dim attribute
-rbind(base=dim(st_ox), subs=dim(st_ox[, 1]))
-c(is.matrix(st_ox), is.matrix(st_ox[, 1]))
-library(xts)  # load package xts
+rbind(base=dim(price_s), subs=dim(price_s[, 1]))
+c(is.matrix(price_s), is.matrix(price_s[, 1]))
 # lag of zoo shortens it by one row
-rbind(base=dim(zoo_stx_adj), lag=dim(lag(zoo_stx_adj)))
+rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
 # lag of xts doesn't shorten it
-rbind(base=dim(st_ox), lag=dim(lag(st_ox)))
+rbind(base=dim(price_s), lag=dim(lag(price_s)))
 # lag of zoo is in opposite direction from xts
-head(lag(zoo_stx_adj), 4)
-head(lag(st_ox), 4)
+head(lag(zoo_prices, -1), 4)
+head(lag(price_s), 4)
 # library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
 end_points <- endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
-library(xts)  # load package xts
 # lower the periodicity to months
-xts_monthly <- to.period(x=st_ox,
+xts_monthly <- to.period(x=price_s,
              period="months", name="MSFT")
 # convert colnames to standard OHLC format
 colnames(xts_monthly)
@@ -696,12 +722,12 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() creates xts from zoo
-st_ox <- as.xts(zoo_stx_adj)
+st_ox <- as.xts(zoo_prices)
 # subset xts using a date
 stox_sub <- st_ox["2014-11", 1:4]
 
 # plot OHLC using plot.xts method
-plot(stox_sub, type="candles", main="")
+xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)

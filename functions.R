@@ -1,3 +1,9 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -14,6 +20,32 @@ test_func <- function(first_arg, second_arg) {
 test_func(3, 2)  # error - glob_var doesn't exist yet!
 glob_var <- 10  # create glob_var
 test_func(3, 2)  # now works
+# define function that returns NULL for non-numeric argument
+test_func <- function(in_put) {
+  if (!is.numeric(in_put)) {
+    warning(paste("argument", in_put, "isn't numeric"))
+    return(NULL)
+  }
+  2*in_put
+}  # end test_func
+
+test_func(2)
+test_func("hello")
+# define a function that returns invisibly
+return_invisible <- function(in_put) {
+  invisible(in_put)
+}  # end return_invisible
+
+return_invisible(2)
+
+glob_var <- return_invisible(2)
+glob_var
+
+rm(list=ls())  # remove all objects
+# load objects from file
+loaded <- load(file="C:/Develop/data/my_data.RData")
+loaded  # vector of loaded objects
+ls()  # list objects
 test_func <- function(first_arg, second_arg) {
 # last statement of function is return value
   first_arg + 2*second_arg
@@ -40,88 +72,27 @@ test_func <- function(in_put=c("first_val", "second_val")) {
 test_func("second_val")
 test_func("se")  # partial name binding
 test_func("some_val")  # invalid string
-# define function that returns NULL for non-numeric argument
-test_func <- function(in_put) {
-  if (!is.numeric(in_put)) {
-    warning(paste("argument", in_put, "isn't numeric"))
-    return(NULL)
-  }
-  2*in_put
-}  # end test_func
-
-test_func(2)
-test_func("hello")
-setwd("C:/Develop/R/lecture_slides/data")
-# define a function that returns invisibly
-return_invisible <- function(in_put) {
-  invisible(in_put)
-}  # end return_invisible
-
-return_invisible(2)
-
-glob_var <- return_invisible(2)
-glob_var
-
-rm(list=ls())  # remove all objects
-# load objects from file
-loaded <- load(file="C:/Develop/data/my_data.RData")
-loaded  # vector of loaded objects
-ls()  # list objects
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
-  } else {
-    c(0, 1)  # initialize and return
-  }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
-# DAX returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
+# DAX percentage returns
+re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 # calc_skew() calculates skew of time series of returns
-calc_skew <- function(time_series=rnorm(1000)) {
 # default is normal time series
-  len_data <- length(time_series)  # number of observations
-# normalize time_series
-  time_series <-
-    (time_series - mean(time_series))/sd(time_series)
-# calculate skew last statement automatically returned
-  len_data*sum(time_series^3)/((len_data-1)*(len_data-2))
+calc_skew <- function(se_ries=rnorm(1000)) {
+  # number of observations
+  len_gth <- NROW(se_ries)
+  # normalize se_ries
+  se_ries <-
+    (se_ries - mean(se_ries))/sd(se_ries)
+  # calculate skew - last statement automatically returned
+  len_gth*sum(se_ries^3)/((len_gth-1)*(len_gth-2))
 }  # end calc_skew
 
-# calculate skew of DAX returns
-calc_skew(time_series=dax_rets)  # bind arguments by name
-calc_skew(dax_rets)  # bind arguments by position
-calc_skew()  # use default value of arguments
-# show the function code
-plot.default
-# display function
-getAnywhere(plot.default)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-# show all methods of mean()
-methods(generic.function=mean)
-# show code for mean.default()
-mean.default
-# get all methods for generic function "plot"
-methods("plot")
-
-getAnywhere(plot)  # display function
-rm(list=ls())
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  2*arg1  # just multiply first argument
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # second argument was never evaluated!
-lazy_func <- function(arg1, arg2) {  # define function lazy_func
-  cat(arg1, '\n')  # write to output
-  cat(arg2)  # write to output
-}  # end lazy_func
-lazy_func(3, 2)  # bind arguments by position
-lazy_func(3)  # first argument written to output
+# Calculate skew of DAX returns
+# bind arguments by name
+calc_skew(se_ries=re_turns)
+# bind arguments by position
+calc_skew(re_turns)
+# use default value of arguments
+calc_skew()
 str(plot)  # dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
   paste0("in_put=", in_put,
@@ -195,13 +166,51 @@ sum_dots <- function(in_put, ...) {
 sum_dots(1, 2, 3, 4)
 # recursive function sums its argument list
 sum_dots <- function(in_put, ...) {
-  if (length(list(...)) == 0) {  # check if dots are empty
+  if (NROW(list(...)) == 0) {  # check if dots are empty
     return(in_put)  # just one argument left
   } else {
     in_put + sum_dots(...)  # sum remaining arguments
   }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
+fibo_nacci <- function(len_gth) {
+  if (len_gth > 2) {
+    fib_seq <- fibo_nacci(len_gth-1)  # recursion
+    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
+  } else {
+    c(0, 1)  # initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(9), 2)
+# show the function code
+plot.default
+# display function
+getAnywhere(plot.default)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+# show all methods of mean()
+methods(generic.function=mean)
+# show code for mean.default()
+mean.default
+# get all methods for generic function "plot"
+methods("plot")
+
+getAnywhere(plot)  # display function
+rm(list=ls())
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  2*arg1  # just multiply first argument
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # second argument was never evaluated!
+lazy_func <- function(arg1, arg2) {  # define function lazy_func
+  cat(arg1, '\n')  # write to output
+  cat(arg2)  # write to output
+}  # end lazy_func
+lazy_func(3, 2)  # bind arguments by position
+lazy_func(3)  # first argument written to output
 rm(list=ls())
 glob_var <- 1  # define a global variable
 ls(environment())  # get all variables in environment
@@ -290,12 +299,12 @@ class(obj_string) <- "string"
 class(obj_string)
 # define function last()
 last <- function(vec_tor) {
-  vec_tor[length(vec_tor)]
+  vec_tor[NROW(vec_tor)]
 }  # end last
 last(1:10)
 # define replacement function last()
 'last<-' <- function(vec_tor, value) {
-  vec_tor[length(vec_tor)] <- value
+  vec_tor[NROW(vec_tor)] <- value
   vec_tor
 }  # end last
 x <- 1:5
@@ -469,6 +478,10 @@ func_tional <- function(list_arg) {
 }  # end func_tional
 arg_list <- list("sum", 1, 2, 3)
 func_tional(arg_list)
+# do_call() performs same operation as do.call()
+all.equal(
+  do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
+  rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
 rm(list=ls())
 str(apply)  # get list of arguments
 # create a matrix
@@ -494,24 +507,24 @@ apply(mat_rix, 2, median)
 # calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
 rm(list=ls())
-# DAX percent returns
-dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
+# DAX percentage returns
+re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 library(moments)  # load package moments
 str(moment)  # get list of arguments
 # apply moment function
-moment(x=dax_rets, order=3)
+moment(x=re_turns, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
-  moment(x=dax_rets, order=moment_order)
+  moment(x=re_turns, order=moment_order)
 }  # end anonymous function
       )  # end apply
 
 # another way of passing parameters into moment() function
 apply(X=moment_orders, MARGIN=1, FUN=moment,
-      x=dax_rets)
+      x=re_turns)
 # function with three arguments
 my_func <- function(arg1, arg2, arg3) {
   c(arg1=arg1, arg2=arg2, arg3=arg3)
@@ -669,13 +682,13 @@ length  # primitive function
 length.zoo_xtra <- function(in_ts) {
   cat("length of zoo_xtra object:\n")
 # unclass object, then calculate length
-  length(unclass(in_ts))
+  NROW(unclass(in_ts))
 }  # end length.zoo_xtra
-length(new_zoo)  # apply "length" method to "zoo_xtra" object
+NROW(new_zoo)  # apply "length" method to "zoo_xtra" object
 methods(generic.function="length")
 # define "last" method for class "zoo_xtra"
 last.zoo_xtra <- function(in_ts) {
-  in_ts[length(in_ts)]
+  in_ts[NROW(in_ts)]
 }  # end last.zoo_xtra
 last(new_zoo)  # doesn't work
 last.zoo_xtra(new_zoo)  # works
@@ -719,7 +732,7 @@ last(new_xts)
 # define new "last" method for class "xts_xtra"
 last.xts_xtra <- function(in_ts) {
   cat("last element of xts_xtra object:\n")
-  drop(in_ts[length(in_ts), ])
+  drop(in_ts[NROW(in_ts), ])
 }  # end last.xts_xtra
 last(new_xts)  # apply "last" from "xts_xtra" class
 # define "last" method for class "xts_xtra"

@@ -80,12 +80,12 @@ sort(sapply(mget(ls()),
 function(ob_ject) {
   format(object.size(ob_ject), units="KB")}
 ))
-# get sizes of objects in env_etf environment
-sort(sapply(ls(env_etf),
+# get sizes of objects in etf_env environment
+sort(sapply(ls(etf_env),
   function(ob_ject) {
-    object.size(get(ob_ject, env_etf))}))
-# get sizes of objects in env_etf environment
-sort(sapply(mget(ls(env_etf), env_etf),
+    object.size(get(ob_ject, etf_env))}))
+# get sizes of objects in etf_env environment
+sort(sapply(mget(ls(etf_env), etf_env),
       object.size))
 # get total size of all objects in workspace
 print(object.size(x=mget(ls())), units="MB")
@@ -95,8 +95,8 @@ ob_jects <- ll(unit="bytes")
 # sort by memory size (descending)
 ob_jects[order(ob_jects[, 2], decreasing=TRUE), ]
 ll()[order(ll()$KB, decreasing=TRUE), ]
-# get sizes of objects in env_etf environment
-ll(unit="bytes", env_etf)
+# get sizes of objects in etf_env environment
+ll(unit="bytes", etf_env)
 library(SOAR)  # load package SOAR
 # get sizes of objects in workspace
 sort(sapply(mget(ls()), object.size))
@@ -118,6 +118,21 @@ library(microbenchmark)
 foo <- runif(1e6)
 system.time(foo^0.5)
 microbenchmark(sqrt(foo), foo^0.5, times=10)
+# calculate the square root of a vector
+vec_tor <- runif(1e6)
+all.equal(sqrt(vec_tor), vec_tor^0.5)
+# microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  sqrt(vec_tor),
+  vec_tor^0.5,
+  times=10))[, c(1, 4, 5)]
+library(microbenchmark)
+vec_tor <- runif(1e6)
+system.time(vec_tor^0.5)
+summary(
+  microbenchmark(sqrt(vec_tor), vec_tor^0.5, times=10)
+  )[, c(1, 4, 5)]
 library(microbenchmark)
 # sum() is a compiled primitive function
 sum
@@ -140,9 +155,9 @@ mat_rix <- matrix(1:9, ncol=3, # create matrix
           paste0("col", 1:3)))
 # create specialized function
 matrix_to_dframe <- function(mat_rix) {
-  n_col <- ncol(mat_rix)
-  dframe <- vector("list", n_col)  # empty vector
-  for (in_dex in 1:n_col)  # populate vector
+  n_cols <- ncol(mat_rix)
+  dframe <- vector("list", n_cols)  # empty vector
+  for (in_dex in 1:n_cols)  # populate vector
     dframe <- mat_rix[, in_dex]
   attr(dframe, "row.names") <-  # add attributes
     .set_row_names(NROW(mat_rix))
@@ -156,21 +171,21 @@ summary(microbenchmark(
   as.data.frame(mat_rix),
   times=10))[, c(1, 4, 5)]
 # matrix with 5,000 rows
-big_matrix <- matrix(rnorm(10000), ncol=2)
+mat_rix <- matrix(rnorm(10000), ncol=2)
 # allocate memory for row sums
-row_sums <- numeric(NROW(big_matrix))
+row_sums <- numeric(NROW(mat_rix))
 summary(microbenchmark(
-  row_sums=rowSums(big_matrix),  # end row_sums
-  ap_ply=apply(big_matrix, 1, sum),  # end apply
-  l_apply=lapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ]),
+  row_sums=rowSums(mat_rix),  # end row_sums
+  ap_ply=apply(mat_rix, 1, sum),  # end apply
+  l_apply=lapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ]),
     FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:NROW(big_matrix), function(in_dex)
-    sum(big_matrix[in_dex, ])),  # end sapply
-  for_loop=for (i in 1:NROW(big_matrix)) {
-    row_sums[i] <- sum(big_matrix[i,])
+  s_apply=sapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end sapply
+  for_loop=for (i in 1:NROW(mat_rix)) {
+    row_sums[i] <- sum(mat_rix[i,])
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 big_vector <- rnorm(5000)
@@ -196,12 +211,84 @@ summary(microbenchmark(
       cum_sum <- c(cum_sum, big_vector[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
-library(microbenchmark)
-foo <- runif(1e6)
-system.time(foo^0.5)
-summary(
-  microbenchmark(sqrt(foo), foo^0.5, times=10)
-  )[, c(1, 4, 5)]
+# disable JIT
+jit_level <- compiler::enableJIT(0)
+# create inefficient function
+my_mean <- function(x) {
+  out_put <- 0; n_elem <- NROW(x)
+  for(it in 1:n_elem)
+    out_put <- out_put + x[it]/n_elem
+  out_put
+}  # end my_mean
+# byte-compile function and inspect it
+mymean_comp <- compiler::cmpfun(my_mean)
+mymean_comp
+# test function
+vec_tor <- runif(1e3)
+all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
+# microbenchmark byte-compile function
+summary(microbenchmark(
+  mean(vec_tor),
+  mymean_comp(vec_tor),
+  my_mean(vec_tor),
+  times=10))[, c(1, 4, 5)]
+# create another inefficient function
+sapply2 <- function(x, FUN, ...) {
+  out_put <- vector(length=NROW(x))
+  for (it in seq_along(x))
+    out_put[it] <- FUN(x[it], ...)
+  out_put
+}  # end sapply2
+sapply2_comp <- compiler::cmpfun(sapply2)
+all.equal(sqrt(vec_tor),
+  sapply2(vec_tor, sqrt),
+  sapply2_comp(vec_tor, sqrt))
+summary(microbenchmark(
+  sqrt(vec_tor),
+  sapply2_comp(vec_tor, sqrt),
+  sapply2(vec_tor, sqrt),
+  times=10))[, c(1, 4, 5)]
+# enable JIT
+compiler::enableJIT(jit_level)
+# define functions for profiling
+out_er <- function() {fa_st(); sl_ow()}
+fa_st <- function() Sys.sleep(0.1)
+sl_ow <- function() Sys.sleep(0.2)
+# turn on profiling
+Rprof(filename="C:/Develop/data_def/profile.out")
+# run code for profiling
+replicate(n=10, out_er())
+# turn off profiling
+Rprof(NULL)
+# compile summary of profiling from file
+summaryRprof("C:/Develop/data_def/profile.out")
+# profile plotting of regression
+profvis::profvis({
+  plot(price ~ carat, data=ggplot2::diamonds)
+  mod_el <- lm(price ~ carat, data=ggplot2::diamonds)
+  abline(mod_el, col="red")
+})  # end profvis
+# four methods of calculating matrix column means
+mat_rix <- matrix(rnorm(1e5), ncol=5e4)
+profvis::profvis({
+  mean_s <- apply(mat_rix, 2, mean)
+  mean_s <- colMeans(mat_rix)
+  mean_s <- lapply(mat_rix, mean)
+  mean_s <- vapply(mat_rix, mean, numeric(1))
+})  # end profvis
+# four methods of calculating data frame column means
+data_frame <- as.data.frame(mat_rix)
+profvis::profvis({
+  mean_s <- apply(data_frame, 2, mean)
+  mean_s <- colMeans(data_frame)
+  mean_s <- lapply(data_frame, mean)
+  mean_s <- vapply(data_frame, mean, numeric(1))
+})  # end profvis
+# profile a shiny app
+profvis::profvis(
+  shiny::runExample(example="06_tabsets",
+            display.mode="normal")
+)  # end profvis
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
@@ -226,10 +313,14 @@ summary(microbenchmark(
 # cumulative sum using "cumsum"
   vec_torized=cumsum(big_vector),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# matrix with 5,000 rows
+mat_rix <- matrix(rnorm(10000), ncol=2)
 # calculate row sums two different ways
+all.equal(rowSums(mat_rix),
+  apply(mat_rix, 1, sum))
 summary(microbenchmark(
-  row_sums=rowSums(big_matrix),
-  ap_ply=apply(big_matrix, 1, sum),
+  row_sums=rowSums(mat_rix),
+  ap_ply=apply(mat_rix, 1, sum),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(microbenchmark)
 str(pmax)
@@ -237,24 +328,24 @@ str(pmax)
 summary(microbenchmark(
   p_max=
     do.call(pmax.int,
-lapply(seq_along(big_matrix[1, ]),
-  function(in_dex) big_matrix[, in_dex])),
+lapply(seq_along(mat_rix[1, ]),
+  function(in_dex) mat_rix[, in_dex])),
   l_apply=unlist(
-    lapply(seq_along(big_matrix[, 1]),
-  function(in_dex) max(big_matrix[in_dex, ]))),
+    lapply(seq_along(mat_rix[, 1]),
+  function(in_dex) max(mat_rix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
 library(matrixStats)  # load package matrixStats
 # calculate row min values three different ways
 summary(microbenchmark(
-  row_mins=rowMins(big_matrix),
+  row_mins=rowMins(mat_rix),
   p_min=
     do.call(pmin.int,
-      lapply(seq_along(big_matrix[1, ]),
+      lapply(seq_along(mat_rix[1, ]),
              function(in_dex)
-               big_matrix[, in_dex])),
+               mat_rix[, in_dex])),
   as_data_frame=
     do.call(pmin.int,
-      as.data.frame.matrix(big_matrix)),
+      as.data.frame.matrix(mat_rix)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 summary(microbenchmark(  # assign values to vector three different ways
 # fast vectorized assignment loop performed in C using brackets "[]"
@@ -359,36 +450,37 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0),
 # plot matrix
 matplot(vec_tor4, type="l", lty="solid",
 col=c("green", "blue", "red"),
-lwd=c(2, 2, 2), xlab="", ylab="")
+lwd=2, xlab="", ylab="")
 # add legend
 legend(x="bottomright", legend=colnames(vec_tor4),
        title="", inset=0.05, cex=0.8, lwd=2,
-       lty=c(1, 1, 1), col=c("green", "blue", "red"))
+       lty=1, col=c("green", "blue", "red"))
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+r_norm <- rnorm(len_gth)
 # sample mean - MC estimate
-mean(sam_ple)
+mean(r_norm)
 # sample standard deviation - MC estimate
-sd(sam_ple)
+sd(r_norm)
 # Monte Carlo estimate of cumulative probability
-sam_ple <- sort(sam_ple)
+r_norm <- sort(r_norm)
 pnorm(1)
-sum(sam_ple<1)/len_gth
+sum(r_norm<1)/len_gth
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
-sam_ple[conf_level*len_gth]
-quantile(sam_ple, probs=conf_level)
+cut_off <- conf_level*len_gth
+r_norm[cut_off]
+quantile(r_norm, probs=conf_level)
 # analyze the source code of quantile()
 stats:::quantile.default
 # microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  sam_ple=sam_ple[cut_off],
-  quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  r_norm=r_norm[cut_off],
+  quan_tile=quantile(r_norm, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
@@ -439,128 +531,185 @@ title(main="Brownian motion crossing a barrier level",
       line=0.5)
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
+len_gth <- 1000; r_norm <- rnorm(len_gth)
+# sample mean and standard deviation
+mean(r_norm); sd(r_norm)
 # bootstrap of sample mean and median
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(len_gth,
                               replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+boot_strap[1:3, ]
+# standard error from formula
+sd(r_norm)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap[, "mean"])
+# standard error of median from bootstrap
+sd(boot_strap[, "median"])
+plot(density(boot_strap[, "median"]),
+     lwd=2, xlab="regression slopes",
+     main="Distribution of Bootstrapped Median")
+abline(v=mean(boot_strap[, "median"]),
+ lwd=2, col="red")
+set.seed(1121)  # reset random number generator
+len_gth <- 1000
+r_norm <- rnorm(len_gth)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  # boot_sample from Standard Normal Distribution
+  boot_sample <- rnorm(len_gth)
   c(mean=mean(boot_sample),
     median=median(boot_sample))
 })  # end sapply
 boot_strap[, 1:3]
 # standard error from formula
-sd(sam_ple)/sqrt(len_gth)
+sd(r_norm)/sqrt(len_gth)
 # standard error of mean from bootstrap
 sd(boot_strap["mean", ])
 # standard error of median from bootstrap
 sd(boot_strap["median", ])
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+r_norm <- rnorm(len_gth)
 # bootstrap mean and median under Windows
 boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  function(x, r_norm, len_gth) {
+  boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+  }, r_norm=r_norm, len_gth=len_gth)  # end parLapply
 # bootstrap mean and median under Mac-OSX or Linux
 boot_strap <- mclapply(1:10000,
   function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
+function(x) c(mean=mean(x), std_error=sd(x)))
 # standard error from formula
-sd(sam_ple)/sqrt(len_gth)
+sd(r_norm)/sqrt(len_gth)
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
-# sample from time series of ETF returns
-sam_ple <- rutils::env_etf$re_turns[, "VTI"]
-sam_ple <- na.omit(sam_ple)
-len_gth <- NROW(sam_ple)
-# bootstrap mean and median under Windows
+len_gth <- 1000
+r_norm <- rnorm(len_gth)
+sd(r_norm)
+mad(r_norm)
+median(abs(r_norm - median(r_norm)))
+median(abs(r_norm - median(r_norm)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    r_norm[sample.int(len_gth, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+# Analyze bootstrapped variance
+head(boot_strap)
+sum(is.na(boot_strap))
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-clusterSetRNGStream(clus_ter, 1121)  # reset random number generator in all cores
-num_boot <- 1e4
-boot_strap <- parLapply(clus_ter, 1:num_boot,
-  function(x, sam_ple, len_gth) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, r_norm) {
+    boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:num_boot,
+  }, r_norm=r_norm)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
   function(x) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-    c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
+    boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # stop R processes over cluster
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Sample from time series of ETF returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+len_gth <- NROW(re_turns)
+# Bootstrap sd and MAD under Windows
+library(parallel)  # load package parallel
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
+clusterSetRNGStream(clus_ter, 1121)  # reset random number generator in all cores
+n_boot <- 1e4
+boot_strap <- parLapply(clus_ter, 1:n_boot,
+  function(x, re_turns, len_gth) {
+    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, re_turns=re_turns, len_gth=len_gth)  # end parLapply
+# Bootstrap sd and MAD under Mac-OSX or Linux
+boot_strap <- mclapply(1:n_boot,
+  function(x) {
+    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
+function(x) c(mean=mean(x), std_error=sd(x)))
 # standard error assuming normal distribution of returns
-sd(sam_ple)/sqrt(num_boot)
+sd(re_turns)/sqrt(n_boot)
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
-# load time series of ETF prices
-sam_ple <- rutils::env_etf$VTI[, 4]
-len_gth <- NROW(sam_ple)
-# calculate percentage returns
-sam_ple <- rutils::diff_it(log(sam_ple))
-# define barrier level with respect to sam_ple
-bar_rier <- 0.8*max(exp(cumsum(sam_ple)))
+# Load time series of ETF percentage returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Define barrier level with respect to re_turns
+bar_rier <- 0.8*max(exp(cumsum(re_turns)))
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-num_boot <- 1e4
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
+n_boot <- 1e4
 # perform parallel bootstrap under Windows
 set.seed(1121)  # reset random number generator
-boot_strap <- parLapply(clus_ter, 1:num_boot,
-  function(x, sam_ple, len_gth, bar_rier) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+boot_strap <- parLapply(clus_ter, 1:n_boot,
+  function(x, re_turns, len_gth, bar_rier) {
+    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
     # calculate prices from percentage returns
     boot_sample <- exp(cumsum(boot_sample))
     # calculate payout
     sum(boot_sample > bar_rier) > 0
-  }, sam_ple=sam_ple, len_gth=len_gth, bar_rier=bar_rier)  # end parLapply
+  }, re_turns=re_turns, len_gth=n_rows, bar_rier=bar_rier)  # end parLapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 # perform parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:num_boot,
+boot_strap <- mclapply(1:n_boot,
   function(x) {
-    boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
     # calculate prices from percentage returns
     boot_sample <- exp(cumsum(boot_sample))
     # calculate payout
     sum(boot_sample > bar_rier) > 0
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # calculate probability of crossing barrier
-sum(boot_strap)/num_boot
+sum(boot_strap)/n_boot
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 len_gth <- 1000
-sam_ple <- rnorm(len_gth)
+r_norm <- rnorm(len_gth)
 # estimate the 95% quantile
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(len_gth,
                               replace=TRUE)]
   quantile(boot_sample, 0.95)
 })  # end sapply
 sd(boot_strap)
 # estimate the 95% quantile using antithetic sampling
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
+  boot_sample <- r_norm[sample.int(len_gth,
                               replace=TRUE)]
   quantile(c(boot_sample, -boot_sample), 0.95)
 })  # end sapply
@@ -569,68 +718,68 @@ sd(boot_strap)
 sqrt(2)*sd(boot_strap)
 set.seed(1121)  # initialize random number generator
 # define explanatory and response variables
-ex_plain <- rnorm(100, mean=2)
+de_sign <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- -3 + ex_plain + noise
+res_ponse <- -3 + de_sign + noise
 # define design matrix and regression formula
-de_sign <- data.frame(res_ponse, ex_plain)
-reg_formula <- paste(colnames(de_sign)[1],
+de_sign <- data.frame(res_ponse, de_sign)
+for_mula <- paste(colnames(de_sign)[1],
   paste(colnames(de_sign)[-1], collapse="+"),
   sep=" ~ ")
 # bootstrap the regression
 boot_strap <- sapply(1:100, function(x) {
   boot_sample <- sample.int(dim(de_sign)[1],
                       replace=TRUE)
-  reg_model <- lm(reg_formula,
+  mod_el <- lm(for_mula,
           data=de_sign[boot_sample, ])
-  reg_model$coefficients
+  mod_el$coefficients
 })  # end sapply
 par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
 x11(width=6, height=6)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=1,
-      function(x) c(mean=mean(x), sd=sd(x)))
+      function(x) c(mean=mean(x), std_error=sd(x)))
 # means and standard errors from regression summary
-reg_model <- lm(reg_formula, data=de_sign)
-reg_model$coefficients
-summary(reg_model)$coefficients[, "Std. Error"]
-plot(density(boot_strap["ex_plain", ]),
+mod_el <- lm(for_mula, data=de_sign)
+mod_el$coefficients
+summary(mod_el)$coefficients[, "Std. Error"]
+plot(density(boot_strap["de_sign", ]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap["ex_plain", ]),
+abline(v=mean(boot_strap["de_sign", ]),
        lwd=2, col="red")
 library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+n_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster under Windows
 # bootstrap the regression under Windows
 boot_strap <- parLapply(clus_ter, 1:1000,
-  function(x, reg_formula, de_sign) {
+  function(x, for_mula, de_sign) {
     boot_sample <-
 sample.int(dim(de_sign)[1], replace=TRUE)
-    reg_model <- lm(reg_formula,
+    mod_el <- lm(for_mula,
 data=de_sign[boot_sample, ])
-    reg_model$coefficients
+    mod_el$coefficients
   },
-  reg_formula=reg_formula,
+  for_mula=for_mula,
   de_sign=de_sign)  # end parLapply
 # bootstrap the regression under Mac-OSX or Linux
 boot_strap <- mclapply(1:1000,
   function(x) {
     boot_sample <-
 sample.int(dim(de_sign)[1], replace=TRUE)
-    lm(reg_formula,
+    lm(for_mula,
 data=de_sign[boot_sample, ])$coefficients
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
+function(x) c(mean=mean(x), std_error=sd(x)))
 x11(width=6, height=6)
-plot(density(boot_strap[, "ex_plain"]),
+plot(density(boot_strap[, "de_sign"]),
      lwd=2, xlab="regression slopes",
      main="Bootstrapped regression slopes")
-abline(v=mean(boot_strap[, "ex_plain"]),
+abline(v=mean(boot_strap[, "de_sign"]),
  lwd=2, col="red")
 library(parallel)  # load package parallel
 # get short description
@@ -641,17 +790,17 @@ help(package="parallel")
 ls("package:parallel")
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
   x
 }  # end paws
 # perform parallel loop under Mac-OSX or Linux
-paw_s <- mclapply(1:10, paws, mc.cores=num_cores,
+paw_s <- mclapply(1:10, paws, mc.cores=n_cores,
           sleep_time=0.01)
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # perform parallel loop under Windows
 paw_s <- parLapply(clus_ter, 1:10, paws,
            sleep_time=0.01)
@@ -667,9 +816,9 @@ summary(microbenchmark(
 stopCluster(clus_ter)
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # define function that pauses execution
 paws <- function(x, sleep_time) {
   Sys.sleep(sleep_time)
@@ -701,12 +850,12 @@ lines(x=rownames(compute_times),
 y=compute_times[, "parallel"], lwd=2, col="green")
 legend(x="topleft", legend=colnames(compute_times),
  inset=0.1, cex=1.0, bg="white",
- lwd=2, lty=c(1, 1), col=c("blue", "green"))
+ lwd=2, lty=1, col=c("blue", "green"))
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # define large matrix
 mat_rix <- matrix(rnorm(7*10^5), ncol=7)
 # define aggregation function over column of matrix
@@ -730,9 +879,9 @@ summary(microbenchmark(
 stopCluster(clus_ter)
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 ba_se <- 2
 # fails because child processes don't know ba_se:
 parLapply(clus_ter, 2:4,
@@ -748,24 +897,24 @@ parLapply(clus_ter, 2:4,
 # fails because child processes don't know zoo::index():
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(index(get(sym_bol, envir=rutils::env_etf))))
+      NROW(index(get(sym_bol, envir=rutils::etf_env))))
 # zoo function referenced using "::" in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol)
-      NROW(zoo::index(get(sym_bol, envir=rutils::env_etf))))
+      NROW(zoo::index(get(sym_bol, envir=rutils::etf_env))))
 # package zoo loaded in child process:
 parSapply(clus_ter, c("VTI", "IEF", "DBC"),
     function(sym_bol) {
       stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-      NROW(index(get(sym_bol, envir=rutils::env_etf)))
+      NROW(index(get(sym_bol, envir=rutils::etf_env)))
     })  # end parSapply
 # stop R processes over cluster under Windows
 stopCluster(clus_ter)
 library(parallel)  # load package parallel
 # calculate number of available cores
-num_cores <- detectCores() - 1
+n_cores <- detectCores() - 1
 # initialize compute cluster under Windows
-clus_ter <- makeCluster(num_cores)
+clus_ter <- makeCluster(n_cores)
 # set seed for cluster under Windows
 # doesn't work: set.seed(1121)
 clusterSetRNGStream(clus_ter, 1121)
@@ -775,7 +924,7 @@ sum(unlist(out_put))
 # stop R processes over cluster under Windows
 stopCluster(clus_ter)
 # perform parallel loop under Mac-OSX or Linux
-out_put <- mclapply(1:10, rnorm, mc.cores=num_cores, n=100)
+out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
 options(width=50, dev='pdf')
 str(optimize)
 # objective function with multiple minima
@@ -834,23 +983,23 @@ op_tim$par
 op_tim$value
 rastri_gin(op_tim$par, pa_ram=1)
 # sample of normal variables
-sam_ple <- rnorm(1000, mean=4, sd=2)
+r_norm <- rnorm(1000, mean=4, sd=2)
 # objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
+object_ive <- function(pa_r, r_norm) {
   sum(2*log(pa_r[2]) +
-    ((sam_ple - pa_r[1])/pa_r[2])^2)
+    ((r_norm - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, sam_ple)
-    object_ive(c(mean, sd), sam_ple),
+  FUN=function(mean, sd, r_norm)
+    object_ive(c(mean, sd), r_norm),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
 objective_grid <- outer(par_mean, par_sd,
-vec_objective, sam_ple=sam_ple)
+vec_objective, r_norm=r_norm)
 objective_min <- which(  # grid search
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
@@ -876,18 +1025,18 @@ par_init <- c(mean=0, sd=1)
 # perform optimization using optim()
 optim_fit <- optim(par=par_init,
   fn=object_ive, # log-likelihood function
-  sam_ple=sam_ple,
+  r_norm=r_norm,
   method="L-BFGS-B", # quasi-Newton method
   upper=c(10, 10), # upper constraint
   lower=c(-10, 0.1)) # lower constraint
 # optimal parameters
 optim_fit$par
 # perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(sam_ple, densfun="normal")
+optim_fit <- MASS::fitdistr(r_norm, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
 # plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
+histo_gram <- hist(r_norm, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_fit$par["mean"],
@@ -897,27 +1046,27 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
  leg="optimal parameters",
  lwd=2, bg="white", col="red")
 # sample from mixture of normal distributions
-sam_ple <- c(rnorm(100, sd=1.0),
-             rnorm(100, mean=4, sd=1.0))
+r_norm <- c(rnorm(100, sd=1.0),
+      rnorm(100, mean=4, sd=1.0))
 # objective function is log-likelihood
-object_ive <- function(pa_r, sam_ple) {
+object_ive <- function(pa_r, r_norm) {
   likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((sam_ple-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((sam_ple-pa_r[4])/pa_r[5])
+  dnorm((r_norm-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((r_norm-pa_r[4])/pa_r[5])
   if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, sam_ple)
-    object_ive(c(w, m1, s1, mean, sd), sam_ple),
+  FUN=function(mean, sd, w, m1, s1, r_norm)
+    object_ive(c(w, m1, s1, mean, sd), r_norm),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
 objective_grid <- outer(par_mean, par_sd,
-    vec_objective, sam_ple=sam_ple,
+    vec_objective, r_norm=r_norm,
     w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
 colnames(objective_grid) <- round(par_sd, 2)
@@ -939,13 +1088,13 @@ par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # perform optimization
 optim_fit <- optim(par=par_init,
       fn=object_ive,
-      sam_ple=sam_ple,
+      r_norm=r_norm,
       method="L-BFGS-B",
       upper=c(1,10,10,10,10),
       lower=c(0,-10,0.2,-10,0.2))
 optim_fit$par
 # plot histogram
-histo_gram <- hist(sam_ple, plot=FALSE)
+histo_gram <- hist(r_norm, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {
@@ -1016,13 +1165,13 @@ Rcpp::cppFunction("
 # run Rcpp function
 times_two(3)
 # source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/rcpp_mult.cpp")
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
 # multiply two numbers
-rcpp_mult(2, 3)
-rcpp_mult(1:3, 6:4)
+mult_rcpp(2, 3)
+mult_rcpp(1:3, 6:4)
 # multiply two vectors
-rcpp_mult_vec(2, 3)
-rcpp_mult_vec(1:3, 6:4)
+mult_vec_rcpp(2, 3)
+mult_vec_rcpp(1:3, 6:4)
 # define Rcpp function with loop
 Rcpp::cppFunction("
 double inner_mult(NumericVector x, NumericVector y) {
@@ -1069,7 +1218,7 @@ summary(microbenchmark(
   r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
   times=10))[, c(1, 4, 5)]
 # define Ornstein-Uhlenbeck function in R
-ou_proc <- function(len_gth=1000, eq_price=5.0,
+sim_ou <- function(len_gth=1000, eq_price=5.0,
               vol_at=0.01, the_ta=0.01) {
   re_turns <- numeric(len_gth)
   price_s <- numeric(len_gth)
@@ -1079,31 +1228,55 @@ ou_proc <- function(len_gth=1000, eq_price=5.0,
     price_s[i] <- price_s[i-1] * exp(re_turns[i])
   }  # end for
   price_s
-}  # end ou_proc
-# simulate Ornstein-Uhlenbeck process
+}  # end sim_ou
+# simulate Ornstein-Uhlenbeck process in R
 eq_price <- 5.0; vol_at <- 0.01
 the_ta <- 0.01; len_gth <- 1000
 set.seed(1121)  # reset random numbers
-price_s <- ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
+ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
 # define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector rcpp_ou_proc(int len_gth, double eq_price, double vol_at, double the_ta, NumericVector r_norm) {
+NumericVector sim_ou_rcpp(double eq_price,
+                double vol_at,
+                double the_ta,
+                NumericVector in_nov) {
+  int len_gth = in_nov.size();
   NumericVector price_s(len_gth);
   NumericVector re_turns(len_gth);
   price_s[0] = eq_price;
-  for (int i = 1; i < len_gth; ++i) {
-    re_turns[i] = the_ta*(eq_price - price_s[i-1]) + vol_at*r_norm[i-1];
-    price_s[i] = price_s[i-1] * exp(re_turns[i]);
-  }
+  for (int it = 1; it < len_gth; it++) {
+    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
+    price_s[it] = price_s[it-1] * exp(re_turns[it]);
+  }  // end for
   return price_s;
 }")  # end cppFunction
+# simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # reset random numbers
-price_s <- rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth))
+ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
+  vol_at=vol_at,
+  the_ta=the_ta,
+  in_nov=rnorm(len_gth))
+all.equal(ou_sim, ou_sim_rcpp)
 # compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
-  r_cpp=rcpp_ou_proc(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, r_norm=rnorm(len_gth)),
+  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, in_nov=rnorm(len_gth)),
+  times=10))[, c(1, 4, 5)]
+# source Rcpp function for Ornstein-Uhlenbeck process from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_ou.cpp")
+# simulate Ornstein-Uhlenbeck process in Rcpp
+set.seed(1121)  # reset random numbers
+ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
+  vol_at=vol_at,
+  the_ta=the_ta,
+  in_nov=rnorm(len_gth))
+all.equal(ou_sim, ou_sim_rcpp)
+# compare speed of Rcpp and R
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, in_nov=rnorm(len_gth)),
   times=10))[, c(1, 4, 5)]
 # calculate uniformly distributed pseudo-random sequence
 uni_form <- function(see_d, len_gth=10) {
@@ -1181,6 +1354,41 @@ summary(microbenchmark(
 #      expr     mean median
 # 1 inv_mat  3.42669  2.933
 # 2 solve   32.00254 31.280
+# source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
+# define AR(2) coefficients
+co_eff <- c(0.9, 0.09)
+len_gth <- 1e4
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+# simulate ARIMA using filter()
+arima_filter <- filter(x=in_nov,
+  filter=co_eff, method="recursive")
+# simulate ARIMA using sim_arima()
+ari_ma <- sim_arima(in_nov, rev(co_eff))
+all.equal(drop(ari_ma),
+  as.numeric(arima_filter))
+# microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
+  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+# wipp
+# install package reticulate
+install.packages("reticulate")
+# load package reticulate
+library(reticulate)
+# get documentation for package reticulate
+# get short description
+packageDescription("reticulate")
+# load help page
+help(package="reticulate")
+# list all datasets in "reticulate"
+data(package="reticulate")
+# list all objects in "reticulate"
+ls("package:reticulate")
+# remove reticulate from search path
+detach("package:reticulate")
 # create random real symmetric matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- mat_rix + t(mat_rix)
@@ -1201,11 +1409,11 @@ round(t(eigen_vec) %*% (mat_rix %*% eigen_vec),
   digits=4)
 ei_gen$values
 # eigen decomposition of matrix by rotating the diagonal matrix
-eigen_decomp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
+de_comp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
 # create diagonal matrix of eigenvalues
 # diago_nal <- diag(ei_gen$values)
-# eigen_decomp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
-all.equal(mat_rix, eigen_decomp)
+# de_comp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
+all.equal(mat_rix, de_comp)
 # create random positive semi-definite matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- t(mat_rix) %*% mat_rix
@@ -1217,35 +1425,46 @@ barplot(ei_gen$values, las=3,
   xlab="", ylab="",
   names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of positive semi-definite matrix")
-# dimensions of left and right matrices
-n_left <- 6 ; n_right <- 4
-# create random positive semi-definite matrix
-left_mat <- matrix(runif(n_left^2), nc=n_left)
-left_mat <- crossprod(left_mat)
-# or
-left_mat <- left_mat %*% t(left_mat)
-# calculate left eigenvectors
-ei_gen <- eigen(left_mat)
-left_mat <- ei_gen$vectors[, 1:n_right]
-# create random positive semi-definite matrix
-right_mat <- matrix(runif(n_right^2), nc=n_right)
-right_mat <- crossprod(right_mat)
-# or
-right_mat <- right_mat %*% t(right_mat)
-# calculate right eigenvectors and singular values
-ei_gen <- eigen(right_mat)
-right_mat <- ei_gen$vectors
-sing_values <- ei_gen$values
-# compose rectangular matrix
-mat_rix <-
-  left_mat %*% (sing_values * t(right_mat))
-# mat_rix <- left_mat %*% diag(sing_values) %*% t(right_mat)
-# perform singular value decomposition
+# Perform singular value decomposition
+mat_rix <- matrix(rnorm(50), nc=5)
 s_vd <- svd(mat_rix)
-# compare SVD with inputs
+# Recompose mat_rix from SVD mat_rices
+all.equal(mat_rix,
+  s_vd$u %*% (s_vd$d*t(s_vd$v)))
+# Columns of U and V are orthonormal
+round(t(s_vd$u) %*% s_vd$u, 4)
+round(t(s_vd$v) %*% s_vd$v, 4)
+# Dimensions of left and right matrices
+n_left <- 6 ; n_right <- 4
+# Calculate left matrix
+left_mat <- matrix(runif(n_left^2), nc=n_left)
+ei_gen <- eigen(crossprod(left_mat))
+left_mat <- ei_gen$vectors[, 1:n_right]
+# Calculate right matrix and singular values
+right_mat <- matrix(runif(n_right^2), nc=n_right)
+ei_gen <- eigen(crossprod(right_mat))
+right_mat <- ei_gen$vectors
+sing_values <- sort(runif(n_right, min=1, max=5), decreasing=TRUE)
+# Compose rectangular matrix
+mat_rix <- left_mat %*% (sing_values * t(right_mat))
+# Perform singular value decomposition
+s_vd <- svd(mat_rix)
+# Recompose mat_rix from SVD
+all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
+# Compare SVD with mat_rix components
 all.equal(abs(s_vd$u), abs(left_mat))
 all.equal(abs(s_vd$v), abs(right_mat))
-all.equal(s_vd$d, ei_gen$values)
+all.equal(s_vd$d, sing_values)
+# Eigen decomposition of mat_rix squared
+square_d <- mat_rix %*% t(mat_rix)
+ei_gen <- eigen(square_d)
+all.equal(ei_gen$values[1:n_right], sing_values^2)
+all.equal(abs(ei_gen$vectors[, 1:n_right]), abs(left_mat))
+# Eigen decomposition of mat_rix squared
+square_d <- t(mat_rix) %*% mat_rix
+ei_gen <- eigen(square_d)
+all.equal(ei_gen$values, sing_values^2)
+all.equal(abs(ei_gen$vectors), abs(right_mat))
 # create random positive semi-definite matrix
 mat_rix <- matrix(runif(25), nc=5)
 mat_rix <- t(mat_rix) %*% mat_rix
@@ -1267,8 +1486,7 @@ all.equal(in_verse, eigen_inverse)
 # diago_nal <- diag(1/ei_gen$values)
 # eigen_inverse <-
 #   eigen_vec %*% (diago_nal %*% t(eigen_vec))
-# create random rectangular matrix
-# case when: n_left > n_right
+# random rectangular matrix: n_left > n_right
 n_left <- 6 ; n_right <- 4
 mat_rix <- matrix(runif(n_left*n_right),
   nc=n_right)
@@ -1276,15 +1494,16 @@ mat_rix <- matrix(runif(n_left*n_right),
 in_verse <- MASS::ginv(mat_rix)
 round(in_verse %*% mat_rix, 4)
 all.equal(mat_rix,
-    mat_rix %*% in_verse %*% mat_rix)
-# create random rectangular matrix
-# case when: n_left < n_right
+  mat_rix %*% in_verse %*% mat_rix)
+# random rectangular matrix: n_left < n_right
 n_left <- 4 ; n_right <- 6
 mat_rix <- matrix(runif(n_left*n_right),
   nc=n_right)
 # calculate generalized inverse of mat_rix
 in_verse <- MASS::ginv(mat_rix)
+all.equal(mat_rix, mat_rix %*% in_verse %*% mat_rix)
 round(mat_rix %*% in_verse, 4)
+round(in_verse %*% mat_rix, 4)
 # perform singular value decomposition
 s_vd <- svd(mat_rix)
 # calculate generalized inverse from SVD
@@ -1300,7 +1519,7 @@ mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
 mat_rix <- t(mat_rix) %*% mat_rix
 # calculate generalized inverse of mat_rix
 in_verse <- MASS::ginv(mat_rix)
-# verify inverse of mat_rix
+# Verify inverse property of mat_rix
 all.equal(mat_rix,
   mat_rix %*% in_verse %*% mat_rix)
 # perform singular value decomposition
@@ -1341,16 +1560,16 @@ mat_rix <- matrix(runif(1e4), nc=100)
 mat_rix <- t(mat_rix) %*% mat_rix
 # calculate eigen decomposition
 ei_gen <- eigen(mat_rix)
-eigen_values <- ei_gen$values
+eigen_val <- ei_gen$values
 eigen_vec <- ei_gen$vectors
 # set tolerance for determining zero singular values
 to_l <- sqrt(.Machine$double.eps)
 # if needed convert to positive definite matrix
-not_zero <- (eigen_values > (to_l * eigen_values[1]))
+not_zero <- (eigen_val > (to_l * eigen_val[1]))
 if (sum(!not_zero) > 0) {
-  eigen_values[!not_zero] <- 2*to_l
+  eigen_val[!not_zero] <- 2*to_l
   mat_rix <- eigen_vec %*%
-    (eigen_values * t(eigen_vec))
+    (eigen_val * t(eigen_vec))
 }  # end if
 # calculate the Cholesky mat_rix
 choles_ky <- chol(mat_rix)
@@ -1373,22 +1592,25 @@ choles_ky <- chol(cov_mat)
 choles_ky
 # simulate random uncorrelated returns
 n_assets <- 5
-n_rows <- 10000
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+len_gth <- 10000
+re_turns <- matrix(rnorm(n_assets*len_gth), nc=n_assets)
 # calculate correlated returns by applying Cholesky
 corr_returns <- re_turns %*% choles_ky
 # calculate covariance matrix
-cov_returns <- crossprod(corr_returns) / (n_rows-1)
+cov_returns <- crossprod(corr_returns) / (len_gth-1)
 all.equal(cov_mat, cov_returns)
-# simulate random portfolio returns
+# Simulate random portfolio returns
 n_assets <- 10
-n_rows <- 100
-re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
-# de-mean the returns
+len_gth <- 100
+set.seed(1121)  # initialize random number generator
+re_turns <- matrix(rnorm(n_assets*len_gth), nc=n_assets)
+# Calculate de-meaned re_turns matrix
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+# Or
 re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
-# calculate covariance matrix
-cov_mat <- crossprod(re_turns) / (n_rows-1)
-# calculate eigenvectors and eigenvalues
+# Calculate covariance matrix
+cov_mat <- crossprod(re_turns) / (len_gth-1)
+# Calculate eigenvectors and eigenvalues
 ei_gen <- eigen(cov_mat)
 ei_gen$values
 barplot(ei_gen$values, # plot eigenvalues
@@ -1408,6 +1630,40 @@ e_values <- sapply(n_data, function(x) {
 plot(y=e_values, x=n_data, t="l",
   xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
+# Create rectangular matrix with collinear columns
+se_ries <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+cov_mat <- cov(se_ries)
+# Calculate inverse of cov_mat - error
+in_verse <- solve(cov_mat)
+# Calculate regularized inverse of cov_mat
+in_verse <- MASS::ginv(cov_mat)
+# Verify inverse property of mat_rix
+all.equal(cov_mat,
+  cov_mat %*% in_verse %*% cov_mat)
+# Perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+eigen_val <- ei_gen$values
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# Calculate regularized inverse matrix
+not_zero <- (eigen_val > (to_l * eigen_val[1]))
+reg_inverse <- eigen_vec[, not_zero] %*%
+  (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
+# Verify inverse property of mat_rix
+all.equal(in_verse, reg_inverse)
+# Create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(rnorm(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+# Perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+# Calculate regularized inverse matrix
+max_eigen <- 2
+in_verse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
 # create random covariance matrix
 set.seed(1121)
 mat_rix <- matrix(rnorm(5e2), nc=5)
@@ -1424,17 +1680,6 @@ al_pha <- 0.5
 cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
 # calculate inverse matrix
 in_verse <- solve(cov_shrink)
-# create random covariance matrix
-set.seed(1121)
-mat_rix <- matrix(rnorm(5e2), nc=5)
-cov_mat <- cov(mat_rix)
-# perform eigen decomposition
-ei_gen <- eigen(cov_mat)
-eigen_vec <- ei_gen$vectors
-# calculate regularized inverse matrix
-max_eigen <- 2
-in_verse <- eigen_vec[, 1:max_eigen] %*%
-  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
 par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # reset random number generator
 bar_rier <- 20  # barrier level

@@ -58,8 +58,8 @@ detach(MASS)
 if (!require("xts")) install.packages("xts")
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Ad(rutils::env_etf$VTI),
-  volume=quantmod::Vo(rutils::env_etf$VTI), n=10)
+  price=quantmod::Ad(rutils::etf_env$VTI),
+  volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 
