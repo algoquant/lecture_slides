@@ -461,8 +461,8 @@ all.equal(sqrt(vec_tor), vec_tor^0.5)
 # microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  sqrt(vec_tor), 
-  vec_tor^0.5, 
+  sqrt(vec_tor),
+  vec_tor^0.5,
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -659,21 +659,19 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} doesn't require allocating memory for new vectors or lists, allowing for them to "grow" each time a new element is added,
+      \texttt{R} performs automatic memory management as users assign values to objects.
       \vskip1ex
-      \texttt{R} allows assigning a value to a vector element that doesn't exist yet (hasn't been allocated),
+      \texttt{R} doesn't require allocating the full memory for vectors or lists, and allows appending new data to existing objects ("growing" them).
       \vskip1ex
-      But when \texttt{R} creates a bigger object from an existing one, it first allocates memory for the new object, and then copies the existing values to the new memory, which is very memory intensive and slow,
+      For example, \texttt{R} allows assigning a value to a vector element that doesn't exist yet.
       \vskip1ex
-      Using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, \texttt{rbind()}, and \texttt{paste()} to append data to objects is even slower than vector assignment,
+      This forces \texttt{R} to allocate additional memory for that element, which carries a small speed penalty.
       \vskip1ex
-      Adding elements to a vector in a loop is very slow, and therefore not recommended,
+      But when data is appended to an object using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, or \texttt{rbind()}, then \texttt{R} allocates memory for the whole new object and copies all the existing values, which is very memory intensive and slow.
       \vskip1ex
-      Pre-allocating memory for large vectors before performing loops increases their speed,
+      It is therefore preferable to pre-allocate memory for large objects before performing loops.
       \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k},
-      \vskip1ex
-      \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object),
+      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k}, while \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object).
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -714,17 +712,17 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted by a \emph{byte code interpreter} much faster. 
+      The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted by a \emph{byte code interpreter} much faster.
       \vskip1ex
-      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about \texttt{2} to \texttt{5} times.  
+      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about \texttt{2} to \texttt{5} times.
       \vskip1ex
-      The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation}, 
+      The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation},
       \vskip1ex
       The function \texttt{compiler::cmpfun()} performs \emph{byte-compilation} of a function,
       \vskip1ex
       When a function is passed into some functionals (like \texttt{microbenchmark()}) it is automatically \emph{byte-compiled} \emph{just-in-time} (JIT), so that when it's run the second time it runs faster,
       \vskip1ex
-      The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation}, 
+      The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation},
       \vskip1ex
       \emph{JIT} is disabled if the \texttt{level} argument is equal to \texttt{0}, with greater \texttt{level} values forcing more extensive compilation,
       \vskip1ex
@@ -749,8 +747,8 @@ vec_tor <- runif(1e3)
 all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
 # microbenchmark byte-compile function
 summary(microbenchmark(
-  mean(vec_tor), 
-  mymean_comp(vec_tor), 
+  mean(vec_tor),
+  mymean_comp(vec_tor),
   my_mean(vec_tor),
   times=10))[, c(1, 4, 5)]
 # create another inefficient function
@@ -761,8 +759,8 @@ sapply2 <- function(x, FUN, ...) {
   out_put
 }  # end sapply2
 sapply2_comp <- compiler::cmpfun(sapply2)
-all.equal(sqrt(vec_tor), 
-          sapply2(vec_tor, sqrt), 
+all.equal(sqrt(vec_tor),
+          sapply2(vec_tor, sqrt),
           sapply2_comp(vec_tor, sqrt))
 summary(microbenchmark(
   sqrt(vec_tor),
@@ -787,11 +785,11 @@ compiler::enableJIT(jit_level)
     \column{0.5\textwidth}
       \emph{Profiling} of a computer program means measuring the amount of memory and time used for the execution of its different components.
       \vskip1ex
-      \emph{Profiling} can be implemented by polling a computer program in fixed time intervals, and writing the information (like the call stack) to a file.  
+      \emph{Profiling} can be implemented by polling a computer program in fixed time intervals, and writing the information (like the call stack) to a file.
       \vskip1ex
-      The command \texttt{Rprof(file\_name)} turns on the profiling of \texttt{R} expressions, and saves the profiling data into the file \texttt{file\_name}. 
+      The command \texttt{Rprof(file\_name)} turns on the profiling of \texttt{R} expressions, and saves the profiling data into the file \texttt{file\_name}.
       \vskip1ex
-      If an \texttt{R} expression is executed after profiling is enabled, then its profiling data is written to the file \texttt{file\_name}. 
+      If an \texttt{R} expression is executed after profiling is enabled, then its profiling data is written to the file \texttt{file\_name}.
       \vskip1ex
       The command \texttt{Rprof(NULL)} turns off profiling.
       \vskip1ex
@@ -864,7 +862,7 @@ profvis::profvis({
 })  # end profvis
 # profile a shiny app
 profvis::profvis(
-  shiny::runExample(example="06_tabsets", 
+  shiny::runExample(example="06_tabsets",
                     display.mode="normal")
 )  # end profvis
       @
@@ -958,7 +956,7 @@ summary(microbenchmark(
 # matrix with 5,000 rows
 mat_rix <- matrix(rnorm(10000), ncol=2)
 # calculate row sums two different ways
-all.equal(rowSums(mat_rix), 
+all.equal(rowSums(mat_rix),
   apply(mat_rix, 1, sum))
 summary(microbenchmark(
   row_sums=rowSums(mat_rix),
@@ -1078,12 +1076,6 @@ summary(microbenchmark(  # assign values to vector three different ways
 # slow because loop is performed in R
   for_loop={vec_tor <- numeric(10)
     for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
       vec_tor[in_dex] <- 2},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 summary(microbenchmark(  # assign values to vector two different ways
@@ -1421,7 +1413,7 @@ ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
+title(main="Brownian motion crossing a barrier level",
       line=0.5)
       @
     \column{0.5\textwidth}
@@ -1465,7 +1457,7 @@ ts_path <- ts(data=pa_th, frequency=365,
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
+title(main="Brownian motion crossing a barrier level",
       line=0.5)
       @
     \column{0.5\textwidth}
@@ -1669,19 +1661,19 @@ boot_strap <- t(boot_strap)
 head(boot_strap)
 sum(is.na(boot_strap))
 # Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2, 
+apply(boot_strap, MARGIN=2,
       function(x) c(mean=mean(x), std_error=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_strap <- parLapply(clus_ter, 1:10000, 
+boot_strap <- parLapply(clus_ter, 1:10000,
   function(x, r_norm) {
     boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, r_norm=r_norm)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000, 
+boot_strap <- mclapply(1:10000,
   function(x) {
     boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
@@ -1689,7 +1681,7 @@ boot_strap <- mclapply(1:10000,
 stopCluster(clus_ter)  # stop R processes over cluster
 boot_strap <- rutils::do_call(rbind, boot_strap)
 # Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2, 
+apply(boot_strap, MARGIN=2,
       function(x) c(mean=mean(x), std_error=sd(x)))
       @
   \end{columns}
@@ -1816,9 +1808,9 @@ sum(boot_strap)/n_boot
     \column{0.5\textwidth}
       \emph{Antithetic Sampling} is a \emph{Variance Reduction} technique in which a new random sample is computed from an existing sample, without generating new random numbers,
       \vskip1ex
-      In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$, 
+      In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$,
       \vskip1ex
-      In the case of a \emph{Uniform} random sample $\phi$, the new \emph{antithetic} sample is equal to \texttt{1} minus the existing sample: $\phi_{new} = 1-\phi$, 
+      In the case of a \emph{Uniform} random sample $\phi$, the new \emph{antithetic} sample is equal to \texttt{1} minus the existing sample: $\phi_{new} = 1-\phi$,
       \vskip1ex
       \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$,
       \vskip1ex
@@ -2423,7 +2415,7 @@ persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
       \vskip1ex
       \texttt{optim()} returns a list containing the location of the minimum and the objective function value,
       \vskip1ex
-      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum, 
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum,
     \column{0.5\textwidth}
         <<eval=FALSE,echo=TRUE>>=
 # Rastrigin function with vector argument for optimization
@@ -2434,7 +2426,7 @@ vec_tor <- c(pi/6, pi/6)
 rastri_gin(vec_tor=vec_tor)
 # draw 3d surface plot of Rastrigin function
 rgl::persp3d(
-  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))), 
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
   xlim=c(-10, 10), ylim=c(-10, 10),
   col="green", axes=FALSE, zlab="", main="rastri_gin")
 # optimize with respect to vector argument
@@ -2722,11 +2714,11 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
       The first generation of solutions is selected randomly,
       \vskip1ex
       Each new generation is obtained by combining solutions from the previous generation,       \vskip1ex
-      The best solutions are selected for creating the next generation, 
+      The best solutions are selected for creating the next generation,
       \vskip1ex
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization, 
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization,
       \vskip1ex
-      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima, 
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima,
     \column{0.5\textwidth}
         <<eval=FALSE,echo=TRUE>>=
 # Rastrigin function with vector argument for optimization
@@ -2737,8 +2729,8 @@ vec_tor <- c(pi/6, pi/6)
 rastri_gin(vec_tor=vec_tor)
 library(DEoptim)
 ## optimize rastri_gin using DEoptim
-op_tim <-  DEoptim(rastri_gin, 
-  upper=c(6, 6), lower=c(-6, -6), 
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # optimal parameters and value
 op_tim$optim$bestmem
@@ -2767,11 +2759,11 @@ plot(op_tim)
       The first generation of solutions is selected randomly,
       \vskip1ex
       Each new generation is obtained by combining solutions from the previous generation,       \vskip1ex
-      The best solutions are selected for creating the next generation, 
+      The best solutions are selected for creating the next generation,
       \vskip1ex
-      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization, 
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization,
       \vskip1ex
-      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima, 
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima,
     \column{0.5\textwidth}
         <<eval=FALSE,echo=TRUE>>=
 # Rastrigin function with vector argument for optimization
@@ -2782,8 +2774,8 @@ vec_tor <- c(pi/6, pi/6)
 rastri_gin(vec_tor=vec_tor)
 library(DEoptim)
 ## optimize rastri_gin using DEoptim
-op_tim <-  DEoptim(rastri_gin, 
-  upper=c(6, 6), lower=c(-6, -6), 
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
   DEoptim.control(trace=FALSE, itermax=50))
 # optimal parameters and value
 op_tim$optim$bestmem
@@ -2985,9 +2977,9 @@ ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_t
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck function in Rcpp
 Rcpp::cppFunction("
-NumericVector sim_ou_rcpp(double eq_price, 
-                      double vol_at, 
-                      double the_ta, 
+NumericVector sim_ou_rcpp(double eq_price,
+                      double vol_at,
+                      double the_ta,
                       NumericVector in_nov) {
   int len_gth = in_nov.size();
   NumericVector price_s(len_gth);
@@ -3001,9 +2993,9 @@ NumericVector sim_ou_rcpp(double eq_price,
 }")  # end cppFunction
 # simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price, 
-  vol_at=vol_at, 
-  the_ta=the_ta, 
+ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
+  vol_at=vol_at,
+  the_ta=the_ta,
   in_nov=rnorm(len_gth))
 all.equal(ou_sim, ou_sim_rcpp)
 # compare speed of Rcpp and R
@@ -3026,7 +3018,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Rcpp attributes} are instructions for the \texttt{C++} compiler, embedded in the \emph{Rcpp} code as \texttt{C++} comments, and preceded by the \texttt{"//"} symbol. 
+      \emph{Rcpp attributes} are instructions for the \texttt{C++} compiler, embedded in the \emph{Rcpp} code as \texttt{C++} comments, and preceded by the \texttt{"//"} symbol.
       \vskip1ex
       The \texttt{Rcpp::depends} attribute specifies additional \texttt{C++} library dependencies.
       \vskip1ex
@@ -3040,9 +3032,9 @@ summary(microbenchmark(
 Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_ou.cpp")
 # simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price, 
-  vol_at=vol_at, 
-  the_ta=the_ta, 
+ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
+  vol_at=vol_at,
+  the_ta=the_ta,
   in_nov=rnorm(len_gth))
 all.equal(ou_sim, ou_sim_rcpp)
 # compare speed of Rcpp and R
@@ -3062,9 +3054,9 @@ using namespace Rcpp; // use Rcpp C++ namespace
 // The function sim_ou_rcpp() simulates an Ornstein-Uhlenbeck process
 // export the function roll_maxmin() to R
 // [[Rcpp::export]]
-NumericVector sim_ou_rcpp(double eq_price, 
-                          double vol_at, 
-                          double the_ta, 
+NumericVector sim_ou_rcpp(double eq_price,
+                          double vol_at,
+                          double the_ta,
                           NumericVector in_nov) {
   int len_gth = in_nov.size();
   NumericVector price_s(len_gth);
@@ -3119,9 +3111,9 @@ summary(microbenchmark(
 #include <Rcpp.h> // include Rcpp C++ header files
 using namespace Rcpp; // use Rcpp C++ namespace
 
-// This is a simple example of exporting a C++ function to R. 
-// You can source this function into an R session using the 
-// function Rcpp::sourceCpp() 
+// This is a simple example of exporting a C++ function to R.
+// You can source this function into an R session using the
+// function Rcpp::sourceCpp()
 // (or via the Source button on the editor toolbar).
 // Learn more about Rcpp at:
 //
@@ -3129,7 +3121,7 @@ using namespace Rcpp; // use Rcpp C++ namespace
 //   http://adv-r.had.co.nz/Rcpp.html
 //   http://gallery.rcpp.org/
 
-// function uni_form() produces a vector of 
+// function uni_form() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
 NumericVector uniform_rcpp(double see_d, int len_gth) {
@@ -3138,7 +3130,7 @@ static const double pi = 3.14159265;
 // allocate output vector
   NumericVector out_put(len_gth);
 // initialize output vector
-  out_put[0] = see_d; 
+  out_put[0] = see_d;
 // perform loop
   for (int i=1; i < len_gth; ++i) {
     out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
@@ -3216,7 +3208,7 @@ summary(microbenchmark(
   vec_in=vec_in(vec1, vec2),
   r_code=(vec1 %*% vec2),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# microbenchmark shows: 
+# microbenchmark shows:
 # vec_in() is several times faster than %*%, especially for longer vectors.
 #     expr     mean   median
 # 1 vec_in 110.7067 110.4530
@@ -3245,7 +3237,7 @@ library(RcppArmadillo)
 Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
 mat_rix <- matrix(runif(1e5), nc=1e3)
 # de-mean using apply()
-new_mat <- apply(mat_rix, 2, 
+new_mat <- apply(mat_rix, 2,
   function(x) (x-mean(x)))
 # de-mean using demean_mat()
 demean_mat(mat_rix)
@@ -3255,7 +3247,7 @@ summary(microbenchmark(
   demean_mat=demean_mat(mat_rix),
   apply=(apply(mat_rix, 2, mean)),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# microbenchmark shows: 
+# microbenchmark shows:
 # demean_mat() is over 70 times faster than apply()
 #         expr       mean   median
 # 1 demean_mat   127.7539  125.604
@@ -3275,7 +3267,7 @@ summary(microbenchmark(
   inv_mat=inv_mat(mat_rix),
   solve=solve(mat_rix),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# microbenchmark shows: 
+# microbenchmark shows:
 # inv_mat() is over 10 times faster than solve()
 #      expr     mean median
 # 1 inv_mat  3.42669  2.933
@@ -3339,11 +3331,11 @@ len_gth <- 1e4
 set.seed(1121)
 in_nov <- rnorm(len_gth)
 # simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov, 
+arima_filter <- filter(x=in_nov,
   filter=co_eff, method="recursive")
 # simulate ARIMA using sim_arima()
 ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma), 
+all.equal(drop(ari_ma),
   as.numeric(arima_filter))
 # microbenchmark RcppArmadillo code
 summary(microbenchmark(
@@ -3373,12 +3365,12 @@ arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
   for (uword it = 2; it < look_back-1; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
   }  // end for
-  
+
   // remaining periods
   for (uword it = look_back; it < len_gth; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
   }  // end for
-  
+
   return ari_ma;
 }  // end sim_arima
     \end{lstlisting}
@@ -3461,7 +3453,7 @@ detach("package:reticulate")
       \vskip1ex
       Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$,
       \vskip1ex
-      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as: 
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
       \begin{displaymath}
         \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
       \end{displaymath}
@@ -3517,9 +3509,9 @@ ei_gen <- eigen(mat_rix)
 eigen_vec <- ei_gen$vectors
 dim(eigen_vec)
 # plot eigenvalues
-barplot(ei_gen$values, 
-  xlab="", ylab="", las=3, 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+barplot(ei_gen$values,
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of a real symmetric matrix")
       @
   \end{columns}
@@ -3552,10 +3544,10 @@ barplot(ei_gen$values,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # eigenvectors form an orthonormal basis
-round(t(eigen_vec) %*% eigen_vec, 
+round(t(eigen_vec) %*% eigen_vec,
   digits=4)
 # diagonalize matrix using eigenvector matrix
-round(t(eigen_vec) %*% (mat_rix %*% eigen_vec), 
+round(t(eigen_vec) %*% (mat_rix %*% eigen_vec),
   digits=4)
 ei_gen$values
 # eigen decomposition of matrix by rotating the diagonal matrix
@@ -3565,7 +3557,7 @@ de_comp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
 # de_comp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
 all.equal(mat_rix, de_comp)
       @
-      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$, 
+      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$,
       \vskip1ex
       The \emph{diagonal} matrix $\mathbb{D}$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues},
       \vskip1ex
@@ -3610,9 +3602,9 @@ mat_rix <- t(mat_rix) %*% mat_rix
 ei_gen <- eigen(mat_rix)
 ei_gen$values
 # plot eigenvalues
-barplot(ei_gen$values, las=3, 
-  xlab="", ylab="", 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+barplot(ei_gen$values, las=3,
+  xlab="", ylab="",
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of positive semi-definite matrix")
       @
   \end{columns}
@@ -3648,7 +3640,7 @@ barplot(ei_gen$values, las=3,
 mat_rix <- matrix(rnorm(50), nc=5)
 s_vd <- svd(mat_rix)
 # Recompose mat_rix from SVD mat_rices
-all.equal(mat_rix, 
+all.equal(mat_rix,
   s_vd$u %*% (s_vd$d*t(s_vd$v)))
 # Columns of U and V are orthonormal
 round(t(s_vd$u) %*% s_vd$u, 4)
@@ -3730,7 +3722,7 @@ all.equal(abs(ei_gen$vectors), abs(right_mat))
       \begin{displaymath}
         \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
       \end{displaymath}
-      Where $\mathbbm{1}$ is the identity matrix, 
+      Where $\mathbbm{1}$ is the identity matrix,
       \vskip1ex
       The inverse $\mathbb{A}^{-1}$ matrix can also be expressed as a product of the inverse of its \emph{eigenvalues} ($\mathbb{D}$) and its \emph{eigenvectors} ($\mathbb{O}$):
       \begin{displaymath}
@@ -3738,7 +3730,7 @@ all.equal(abs(ei_gen$vectors), abs(right_mat))
       \end{displaymath}
       But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse,
       \vskip1ex
-      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3756,7 +3748,7 @@ ei_gen <- eigen(mat_rix)
 eigen_vec <- ei_gen$vectors
 
 # perform eigen decomposition of inverse
-eigen_inverse <- 
+eigen_inverse <-
   eigen_vec %*% (t(eigen_vec) / ei_gen$values)
 all.equal(in_verse, eigen_inverse)
 # decompose diagonal matrix with inverse of eigenvalues
@@ -3797,16 +3789,16 @@ all.equal(in_verse, eigen_inverse)
       <<echo=TRUE,eval=FALSE>>=
 # random rectangular matrix: n_left > n_right
 n_left <- 6 ; n_right <- 4
-mat_rix <- matrix(runif(n_left*n_right), 
+mat_rix <- matrix(runif(n_left*n_right),
   nc=n_right)
 # calculate generalized inverse of mat_rix
 in_verse <- MASS::ginv(mat_rix)
 round(in_verse %*% mat_rix, 4)
-all.equal(mat_rix, 
+all.equal(mat_rix,
   mat_rix %*% in_verse %*% mat_rix)
 # random rectangular matrix: n_left < n_right
 n_left <- 4 ; n_right <- 6
-mat_rix <- matrix(runif(n_left*n_right), 
+mat_rix <- matrix(runif(n_left*n_right),
   nc=n_right)
 # calculate generalized inverse of mat_rix
 in_verse <- MASS::ginv(mat_rix)
@@ -3819,7 +3811,7 @@ s_vd <- svd(mat_rix)
 svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
 all.equal(svd_inverse, in_verse)
 # calculate Moore-Penrose pseudo-inverse
-mp_inverse <- 
+mp_inverse <-
   MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
 all.equal(mp_inverse, in_verse)
       @
@@ -3851,7 +3843,7 @@ mat_rix <- t(mat_rix) %*% mat_rix
 # calculate generalized inverse of mat_rix
 in_verse <- MASS::ginv(mat_rix)
 # Verify inverse property of mat_rix
-all.equal(mat_rix, 
+all.equal(mat_rix,
   mat_rix %*% in_verse %*% mat_rix)
       @
     \column{0.5\textwidth}
@@ -3865,12 +3857,12 @@ to_l <- sqrt(.Machine$double.eps)
 s_vd$d
 not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
 # calculate generalized inverse from SVD
-svd_inverse <- 
-  s_vd$v[, not_zero] %*% 
+svd_inverse <-
+  s_vd$v[, not_zero] %*%
   (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
 all.equal(svd_inverse, in_verse)
 # calculate Moore-Penrose pseudo-inverse
-mp_inverse <- 
+mp_inverse <-
   MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
 all.equal(mp_inverse, in_verse)
       @
@@ -3918,19 +3910,19 @@ round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A system of linear equations can be defined as: 
+      A system of linear equations can be defined as:
       \begin{displaymath}
         \mathbb{A} \, x = b
       \end{displaymath}
-      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector, 
+      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector,
       \vskip1ex
-      The solution of the system of linear equations is equal to: 
+      The solution of the system of linear equations is equal to:
       \begin{displaymath}
         x = \mathbb{A}^{-1} b
       \end{displaymath}
       Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$,
       \vskip1ex
-      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices, 
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices,
       \vskip1ex
       The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
       \vskip1ex
@@ -3974,9 +3966,9 @@ mat_rix %*% solu_tion
       \vskip1ex
       The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite},
       \vskip1ex
-      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix, 
+      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix,
       \vskip1ex
-      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()}, 
+      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()},
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3993,7 +3985,7 @@ to_l <- sqrt(.Machine$double.eps)
 not_zero <- (eigen_val > (to_l * eigen_val[1]))
 if (sum(!not_zero) > 0) {
   eigen_val[!not_zero] <- 2*to_l
-  mat_rix <- eigen_vec %*% 
+  mat_rix <- eigen_vec %*%
     (eigen_val * t(eigen_vec))
 }  # end if
 # calculate the Cholesky mat_rix
@@ -4067,7 +4059,7 @@ all.equal(cov_mat, cov_returns)
       \begin{displaymath}
         \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
       \end{displaymath}
-      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero), 
+      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero),
       \vskip1ex
       The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster,
       \vspace{-1em}
@@ -4087,8 +4079,8 @@ cov_mat <- crossprod(re_turns) / (len_gth-1)
 ei_gen <- eigen(cov_mat)
 ei_gen$values
 barplot(ei_gen$values, # plot eigenvalues
-  xlab="", ylab="", las=3, 
-  names.arg=paste0("ev", 1:NROW(ei_gen$values)), 
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
   main="Eigenvalues of covariance matrix")
       @
     \column{0.5\textwidth}
@@ -4101,12 +4093,12 @@ barplot(ei_gen$values, # plot eigenvalues
 n_data <- ((n_assets/2):(2*n_assets))
 e_values <- sapply(n_data, function(x) {
   re_turns <- re_turns[1:x, ]
-  re_turns <- apply(re_turns, MARGIN=2, 
+  re_turns <- apply(re_turns, MARGIN=2,
     function(y) (y-mean(y)))
   cov_mat <- crossprod(re_turns) / (x-1)
   min(eigen(cov_mat)$values)
 })  # end sapply
-plot(y=e_values, x=n_data, t="l", 
+plot(y=e_values, x=n_data, t="l",
   xlab="", ylab="", lwd=3, col="blue",
   main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
       @
@@ -4146,7 +4138,7 @@ in_verse <- solve(cov_mat)
 # Calculate regularized inverse of cov_mat
 in_verse <- MASS::ginv(cov_mat)
 # Verify inverse property of mat_rix
-all.equal(cov_mat, 
+all.equal(cov_mat,
   cov_mat %*% in_verse %*% cov_mat)
 # Perform eigen decomposition
 ei_gen <- eigen(cov_mat)
@@ -4156,7 +4148,7 @@ eigen_val <- ei_gen$values
 to_l <- sqrt(.Machine$double.eps)
 # Calculate regularized inverse matrix
 not_zero <- (eigen_val > (to_l * eigen_val[1]))
-reg_inverse <- eigen_vec[, not_zero] %*% 
+reg_inverse <- eigen_vec[, not_zero] %*%
   (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
 # Verify inverse property of mat_rix
 all.equal(in_verse, reg_inverse)
@@ -4169,7 +4161,7 @@ ei_gen <- eigen(cov_mat)
 eigen_vec <- ei_gen$vectors
 # Calculate regularized inverse matrix
 max_eigen <- 2
-in_verse <- eigen_vec[, 1:max_eigen] %*% 
+in_verse <- eigen_vec[, 1:max_eigen] %*%
   (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
       @
   \end{columns}

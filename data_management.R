@@ -347,7 +347,7 @@ setwd("C:/Develop/R/lecture_slides/data")
 flight_s <- data.table::fread("flights14.csv")
 # fread() reads the same data as read.csv()
 all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
-    data.table::setDF((data.table::fread("weather_delays14.csv"))))
+    data.table::setDF(data.table::fread("weather_delays14.csv")))
 # fread() is much faster than read.csv()
 library(microbenchmark)
 summary(microbenchmark(

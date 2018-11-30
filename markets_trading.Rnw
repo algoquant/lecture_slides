@@ -1,0 +1,2756 @@
+% Define knitr options
+% !Rnw weave=knitr
+% Set global chunk options
+<<knitr_setup,include=FALSE,cache=FALSE>>=
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+@
+
+
+% Define document options
+\documentclass[10pt]{beamer}
+\mode<presentation>
+\usetheme{AnnArbor}
+% \usecolortheme{whale}
+% Uncover everything in a step-wise fashion
+% \beamerdefaultoverlayspecification{<+->}
+% \usepackage{caption}
+% mathtools package for math symbols
+\usepackage{mathtools}
+% bbm package for unitary vector or matrix symbol
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage[latin1]{inputenc}
+\usepackage{hyperref}
+\usepackage{fancybox}
+\usepackage{url}
+\usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{cmd_background}{rgb}{0.2, 0.2, 0.0}
+\definecolor{vba_background}{rgb}{0.0, 0.0, 0.9}
+% \colorlet{cmd_background_light}{cmd_background!20!black}
+% \bibliographystyle{amsalpha} % doesn't work
+\addbibresource{FRE_lectures.bib}
+% \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
+\renewcommand\bibfont{\footnotesize}
+\renewcommand{\pgfuseimage}[1]{\scalebox{0.75}{\includegraphics{#1}}} % scale bib icons
+\setbeamertemplate{bibliography item}[text] % set bib icons
+% \setbeamertemplate{bibliography item}{} % remove bib icons
+
+% \usepackage{enumerate}
+% \let\emph\textbf
+% \let\alert\textbf
+% Define colors for hyperlinks
+\definecolor{links}{HTML}{2A1B81}
+\hypersetup{colorlinks=true,linkcolor=,urlcolor=links}
+% Make url text scriptsize
+\renewcommand\UrlFont{\scriptsize}
+% Make institute text italic and small
+\setbeamerfont{institute}{size=\small,shape=\itshape}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{block title}{size=\normalsize} % shape=\itshape
+\setbeamerfont{block body}{size=\footnotesize}
+
+
+
+% Title page setup
+\title[Markets and Trading]{Markets and Trading}
+\subtitle{FRE6871 \& FRE7241, Fall 2018}
+\institute[NYU Tandon]{NYU Tandon School of Engineering}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
+\date{\today}
+
+
+
+%%%%%%%%%%%%%%%
+\begin{document}
+
+
+%%%%%%%%%%%%%%%
+\maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Bonds and Interest Rates}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Treasury Bond Rates from \protect\emph{FRED}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The constant maturity Treasury rates are yields of hypothetical fixed-maturity bonds, interpolated from the market yields of actual Treasury bonds,
+      \vskip1ex
+      The \emph{FRED} database contains current and historical constant maturity Treasury rates, \\
+      \hskip1em\url{https://fred.stlouisfed.org/series/DGS5}
+      \vskip1ex
+      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
+      \vskip1ex
+      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
+library(quantmod)  # load package quantmod
+rates_env <- new.env()  # new environment for data
+# Download data for sym_bols into rates_env
+getSymbols(sym_bols, env=rates_env, src="FRED")
+ls(rates_env)  # list files in rates_env
+# get class of object in rates_env
+class(get(x=sym_bols[1], envir=rates_env))
+# another way
+class(rates_env$DGS10)
+colnames(rates_env$DGS10)
+save(rates_env, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/treas_10y_rate.png}
+    \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
+head(rates_env$DGS10, 3)
+# get class of all objects in rates_env
+eapply(rates_env, class)
+# get class of all objects in R workspace
+lapply(ls(), function(ob_ject) class(get(ob_ject)))
+# Plot 10-year constant maturity Treasury rate
+chart_Series(rates_env$DGS10["1990/"],
+  name="10-year constant maturity Treasury rate")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Treasury Yield Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{yield curve} is a vector of interest rates at different maturities, on a given date,
+      \vskip1ex
+      The \emph{yield curve} shape changes depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens,
+    \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+# load constant maturity Treasury rates
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+# get end-of-year dates since 2006
+date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
+date_s <- zoo::index(rates_env$DGS1["2006/"])[date_s]
+# Create time series of end-of-year rates
+rate_s <- eapply(rates_env, function(ra_te) ra_te[date_s])
+rate_s <- rutils::do_call(cbind, rate_s)
+# rename columns and rows, sort columns, and transpose into matrix
+colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
+rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
+colnames(rate_s) <- paste0(colnames(rate_s), "yr")
+rate_s <- t(rate_s)
+colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+# Plot matrix using plot.zoo()
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(rate_s))
+plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
+         plot.type="single", xlab="maturity", ylab="yield", col=col_ors)
+# Add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# Add legend
+legend("bottomright", legend=colnames(rate_s),
+       col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/yield_curve.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# alternative plot using matplot()
+matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
+        type="l", xlab="maturity", ylab="yield", col=col_ors)
+# Add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# Add legend
+legend("bottomright", legend=colnames(rate_s),
+       col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Correlation Matrix of the Yield Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The covariance matrix $\mathbf{V}$, of the data matrix $\mathbf{r}$, is given by:
+      \begin{displaymath}
+        \mathbf{V} = \frac{\mathbf{r}^T \, \mathbf{r}} {n-1}
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
+# load constant maturity Treasury rates
+load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+# Symbols for constant maturity Treasury rates
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+# Calculate daily rates changes
+rate_s <- xts:::na.locf.xts(rutils::do_call(cbind,
+    as.list(rates_env)[sym_bols]))
+rate_s <- xts:::na.locf.xts(rate_s)
+rate_s <- xts:::na.locf.xts(rate_s, fromLast=TRUE)
+re_turns <- rutils::diff_it(rate_s)
+date_s <- index(re_turns)
+# De-mean (center) and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
+# Correlation matrix of Treasury rates
+cor_mat <- cor(re_turns)
+# reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat, order="hclust",
+  hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/cor_yield.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title=NA, tl.col="black",
+  tl.cex=0.8, mar=c(0,0,0,0), method="square",
+  col=col_ors(8), cl.offset=0.75, cl.cex=0.7,
+  cl.align.text="l", cl.ratio=0.25)
+title("Correlation of Treasury rates", line=-1)
+# Draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
+  method="complete", col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal components} are linear combinations of the \texttt{k} return vectors $\mathbf{r}_i$:
+      \begin{displaymath}
+        \mathbf{pc}_j = \sum_{i=1}^k {w_{ij} \, \mathbf{r}_i}
+      \end{displaymath}
+      Where $\mathbf{w}_j$ is a vector of weights (loadings) of the \emph{principal component} \texttt{j}, with $\mathbf{w}_j^T \mathbf{w}_j = 1$,
+      \vskip1ex
+      The weights $\mathbf{w}_j$ are chosen to maximize the variance of the \emph{principal components}, under the condition that they are orthogonal:
+      \begin{align*}
+        \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
+        \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
+      \end{align*}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1e7*(1 - sum(weight_s*weight_s))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# Compare speed of vector multiplication methods
+summary(microbenchmark(
+  trans_pose=t(re_turns) %*% re_turns,
+  s_um=sum(re_turns*re_turns),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# find weights with maximum variance
+optim_run <- optim(par=weight_s,
+  fn=object_ive,
+  re_turns=re_turns,
+  method="L-BFGS-B",
+  upper=rep(1.0, n_weights),
+  lower=rep(-1.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# Plot first principal component loadings
+barplot(weight_s, names.arg=names(weight_s),
+  xlab="", ylab="",
+  main="first principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Order Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component},
+      \vskip1ex
+      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components},
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets*portf_rets) +
+    1e7*(1 - sum(weight_s*weight_s))^2 +
+    1e7*sum(pc_1*portf_rets)^2
+}  # end object_ive
+# find second principal component weights
+optim_run <- optim(par=weight_s,
+                   fn=object_ive,
+                   re_turns=re_turns,
+                   method="L-BFGS-B",
+                   upper=rep(1.0, n_weights),
+                   lower=rep(-1.0, n_weights))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load2.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc2 weights and returns
+weights_2 <- optim_run$par
+pc_2 <- re_turns %*% weights_2
+sum(pc_1*pc_2)
+# Plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2),
+        xlab="", ylab="",
+        main="second principal component loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of the Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio variance: $\mathbf{w}^T \, \mathbb{C} \, w$ can be maximized under the \emph{quadratic} weights constraint $\mathbf{w}^T \mathbf{w} = 1$, by maximizing the \emph{Lagrangian}:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \, \mathbb{C} \, w \, - \, \lambda \, (\mathbf{w}^T \mathbf{w} - 1)
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier},
+      \vskip1ex
+      The weights corresponding to the maximum portfolio variance can be found by differentiating $\mathcal{L}$ with respect to $\mathbf{w}$ and setting it to zero:
+      \begin{displaymath}
+        \mathbb{C} \, \mathbf{w} = \lambda \, \mathbf{w}
+      \end{displaymath}
+      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$,
+      \vskip1ex
+      The optimal weights $\mathbf{w}$ form an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $\mathbf{w}$,
+      \vskip1ex
+      The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the return variances:
+      \begin{displaymath}
+        \sum_{i=1}^k \lambda_i = \sum_{i=1}^k r_i^T r_i
+      \end{displaymath}
+      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_rates_eigenvalues.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Covariance matrix and variance vector of returns
+cov_mat <- cov(re_turns)
+vari_ance <- diag(cov_mat)
+cor_mat <- cor(re_turns)
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$vectors
+weights_1
+weights_2
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # Plot eigenvalues
+  names.arg=paste0("PC", 1:n_weights),
+  las=3, xlab="", ylab="", main="Principal Component Variances")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Analysis of the Yield Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimensionality reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series,
+      \vskip1ex
+      The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimensionality reduction}, so that more information is retained by the first few \emph{principal component} time series,
+      \vskip1ex
+      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as an object of class \texttt{prcomp},
+      \vskip1ex
+      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations,
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_scree.png}
+      A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components},
+      <<echo=TRUE,eval=FALSE>>=
+# perform principal component analysis PCA
+pc_a <- prcomp(re_turns, scale=TRUE)
+# Plot standard deviations
+barplot(pc_a$sdev,
+  names.arg=colnames(pc_a$rotation),
+  las=3, xlab="", ylab="",
+  main="Scree Plot: Volatilities of Principal Components
+  of Treasury rates")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Principal Component Loadings (Weights)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns,
+      \vskip1ex
+      The \emph{principal component} portfolios represent the different orthogonal modes of the data variance,
+      \vskip1ex
+      The first \emph{principal component} of the \emph{yield curve} is the correlated movement of all rates up and down,
+      \vskip1ex
+      The second \emph{principal component} is \emph{yield curve} steepening and flattening,
+      \vskip1ex
+      The third \emph{principal component} is the \emph{yield curve} butterfly movement,
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(width=6, height=7)
+# principal component loadings (weights)
+pc_a$rotation
+# Plot loading barplots in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:NCOL(pc_a$rotation)) {
+  barplot(pc_a$rotation[, or_der],
+        las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0,
+        col.main="red")
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_loadings_yield.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Yield Curve Principal Component Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data,
+      \vskip1ex
+      Higher order \emph{principal components} are gradually less volatile,
+      <<echo=TRUE,eval=FALSE>>=
+# principal component time series
+pca_ts <- xts(re_turns %*% pc_a$rotation,
+                order.by=index(re_turns))
+pca_ts <- cumsum(pca_ts)
+# Plot principal component time series in multiple panels
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:NCOL(pca_ts)) {
+  plot.zoo(pca_ts[, or_der],
+           ylim=ra_nge,
+           xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_series_yield.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating Yield Curve Using Package \protect\emph{RQuantLib}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package
+      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
+      is an interface to the
+      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
+      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options,
+      \vskip1ex
+      The function \texttt{DiscountCurve()} calibrates a \emph{zero coupon yield curve} from \emph{money market} rates, \emph{Eurodollar} futures, and \emph{swap} rates,
+      \vskip1ex
+      The function \texttt{DiscountCurve()} interpolates the \emph{zero coupon} rates into a vector of dates specified by the \texttt{times} argument,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(quantmod)  # load quantmod
+library(RQuantLib)  # load RQuantLib
+# Specify curve parameters
+curve_params <- list(tradeDate=as.Date("2018-01-17"),
+                     settleDate=as.Date("2018-01-19"),
+                     dt=0.25,
+                     interpWhat="discount",
+                     interpHow="loglinear")
+# Specify market data: prices of FI instruments
+market_data <- list(d3m=0.0363,
+                    fut1=96.2875,
+                    fut2=96.7875,
+                    fut3=96.9875,
+                    fut4=96.6875,
+                    s5y=0.0443,
+                    s10y=0.05165,
+                    s15y=0.055175)
+# Specify dates for calculating the zero rates
+disc_dates <- seq(0, 10, 0.25)
+# Specify the evaluation (as of) date
+setEvaluationDate(as.Date("2018-01-17"))
+# Calculate the zero rates
+disc_curves <- DiscountCurve(params=curve_params,
+                             tsQuotes=market_data,
+                             times=disc_dates)
+# Plot the zero rates
+x11()
+plot(x=disc_curves$zerorates, t="l", main="zerorates")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Financial and Commodity Futures}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Financial and Commodity Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The underlying assets delivered in \emph{commodity futures} contracts are commodities, such as grains (corn, wheat), or raw materials and metals (oil, aluminum).
+      \vskip1ex
+      The underlying assets delivered in \emph{financial futures} contracts are financial assets, such as stocks, bonds, and currencies.
+      \vskip1ex
+      Many futures contracts use cash settlement instead of physical delivery of the asset.
+      \vskip1ex
+      Futures contracts on different underlying assets can have quarterly, monthly, or even weekly expiration dates.
+      \vskip1ex
+      The front month futures contract is the contract with the closest expiration date to the current date.
+      \vskip1ex
+      Symbols of futures contracts are obtained by combining the contract code with the month code and the year.
+      \vskip1ex
+      For example, \emph{ESZ8} is the symbol for the \emph{S\&P500} index E-mini futures expiring in December 2018.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    \begin{table}[htb]
+    \begin{minipage}{0.48\textwidth}
+    % \centering
+    <<echo=FALSE,eval=TRUE,results='asis'>>=
+# futures contracts codes
+future_s <- rbind(c("S&P500 index", "ES"),
+                  c("10yr Treasury", "ZN"),
+                  c("VIX index", "VX"),
+                  c("Gold", "GC"),
+                  c("Oil", "CL"),
+                  c("Euro FX", "EC"),
+                  c("Swiss franc", "SF"),
+                  c("Japanese Yen", "JY"))
+colnames(future_s) <- c("Futures contract", "Code")
+print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
+@
+% \captionof{table}{The first table}
+\end{minipage}
+\begin{minipage}{0.48\textwidth}
+% \centering
+<<echo=FALSE,eval=TRUE,results='asis'>>=
+# monthly futures contract codes
+month_codes <- cbind(c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
+                     c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"))
+colnames(month_codes) <- c("Month", "Code")
+print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushright")
+      @
+      % \captionof{table}{The second table}
+      \end{minipage}
+      \end{table}
+      \vspace{-1em}
+      Interactive Brokers offers more information about futures contracts:\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=463}{IB Contract and Symbol Database}\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}
+      \vskip1ex
+      List of
+      \href{https://www.purefinancialacademy.com/futures-markets}{Popular Futures Contracts}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{E-mini} Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{E-mini} futures are contracts with smaller notionals and tick values, which are more suitable for retail investors.
+      \vskip1ex
+      For example, the
+      \href{https://www.cmegroup.com/trading/energy/crude-oil/emini-crude-oil.html}{\emph{QM} E-mini oil future}
+      notional is \texttt{500} barrels, while the standard
+      \href{https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude_quotes_globex.html}{\emph{CL} oil future} notional is \texttt{1,000} barrels.
+      \vskip1ex
+      The tick value is the change in the dollar value of the futures contract due to a one tick change in the underlying price.
+      \vskip1ex
+      For example, the tick value of the \emph{ES} E-mini \emph{S\&P500} future is \texttt{\$12.50}, and one tick is \texttt{0.25}.
+      \vskip1ex
+      So if the \emph{S\&P500} index changes by one tick (\texttt{0.25}), then the value of a single \emph{ES} E-mini contract changes by \texttt{\$12.50}, while the standard \emph{SP} contract value changes by \texttt{\$62.5}.
+      \vskip1ex
+      The
+      \href{https://www.cmegroup.com/trading/equity-index/us-index/e-mini-sandp500.html}{\emph{ES} E-mini \emph{S\&P500} futures} trade almost continuously 24 hours per day, from 6:00 PM Eastern Time (ET) on Sunday night to 5:00 PM Friday night (with a trading halt between 4:15 and 4:30 PM ET each day).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    \begin{table}[htb]
+    <<echo=FALSE,eval=TRUE,results='asis'>>=
+# futures contracts codes
+future_s <- rbind(c("S&P500 index", "SP", "ES"),
+                  c("10yr Treasury", "ZN", "ZN"),
+                  c("VIX index", "VX", "delisted"),
+                  c("Gold", "GC", "YG"),
+                  c("Oil", "CL", "QM"),
+                  c("Euro FX", "EC", "E7"),
+                  c("Swiss franc", "SF", "MSF"),
+                  c("Japanese Yen", "JY", "J7"))
+colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
+print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
+@
+      \end{table}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{S\&P500} Futures Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{data.table::fread()} reads \emph{csv} files over five times faster than function \texttt{read.csv()}!
+      \vskip1ex
+      The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load data for S&P Emini futures December 2018 contract
+sym_bol <- "ES"
+data_dir <- "C:/Develop/data/ib_data"
+file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
+# Read a data table from CSV file
+price_s <- data.table::fread(file_name)
+# Coerce price_s into data frame
+data.table::setDF(price_s)
+# Or
+# price_s <- data.table:::as.data.frame.data.table(
+#   data.table::fread(file_name))
+# first column of price_s is a numeric date-time
+tail(price_s)
+# Coerce price_s into xts series
+price_s <- xts::xts(price_s[, 2:6],
+  order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
+    tz="America/New_York",
+    origin="1970-01-01")))
+colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+tail(price_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# plot OHLC data in x11 window
+x11(width=5, height=4)  # Open x11 for plotting
+par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
+chart_Series(x=price_s, TA="add_Vo()",
+  name="S&P500 futures")
+# plot dygraph
+dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
+  dyCandlestick()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Consecutive Contract Futures Volumes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The trading volumes of a futures contract drop significantly shortly before its expiration, and the successive contract volumes increase.
+      \vskip1ex
+      The contract with the highest trading volume is usually considered the most liquid contract.
+      <<echo=TRUE,eval=FALSE>>=
+# Load ESU8 data
+data_dir <- "C:/Develop/data/ib_data"
+file_name <- file.path(data_dir, "ESU8.csv")
+ES_U8 <- data.table::fread(file_name)
+data.table::setDF(ES_U8)
+ES_U8 <- xts::xts(ES_U8[, 2:6],
+  order.by=as.Date(as.POSIXct.numeric(ES_U8[, 1],
+    tz="America/New_York", origin="1970-01-01")))
+colnames(ES_U8) <- c("Open", "High", "Low", "Close", "Volume")
+# Load ESM8 data
+file_name <- file.path(data_dir, "ESM8.csv")
+ES_M8 <- data.table::fread(file_name)
+data.table::setDF(ES_M8)
+ES_M8 <- xts::xts(ES_M8[, 2:6],
+  order.by=as.Date(as.POSIXct.numeric(ES_M8[, 1],
+    tz="America/New_York", origin="1970-01-01")))
+colnames(ES_M8) <- c("Open", "High", "Low", "Close", "Volume")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures_volumes.png}
+      \vspace{-2em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+x11(width=6, height=5)  # Open x11 for plotting
+# plot last month of ESU8 and ESM8 volume data
+en_d <- end(ES_M8)
+star_t <- (en_d - 30*24*60^2)
+vol_ume <- cbind(Vo(ES_U8),
+  Vo(ES_M8))[paste0(star_t, "/", en_d)]
+colnames(vol_ume) <- c("ESU8", "ESM8")
+col_ors <- c("blue", "green")
+plot(vol_ume, col=col_ors, lwd=3, major.ticks="days",
+     format.labels="%b-%d", observation.based=TRUE,
+     main="Volumes of ESU8 and ESM8 futures")
+legend("topleft", legend=colnames(vol_ume), col=col_ors,
+       title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Chaining Together Futures Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Chaining futures means splicing together prices from several consecutive futures contracts.
+      \vskip1ex
+      A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
+      \vskip1ex
+      The price of the continuous contract is equal to the most liquid contract times a scaling factor.
+      \vskip1ex
+      When the next contract becomes more liquid, then the continuous contract price is rolled over to that contract.
+      \vskip1ex
+      Futures contracts with different maturities (expiration dates) trade at different prices because of the futures curve, which causes price jumps between consecutive futures contracts.
+      \vskip1ex
+      The old contract price is multiplied by a scaling factor after that contract is rolled, to remove price jumps.
+      \vskip1ex
+      So the continuous contract prices are not equal to the past futures prices.
+      \vskip1ex
+      Interactive Brokers offers information about Continuous Contract Futures market data:\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm}{Continuous Contract Futures Data}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures_chained.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Find date when ESU8 volume exceeds ESM8
+exceed_s <- (vol_ume[, "ESU8"] > vol_ume[, "ESM8"])
+in_deks <- min(which(exceed_s))
+# In_deks <- match(TRUE, exceed_s)
+# Scale the ES_M8 prices
+in_deks <- index(exceed_s[in_deks])
+fac_tor <- as.numeric(Cl(ES_U8[in_deks])/Cl(ES_M8[in_deks]))
+ES_M8[, 1:4] <- fac_tor*ES_M8[, 1:4]
+# Calculate continuous contract prices
+chain_ed <- rbind(ES_M8[index(ES_M8) < in_deks],
+                  ES_U8[index(ES_U8) >= in_deks])
+# Or
+# Chain_ed <- rbind(ES_M8[paste0("/", in_deks-1)],
+#                   ES_U8[paste0(in_deks, "/")])
+# Plot continuous contract prices
+chart_Series(x=chain_ed["2018"], TA="add_Vo()",
+  name="S&P500 chained futures")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VIX} Volatility Index}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{VIX} Volatility Index is an estimate of expected stock market volatility, calculated from the implied volatilities of options on the \emph{S\&P500} Index (SPX).
+      \vskip1ex
+      The \emph{VIX} index is not a directly tradable asset, but it can be traded using \emph{VIX} futures.
+      \vskip1ex
+      The CBOE provides daily historical data for the \emph{VIX} index.
+      <<echo=TRUE,eval=FALSE>>=
+# Download VIX index data from CBOE
+vix_index <- data.table::fread("http://www.cboe.com/publish/scheduledtask/mktdata/datahouse/vixcurrent.csv", skip=1)
+class(vix_index)
+dim(vix_index)
+tail(vix_index)
+sapply(vix_index, class)
+vix_index <- xts(vix_index[, -1],
+  order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
+colnames(vix_index) <- c("Open", "High", "Low", "Close")
+# Save the VIX data to binary file
+load(file="C:/Develop/data/ib_data/vix_cboe.RData")
+ls(vix_env)
+vix_env$vix_index <- vix_index
+ls(vix_env)
+save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
+# plot OHLC data in x11 window
+chart_Series(x=vix_index["2018"], name="VIX Index")
+# plot dygraph
+dygraphs::dygraph(vix_index, main="VIX Index") %>%
+  dyCandlestick()
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_historical.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VIX} Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{VIX} futures are cash-settled futures contracts on the \emph{VIX} Index.
+      \vskip1ex
+      The most liquid \emph{VIX} futures are with monthly expiration dates (\href{http://www.cboe.com/framed/pdfframed?content=/aboutcboe/xcal2018.pdf&section=SEC_RESOURCES&title=2018+Cboe+Expiration+Calendar}{CBOE Expiration Calendar}), but weekly \emph{VIX} futures are also traded.
+      \vskip1ex
+      These are the \href{http://www.macroption.com/vix-expiration-calendar/}{VIX Futures Monthly Expiration Dates} from 2004 to 2019.
+      \vskip1ex
+      \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange):\\
+      \hskip1em\url{http://cfe.cboe.com/}\\
+      \hskip1em\url{http://www.cboe.com/vix}
+      \vskip1ex
+      \emph{VIX} Contract Specifications:\\
+      \hskip1em\href{http://cfe.cboe.com/cfe-products/vx-cboe-volatility-index-vix-futures/contract-specifications}{VIX Contract Specifications}\\
+      \hskip1em\href{http://www.macroption.com/vix-expiration-calendar/}{VIX Expiration Calendar}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read CBOE monthly futures expiration dates
+date_s <- read.csv(
+  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates.csv",
+  stringsAsFactors=FALSE)
+date_s <- as.Date(date_s[, 1])
+year_s <- format(date_s, format="%Y")
+year_s <- substring(year_s, 4)
+# monthly futures contract codes
+month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
+sym_bols <- paste0("VX", month_codes, year_s)
+date_s <- as.data.frame(date_s)
+colnames(date_s) <- "monthly_expiration_dates"
+rownames(date_s) <- sym_bols
+# write dates to CSV file, with row names
+write.csv(date_s, row.names=TRUE,
+  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv")
+# Read back CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
+  stringsAsFactors=FALSE, row.names=1)
+date_s[, 1] <- as.Date(date_s[, 1])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VIX} Futures Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Futures contracts with different expiration dates trade at different prices, known as the \emph{futures curve} (or \emph{term structure}).
+      \vskip1ex
+      The \emph{VIX} futures curve is similar to the interest rate \emph{yield curve}, which displays yields at different bond maturities.
+      \vskip1ex
+      The \emph{VIX} futures curve is not the same as the \emph{VIX} index term structure.
+      \vskip1ex
+      More information about the \emph{VIX} Index and the \emph{VIX} futures curve:\\
+      \hskip1em\href{http://www.macroption.com/vix-futures/}{VIX Futures}\\
+      \hskip1em\href{http://www.macroption.com/vix-futures-historical-data/}{VIX Futures Data}\\
+      \hskip1em\href{http://www.macroption.com/vix-futures-curve/}{VIX Futures Curve}\\
+      \hskip1em\href{http://www.macroption.com/vix-term-structure/}{VIX Index Term Structure}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+# Get all VIX futures for 2018 except January
+sym_bols <- ls(vix_env)
+sym_bols <- sym_bols[grep("*8", sym_bols)]
+sym_bols <- sym_bols[2:9]
+# Specify dates for curves
+low_vol <- as.Date("2018-01-11")
+hi_vol <- as.Date("2018-02-05")
+# Extract all VIX futures prices on the dates
+curve_s <- lapply(sym_bols, function(sym_bol) {
+  x_ts <- get(x=sym_bol, envir=vix_env)
+  Cl(x_ts[c(low_vol, hi_vol)])
+})  # end lapply
+curve_s <- rutils::do_call(cbind, curve_s)
+colnames(curve_s) <- sym_bols
+curve_s <- t(coredata(curve_s))
+colnames(curve_s) <- c("Contango 01/11/2018",
+                       "Backwardation 02/05/2018")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Contango} and \protect\emph{Backwardation} of \protect\emph{VIX} Futures Curve}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      When prices are \emph{low} then the futures curve is usually \emph{upward sloping}, known as \emph{contango}.
+      \vskip1ex
+      Futures prices are in \emph{contango} most of the time.
+      \vskip1ex
+      When prices are \emph{high} then the curve is usually \emph{downward sloping}, known as \emph{backwardation}.
+      <<echo=TRUE,eval=FALSE>>=
+x11(width=7, height=5)
+par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0))
+plot(curve_s[, 1], type="l", lty=1, col="blue", lwd=3,
+     xaxt="n", xlab="", ylab="", ylim=range(curve_s),
+     main="VIX Futures Curves")
+axis(1, at=(1:NROW(curve_s)), labels=rownames(curve_s))
+lines(curve_s[, 2], lty=1, lwd=3, col="red")
+legend(x="topright", legend=colnames(curve_s),
+       inset=0.05, cex=1.0, bty="n",
+       col=c("blue", "red"), lwd=6, lty=1)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_curves.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Futures Prices at Constant Maturity}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A constant maturity futures price is the price of a hypothetical futures contract with an expiration date at a fixed number of days in the future.
+      \vskip1ex
+      Futures prices at a constant maturity can be calculated by interpolating the prices of contracts with neighboring expiration dates.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read CBOE futures expiration dates
+date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
+  stringsAsFactors=FALSE, row.names=1)
+sym_bols <- rownames(date_s)
+expiration_dates <- as.Date(date_s[, 1])
+to_day <- as.Date("2018-05-07")
+maturi_ty <- to_day + 30
+# Find neighboring futures contracts
+in_deks <- match(TRUE, expiration_dates > maturi_ty)
+# In_deks <- min(which(expiration_dates > to_day))
+expiration_dates[in_deks-1]
+expiration_dates[in_deks]
+front_symbol <- sym_bols[in_deks-1]
+back_symbol <- sym_bols[in_deks]
+front_date <- expiration_dates[in_deks-1]
+back_date <- expiration_dates[in_deks]
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+front_price <- get(x=front_symbol, envir=vix_env)
+# front_price <- vix_env$front_symbol
+front_price <- as.numeric(Cl(front_price[to_day]))
+back_price <- get(x=back_symbol, envir=vix_env)
+back_price <- as.numeric(Cl(back_price[to_day]))
+# Calculate the constant maturity 30-day futures price
+fra_c <- as.numeric(maturi_ty - front_date) /
+  as.numeric(back_date - front_date)
+pric_e <- (fra_c*back_price +
+  (1-fra_c)*front_price)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VIX} Futures Investing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The volatility index moves in the opposite direction to the underlying asset price.
+      \vskip1ex
+      An increase in the \emph{VIX} index coincides with a drop in stock prices, and vice versa.
+      \vskip1ex
+      Taking a \emph{long} position in \emph{VIX} futures is similar to a \emph{short} position in stocks, and vice versa.
+      \vskip1ex
+      There are several exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}) which are linked to \emph{VIX} futures.
+      \vskip1ex
+      \emph{VXX} is an \emph{ETN} providing the total return of a \emph{long VIX} futures contract.
+      \vskip1ex
+      \emph{SVXY} is an \emph{ETF} providing the total return of a \emph{short VIX} futures contract.
+      \vskip1ex
+      Standard and Poor's explains the calculation of the
+      \href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}.
+      <<echo=(-(1:4)),eval=FALSE>>=
+library(HighFreq)
+x11(width=5, height=3)  # Open x11 for plotting
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+# plot VIX and SVXY data in x11 window
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- "blue"
+chart_Series(x=Cl(vix_env$vix_index["2007/"]),
+             theme=plot_theme, name="VIX Index")
+chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
+             theme=plot_theme, name="VTI ETF")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_historical2.png}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_vti.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{VIX} Crash on February 5th 2018}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{SVXY} and \emph{XIV} ETFs rallied strongly after the financial crisis of 2008, so they became very popular with individual investors, and became very "crowded trades".
+      \vskip1ex
+      The \emph{SVXY} and \emph{XIV} ETFs had \$3.6 billion of assets at the beginning of 2018.
+      \vskip1ex
+      On February 5th 2018 the U.S. stock markets experienced a mini-crash, which was exacerbated by \emph{VIX} futures short sellers.
+      \vskip1ex
+      As a result, the \emph{XIV} ETF hit its termination event and its value dropped to zero:\\
+      \hskip1em\href{https://www.bloomberg.com/news/articles/2018-02-07/how-two-tiny-volatility-products-helped-fuel-sudden-stock-slump}{Volatility Caused Stock Market Crash}\\
+      \hskip1em\href{https://riskreversal.com/2018/02/06/volatility-etn-terminated-xiv/
+}{XIV ETF Termination Event}
+      <<echo=TRUE,eval=FALSE>>=
+chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
+             theme=plot_theme, name="VIX Index")
+chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
+             theme=plot_theme, name="SVXY ETF")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_historical3.png}
+      \includegraphics[width=0.5\paperwidth]{figure/vix_svxy2.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Types of Market Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Fundamental company data can be divided into several different types:
+      \begin{itemize}
+        \item Balance Sheet (assets and liabilities),
+        \item Income Statement (profits and losses),
+        \item Cash Flow Statement (current operating cash flows),
+        \item Financial Ratios (performance and risk measures),
+      \end{itemize}
+    \column{0.5\textwidth}
+    Financial ratios summarize the performance and risk measures of a company, and can be used for investment decisions, like value investing,
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(xtable)
+# Read etf database into data frame
+fundamental_data <-
+  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
+                     stringsAsFactors=FALSE)
+      @
+  \end{columns}
+      <<echo=FALSE,eval=TRUE,results='asis'>>=
+print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+      @
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Fundamental Company Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Types of Fundamental Company Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Fundamental company data can be divided into several different types:
+      \begin{itemize}
+        \item Balance Sheet (assets and liabilities),
+        \item Income Statement (profits and losses),
+        \item Cash Flow Statement (current operating cash flows),
+        \item Financial Ratios (performance and risk measures),
+      \end{itemize}
+    \column{0.5\textwidth}
+    Financial ratios summarize the performance and risk measures of a company, and can be used for investment decisions, like value investing,
+      <<echo=(-(1:1)),eval=TRUE>>=
+library(xtable)
+# Read etf database into data frame
+fundamental_data <-
+  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
+                     stringsAsFactors=FALSE)
+      @
+  \end{columns}
+      <<echo=FALSE,eval=TRUE,results='asis'>>=
+print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+      @
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Sources of Fundamental Company Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      U.S. companies are required to provide the Securities and Exchange Commission (\href{https://www.sec.gov/}{SEC}) with quarterly \emph{10Q} and annual \emph{10K} filings, which contain fundamental data about the companies,
+      \vskip1ex
+      The \emph{SEC} filings are publicly available online through the \href{https://www.sec.gov/edgar.shtml}{EDGAR} database, and they are compiled into premium (license fee) databases by vendors such as \href{http://www.compustat.com/}{Compustat} (part of \href{http://www.capitaliq.com}{S\&P Capital IQ}) and \href{http://www.factset.com/}{FactSet},
+      \vskip1ex
+      There are also free databases of fundamental company data, from providers such as \href{https://simfin.com/}{SimFin}, \href{http://usfundamentals.com/}{Linelane}, and the
+      \href{https://www.quandl.com/data/RAYMOND-Raymond}{RAYMOND} database on \emph{Quandl},
+      \vskip1ex
+      Yahoo and Google don't provide financial ratios
+      \vskip1ex
+
+      \href{https://www.quandl.com/data/RAYMOND-Raymond}{RAYMOND} is a free \emph{Quandl} database of harmonized stock fundamentals, based on the \emph{SEC} database, but it has several limitations,
+      \vskip1ex
+      The data only goes back a few years, because the \emph{SEC} did not mandate electronic filing prior to 2009,
+      \vskip1ex
+      The report harmonization procedure fails when companies change their accounting treatment from year to year,
+      \vskip1ex
+      There are occasional gaps in the quarterly data, because companies are not required to file quarterly reports on dates when they're also filing annual reports,
+      \vskip1ex
+      \emph{Quandl} has written a review of both premium and free sources of fundamental company data:\\
+      https://blog.quandl.com/api-for-stock-data\#SEC-Indicators-Legend
+      \vskip1ex
+      data from the \emph{10Q}, \emph{10K}, and other \emph{SEC} filings are compiled by vendors such as \emph{Compustat} (which is part of \emph{S\&P Capital IQ}) and \emph{FactSet}, into premium databases,
+      \vskip1ex
+      \emph{WRDS} redistributes data from \emph{CRSP}, \emph{S\&P Capital IQ}, \emph{Compustat}, \emph{Thomson Reuters}, \emph{FactSet}, \emph{Hedge Fund Research}, \emph{Markit}, etc.,
+      \vskip1ex
+      \emph{SEC} is a free database of stock fundamentals extracted from SEC and (but not harmonized),\\
+      \hskip1em\url{https://www.quandl.com/data/SEC}
+      \vskip1ex
+      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,\\
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND}
+      \hskip1em\url{https://www.quandl.com/data/RAYMOND?keyword=aapl}
+      \vskip1ex
+      Wharton Research Data Services (\emph{WRDS}) is a distributor of third party data for the academic and research communities,
+      \vskip1ex
+      \emph{WRDS} offers financial, economic, and social datasets, including time series of stock prices, and fundamental company data,
+      \vskip1ex
+      \emph{WRDS} redistributes data from \emph{CRSP}, \emph{S\&P Capital IQ}, \emph{Compustat}, \emph{Thomson Reuters}, \emph{FactSet}, \emph{Hedge Fund Research}, \emph{Markit}, etc.,
+      \vskip1ex
+      The Center for Research in Security Prices (\emph{CRSP}) is a provider of historical stock market data for the academic and research communities,
+      \vskip1ex
+      Much of the \emph{WRDS} data is free, while premium data can be obtained under a temporary license,
+      \vskip1ex
+      \emph{WRDS} offers online help and a guide to its datasets:\\
+      \hskip1em\url{https://wrds-web.wharton.upenn.edu/wrds/index.cfm}\\
+      \hskip1em\url{https://wrds-web.wharton.upenn.edu/wrds/about/WRDS%20FAQs.cfm}\\
+      \hskip1em\url{https://www.WRDS.com/blog/getting-started-with-the-WRDS-api}\\
+      \hskip1em\url{https://www.WRDS.com/blog/stock-market-data-guide}
+      \vskip1ex
+      \emph{WRDS} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \hskip1em\url{https://www.WRDS.com/blog/api-for-stock-data}
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(Quandl)  # Load package Quandl
+# Register Quandl API key
+Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+
+# Quandl stock market data
+# https://blog.quandl.com/stock-market-data-ultimate-guide-part-1
+# https://blog.quandl.com/stock-market-data-the-ultimate-guide-part-2
+
+# Download RAYMOND metadata
+# https://www.quandl.com/data/RAYMOND-Raymond/documentation/metadata
+
+# Download S&P500 Index sonstituents
+# https://s3.amazonaws.com/static.quandl.com/tickers/SP500.csv
+
+# Download AAPL gross profits from RAYMOND
+prof_it <-
+  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
+chart_Series(prof_it, name="AAPL gross profits")
+
+# Download multiple time series
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+         start_date="2013-01-01", type="xts")
+
+# Download datasets for AAPL
+# https://www.quandl.com/api/v3/datasets/WIKI/AAPL.json
+
+# Download metadata for AAPL
+price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
+         start_date="2013-01-01", type="xts")
+# https://www.quandl.com/api/v3/datasets/WIKI/AAPL/metadata.json
+
+# scrape fundamental data from Google using quantmod - doesn't work
+funda_mentals <- getFinancials("HPQ", src="google", auto.assign=FALSE)
+# view quarterly fundamentals
+viewFinancials(funda_mentals,  period="Q")
+viewFinancials(funda_mentals)
+
+# scrape fundamental data from Yahoo using quantmod
+# table of Yahoo data fields
+# http://www.financialwisdomforum.org/gummy-stuff/Yahoo-data.htm
+
+met_rics <- yahooQF(c("Price/Sales",
+                      "P/E Ratio",
+                      "Price/EPS Estimate Next Year",
+                      "PEG Ratio",
+                      "Dividend Yield",
+                      "Market Capitalization"))
+
+
+sym_bols <- c("AAPL", "IBM", "MSFT")
+# Not all the metrics are returned by Yahoo.
+funda_mentals <- getQuote(paste(sym_bols, sep="", collapse=";"), src="yahoo", what=met_rics)
+viewFinancials(funda_mentals,  period="Q")
+
+funda_mentals <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
+viewFinancials(funda_mentals)
+
+
+      @
+      \emph{WRDS} has developed an \texttt{R} package called \texttt{WRDS} that allows downloading data from \emph{WRDS} directly into \texttt{R},
+      \vskip1ex
+      To make more than 50 downloads a day, you need to register your \emph{WRDS} API key using the function \texttt{WRDS.api\_key()},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Wharton Research Data Services \protect\emph{WRDS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Wharton Research Data Services (\emph{WRDS}) is a distributor of third party data for the academic and research communities.
+      \vskip1ex
+      \emph{WRDS} offers financial, economic, and social datasets, including time series of stock prices, and fundamental company data.
+      \vskip1ex
+      \emph{WRDS} redistributes data from \emph{CRSP}, \emph{S\&P Capital IQ}, \emph{Compustat}, \emph{Thomson Reuters}, \emph{FactSet}, \emph{Hedge Fund Research}, \emph{Markit}, etc.
+      \vskip1ex
+      The Center for Research in Security Prices (\emph{CRSP}) is a provider of historical stock market data for the academic and research communities.
+      \vskip1ex
+      Much of the \emph{WRDS} data is free, while premium data can be obtained under a temporary license.
+      \vskip1ex
+      \emph{WRDS} offers online help and a guide to its datasets:\\
+      \hskip1em\url{https://wrds-web.wharton.upenn.edu/wrds/index.cfm}\\
+      \hskip1em\url{https://wrds-web.wharton.upenn.edu/wrds/about/WRDS%20FAQs.cfm}\\
+      \hskip1em\url{https://www.WRDS.com/blog/getting-started-with-the-WRDS-api}\\
+      \hskip1em\url{https://www.WRDS.com/blog/stock-market-data-guide}
+      \vskip1ex
+      \emph{WRDS} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \hskip1em\url{https://www.WRDS.com/blog/api-for-stock-data}
+      \vskip1ex
+      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized).\\
+      \hskip1em\url{https://www.quandl.com/data/SEC}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+install.packages("devtools")
+library(devtools)
+# Install package WRDS from github
+install_github("WRDS/R-package")
+library(WRDS)  # Load package WRDS
+# Register WRDS API key
+WRDS.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+# get short description
+packageDescription("WRDS")
+# Load help page
+help(package="WRDS")
+# Remove WRDS from search path
+detach("package:WRDS")
+      @
+      \emph{WRDS} has developed an \texttt{R} package called \texttt{WRDS} that allows downloading data from \emph{WRDS} directly into \texttt{R}.
+      \vskip1ex
+      To make more than 50 downloads a day, you need to register your \emph{WRDS} API key using the function \texttt{WRDS.api\_key()}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Fundamental Company Data Portfolio from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl},
+      \vskip1ex
+      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+env_sp500 <- new.env()  # new environment for data
+# Remove all files (if necessary)
+rm(list=ls(env_sp500), envir=env_sp500)
+# Boolean vector of symbols already downloaded
+down_loaded <- tick_ers %in% ls(env_sp500)
+# Download data and copy it into environment
+for (tick_er in tick_ers[!down_loaded]) {
+  cat("processing: ", tick_er, "\n")
+  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
+                  start_date="1990-01-01",
+                  type="xts")[, -(1:7)]
+  colnames(da_ta) <- paste(tick_er,
+    c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  assign(tick_er, da_ta, envir=env_sp500)
+}  # end for
+save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
+             name="XOM stock")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Fama-French Factors from \protect\emph{Quandl}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Fama/French factors are constructed using six value-weight portfolios formed on size and book-to-market,
+      \hskip1em\url{https://www.quandl.com/data/KFRENCH/FACTORS_D}
+      \vskip1ex
+      \texttt{Mkt-RF} is the excess return on the market (value-weighted NYSE, AMEX, and NASDAQ stocks minus the one-month Treasury bill rate),
+      \vskip1ex
+      \texttt{SMB} (Small Minus Big) is the return on the three small-cap portfolios minus the three big-cap portfolios,
+      \vskip1ex
+      \texttt{HML} (High Minus Low) is the return on the two value portfolios minus the two growth portfolios,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)  # Load package HighFreq
+# Download Fama-French factors from KFRENCH database
+fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
+        start_date="2001-01-01", type="xts")
+dim(fac_tors)
+head(fac_tors)
+tail(fac_tors)
+chart_Series(cumsum(fac_tors["2001/", 1]/100),
+        name="Fama-French factors")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{High Frequency and Intraday Time Series Data}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trade and Quote (\protect\emph{TAQ}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High frequency data is typically formatted as either Trade and Quote (\emph{TAQ}) data, or \emph{Open-High-Low-Close} (\emph{OHLC}) data,
+      \vskip1ex
+      Trade and Quote (\emph{TAQ}) data contains intraday trades and quotes on exchange-traded stocks and futures,
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives,
+      \vskip1ex
+      Each row of \emph{TAQ} data contains both the quote and trade prices, and the corresponding quote size or trade volume:
+      \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=TRUE>>=
+# Load package HighFreq
+library(HighFreq)
+head(SPY_TAQ)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Open-High-Low-Close (\protect\emph{OHLC}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Open-High-Low-Close} (\emph{OHLC}) data contains intraday trade prices and trade volumes,
+      \vskip1ex
+      \emph{OHLC} data is evenly spaced in time, with each row containing the \emph{Open, High, Low, Close} prices, and the trade \emph{Volume}, recorded over the past time interval (called a \emph{bar} of data),
+      \vskip1ex
+      The \emph{Open} and \emph{Close} prices are the first and last trade prices recorded in the time bar,
+      \vskip1ex
+      The \emph{High} and \emph{Low} prices are the highest and lowest trade prices recorded in the time bar,
+      \vskip1ex
+      The \emph{Volume} is the total trading volume recorded in the time bar,
+      \vskip1ex
+      The \emph{OHLC} data format provides a way of efficiently compressing \emph{TAQ} data, while preserving information about price levels, volatility (range), and trading volumes,
+      \vskip1ex
+      In addition, evenly spaced \emph{OHLC} data allows for easier analysis of multiple time series, since the prices for different assets are given at the same moments in time,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=TRUE>>=
+# Load package HighFreq
+library(HighFreq)
+head(SPY)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{HighFreq} for Managing High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{HighFreq} contains functions for managing high frequency time series data, such as:
+      \begin{itemize}
+        \item converting \emph{TAQ} data to \emph{OHLC} format,
+        \item chaining and joining time series,
+        \item scrubbing bad data,
+        \item managing time zones and alligning time indices,
+        \item aggregating data to lower frequency (periodicity),
+        \item calculating rolling aggregations (VWAP, Hurst exponent, etc.),
+        \item calculating seasonality aggregations,
+        \item estimating volatility, skew, and higher moments,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# Install package HighFreq from github
+devtools::install_github(repo="algoquant/HighFreq")
+# Load package HighFreq
+library(HighFreq)
+# get documentation for package HighFreq
+# get short description
+packageDescription("HighFreq")
+# Load help page
+help(package="HighFreq")
+# List all datasets in "HighFreq"
+data(package="HighFreq")
+# List all objects in "HighFreq"
+ls("package:HighFreq")
+# Remove HighFreq from search path
+detach("package:HighFreq")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Datasets in Package \protect\emph{HighFreq}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{HighFreq} contains several high frequency time series, in \emph{xts} format, stored in a file called \texttt{hf\_data.RData}:
+      \begin{itemize}
+        \item a time series called \texttt{SPY\_TAQ}, containing a single day of \emph{TAQ} data for the \emph{SPY} ETF,
+        \item three time series called \texttt{SPY}, \texttt{TLT}, and \texttt{VXX}, containing intraday 1-minute \emph{OHLC} data for the \emph{SPY}, \emph{TLT}, and \emph{VXX} ETFs,
+      \end{itemize}
+      Even after the \emph{HighFreq} package is loaded, its datasets aren't loaded into the workspace, so they aren't listed in the workspace,
+      \vskip1ex
+      That's because the datasets in package \emph{HighFreq} are set up for \emph{lazy loading}, which means they can be called as if they were loaded, even though they're not loaded into the workspace,
+      \vskip1ex
+      The datasets in package \emph{HighFreq} can be loaded into the workspace using the function \texttt{data()},
+      \vskip1ex
+      The data is set up for \emph{lazy loading}, so it doesn't require calling \texttt{data(hf\_data)} to load it into the workspace before calling it,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# Load package HighFreq
+library(HighFreq)
+# you can see SPY when listing objects in HighFreq
+ls("package:HighFreq")
+# you can see SPY when listing datasets in HighFreq
+data(package="HighFreq")
+# but the SPY dataset isn't listed in the workspace
+ls()
+# HighFreq datasets are lazy loaded and available when needed
+head(SPY)
+# Load all the datasets in package HighFreq
+data(hf_data)
+# HighFreq datasets are now loaded and in the workspace
+head(SPY)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{CumReturns} Plots}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High Frequency and Intraday Time Series Data
+      tick-by-tick data, trade and quote data, order book data,
+      \texttt{chart.CumReturns()} plots the cumulative returns of a time series of returns,
+      <<foo_chart,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# Library(xts)  # Load package xts
+# Load package "PerformanceAnalytics"
+library(PerformanceAnalytics)
+data(managers)  # Load "managers" data set
+ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
+                      "SP500 TR")]
+
+chart.CumReturns(ham_1, lwd=2, ylab="",
+        legend.loc="topleft", main="")
+# Add title
+title(main="Managers cumulative returns",
+      line=-1)
+      @
+    \column{0.5\textwidth}
+    \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/cum_returns-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Package \protect\emph{IBrokers} for Using Interactive Brokers}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{IBrokers} for Using Interactive Brokers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Interactive Brokers (IB) is a brokerage company which provides an API for computer-driven trading, and it also provides extensive documentation:\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=29205}{Interactive Brokers Main Page}\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=29205}{Interactive Brokers Documentation}\\
+      \hskip1em\href{https://gdcdyn.interactivebrokers.com/en/index.php?f=25228&course=5}{Interactive Brokers Course}
+      \vskip1ex
+      \fcolorbox{red}{yellow}{
+      \begin{minipage}{18em}
+        \textbf{\color{red}{Disclaimer:}} I do have a personal account with Interactive Brokers.\\
+        But I do not have any other relationship with Interactive Brokers, and I do not endorse or recommend them.\\
+         \textbf{\color{red}{Warning:}} Active trading is extremely risky, and most people lose money.\\
+        \textbf{\color{red}{I advise not to trade with your own capital!}}
+      \end{minipage}}
+      \vskip1ex
+      The package \emph{IBrokers} contains \texttt{R} functions for executing IB commands using the Interactive Brokers API.
+      \vskip1ex
+      The package \emph{IBrokers} has extensive
+      \href{https://cran.r-project.org/web/packages/IBrokers/index.html}{documentation}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<eval=FALSE>>=
+# Install package IBrokers
+install.packages("IBrokers")
+# Load package IBrokers
+library(IBrokers)
+# get documentation for package IBrokers
+# get short description
+packageDescription("IBrokers")
+# Load help page
+help(package="IBrokers")
+# List all datasets in "IBrokers"
+data(package="IBrokers")
+# List all objects in "IBrokers"
+ls("package:IBrokers")
+# Remove IBrokers from search path
+detach("package:IBrokers")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Configuring the IB Trader Workstation (\protect\emph{TWS})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Connecting to Interactive Brokers via the API requires being logged into the IB Trader Workstation (\emph{TWS}) or the IB Gateway (\emph{IBG}).
+      \vskip1ex
+      You should \href{https://www.interactivebrokers.com/en/index.php?f=16040}{Download the TWS} and install it.
+      \vskip1ex
+      Read about the \emph{TWS}
+      \href{https://interactivebrokers.github.io/tws-api/initial_setup.html}{initial setup}.
+      \vskip1ex
+      The \emph{TWS} settings must be configured to enable the API: \emph{File $\rightarrow$ Global Configuration $\rightarrow$ API}
+      \vskip1ex
+      The \emph{TWS} Java heap size should be increased to \texttt{1.5} GB: \emph{File $\rightarrow$ Global Configuration $\rightarrow$ General}
+      \vskip1ex
+      Read more about the
+      \href{https://ibkr.info/article/2170}{required TWS memory allocation}
+      and about
+      \href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/priceriskanalytics/custommemory.htm}{how to change the TWS heap size}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ibapi_settings.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ibtws_memory.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Connecting to Interactive Brokers via the API}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Connecting to Interactive Brokers via the API requires being logged into the IB Trader Workstation (\emph{TWS}) or the IB Gateway (\emph{IBG}).
+      \vskip1ex
+      Interactive Brokers offers extensive
+      \href{http://interactivebrokers.github.io/tws-api/}{API Documentation}.
+      \vskip1ex
+      The functions \texttt{twsConnect()} and \texttt{ibgConnect()} open a connection to the Interactive Brokers API, via either the \emph{TWS} or the \emph{IBG}.
+      \vskip1ex
+      The parameter \texttt{port} should be assigned to the value of the \emph{socket port} displayed in \emph{TWS} or \emph{IBG}.
+      \vskip1ex
+      The function \texttt{twsDisconnect()} closes the Interactive Brokers API connection.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Or connect to IB Gateway
+# Ib_connect <- ibgConnect(port=4002)
+# Check connection
+IBrokers::isConnected(ib_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Account Information from Interactive Brokers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqAccountUpdates()} returns a list with the account information (requires an account code).
+      \vskip1ex
+      The first element of the list contains the account dollar balances, while the remaining elements contain contract information.
+      \vskip1ex
+      The function \texttt{twsPortfolioValue()} returns a data frame with commonly used account fields, such as the contract names, net positions, and realized and unrealized profits and losses (pnl's).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Or connect to IB Gateway
+# Ib_connect <- ibgConnect(port=4002)
+# Download account information from IB
+ib_account <- IBrokers::reqAccountUpdates(conn=ib_connect, acctCode="DI1207807")
+# Extract account balances
+balance_s <- ib_account[[1]]
+balance_s$AvailableFunds
+# Extract contract names, net positions, and profits and losses
+IBrokers::twsPortfolioValue(ib_account)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining Contracts Using Package \protect\emph{IBrokers}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{twsEquity()} defines a stock contract (IB contract object).
+      \vskip1ex
+      The functions \texttt{twsFuture()} and \texttt{twsCurrency()} define futures and currency contracts.
+      \vskip1ex
+      The function \texttt{reqContractDetails()} returns a list with information on the IB instrument.
+      \vskip1ex
+      The package \emph{twsInstrument} contains utility functions for enhancing the package \emph{IBrokers}.
+      \vskip1ex
+      To define an IB contract, first look it up by keyword in the online
+      \href{https://www.interactivebrokers.com/en/index.php?f=463}{IB Contract and Symbol Database}, and find the \emph{Conid} for that instrument.
+      \vskip1ex
+      Enter the \emph{Conid} into the function \texttt{twsInstrument::getContract()}, which will return the IB contract object for that instrument.
+      \vskip1ex
+      Interactive Brokers offers more information about financial contracts here:
+      \href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define AAPL stock contract (object)
+con_tract <- IBrokers::twsEquity("AAPL")
+# Define CHF currency contract
+con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
+# Define S&P Emini future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ES",
+  exch="GLOBEX", expiry="201812")
+# Define 10yr Treasury future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ZN",
+  exch="ECBOT", expiry="201812")
+# Define euro currency future October 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="EUR",
+  exch="GLOBEX", expiry="201810")
+# Define Gold future July 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="GC",
+  exch="NYMEX", expiry="201807")
+# Define Oil future January 2019 contract
+con_tract <- IBrokers::twsFuture(symbol="QM",
+  exch="NYMEX", expiry="201901")
+# test if contract object is correct
+IBrokers::is.twsContract(con_tract)
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+# Install the package twsInstrument
+install.packages("twsInstrument", repos="http://r-forge.r-project.org")
+# Define euro future using getContract() and Conid
+con_tract <- twsInstrument::getContract("317631411")
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining \protect\emph{VIX} Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{VIX} futures have both monthly and weekly contracts, with the monthly contracts being the most liquid.
+      \vskip1ex
+      In order to uniquely specify a \emph{VIX} futures contract, the parameter \texttt{"local"} should be passed into the function \texttt{twsFuture()}, with the local security name.
+      \vskip1ex
+      For example, \emph{VXV8} is the local security name (symbol) for the monthly \emph{VIX} futures contract expiring on October 17th, 2018.
+      \vskip1ex
+      \emph{VX40V8} is the local security name (symbol) for the weekly \emph{VIX} futures contract expiring on October 3rd, 2018.
+      \vskip1ex
+      The function \texttt{reqContractDetails()} returns a list with information on the IB instrument.
+      \vskip1ex
+      \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange): \url{http://cfe.cboe.com/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define VIX monthly and weekly futures October 2018 contract
+sym_bol <- "VIX"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  exch="CFE", expiry="201810")
+# Define VIX monthly futures October 2018 contract
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  local="VXV8", exch="CFE", expiry="201810")
+# Define VIX weekly futures October 3rd 2018 contract
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  local="VX40V8", exch="CFE", expiry="201810")
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect,
+  Contract=con_tract)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Historical Data from Interactive Brokers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqHistoricalData()} downloads historical data to a \emph{csv} file.
+      \vskip1ex
+      The historical bar data fields are \texttt{"Open", "High", "Low", "Close", "Volume", "WAP", "Count"}. (\texttt{"WAP"} is the weighted average price.)
+      \vskip1ex
+      Interactive Brokers offers more information about historical market data:\\
+      \hskip1em\href{http://interactivebrokers.github.io/tws-api/historical_data.html}{IB Historical Market Data}\\
+      \hskip1em\href{http://interactivebrokers.github.io/tws-api/historical_bars.html}{IB Historical Bar Data Fields}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures December 2018 contract
+sym_bol <- "ES"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  exch="GLOBEX", expiry="201812")
+# Open file for data download
+data_dir <- "C:/Develop/data/ib_data"
+dir.create(data_dir)
+file_name <- file.path(data_dir, paste0(sym_bol, "_201812.csv"))
+file_connect <- file(file_name, open="w")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download historical data to file
+IBrokers::reqHistoricalData(conn=ib_connect,
+  Contract=con_tract,
+  # whatToShow="MIDPOINT",
+  # endDateTime=ib_time,
+  barSize="1 day", duration="6 M",
+  file=file_connect)
+# Close data file
+close(file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Historical Data for Expired Futures Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Historical data for expired futures contracts can be downloaded using \texttt{reqHistoricalData()} with the appropriate \texttt{expiry} date, and the parameter \texttt{include\_expired="1"}.
+      \vskip1ex
+      For example, \emph{ESM8} is the symbol for the \emph{S\&P500} emini futures expiring in June 2018.
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures June 2018 contract
+sym_bol <- "ES"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  include_expired="1",
+  exch="GLOBEX", expiry="201806")
+# Open file for ESM8 data download
+file_name <- file.path(data_dir, paste0(sym_bol, "M8.csv"))
+file_connect <- file(file_name, open="w")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download historical data to file
+IBrokers::reqHistoricalData(conn=ib_connect,
+  Contract=con_tract,
+  barSize="1 day", duration="2 Y",
+  file=file_connect)
+# Close data file
+close(file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_ESM8_futures.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load OHLC data and coerce it into xts series
+price_s <- data.table::fread(file_name)
+data.table::setDF(price_s)
+price_s <- xts::xts(price_s[, 2:6],
+  order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
+    tz="America/New_York", origin="1970-01-01")))
+colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+# plot OHLC data in x11 window
+chart_Series(x=price_s, TA="add_Vo()",
+  name="S&P500 ESM8 futures")
+# plot dygraph
+dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM8 futures") %>%
+  dyCandlestick()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Downloading Continuous Contract Futures Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Note:
+      Continuous futures require passing the parameter: contract.secType = "CONTFUT", which isn't currently included in package IBrokers.\\
+            \hskip1em\url{http://interactivebrokers.github.io/tws-api/basic_contracts.html}
+      \vskip1ex
+      A continuous futures contract is a synthetic time series of prices, created by splicing together prices from several futures contracts with different expiration dates.
+      \vskip1ex
+      At any point in time, the price of the continuous contract is equal to the most liquid contract times a normalization factor.
+      \vskip1ex
+      When the next consecutive contract becomes more liquid, then the continuous contract price is rolled over to that contract.
+      \vskip1ex
+      The continuous price is multiplied by a normalization factor when the contract is rolled, to remove jumps caused by the shape of the futures curve.
+      \vskip1ex
+      So the continuous contract prices are not equal to the past futures prices.
+      \vskip1ex
+      Futures contracts trade at different prices (because of the futures convenience yield).
+      \vskip1ex
+      This cause price jumps between the currently expiring futures contract and the next futures contract.
+      A continuous futures contract adjusts the prices to remove these jumps and time differences to create an artificial price series.
+      \vskip1ex
+      The function \texttt{reqHistoricalData()} downloads historical data to a \emph{csv} file.
+      \vskip1ex
+      The historical bar data fields are \texttt{"Open", "High", "Low", "Close", "Volume", "WAP", "Count"}.
+      \vskip1ex
+      Interactive Brokers offers more information about historical Continuous Contract Futures market data:\\
+      \hskip1em\href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm}{Continuous Contract Futures Data}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures June 2018 contract
+sym_bol <- "ES"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  include_expired="1",
+  exch="GLOBEX", expiry="201806")
+# Open file for data download
+data_dir <- "C:/Develop/data/ib_data"
+dir.create(data_dir)
+file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
+file_connect <- file(file_name, open="w")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download historical data to file
+IBrokers::reqHistoricalData(conn=ib_connect,
+  Contract=con_tract,
+  barSize="1 day", duration="6 M",
+  file=file_connect)
+# Close data file
+close(file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Live \protect\emph{TAQ} Data from Interactive Brokers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqMktData()} downloads live (real-time) trades and quotes (\emph{TAQ}) data from Interactive Brokers.
+      \vskip1ex
+      The function \texttt{eWrapper()} formats the real-time market events (trades and quotes), so they can be displayed or saved to a file.
+      \vskip1ex
+      The method \texttt{eWrapper.MktData.CSV()} formats the real-time \emph{TAQ} data so it can be saved to a \emph{csv} file.
+      \vskip1ex
+      The real-time \emph{TAQ} data fields are \emph{BidSize, BidPrice, AskPrice, AskSize, Last, LastSize, Volume}.
+      \vskip1ex
+      \emph{BidPrice} is the quoted bid price, \emph{AskPrice} is the quoted offer price, and \emph{Last} is the most recent traded price.
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures December 2018 contract
+sym_bol <- "ES"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  exch="GLOBEX", expiry="201812")
+# Open file for data download
+data_dir <- "C:/Develop/data/ib_data"
+# Dir.create(data_dir)
+file_name <- file.path(data_dir, paste0(sym_bol, "_taq_live.csv"))
+file_connect <- file(file_name, open="w")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download live data to file
+IBrokers::reqMktData(conn=ib_connect,
+           Contract=con_tract,
+           eventWrapper=eWrapper.MktData.CSV(1),
+           file=file_connect)
+# Close data file
+close(file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Live \protect\emph{OHLC} Data from Interactive Brokers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqRealTimeBars()} downloads live (real-time) \emph{OHLC} market data from Interactive Brokers.
+      \vskip1ex
+      The method \texttt{eWrapper.RealTimeBars.CSV()} formats the real-time \emph{OHLC} data so it can be saved to a \emph{csv} file.
+      \vskip1ex
+      Interactive Brokers by default only offers \texttt{5}-second bars of real-time prices (but it also offers historical data at other frequencies).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures December 2018 contract
+sym_bol <- "ES"
+con_tract <- IBrokers::twsFuture(symbol=sym_bol,
+  exch="GLOBEX", expiry="201812")
+# Open file for data download
+data_dir <- "C:/Develop/data/ib_data"
+# Dir.create(data_dir)
+file_name <- file.path(data_dir, paste0(sym_bol, "_ohlc_live.csv"))
+file_connect <- file(file_name, open="w")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download live data to file
+IBrokers::reqRealTimeBars(conn=ib_connect,
+           Contract=con_tract, barSize="1",
+           eventWrapper=eWrapper.RealTimeBars.CSV(1),
+           file=file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+# Close data file
+close(file_connect)
+# Load OHLC data and coerce it into xts series
+library(data.table)
+price_s <- data.table::fread(file_name)
+price_s <- xts::xts(price_s[, paste0("V", 2:6)],
+  as.POSIXct.numeric(as.numeric(price_s[, V1]), tz="America/New_York", origin="1970-01-01"))
+colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+# Plot OHLC data in x11 window
+x11()
+chart_Series(x=price_s, TA="add_Vo()",
+             name="S&P500 ESZ8 futures")
+# Plot dygraph
+library(dygraphs)
+dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESZ8 futures") %>%
+  dyCandlestick()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading Live \protect\emph{OHLC} Data For Multiple Contracts}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Live \protect\emph{OHLC} data can be downloaded for multiple instruments simultaneously.
+      \vskip1ex
+      This requires passing a \emph{list} of contracts and file connections to \texttt{reqRealTimeBars()}, and also passing the number of contracts to \texttt{eWrapper.RealTimeBars.CSV()}.
+      \vskip1ex
+      The bar prices for each contract are written into a separate file.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(IBrokers)
+# Define list of S&P futures and 10yr Treasury contracts
+con_tracts <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201812"),
+                   ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201812"))
+# Open the file for storing the bar data
+data_dir <- "C:/Develop/data/ib_data"
+file_names <- file.path(data_dir, paste0(c("ES_", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
+file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers2::twsConnect(port=7497)
+# Download live data to file
+IBrokers::reqRealTimeBars(conn=ib_connect,
+                          Contract=con_tracts,
+                          barSize="1", useRTH=FALSE,
+                          eventWrapper=eWrapper.RealTimeBars.CSV(NROW(con_tracts)),
+                          file=file_connects)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+# Close data files
+for (file_connect in file_connects)
+  close(file_connect)
+library(data.table)
+# Load ES futures December 2018 contract and coerce it into xts series
+price_s <- data.table::fread(file_names[1])
+price_s <- xts::xts(price_s[, paste0("V", 2:6)],
+  as.POSIXct.numeric(as.numeric(price_s[, V1]), tz="America/New_York", origin="1970-01-01"))
+colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+# Plot dygraph
+library(dygraphs)
+dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESZ8 futures") %>%
+  dyCandlestick()
+# Load ZN 10yr Treasury futures December 2018 contract
+price_s <- data.table::fread(file_names[2])
+price_s <- xts::xts(price_s[, paste0("V", 2:6)],
+  as.POSIXct.numeric(as.numeric(price_s[, V1]), tz="America/New_York", origin="1970-01-01"))
+colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+# Plot dygraph
+dygraphs::dygraph(price_s[, 1:4], main="ZN 10yr Treasury futures") %>%
+  dyCandlestick()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Event Processing Using \texttt{eWrapper()} and \texttt{twsCALLBACK()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Functions which process real-time market events (like \texttt{reqMktData()} and \texttt{reqRealTimeBars()}) rely on the functions \texttt{eWrapper()} and \texttt{twsCALLBACK}.
+      \vskip1ex
+      The function \texttt{eWrapper()} creates an \emph{eWrapper} object, consisting of a data environment and methods (functions) for formatting adding new data to it.
+      \vskip1ex
+      The function \texttt{reqMktData()} accepts an \emph{eWrapper} object and passes it into \texttt{twsCALLBACK()}.
+      \vskip1ex
+      The function \texttt{twsCALLBACK()} processes market events by calling functions \texttt{readBin()} and \texttt{processMsg()} in a \texttt{while()} loop.
+      \vskip1ex
+      The \emph{TWS} broadcasts real-time market events in the form of \texttt{character} strings, which are captured by \texttt{readBin()}.
+      \vskip1ex
+      The \texttt{character} strings are then parsed by \texttt{processMsg()}, and copied to the data environment of the \emph{eWrapper} object.
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/market_event_processing.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Placing Market Trade Orders on \protect\emph{TWS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqIds()} requests a trade order ID from Interactive Brokers \emph{TWS}.
+      \vskip1ex
+      The function \texttt{twsOrder()} creates a trade order object.
+      \vskip1ex
+      The parameter \texttt{orderType} specifies the type of trade order: market order (\texttt{MKT}), limit order (\texttt{LMT}), etc.
+      \vskip1ex
+      Each trade order requires its own ID generated by \texttt{reqIds()}.
+      \vskip1ex
+      The function \texttt{placeOrder()} places a trade order.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:10)),eval=FALSE>>=
+# Define S&P Emini future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201812")
+# Define euro currency contract EUR.USD
+con_tract <- IBrokers::twsCurrency("EUR", currency="USD")
+# Define euro currency E-mini futures December 2018 contract E7Z8
+con_tract <- IBrokers::twsFuture(symbol="E7", exch="GLOBEX", expiry="201812")
+# Define Japanese yen currency contract JPY.USD
+con_tract <- IBrokers::twsCurrency("JPY", currency="USD")
+# Define Japanese yen currency E-mini futures December 2018 contract J7Z8
+con_tract <- IBrokers::twsFuture(symbol="J7", exch="GLOBEX", expiry="201812")
+# Define Japanese yen currency futures December 2018 contract 6JZ8
+con_tract <- IBrokers::twsFuture(symbol="JPY", exch="GLOBEX", expiry="201812")
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+# Request trade order ID
+order_id <- IBrokers::reqIds(ib_connect)
+# Create buy market order object
+ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
+  action="BUY", totalQuantity=1)
+# Place trade order
+IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+# Execute sell market order
+order_id <- IBrokers::reqIds(ib_connect)
+ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
+  action="SELL", totalQuantity=1)
+IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+# Execute buy market order
+order_id <- IBrokers::reqIds(ib_connect)
+ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
+  action="BUY", totalQuantity=1)
+IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Placing and Cancelling Limit Trade Orders on \protect\emph{TWS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{twsOrder()} with \texttt{orderType=LMT} creates a limit trade order object.
+      \vskip1ex
+      The function \texttt{cancelOrder()} with the parameter \texttt{orderId=order\_id} cancels a trade order with the ID equal to \texttt{order\_id}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Request trade order ID
+order_id <- IBrokers::reqIds(ib_connect)
+# Create buy limit order object
+ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
+  lmtPrice="1.1511", action="BUY", totalQuantity=1)
+# Place trade order
+IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+# Cancel trade order
+IBrokers::cancelOrder(ib_connect, order_id)
+# Execute sell limit order
+order_id <- IBrokers::reqIds(ib_connect)
+ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
+  lmtPrice="1.1512", action="SELL", totalQuantity=1)
+IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+# Cancel trade order
+IBrokers::cancelOrder(ib_connect, order_id)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Placing Limit Orders in a Programmatic Loop}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{reqRealTimeBars()} creates data objects and then calls \texttt{twsCALLBACK()} and passes the objects to \texttt{twsCALLBACK()}.
+      \vskip1ex
+      \texttt{twsCALLBACK()} calls \texttt{processMsg()} in a loop, and passes the \texttt{eWrapper()} to it.
+      \vskip1ex
+      \texttt{processMsg()} performs if-else statements and calls eWrapper methods.
+      \vskip1ex
+      \texttt{eWrapper()} creates an environment for data, and methods (functions) for handling (formatting) the data.
+      \vskip1ex
+      \texttt{eWrapper.RealTimeBars.CSV()} calls \texttt{eWrapper()} to create a closure (function) and returns it.
+      \vskip1ex
+      Closures allow creating mutable states for persistent data objects.
+      \vskip1ex
+      Limit trade orders can be placed inside a modified \texttt{eWrapper()} function.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+eWrapper_realtimebars <- function(n = 1) {
+  eW <- eWrapper_new(NULL)
+  # eW <- IBrokers::eWrapper(NULL)
+  eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_, 7), ncol = 7), 0), .Dimnames = list(NULL, c("Open", "High", "Low", "Close", "Volume", "WAP", "Count")))), n))
+  eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...) {
+    id <- as.numeric(msg[2])
+    file <- file[[id]]
+    data <- eW$get.Data("data")
+    attr(data[[id]], "index") <- as.numeric(msg[3])
+    nr.data <- NROW(data[[id]])
+    # write to file
+    cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
+    # write to console
+    # eW$count_er <- eW$count_er + 1
+    eW$assign.Data("count_er", eW$get.Data("count_er")+1)
+    cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    ### Trade
+    # Cancel previous trade orders
+    buy_id <- eW$get.Data("buy_id")
+    sell_id <- eW$get.Data("sell_id")
+    if (buy_id>0) IBrokers::cancelOrder(ib_connect, buy_id)
+    if (sell_id>0) IBrokers::cancelOrder(ib_connect, sell_id)
+    # Execute buy limit order
+    buy_id <- IBrokers::reqIds(ib_connect)
+    buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
+                                    lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
+    IBrokers::placeOrder(ib_connect, con_tract, buy_order)
+    # Execute sell limit order
+    sell_id <- IBrokers::reqIds(ib_connect)
+    sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
+                                     lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
+    IBrokers::placeOrder(ib_connect, con_tract, sell_order)
+    # Copy new trade orders
+    eW$assign.Data("buy_id", buy_id)
+    eW$assign.Data("sell_id", sell_id)
+    ### Trade finished
+    data[[id]][nr.data, 1:7] <- as.numeric(msg[4:10])
+    eW$assign.Data("data", data)
+    c(curMsg, msg)
+  }  # end eW$realtimeBars
+  return(eW)
+}  # end eWrapper_realtimebars
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Advanced Order Types and Execution Algos}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Interactive Brokers offers many different
+      \hskip1em\href{https://www.interactivebrokers.com/en/index.php?f=4985}{Advanced Order Types and Execution Algos}.
+      \vskip1ex
+      The function \texttt{reqRealTimeBars()} creates data objects and then calls \texttt{twsCALLBACK()} and passes the objects to \texttt{twsCALLBACK()}.
+      \vskip1ex
+      \texttt{twsCALLBACK()} calls \texttt{processMsg()} in a loop, and passes the \texttt{eWrapper()} to it.
+      \vskip1ex
+      \texttt{processMsg()} performs if-else statements and calls eWrapper methods.
+      \vskip1ex
+      \texttt{eWrapper()} creates an environment for data, and methods (functions) for handling (formatting) the data.
+      \vskip1ex
+      \texttt{eWrapper.RealTimeBars.CSV()} calls \texttt{eWrapper()} to create a closure (function) and returns it.
+      \vskip1ex
+      Closures allow creating mutable states for persistent data objects.
+      \vskip1ex
+      Limit trade orders can be placed inside a modified \texttt{eWrapper()} function.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+eWrapper_realtimebars <- function(n = 1) {
+  eW <- eWrapper_new(NULL)
+  # eW <- IBrokers::eWrapper(NULL)
+  eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_, 7), ncol = 7), 0), .Dimnames = list(NULL, c("Open", "High", "Low", "Close", "Volume", "WAP", "Count")))), n))
+  eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...) {
+    id <- as.numeric(msg[2])
+    file <- file[[id]]
+    data <- eW$get.Data("data")
+    attr(data[[id]], "index") <- as.numeric(msg[3])
+    nr.data <- NROW(data[[id]])
+    # write to file
+    cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
+    # write to console
+    # eW$count_er <- eW$count_er + 1
+    eW$assign.Data("count_er", eW$get.Data("count_er")+1)
+    cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
+    ### Trade
+    # Cancel previous trade orders
+    buy_id <- eW$get.Data("buy_id")
+    sell_id <- eW$get.Data("sell_id")
+    if (buy_id>0) IBrokers::cancelOrder(ib_connect, buy_id)
+    if (sell_id>0) IBrokers::cancelOrder(ib_connect, sell_id)
+    # Execute buy limit order
+    buy_id <- IBrokers::reqIds(ib_connect)
+    buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
+                                    lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
+    IBrokers::placeOrder(ib_connect, con_tract, buy_order)
+    # Execute sell limit order
+    sell_id <- IBrokers::reqIds(ib_connect)
+    sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
+                                     lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
+    IBrokers::placeOrder(ib_connect, con_tract, sell_order)
+    # Copy new trade orders
+    eW$assign.Data("buy_id", buy_id)
+    eW$assign.Data("sell_id", sell_id)
+    ### Trade finished
+    data[[id]][nr.data, 1:7] <- as.numeric(msg[4:10])
+    eW$assign.Data("data", data)
+    c(curMsg, msg)
+  }  # end eW$realtimeBars
+  return(eW)
+}  # end eWrapper_realtimebars
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Downloading Live \protect\emph{TAQ} Data and Replaying It}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Note: The script downloads the raw data, but doesn't replay the bar data properly.
+      https://offerm.wordpress.com/2015/05/21/market-data-recording-and-playback-with-ibrokers-and-r-2/
+      \vskip1ex
+      The function \texttt{reqMktData()} downloads live (real-time) trades and quotes (\emph{TAQ}) data from Interactive Brokers.
+      \vskip1ex
+      The function \texttt{eWrapper()} formats the real-time market events (trades and quotes), so they can be displayed or saved to a file.
+      \vskip1ex
+      The method \texttt{eWrapper.MktData.CSV()} formats the real-time \emph{TAQ} data so it can be saved to a \emph{csv} file.
+      \vskip1ex
+      The real-time \emph{TAQ} data fields are \emph{BidSize, BidPrice, AskPrice, AskSize, Last, LastSize, Volume}.
+      \vskip1ex
+      \emph{BidPrice} is the quoted bid price, \emph{AskPrice} is the quoted offer price, and \emph{Last} is the most recent traded price.
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define S&P Emini futures December 2018 contract
+snp_contract <- IBrokers::twsFuture(symbol="ES",
+  exch="GLOBEX", expiry="201812")
+# Define VIX futures December 2018 contract
+vix_contract <- IBrokers::twsFuture(symbol="VIX",
+  local="VXZ8", exch="CFE", expiry="201812")
+# Define 10yr Treasury futures December 2018 contract
+trs_contract <- IBrokers::twsFuture(symbol="ZN",
+  exch="ECBOT", expiry="201812")
+# Define Emini gold futures December 2018 contract
+gold_contract <- IBrokers::twsFuture(symbol="YG",
+  exch="NYSELIFFE", expiry="201812")
+# Define euro currency future December 2018 contract
+euro_contract <- IBrokers::twsFuture(symbol="EUR",
+  exch="GLOBEX", expiry="201812")
+IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
+
+# Define data directory
+data_dir <- "C:/Develop/data/ib_data"
+# Dir.create(data_dir)
+
+# Open file for error messages
+file_root <- "replay"
+file_name <- file.path(data_dir, paste0(file_root, "_error.csv"))
+error_connect <- file(file_name, open="w")
+
+# Open file for raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- file(file_name, open="w")
+
+# Create empty eWrapper to redirect error messages to error file
+error_ewrapper <- eWrapper(debug=NULL, errfile=error_connect)
+
+# Create eWrapper for raw data
+raw_ewrapper <- eWrapper(debug=TRUE)
+
+# Redirect error messages to error eWrapper (error_ewrapper),
+# by replacing handler function errorMessage() in raw_ewrapper
+raw_ewrapper$errorMessage <- error_ewrapper$errorMessage
+
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+
+# Download raw data for multiple contracts for replay
+IBrokers::reqMktData(ib_connect,
+  list(snp_contract, vix_contract, trs_contract, gold_contract, euro_contract),
+  eventWrapper=raw_ewrapper, file=raw_connect)
+
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+
+# Close data files
+close(raw_connect)
+close(error_connect)
+
+## Replay the raw data
+
+# Open file with raw data
+file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+raw_connect <- IBrokers::twsConnect(file_name)
+class(raw_connect) <- c("twsPlayback", class(raw_connect))
+# Replay the raw data
+IBrokers::reqMktData(raw_connect, list(snp_contract, vix_contract))
+
+# Open file for data
+file_connect <- file(file.path(data_dir, "temp.csv"), open="w")
+# Download TAQ data to file
+IBrokers::reqMktData(conn=raw_connect,
+           Contract=snp_contract,
+           eventWrapper=eWrapper.MktData.CSV(1),
+           file=file_connect)
+
+# Close file for TAQ data
+close(file_connect)
+# Close file with raw data
+IBrokers::twsDisconnect(raw_connect)
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Defining Instrument Pairs in \protect\emph{TWS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Users can \href{https://www.interactivebrokers.com/en/index.php?f=744}{Define Pairs of Instruments} in the \emph{TWS}, using the \emph{Combo Selection} window.
+      \vskip1ex
+      To open the \emph{Combo Selection} window, right-click on a blank contract field and select \emph{Generic Combo}.
+      \vskip1ex
+      Or enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
+      \vskip1ex
+      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-offer spread may be very large.
+      \vskip1ex
+      The tab \emph{Multiple} allows selecting a group of combination quotes on the same underlying for comparison.
+      \vskip1ex
+      First access the \emph{Combo Selection} window, enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
+      \vskip1ex
+      Interactive Brokers offers more information about financial contracts here:
+      \href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define AAPL stock contract (object)
+con_tract <- IBrokers::twsEquity("AAPL")
+# Define CHF currency contract
+con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
+# Define S&P Emini future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ES",
+  exch="GLOBEX", expiry="201812")
+# Define 10yr Treasury future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ZN",
+  exch="ECBOT", expiry="201812")
+# Define euro currency future October 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="EUR",
+  exch="GLOBEX", expiry="201810")
+# Define Gold future July 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="GC",
+  exch="NYMEX", expiry="201807")
+# test if contract object is correct
+IBrokers::is.twsContract(con_tract)
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+# Install the package twsInstrument
+install.packages("twsInstrument", repos="http://r-forge.r-project.org")
+# Define euro future using getContract() and Conid
+con_tract <- twsInstrument::getContract("317631411")
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Defining Investment Strategies in \protect\emph{TWS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Users can \href{https://www.interactivebrokers.com/en/index.php?f=15064}{Define Investment Strategies} in the \emph{TWS}, using the \emph{Portfolio Builder} window.
+      \vskip1ex
+      To open the \emph{Portfolio Builder} window, left-click on the New Window dropdown on the upper-left of \emph{TWS}, and select \emph{Portfolio Builder}.
+      \vskip1ex
+      Click "Create New Strategy" to open and edit Investment Rules in the sidecar populated with sample data based on the last sorting option you selected. The main Portfolio Builder reflects changes made in the sidecar in real time.
+      \vskip1ex
+      Or enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
+      \vskip1ex
+      The pairs can be traded as a single instrument, but the execution is not guaranteed, and the bid-offer spread may be very large.
+      \vskip1ex
+      The tab \emph{Multiple} allows selecting a group of combination quotes on the same underlying for comparison.
+      \vskip1ex
+      First access the \emph{Combo Selection} window, enter the symbol for one of the instruments and select \emph{Combinations} followed by \emph{Option Combos} from the drop down menu, and then click the tab \emph{Pair or Leg-by-leg}.
+      \vskip1ex
+      Interactive Brokers offers more information about financial contracts here:
+      \href{https://www.interactivebrokers.com/en/index.php?f=1563&p=fut}{IB Traded Products}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define AAPL stock contract (object)
+con_tract <- IBrokers::twsEquity("AAPL")
+# Define CHF currency contract
+con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
+# Define S&P Emini future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ES",
+  exch="GLOBEX", expiry="201812")
+# Define 10yr Treasury future December 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="ZN",
+  exch="ECBOT", expiry="201812")
+# Define euro currency future October 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="EUR",
+  exch="GLOBEX", expiry="201810")
+# Define Gold future July 2018 contract
+con_tract <- IBrokers::twsFuture(symbol="GC",
+  exch="NYMEX", expiry="201807")
+# test if contract object is correct
+IBrokers::is.twsContract(con_tract)
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+# Install the package twsInstrument
+install.packages("twsInstrument", repos="http://r-forge.r-project.org")
+# Define euro future using getContract() and Conid
+con_tract <- twsInstrument::getContract("317631411")
+# Download list with instrument information
+IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+\end{document}

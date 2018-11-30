@@ -63,13 +63,14 @@ http://engineering.nyu.edu/academics/support/fitl/srs
 # Below is a link to Google Drive with my lecture files: 
 https://drive.google.com/drive/u/0/folders/0Bxzva1I0t63vVGEtaXNIY1JMa00
 The .pdf files contain the narration text, formulas, and R code. Most slides have narration and formulas on the left panel, and the corresponding R code on the right panel.
-There are two types of .pdf files.  First, there are thematic files, containing slides on certain topics.  For example you can take a look at portfolio_construction.pdf.  Second, there are lecture files, containing slides for specific lectures.  I create .pdf lecture files by selecting slides from thematic files.  I created the .pdf files from .Rnw Sweave files using the knitr package.
+There are two types of .pdf files.  First, there are thematic files, containing slides on certain topics.  For example, you can take a look at portfolio_construction.pdf.  Second, there are lecture files, containing slides for specific lectures.  I created the .pdf files from .Rnw Sweave files using the knitr package.  I created the .pdf lecture files by selecting slides from the thematic files.  
+There are also .R files containing the code in the lecture slides so that students can execute the code as they listen to the lecture. The lecture materials also contain RData files with sample data. 
 
-I also provide .R files containing the code, so that students can execute the code as they listen to the lecture. The lecture materials also contain .RData files with sample data. 
+Most of my code is open-source and available on GitHub:
+https://github.com/algoquant
+
 I welcome your comments.
 
-For FRE-7241 Algorithmic Portfolio Management I need a grader.  The GA's responsibilities will be grading and answering student questions during office hours.
-Preference is for student who has already taken FRE-7241 or FRE-6871, or who has strong R programming skills.
 
 # IB data request
 
@@ -184,6 +185,8 @@ how difficult it is to create successful systematic investment strategies
 
 
 topics:
+static stock-bond allocation works better than most active strategies
+simple active asset allocation strategy: rebalance between stocks and bonds, using logistic function
 different asset allocation functions (rules)
 p-hacking increases with portfolio size: backtest will always find profitable strategy out of the many allocation functions rules
 divide data in two: in-sample performance increases but out-of-sample performance decreases
@@ -192,9 +195,73 @@ optimization
 regression
 CAPM market timing
 
-+ [ ] R/Finance topic: "Honey, I Shrunk the Kitchen Sink!"
++ [ ] Explain that a market making strategy is an integral over the Brownian motion - is the PnL mean-reverting?
+
++ [ ] Introduce Schwartz model - generalization of Ornstein-Uhlenbeck process to log-normal prices
+Kearns Market Making Mean Reversion Models.pdf
+
++ [ ] Adapt dygraphs plotting from:
+https://stackoverflow.com/questions/17888989/how-to-skip-weekends-on-dygraps-x-axis
+
++ [ ] Read: Bates thesis Market Making Stochastic Control Algorithmic Trading.pdf
+The inventory process is an Ornstein-Uhlenbeck process.
+
++ [ ] Convert cumulative returns to log returns, not compounded returns
+
++ [ ] Rework backtesting to use roll_agg() (slide #33 titled Functional for Aggregating Asset Returns) from the start - skip looping over look_backs list
+First pre-calculate matrix of EWMA returns (called re_turns) for a vector of lambda decay parameters, using parallel computing.
+Use slide Performance of EWMA Strategies.
+Then apply roll_agg() to perform loop and calculate aggregations over endpoints.
+Get rid of calc_sharpe() and look_backs list.
+Apply to ETF returns rutils::etf_env$re_turns.
+
++ [ ] Rework backtesting: in roll_agg() call FUN() and then perform a look_backs loop over the output of FUN(), instead of a look_backs loop over the oh_lc input of FUN(). 
+Get rid of the agg_regate() function. 
+roll_agg() should perform two loops: 
+first, a loop over lamb_das, to run the model function with multiple lamb_da parameters, output is time series of returns, 
+second, a look_backs loop over the time series of returns, output is matrix of performance statistics (Sharpe ratios), 
+roll_agg() should accept the arguments: x_ts, look_backs, FUN, lamb_das, ...
+further improvement: instead of performing sapply() loop over the time series of returns, perform vectorized operation.
+roll_agg() should return an time series of performance statistics (Sharpe ratios).
+
++ [ ] Create backtesting: at each endpoint rebalance, run models over expanding window, select optimal lamb_da, don't loop over lamb_das 
+
++ [ ] Vectorize simu_ewma() with respect to its lamb_da parameter ?
+
++ [ ] Rewrite the Backtesting Framework using exclusively vectorized functions:
+introduce improved out-of-sample data notation using period_s
+is "periods" needed?
+risk_ret_stats() should perform lapply() and return list
+split and rename pnl_period()
+etf_reg_stats is not defined anywhere in "investment_strategies"
+	load it from "time_series_multivariate"
+
++ [ ] Deprecate slides in investment_strategies.Rnw
+deprecate calc_sharpe() on slide Aggregation Function for EWMA Model
+deprecate slide Performing Overlapping Aggregations
+deprecate roll_agg() on slide Functional for Performing Overlapping Aggregations
+
++ [ ] Rewrite simu_ewma() in Rcpp ?
+
++ [ ] Modify simu_ewma() to catch error when oh_lc is shorter than look_back
+add warmup period?
+
++ [ ] Modify slide "Rolling Weighted Aggregations Using Package RcppRoll" in risk_models, and add function filter()
+
++ [ ] Demonstrate that mean-reverting (statistical arbitrage) strategies often benefit if trades are delayed, as opposed to trend-following strategies which require trading immediately
+Explain that this is because mean-reverting strategies depend on cheap/rich signals (indicators) which may be premature.  For example, prices may drop further even if they are already cheap.  So waiting a little bit may allow buying at a lower price.
+
++ [ ] Demonstrate how to use iBrokers data playback replay feature
+The script added to data_management.Rnw downloads the raw data, but doesn't replay the bar data properly.
+https://offerm.wordpress.com/2015/05/21/market-data-recording-and-playback-with-ibrokers-and-r-2/
 
 + [ ] Optimize portfolio using trailing Sharpe ratios instead of trailing returns
+
++ [ ] Demonstrate that rank momentum (weights proportional to ranks) works better than momentum strategy (weights proportional to returns or Sharpe)
+
++ [ ] Demonstrate that the best rank momentum strategy is with positive uniform weights for the top quantile of assets and negative uniform weights for the bottom quantile (instead of proportional weights)
+
++ [ ] Create shiny app for rank momentum strategy
 
 + [ ] Add rank regression for robust beta estimation
 
@@ -217,20 +284,10 @@ http://www.investresolve.com/robo/research/
 Bannouh Range High Frequency Covariance Estimators.pdf
 Rogers OHLC Range Covariance Estimators.pdf
 
-+ [ ] Create shiny app for rank momentum strategy
-
 + [ ] Use Huge Stock Market Dataset: C:\Develop\data\Kaggle_stocks.zip
 https://www.kaggle.com/borismarjanovic/price-volume-data-for-all-us-stocks-etfs
 
 + [ ] Explain how to create your own package: Pfaff Package Development in R.pdf  
-
-+ [x] Create a max Sharpe strategy with the exponentially smoothed excess returns: create a shiny app with a lambda decay slider
-
-+ [ ] Demonstrate that the max Sharpe portfolio is close to the max Hurst portfolio
-
-+ [ ] Calculate the standard error of the Sharpe ratio using parallel bootstrap simulation
-
-+ [ ] Calculate weights for maximum Hurst portfolio using Lagrange multiplier method
 
 + [ ] Adapt from: Martin Robust Regression.pdf
 
@@ -243,6 +300,11 @@ http://www.sr-sv.com/variance-term-premia/
 
 + [ ] Adapt from: Winton Stock Market Challenge
 https://www.kaggle.com/c/the-winton-stock-market-challenge
+
++ [ ] Adapt from: Chris Conlan book Automated Trading with R
+https://chrisconlan.com/automated-trading-r-apressspringer/
+https://github.com/Apress/automated-trading-with-r
+C:/Research/R/Tutorials/Conlan_automated_trading_with_r
 
 + [ ] Convert backtest_ep() to percentage returns, similar to backtest_rolling()
 
@@ -378,6 +440,8 @@ Lundholm Introduction R Time Series
 Regression and time series data
 auto.arima() handles order selection and differencing (but only checks if errors are stationary).
 
++ [ ] Order selection using the Akaike and Bayesian information criteria AIC BIC
+
 + [ ] Create study of time series forecasting using ARIMA or regression
 ARIMA order selection.
 Create synthetic time series using ARIMA.
@@ -492,12 +556,13 @@ https://gdcdyn.interactivebrokers.com/en/index.php?f=25228&course=4
 + [ ] take Machine Learning in Finance course by Igor Halperin
 https://www.coursera.org/learn/guided-tour-machine-learning-finance
 
-+ [ ] add books to notes: 
++ [ ] Add books to notes: 
 Ang book Financial Data and Models Using R (good, some code)
 http://www.cliffordang.com/
 Mark Bennett book Financial Analytics with R
 Chris Conlan book Automated Trading with R
 https://chrisconlan.com/automated-trading-r-apressspringer/
+https://github.com/Apress/automated-trading-with-r
 C:/Research/R/Tutorials/Conlan_automated_trading_with_r
 Wilmott book Frequently Asked Quantitative Finance Questions
 Narang book Quantitative and High Frequency Trading (just talk, few examples, and no code)
@@ -530,20 +595,6 @@ https://stackoverflow.com/questions/7353539/dygraph-vertical-line
 
 + [ ] Explain that given many signals from an ensemble of models, it's better to first calculate the positions and then to average the positions, instead of averaging the signals and calculating a single positions vector
 Averaging the positions reduces the binary risk.
-
-+ [x] Explain that under the quadratic sum-of-squares constraint the weights are constrained to a hypersphere, while under the linear sum-of-weights constraint the weights are constrained to a hyperplane
-
-+ [x] Rewrite the overlapping endpoints framework in risk_models.Rnw: 
-n_rows is the number of data points.
-n_points is the number of periods between neighboring endpoints.
-look_back is the number of data points in the look-back interval.
-
-+ [x] Rename n_row to n_rows and n_col to n_cols
-
-+ [x] Remove fwd_points from investment_strategies.Rnw
-Instead just use end_points[it_er+1]
-
-+ [x] combine the data from files sp500.RData sp500_2017.RData sp500_recent.RData
 
 + [ ] Demonstrate that in a mean-reversion strategy, if the look-back is longer then the signal is more normal so the threshold should be lower
 Calculate the moments of the signal as a function of the look-back.
@@ -610,53 +661,7 @@ http://eranraviv.com/blog/a-shrinkage-estimator-for-beta/
 
 + [ ] Study effect of shrinkage term in the form sqrt(abs())
 
-+ [ ] Rework backtesting to use roll_agg() (slide #33 titled Functional for Aggregating Asset Returns) from the start - skip looping over look_backs list
-First pre-calculate matrix of EWMA returns (called re_turns) for a vector of lambda decay parameters, using parallel computing.
-Use slide Performance of EWMA Strategies.
-Then apply roll_agg() to perform loop and calculate aggregations over endpoints.
-Get rid of calc_sharpe() and look_backs list.
-Apply to ETF returns rutils::etf_env$re_turns.
-
-+ [ ] Rework backtesting: in roll_agg() call FUN() and then perform a look_backs loop over the output of FUN(), instead of a look_backs loop over the oh_lc input of FUN(). 
-Get rid of the agg_regate() function. 
-roll_agg() should perform two loops: 
-first, a loop over lamb_das, to run the model function with multiple lamb_da parameters, output is time series of returns, 
-second, a look_backs loop over the time series of returns, output is matrix of performance statistics (Sharpe ratios), 
-roll_agg() should accept the arguments: x_ts, look_backs, FUN, lamb_das, ...
-further improvement: instead of performing sapply() loop over the time series of returns, perform vectorized operation.
-roll_agg() should return an time series of performance statistics (Sharpe ratios).
-
-+ [ ] Create backtesting: at each endpoint rebalance, run models over expanding window, select optimal lamb_da, don't loop over lamb_das 
-
-+ [ ] vectorize simu_ewma() with respect to its lamb_da parameter ?
-
-+ [ ] Rewrite the Backtesting Framework using exclusively vectorized functions:
-introduce improved out-of-sample data notation using period_s
-is "periods" needed?
-risk_ret_stats() should perform lapply() and return list
-split and rename pnl_period()
-etf_reg_stats is not defined anywhere in "investment_strategies"
-	load it from "time_series_multivariate"
-
-
-+ [ ] Deprecate slides in investment_strategies.Rnw
-deprecate calc_sharpe() on slide Aggregation Function for EWMA Model
-deprecate slide Performing Overlapping Aggregations
-deprecate roll_agg() on slide Functional for Performing Overlapping Aggregations
-
-+ [ ] move slides in investment_strategies.Rnw
-Move slides from Backtesting Active Investment Strategies to Active Investment Strategies:
-Performance of EWMA Strategies
-Simulating EWMA Strategies Using Parallel Computing
-
-+ [ ] Rewrite simu_ewma() in Rcpp ?
-
-+ [ ] Modify simu_ewma() to catch error when oh_lc is shorter than look_back
-add warmup period?
-
-+ [ ] Modify slide "Rolling Weighted Aggregations Using Package RcppRoll" in risk_models, and add function filter()
-
-+ [ ] compare speed of filter() with RcppRoll::roll_mean()
++ [ ] Compare speed of filter() with RcppRoll::roll_mean()
 
 + [ ] Replace: sapply(re_turns, mean) with colMeans(re_turns) and microbenchmark the two
 
@@ -672,7 +677,6 @@ http://dirk.eddelbuettel.com/code/rcpp.eigen.html
 https://stackoverflow.com/questions/22110075/r-use-primitive-functions-like-max-sum-in-rcpp
 https://stackoverflow.com/questions/27490659/rcppeigen-going-from-inline-to-a-cpp-function-in-a-package-and-map
 
-
 + [ ] Demonstrate that investing in the rolling optimal portfolio is a trend-following strategy  
 
 + [ ] Read Jonathan Kinlay articles on linkedin
@@ -683,39 +687,6 @@ Calculate autocorrelations and partial autocorrelations by hand.
 + [ ] Improve slides:
 Stationary Processes and Their Characteristic Equations
 Integrated and Unit-root Processes
-
-+ [ ] Perform portfolio optimization by hand using matrix algebra, SVD, Cholesky
-Use matrix pseudo-inverse of covariance if inverse doesn't exist ?
-Pav Markowitz Portfolio Distribution.pdf
-Pantaleo Portfolio Optimization Pseudoinverse Matrix.pdf
-Lee Portfolio Optimization Pseudoinverse Matrix.pdf
-Pollak Portfolio Optimization Pseudoinverse Matrix.pdf
-http://www.win-vector.com/blog/2010/01/easy-portfolio-allocation/
-
-+ [ ] Calculate confidence interval of Sharpe ratio using bootstrap
-Demonstrate that the Sharpe ratio confidence intervals are so wide, that it's hard to distinguish between assets with large Sharpe ratios from those with small Sharpe ratios.
-Demonstrate that a very long time series is needed in order determine if the Sharpe ratios of two assets are different from each other.
-So ranking assets on their trailing Sharpe ratios makes little sense ?
-Use SharpeR package by Steven Pav, and also bootstrap. 
-Sharpe ratio as Hotelling's t-squared distribution.  
-https://github.com/shabbychef  
-Pav Sharpe Ratio Notes Hotelling Statistic.pdf  
-SharpeR Vignette.pdf  
-
-+ [ ] SharpeR and MarkowitzR packages by Steven Pav  
-finding optimal portfolio in-sample is the same as finding optimal strategy in-sample - both are over-fit and require shrinkage  
-Sharpe ratio as Hotelling's t-squared distribution  
-https://github.com/shabbychef  
-Pav Sharpe Ratio Notes Hotelling Statistic.pdf  
-Pav Strategy Overfit.pdf  
-SharpeR Vignette.pdf  
-Pav Portfolio Optimization.pdf  
-Pav Markowitz Portfolio Signal Noise Ratio.pdf  
-Pav Markowitz Portfolio Optimization Distribution.pdf  
-MarkowitzR Vignette.pdf  
-MarkowitzR AsymptoticMarkowitz.pdf  
-Britten-Jones Efficient Portfolio Parameter Uncertainty.pdf
-Simaan Efficient Portfolio Parameter Uncertainty.pdf
 
 + [ ] Adapt from package fromo: Fast Robust Moments in R with Rcpp
 https://github.com/shabbychef/fromo
@@ -866,10 +837,37 @@ source(file="C:/Develop/R/scripts/vis_portf.R")
 
 + [ ] Topic: simulate Parrondo games
 
-+ [ ] coursera R Data Science Specialization Certificate
++ [ ] Coursera R Data Science Specialization Certificate
 https://www.coursera.org/specialization/jhudatascience/1?utm_medium=sem&utm_source=gg&utm_campaign=spn_dss
 
 + [ ] Read: Sornette Power Law Tail Risk.pdf
+
++ [x] move slides in investment_strategies.Rnw
+Move slides from Backtesting Active Investment Strategies to Active Investment Strategies:
+Performance of EWMA Strategies
+Simulating EWMA Strategies Using Parallel Computing
+
++ [x]  Move sections from data_management.Rnw to markets_trading.Rnw:
+\section{Stocks, Bonds, and Futures}
+\section{Fundamental Company Data}
+\section{High Frequency and Intraday Time Series Data}
+\section{Package \protect\emph{IBrokers} for Using Interactive Brokers}
+
++ [x] Create a max Sharpe strategy with the exponentially smoothed excess returns: create a shiny app with a lambda decay slider
+
++ [x] Explain that under the quadratic sum-of-squares constraint the weights are constrained to a hypersphere, while under the linear sum-of-weights constraint the weights are constrained to a hyperplane
+
++ [x] Rewrite the overlapping endpoints framework in risk_models.Rnw: 
+n_rows is the number of data points.
+n_points is the number of periods between neighboring endpoints.
+look_back is the number of data points in the look-back interval.
+
++ [x] Rename n_row to n_rows and n_col to n_cols
+
++ [x] Remove fwd_points from investment_strategies.Rnw
+Instead just use end_points[it_er+1]
+
++ [x] Combine the data from files sp500.RData sp500_2017.RData sp500_recent.RData
 
 + [x] move from homework to numerical_analysis.Rnw lecture slides:
 Summary: Create a function which simulates an ARIMA process in RcppArmadillo.
@@ -908,7 +906,7 @@ Henriksson Market Timing.pdf
 
 + [x] Add Alpha Vantage as main data provider in time_series_univariate.Rnw
 
-+ [x] change to 252 business days, instead of 260
++ [x] Change to 252 business days, instead of 260
 
 + [x] Add files to NYU Classes:
 Storn Differential Evolution.pdf
@@ -919,14 +917,14 @@ DEoptim Portfolio Optimization.pdf
 + [x] Rename the look_back parameter used for calculating weight_s, to wid_th
 To avoid confusing it with other aggregation look-back parameters
 
-+ [x] change inner_prod=(t(re_turns) %*% re_turns) to cross_prod=crossprod(re_turns)
++ [x] Change inner_prod=(t(re_turns) %*% re_turns) to cross_prod=crossprod(re_turns)
 
 + [x] Fix calls to filter(): use rev() to reverse the order of weight_s so that most recent observation have biggest weight
 
-+ [x] change endpoints calculation: define look_backs as a list of numeric vectors
++ [x] Change endpoints calculation: define look_backs as a list of numeric vectors
 Calculate aggregations using lapply() loop over the look_backs, instead of sapply()
 
-+ [x] change endpoints calculation to without the extra 0 at the beginning
++ [x] Change endpoints calculation to without the extra 0 at the beginning
 
 + [x] Create data and script directories
 Move data files from C:\Develop\data to C:\Develop\R\lecture_slides\data
@@ -954,6 +952,236 @@ http://www.bearcave.com/finance/portfolio_equations/
 ###############
 ### topics to add
 
++ [ ] Explain market making strategies
+Dixon High Frequency Trading Market Making Machine Learning 2017.pdf
+Menkveld High Frequency Trading Market Making.pdf
+Kearns Market Making Mean Reversion Models.pdf
+
++ [ ] Explain how to simulate limit orders using OHLC data
+Explain why limit orders are better than market orders.
+Kim Market Making Trading Hidden Markov Model.pdf
+
++ [ ] Explain limit orders
+https://www.investopedia.com/terms/l/limitorder.asp
+
++ [ ] Introduce Sharpe component analysis SCA: the first component is the max Sharpe portfolio, the second is the max Sharpe portfolio orthogonal to the first one, etc.
+Introduce Hurst component analysis HCA in a similar way.
+Prado Kinetic Component Analysis Forecasting.pdf  
+
++ [ ] Demonstrate that the max Sharpe portfolio is close to the max Hurst portfolio
+
++ [ ] Calculate the standard error of the Sharpe ratio using parallel bootstrap simulation
+
++ [ ] Calculate weights for maximum Hurst portfolio using Lagrange multiplier method
+
++ [ ] Calculate max Sharpe portfolio with constraint that it is orthogonal to market portfolio - can it be calculated using matrix algebra?
+
++ [ ] Perform portfolio optimization using matrix algebra, SVD, Cholesky
+Use matrix pseudo-inverse of covariance if inverse doesn't exist ?
+Pav Markowitz Portfolio Distribution.pdf
+Pantaleo Portfolio Optimization Pseudoinverse Matrix.pdf
+Lee Portfolio Optimization Pseudoinverse Matrix.pdf
+Pollak Portfolio Optimization Pseudoinverse Matrix.pdf
+http://www.win-vector.com/blog/2010/01/easy-portfolio-allocation/
+
++ [ ] Adapt from: Pav Sharpe Ratio Course.pdf
+http://www.gilgamath.com/bad-cis.html
+
++ [ ] Adapt from Pav: Distribution of Maximal Sharpe
+http://www.sharperat.io/max-sharpe-one.html
+http://www.quantresearch.info/Intro.htm
+
++ [ ] Calculate confidence interval of Sharpe ratio using bootstrap
+Demonstrate that the Sharpe ratio confidence intervals are so wide, that it's hard to distinguish between assets with large Sharpe ratios from those with small Sharpe ratios.
+Demonstrate that a very long time series is needed in order determine if the Sharpe ratios of two assets are different from each other.
+So ranking assets on their trailing Sharpe ratios makes little sense ?
+Use SharpeR package by Steven Pav, and also bootstrap. 
+Sharpe ratio as Hotelling's t-squared distribution.  
+https://github.com/shabbychef  
+Pav Sharpe Ratio Notes Hotelling Statistic.pdf  
+SharpeR Vignette.pdf  
+
++ [ ] SharpeR and MarkowitzR packages by Steven Pav  
+finding optimal portfolio in-sample is the same as finding optimal strategy in-sample - both are over-fit and require shrinkage  
+Sharpe ratio as Hotelling's t-squared distribution  
+https://github.com/shabbychef  
+Pav Sharpe Ratio Notes Hotelling Statistic.pdf  
+Pav Strategy Overfit.pdf  
+SharpeR Vignette.pdf  
+Pav Portfolio Optimization.pdf  
+Pav Markowitz Portfolio Signal Noise Ratio.pdf  
+Pav Markowitz Portfolio Optimization Distribution.pdf  
+MarkowitzR Vignette.pdf  
+MarkowitzR AsymptoticMarkowitz.pdf  
+Britten-Jones Efficient Portfolio Parameter Uncertainty.pdf
+Simaan Efficient Portfolio Parameter Uncertainty.pdf
+
++ [ ] Adapt Damien Challet's drawdown estimator of the Signal to Noise Sharpe ratio
+Challet Drawdown Sharpe Ratio.pdf
+http://www.sharperat.io/improved-moment-estimator-snr.html
+https://github.com/amirsani/pySharpeRratio
+
++ [ ] Explain treasury yield curve
+https://institute.cmegroup.com/products/ZN
+Trading Treasury Yield Curve.pdf
+Trading Treasury Futures.pdf
+
++ [ ] Perform Principal Component Analysis (PCA) on a portfolio of stocks, bonds, and currencies
+Perform the Engle-Granger two-step cointegration procedure.
+Demonstrate Granger causality.
+
++ [ ] Cointegration package irlba  
+Apply Doornik’s method using the SVD to solve the cointegration problem  
+Lewis RFinance 2012 Cointegration SVD.pdf  
+Doornik Cointegration Analysis SVD QR.pdf
+Explain error propagation in matrix inversion use example:
+C:\Research\R\R-Finance 2015\Lewis RFinance 2015 Cointegration SVD.html  
+https://bwlewis.github.io/rfinance-2017/#/section
+https://github.com/bwlewis/irlba
+
++ [ ] Demonstrate that given any two random price series, you can always find a coefficient that creates a cointegrated portfolio in-sample, but it falls apart out-of-sample
+
++ [ ] Adapt from Sebastian Fossati and Hauser - very good time series and cointegration with some R
+Granger Causality
+C:\Research\R\Tutorials\Fossati\e509\Lec8.R
+C:\Research\R\Tutorials\Fossati\e509\Lab4.R
+Hauser Cointegration Vector Error Correction Autoregressive Model.pdf
+Investigate the price series of black and white pepper, PepperPrices from the R library(”AER”) wrt cointegration and calibrate the VECM model.
+
++ [ ] Add total least squares regression of stock pair
+C:\Research\R\Tutorials\Georgakopoulos\rfortraders\Chapter_06
+
++ [ ] Add Johansen cointegration statistical arbitrage
+https://github.com/VermeirJellen/AlgorithmicTrading-Cointegration
+
++ [ ] Create slides for Engle-Granger two-step cointegration procedure, Augmented Dickey Fuller ADF test
+1. identify cointegrated pairs in a portfolio of assets - heatmap,
+2. calculate standard error of cointegration factor, 
+3. test persistence of cointegrated pairs out-of-sample,
+4. identify cointegrated portfolios from cluster analysis,
+5. apply ADF test to pairs and portfolios
+use sources in: ## trading cointegration pairs trading statistical arbitrage
+https://github.com/matthewclegg/egcm
+https://github.com/mikeschmitt/pairs-trading
+https://www.quantstart.com/articles/Cointegrated-Augmented-Dickey-Fuller-Test-for-Pairs-Trading-Evaluation-in-R
+http://gekkoquant.com/2012/10/21/statistical-arbitrage-correlation-vs-cointegration/
+http://gekkoquant.com/2012/12/17/statistical-arbitrage-testing-for-cointegration-augmented-dicky-fuller/
+http://gekkoquant.com/2017/01/23/investigation-into-the-power-of-co-integration-mean-reversion-tests/
+http://davegiles.blogspot.com/2011/04/testing-for-granger-causality.html  
+http://davegiles.blogspot.com/2015/10/cointegration-granger-causality.html
+http://davegiles.blogspot.com/2011/10/var-or-vecm-when-testing-for-granger.html
+http://davegiles.blogspot.com/2016/05/forecasting-from-error-correction-model.html
+http://denizstij.blogspot.com/2013/11/stationary-tests-of-time-series-within-r.html
+http://denizstij.blogspot.com/2013/11/cointegration-tests-adf-and-johansen.html
+https://quant.stackexchange.com/questions/34460/granger-causality-with-stocks-and-cds
+https://quant.stackexchange.com/questions/15948/two-correlated-time-series-driver-and-follower/15950
+https://quant.stackexchange.com/questions/14865/detecting-and-measuring-lead-lag-effect
+https://en.wikipedia.org/wiki/Granger_causality
+
++ [ ] Adapt from package egcm for Engle-Granger two-step cointegration procedure
+https://github.com/matthewclegg/egcm
+
++ [ ] unit root tests, cointegration, and VAR vector autoregressive models, spurious correlation example  
+C:\Research\R\Tutorials\Zivot\Econ 584\Zivot Cointegration.pdf  
+Zivot Cointegration Tests.pdf
+Zivot VAR Vector Autoregressive Time Series Models.pdf
+Phillips-Ouliaris test for cointegration  
+
++ [ ] Expand on spurious time series regression
+http://r-datameister.blogspot.com/2013/12/spurious-regression-of-time-series.html
+http://davegiles.blogspot.com/2012/05/more-about-spurious-regressions.html
+https://eranraviv.com/spurious-regression-illustrated/
+https://eranraviv.com/how-regression-statistics-mislead-experts/
+
++ [ ] Create slides explaining Johansen test
+Demonstrate that unit root test power is poor, by simulating and testing almost stationary ARIMA process. 
+The power and size of unit root tests are poor. 
+The test's weak power means that they cannot distinguish between a unit root process and a fractionally integrated series with long memory (Baillie, 1996)
+Johansen Cointegration.pdf
+SVD subset selection: 
+Lewis RFinance 2012 Cointegration SVD.pdf
+Doornik Cointegration Analysis SVD QR.pdf
+https://www.quantstart.com/articles/Johansen-Test-for-Cointegrating-Time-Series-Analysis-in-R
+http://www.spiderfinancial.com/support/documentation/numxl/users-guide/statistical-testing/cointegration-test
+https://quant.stackexchange.com/questions/8494/cointegrating-relationships-johansen-in-r
+https://quant.stackexchange.com/questions/3526/how-to-interpret-results-of-johansen-test
+https://quant.stackexchange.com/questions/2076/how-to-interpret-the-eigenmatrix-from-a-johansen-cointegration-test?
+https://quant.stackexchange.com/questions/25212/johansen-cointegration-test-interpretation-in-r
+http://quant.stackexchange.com/questions/18581/johansen-test-on-two-stocks-for-pairs-trading-yielding-annoying-results
+http://r.789695.n4.nabble.com/Testing-for-cointegration-Johansen-vs-Dickey-Fuller-td926500.html
+
++ [ ] Determine the lead-lag relationships between asset returns from their correlations  
+Find which one leads by applying Vector Autoregressive VAR model and Granger causality test.
+Study the effect of longer lookback intervals.
+Wu Leader Lagged Correlation.pdf
+vars Vignette.pdf
+VAR Models R Package vars.pdf
+DeMiguel VAR Model Stock Selection Forecasting.pdf
+Ni Bayesian VAR Model Estimation.pdf
+Barigozzi Nets Lasso Network Estimation for Time Series.pdf
+
++ [ ] Vector Autoregressive VaR Models
+Christian Brownlees VAR autoregressive model with LASSO shrinkage package nets
+vars.pdf
+https://github.com/ctbrownlees/R-Package-nets
+
++ [ ] Create slides for pairs trading  
+1. trade pairs in-sample and out-of-sample,
+2. demonstrate that using ensemble of cointegration factors produces higher Sharpe out-of-sample. 
+use sources in: ## trading cointegration pairs trading statistical arbitrage
+http://quantdevel.com/public/html/testForCoint.html
+http://www.rfortraders.com/lecture-4-regression-and-pairs-trading/
+http://gekkoquant.com/2013/01/21/statistical-arbitrage-trading-a-cointegrated-pair/
+https://stackoverflow.com/questions/24051503/filter-xts-objects-by-common-dates
+https://github.com/dankim93/Pairs-Trading-Project
+C:\Research\R\Tutorials\Pairs-Trading-Project-master
+https://github.com/Jackal08/QuantInsti-Final-Project-Statistical-Arbitrage
+https://www.linkedin.com/pulse/statistical-arbitrage-strategy-r-jacques-joubert
+https://github.com/justinlent/PairTradeR
+
++ [ ] Adapt pairs trading from package PairTrading (removed from CRAN)
+http://mockquant.blogspot.com/2011/10/introduction-to-pairtrading-package.html
+
++ [ ] Adapt from packages partialCI and partialAR for partial cointegration procedure
+https://github.com/matthewclegg/partialCI
+https://github.com/matthewclegg/partialAR
+
++ [ ] Explain steps of statistical arbitrage
+1. determine cointegrated portfolio either using Engle-Granger two-step cointegration procedure, or Johansen VAR and VECM models.
+2. estimate time-varying portfolio weights using stochastic control.
+3. determine optimal trading parameters and stop-loss.
+
++ [ ] Trade Hurst model
+http://timelyportfolio.blogspot.com/2011/06/exploring-market-with-hurst.html
+Qian Rashid Hurst Predictability.pdf
+
++ [ ] Explain that a static 60 bonds/40 stocks portfolio loses when there's inflation
+https://www.marketwatch.com/story/your-portfolio-may-be-riskier-than-you-think-2018-10-11
+
++ [ ] Backtest a market-timing active asset allocation strategy which rebalances between stocks and bonds, using AR(p) plus logistic function
+The single allocation weight to stocks can be a function of forecast volatility, yield curve slope, VIX curve slope, etc.
+https://alphaarchitect.com/2017/03/23/do-you-rebalance-your-portfolio-you-are-a-market-timer/
+Taxonomy of active asset allocation strategies:
+https://www.investopedia.com/investing/6-asset-allocation-strategies-work/
+https://seekingalpha.com/article/4138204-40-shades-tactical-asset-allocation-across-bull-bear-markets
+
++ [ ] Explain that active asset allocation ETFs have performed poorly: AdvisorShares Tactical ETF (GTAA)
+https://www.moneysense.ca/columns/the-failed-promise-of-market-timing/
+
++ [ ] Backtest different rebalancing strategies between stocks and bonds
+The rebalancing rules can be: maintain constant dollar allocations, constant relative risk allocations, etc.
+
++ [ ] Numerical optimization in Rcpp
+Bolker Optimization Methods.pdf
+Yollin Optimization.pdf
+Numerical solution of maximum likelihood
+https://statr.me/2016/04/rcppnumerical-numerical-integration-optimization-rcpp/
+https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
+
++ [ ] Incorporate ideas from and contribute to Matt Brigida Teaching Resources with R/Shiny
+https://github.com/Matt-Brigida
+https://github.com/Matt-Brigida/portfolio-theory
+
 + [ ] Explore RCode modern environment for R
 https://www.pgm-solutions.com/rcode
 
@@ -963,15 +1191,14 @@ https://github.com/arorar/covmat
 https://github.com/rstats-gsoc/gsoc2015/wiki/Covariance-Matrix-Estimators
 https://github.com/AEBilgrau/correlateR
 
-+ [ ] Introduce Sharpe component analysis SCA: the first component is the max Sharpe portfolio, the second is the max Sharpe portfolio orthogonal to the first one, etc.
-Introduce Hurst component analysis HCA in a similar way.
-Prado Kinetic Component Analysis Forecasting.pdf  
-
 + [ ] Banbura Vector Autoregressive Bayesian Shrinkage Dynamic Models.pdf
 Banbura Forecasting Vector Autoregressive Bayesian Models.pdf
 https://github.com/clementcarrier/ez
 
-+ [ ] Backtest an AR(p) model for forecasting returns from a "kitchen sink" design matrix with many technical indicators, and apply shrinkage to the inverse of the design matrix
++ [ ] Introduce a zoo of OHLC technical indicators, and perform their PCA analysis
+
++ [ ] Backtest an AR(p) model for forecasting returns from a large "kitchen sink" design matrix composed of a zoo of many technical indicators
+Apply dimensionality reduction and shrinkage to the inverse of the design matrix.
 Calculate the standard errors of the forecasts as a function of the number of indicators and the shrinkage intensity.
 
 + [ ] Add mean-reverting stat-arb strategy: buy lowest decile stocks and sell highest decile stocks
@@ -1057,40 +1284,8 @@ https://www.interactivebrokers.com/en/index.php?f=25244
 adapted from
 https://robotwealth.com/
 
-+ [ ] Adapt from autotrade by Phillip Guerra: uses package reticulate with Python for Interactive Brokers
-https://www.pcppresentation.com/
-https://github.com/PhilGuerra/autotrade
-https://github.com/PhilGuerra/autotrade/commits?author=PhilGuerra
-Guerra autotrade RFinance Chicago 2018.pdf
-C:/Research/R/Tutorials/Guerra_automated_trading_with_r
-
-# Santosh Srinivas: Interactive Brokers with Python, R and package reticulate
-https://www.santoshsrinivas.com/amicable-interactive-data-analysis-using-pythoth-and-r-using-reticulate/
-
-+ [ ] Adapt iBrokers code from:
-https://www.quantopian.com/posts/ib-api
-https://stackoverflow.com/questions/34703679/r-ibrokers-reqopenorders-hangs
-https://stackoverflow.com/questions/35559742/reqexecutions-ibrokers-package
-https://stackoverflow.com/questions/21442158/ibrokers-data-persistence
-http://r.789695.n4.nabble.com/Confirm-orders-in-TWS-Interactive-Brokers-td3785506.html
-
-Add new order type to IBrokers:
-https://stackoverflow.com/questions/46482300/r-ibrokers-interactive-brokers-api
-
-reply to / comment on:
-https://stackoverflow.com/questions/44582053/ibrokers-quantstrat-live-implementation
-
-
-+ [ ] Adapt Interactive Brokers API script from:
-C:\Develop\R\IBrokers\Sherrington IBrokers scripts.pdf
-C:\Develop\R\IBrokers\Yadav IBrokers scripts.pdf
-
 + [ ] Demonstrate that stock expected returns are proportional to market illiquidity
 Amihud Stock Market Premiums Liquidity.pdf
-
-+ [ ] Explain how to simulate limit orders using OHLC data
-Explain why limit orders are better than market orders.
-Kim Market Making Trading Hidden Markov Model.pdf
 
 + [ ] Explain trade order types: market, limit, split spread, adaptive algo
 Cesari Exchange Trade Execution.pdf
@@ -1102,10 +1297,6 @@ https://www.interactivebrokers.com/en/index.php?f=19091
 
 + [ ] Adapt from: downloading raw market data using IBrokers::reqMktData() without eventWrapper
 https://stat.ethz.ch/pipermail/r-sig-finance/2011q3/008232.html
-
-+ [ ] Demonstrate how to use iBrokers data playback replay feature
-The script added to data_management.Rnw downloads the raw data, but doesn't replay the bar data properly.
-https://offerm.wordpress.com/2015/05/21/market-data-recording-and-playback-with-ibrokers-and-r-2/
 
 + [ ] Adapt technical indicator timing ability from: 
 Lissandrin Testing Technical Indicator Forecasting.pdf
@@ -1138,16 +1329,6 @@ Edwards Low Volatility Anomaly.pdf
 Li Low Volatility Anomaly FAJ.pdf  
 Han Volatility Decile Cross-Sectional Momentum Anomaly.pdf  
 Vliet Volatility Expected Returns.pdf  
-
-+ [x] Add forecasting using ARIMA
-Backtest forecasting using ARIMA and a simulated AR time series.
-
-+ [x] Downloading data from tiingo
-https://www.tiingo.com/
-http://blog.fosstrading.com/2018/04/goodbye-google-hello-tiingo.html
-
-+ [x] Calculate constant maturity VIX futures - calculate VIX futures term structure from CBOE settlement data.
-https://quantstrattrader.wordpress.com/2017/04/27/creating-a-vix-futures-term-structure-in-r-from-official-cboe-settlement-data/
 
 + [ ] Add package IButils
 https://github.com/enricoschumann/IButils
@@ -1269,7 +1450,7 @@ Demonstrate that performance is better if future returns are the average over ma
 Apply the weights to the design matrix out-of-sample, lag the resulting signal, and trade VTI.
 Explain that the regression is biased by the returns in periods of high volatility, so the out-of-sample performance is also good in periods of high volatility, but poor otherwise.
 Subset the data to exclude periods of high volatility.
-Apply shrinkage and dimensional regularization.
+Apply shrinkage and dimensionality reduction.
 
 + [ ] Create shiny app for exploring trading strategy for OHLC technical indicators
 Create sliders for weights, scaling and smoothing (look-back).
@@ -1520,20 +1701,8 @@ perform rolling PCA and calculate factors and z-scores
 sort on z-scores and go long and short
 define trading rules: entry, exit, stop-loss
 
-+ [ ] Adapt from: Pav Sharpe Ratio Course.pdf
-http://www.gilgamath.com/bad-cis.html
-
-+ [ ] Adapt from Pav: Distribution of Maximal Sharpe
-http://www.sharperat.io/max-sharpe-one.html
-http://www.quantresearch.info/Intro.htm
-
-+ [ ] Adapt Damien Challet's drawdown estimator of the Signal to Noise Sharpe ratio
-Challet Drawdown Sharpe Ratio.pdf
-http://www.sharperat.io/improved-moment-estimator-snr.html
-https://github.com/amirsani/pySharpeRratio
-
 + [ ] Perform PCA, select clustered sub-portfolios, and perform PCA on the sub-portfolios
-study if second PC of sub-portfolios is mean-reverting, and if it's persistent out-of-sample.
+Study if second PC of sub-portfolios is mean-reverting, and if it's persistent out-of-sample.
 
 + [ ] Add slide with PCA percentage of variance explained to time_series_multivariate
 calculate by hand
@@ -1681,7 +1850,7 @@ Since beta depends on time, we are not able to measure beta.
 
 + [ ] Add slide portfolio optimization with elastic net shrinkage  
 
-+ [ ] constrained portfolio optimization shrinkage  
++ [ ] Constrained portfolio optimization shrinkage  
 http://www.finance-r.com/s/efficient_frontier_fPortfolio/complete/  
 http://www.finance-r.com/s/simple_portfolio_optimization_tseries/complete/  
 http://www.portfolioprobe.com/2011/04/28/a-test-of-ledoit-wolf-versus-a-factor-model  
@@ -1762,7 +1931,7 @@ http://unstarched.net/r-examples/rugarch/a-short-introduction-to-the-rugarch-pac
 
 + [ ] Add package tseries GARCH volatility models  
 
-+ [ ] calibrate into simulated GARCH data and show how the standard error of parameter estimates depends on the number of data points
++ [ ] Calibrate into simulated GARCH data and show how the standard error of parameter estimates depends on the number of data points
 
 + [ ] Perform backtest of GARCH model, and calibrate it using variance targeting  
 use DEoptim
@@ -1784,9 +1953,6 @@ http://models.cliffordang.com/hestonSV.R
 + [ ] Slide Simulating Stochastic Volatility
 
 + [ ] Create GARCH examples from package highfrequency  
-
-+ [x] Demonstrate that mixture of two normal distributions has fat tails lepto-kurtosis
-Demonstrate that normal mixture model is similar to Student's t-distribution.
 
 + [ ] Fit returns into Student t-distribution, Cauchy, and Pareto distribution
 Explain Method of Moments
@@ -1878,8 +2044,8 @@ use package pracma
 Demonstrate that if prices follow geometric Brownian motion then the Hurst exponent is equal to 1, 
 If prices are mean-reverting then the Hurst exponent is less than 1, 
 If prices are trending then the Hurst exponent is greater than 1, 
-simulate prices for OU prices and calculate variance ratios for different values of mean-reversion parameter
-plot Hurst exponent as function of mean-reversion parameter
+Simulate prices for OU prices and calculate variance ratios for different values of mean-reversion parameter.
+Plot Hurst exponent as function of mean-reversion parameter.
 # calculate Hurst exponent using variance ratios for non-xts
 hurst_exp <- function(da_ta, l_ag=4) {
   len_gth <- length(da_ta)
@@ -1917,138 +2083,13 @@ sde.sim()
 http://quant.stackexchange.com/questions/1260/r-code-for-ornstein-uhlenbeck-process
 https://cran.r-project.org/web/packages/Sim.DiffProc/index.html
 https://cran.r-project.org/web/packages/yuima/index.html
-create scatterplot of returns versus lagged prices
-create plot with multiple OU processes
-forecast returns and demonstrate that forecasting is easier with stronger mean-reversion  
+Create scatterplot of returns versus lagged prices.
+Create plot with multiple OU processes.
+Forecast returns and demonstrate that forecasting is easier with stronger mean-reversion.
 Bertram Statistical Arbitrage Trading Solutions.pdf
-
-+ [ ] cointegration package irlba  
-apply Doornik’s method using the SVD to solve the cointegration problem  
-Lewis RFinance 2012 Cointegration SVD.pdf  
-Doornik Cointegration Analysis SVD QR.pdf
-explain error propagation in matrix inversion use example
-C:\Research\R\R-Finance 2015\Lewis RFinance 2015 Cointegration SVD.html  
-https://bwlewis.github.io/rfinance-2017/#/section
-https://github.com/bwlewis/irlba
-
-+ [ ] Demonstrate that given any two random price series, you can always find a coefficient that creates a cointegrated portfolio in-sample, but it falls apart out-of-sample
-
-+ [ ] Adapt from Sebastian Fossati and Hauser - very good time series and cointegration with some R
-Granger Causality
-C:\Research\R\Tutorials\Fossati\e509\Lec8.R
-C:\Research\R\Tutorials\Fossati\e509\Lab4.R
-Hauser Cointegration Vector Error Correction Autoregressive Model.pdf
-Investigate the price series of black and white pepper, PepperPrices from the R library(”AER”) wrt cointegration and calibrate the VECM model.
-
-+ [ ] Add total least squares regression of stock pair
-C:\Research\R\Tutorials\Georgakopoulos\rfortraders\Chapter_06
-
-+ [ ] Add Johansen cointegration statistical arbitrage
-https://github.com/VermeirJellen/AlgorithmicTrading-Cointegration
 
 + [ ] Add Stanford Lisa Borland course MSE448 Big Financial Data for Algorithmic Trading (in Python)
 http://web.stanford.edu/class/msande448/
-
-+ [ ] Create slides for Engle-Granger two-step cointegration procedure, Augmented Dickey Fuller ADF test
-1. identify cointegrated pairs in a portfolio of assets - heatmap,
-2. calculate standard error of cointegration factor, 
-3. test persistence of cointegrated pairs out-of-sample,
-4. identify cointegrated portfolios from cluster analysis,
-5. apply ADF test to pairs and portfolios
-use sources in: ## trading cointegration pairs trading statistical arbitrage
-https://github.com/matthewclegg/egcm
-https://github.com/mikeschmitt/pairs-trading
-https://www.quantstart.com/articles/Cointegrated-Augmented-Dickey-Fuller-Test-for-Pairs-Trading-Evaluation-in-R
-http://gekkoquant.com/2012/10/21/statistical-arbitrage-correlation-vs-cointegration/
-http://gekkoquant.com/2012/12/17/statistical-arbitrage-testing-for-cointegration-augmented-dicky-fuller/
-http://gekkoquant.com/2017/01/23/investigation-into-the-power-of-co-integration-mean-reversion-tests/
-http://davegiles.blogspot.com/2011/04/testing-for-granger-causality.html  
-http://davegiles.blogspot.com/2015/10/cointegration-granger-causality.html
-http://davegiles.blogspot.com/2011/10/var-or-vecm-when-testing-for-granger.html
-http://davegiles.blogspot.com/2016/05/forecasting-from-error-correction-model.html
-http://denizstij.blogspot.com/2013/11/stationary-tests-of-time-series-within-r.html
-http://denizstij.blogspot.com/2013/11/cointegration-tests-adf-and-johansen.html
-https://quant.stackexchange.com/questions/34460/granger-causality-with-stocks-and-cds
-https://quant.stackexchange.com/questions/15948/two-correlated-time-series-driver-and-follower/15950
-https://quant.stackexchange.com/questions/14865/detecting-and-measuring-lead-lag-effect
-https://en.wikipedia.org/wiki/Granger_causality
-
-+ [ ] Adapt from package egcm for Engle-Granger two-step cointegration procedure
-https://github.com/matthewclegg/egcm
-
-+ [ ] unit root tests, cointegration, and VAR vector autoregressive models, spurious correlation example  
-C:\Research\R\Tutorials\Zivot\Econ 584\Zivot Cointegration.pdf  
-Zivot Cointegration Tests.pdf
-Zivot VAR Vector Autoregressive Time Series Models.pdf
-Phillips-Ouliaris test for cointegration  
-
-+ [ ] Expand on spurious time series regression
-http://r-datameister.blogspot.com/2013/12/spurious-regression-of-time-series.html
-http://davegiles.blogspot.com/2012/05/more-about-spurious-regressions.html
-https://eranraviv.com/spurious-regression-illustrated/
-https://eranraviv.com/how-regression-statistics-mislead-experts/
-
-+ [ ] Create slides explaining Johansen test
-Demonstrate that unit root test power is poor, by simulating and testing almost stationary ARIMA process. 
-The power and size of unit root tests are poor. 
-The test's weak power means that they cannot distinguish between a unit root process and a fractionally integrated series with long memory (Baillie, 1996)
-Johansen Cointegration.pdf
-SVD subset selection: 
-Lewis RFinance 2012 Cointegration SVD.pdf
-Doornik Cointegration Analysis SVD QR.pdf
-https://www.quantstart.com/articles/Johansen-Test-for-Cointegrating-Time-Series-Analysis-in-R
-http://www.spiderfinancial.com/support/documentation/numxl/users-guide/statistical-testing/cointegration-test
-https://quant.stackexchange.com/questions/8494/cointegrating-relationships-johansen-in-r
-https://quant.stackexchange.com/questions/3526/how-to-interpret-results-of-johansen-test
-https://quant.stackexchange.com/questions/2076/how-to-interpret-the-eigenmatrix-from-a-johansen-cointegration-test?
-https://quant.stackexchange.com/questions/25212/johansen-cointegration-test-interpretation-in-r
-http://quant.stackexchange.com/questions/18581/johansen-test-on-two-stocks-for-pairs-trading-yielding-annoying-results
-http://r.789695.n4.nabble.com/Testing-for-cointegration-Johansen-vs-Dickey-Fuller-td926500.html
-
-+ [ ] Determine the lead-lag relationships between asset returns from their correlations  
-Find which one leads by applying Vector Autoregressive VAR model and Granger causality test.
-Study the effect of longer lookback intervals.
-Wu Leader Lagged Correlation.pdf
-vars Vignette.pdf
-VAR Models.pdf
-DeMiguel VAR Model Stock Selection Forecasting.pdf
-Ni Bayesian VAR Model Estimation.pdf
-Barigozzi Nets Lasso Network Estimation for Time Series.pdf
-
-+ [ ] Vector Autoregressive VaR Models
-Christian Brownlees VAR autoregressive model with LASSO shrinkage package nets
-vars.pdf
-https://github.com/ctbrownlees/R-Package-nets
-
-+ [ ] Create slides for pairs trading  
-1. trade pairs in-sample and out-of-sample,
-2. demonstrate that using ensemble of cointegration factors produces higher Sharpe out-of-sample. 
-use sources in: ## trading cointegration pairs trading statistical arbitrage
-http://quantdevel.com/public/html/testForCoint.html
-http://www.rfortraders.com/lecture-4-regression-and-pairs-trading/
-http://gekkoquant.com/2013/01/21/statistical-arbitrage-trading-a-cointegrated-pair/
-https://stackoverflow.com/questions/24051503/filter-xts-objects-by-common-dates
-https://github.com/dankim93/Pairs-Trading-Project
-C:\Research\R\Tutorials\Pairs-Trading-Project-master
-https://github.com/Jackal08/QuantInsti-Final-Project-Statistical-Arbitrage
-https://www.linkedin.com/pulse/statistical-arbitrage-strategy-r-jacques-joubert
-https://github.com/justinlent/PairTradeR
-
-+ [ ] Adapt pairs trading from package PairTrading (removed from CRAN)
-http://mockquant.blogspot.com/2011/10/introduction-to-pairtrading-package.html
-
-+ [ ] Adapt from packages partialCI and partialAR for partial cointegration procedure
-https://github.com/matthewclegg/partialCI
-https://github.com/matthewclegg/partialAR
-
-+ [ ] Explain steps of statistical arbitrage
-1. determine cointegrated portfolio either using Engle-Granger two-step cointegration procedure, or Johansen VAR and VECM models.
-2. estimate time-varying portfolio weights using stochastic control.
-3. determine optimal trading parameters and stop-loss.
-
-+ [ ] Trade Hurst model
-http://timelyportfolio.blogspot.com/2011/06/exploring-market-with-hurst.html
-Qian Rashid Hurst Predictability.pdf
 
 + [ ] WRDS research database SAS sample queries
 https://wrds-web.wharton.upenn.edu/wrds/research/applications/index.cfm
@@ -2314,50 +2355,6 @@ http://gallery.rcpp.org/articles/rcpp-sgd/
 https://www.r-bloggers.com/quantitative-finance-applications-in-r-4-using-the-generalized-lambda-distribution-to-simulate-market-returns/
 https://www.r-bloggers.com/the-generalized-lambda-distribution-and-gldex-package-fitting-financial-return-data/
 
-+ [x] Add slide about VIX crash on February 5th 2018
-
-+ [x] Introduce SVXY short VIX futures ETF
-
-+ [x] Chain futures data
-
-+ [x] Add package iBrokers to thematic slides file data_management.Rnw
-
-+ [x] Add package data.table to thematic slides file data_management.Rnw
-
-+ [x] Principal component regression PCR
-
-+ [x] Explain how to create pairs and portfolios in Interactive Brokers
-https://www.interactivebrokers.com/en/index.php?f=744
-
-+ [x] Calculate coefficients of multiple linear regression using function solve()
-
-+ [x] Add formula for slope of tangency portfolio using derivative of efficient frontier.
-Compute tangency portfolio in two different ways: from derivative of efficient frontier, and from Sharpe portfolio weights.
-
-+ [x] Calculate the efficient frontier under sum of weights constraint using matrix algebra in two steps:
-Calculate the minimum variance portfolio
-Calculate the minimum variance portfolio under the constraint that it has a fixed target return
-Demonstrate that efficient frontier is a parabola in sigma-squared-mu space
-Demonstrate that efficient frontier is a hyperbola in sigma-mu space
-
-+ [x] Demonstrate that the PCA with the smallest eigenvalue is the minimum variance portfolio
-
-+ [x] Demonstrate that GARCH model returns have excess kurtosis, and fit them into t-distribution
-
-+ [x] Perform Principal Component Analysis PCA by hand using optimization
-update time_series_multivariate.Rnw
-
-+ [x] Simulate Ornstein-Uhlenbeck OU process using Rcpp
-
-+ [x] Demonstrate that a combination of momentum and static buy-and-hold strategies produces a better Sharpe ratio than the individual strategies alone
-
-+ [x] Create slides for improved version of Performing Overlapping Aggregations in investment_strategies.Rnw
-
-+ [x] Create shiny interactive plot of EWMA strategy 
-
-+ [x] Demonstrate that returns of trend-following and mean-reverting strategies are negatively correlated
-demonstrate that a combination of trend-following and mean-reverting strategies has better Sharpe ratio than the individual strategies
-
 + [ ] Create option examples from GARPFRM package  
 demonstrate that call option returns have more positive skew than underlying asset
 C:\Develop\R\fin_engine\vignettes
@@ -2453,14 +2450,6 @@ https://wrds-web.wharton.upenn.edu/wrds/support/Accessing%20and%20Manipulating%2
 https://wrds-web.wharton.upenn.edu/wrds/tools/variable.cfm
 # example SAS queries for TAQ
 https://wrds-web.wharton.upenn.edu/wrds/support/Data/_003Sample%20Programs/TAQ/index.cfm
-
-+ [x] Create shiny for two EWMA strategy, with performance in output
-
-+ [x] Add slide for shiny plots
-
-+ [x] Create shiny for EWMA model and assign it as homework
-
-+ [x] Simulate geometric Brownian motion
 
 + [ ] Slides for package h5 for hdf5 files
 
@@ -2612,7 +2601,7 @@ C:\Develop\R\fin_engine\vignettes
 efficient frontiers
 http://rossb34.github.io/GARPFRM_shiny/
 
-+ [ ] bootstrapping time series of prices and OHLC time series in parallel  
++ [ ] Bootstrapping time series of prices and OHLC time series in parallel  
 
 The no drift assumption is a good approximation when the dimensionless parameter µvT/s is small
 
@@ -2654,27 +2643,6 @@ http://moderndata.plot.ly/r-python-matlab-dashboards-graphs-with-d3-js-webgl/
 http://moderndata.plot.ly/interactive-r-visualizations-with-d3-ggplot2-rstudio/
 https://plot.ly/quandl/?code=GOOG/AMEX_LVOL
 
-+ [x] Add slide for markdown and knitr documents containing interactive charts
-Use blog web pages.
-
-+ [x] Explain, summarize, and benchmark rolling functions over endpoints:
-rollapply
-apply.rolling
-period.apply
-period.sum
-
-+ [x] Demonstrate that squared returns are autocorrelated, but squared ranges are not autocorrelated  
-
-+ [x] Robust measures of centrality, dispersion, and skewness MAD
-
-+ [x] OHLC variance estimators  
-
-+ [x] Explain why range variance estimators have bias and they underestimate variance
-
-+ [x] Explain the effect of aggregation frequency and observation (measurement) units on the time scaling of variance  
-
-+ [x] Create dygraphs slides for time series
-
 + [ ] Create dygraphs slides for OHLC time series
 https://github.com/danielkrizian/rChartsDygraphs
 https://github.com/danvk/dygraphs/pull/538
@@ -2683,14 +2651,12 @@ http://dygraphs.com/tests/plotters.html
 + [ ] Create plotly slides for OHLC time series
 http://moderndata.plot.ly/candlestick-charts-using-plotly-and-quantmod/
 
-+ [ ] convert all lectures from Sweave LaTeX to knitr R Markdown ?  what about two-column layout?
++ [ ] Convert all lectures from Sweave LaTeX to knitr R Markdown ?  what about two-column layout?
 http://jeromyanglim.blogspot.com/2012/06/how-to-convert-sweave-latex-to-knitr-r.html
 http://stackoverflow.com/questions/20934148/sweave-to-r-markdown-file-conversion-code-or-converters-available
 http://pandoc.org/
 
 + [ ] Create online interactive documents using .Rmd files on RPubs  
-
-+ [x] Create package fin_engine, a clone of GARPFRM package  
 
 + [ ] using hfreq return data, estimate daily data: mean return, variance, skewness and kurtosis
 show that daily returns are not autocorrelated, 
@@ -2702,11 +2668,6 @@ fit GARCH model using hfreq data
 + [ ] Adapt code from package deSolve DLL models  
 
 + [ ] Ryan Haffen trelliscope, tessera
-
-+ [ ] Incorporate ideas from and contribute to Matt Brigida Teaching Resources with R/Shiny
-https://github.com/Matt-Brigida
-
-+ [ ] Akaike and Bayesian information criteria AIC BIC
 
 + [ ] Use following data:  
 data(package="factorAnalytics")  
@@ -2878,35 +2839,6 @@ Vince Kelly Optimal-f Criteria.pdf
 
 + [ ] Replace "look_back" and "win_dow" with "inter_val" - deprecated
 
-+ [x] change start_points in time_series_univariate: make it consistent with HighFreq::roll_apply(): win_dow is the size of the lookback window, equal to the number of data points used for applying the aggregation function (including the current point)  
-start_points <-  end_points[c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
-instead of:
-start_points <-  end_points[c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
-
-+ [x] Review Optimal Mean Reversion Trading: mostly math from his papers  
-Redemption Code:	F3P8XXBB7SKVXFZNX6KP
-https://bookshelf.vitalsource.com/#/books/9789814725934/cfi/6/2!/4/2/2@0:66.1
-
-+ [x] convert all code from nrow() and ncol() to NROW() and NCOL()  
-
-+ [x] update ETF list and etf_data.Rdata
-
-+ [x] hw/test: eapply over hypothesis tests 
-
-+ [x] Create package rutils: Utility Functions for Financial Data Management and Modeling
-
-+ [x] Downloading S&P500 stock price data with R
-https://grollchristian.wordpress.com/2013/08/07/sp500-stock-price-data/
-
-+ [x] Stock index constituents and meta-data  
-https://www.quandl.com/blog/useful-lists
-
-+ [x] Download data for all S&P500 stocks from Quandl
-Quandl API Key:	pUJi9Mv3V9CD3Js5s7Rx
-https://www.quandl.com/blog/quandl-launches-intraday-data-2
-
-+ [x] update HighFreq package
-
 + [ ] Demonstrate that positive correlation doesn't translate into similar long-term returns
 develop the contrived hypothetical example in: Kinlaw Variance Ratio Correlation Term Structure.pdf  
 demonstrate that the term structure of correlation decreases with tenor  
@@ -2933,6 +2865,124 @@ http://opendata.stackexchange.com/questions/4116/stock-market-historical-data
 # create lecture slides for:
 https://ropensci.org/
 https://plot.ly
+
+
++ [x] Add forecasting using ARIMA
+Backtest forecasting using ARIMA and a simulated AR time series.
+
++ [x] Downloading data from tiingo
+https://www.tiingo.com/
+http://blog.fosstrading.com/2018/04/goodbye-google-hello-tiingo.html
+
++ [x] Calculate constant maturity VIX futures - calculate VIX futures term structure from CBOE settlement data.
+https://quantstrattrader.wordpress.com/2017/04/27/creating-a-vix-futures-term-structure-in-r-from-official-cboe-settlement-data/
+
++ [x] Demonstrate that mixture of two normal distributions has fat tails lepto-kurtosis
+Demonstrate that normal mixture model is similar to Student's t-distribution.
+
++ [x] Add slide about VIX crash on February 5th 2018
+
++ [x] Introduce SVXY short VIX futures ETF
+
++ [x] Chain futures data
+
++ [x] Add package iBrokers to thematic slides file data_management.Rnw
+
++ [x] Add package data.table to thematic slides file data_management.Rnw
+
++ [x] Principal component regression PCR
+
++ [x] Explain how to create pairs and portfolios in Interactive Brokers
+https://www.interactivebrokers.com/en/index.php?f=744
+
++ [x] Calculate coefficients of multiple linear regression using function solve()
+
++ [x] Add formula for slope of tangency portfolio using derivative of efficient frontier.
+Compute tangency portfolio in two different ways: from derivative of efficient frontier, and from Sharpe portfolio weights.
+
++ [x] Calculate the efficient frontier under sum of weights constraint using matrix algebra in two steps:
+Calculate the minimum variance portfolio
+Calculate the minimum variance portfolio under the constraint that it has a fixed target return
+Demonstrate that efficient frontier is a parabola in sigma-squared-mu space
+Demonstrate that efficient frontier is a hyperbola in sigma-mu space
+
++ [x] Demonstrate that the PCA with the smallest eigenvalue is the minimum variance portfolio
+
++ [x] Demonstrate that GARCH model returns have excess kurtosis, and fit them into t-distribution
+
++ [x] Perform Principal Component Analysis PCA by hand using optimization
+update time_series_multivariate.Rnw
+
++ [x] Simulate Ornstein-Uhlenbeck OU process using Rcpp
+
++ [x] Demonstrate that a combination of momentum and static buy-and-hold strategies produces a better Sharpe ratio than the individual strategies alone
+
++ [x] Create slides for improved version of Performing Overlapping Aggregations in investment_strategies.Rnw
+
++ [x] Create shiny interactive plot of EWMA strategy 
+
++ [x] Demonstrate that returns of trend-following and mean-reverting strategies are negatively correlated
+demonstrate that a combination of trend-following and mean-reverting strategies has better Sharpe ratio than the individual strategies
+
++ [x] Create shiny for two EWMA strategy, with performance in output
+
++ [x] Add slide for shiny plots
+
++ [x] Create shiny for EWMA model and assign it as homework
+
++ [x] Simulate geometric Brownian motion
+
++ [x] Add slide for markdown and knitr documents containing interactive charts
+Use blog web pages.
+
++ [x] Explain, summarize, and benchmark rolling functions over endpoints:
+rollapply
+apply.rolling
+period.apply
+period.sum
+
++ [x] Demonstrate that squared returns are autocorrelated, but squared ranges are not autocorrelated  
+
++ [x] Robust measures of centrality, dispersion, and skewness MAD
+
++ [x] OHLC variance estimators  
+
++ [x] Explain why range variance estimators have bias and they underestimate variance
+
++ [x] Explain the effect of aggregation frequency and observation (measurement) units on the time scaling of variance  
+
++ [x] Create dygraphs slides for time series
+
++ [x] Create package fin_engine, a clone of GARPFRM package  
+
++ [x] Change start_points in time_series_univariate: make it consistent with HighFreq::roll_apply(): win_dow is the size of the lookback window, equal to the number of data points used for applying the aggregation function (including the current point)  
+start_points <-  end_points[c(rep_len(1, win_dow-1), 1:(len_gth-win_dow+1))]
+instead of:
+start_points <-  end_points[c(rep_len(1, win_dow), 1:(len_gth-win_dow))] + 1
+
++ [x] Review Optimal Mean Reversion Trading: mostly math from his papers  
+Redemption Code:	F3P8XXBB7SKVXFZNX6KP
+https://bookshelf.vitalsource.com/#/books/9789814725934/cfi/6/2!/4/2/2@0:66.1
+
++ [x] Convert all code from nrow() and ncol() to NROW() and NCOL()  
+
++ [x] update ETF list and etf_data.Rdata
+
++ [x] hw/test: eapply over hypothesis tests 
+
++ [x] Create package rutils: Utility Functions for Financial Data Management and Modeling
+
++ [x] Downloading S&P500 stock price data with R
+https://grollchristian.wordpress.com/2013/08/07/sp500-stock-price-data/
+
++ [x] Stock index constituents and meta-data  
+https://www.quandl.com/blog/useful-lists
+
++ [x] Download data for all S&P500 stocks from Quandl
+Quandl API Key:	pUJi9Mv3V9CD3Js5s7Rx
+https://www.quandl.com/blog/quandl-launches-intraday-data-2
+
++ [x] update HighFreq package
 
 
 
@@ -3297,7 +3347,7 @@ plot with plotly
 Calculate the corresponding maximum Sharpe and the minimum variance portfolio weights, in R and in RcppArmadillo.
 Create a shiny app in an R file.
 
-+ [x] combine data for the S&P500 constituents, and stitch the newer data to the older data
++ [x] Combine data for the S&P500 constituents, and stitch the newer data to the older data
 
 + [x] Calculate the standard errors of the Yang-Zhang and the close-to-close variance estimators using bootstrap simulation
 Demonstrate that the Yang-Zhang estimator has much smaller standard error than the standard close-to-close variance estimator.
@@ -3415,7 +3465,7 @@ find optimal parameters and apply them out-of-sample
 
 + [ ] Recursively rbind() a list of objects, such as xts time series - reproduce do_call_rbind()
 
-+ [x] convert the date and time to different time zones  
++ [x] Convert the date and time to different time zones  
 
 + [x] Create a vector of dates that are the last workdays of every month  
 
@@ -3424,7 +3474,7 @@ plot histograms of returns in each year in panels
 
 + [ ] Calculate SPY moments in each month, in each year, 
 
-+ [ ] benchmark runmed with runquantile and runMedian
++ [ ] Benchmark runmed with runquantile and runMedian
 benchmark TTR::runMAD() with caTools::runmad()
 
 + [ ] Calculate standard errors of variance estimators using bootstrap - parallel version
@@ -3559,6 +3609,8 @@ https://help.yahoo.com/kb/finance/historical-prices-sln2311.html
 ########################
 ### emails announcements
 
+# Next Spring the portfolio course will be extremely interesting, since I will add even more topics on trading via the API of Interactive Brokers.
+
 # I would be very happy to have you as a student.
 I am teaching in the Spring semester 2019 two very interesting courses:
 FRE-6871 R in Finance
@@ -3588,6 +3640,9 @@ Please change your default settings in Linkedin so that you receive alerts for n
 
 ##
 
+For FRE-7241 Algorithmic Portfolio Management I need a grader.  The GA's responsibilities will be grading and answering student questions during office hours.
+Preference is for student who has already taken FRE-7241 or FRE-6871, or who has strong R programming skills.
+
 Dear Students,
 Welcome to FRE7241 Algorithmic Portfolio Management.  Please see attached the syllabus. 
 The first class will be today, Tuesday, September 4th, at 6:00 PM in RH227.
@@ -3595,6 +3650,10 @@ I'm glad to see that so many students have registered for this course.
 But many students find this course to be difficult, especially those without programming experience.  The R language is considered to be challenging, so students should have programming experience with the R language and with other languages such as C++ or Python.  
 
 I highly recommend that you first take FRE6871 R in Finance, which also contains very valuable material that can be applied to investing.  
+
+Dear Students,
+I uploaded an improved IB script for paper trading through Interactive Brokers using package IBrokers.
+It's a simple and naive market-making strategy using limit orders.  It's designed to illustrate how the package IBrokers can be used for trading.  It can be used to study the risks of market-making.  You can also modify it and improve it.  Please let me know if you have questions, or if you would like to share your progress.
 
 # deprecated
 But I must warn you that many students find this course to be difficult.  The R language is considered to be very challenging, so this course requires strong programming skills and experience.  Students should therefore have extensive programming experience with the R language and other languages such as C++ or Python.  
