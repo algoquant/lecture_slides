@@ -488,7 +488,7 @@ summary(dax_acf)  # get the structure of the "acf" object
 dim(dax_acf$acf)
 dim(dax_acf$lag)
 head(dax_acf$acf)
-acf_plus <- function (ts_data, plo_t=TRUE,
+acf_plus <- function(ts_data, plo_t=TRUE,
                 xlab="Lag", ylab="",
                 main="", ...) {
   acf_data <- acf(x=ts_data, plot=FALSE, ...)

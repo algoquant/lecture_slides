@@ -85,7 +85,7 @@ library(PerformanceAnalytics)
 ts_rets <- rutils::etf_env$re_turns[, "VTI"]
 c(mean(ts_rets), sd(ts_rets))
 utility <- function(frac, r=ts_rets) {
-sapply(frac, function (fract) sum(log(1+fract*r)))
+sapply(frac, function(fract) sum(log(1+fract*r)))
 }  # end utility
 curve(expr=utility,
 xlim=c(0.1, 2*PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")),
@@ -383,7 +383,7 @@ source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
 lamb_das <- seq(0.05, 1.0, 0.05)
 # perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
-  # simulate EWMA strategy and calculate re_turns
+  # backtest EWMA strategy and calculate re_turns
   star_t*exp(cumsum(simu_ewma(
     oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "returns"]))
 })  # end lapply
@@ -409,7 +409,7 @@ plot(x=lamb_das, y=sharpe_ratios, t="l",
      as function of the decay parameter lambda")
 revert_returns <- rutils::diff_it(log(pnl_s))
 revert_sharpe <- sharpe_ratios
-# simulate best performing strategy
+# backtest best performing strategy
 ewma_revert <- simu_ewma(oh_lc=oh_lc,
   lamb_da=lamb_das[which.max(sharpe_ratios)],
   wid_th=wid_th, tre_nd=(-1))

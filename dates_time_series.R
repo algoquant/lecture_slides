@@ -417,8 +417,8 @@ price_s <- lapply(price_s, quantmod::Ad)
 price_s <- rutils::do_call(cbind, price_s)
 sum(is.na(price_s))
 # carry forward and backward non-NA prices
-price_s <- zoo::na.locf(price_s)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, na.rm=FALSE, fromLast=TRUE)
 sum(is.na(price_s))
 # remove whole rows containing NA returns
 re_turns <- rutils::etf_env$re_turns
@@ -427,14 +427,14 @@ re_turns <- na.omit(re_turns)
 # or carry forward non-NA returns (preferred)
 re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns)
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 sum(is.na(re_turns))
 # Replace NAs in xts time series
 se_ries <- rutils::etf_env$price_s[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
 library(microbenchmark)

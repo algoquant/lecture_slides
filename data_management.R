@@ -103,6 +103,28 @@ data_read
 write.csv(data_frame, row.names=FALSE, file="florist.csv")
 data_read <- read.csv(file="florist.csv")
 data_read  # A data frame without row names
+# Read a data table from CSV file
+setwd("C:/Develop/R/lecture_slides/data")
+data_table <- data.table::fread("weather_delays14.csv")
+# fread() reads the same data as read.csv()
+all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
+    data.table::setDF(data.table::fread("weather_delays14.csv")))
+# fread() is much faster than read.csv()
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=read.csv("weather_delays14.csv"),
+  data.table=data.table:::setDF(data.table::fread("weather_delays14.csv")),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # write matrix to csv file, and then read it back
 write.csv(mat_rix, file="matrix.csv")
 mat_read <- read.csv(file="matrix.csv", row.names=1)
@@ -336,15 +358,47 @@ data(package="data.table")
 ls("package:data.table")
 # Remove data.table from search path
 detach("package:data.table")
-data_table <- data.table::data.table(
-  type=c('rose', 'daisy', 'tulip'),
-  color=c('red', 'white', 'yellow'),
-  price=c(1.5, 0.5, 1.0)
-)  # end data.frame
+# Create a data table
+library(data.table)
+data_table <- data.table::data.table(col1=rnorm(5e3), col2=rnorm(5e3), col3=rnorm(5e3))
+class(data_table)
+tail(data_table)
+# Create a matrix and coerce it to a data table
+mat_rix <- matrix(rnorm(5e3), nc=5)
+data_table <- as.data.frame(mat_rix)
+data.table::setDT(data_table)
+# Coerce xts to a data frame
+library(rutils)
+price_s <- rutils::etf_env$VTI
+class(price_s)
+tail(price_s)
+price_s <- as.data.frame(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+all.equal(price_s, data_table, check.attributes=FALSE)
+sapply(price_s, class)
 sapply(data_table, class)
+# column referenced by name not string
+tail(data_table[, VTI.Open])
+# row referenced without a following comma
+data_table[1]
+# Coerce data_table into data frame
+data.table::setDF(data_table)
+class(data_table)
+# Or
+data_table <- data.table:::as.data.frame.data.table(data_table)
+# setDF() is much faster than as.data.frame()
+library(microbenchmark)
+summary(microbenchmark(
+  as.data.frame=data.table:::as.data.frame.data.table(data_table),
+  setDF=data.table::setDF(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Read a data table from CSV file
 setwd("C:/Develop/R/lecture_slides/data")
-flight_s <- data.table::fread("flights14.csv")
+data_table <- data.table::fread("weather_delays14.csv")
 # fread() reads the same data as read.csv()
 all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
     data.table::setDF(data.table::fread("weather_delays14.csv")))
@@ -354,49 +408,30 @@ summary(microbenchmark(
   pure_r=read.csv("weather_delays14.csv"),
   data.table=data.table:::setDF(data.table::fread("weather_delays14.csv")),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+data_table <- data.table::fread("flights14.csv")
 # subset using multiple logical clauses
-jfk_flights <- flight_s[origin == "JFK" & month == 6]
+jfk_flights <- data_table[origin == "JFK" & month == 6]
 # subset first five rows
 jfk_flights[1:5]
-# sort flight_s by "origin"column in ascending order, then by "dest" in descending order
-flight_s <- flight_s[order(origin, -dest)]
-
+# sort data_table by "origin" column in ascending order, then by "dest" in descending order
+data_table <- data_table[order(origin, -dest)]
 # fsort() is much slower than sort() !
-foo <- flight_s[, dest]
-foo <- runif(1e3)
-all.equal(sort(foo), data.table::fsort(foo))
+da_ta <- runif(1e3)
+all.equal(sort(da_ta), data.table::fsort(da_ta))
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sort(foo),
-  data.table=data.table::fsort(foo),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-
-# write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv",
-                 stringsAsFactors=FALSE)
-data_read  # the row names are read in as extra column
-# Restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # Remove extra column
-data_read
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-# Read a data table from CSV file
-flight_s <- data.table::fread("weather_delays14.csv")
-class(flight_s)
-# Coerce flight_s into data frame
-data.table::setDF(flight_s)
-class(flight_s)
-# Or
-flight_s <- data.table:::as.data.frame.data.table(flight_s)
-# setDF() is much faster than as.data.frame()
-library(microbenchmark)
-summary(microbenchmark(
-  as.data.frame=data.table:::as.data.frame.data.table(flight_s),
-  setDF=data.table::setDF(flight_s),
+  pure_r=sort(da_ta),
+  data.table=data.table::fsort(da_ta),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 library(tseries)  # Load package tseries
 # Download MSFT data in ts format
@@ -479,11 +514,11 @@ library(xtable)
 # Define ETF symbols for asset allocation
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
-  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
+  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
   "IWB", "IWD", "IWF", "VXX", "SVXY")
 # Read etf database into data frame
 etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
+  file='C:/Develop/R/lecture_slides/data/etf_list.csv',
          stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
 # subset etf_list only those ETF's in sym_bols
@@ -981,797 +1016,3 @@ colnames(vix_env$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
 save(vix_env,
   file="C:/Develop/data/vix_data/vix_cboe.RData")
-# futures contracts codes
-future_s <- rbind(c("S&P500 index", "ES"), 
-              c("10yr Treasury", "ZN"),
-              c("VIX index", "VX"),
-              c("Gold", "GC"),
-              c("Oil", "CL"),
-              c("Euro FX", "EC"),
-              c("Swiss franc", "SF"),
-              c("Japanese Yen", "JY"))
-colnames(future_s) <- c("Futures contract", "Code")
-print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
-# monthly futures contract codes
-month_codes <- cbind(c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"), 
-                     c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"))
-colnames(month_codes) <- c("Month", "Code")
-print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushright")
-# futures contracts codes
-future_s <- rbind(c("S&P500 index", "SP", "ES"), 
-              c("10yr Treasury", "ZN", "ZN"),
-              c("VIX index", "VX", "delisted"),
-              c("Gold", "GC", "YG"),
-              c("Oil", "CL", "QM"),
-              c("Euro FX", "EC", "E7"),
-              c("Swiss franc", "SF", "MSF"),
-              c("Japanese Yen", "JY", "J7"))
-colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
-print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
-# Load data for S&P Emini futures December 2018 contract
-sym_bol <- "ES"
-data_dir <- "C:/Develop/data/ib_data"
-file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
-# Read a data table from CSV file
-price_s <- data.table::fread(file_name)
-# Coerce price_s into data frame
-data.table::setDF(price_s)
-# Or
-# price_s <- data.table:::as.data.frame.data.table(
-#   data.table::fread(file_name))
-# first column of price_s is a numeric date-time
-tail(price_s)
-# Coerce price_s into xts series
-price_s <- xts::xts(price_s[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
-    tz="America/New_York",
-    origin="1970-01-01")))
-colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
-tail(price_s)
-# plot OHLC data in x11 window
-x11(width=5, height=4)  # Open x11 for plotting
-par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-chart_Series(x=price_s, TA="add_Vo()",
-  name="S&P500 futures")
-# plot dygraph
-dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
-  dyCandlestick()
-# Load ESU8 data
-data_dir <- "C:/Develop/data/ib_data"
-file_name <- file.path(data_dir, "ESU8.csv")
-ES_U8 <- data.table::fread(file_name)
-data.table::setDF(ES_U8)
-ES_U8 <- xts::xts(ES_U8[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(ES_U8[, 1],
-    tz="America/New_York", origin="1970-01-01")))
-colnames(ES_U8) <- c("Open", "High", "Low", "Close", "Volume")
-# Load ESM8 data
-file_name <- file.path(data_dir, "ESM8.csv")
-ES_M8 <- data.table::fread(file_name)
-data.table::setDF(ES_M8)
-ES_M8 <- xts::xts(ES_M8[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(ES_M8[, 1],
-    tz="America/New_York", origin="1970-01-01")))
-colnames(ES_M8) <- c("Open", "High", "Low", "Close", "Volume")
-x11(width=6, height=5)  # Open x11 for plotting
-# plot last month of ESU8 and ESM8 volume data
-en_d <- end(ES_M8)
-star_t <- (en_d - 30*24*60^2)
-vol_ume <- cbind(Vo(ES_U8),
-  Vo(ES_M8))[paste0(star_t, "/", en_d)]
-colnames(vol_ume) <- c("ESU8", "ESM8")
-col_ors <- c("blue", "green")
-plot(vol_ume, col=col_ors, lwd=3, major.ticks="days",
-     format.labels="%b-%d", observation.based=TRUE,
-     main="Volumes of ESU8 and ESM8 futures")
-legend("topleft", legend=colnames(vol_ume), col=col_ors,
- title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
-# find date when ESU8 volume exceeds ESM8
-exceed_s <- (vol_ume[, "ESU8"] > vol_ume[, "ESM8"])
-in_deks <- min(which(exceed_s))
-# In_deks <- match(TRUE, exceed_s)
-# scale the ES_M8 prices
-in_deks <- index(exceed_s[in_deks])
-fac_tor <- as.numeric(Cl(ES_U8[in_deks])/Cl(ES_M8[in_deks]))
-ES_M8[, 1:4] <- fac_tor*ES_M8[, 1:4]
-# Calculate continuous contract prices
-chain_ed <- rbind(ES_M8[index(ES_M8) < in_deks],
-            ES_U8[index(ES_U8) >= in_deks])
-# Or
-# Chain_ed <- rbind(ES_M8[paste0("/", in_deks-1)],
-#                   ES_U8[paste0(in_deks, "/")])
-# plot continuous contract prices
-chart_Series(x=chain_ed["2018"], TA="add_Vo()",
-  name="S&P500 chained futures")
-# Download VIX index data from CBOE
-vix_index <- data.table::fread("http://www.cboe.com/publish/scheduledtask/mktdata/datahouse/vixcurrent.csv", skip=1)
-class(vix_index)
-dim(vix_index)
-tail(vix_index)
-sapply(vix_index, class)
-vix_index <- xts(vix_index[, -1],
-  order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
-colnames(vix_index) <- c("Open", "High", "Low", "Close")
-# Save the VIX data to binary file
-load(file="C:/Develop/data/ib_data/vix_cboe.RData")
-ls(vix_env)
-vix_env$vix_index <- vix_index
-ls(vix_env)
-save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
-# plot OHLC data in x11 window
-chart_Series(x=vix_index["2018"], name="VIX Index")
-# plot dygraph
-dygraphs::dygraph(vix_index, main="VIX Index") %>%
-  dyCandlestick()
-# Read CBOE monthly futures expiration dates
-date_s <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates.csv",
-  stringsAsFactors=FALSE)
-date_s <- as.Date(date_s[, 1])
-year_s <- format(date_s, format="%Y")
-year_s <- substring(year_s, 4)
-# monthly futures contract codes
-month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
-sym_bols <- paste0("VX", month_codes, year_s)
-date_s <- as.data.frame(date_s)
-colnames(date_s) <- "monthly_expiration_dates"
-rownames(date_s) <- sym_bols
-# write dates to CSV file, with row names
-write.csv(date_s, row.names=TRUE,
-  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv")
-# Read back CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
-  stringsAsFactors=FALSE, row.names=1)
-date_s[, 1] <- as.Date(date_s[, 1])
-# Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
-# Get all VIX futures for 2018 except January
-sym_bols <- ls(vix_env)
-sym_bols <- sym_bols[grep("*8", sym_bols)]
-sym_bols <- sym_bols[2:9]
-# Specify dates for curves
-low_vol <- as.Date("2018-01-11")
-hi_vol <- as.Date("2018-02-05")
-# Extract all VIX futures prices on the dates
-curve_s <- lapply(sym_bols, function(sym_bol) {
-  x_ts <- get(x=sym_bol, envir=vix_env)
-  Cl(x_ts[c(low_vol, hi_vol)])
-})  # end lapply
-curve_s <- rutils::do_call(cbind, curve_s)
-colnames(curve_s) <- sym_bols
-curve_s <- t(coredata(curve_s))
-colnames(curve_s) <- c("Contango 01/11/2018",
-                 "Backwardation 02/05/2018")
-x11(width=7, height=5)
-par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0))
-plot(curve_s[, 1], type="l", lty=1, col="blue", lwd=3,
-     xaxt="n", xlab="", ylab="", ylim=range(curve_s),
-     main="VIX Futures Curves")
-axis(1, at=(1:NROW(curve_s)), labels=rownames(curve_s))
-lines(curve_s[, 2], lty=1, lwd=3, col="red")
-legend(x="topright", legend=colnames(curve_s),
- inset=0.05, cex=1.0, bty="n",
- col=c("blue", "red"), lwd=6, lty=1)
-# Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
-  stringsAsFactors=FALSE, row.names=1)
-sym_bols <- rownames(date_s)
-expiration_dates <- as.Date(date_s[, 1])
-to_day <- as.Date("2018-05-07")
-maturi_ty <- to_day + 30
-# Find neighboring futures contracts
-in_deks <- match(TRUE, expiration_dates > maturi_ty)
-# In_deks <- min(which(expiration_dates > to_day))
-expiration_dates[in_deks-1]
-expiration_dates[in_deks]
-front_symbol <- sym_bols[in_deks-1]
-back_symbol <- sym_bols[in_deks]
-front_date <- expiration_dates[in_deks-1]
-back_date <- expiration_dates[in_deks]
-# Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
-front_price <- get(x=front_symbol, envir=vix_env)
-# front_price <- vix_env$front_symbol
-front_price <- as.numeric(Cl(front_price[to_day]))
-back_price <- get(x=back_symbol, envir=vix_env)
-back_price <- as.numeric(Cl(back_price[to_day]))
-# Calculate the constant maturity 30-day futures price
-fra_c <- as.numeric(maturi_ty - front_date) /
-  as.numeric(back_date - front_date)
-pric_e <- (fra_c*back_price +
-  (1-fra_c)*front_price)
-library(HighFreq)
-x11(width=5, height=3)  # Open x11 for plotting
-# Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
-# plot VIX and SVXY data in x11 window
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- "blue"
-chart_Series(x=Cl(vix_env$vix_index["2007/"]),
-       theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
-       theme=plot_theme, name="VTI ETF")
-chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
-       theme=plot_theme, name="VIX Index")
-chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
-       theme=plot_theme, name="SVXY ETF")
-library(xtable)
-# Read etf database into data frame
-fundamental_data <-
-  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
-               stringsAsFactors=FALSE)
-print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
-library(xtable)
-# Read etf database into data frame
-fundamental_data <-
-  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
-               stringsAsFactors=FALSE)
-print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
-library(Quandl)  # Load package Quandl
-# Register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-
-# Quandl stock market data
-# https://blog.quandl.com/stock-market-data-ultimate-guide-part-1
-# https://blog.quandl.com/stock-market-data-the-ultimate-guide-part-2
-
-# Download RAYMOND metadata
-# https://www.quandl.com/data/RAYMOND-Raymond/documentation/metadata
-
-# Download S&P500 Index sonstituents
-# https://s3.amazonaws.com/static.quandl.com/tickers/SP500.csv
-
-# Download AAPL gross profits from RAYMOND
-prof_it <-
-  Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q", type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-
-# Download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-   start_date="2013-01-01", type="xts")
-
-# Download datasets for AAPL
-# https://www.quandl.com/api/v3/datasets/WIKI/AAPL.json
-
-# Download metadata for AAPL
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-   start_date="2013-01-01", type="xts")
-# https://www.quandl.com/api/v3/datasets/WIKI/AAPL/metadata.json
-
-# scrape fundamental data from Google using quantmod - doesn't work
-funda_mentals <- getFinancials("HPQ", src="google", auto.assign=FALSE)
-# view quarterly fundamentals
-viewFinancials(funda_mentals,  period="Q")
-viewFinancials(funda_mentals)
-
-# scrape fundamental data from Yahoo using quantmod
-# table of Yahoo data fields
-# http://www.financialwisdomforum.org/gummy-stuff/Yahoo-data.htm
-
-met_rics <- yahooQF(c("Price/Sales",
-                "P/E Ratio",
-                "Price/EPS Estimate Next Year",
-                "PEG Ratio",
-                "Dividend Yield",
-                "Market Capitalization"))
-
-
-sym_bols <- c("AAPL", "IBM", "MSFT")
-# Not all the metrics are returned by Yahoo.
-funda_mentals <- getQuote(paste(sym_bols, sep="", collapse=";"), src="yahoo", what=met_rics)
-viewFinancials(funda_mentals,  period="Q")
-
-funda_mentals <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
-viewFinancials(funda_mentals)
-
-
-library(HighFreq)  # Load package HighFreq
-install.packages("devtools")
-library(devtools)
-# Install package WRDS from github
-install_github("WRDS/R-package")
-library(WRDS)  # Load package WRDS
-# Register WRDS API key
-WRDS.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("WRDS")
-# Load help page
-help(package="WRDS")
-# Remove WRDS from search path
-detach("package:WRDS")
-library(HighFreq)  # Load package HighFreq
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# Download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-            start_date="1990-01-01",
-            type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-       name="XOM stock")
-library(HighFreq)  # Load package HighFreq
-# Download Fama-French factors from KFRENCH database
-fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
-  start_date="2001-01-01", type="xts")
-dim(fac_tors)
-head(fac_tors)
-tail(fac_tors)
-chart_Series(cumsum(fac_tors["2001/", 1]/100),
-  name="Fama-French factors")
-# Load package HighFreq
-library(HighFreq)
-head(SPY_TAQ)
-# Load package HighFreq
-library(HighFreq)
-head(SPY)
-# Install package HighFreq from github
-devtools::install_github(repo="algoquant/HighFreq")
-# Load package HighFreq
-library(HighFreq)
-# get documentation for package HighFreq
-# get short description
-packageDescription("HighFreq")
-# Load help page
-help(package="HighFreq")
-# List all datasets in "HighFreq"
-data(package="HighFreq")
-# List all objects in "HighFreq"
-ls("package:HighFreq")
-# Remove HighFreq from search path
-detach("package:HighFreq")
-# Load package HighFreq
-library(HighFreq)
-# you can see SPY when listing objects in HighFreq
-ls("package:HighFreq")
-# you can see SPY when listing datasets in HighFreq
-data(package="HighFreq")
-# but the SPY dataset isn't listed in the workspace
-ls()
-# HighFreq datasets are lazy loaded and available when needed
-head(SPY)
-# Load all the datasets in package HighFreq
-data(hf_data)
-# HighFreq datasets are now loaded and in the workspace
-head(SPY)
-# Library(xts)  # Load package xts
-# Load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-data(managers)  # Load "managers" data set
-ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
-                "SP500 TR")]
-
-chart.CumReturns(ham_1, lwd=2, ylab="",
-  legend.loc="topleft", main="")
-# Add title
-title(main="Managers cumulative returns",
-line=-1)
-# Install package IBrokers
-install.packages("IBrokers")
-# Load package IBrokers
-library(IBrokers)
-# get documentation for package IBrokers
-# get short description
-packageDescription("IBrokers")
-# Load help page
-help(package="IBrokers")
-# List all datasets in "IBrokers"
-data(package="IBrokers")
-# List all objects in "IBrokers"
-ls("package:IBrokers")
-# Remove IBrokers from search path
-detach("package:IBrokers")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Or connect to IB Gateway
-# Ib_connect <- ibgConnect(port=4002)
-# Check connection
-IBrokers::isConnected(ib_connect)
-# Download Interactive Brokers account information
-ib_account <- IBrokers::reqAccountUpdates(conn=ib_connect, acctCode="DI1207807")
-foo <- ib_account[[1]]
-foo$AvailableFunds
-
-ib_account <- IBrokers::.reqAccountUpdates(conn=ib_connect,  subscribe=TRUE, acctCode="DI1207807")
-
-
-IBrokers::twsPortfolioValue(ib_account)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
-# Define CHF currency contract
-con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
-# test if contract object is correct
-IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Install the package twsInstrument
-install.packages("twsInstrument", repos="http://r-forge.r-project.org")
-# Define euro future using getContract() and Conid
-con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Define VIX monthly and weekly futures October 2018 contract
-sym_bol <- "VIX"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="CFE", expiry="201810")
-# Define VIX monthly futures October 2018 contract
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  local="VXV8", exch="CFE", expiry="201810")
-# Define VIX weekly futures October 3rd 2018 contract
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  local="VX40V8", exch="CFE", expiry="201810")
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect,
-  Contract=con_tract)
-# Define S&P Emini futures December 2018 contract
-sym_bol <- "ES"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_201812.csv"))
-file_connect <- file(file_name, open="w")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
-  Contract=con_tract,
-  # whatToShow="MIDPOINT",
-  # endDateTime=ib_time,
-  barSize="1 day", duration="6 M",
-  file=file_connect)
-# Close data file
-close(file_connect)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Define S&P Emini futures June 2018 contract
-sym_bol <- "ES"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  include_expired="1",
-  exch="GLOBEX", expiry="201806")
-# Open file for ESM8 data download
-file_name <- file.path(data_dir, paste0(sym_bol, "M8.csv"))
-file_connect <- file(file_name, open="w")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
-  Contract=con_tract,
-  barSize="1 day", duration="2 Y",
-  file=file_connect)
-# Close data file
-close(file_connect)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Load OHLC data and coerce it into xts series
-price_s <- data.table::fread(file_name)
-data.table::setDF(price_s)
-price_s <- xts::xts(price_s[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
-    tz="America/New_York", origin="1970-01-01")))
-colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
-# plot OHLC data in x11 window
-chart_Series(x=price_s, TA="add_Vo()",
-  name="S&P500 ESM8 futures")
-# plot dygraph
-dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM8 futures") %>%
-  dyCandlestick()
-# Define S&P Emini futures June 2018 contract
-sym_bol <- "ES"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  include_expired="1",
-  exch="GLOBEX", expiry="201806")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
-file_connect <- file(file_name, open="w")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Download historical data to file
-IBrokers::reqHistoricalData(conn=ib_connect,
-  Contract=con_tract,
-  barSize="1 day", duration="6 M",
-  file=file_connect)
-# Close data file
-close(file_connect)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Define S&P Emini futures December 2018 contract
-sym_bol <- "ES"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_taq_live.csv"))
-file_connect <- file(file_name, open="w")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Download live data to file
-IBrokers::reqMktData(conn=ib_connect,
-     Contract=con_tract,
-     eventWrapper=eWrapper.MktData.CSV(1),
-     file=file_connect)
-# Close data file
-close(file_connect)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Define S&P Emini futures December 2018 contract
-sym_bol <- "ES"
-con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_ohlc_live.csv"))
-file_connect <- file(file_name, open="w")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-# Download live data to file
-IBrokers::reqRealTimeBars(conn=ib_connect,
-     Contract=con_tract, barSize="1",
-     eventWrapper=eWrapper.RealTimeBars.CSV(1),
-     file=file_connect)
-# Close data file
-close(file_connect)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-# Load OHLC data and coerce it into xts series
-price_s <- data.table::fread(file_name)
-data.table::setDF(price_s)
-price_s <- xts::xts(price_s[, 2:6],
-  order.by=as.POSIXct.numeric(price_s[, 1],
-    tz="America/New_York", origin="1970-01-01"))
-colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
-# Plot OHLC data in x11 window
-chart_Series(x=price_s, TA="add_Vo()",
-  name="S&P500 ESZ8 futures")
-# Plot dygraph
-dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESZ8 futures") %>%
-  dyCandlestick()
-# Define S&P Emini future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201812")
-# Define euro currency contract EUR.USD
-con_tract <- IBrokers::twsCurrency("EUR", currency="USD")
-# Define euro currency E-mini futures December 2018 contract E7Z8
-con_tract <- IBrokers::twsFuture(symbol="E7", exch="GLOBEX", expiry="201812")
-# Define Japanese yen currency contract JPY.USD
-con_tract <- IBrokers::twsCurrency("JPY", currency="USD")
-# Define Japanese yen currency E-mini futures December 2018 contract J7Z8
-con_tract <- IBrokers::twsFuture(symbol="J7", exch="GLOBEX", expiry="201812")
-# Define Japanese yen currency futures December 2018 contract 6JZ8
-con_tract <- IBrokers::twsFuture(symbol="JPY", exch="GLOBEX", expiry="201812")
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Request trade order ID
-order_id <- IBrokers::reqIds(ib_connect)
-# Create buy market order object
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="BUY", totalQuantity=1)
-# Place trade order
-IBrokers::placeOrder(ib_connect, con_tract, ib_order)
-# Execute sell market order
-order_id <- IBrokers::reqIds(ib_connect)
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="SELL", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, con_tract, ib_order)
-# Execute buy market order
-order_id <- IBrokers::reqIds(ib_connect)
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="BUY", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, con_tract, ib_order)
-# Request trade order ID
-order_id <- IBrokers::reqIds(ib_connect)
-# Create buy limit order object
-ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
-  lmtPrice="1.1511", action="BUY", totalQuantity=1)
-# Place trade order
-IBrokers::placeOrder(ib_connect, con_tract, ib_order)
-# Cancel trade order
-IBrokers::cancelOrder(ib_connect, order_id)
-# Execute sell limit order
-order_id <- IBrokers::reqIds(ib_connect)
-ib_order <- IBrokers::twsOrder(order_id, orderType="LMT",
-  lmtPrice="1.1512", action="SELL", totalQuantity=1)
-IBrokers::placeOrder(ib_connect, con_tract, ib_order)
-# Cancel trade order
-IBrokers::cancelOrder(ib_connect, order_id)
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-eWrapper_realtimebars <- function (n = 1) {
-  eW <- eWrapper_new(NULL)
-  # eW <- IBrokers::eWrapper(NULL)
-  eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_, 7), ncol = 7), 0), .Dimnames = list(NULL, c("Open", "High", "Low", "Close", "Volume", "WAP", "Count")))), n))
-  eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...) {
-    id <- as.numeric(msg[2])
-    file <- file[[id]]
-    data <- eW$get.Data("data")
-    attr(data[[id]], "index") <- as.numeric(msg[3])
-    nr.data <- NROW(data[[id]])
-    # write to file
-    cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
-    # write to console
-    # eW$count_er <- eW$count_er + 1
-    eW$assign.Data("count_er", eW$get.Data("count_er")+1)
-    cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
-    # cat(paste0("Open=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
-    #Trade
-    # Cancel previous trade orders
-    buy_id <- eW$get.Data("buy_id")
-    sell_id <- eW$get.Data("sell_id")
-    if (buy_id>0) IBrokers::cancelOrder(ib_connect, buy_id)
-    if (sell_id>0) IBrokers::cancelOrder(ib_connect, sell_id)
-    # Execute buy limit order
-    buy_id <- IBrokers::reqIds(ib_connect)
-    buy_order <- IBrokers::twsOrder(buy_id, orderType="LMT",
-                              lmtPrice=msg[6]-0.25, action="BUY", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, con_tract, buy_order)
-    # Execute sell limit order
-    sell_id <- IBrokers::reqIds(ib_connect)
-    sell_order <- IBrokers::twsOrder(sell_id, orderType="LMT",
-                               lmtPrice=msg[5]+0.25, action="SELL", totalQuantity=1)
-    IBrokers::placeOrder(ib_connect, con_tract, sell_order)
-    # Copy new trade orders
-    eW$assign.Data("buy_id", buy_id)
-    eW$assign.Data("sell_id", sell_id)
-    #Trade finished
-    data[[id]][nr.data, 1:7] <- as.numeric(msg[4:10])
-    eW$assign.Data("data", data)
-    c(curMsg, msg)
-  }  # end eW$realtimeBars
-  return(eW)
-}  # end eWrapper_realtimebars
-# Define S&P Emini futures December 2018 contract
-snp_contract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define VIX futures December 2018 contract
-vix_contract <- IBrokers::twsFuture(symbol="VIX",
-  local="VXZ8", exch="CFE", expiry="201812")
-# Define 10yr Treasury futures December 2018 contract
-trs_contract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define Emini gold futures December 2018 contract
-gold_contract <- IBrokers::twsFuture(symbol="YG",
-  exch="NYSELIFFE", expiry="201812")
-# Define euro currency future December 2018 contract
-euro_contract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201812")
-IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
-
-# Define data directory
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
-
-# Open file for error messages
-file_root <- "replay"
-file_name <- file.path(data_dir, paste0(file_root, "_error.csv"))
-error_connect <- file(file_name, open="w")
-
-# Open file for raw data
-file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
-raw_connect <- file(file_name, open="w")
-
-# Create empty eWrapper to redirect error messages to error file
-error_ewrapper <- eWrapper(debug=NULL, errfile=error_connect)
-
-# Create eWrapper for raw data
-raw_ewrapper <- eWrapper(debug=TRUE)
-
-# Redirect error messages to error eWrapper (error_ewrapper),
-# by replacing handler function errorMessage() in raw_ewrapper
-raw_ewrapper$errorMessage <- error_ewrapper$errorMessage
-
-# Connect to Interactive Brokers TWS
-ib_connect <- IBrokers::twsConnect(port=7497)
-
-# Download raw data for multiple contracts for replay
-IBrokers::reqMktData(ib_connect,
-  list(snp_contract, vix_contract, trs_contract, gold_contract, euro_contract),
-  eventWrapper=raw_ewrapper, file=raw_connect)
-
-# Close the Interactive Brokers API connection
-IBrokers::twsDisconnect(ib_connect)
-
-# Close data files
-close(raw_connect)
-close(error_connect)
-
-Replay the raw data
-
-# Open file with raw data
-file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
-raw_connect <- IBrokers::twsConnect(file_name)
-class(raw_connect) <- c("twsPlayback", class(raw_connect))
-# Replay the raw data
-IBrokers::reqMktData(raw_connect, list(snp_contract, vix_contract))
-
-# Open file for data
-file_connect <- file(file.path(data_dir, "temp.csv"), open="w")
-# Download TAQ data to file
-IBrokers::reqMktData(conn=raw_connect,
-     Contract=snp_contract,
-     eventWrapper=eWrapper.MktData.CSV(1),
-     file=file_connect)
-
-# Close file for TAQ data
-close(file_connect)
-# Close file with raw data
-IBrokers::twsDisconnect(raw_connect)
-
-# Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
-# Define CHF currency contract
-con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
-# test if contract object is correct
-IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Install the package twsInstrument
-install.packages("twsInstrument", repos="http://r-forge.r-project.org")
-# Define euro future using getContract() and Conid
-con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
-# Define CHF currency contract
-con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
-# test if contract object is correct
-IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Install the package twsInstrument
-install.packages("twsInstrument", repos="http://r-forge.r-project.org")
-# Define euro future using getContract() and Conid
-con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
-IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)

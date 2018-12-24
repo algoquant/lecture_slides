@@ -493,7 +493,7 @@ zoo_agg <- aggregate(zoo_series, by=dates_agg,
 # merge with original zoo - union of dates
 zoo_agg <- cbind(zoo_series, zoo_agg)
 # replace NA's using locf
-zoo_agg <- na.locf(zoo_agg)
+zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
 # extract aggregated zoo
 zoo_agg <- zoo_agg[index(zoo_series), 2]
 # library(HighFreq)  # load package HighFreq
@@ -529,7 +529,7 @@ zoo_mean <- rollapply(zoo_series, width=11,
 # merge with original zoo - union of dates
 zoo_mean <- cbind(zoo_series, zoo_mean)
 # replace NA's using na.locf
-zoo_mean <- na.locf(zoo_mean, fromLast=TRUE)
+zoo_mean <- na.locf(zoo_mean, na.rm=FALSE, fromLast=TRUE)
 # extract mean zoo
 zoo_mean <- zoo_mean[index(zoo_series), 2]
 # plot original and interpolated zoo

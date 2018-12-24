@@ -355,12 +355,6 @@ summary(microbenchmark(  # assign values to vector three different ways
   for_loop={vec_tor <- numeric(10)
     for (in_dex in seq_along(vec_tor))
       vec_tor[in_dex] <- 2},
-# very slow because no memory is pre-allocated
-# "vec_tor" is "grown" with each new element
-  grow_vec={vec_tor <- numeric(0)
-    for (in_dex in 1:10)
-# add new element to "vec_tor" ("grow" it)
-      vec_tor[in_dex] <- 2},
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 summary(microbenchmark(  # assign values to vector two different ways
 # fast vectorized assignment loop performed in C using brackets "[]"

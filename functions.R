@@ -588,17 +588,17 @@ methods(generic.function="merge")
 # get generic function methods applied to "zoo" objects
 methods(class="zoo")
 # define a generic function
-gen_sum <- function (a, b, ...) {
+gen_sum <- function(a, b, ...) {
   UseMethod("gen_sum")
 }  # end gen_sum
 
 # define method for "numeric" class
-gen_sum.numeric <- function (a, b, ...) {
+gen_sum.numeric <- function(a, b, ...) {
   sum(a, b)
 }  # end gen_sum.character
 
 # define method for "character" class
-gen_sum.character <- function (a, b, ...) {
+gen_sum.character <- function(a, b, ...) {
   paste(a, "plus", b)
 }  # end gen_sum.character
 
@@ -609,7 +609,7 @@ gen_sum("a", "b")
 # 'cbind' is an internal generic function
 cbind
 # define "+" method for "character" class
-"+.character" <- function (a, b, ...) {
+"+.character" <- function(a, b, ...) {
   paste(a, "plus", b)
 }  # end +.character
 methods("+")  # view methods for "+" operator
@@ -629,7 +629,7 @@ obj_string <- "how are you today?"
 class(obj_string) <- "string"
 obj_string
 # overload "print" method for string objects
-print.string <- function (str_ing) {
+print.string <- function(str_ing) {
   print(
     paste(strsplit(str_ing, split=" ")[[1]],
   collapse=" + "))
@@ -651,15 +651,15 @@ methods("+")  # view methods for "+" operator
 # add two "character" objects
 "a" + "b"
 # overwrite "+" operator with a generic function
-"+" <- function (a, b, ...) {
+"+" <- function(a, b, ...) {
   UseMethod("+")
 }  # end gen_sum
 # define method for "numeric" class
-"+.numeric" <- function (a, b, ...) {
+"+.numeric" <- function(a, b, ...) {
   sum(a, b)
 }  # end gen_sum.character
 # define method for "character" class
-"+.character" <- function (a, b, ...) {
+"+.character" <- function(a, b, ...) {
   paste(a, "plus", b)
 }  # end gen_sum.character
 methods("+")  # view methods for "+" operator
@@ -693,21 +693,21 @@ last.zoo_xtra <- function(in_ts) {
 last(new_zoo)  # doesn't work
 last.zoo_xtra(new_zoo)  # works
 # define a generic function
-last <- function (a, b, ...) {
+last <- function(a, b, ...) {
   UseMethod("last")
 }  # end last
 last(new_zoo)  # now works
 # define generic "string" class converter
-as.string <- function (str_ing, ...)
+as.string <- function(str_ing, ...)
   UseMethod("as.string")
 # default "string" class converter
-as.string.default <- function (str_ing, ...)
+as.string.default <- function(str_ing, ...)
   structure(str_ing, class="string", ...)
 # numeric "string" class converter
-as.string.numeric <- function (str_ing, ...)
+as.string.numeric <- function(str_ing, ...)
   structure(as.character(str_ing), class="string", ...)
 # "string" class checker
-is.string <- function (str_ing)
+is.string <- function(str_ing)
   inherits(x=str_ing, what="string")
 # define "string" object
 obj_string <- as.string("how are you today?")

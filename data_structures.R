@@ -541,7 +541,7 @@ se_ries <- rutils::etf_env$price_s[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
 library(microbenchmark)
