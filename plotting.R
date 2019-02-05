@@ -368,6 +368,71 @@ boxplot(x=pois_counts, ylab="counts",
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
+# Create a plotting expression
+ex_pr <- quote({
+  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+  deg_free <- 2:20
+  rang_e <- (1:NROW(deg_free))
+  in_dex <- 4
+  # Plot a curve
+  curve(expr=dchisq(x, df=deg_free[in_dex]),
+xlim=c(0, 30), ylim=c(0, 0.2),
+xlab="", ylab="", lwd=3, col="red")
+  # Add grey lines to plot
+  for (it in rang_e[-in_dex]) {
+    curve(expr=dchisq(x, df=deg_free[it]),
+  xlim=c(0, 30), ylim=c(0, 0.2),
+  xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
+  }  # end for
+  # add title
+  title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
+  # add legend
+  text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
+      deg_free[in_dex]), pos=1, cex=1.3)
+})  # end quote
+# View the plotting expression
+ex_pr
+# Create plot by evaluating the plotting expression
+x11(width=6, height=4)
+eval(ex_pr)
+library(animation)
+# Create an expression for creating multiple plots
+ex_pr <- quote({
+  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+  deg_free <- 2:20
+  rang_e <- (1:NROW(deg_free))
+  # Set image refesh interval
+  animation::ani.options(interval=0.25)
+  # Create multiple plots with curves
+  for (in_dex in rang_e) {
+    curve(expr=dchisq(x, df=deg_free[in_dex]),
+  xlim=c(0, 30), ylim=c(0, 0.2),
+  xlab="", ylab="", lwd=3, col="red")
+    # add grey lines to plot
+    for (it in rang_e[-in_dex]) {
+      curve(expr=dchisq(x, df=deg_free[it]),
+    xlim=c(0, 30), ylim=c(0, 0.2),
+    xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
+    }  # end for
+    # add title
+    title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
+    # add legend
+    text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
+      deg_free[in_dex]), pos=1, cex=1.3)
+  }  # end for
+})  # end quote
+# Create plot by evaluating the plotting expression
+x11(width=6, height=4)
+eval(ex_pr)
+# Create gif with animated plot
+animation::saveGIF(expr=eval(ex_pr),
+  movie.name="chi_squared.gif",
+  img.name="chi_squared")
+# Create html with animated plot
+animation::saveHTML(expr=eval(ex_pr),
+  img.name="chi_squared",
+  htmlfile="chi_squared.html",
+  description="Chi-squared Distributions")  # end saveHTML
 # R startup chunk
 # ```{r setup, include=FALSE}
 library(shiny)

@@ -50,7 +50,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Control Statements, Operators and Debugging]{Control Statements, Operators and Debugging}
-\subtitle{FRE6871 \& FRE7241, Fall 2018}
+\subtitle{FRE6871 \& FRE7241, Spring 2019}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -534,37 +534,44 @@ rm(test_env)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Creating and Evaluating Symbols and Expressions}
+\subsection{Metaprogramming in \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{as.symbol()} converts a character string into a \texttt{symbol},
+      A powerful feature of \texttt{R} is \emph{non-standard evaluation} (aka \emph{metaprogramming} or \emph{programming on the language}).
       \vskip1ex
-      \texttt{expressions} are objects that represent \texttt{R} formulas and commands,
+      Unevaluated \emph{expressions} are objects that represent \texttt{R} formulas and commands.
       \vskip1ex
-      \texttt{parse()} converts a character string into an \texttt{expression},
+      \emph{Metaprogramming} allows creating and manipulating unevaluated \texttt{R} \emph{expressions} and then executing them as needed.
       \vskip1ex
-      \texttt{eval()} evaluates a \texttt{symbol} or \texttt{expression} in a specified \emph{environment},
+      The book \href{http://adv-r.had.co.nz/}{\emph{Advanced \texttt{R}}} by Hadley Wickham provides a good explanation of 
+      \href{http://adv-r.had.co.nz/Computing-on-the-language.html}{\emph{metaprogramming} in \texttt{R}} and 
+      \href{http://adv-r.had.co.nz/Expressions.html}{\texttt{R} \emph{expressions}}. 
       \vskip1ex
-      \texttt{R} interprets character strings that are not in quotes ("") as \texttt{symbols} or \texttt{expressions},
+      \texttt{R} interprets character strings that are not in quotes "" as \emph{symbols} or \emph{expressions}.
+      \vskip1ex
+      The function \texttt{as.symbol()} converts a character string into a \emph{symbol} object.
+      \vskip1ex
+      The function \texttt{parse()} converts a character string into an unevaluated \emph{expression} object.
+      \vskip1ex
+      The function \texttt{eval()} evaluates a \emph{symbol} or \emph{expression} in a specified \emph{environment}.
     \column{0.5\textwidth}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
 rm(list=ls())  # delete all objects
-# convert string to symbol
+# Convert string to symbol
 as.symbol("some_string")
-# name is synonymous with symbol
+# The "name" class is synonymous with a symbol
 class(as.symbol("some_string"))
-# symbols are created during assignments
+# Symbols are created during assignments
 sym_bol <- 2
-# evaluate symbol (same as typing it)
+# Evaluate symbol (same as typing it)
 eval(sym_bol)
-# convert string to symbol and evaluate it
+# Convert string into a symbol and evaluate it
 eval(as.symbol("sym_bol"))
-
-# convert string to expression
+# Convert string into unevaluated expression
 ex_pression <- parse(text="ne_w <- sym_bol")
 ex_pression
 class(ex_pression)
@@ -586,29 +593,45 @@ ne_w
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{quote()} accepts \texttt{symbols} or \texttt{expressions}, and returns them without evaluating them,
+      The function \texttt{quote()} accepts \emph{symbols} and \emph{expressions}, and returns an \emph{expression} object without evaluating it.
       \vskip1ex
-      The function \texttt{substitute()} substitutes object names (that may be part of \texttt{expressions}), with their corresponding values, and returns an \texttt{expression},
+      The function \texttt{quote()} creates unevaluated \emph{expression} objects which later can be evaluated by functions.
       \vskip1ex
-      \texttt{substitute()} looks up the object names in either named \texttt{lists} (symbol-value pairs) or \texttt{environments}, and evaluates the objects in them,
+      The function \texttt{substitute()} replaces objects in unevaluated expressions with their corresponding values, and returns an \emph{expression}.
       \vskip1ex
-      \texttt{substitute()} is often used inside functions to substitute formal arguments with names of actual arguments,
+      \texttt{substitute()} looks up the object names in either named \texttt{lists} (symbol-value pairs) or in \texttt{environments}, and evaluates the objects in them.
+      \vskip1ex
+      \texttt{substitute()} is often used inside functions to substitute formal arguments with the names of the actual arguments they are bound to in a function call.
     \column{0.5\textwidth}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
-# return expression without evaluating it
-quote(sym_bol + ne_w)
-# substitute objects in an expression
-ex_pression <- substitute(sym_bol + ne_w,
-                      env=list(sym_bol=1, ne_w=2))
+# Create the expression "1+1"
+quote(1+1)
+# Evaluate the expression "1+1"
+eval(quote(1+1))
+# Create an expression containing several commands
+ex_pression <- quote({x <- 1; y <- 2; x+y})
+ex_pression
+# Evaluate all the commands in the expression
+eval(ex_pression)
+ls()
+# Return an expression without evaluating it
+ne_w <- 2*sym_bol
+ex_pression <- quote(sym_bol + ne_w)
 ex_pression
 eval(ex_pression)  # evaluate expression
-make_expression <- function(in_put) {
-  substitute(sym_bol + in_put)
-}  # end make_expression
-make_expression(1)
+# Substitute objects in an expression
+ex_pression <- substitute(sym_bol + ne_w,
+                          env=list(sym_bol=1, ne_w=2))
+ex_pression
+eval(ex_pression)  # evaluate expression
+# get_input() substitutes its formal argument with the actual argument
+get_input <- function(in_put) {
+  substitute(in_put)
+}  # end get_input
 my_var <- 2
-make_expression(my_var)
+get_input(my_var)
+eval(get_input(my_var))
       @
   \end{columns}
 \end{block}
@@ -623,31 +646,28 @@ make_expression(my_var)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{deparse()} converts \texttt{symbols} and \texttt{expressions} into character strings,
+      The function \texttt{deparse()} is the opposite of \texttt{parse()}, and it converts \emph{symbols} and \emph{expressions} into character strings.
       \vskip1ex
-      \texttt{quote()} accepts \texttt{symbols} and \texttt{expressions}, and returns them without evaluating them,
-      \vskip1ex
-      The function \texttt{substitute()} substitutes object names (that may be part of \texttt{expressions}), with their corresponding values, and returns an \texttt{expression},
+      The combination of functions \texttt{deparse(substitute())} returns a character string representing the actual argument passed into a function.
     \column{0.5\textwidth}
       \vspace{-1em}
             <<echo=TRUE,eval=FALSE>>=
-# define symbol
+# Define symbol
 my_var <- 10
-# convert symbol value into string
+# Convert symbol value into string
 deparse(my_var)
-# convert symbol into string without evaluating it
+# Convert symbol into string without evaluating it
 deparse(quote(my_var))
-# substitute object with value from named list
-deparse(substitute(sym_bol + ne_w,
-                   env=list(ne_w=2)))
-# capture name of input argument
-deparse_name <- function(in_put) {
+# Substitute object with value from named list
+sym_bol <- 2
+deparse(substitute(sym_bol + my_var,
+                   env=list(my_var=2)))
+# Create string with name of input argument
+get_name <- function(in_put) {
   names(in_put) <- deparse(substitute(in_put))
   in_put
-}  # end deparse_name
-deparse_name(my_var)
-my_var <- deparse_name(my_var)
-my_var
+}  # end get_name
+get_name(my_var)
       @
   \end{columns}
 \end{block}

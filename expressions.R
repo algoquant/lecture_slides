@@ -174,7 +174,7 @@ rm(test_env)
 rm(list=ls())  # delete all objects
 # convert string to symbol
 as.symbol("some_string")
-# name is synonymous with symbol
+# name class is synonymous with symbol
 class(as.symbol("some_string"))
 # symbols are created during assignments
 sym_bol <- 2
@@ -191,36 +191,48 @@ ls()
 eval(ex_pression)  # evaluate expression
 ls()  # expression evaluation created new object
 ne_w
-# return expression without evaluating it
-quote(sym_bol + ne_w)
-# substitute objects in an expression
-ex_pression <- substitute(sym_bol + ne_w,
-          env=list(sym_bol=1, ne_w=2))
+# Create the expression "1+1"
+quote(1+1)
+# Evaluate the expression "1+1"
+eval(quote(1+1))
+# Create an expression containing several commands
+ex_pression <- quote({x <- 1; y <- 2; x+y})
+ex_pression
+# Evaluate all the commands in the expression
+eval(ex_pression)
+# Return an expression without evaluating it
+ne_w <- 2*sym_bol
+ex_pression <- quote(sym_bol + ne_w)
 ex_pression
 eval(ex_pression)  # evaluate expression
-make_expression <- function(in_put) {
-  substitute(sym_bol + in_put)
-}  # end make_expression
-make_expression(1)
+# Substitute objects in an expression
+ex_pression <- substitute(sym_bol + ne_w,
+              env=list(sym_bol=1, ne_w=2))
+ex_pression
+eval(ex_pression)  # evaluate expression
+# make_expr() substitutes its formal argument with the actual argument
+make_expr <- function(in_put) {
+  substitute(in_put)
+}  # end make_expr
+make_expr(1)
 my_var <- 2
-make_expression(my_var)
-# define symbol
+make_expr(my_var)
+eval(make_expr(my_var))
+# Define symbol
 my_var <- 10
-# convert symbol value into string
+# Convert symbol value into string
 deparse(my_var)
-# convert symbol into string without evaluating it
+# Convert symbol into string without evaluating it
 deparse(quote(my_var))
-# substitute object with value from named list
+# Substitute object with value from named list
 deparse(substitute(sym_bol + ne_w,
        env=list(ne_w=2)))
-# capture name of input argument
+# Create string with name of input argument
 deparse_name <- function(in_put) {
   names(in_put) <- deparse(substitute(in_put))
   in_put
 }  # end deparse_name
 deparse_name(my_var)
-my_var <- deparse_name(my_var)
-my_var
 rm(list=ls())
 # expressions enclosed in parenthesis are less ambiguous
 -2:5

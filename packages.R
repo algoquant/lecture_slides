@@ -32,10 +32,15 @@ install.packages(
   "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
   repos=NULL, type="source")
 getOption("defaultPackages")
-pack_info <- installed.packages()  # matrix of packages
+# matrix of installed package information
+pack_info <- installed.packages()
+dim(pack_info)
+# get all installed package names
+sort(unname(pack_info[, "Package"]))
 # get a few package names and their versions
 pack_info[sample(x=1:100, 5), c("Package", "Version")]
-t(pack_info["xts", ])  # get info for package "xts"
+# get info for package "xts"
+t(pack_info["xts", ])
 # list directories in "PortfolioAnalytics" sub-directory
 gsub(
   "C:/Users/Jerzy/Documents/R/win-library/3.1",
