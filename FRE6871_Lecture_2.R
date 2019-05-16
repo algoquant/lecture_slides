@@ -1,3 +1,142 @@
+# allocate character vector
+character()
+character(5)
+is.character(character(5))
+# allocate integer vector
+integer()
+integer(5)
+is.integer(integer(5))
+is.numeric(integer(5))
+# allocate numeric vector
+numeric()
+numeric(5)
+is.integer(numeric(5))
+is.numeric(numeric(5))
+# allocate Boolean vector
+vector()
+vector(length=5)
+# allocate numeric vector
+vector(length=5, mode="numeric")
+is.null(vector())
+# allocate Boolean matrix
+matrix()
+is.null(matrix())
+# allocate integer matrix
+matrix(NA_integer_, nrow=3, ncol=2)
+is.integer(matrix(NA_integer_, nrow=3, ncol=2))
+# allocate numeric matrix
+matrix(NA_real_, nrow=3, ncol=2)
+is.numeric(matrix(NA_real_, nrow=3, ncol=2))
+vec_tor <- sample(1:9)
+vec_tor
+vec_tor < 5  # element-wise comparison
+vec_tor == 5  # element-wise comparison
+mat_rix <- matrix(vec_tor, ncol=3)
+mat_rix
+mat_rix < 5  # element-wise comparison
+mat_rix == 5  # element-wise comparison
+mat_rix <- 1:6  # create a vector
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+structure(mat_rix, dim=c(2, 3))  # matrix object
+# adding dimension attribute coerces into matrix
+dim(mat_rix) <- c(2, 3)
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+# assign dimnames attribute
+dimnames(mat_rix) <- list(rows=c("row1", "row2"),
+                  columns=c("col1", "col2", "col3"))
+mat_rix
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+mat_rix
+# as.numeric strips dim attribute from matrix
+as.numeric(mat_rix)
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+vec_tor1 <- 1:3  # define vector
+vec_tor2 <- 6:4  # define vector
+# bind vectors into columns
+cbind(vec_tor1, vec_tor2)
+# bind vectors into rows
+rbind(vec_tor1, vec_tor2)
+# extend to four elements
+vec_tor2 <- c(vec_tor2, 7)
+# recycling rule applied
+cbind(vec_tor1, vec_tor2)
+# another example of recycling rule
+1:6 + c(10, 20)
+# replicate a single element
+rep("a", 5)
+# replicate the whole vector several times
+rep(c("a", "b"), 5)
+rep(c("a", "b"), times=5)
+# replicate the first element, then the second, etc.
+rep(c("a", "b"), each=5)
+# replicate to specified length
+rep(c("a", "b"), length.out=5)
+# define vector and matrix
+vec_tor1 <- c(2, 4, 3)
+mat_rix <- matrix(sample(1:12), ncol=3)
+# multiply matrix by vector column-wise
+vec_tor1 * mat_rix
+mat_rix * vec_tor1
+# multiply matrix by vector row-wise
+t(vec_tor1 * t(mat_rix))
+vec_tor1
+vec_tor2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_tor1 * vec_tor2
+# calculate inner product
+vec_tor1 %*% vec_tor2
+# calculate inner product and drop dimensions
+drop(vec_tor1 %*% vec_tor2)
+# multiply columns of matrix by vector
+mat_rix %*% vec_tor1  # single column matrix
+drop(mat_rix %*% vec_tor1)  # vector
+rowSums(t(vec_tor1 * t(mat_rix)))
+# using rowSums() and t() is 10 times slower than %*%
+library(microbenchmark)
+summary(microbenchmark(
+  in_ner=drop(mat_rix %*% vec_tor1),
+  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+library(microbenchmark)
+# multiply matrix by vector fails because dimensions aren't conformable
+vec_tor1 %*% mat_rix
+# works after transpose
+drop(vec_tor1 %*% t(mat_rix))
+# calculate inner product
+crossprod(vec_tor1, vec_tor2)
+# create matrix and vector
+mat_rix <- matrix(1:3000, ncol=3)
+tmat_rix <- t(mat_rix)
+vec_tor <- 1:3
+# crossprod is slightly faster than "%*%" operator
+summary(microbenchmark(
+  cross_prod=crossprod(tmat_rix, vec_tor),
+  inner_prod=mat_rix %*% vec_tor,
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# define named vectors
+vec_tor1 <- sample(1:4)
+names(vec_tor1) <-
+  paste0("row", 1:4, "=", vec_tor1)
+vec_tor1
+vec_tor2 <- sample(1:3)
+names(vec_tor2) <-
+  paste0("col", 1:3, "=", vec_tor2)
+vec_tor2
+# calculate outer product of two vectors
+mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix
+# calculate vectorized function spanned over two vectors
+mat_rix <- outer(vec_tor1, vec_tor2,
+           FUN=function(x1, x2) x2*sin(x1))
+mat_rix
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -149,38 +288,29 @@ my_sqrt <- function(in_put) {
 my_sqrt(2)
 my_sqrt(-2)
 my_sqrt(NA)
-# recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
-  if (missing(...)) {  # check if dots are empty
-    return(in_put)  # just one argument left
-  } else {
-    in_put + sum_dots(...)  # sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-# recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
-  if (NROW(list(...)) == 0) {  # check if dots are empty
-    return(in_put)  # just one argument left
-  } else {
-    in_put + sum_dots(...)  # sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
-  } else {
-    c(0, 1)  # initialize and return
-  }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
 # show the function code
 plot.default
 # display function
 getAnywhere(plot.default)
+setwd("C:/Develop/R/lecture_slides/data")
+rm(list=ls())  # remove all objects
+ls()  # list objects
+# load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # list objects
+glob_var <- 1  # define a global variable
+# explore function scope and side effects
+side_effect <- function() {
+  cat("global glob_var:\t", glob_var, "\n")
+# define local "glob_var" variable
+  glob_var <- 10
+# re-define the global "glob_var"
+  glob_var <<- 2
+  cat("local glob_var:\t", glob_var, "\n")
+}  # end side_effect
+side_effect()
+# global variable was modified as side effect
+glob_var
 # func_tional accepts function name and additional argument
 func_tional <- function(func_name, in_put) {
 # produce function name from argument
@@ -273,24 +403,24 @@ apply(mat_rix, 2, median)
 # calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
 rm(list=ls())
-# DAX percent returns
-dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
+# DAX percentage returns
+re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 library(moments)  # load package moments
 str(moment)  # get list of arguments
 # apply moment function
-moment(x=dax_rets, order=3)
+moment(x=re_turns, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
-  moment(x=dax_rets, order=moment_order)
+  moment(x=re_turns, order=moment_order)
 }  # end anonymous function
       )  # end apply
 
 # another way of passing parameters into moment() function
 apply(X=moment_orders, MARGIN=1, FUN=moment,
-      x=dax_rets)
+      x=re_turns)
 # function with three arguments
 my_func <- function(arg1, arg2, arg3) {
   c(arg1=arg1, arg2=arg2, arg3=arg3)
@@ -343,212 +473,6 @@ vapply(2:4, function(num) c(el1=num, el2=2*num),
 # vapply produces an error if it can't simplify
 vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean - MC estimate
-mean(sam_ple)
-# sample standard deviation - MC estimate
-sd(sam_ple)
-# Monte Carlo estimate of cumulative probability
-sam_ple <- sort(sam_ple)
-pnorm(1)
-sum(sam_ple<1)/len_gth
-# Monte Carlo estimate of quantile
-conf_level <- 0.99
-qnorm(conf_level)
-sam_ple[conf_level*len_gth]
-quantile(sam_ple, probs=conf_level)
-# analyze the source code of quantile()
-stats:::quantile.default
-# microbenchmark quantile
-library(microbenchmark)
-summary(microbenchmark(
-  sam_ple=sam_ple[cut_off],
-  quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
-pa_th[1] <- 0  # initialize path
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
- (pa_th[in_dex - 1] < bar_rier)) {
-# simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-# fill remaining pa_th after it crosses bar_rier
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-# simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
-# create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                              replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# bootstrap mean and median under Windows
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), sd=sd(x)))
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-stopCluster(clus_ter)  # stop R processes over cluster under Windows
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor),
- function(le_vel) {
-   sum(fac_tor==le_vel)
- })  # end sapply
-library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-       cold=50, pleasant=60,
-       warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-library(microbenchmark)
-da_ta <- sample(0:6) + 0.1
-da_ta
-cut(x=da_ta, breaks=c(2, 4, 6, 8))
-rbind(da_ta, cut(x=da_ta, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-# plot histogram
-par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-histo_gram <- hist(dax_rets, breaks=30,
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
-  xlab="", ylab="", freq=FALSE)
-# draw kernel density of histogram
-lines(density(dax_rets), col='red', lwd=2)
-# add density of normal distribution
-curve(expr=dnorm(x, mean=mean(dax_rets),
-  sd=sd(dax_rets)), add=TRUE, type="l",
-  lwd=2, col="blue")
-title(main="DAX return distribution", line=0)
-# add legend
-legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c(colnames(EuStockMarkets)[1], "Normal"),
-  lwd=6, bg="white", col=c("red", "blue"))
-# total area under histogram
-diff(histo_gram$breaks) %*% histo_gram$density
 library(quantmod)
 some_cars <- mtcars[sample(NROW(mtcars), 10), ]
 # plot scatterplot horsepower vs miles per gallon
@@ -1041,3 +965,124 @@ jarque.bera.test(dax_rets)
 
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(dax_rets)))
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# Monte Carlo estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+sam_ple[conf_level*len_gth]
+quantile(sam_ple, probs=conf_level)
+# analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+ (pa_th[in_dex - 1] < bar_rier)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses bar_rier
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+# simulate path of Brownian motion
+pa_th <- cumsum(rnorm(len_gth))
+# find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# fill remaining pa_th after it crosses bar_rier
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):len_gth] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+     start=c(2011, 1))
+# create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                              replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows

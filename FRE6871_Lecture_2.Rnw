@@ -60,7 +60,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{September 17, 2018}
+\date{April 15, 2019}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,6 +72,398 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Vectors and Matrices}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Allocating Memory to Vectors and Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} automatically allocates memory to new objects as needed during runtime, but at the cost of slowing down calculations,
+      \vskip1ex
+      Allocating memory of the correct \emph{mode} speeds up calculations by avoiding automatic memory allocation by \texttt{R},
+      \vskip1ex
+      The functions \texttt{character()}, \texttt{integer()}, and \texttt{numeric()} return zero-length vectors of the specified \emph{mode},
+      \vskip1ex
+      Zero length vectors are not the same as \texttt{NULL} objects,
+      \vskip1ex
+      The function \texttt{character(k)} returns a \texttt{character} vector of empty strings of length \texttt{k},
+      \vskip1ex
+      The function \texttt{integer(k)} returns a \texttt{integer} vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{numeric(k)} returns a \texttt{numeric} vector of zeros of length \texttt{k},
+      \vskip1ex
+      The function \texttt{vector()} by default returns a \texttt{Boolean} vector, unless the \emph{mode} is specified,
+      \vskip1ex
+      The function \texttt{matrix()} by default returns a \texttt{Boolean} matrix containing \texttt{NA} values, unless the \emph{mode} is specified,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+# allocate character vector
+character()
+character(5)
+is.character(character(5))
+# allocate integer vector
+integer()
+integer(5)
+is.integer(integer(5))
+is.numeric(integer(5))
+# allocate numeric vector
+numeric()
+numeric(5)
+is.integer(numeric(5))
+is.numeric(numeric(5))
+# allocate Boolean vector
+vector()
+vector(length=5)
+# allocate numeric vector
+vector(length=5, mode="numeric")
+is.null(vector())
+# allocate Boolean matrix
+matrix()
+is.null(matrix())
+# allocate integer matrix
+matrix(NA_integer_, nrow=3, ncol=2)
+is.integer(matrix(NA_integer_, nrow=3, ncol=2))
+# allocate numeric matrix
+matrix(NA_real_, nrow=3, ncol=2)
+is.numeric(matrix(NA_real_, nrow=3, ncol=2))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Logical Operators Applied to Vectors and Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      When logical operators are applied to vectors and matrices, they are applied element-wise, producing \texttt{Boolean} vectors and matrices,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+vec_tor <- sample(1:9)
+vec_tor
+vec_tor < 5  # element-wise comparison
+vec_tor == 5  # element-wise comparison
+mat_rix <- matrix(vec_tor, ncol=3)
+mat_rix
+mat_rix < 5  # element-wise comparison
+mat_rix == 5  # element-wise comparison
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Vectors Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Vectors can be coerced into matrices by adding a dimension attribute,
+      \vskip1ex
+      The \texttt{dimnames} attribute can be assigned a named list to convert it into a named matrix,
+      \vskip1ex
+      The function \texttt{structure()} adds attributes (specified as \texttt{symbol=value} pairs) to an object, and returns it,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+mat_rix <- 1:6  # create a vector
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+structure(mat_rix, dim=c(2, 3))  # matrix object
+# adding dimension attribute coerces into matrix
+dim(mat_rix) <- c(2, 3)
+class(mat_rix)  # get its class
+# is it vector or matrix?
+c(is.vector(mat_rix), is.matrix(mat_rix))
+# assign dimnames attribute
+dimnames(mat_rix) <- list(rows=c("row1", "row2"),
+                        columns=c("col1", "col2", "col3"))
+mat_rix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Matrices Into Other Types}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices can be explicitly coerced using the \texttt{"as.*"} coercion functions,
+      \vskip1ex
+      But coercion functions strip the \emph{attributes} from an object,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+mat_rix <- matrix(1:10, 2, 5)  # create matrix
+mat_rix
+# as.numeric strips dim attribute from matrix
+as.numeric(mat_rix)
+# explicitly coerce to "character"
+mat_rix <- as.character(mat_rix)
+c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
+# coercion converted matrix to vector
+c(is.matrix(mat_rix), is.vector(mat_rix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binding Vectors and Matrices Together}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Vectors can be bound into matrices using the functions \texttt{cbind()} and \texttt{rbind()},
+      \vskip1ex
+      The \emph{recycling rule} allows operations on vectors of different lengths:\\
+      \begin{enumerate}
+        \item Vectors are scanned from left to right,
+        \item Shorter vectors are extended in length by recycling their values until they match the length of longer vectors,
+      \end{enumerate}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+vec_tor1 <- 1:3  # define vector
+vec_tor2 <- 6:4  # define vector
+# bind vectors into columns
+cbind(vec_tor1, vec_tor2)
+# bind vectors into rows
+rbind(vec_tor1, vec_tor2)
+# extend to four elements
+vec_tor2 <- c(vec_tor2, 7)
+# recycling rule applied
+cbind(vec_tor1, vec_tor2)
+# another example of recycling rule
+1:6 + c(10, 20)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Replicating Objects Using \texttt{rep()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{rep()} replicates vectors and lists a given number of times,
+      \vskip1ex
+      \texttt{rep()} accepts a vector or list \texttt{"x"}, and an integer specifying the type and number of replications,
+      \vskip1ex
+      Argument \texttt{"times"} replicates the whole vector a given number of times,
+      \vskip1ex
+      Argument \texttt{"each"} replicates each vector element a given number of times,
+      \vskip1ex
+      Argument \texttt{"length.out"} replicates the whole vector a certain number of times, so that the output vector length is equal to \texttt{"length.out"},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# replicate a single element
+rep("a", 5)
+# replicate the whole vector several times
+rep(c("a", "b"), 5)
+rep(c("a", "b"), times=5)
+# replicate the first element, then the second, etc.
+rep(c("a", "b"), each=5)
+# replicate to specified length
+rep(c("a", "b"), length.out=5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multiplying Vectors and Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The multiplication \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices,
+      \vskip1ex
+      By default the matrix elements are multiplied column-wise by the vector elements: the first matrix element in the first column is multiplied by the first vector element, then the second matrix column is multiplied by the remaining vector elements, etc.
+      \vskip1ex
+      The \emph{recycling rule} is applied to the vector elements as needed,
+      \vskip1ex
+      The transpose function \texttt{t()} can be applied if we want to perform row-wise multiplication,
+     \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# define vector and matrix
+vec_tor1 <- c(2, 4, 3)
+mat_rix <- matrix(sample(1:12), ncol=3)
+# multiply matrix by vector column-wise
+vec_tor1 * mat_rix
+mat_rix * vec_tor1
+# multiply matrix by vector row-wise
+t(vec_tor1 * t(mat_rix))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Inner Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+      \begin{displaymath}
+        C_{i,j} = \sum_{k=1}^n A_{i,k} B_{k,j}
+      \end{displaymath}
+      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
+      \vskip1ex
+      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second),
+      \vskip1ex
+      The function \texttt{drop()} removes any dimensions of length \emph{one},
+      \vskip1ex
+      The functions \texttt{rowSums()} and \texttt{colSums()} calculate the sums of rows and columns, and they're very fast because they pass their data to compiled \texttt{C++} code,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+vec_tor1
+vec_tor2 <- 6:4  # define vector
+# multiply two vectors element-by-element
+vec_tor1 * vec_tor2
+# calculate inner product
+vec_tor1 %*% vec_tor2
+# calculate inner product and drop dimensions
+drop(vec_tor1 %*% vec_tor2)
+# multiply columns of matrix by vector
+mat_rix %*% vec_tor1  # single column matrix
+drop(mat_rix %*% vec_tor1)  # vector
+rowSums(t(vec_tor1 * t(mat_rix)))
+# using rowSums() and t() is 10 times slower than %*%
+library(microbenchmark)
+summary(microbenchmark(
+  in_ner=drop(mat_rix %*% vec_tor1),
+  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Transpose}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{t()} returns the transpose of a matrix,
+      \vskip1ex
+      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(microbenchmark)
+# multiply matrix by vector fails because dimensions aren't conformable
+vec_tor1 %*% mat_rix
+# works after transpose
+drop(vec_tor1 %*% t(mat_rix))
+# calculate inner product
+crossprod(vec_tor1, vec_tor2)
+# create matrix and vector
+mat_rix <- matrix(1:3000, ncol=3)
+tmat_rix <- t(mat_rix)
+vec_tor <- 1:3
+# crossprod is slightly faster than "%*%" operator
+summary(microbenchmark(
+  cross_prod=crossprod(tmat_rix, vec_tor),
+  inner_prod=mat_rix %*% vec_tor,
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Matrix Outer Multiplication}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = A_i \cdot B_j
+      \end{displaymath}
+      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
+      \begin{displaymath}
+        C_{i,j} = f(A_i, B_j)
+      \end{displaymath}
+      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
+      \vskip1ex
+      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
+      \vskip1ex
+      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# define named vectors
+vec_tor1 <- sample(1:4)
+names(vec_tor1) <-
+  paste0("row", 1:4, "=", vec_tor1)
+vec_tor1
+vec_tor2 <- sample(1:3)
+names(vec_tor2) <-
+  paste0("col", 1:3, "=", vec_tor2)
+vec_tor2
+# calculate outer product of two vectors
+mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix
+# calculate vectorized function spanned over two vectors
+mat_rix <- outer(vec_tor1, vec_tor2,
+                 FUN=function(x1, x2) x2*sin(x1))
+mat_rix
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 
@@ -169,7 +561,7 @@ test_func("hello")
       \vskip1ex
       \texttt{invisible()} allows creating functions whose return values can be assigned, but which do not print when they're not assigned,
       \vskip1ex
-      The function \texttt{load()} reads data from \texttt{*.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
+      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -464,86 +856,6 @@ my_sqrt(NA)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Recursive \secname \hskip0.4em with dots \texttt{"..."} Argument}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Recursive} functions can also accept the dots \texttt{"..."} argument,
-      \vskip1ex
-      The dots \texttt{"..."} argument can be referenced inside a function by first converting it into a list using \texttt{"list(...)"},
-      \vskip1ex
-      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
-  if (missing(...)) {  # check if dots are empty
-    return(in_put)  # just one argument left
-  } else {
-    in_put + sum_dots(...)  # sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-# recursive function sums its argument list
-sum_dots <- function(in_put, ...) {
-  if (NROW(list(...)) == 0) {  # check if dots are empty
-    return(in_put)  # just one argument left
-  } else {
-    in_put + sum_dots(...)  # sum remaining arguments
-  }  # end if
-}  # end sum_dots
-sum_dots(1, 2, 3, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Recursive Function for Calculating Fibonacci Sequence}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Recursive} functions call themselves in their own body,
-      \vskip1ex
-      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
-      \begin{displaymath}
-        F_n = F_{n-1} + F_{n-2},
-      \end{displaymath}
-      \begin{displaymath}
-        F_1 = 0, F_2 = 1,
-      \end{displaymath}
-      \begin{displaymath}
-        F_n = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
-      \end{displaymath}
-      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by the Italian mathematician \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE>>=
-fibo_nacci <- function(len_gth) {
-  if (len_gth > 2) {
-    fib_seq <- fibo_nacci(len_gth-1)  # recursion
-    c(fib_seq, sum(tail(fib_seq, 2)))  # return this
-  } else {
-    c(0, 1)  # initialize and return
-  }
-}  # end fibo_nacci
-fibo_nacci(10)
-tail(fibo_nacci(9), 2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Exploring Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -564,6 +876,53 @@ tail(fibo_nacci(9), 2)
 plot.default
 # display function
 getAnywhere(plot.default)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Side effects Using the Super-assignment Operator \texttt{"<<-"}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Function \emph{side effects} are operations on objects outside a function's \emph{evaluation} environment,
+      \vskip1ex
+      The functions \texttt{plot()} and \texttt{load()} are examples of functions that produce \emph{side effects},
+      \vskip1ex
+      \texttt{load()} reads data from an \texttt{.RData} file, and creates objects in the workspace that are contained in the \texttt{.RData} file,
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} allows creating functions that produce \emph{side effects},
+      \vskip1ex
+      The super-assignment operator \texttt{"<<-"} modifies or creates variables in the \emph{enclosing} environment in which a function was \emph{defined} (\emph{lexical} scoping),
+      \vskip1ex
+      If a function was \emph{defined} in the \emph{global} environment then that's the function's \emph{enclosing} environment, and the \texttt{"<<-"} operator operates on variables in the \emph{global} environment,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1))>>=
+setwd("C:/Develop/R/lecture_slides/data")
+rm(list=ls())  # remove all objects
+ls()  # list objects
+# load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # list objects
+glob_var <- 1  # define a global variable
+# explore function scope and side effects
+side_effect <- function() {
+  cat("global glob_var:\t", glob_var, "\n")
+# define local "glob_var" variable
+  glob_var <- 10
+# re-define the global "glob_var"
+  glob_var <<- 2
+  cat("local glob_var:\t", glob_var, "\n")
+}  # end side_effect
+side_effect()
+# global variable was modified as side effect
+glob_var
       @
   \end{columns}
 \end{block}
@@ -848,24 +1207,24 @@ apply(mat_rix, 2, median, na.rm=TRUE)
       \vspace{-1em}
         <<echo=(-1)>>=
 rm(list=ls())
-# DAX percent returns
-dax_rets <- 100*diff(log(EuStockMarkets[, 1]))
+# DAX percentage returns
+re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 library(moments)  # load package moments
 str(moment)  # get list of arguments
 # apply moment function
-moment(x=dax_rets, order=3)
+moment(x=re_turns, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
 # anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
-          moment(x=dax_rets, order=moment_order)
+          moment(x=re_turns, order=moment_order)
         }  # end anonymous function
       )  # end apply
 
 # another way of passing parameters into moment() function
 apply(X=moment_orders, MARGIN=1, FUN=moment,
-      x=dax_rets)
+      x=re_turns)
       @
   \end{columns}
 \end{block}
@@ -1019,522 +1378,6 @@ vapply(2:4, function(num) c(el1=num, el2=2*num),
 # vapply produces an error if it can't simplify
 vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Simulation}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Monte Carlo Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution,
-      \vskip1ex
-      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals,
-      \vskip1ex
-      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} \texttt{p},
-      \vskip1ex
-      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} \texttt{p},
-      \vskip1ex
-      The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow,
-      \vskip1ex
-      The function \texttt{sort()} returns a vector sorted into ascending order,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean - MC estimate
-mean(sam_ple)
-# sample standard deviation - MC estimate
-sd(sam_ple)
-# Monte Carlo estimate of cumulative probability
-sam_ple <- sort(sam_ple)
-pnorm(1)
-sum(sam_ple<1)/len_gth
-# Monte Carlo estimate of quantile
-conf_level <- 0.99
-qnorm(conf_level)
-sam_ple[conf_level*len_gth]
-quantile(sam_ple, probs=conf_level)
-# analyze the source code of quantile()
-stats:::quantile.default
-# microbenchmark quantile
-library(microbenchmark)
-summary(microbenchmark(
-  sam_ple=sam_ple[cut_off],
-  quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance,
-      \vskip1ex
-      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level,
-      \vspace{-1em}
-        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
-pa_th[1] <- 0  # initialize path
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
-         (pa_th[in_dex - 1] < bar_rier)) {
-# simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-# fill remaining pa_th after it crosses bar_rier
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
-      line=0.5)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
-      \vspace{-1em}
-        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-# simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-             start=c(2011, 1))
-# create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
-      line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
-      \vskip1ex
-      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
-      \vskip1ex
-      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set,
-      \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values,
-      \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error,
-      \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                                    replace=TRUE)]
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
-})  # end sapply
-boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-# standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# standard error of median from bootstrap
-sd(boot_strap["median", ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping Standard Errors Using Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
-      \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
-      \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
-      \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
-      \vskip1ex
-      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# bootstrap mean and median under Windows
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), sd=sd(x)))
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-stopCluster(clus_ter)  # stop R processes over cluster under Windows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Atomic Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Factors}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Factors are similar to vectors, but their elements can only take values from a set of \emph{levels},
-      \vskip1ex
-      Factors are designed for categorical data which can only take certain values,
-      \vskip1ex
-      The function \texttt{factor()} converts a vector into a factor,
-      \vskip1ex
-      Factors have two attributes: \emph{class} (equal to \texttt{"factor"}) and \texttt{levels} (the allowed values),
-      \vskip1ex
-      Although factors aren't vectors, the data underlying a factor is an integer vector, called an \emph{encoding vector},
-      \vskip1ex
-      The function \texttt{as.numeric()} extracts the encoding vector (indices) of a factor,
-      \vskip1ex
-      The function \texttt{as.vector()} coerces a factor to a character vector,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
-fac_tor
-fac_tor[3]
-attributes(fac_tor)  # get factor attributes
-levels(fac_tor)  # get allowed values
-as.numeric(fac_tor)  # get encoding vector
-is.vector(fac_tor)
-as.factor(1:5)  # coerce vector to factor
-# coerce factor to character vector
-as.vector(as.factor(1:5))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Tables of Categorical Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{table()} calculates the frequency distribution of categorical data,
-      \vskip1ex
-      A contingency table is a matrix that contains the frequency distribution of variables (factors) contained in a set of data,
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object,
-      \vskip1ex
-      \texttt{sapply()} applies a function to a vector or a list of objects and returns a vector or a list,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-fac_tor
-levels(fac_tor)  # get allowed values
-unique(fac_tor)  # get unique elements
-# get contingency (frequency) table
-table(fac_tor)
-# get contingency table using sapply
-sapply(levels(fac_tor),
-       function(le_vel) {
-         sum(fac_tor==le_vel)
-       })  # end sapply
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Continuous Numeric Data Into Categories}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Numeric data that represents a \emph{magnitude}, \emph{intensity}, or \emph{score} can be classified into categorical data, given a vector of \emph{breakpoints},
-      \vskip1ex
-      The \emph{breakpoints} create intervals that correspond to different \emph{categories},
-      \vskip1ex
-      The \emph{categories} combine elements that have a similar numeric \emph{magnitude},
-      \vskip1ex
-      \texttt{findInterval()} returns the indices of the intervals specified by \texttt{"vec"} that contain the elements of \texttt{"x"},
-      \vskip1ex
-      If there's an exact match, then \texttt{findInterval()} returns the same index as function \texttt{match()},
-      \vskip1ex
-      If there's no exact match, then \texttt{findInterval()} finds the element of \texttt{"vec"} that is closest to, but not greater than, the element of \texttt{"x"},
-      \vskip1ex
-      If all the elements of \texttt{"vec"} are greater than the element of \texttt{"x"}, then \texttt{findInterval()} returns \texttt{zero},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-str(findInterval)
-# get index of the element of "vec" that matches 5
-findInterval(x=5, vec=c(3, 5, 7))
-match(5, c(3, 5, 7))
-# no exact match
-findInterval(x=6, vec=c(3, 5, 7))
-match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
-findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-             all.inside=TRUE)
-# make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-             rightmost.closed=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Classifying Numeric Data Into Categories Example}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Temperature can be categorized into "cold", "warm", "hot", etc.
-      \vskip1ex
-      A named numeric vector of \emph{breakpoints} can be used to convert a temperature into one of the \emph{categories},
-      \vskip1ex
-      \emph{Breakpoints} correspond to \emph{categories} of the data,
-      \vskip1ex
-      The first \emph{breakpoint} should correspond to the lowest \emph{category}, and should have a value less than any of the data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-             cold=50, pleasant=60,
-             warm=80, hot=90)
-brea_ks
-tempe_ratures <- runif(10, min=10, max=100)
-feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                       vec=brea_ks)])
-names(tempe_ratures) <- feels_like
-tempe_ratures
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Converting Numeric Data Into Factors Using \texttt{cut()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cut()} converts a numeric vector into a vector of factors, representing the intervals to which the numeric values belong,
-      \vskip1ex
-      \texttt{cut()} divides the range of values into intervals, based on a vector of breaks,
-      \vskip1ex
-      \texttt{cut()} then assigns factors to the numeric values, representing the intervals to which the numeric values belong,
-      \vskip1ex
-      The parameter \texttt{breaks} is a numeric vector of break points that divide the range of values into intervals,
-      \vskip1ex
-      The argument \texttt{"labels"} is a vector of labels for the intervals,
-      \vskip1ex
-      The argument \texttt{"right"} is a Boolean indicating if the intervals should be closed on the right (and open on the left), or vice versa,
-      \vskip1ex
-      \texttt{cut()} can produce the same classification as \texttt{findInterval()}, but \texttt{findInterval()} is faster than \texttt{cut()}, because it's a compiled function,
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-da_ta <- sample(0:6) + 0.1
-da_ta
-cut(x=da_ta, breaks=c(2, 4, 6, 8))
-rbind(da_ta, cut(x=da_ta, breaks=c(2, 4, 6, 8)))
-# cut() replicates findInterval()
-cut(x=1:8, breaks=c(3, 5, 7), labels=1:2,
-    right=FALSE)
-findInterval(x=1:8, vec=c(3, 5, 7))
-# findInterval() is a compiled function, so it's faster than cut()
-vec_tor <- rnorm(1000)
-summary(microbenchmark(
-  find_interval=
-    findInterval(x=vec_tor, vec=c(3, 5, 7)),
-  cuut=
-    cut(x=vec_tor, breaks=c(3, 5, 7)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Histograms of Frequency Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
-      \vskip1ex
-      The parameter \texttt{breaks} is the number of cells of the histogram.
-      \vskip1ex
-      If the argument \texttt{freq} is \texttt{TRUE} then the frequencies (counts) are plotted, and if it's \texttt{FALSE} then the probability density is plotted (with total area equal to \texttt{1}).
-      \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density.
-      \vskip1ex
-      The function \texttt{lines()} draws a line through specified points.
-      <<echo=TRUE,eval=FALSE>>=
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-# plot histogram
-par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-histo_gram <- hist(dax_rets, breaks=30, 
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04), 
-  xlab="", ylab="", freq=FALSE)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-    \includegraphics[width=0.5\paperwidth]{figure/hist_dax.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# draw kernel density of histogram
-lines(density(dax_rets), col='red', lwd=2)
-# add density of normal distribution
-curve(expr=dnorm(x, mean=mean(dax_rets), 
-  sd=sd(dax_rets)), add=TRUE, type="l", 
-  lwd=2, col="blue")
-title(main="DAX return distribution", line=0)
-# add legend
-legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c(colnames(EuStockMarkets)[1], "Normal"),
-  lwd=6, bg="white", col=c("red", "blue"))
-# total area under histogram
-diff(histo_gram$breaks) %*% histo_gram$density
       @
   \end{columns}
 \end{block}
@@ -2396,7 +2239,7 @@ plot(
       The function \texttt{rbinom()} produces random numbers from the \emph{binomial} distribution,
     \column{0.6\textwidth}
       \vspace{-1em}
-        <<>>=
+        <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # reset random number generator
 # flip unbiased coin once, 20 times
 rbinom(n=20, size=1, 0.5)
@@ -2436,7 +2279,7 @@ as.numeric(runif(20) < 0.5)  # slower
       If \texttt{replace=TRUE}, then \texttt{sample()} produces samples with replacement,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<>>=
+        <<echo=TRUE,eval=FALSE>>=
 # permutation of five numbers
 sample(x=5)
 # permutation of four strings
@@ -2632,7 +2475,7 @@ sd(sam_ple)
       The \emph{p}-value is the probability of erroneously rejecting a \texttt{TRUE} \emph{null hypothesis}, due to the randomness of the data sample,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 ### Perform two-tailed test that sample is
 ### from Standard Normal Distribution (mean=0, SD=1)
 # generate vector of samples and store in data frame
@@ -2873,7 +2716,7 @@ wilcox.test(runif(100), rnorm(100))
       The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # KS test for normal distribution
 ks.test(rnorm(100), pnorm)
 # KS test for uniform distribution
@@ -2913,7 +2756,7 @@ ks.test(rnorm(100), rnorm(100, mean=1.0))
       The \emph{p}-value for DAX returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the DAX returns are not from a normally distributed population,
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 
@@ -2979,7 +2822,260 @@ jarque.bera.test(runif(NROW(dax_rets)))
 
 
 %%%%%%%%%%%%%%%
-\section{Homework Assignment}
+\section{Simulation}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Monte Carlo Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution,
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals,
+      \vskip1ex
+      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} \texttt{p},
+      \vskip1ex
+      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} \texttt{p},
+      \vskip1ex
+      The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow,
+      \vskip1ex
+      The function \texttt{sort()} returns a vector sorted into ascending order,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean - MC estimate
+mean(sam_ple)
+# sample standard deviation - MC estimate
+sd(sam_ple)
+# Monte Carlo estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+sam_ple[conf_level*len_gth]
+quantile(sam_ple, probs=conf_level)
+# analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance,
+      \vskip1ex
+      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level,
+      \vspace{-1em}
+        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+pa_th <- numeric(len_gth)  # allocate path vector
+pa_th[1] <- 0  # initialize path
+in_dex <- 2  # initialize simulation index
+while ((in_dex <= len_gth) &&
+         (pa_th[in_dex - 1] < bar_rier)) {
+# simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # advance in_dex
+}  # end while
+# fill remaining pa_th after it crosses bar_rier
+if (in_dex <= len_gth)
+  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level", 
+      line=0.5)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Brownian Motion Using Vectorized Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
+      \vspace{-1em}
+        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+set.seed(1121)  # reset random number generator
+bar_rier <- 20  # barrier level
+len_gth <- 1000  # number of simulation steps
+# simulate path of Brownian motion
+pa_th <- cumsum(rnorm(len_gth))
+# find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# fill remaining pa_th after it crosses bar_rier
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):len_gth] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+             start=c(2011, 1))
+# create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level", 
+      line=0.5)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
+      \vskip1ex
+      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      \vskip1ex
+      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set,
+      \vskip1ex
+      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values,
+      \vskip1ex
+      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error,
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# sample mean
+mean(sam_ple)
+# sample standard deviation
+sd(sam_ple)
+# bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth,
+                                    replace=TRUE)]
+  c(mean=mean(boot_sample),
+    median=median(boot_sample))
+})  # end sapply
+boot_strap[, 1:3]
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+# standard error of mean from bootstrap
+sd(boot_strap["mean", ])
+# standard error of median from bootstrap
+sd(boot_strap["median", ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping Standard Errors Using Parallel Computing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
+      \vskip1ex
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
+      \vskip1ex
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      \vskip1ex
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
+      \vskip1ex
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
+      \vskip1ex
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
+      \vskip1ex
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
+      \vskip1ex
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # load package parallel
+num_cores <- detectCores() - 1  # number of cores
+clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
+set.seed(1121)  # reset random number generator
+# sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# bootstrap mean and median under Windows
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple, len_gth) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
+# bootstrap mean and median under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+  }, mc.cores=num_cores)  # end mclapply
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# standard error from formula
+sd(sam_ple)/sqrt(len_gth)
+stopCluster(clus_ter)  # stop R processes over cluster under Windows
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -2988,12 +3084,17 @@ jarque.bera.test(runif(NROW(dax_rets)))
 \vspace{-1em}
 \begin{block}{Required}
   \begin{itemize}[]
-    \item Read all the lecture slides in \emph{FRE6871\_Lecture\_2.pdf}, and run all the code in \emph{FRE6871\_Lecture\_2.R}
+    \item Study all the lecture slides in \emph{FRE6871\_Lecture\_2.pdf}, and run all the code in \emph{FRE6871\_Lecture\_2.R},
+    \item Study \emph{bootstrap simulation} from the files \emph{bootstrap\_technique.pdf} and \emph{doBootstrap\_primer.pdf},
+    \item Study the \emph{Vasicek} single factor model from \emph{Vasicek Portfolio Default Distribution.pdf},
+    \item Study credit portfolio risk models from \texttt{BOE Credit Risk Models.pdf} and \texttt{BIS Bank Capital Model.pdf},
+    \item Study CDO models from \texttt{Elizalde CDO Vasicek Credit Model.pdf},
+    \item Study the \emph{CVAR} credit portfolio risk measure from \emph{Danielsson CVAR Estimation Standard Error.pdf}.
   \end{itemize}
 \end{block}
 \begin{block}{Recommended}
   \begin{itemize}[]
-    \item Read about the \emph{Vasicek} single factor model in \emph{Vasicek Portfolio Default Distribution.pdf}
+    \item Read about plotting from \emph{plot par cheatsheet.pdf} and \emph{ggplot2 cheatsheet.pdf}.
   \end{itemize}
 \end{block}
 

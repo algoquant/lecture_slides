@@ -1,266 +1,360 @@
-# R startup chunk
-# ```{r setup, include=FALSE}
-library(shiny)
-library(quantmod)
-inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-# ```
-#end R startup chunk
-inputPanel(
-  sliderInput("lamb_da", label="lambda:",
-    min=0.01, max=0.2, value=0.1, step=0.01)
-)  # end inputPanel
-renderPlot({
-  # calculate EWMA prices
-  lamb_da <- input$lamb_da
-  weight_s <- exp(-lamb_da*1:inter_val)
-  weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
-  colnames(ew_ma) <- c("VTI", "VTI EWMA")
-  # plot EWMA prices
-  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
-  plot(ch_ob)
-  legend("top", legend=colnames(ew_ma),
-   inset=0.1, bg="white", lty=1, lwd=2,
-   col=plot_theme$col$line.col, bty="n")
-})  # end renderPlot
-# Define cumulative default probability function
-cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
-  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
-# Define Vasicek loss distribution density function
-# (vectorized version with error handling for x)
-portf_loss <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
-  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
-}  # end portf_loss
-def_prob <- 0.2; def_thresh <- qnorm(def_prob)
-rh_o <- 0.1; l_gd <- 0.4
-at_tach <- 0.15; de_tach <- 0.2
-# Expected tranche loss is sum of two terms
-tranche_loss <-
-  # Loss between at_tach and de_tach
-  integrate(function(x, at_tach) (x-at_tach)*portf_loss(x,
-def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
-  # Loss in excess of de_tach
-  (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
-# Plot probability distribution of losses
-curve(expr=portf_loss(x, def_thresh=def_thresh, rh_o=rh_o),
-type="l", xlim=c(0, 3*l_gd*def_prob),
-xlab="loss percentage", ylab="density", lwd=3,
-col="orange", main="CDO Tranche Losses")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
- lwd=2, srt=90, pos=3)
-# Add lines for attach and detach
-abline(v=at_tach, col="blue", lwd=3)
-text(x=at_tach-0.001, y=4, labels="attach",
- lwd=2, srt=90, pos=3)
-abline(v=de_tach, col="green", lwd=3)
-text(x=de_tach-0.001, y=4, labels="detach",
- lwd=2, srt=90, pos=3)
-# Add shading for CDO tranche
-var_s <- seq(at_tach, de_tach, length=100)
-dens_ity <- sapply(var_s, portf_loss,
-  def_thresh=def_thresh, rh_o=rh_o)
-# Draw shaded polygon
-polygon(c(at_tach, var_s, de_tach), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
-text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
-# create list of vectors
-li_st <- lapply(1:3, function(x) sample(6))
-# bind list elements into matrix - doesn't work
-rbind(li_st)
-# bind list elements into matrix - tedious
-rbind(li_st[[1]], li_st[[2]], li_st[[3]])
-# bind list elements into matrix - works!
-do.call(rbind, li_st)
-# create numeric list
-li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # returns single column matrix
-do.call(cbind, li_st)  # returns single row matrix
-# recycling rule applied
-do.call(cbind, list(1:2, 3:5))
-# NULL element is skipped
-do.call(cbind, list(1, NULL, 3, 4))
-# NA element isn't skipped
-do.call(cbind, list(1, NA, 3, 4))
-library(microbenchmark)
-list_vectors <- lapply(1:5, rnorm, n=10)
-mat_rix <- do.call(rbind, list_vectors)
-dim(mat_rix)
-do_call_rbind <- function(li_st) {
-  while (NROW(li_st) > 1) {
-# index of odd list elements
-    odd_index <- seq(from=1, to=NROW(li_st), by=2)
-# bind odd and even elements, and divide li_st by half
-    li_st <- lapply(odd_index, function(in_dex) {
-if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
-rbind(li_st[[in_dex]], li_st[[in_dex+1]])
-    })  # end lapply
-  }  # end while
-# li_st has only one element - return it
-  li_st[[1]]
-}  # end do_call_rbind
-identical(mat_rix, do_call_rbind(list_vectors))
-library(microbenchmark)
-airquality[(airquality$Solar.R>320 &
-        !is.na(airquality$Solar.R)), ]
-subset(x=airquality, subset=(Solar.R>320))
-summary(microbenchmark(
-    subset=subset(x=airquality, subset=(Solar.R>320)),
-    brackets=airquality[(airquality$Solar.R>320 &
-            !is.na(airquality$Solar.R)), ],
-times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-unique(iris$Species)  # Species has three distinct values
-# split into separate data frames by hand
-set_osa <- iris[iris$Species=="setosa", ]
-versi_color <- iris[iris$Species=="versicolor", ]
-virgin_ica <- iris[iris$Species=="virginica", ]
-dim(set_osa)
-head(set_osa, 2)
-# split iris into list based on Species
-split_iris <- split(iris, iris$Species)
-str(split_iris, max.level=1)
-names(split_iris)
-dim(split_iris$setosa)
-head(split_iris$setosa, 2)
-unique(mtcars$cyl)  # cyl has three unique values
-# split mpg column based on number of cylinders
-split(mtcars$mpg, mtcars$cyl)
-# split mtcars data frame based on number of cylinders
-split_cars <- split(mtcars, mtcars$cyl)
-str(split_cars, max.level=1)
-names(split_cars)
-# aggregate the mean mpg over split mtcars data frame
-sapply(split_cars, function(x) mean(x$mpg))
-# Or: split mpg column and aggregate the mean
-sapply(split(mtcars$mpg, mtcars$cyl), mean)
-# same but using with()
-with(mtcars, sapply(split(mpg, cyl), mean))
-# Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars,
-    FUN=mean)
-# Or: aggregate() using data frame syntax
-aggregate(x=mtcars$mpg,
-  by=list(cyl=mtcars$cyl), FUN=mean)
-# Or: using name for mpg
-aggregate(x=list(mpg=mtcars$mpg),
-  by=list(cyl=mtcars$cyl), FUN=mean)
-# aggregate() all columns
-aggregate(x=mtcars,
-  by=list(cyl=mtcars$cyl), FUN=mean)
-# mean mpg for each cylinder group
-tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
-# using with() environment
-with(mtcars,
-     tapply(X=mpg, INDEX=cyl, FUN=mean))
-# function sapply() instead of tapply()
-with(mtcars,
-     sapply(sort(unique(cyl)), function(x) {
- structure(mean(mpg[x==cyl]), names=x)
- }, USE.NAMES=TRUE))  # end with
+# KS-test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS-test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS-test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS-test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
 
-# function by() instead of tapply()
-with(mtcars,
-     by(data=mpg, INDICES=cyl, FUN=mean))
-# get several mpg stats for each cylinder group
-data_cars <- sapply(split_cars,
-        function(x) {
-          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-        }  # end anonymous function
-        )  # end sapply
-data_cars  # sapply produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
-        function(x) {
-          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
-        }  # end anonymous function
-        )  # end sapply
-is.list(data_cars)  # lapply produces a list
-# do.call flattens list into a matrix
-do.call(cbind, data_cars)
-# Download CRSPpanel.txt from NYU Classes
-# Read the file using read.table() with header and sep arguments
-panel_data <- read.table(file="C:/Develop/R/lecture_slides/data/CRSPpanel.txt",
-                   header=TRUE, sep="\t")
-# split panel_data based on Industry column
-split_panel <- split(panel_data, panel_data$Industry)
-# number of companies in each Industry
-sapply(split_panel, NROW)
-# number of Sectors that each Industry belongs to
-sapply(split_panel, function(x) {
-  NROW(unique(x$Sector))
+# t-test for single sample
+t.test(rnorm(100))
+# t-test for two samples
+t.test(rnorm(100),
+       rnorm(100, mean=1))
+# Plot the normal and t-distribution densities
+x11(width=6, height=5)
+par(mar=c(3, 3, 3, 1), oma=c(0, 0, 0, 0))
+curve(expr=dnorm, xlim=c(-4, 4),
+      xlab="", ylab="", lwd=3)
+curve(expr=dt(x, df=3),
+      xlab="", ylab="", lwd=3,
+      col="red", add=TRUE)
+# Add title
+title(main="Normal and t-distribution densities", line=0.5)
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       title=NULL, c("normal", "t-dist"),
+       cex=0.8, lwd=6, lty=1,
+       col=c("black", "red"))
+
+# Wilcoxon test for normal distribution
+wilcox.test(rnorm(100))
+# Wilcoxon test for two normal distributions
+sample1 <- rnorm(100)
+sample2 <- rnorm(100, mean=0.1)
+wilcox.test(sample1, sample2)$p.value
+t.test(sample1, sample2)$p.value
+# Wilcoxon test with data outliers
+sample2 <- sample1
+sample2[1:11] <- sample2[1:11] + 5
+wilcox.test(sample1, sample2)$p.value
+t.test(sample1, sample2)$p.value
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=1.0))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100)-0.5, rnorm(100))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100), rnorm(100))
+
+# Wilcoxon test for random data around 0
+n_row <- 1e3
+da_ta <- (runif(n_row) - 0.5)
+wil_cox <- wilcox.test(da_ta)
+# Calculate V statistic of Wilcoxon test
+wil_cox$statistic
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+# Calculate distributon of Wilcoxon W statistic
+wilcox_w <- sapply(1:1e3, function(x) {
+  da_ta <- (runif(n_row) - 0.5)
+  sum(sign(da_ta)*rank(abs(da_ta)))
 })  # end sapply
-# Or
-aggregate(formula=(Sector ~ Industry),
-  data=panel_data, FUN=function(x) NROW(unique(x)))
-# Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry),
-  data=panel_data, FUN=unique)
-# Or
-with(panel_data, aggregate(x=Sector,
-  by=list(Industry), FUN=unique))
-# Or
-with(panel_data, sapply(levels(Industry),
-  function(x) {
-    Sector[match(x, Industry)]
-  }))  # end sapply
-# split panel_data based on Sector column
-split_panel <- split(panel_data, panel_data$Sector)
-# number of companies in each Sector
-sapply(split_panel, NROW)
-# Industries belonging to each Sector (jagged array)
-sec_ind <- sapply(split_panel,
-  function(x) unique(as.vector(x$Industry)))
-# Or use aggregate() (returns a data frame)
-sec_ind2 <- aggregate(formula=(Industry ~ Sector),
-  data=panel_data, FUN=function(x) unique(as.vector(x)))
-# Or use aggregate() with "by" argument
-sec_ind2 <- with(panel_data,
-  aggregate(x=Industry, by=list(Sector),
-    FUN=function(x) as.vector(unique(x))))
-# coerce sec_ind2 into a jagged array
-name_s <- as.vector(sec_ind2[, 1])
-sec_ind2 <- sec_ind2[, 2]
-names(sec_ind2) <- name_s
-all.equal(sec_ind2, sec_ind)
-# Or use tapply() (returns an array)
-sec_ind2 <- with(panel_data,
-  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
-# coerce sec_ind2 into a jagged array
-sec_ind2 <- drop(as.matrix(sec_ind2))
-all.equal(sec_ind2, sec_ind)
-# average ROE in each Industry
-with(panel_data,
-  sapply(split(ROE, Industry), mean))
-# average, min, and max ROE in each Industry
-t(with(panel_data,
-  sapply(split(ROE, Industry),
-    FUN=function(x)
-c(mean=mean(x), max=max(x), min=min(x)))))
-# split panel_data based on Industry column
-split_panel <- split(panel_data,
-  panel_data$Industry)
-# average ROE and EPS in each Industry
-t(sapply(split_panel, FUN=function(x)
-  c(mean_roe=mean(x$ROE),
-    mean_eps=mean(x$EPS.EXCLUDE.EI))))
-# Or: split panel_data based on Industry column
-split_panel <-
-  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
-  panel_data$Industry)
-# average ROE and EPS in each Industry
-t(sapply(split_panel,
-  FUN=function(x) sapply(x, mean)))
-# average ROE and EPS using aggregate()
-aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
-  by=list(panel_data$Industry),
-  FUN=mean)
+wilcox_w <- wilcox_w/sqrt(n_row*(n_row+1)*(2*n_row+1)/6)
+var(wilcox_w)
+hist(wilcox_w)
+
+par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+lamb_da <- c(0.5, 1, 1.5)
+col_ors <- c("red", "blue", "green")
+# Plot three curves in loop
+for (in_dex in 1:3) {
+  curve(expr=plogis(x, scale=lamb_da[in_dex]),
+xlim=c(-4, 4), type="l",
+xlab="", ylab="", lwd=4,
+col=col_ors[in_dex], add=(in_dex>1))
+}  # end for
+
+# Add title
+title(main="Logistic function", line=0.5)
+# Add legend
+legend("topleft", title="Scale parameters",
+       paste("lambda", lamb_da, sep="="),
+       inset=0.05, cex=0.8, lwd=6, bty="n",
+       lty=1, col=col_ors)
+
+set.seed(1121)
+# Simulate overlapping scores data
+sample1 <- runif(100, max=0.6)
+sample2 <- runif(100, min=0.4)
+# Perform Wilcoxon test for mean
+wilcox.test(sample1, sample2)
+# Combine scores and add categorical variable
+predic_tor <- c(sample1, sample2)
+res_ponse <- c(logical(100), !logical(100))
+# Perform logit regression
+g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
+class(g_lm)
+summary(g_lm)
+
+x11(width=7, height=5)
+par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
+or_der <- order(predic_tor)
+plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
+     type="l", lwd=4, col="orange",
+     main="Category Densities and Logistic Function",
+     xlab="score", ylab="density")
+den_sity <- density(predic_tor[res_ponse])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="red")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
+den_sity <- density(predic_tor[!res_ponse])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="blue")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
+# Add legend
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
+ lwd=c(6, NA, NA), pch=c(NA, 15, 15),
+ legend=c("logistic fit", "TRUE", "FALSE"),
+ col=c("orange", "red", "blue"),
+ text.col=c("black", "red", "blue"))
+
+library(ISLR)  # load package ISLR
+# get documentation for package tseries
+packageDescription("ISLR")  # get short description
+
+help(package="ISLR")  # load help page
+
+library(ISLR)  # load package ISLR
+
+data(package="ISLR")  # list all datasets in ISLR
+
+ls("package:ISLR")  # list all objects in ISLR
+
+detach("package:ISLR")  # Remove ISLR from search path
+
+library(ISLR)  # load package ISLR
+# load credit default data
+attach(Default)
+summary(Default)
+sapply(Default, class)
+dim(Default); head(Default)
+x_lim <- range(balance)
+y_lim <- range(income)
+# Plot data points for non-defaulters
+default_ed <- (default=="Yes")
+plot(income ~ balance,
+     main="Default Dataset from Package ISLR",
+     xlim=x_lim, ylim=y_lim,
+     data=Default[!default_ed, ],
+     pch=4, col="blue")
+
+# Plot data points for defaulters
+points(income ~ balance,
+ data=Default[default_ed, ],
+ pch=4, lwd=2, col="red")
+# Add legend
+legend(x="topright", bty="n",
+ legend=c("non-defaulters", "defaulters"),
+ col=c("blue", "red"), lty=1, lwd=6, pch=4)
+
+default_ed <- (default=="Yes")
+# Wilcoxon test for balance predictor
+wilcox.test(balance[default_ed], balance[!default_ed])
+# Wilcoxon test for income predictor
+wilcox.test(income[default_ed], income[!default_ed])
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+par(mfrow=c(1,2))  # Set plot panels
+# balance boxplot
+boxplot(formula=balance ~ default,
+  col="lightgrey",
+  main="balance", xlab="default")
+# income boxplot
+boxplot(formula=income ~ default,
+  col="lightgrey",
+  main="income", xlab="default")
+
+# fit logistic regression model
+g_lm <- glm(default ~ balance,
+        family=binomial(logit))
+class(g_lm)
+summary(g_lm)
+
+plot(x=balance, y=default_ed,
+     main="Logistic Regression of Credit Defaults", col="orange",
+     xlab="credit balance", ylab="defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
+col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n",
+ legend=c("defaults", "logit fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# Calculate cumulative defaults
+default_ed <- (default=="Yes")
+to_tal <- sum(default_ed)
+default_s <- sapply(balance, function(ba_lance) {
+    sum(default_ed[balance <= ba_lance])
+})  # end sapply
+# Perform logit regression
+g_lm <- glm(
+  cbind(default_s, to_tal-default_s) ~
+    balance,
+  family=binomial(logit))
+summary(g_lm)
+
+plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
+     main="Cumulative Defaults Versus Balance",
+     xlab="credit balance", ylab="cumulative defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
+col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n",
+ legend=c("cumulative defaults", "fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# fit multifactor logistic regression model
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+g_lm <- glm(for_mula, data=Default,
+        family=binomial(logit))
+summary(g_lm)
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+default_ed <- (default=="Yes")
+stu_dent <- (student=="Yes")
+# Calculate cumulative defaults
+default_s <- sapply(balance,
+  function(ba_lance) {
+    c(stu_dent=sum(default_ed[stu_dent & (balance <= ba_lance)]),
+non_student=sum(default_ed[(!stu_dent) & (balance <= ba_lance)]))
+})  # end sapply
+to_tal <- c(sum(default_ed[stu_dent]), sum(default_ed[!stu_dent]))
+default_s <- t(default_s / to_tal)
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+# Plot cumulative defaults
+par(mfrow=c(1,2))  # Set plot panels
+or_der <- order(balance)
+plot(x=balance[or_der], y=default_s[or_der, 1],
+     col="red", t="l", lwd=2,
+     main="Cumulative defaults of\n students and non-students",
+     xlab="credit balance", ylab="")
+lines(x=balance[or_der], y=default_s[or_der, 2],
+col="blue", lwd=2)
+legend(x="topleft", bty="n",
+ legend=c("students", "non-students"),
+ col=c("red", "blue"), text.col=c("red", "blue"),
+ lwd=3)
+# balance boxplot for student factor
+boxplot(formula=balance ~ student,
+  col="lightgrey",
+  main="balance", xlab="student")
+
+# fit multifactor logistic regression model
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
+fore_casts <- predict(g_lm, type="response")
+fore_casts[1:6]
+all.equal(g_lm$fitted.values, fore_casts)
+# Discrimination threshold
+thresh_old <- 0.05
+# Calculate confusion matrix
+table(default_ed, (fore_casts>thresh_old))
+sum(default_ed)
+sum(Default$default=="Yes")
+# fit logistic regression over training data
+set.seed(1121)  # Reset random number generator
+n_rows <- NROW(Default)
+sam_ple <- sample.int(n=n_rows, size=n_rows/2)
+train_data <- Default[sam_ple, ]
+g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
+# forecast over test data
+test_data <- Default[-sam_ple, ]
+fore_casts <- predict(g_lm, newdata=test_data, type="response")
+# Calculate confusion matrix
+table(test_data$default=="No",
+(fore_casts<thresh_old))
+# FALSE positive (type I error)
+sum(test_data$default=="No" & (fore_casts>thresh_old))
+# FALSE negative (type II error)
+sum(test_data$default=="Yes" & (fore_casts<thresh_old))
+detach(Default)
+
+library(ISLR)  # load package ISLR
+attach(Default)  # load credit default data
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
+set.seed(1121)  # Reset random number generator
+n_rows <- NROW(Default)
+sam_ple <- sample(x=1:n_rows, size=n_rows/2)
+train_data <- Default[sam_ple, ]
+g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
+test_data <- Default[-sam_ple, ]
+fore_casts <- predict(g_lm, newdata=test_data, type="response")
+thresh_old <- 0.05
+# Calculate confusion matrix
+confu_sion <- table(test_data$default=="No",
+              (fore_casts<thresh_old))
+dimnames(confu_sion) <- list(actual=rownames(confu_sion),
+  forecast=colnames(confu_sion))
+confu_sion
+confu_sion <- confu_sion / rowSums(confu_sion)
+c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+# below is an unsuccessful attempt to draw confusion matrix using xtable
+confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
+dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
+                             actual=c("FALSE", "TRUE"))
+print(xtable::xtable(confusion_matrix,
+caption="Confusion Matrix"),
+caption.placement="top",
+comment=FALSE, size="scriptsize",
+include.rownames=TRUE,
+include.colnames=TRUE)
+# end unsuccessful attempt to draw confusion table using xtable
+
+# Confusion matrix as function of thresh_old
+con_fuse <- function(actu_al, fore_casts, thresh_old) {
+    confu_sion <- table(actu_al, (fore_casts<thresh_old))
+    confu_sion <- confu_sion / rowSums(confu_sion)
+    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+  }  # end con_fuse
+con_fuse(test_data$default=="No", fore_casts, thresh_old=thresh_old)
+# Define vector of discrimination thresholds
+threshold_s <- seq(0.01, 0.95, by=0.01)^2
+# Calculate error rates
+error_rates <- sapply(threshold_s, con_fuse,
+  actu_al=(test_data$default=="No"),
+  fore_casts=fore_casts)  # end sapply
+error_rates <- t(error_rates)
+# Calculate area under ROC curve (AUC)
+true_pos <- sort(1- c(error_rates[, "typeII"], 0))
+true_pos <- (true_pos + rutils::lag_it(true_pos))/2
+false_pos <- c(sort(error_rates[, "typeI"]), 1)
+false_pos <- rutils::diff_it(false_pos)
+sum(true_pos*false_pos)
+
+# Plot ROC Curve for Defaults
+plot(x=error_rates[, "typeI"],
+     y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate",
+     ylab="TRUE positive rate",
+     main="ROC Curve for Defaults",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")
+
 # ?options  # get info on global options
 getOption("warn")  # global option for "warn"
 options("warn")  # global option for "warn"
@@ -284,6 +378,7 @@ options(warn=1)
 sqrt_safe()
 options(warn=3)
 sqrt_safe()
+
 # function vali_date validates its arguments
 vali_date <- function(in_put=NULL) {
 # check if argument is valid and return double
@@ -308,6 +403,7 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
+
 # vali_date() validates its arguments and assertions
 vali_date <- function(in_put) {
 # check if argument is valid and return double
@@ -321,8 +417,10 @@ vali_date <- function(in_put) {
 vali_date(3)
 vali_date("a")
 vali_date()
+
 # print the call stack
 traceback()
+
 vali_date <- function(in_put) {
 # check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
@@ -339,6 +437,7 @@ vali_date <- function(in_put) {
 }  # end vali_date
 vali_date()
 vali_date("a")
+
 # sum_two() returns the sum of its two arguments
 sum_two <- function(in_put1, in_put2) {  # even more robust
 # check if at least one argument is not missing
@@ -363,12 +462,14 @@ sum_two(5, 'a')
 sum_two('a', 5)
 sum_two('a', 'b')
 sum_two()
+
 # flag "vali_date" for debugging
 debug(vali_date)
 # calling "vali_date" starts debugger
 vali_date(3)
 # unflag "vali_date" for debugging
 undebug(vali_date)
+
 vali_date <- function(in_put) {
   browser()  # pause and invoke browser
 # check argument using long form '&&' operator
@@ -380,6 +481,7 @@ vali_date()  # invokes debugger
 options("error")  # show default NULL "error" option
 options(error=recover)  # set "error" option to "recover"
 options(error=NULL)  # set back to default "error" option
+
 str(tryCatch)  # get arguments of tryCatch()
 tryCatch(  # without error handler
   {  # evaluate expressions
@@ -404,6 +506,7 @@ tryCatch(  # with error handler
   },  # end warning handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
+
 rm(list=ls())
 # apply loop without tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
@@ -414,6 +517,7 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
+
 # apply loop with tryCatch
 apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
     tryCatch(  # with error handler
@@ -431,697 +535,576 @@ finally=print(paste("(finally) num_var =", num_var))
     )  # end tryCatch
   }  # end anonymous function
 )  # end apply
-my_var <- 1  # create new object
-assign(x="my_var", value=2)  # assign value to existing object
-my_var
-rm(my_var)  # remove my_var
-assign(x="my_var", value=3)  # create new object from name
-my_var
-# create new object in new environment
-new_env <- new.env()  # create new environment
-assign("my_var", 3, envir=new_env)  # assign value to name
-ls(new_env)  # list objects in "new_env"
-new_env$my_var
-rm(list=ls())  # delete all objects
-sym_bol <- "my_var"  # define symbol containing string "my_var"
-assign(sym_bol, 1)  # assign value to "my_var"
-ls()
-my_var
-assign("sym_bol", "new_var")
-assign(sym_bol, 1)  # assign value to "new_var"
-ls()
-sym_bol <- 10
-assign(sym_bol, 1)  # can't assign to non-string
-rm(list=ls())  # delete all objects
-# create individual vectors from column names of EuStockMarkets
-for (col_name in colnames(EuStockMarkets)) {
-# assign column values to column names
-  assign(col_name, EuStockMarkets[, col_name])
-}  # end for
-ls()
-head(DAX)
-head(EuStockMarkets[, "DAX"])
-identical(DAX, EuStockMarkets[, "DAX"])
-# create new environment
-test_env <- new.env()
-# pass string as name to create new object
-assign("my_var1", 2, envir=test_env)
-# create new object using $ string referencing
-test_env$my_var2 <- 1
-# list objects in new environment
-ls(test_env)
-# reference an object by name
-test_env$my_var1
-# reference an object by string name using get
-get("my_var1", envir=test_env)
-# retrieve and assign value to object
-assign("my_var1",
-       2*get("my_var1", envir=test_env),
-       envir=test_env)
-get("my_var1", envir=test_env)
-# return all objects in an environment
-mget(ls(test_env), envir=test_env)
-# delete environment
-rm(test_env)
+
+cat("Enter\ttab")  # Cat() interprets backslash escape sequences
+print("Enter\ttab")
+
+my_text <- print("hello")
+my_text  # print() returns its argument
+
+# Create string
+my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
+
+cat(my_text, file="mytext.txt")  # Write to text file
+
+cat("Title: My Text",  # Write several lines to text file
+    "Some numbers: 1,2,3,...",
+    "Rprofile files contain code executed at R startup,",
+    file="mytext.txt", sep="\n")
+
+save(my_text, file="mytext.RData")  # Write to binary file
+
+print(pi)
+print(pi, digits=10)
+getOption("digits")
+foo <- 12
+bar <- "months"
+sprintf("There are %i %s in the year", foo, bar)
+
+# Read text from file
+scan(file="mytext.txt", what=character(), sep="\n")
+
+# Read lines from file
+readLines(con="mytext.txt")
+
+# Read text from console
+in_put <- readline("Enter a number: ")
+class(in_put)
+# Coerce to numeric
+in_put <- as.numeric(in_put)
+
+# Read text from file and display in editor:
+# file.show("mytext.txt")
+# file.show("mytext.txt", pager="")
+
+setwd("C:/Develop/R/lecture_slides/data")
+data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
+mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
+# Write data frame to text file, and then read it back
+write.table(data_frame, file="florist.txt")
+data_read <- read.table(file="florist.txt")
+data_read  # A data frame
+
+# Write matrix to text file, and then read it back
+write.table(mat_rix, file="matrix.txt")
+mat_read <- read.table(file="matrix.txt")
+mat_read  # write.table() coerced matrix to data frame
+class(mat_read)
+# Coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+
+setwd("C:/Develop/R/lecture_slides/data")
+data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+data_frame <- read.table("mydata.txt", header=TRUE)
+data_frame <- read.table("clipboard", header=TRUE)
+
+write.table(x=data_frame, file="clipboard", sep="\t")
+
+# Wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t",
+              header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+data_frame <- read_clip()
+
+# Wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write_clip <- function(data, row.names=FALSE,
+               col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t",
+      row.names=row.names, col.names=col.names, ...)
+}  # end write_clip
+
+write_clip(data=data_frame)
+
+# Launch spreadsheet-style data editor
+data_frame <- edit(data_frame)
+
+# Write data frame to CSV file, and then read it back
+write.csv(data_frame, file="florist.csv")
+data_read <- read.csv(file="florist.csv",
+                 stringsAsFactors=FALSE)
+data_read  # the row names are read in as extra column
+# Restore row names
+rownames(data_read) <- data_read[, 1]
+data_read <- data_read[, -1]  # Remove extra column
+data_read
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+data_read
+
+# Write data frame to CSV file, without row names
+write.csv(data_frame, row.names=FALSE, file="florist.csv")
+data_read <- read.csv(file="florist.csv")
+data_read  # A data frame without row names
+
+# Write matrix to csv file, and then read it back
+write.csv(mat_rix, file="matrix.csv")
+mat_read <- read.csv(file="matrix.csv", row.names=1)
+mat_read  # Read.csv() reads matrix as data frame
+class(mat_read)
+mat_read <- as.matrix(mat_read)  # Coerce to matrix
+identical(mat_rix, mat_read)
+write.csv(mat_rix, row.names=FALSE,
+    file="matrix_ex_rows.csv")
+mat_read <- read.csv(file="matrix_ex_rows.csv")
+mat_read <- as.matrix(mat_read)
+mat_read  # A matrix without row names
+
+setwd("C:/Develop/R/lecture_slides/data")
+library(MASS)  # Load package "MASS"
+# Write to CSV file by row - it's very SLOW!!!
+MASS::write.matrix(mat_rix,
+  file="matrix.csv", sep=",")
+# Read using scan() and skip first line with colnames
+mat_read <- scan(file="matrix.csv",
+  sep=",", skip=1, what=numeric())
+# Read colnames
+col_names <- readLines(con="matrix.csv", n=1)
+col_names  # this is a string!
+# Convert to char vector
+col_names <- strsplit(col_names,
+  s=",")[[1]]
+mat_read  # mat_read is a vector, not matrix!
+# Coerce by row to matrix
+mat_read <- matrix(mat_read,
+  ncol=NROW(col_names), byrow=TRUE)
+# Restore colnames
+colnames(mat_read) <- col_names
+mat_read
+# Scan() is a little faster than read.csv()
+library(microbenchmark)
+summary(microbenchmark(
+  read_csv=read.csv("matrix.csv"),
+  scan=scan(file="matrix.csv", sep=",",
+    skip=1, what=numeric()),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Read data from a csv file, including row names
+mat_rix <- read.csv(file="matrix_bad.csv",
+  row.names=1, stringsAsFactors=FALSE)
+mat_rix
+class(mat_rix)
+# Columns with bad data are character or factor
+sapply(mat_rix, class)
+# Copy row names
+row_names <- row.names(mat_rix)
+# sapply loop over columns and coerce to numeric
+mat_rix <- sapply(mat_rix, as.numeric)
+# Restore row names
+row.names(mat_rix) <- row_names
+# Replace NAs with zero
+mat_rix[is.na(mat_rix)] <- 0
+# matrix without NAs
+mat_rix
+
+setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())
-# get base environment
-baseenv()
-# get global environment
-globalenv()
-# get current environment
-environment()
-# get environment class
-class(environment())
-# define variable in current environment
-glob_var <- 1
-# get objects in current environment
-ls(environment())
-# create new environment
-new_env <- new.env()
-# get calling environment of new environment
-parent.env(new_env)
-# assign Value to Name
-assign("new_var1", 3, envir=new_env)
-# create object in new environment
-new_env$new_var2 <- 11
-# get objects in new environment
-ls(new_env)
-# get objects in current environment
-ls(environment())
-# environments are subset like lists
-new_env$new_var1
-# environments are subset like lists
-new_env[["new_var1"]]
-search()  # get search path for R objects
-my_list <- 
-  list(flowers=c("rose", "daisy", "tulip"), 
-       trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is in datasets base package
-library(HighFreq)  # load package HighFreq
-# ETF symbols
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind, # do.call(merge
-  as.list(rutils::etf_env)[sym_bols])
-# extract and merge adjusted prices, subset by sym_bols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
-# same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
-# drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
-    function(col_name)
-strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-# which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
+set.seed(1121)  # Reset random number generator
+library(zoo)  # Load package zoo
+# Create zoo with Date index
+in_dex <- seq(from=as.Date("2013-06-15"),
+        by="day", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to text file, and then read it back
+write.zoo(zoo_series, file="zoo_series.txt")
+zoo_read <- read.zoo("zoo_series.txt")  # Read it back
+all.equal(zoo_read, zoo_series)
+# Perform the same using write.table() and read.table()
+# first coerce zoo_series into data frame
+data_frame <- as.data.frame(zoo_series)
+data_frame <- cbind(in_dex, data_frame)
+# Write zoo_series to text file using write.table
+write.table(data_frame, file="zoo_series.txt",
+      row.names=FALSE, col.names=FALSE)
+# Read data frame from file
+zoo_read <- read.table(file="zoo_series.txt",
+                 stringsAsFactors=FALSE)
+sapply(zoo_read, class)  # A data frame
+# Coerce data frame into zoo_series
+zoo_read <- zoo::zoo(
+  drop(as.matrix(zoo_read[, -1])),
+  order.by=as.Date(zoo_read[, 1]))
+all.equal(zoo_read, zoo_series)
 
-# save xts to csv file
-write.zoo(price_s,
-     file='etf_series.csv', sep=",")
-# copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file='etf_data.RData')
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, 
-     c(mean(Girth), mean(Height), mean(Volume)))
-library(tseries)  # Load package tseries
-# Download MSFT data in ts format
-ts_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    retclass="ts",
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Calculate price adjustment vector
-adj_vector <-
-  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
-# Adjust OHLC prices
-ts_stx_adj <- ts_stx
-ts_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * ts_stx[, c("Open","High","Low","Close")]
-# Inspect the data
-tsp(ts_stx_adj)  # frequency=1
-head(time(ts_stx_adj))
-head(ts_stx_adj)
-tail(ts_stx_adj)
-library(tseries)  # Load package tseries
-# Download MSFT data
-zoo_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    quote=c("Open","High","Low","Close",
-      "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-class(zoo_stx)
-dim(zoo_stx)
-head(zoo_stx, 4)
-library(tseries)  # Load package tseries
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Calculate price adjustment vector
-adj_vector <-
-  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
-head(adj_vector, 5)
-tail(adj_vector, 5)
-# Adjust OHLC prices
-zoo_stx_adj <- zoo_stx
-zoo_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
-head(zoo_stx_adj)
-tail(zoo_stx_adj)
-library(tseries)  # Load package tseries
-# Download EUR/USD data
-zoo_eurusd <- suppressWarnings(
-  get.hist.quote(
-    instrument="EUR/USD",
-    provider="oanda",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# bind and scrub data
-zoo_stxeur <- cbind(zoo_eurusd,
-               zoo_stx[, "AdjClose"])
-colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
-zoo_stxeur <-
-  zoo_stxeur[complete.cases(zoo_stxeur),]
-save(zoo_stx, zoo_stx_adj,
-     ts_stx, ts_stx_adj,
-     zoo_eurusd, zoo_stxeur,
-     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Inspect the data
-class(zoo_eurusd)
-tail(zoo_eurusd, 4)
-library(xtable)
-# Define ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
-  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", 
-  "IWB", "IWD", "IWF", "VXX", "SVXY")
-# Read etf database into data frame
-etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv', 
-         stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# shorten names
-etf_names <- sapply(etf_list$Name,
-              function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -NROW(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
+library(zoo)  # Load package zoo
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+    sep=",", col.names=TRUE)
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=TRUE, sep=",", drop=FALSE)
+all.equal(zoo_series, drop(zoo_read))
+
+set.seed(1121)  # Reset random number generator
+# Create zoo with POSIXct date-time index
+in_dex <- seq(from=as.POSIXct("2013-06-15"),
+        by="hour", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+    sep=",", col.names=TRUE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv")
+all.equal(zoo_series, zoo_read)
+# Coerce to xts series
+x_ts <- xts::as.xts(zoo_read)
+class(x_ts); head(x_ts, 3)
+# Coerce zoo series into data frame with custom date format
+data_frame <- as.data.frame(zoo_series)
+data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
+head(data_frame, 3)
+# Write zoo series to csv file using write.table
+write.table(data_frame, file="zoo_series.csv",
+      sep=",", row.names=FALSE, col.names=FALSE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=FALSE, sep=",", FUN=as.POSIXct,
+  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+# Or using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv",
+  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+head(zoo_read, 3)
+all.equal(zoo_series, zoo_read)
+
+# Read time series from CSV file, with numeric date-time
+zoo_read <- read.table(file="C:/Develop/R/lecture_slides/data/es_ohlc.csv",
+  header=TRUE, sep=",")
+# A data frame
+class(zoo_read)
+sapply(zoo_read, class)
+# Coerce data frame into xts series
+zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
+  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
+# An xts series
+class(zoo_read)
+head(zoo_read, 3)
+
+rm(list=ls())  # Remove all objects
+var1 <- 1; var2 <- 2
+ls()  # List all objects
+ls()[1]  # List first object
+args(save)  # List arguments of save function
+# Save "var1" to a binary file using string argument
+save("var1", file="my_data.RData")
+# Save "var1" to a binary file using object name
+save(var1, file="my_data.RData")
+# Save multiple objects
+save(var1, var2, file="my_data.RData")
+# Save first object in list by passing to "..." argument
+# Ls()[1] is not evaluated
+save(ls()[1], file="my_data.RData")
+# Save first object in list by passing to "list" argument
+save(list=ls()[1], file="my_data.RData")
+# Save whole list by passing it to the "list" argument
+save(list=ls(), file="my_data.RData")
+
+rm(list=ls())  # Remove all objects
+# Load objects from file
+load_ed <- load(file="my_data.RData")
+load_ed  # vector of loaded objects
+ls()  # List objects
+# Assign new values to objects in  global environment
+sapply(load_ed, function(sym_bol) {
+  assign(sym_bol, runif(1), envir=globalenv())
 })  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list["SVXY", "Name"] <- "Short VIX Futures"
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-library(tseries)  # Load package tseries
-# Download price and volume data for sym_bols into list of zoo objects
-zoo_series <- suppressWarnings(
-  lapply(sym_bols, # Loop for loading data
-   get.hist.quote,
-   quote=c("AdjClose", "Volume"),
-   start=Sys.Date()-3650,
-   end=Sys.Date(),
-   origin="1970-01-01")  # end lapply
-)  # end suppressWarnings
-# flatten list of zoo objects into a single zoo object
-zoo_series <- rutils::do_call(cbind, zoo_series)
-# Or
-# zoo_series <- do.call(cbind, zoo_series)
-# Assign names in format "symbol.Close", "symbol.Volume"
-names(zoo_series) <-
-  as.vector(sapply(sym_bols,
-    paste, c("Close", "Volume"), sep="."))
-# save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file='zoo_series.csv', sep=",")
-# save zoo_series to a binary .RData file
-save(zoo_series, file='zoo_series.RData')
-library(HighFreq)  # Load package HighFreq
-etf_env <- new.env()  # new environment for data
-# Download data for sym_bols into etf_env from Alpha Vantage
-getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
-  output.size="full", api.key="T7JPW54ES8G75310")
-# getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
-library(HighFreq)  # Load package HighFreq
-ls(etf_env)  # List files in etf_env
-# get class of object in etf_env
-class(get(x=sym_bols[1], envir=etf_env))
-# Another way
-class(etf_env$VTI)
-colnames(etf_env$VTI)
-head(etf_env$VTI, 3)
-# get class of all objects in etf_env
-eapply(etf_env, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-library(HighFreq)  # Load package HighFreq
-# Check of object is an OHLC time series
-is.OHLC(etf_env$VTI)
-# Adjust single OHLC object using its name
-etf_env$VTI <- adjustOHLC(etf_env$VTI,
-                    use.Adjusted=TRUE)
+ls()  # List objects
+# Assign new values to objects using for loop
+for (sym_bol in load_ed) {
+  assign(sym_bol, runif(1))
+}  # end for
+ls()  # List objects
+# Save vector of objects
+save(list=load_ed, file="my_data.RData")
+# Remove only loaded objects
+rm(list=load_ed)
+# Remove the object "load_ed"
+rm(load_ed)
 
-# Adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=etf_env),
-    use.Adjusted=TRUE),
-  envir=etf_env)
+sink("sinkdata.txt")# Redirect text output to file
 
-# Adjust objects in environment using vector of strings
-for (sym_bol in ls(etf_env)) {
-  assign(sym_bol,
-   adjustOHLC(get(sym_bol, envir=etf_env),
-              use.Adjusted=TRUE),
-   envir=etf_env)
-}  # end for
-library(HighFreq)  # Load package HighFreq
-# extract and cbind all data, subset by symbols
-price_s <- rutils::do_call(cbind,
-  as.list(etf_env)[sym_bols])
-# Or
-# price_s <- do.call(cbind,
-#   as.list(etf_env)[sym_bols])
-# extract and cbind adjusted prices, subset by symbols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(etf_env)[sym_bols], Ad))
-# same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(etf_env, Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
-    function(col_name)
-strsplit(col_name, split="[.]")[[1]],
-    USE.NAMES=FALSE)[1, ]
-tail(price_s[, 1:2], 3)
-# which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-# save xts to csv file
-write.zoo(price_s,
-  file='etf_series.csv', sep=",")
-# Copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file='etf_data.RData')
-# extract VTI prices
-vt_i <- etf_env$price_s[ ,"VTI"]
-vt_i <- na.omit(vt_i)
-# Calculate percentage returns "by hand"
-vti_lag <- as.numeric(vt_i)
-vti_lag <- c(vti_lag[1], vti_lag[-NROW(vti_lag)])
-vti_lag <- xts(vti_lag, index(vt_i))
-vti_returns <- (vt_i-vti_lag)/vti_lag
-# Calculate percentage returns using dailyReturn()
-daily_returns <- quantmod::dailyReturn(vt_i)
-head(cbind(daily_returns, vti_returns))
-all.equal(daily_returns, vti_returns, check.attributes=FALSE)
-# Calculate returns for all prices in etf_env$price_s
-re_turns <- lapply(etf_env$price_s, function(x_ts) {
-  daily_returns <- quantmod::dailyReturn(x_ts)
-  colnames(daily_returns) <- names(x_ts)
-  daily_returns
-})  # end lapply
-# "re_turns" is a list of xts
-class(re_turns)
-class(re_turns[[1]])
-# flatten list of xts into a single xts
-re_turns <- rutils::do_call(cbind, re_turns)
-class(re_turns)
-dim(re_turns)
-# Copy re_turns into etf_env and save to .RData file
-assign("re_turns", re_turns, envir=etf_env)
-save(etf_env, file='etf_data.RData')
-library(quantmod)
-start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# subset all objects in environment and return as environment
-new_env <- as.environment(eapply(etf_env, "[",
-            paste(start_date, end_date, sep="/")))
-# subset only sym_bols in environment and return as environment
-new_env <- as.environment(
-  lapply(as.list(etf_env)[sym_bols], "[",
-   paste(start_date, end_date, sep="/")))
-# extract and cbind adjusted prices and return to environment
-assign("price_s", rutils::do_call(cbind,
-         lapply(ls(etf_env), function(sym_bol) {
-           x_ts <- Ad(get(sym_bol, etf_env))
-           colnames(x_ts) <- sym_bol
-           x_ts
-         })), envir=new_env)
-# get sizes of OHLC xts series in etf_env
-sapply(mget(sym_bols, envir=etf_env), object.size)
-# extract and cbind adjusted prices and return to environment
-col_name <- function(x_ts)
-  strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", rutils::do_call(cbind,
-         lapply(mget(etf_env$sym_bols, envir=etf_env),
-                function(x_ts) {
-                  x_ts <- Ad(x_ts)
-                  colnames(x_ts) <- col_name(x_ts)
-                  x_ts
-         })), envir=new_env)
-library(HighFreq)  # Load package HighFreq
-# Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
-sym_bols <- sp_500$co_tic
-# Get duplicate sym_bols
-ta_ble <- table(sym_bols)
-ta_ble[ta_ble>1]
-sym_bols <- unique(sym_bols)
-# Remove "BRK.B" and later download separately
-sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
-env_sp500 <- new.env()  # new environment for data
-# Download in while loop from Tiingo and copy into environment
-down_loaded <- sym_bols %in% ls(env_sp500)
-it_er <- 0
-while (((sum(!down_loaded)) > 0) & (it_er<10)) {
-  # Boolean vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
-  # Download data and copy it into environment
-  for (sym_bol in sym_bols[!down_loaded]) {
-    cat("processing: ", sym_bol, "\n")
-    tryCatch(  # with error handler
-getSymbols(sym_bol, src="tiingo", adjust=TRUE,
-  from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
-# error handler captures error condition
-error=function(error_cond) {
-  print(paste("error handler: ", error_cond))
-},  # end error handler
-finally=print(paste("sym_bol=", sym_bol))
-    )  # end tryCatch
-  }  # end for
-  it_er <- it_er + 1
-  Sys.sleep(2*60)
-}  # end while
-# Rename "LOW" colnames to "LO_WES"
-colnames(env_sp500$LOW) <-
-  sapply(colnames(env_sp500$LOW),
-    function(col_name) {
-col_name <- strsplit(col_name, split="[.]")[[1]]
-paste("LO_WES", col_name[2], sep=".")
-    })
-env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
-rm(LOW, envir=env_sp500)
-# Download "BRK.B" separately
-BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
-colnames(BRK_B) <- paste("BRK_B", sapply(strsplit(colnames(BRK_B), split="[.]"), function(x) x[2]), sep=".")
-env_sp500$BRK_B <- BRK_B
-# Rename "BF-B" colnames to "BF_B"
-colnames(env_sp500$"BF-B") <-
-  sapply(colnames(env_sp500$"BF-B"),
-    function(col_name) {
-col_name <- strsplit(col_name, split="[.]")[[1]]
-paste("BF_B", col_name[2], sep=".")
-    })
-env_sp500$BF_B <- env_sp500$"BF-B"
-names(colnames(env_sp500$BF_B)) <- NULL
-rm("BF-B", envir=env_sp500)
-# Coerce the time indices from class POSIXct to class Date
-for (sym_bol in ls(env_sp500)) {
-  x_ts <- get(sym_bol, envir=env_sp500)
-  index(x_ts) <- as.Date(index(x_ts))
-  assign(sym_bol, x_ts, envir=env_sp500)
-}  # end for
-save(env_sp500,
-  file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$LO_WES["2017-06/"],
-  TA="add_Vo()", name="LOWES stock")
-# Remove all files from environment(if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Download in while loop from Alpha Vantage and copy into environment
-down_loaded <- sym_bols %in% ls(env_sp500)
-it_er <- 0
-while (((sum(!down_loaded)) > 0) & (it_er<10)) {
-  # Boolean vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
-  # Download data and copy it into environment
-  for (sym_bol in sym_bols[!down_loaded]) {
-    cat("processing: ", sym_bol, "\n")
-    tryCatch(  # with error handler
-getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500,
-           output.size="full", api.key="T7JPW54ES8G75310"),
-# error handler captures error condition
-error=function(error_cond) {
-  print(paste("error handler: ", error_cond))
-},  # end error handler
-finally=print(paste("sym_bol=", sym_bol))
-    )  # end tryCatch
-  }  # end for
-  it_er <- it_er + 1
-  Sys.sleep(2*60)
-}  # end while
-# Adjust all OHLC prices in environment
-for (sym_bol in ls(env_sp500)) {
-  assign(sym_bol,
-    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE),
-    envir=env_sp500)
-}  # end for
-library(HighFreq)  # Load package HighFreq
-# Assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
-       TA="add_Vo()",
-       name="S&P500 index")
-library(HighFreq)  # Load package HighFreq
-# Assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# Download DJIA prices into etf_env
-getSymbols("DJIA", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$DJIA["2016/"],
-       TA="add_Vo()",
-       name="DJIA index")
-library(HighFreq)  # Load package HighFreq
-library(RCurl)  # Load package RCurl
-library(XML)  # Load package XML
-# Download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-              stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# Create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
-write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-  row.names=FALSE)
-library(HighFreq)  # Load package HighFreq
-# Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# Register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])),
-    names=sp_500$names[in_dex]))
-}  # end for
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
-# Or download in loop
-for (sym_bol in sp_500$names) {
-  cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
-       name="BRK-B stock")
-library(quantmod)
-# Download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-            auto.assign=FALSE,
-            src="FRED")
-# plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-      name="U.S. unemployment rate")
-library(HighFreq)  # Load package HighFreq
-install.packages("devtools")
-library(devtools)
-# Install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # Load package Quandl
-# Register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
+cat("Redirect text output from R\n")
+print(runif(10))
+cat("\nEnd data\nbye\n")
+
+sink()  # turn redirect off
+
+pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
+
+cat("Redirect data from R into pdf file\n")
+my_var <- seq(-2*pi, 2*pi, len=100)
+plot(x=my_var, y=sin(my_var), main="Sine wave",
+   xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn pdf output off
+
+png("r_plot.png")  # Redirect graphics output to png file
+
+cat("Redirect graphics from R into png file\n")
+plot(x=my_var, y=sin(my_var), main="Sine wave",
+ xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
+
+dev.off()  # turn png output off
+
+# Install package data.table
+install.packages("data.table")
+# Load package data.table
+library(data.table)
+# get documentation for package data.table
 # get short description
-packageDescription("Quandl")
+packageDescription("data.table")
 # Load help page
-help(package="Quandl")
-# Remove Quandl from search path
-detach("package:Quandl")
-library(HighFreq)  # Load package HighFreq
-# Download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL",
-            type="xts", start_date="1990-01-01")
-x11(width=14, height=7)
-chart_Series(price_s["2016", 1:4],
-    name="AAPL OHLC prices")
-# Add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# Download euro currency rates
-price_s <- Quandl(code="BNP/USDEUR",
-    start_date="2013-01-01",
-    end_date="2013-12-01", type="xts")
-# Download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-    start_date="2013-01-01", type="xts")
-# Download AAPL gross profits
-prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
-    type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# Download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST",
-    start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1],
-       name="AAPL Hurst")
-library(HighFreq)  # Load package HighFreq
-# Load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# Replace "-" with "_" in symbols
-sp_500$free_code <-
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
+help(package="data.table")
+# List all datasets in "data.table"
+data(package="data.table")
+# List all objects in "data.table"
+ls("package:data.table")
+# Remove data.table from search path
+detach("package:data.table")
+
+# Create a data table
+library(data.table)
+data_table <- data.table::data.table(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+# Print data_table
+class(data_table); data_table
+# column referenced without quotes
+data_table[, col2]
+# row referenced without a following comma
+data_table[2]
+# Print option "datatable.print.nrows"
+getOption("datatable.print.nrows")
+options(datatable.print.nrows=10)
+getOption("datatable.print.nrows")
+# Number of rows in data_table
+NROW(data_table)
 # Or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"),
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
+data_table[, NROW(col1)]
 # Or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-library(HighFreq)  # Load package HighFreq
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# Download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-            start_date="1990-01-01",
-            type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-       name="XOM stock")
-library(HighFreq)
-library(Quandl)
-# Register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# Download E-mini S&P500 futures prices
-price_s <- Quandl(code="CHRIS/CME_ES1",
-  type="xts", start_date="1990-01-01")
-price_s <- price_s[, c("Open", "High", "Low", "Last", "Volume")]
-colnames(price_s)[4] <- "Close"
-# plot the prices
-x11(width=5, height=4)  # Open x11 for plotting
-chart_Series(x=price_s["2008-06/2009-06"],
-       TA="add_Vo()",
-       name="S&P500 Futures")
-# plot dygraph
-dygraphs::dygraph(price_s["2008-06/2009-06", -5],
-  main="S&P500 Futures") %>%
-  dyCandlestick()
-# Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
-  stringsAsFactors=FALSE, row.names=1)
-data_dir <- "C:/Develop/data/vix_data"
-dir.create(data_dir)
-sym_bols <- rownames(date_s)
-file_names <- file.path(data_dir, paste0(sym_bols, ".csv"))
-log_file <- file.path(data_dir, "log_file.txt")
-cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
-url_s <- paste0(cboe_url, date_s[, 1])
-# Download files in loop
-for (it in seq_along(url_s)) {
-    tryCatch(  # warning and error handler
-  download.file(url_s[it],
-          destfile=file_names[it], quiet=TRUE),
-# warning handler captures warning condition
-warning=function(warning_cond) {
-  cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
-},  # end warning handler
-# error handler captures error condition
-error=function(error_cond) {
-  cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
-},  # end error handler
-finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
-    )  # end tryCatch
-}  # end for
-# Create new environment for data
-vix_env <- new.env()
-# Download VIX data for the months 6, 7, and 8 in 2018
-library(qmao)
-quantmod::getSymbols("VX", Months=1:12,
-  Years=2018, src="cfe", env=vix_env)
+data_table[, .N]
+# microbenchmark speed of data.table syntax
+library(microbenchmark)
+summary(microbenchmark(
+  dt=data_table[, .N],
+  pure_r=NROW(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Create data frame and coerce it to data table
+data_table <- data.frame(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+class(data_table); data_table
+data.table::setDT(data_table)
+class(data_table); data_table
+# Coerce data_table into data frame
+data.table::setDF(data_table)
+class(data_table); data_table
 # Or
-qmao::getSymbols.cfe(Symbols="VX",
-  Months=6:8, Years=2018, env=vix_env,
-  verbose=FALSE, auto.assign=TRUE)
-# Calculate the classes of all the objects
-# In the environment vix_env
-unlist(eapply(vix_env,
-  function(x) {class(x)[1]}))
-class(vix_env$VX_M18)
-colnames(vix_env$VX_M18)
-# Save the data to a binary file called "vix_cboe.RData".
-save(vix_env,
-  file="C:/Develop/data/vix_data/vix_cboe.RData")
+data_table <- data.table:::as.data.frame.data.table(data_table)
+# SetDF() is much faster than as.data.frame()
+summary(microbenchmark(
+  as.data.frame=data.table:::as.data.frame.data.table(data_table),
+  setDF=data.table::setDF(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
+
+# Read a data table from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
+# fread() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+    setDF(fread(file_name)))
+# fread() is much faster than read.csv()
+summary(microbenchmark(
+  pure_r=read.csv(file_name),
+  data.table=setDF(fread(file_name)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+# Or
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+# Or
+data_table[, .(origin, month)]
+# Select two columns and rename them
+data_table[, list(or=origin, mo=month)]
+
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or
+NROW(data_table[carrier_delay > 0])
+# microbenchmark speed of data.table syntax
+summary(microbenchmark(
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=NROW(data_table[carrier_delay > 0]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay),
+         aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Or with names for output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N),
+     by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N),
+     by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)),
+     by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     keyby=.(airport=origin, month=month)]
+
+# Sort data_table by origin in ascending order, then by dest in descending order
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)]
+# Sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)][order(month)]
+
+# Return all columns except origin and dest
+data_table[1:7]
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+# Return all columns except origin and dest
+data_table[1:7, .SD,
+     by=.(origin, dest), .SDcols="aircraft_delay"]
+# Return the columns carrier_delay, weather_delay, aircraft_delay
+data_table[1:7, .SD,
+     by=.(origin, dest),
+     .SDcols=c("carrier_delay", "weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay by origin
+data_table[,
+     lapply(.SD, mean),
+     by=.(origin),
+     .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[,
+     .(weather_delay=mean(weather_delay), aircraft_delay=mean(aircraft_delay)),
+     by=.(origin)]
+
+# Install package fst
+install.packages("fst")
+# Load package fst
+library(fst)
+# get documentation for package fst
+# get short description
+packageDescription("fst")
+# Load help page
+help(package="fst")
+# List all datasets in "fst"
+data(package="fst")
+# List all objects in "fst"
+ls("package:fst")
+# Remove fst from search path
+detach("package:fst")
+
+# Read a data frame from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data.table::setDF(data_frame)
+class(data_frame); dim(data_frame)
+# Write data frame to .fst file in different ways
+fst::write_fst(data_frame, path="data_frame.fst")
+write.csv(data_frame, file="data_frame2.csv")
+# microbenchmark speed of fst::write_fst()
+library(microbenchmark)
+summary(microbenchmark(
+  fst=fst::write_fst(data_frame, path="data_frame.csv"),
+  write_csv=write.csv(data_frame, file="data_frame2.csv"),
+  cat=cat(unlist(data_frame), file="data_frame3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# fst::read_fst() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+    fst::read_fst("data_frame.fst"))
+# fst::read_fst() is 10 times faster than read.csv()
+summary(microbenchmark(
+  fst=fst::read_fst("data_frame.fst"),
+  read_csv=read.csv(file_name),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Create reference to data file similar to a data frame
+fs_t <- fst::fst("data_frame.fst")
+class(fs_t)
+dim(data_frame); dim(fs_t)
+# Get classes of data frame columns
+sapply(data_frame, class)
+sapply(fs_t, class)
+# Get sizes of all objects in workspace
+sort(sapply(mget(ls()), object.size))

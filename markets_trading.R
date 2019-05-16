@@ -1,9 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
 library(quantmod)  # load package quantmod
@@ -258,10 +252,10 @@ future_s <- rbind(c("S&P500 index", "SP", "ES"),
               c("Japanese Yen", "JY", "J7"))
 colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
 print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
-# Load data for S&P Emini futures December 2018 contract
+# Load data for S&P Emini futures June 2019 contract
 sym_bol <- "ES"
-data_dir <- "C:/Develop/data/ib_data"
-file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
+dir_name <- "C:/Develop/data/ib_data"
+file_name <- file.path(dir_name, paste0(sym_bol, ".csv"))
 # Read a data table from CSV file
 price_s <- data.table::fread(file_name)
 # Coerce price_s into data frame
@@ -287,8 +281,8 @@ chart_Series(x=price_s, TA="add_Vo()",
 dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
   dyCandlestick()
 # Load ESU8 data
-data_dir <- "C:/Develop/data/ib_data"
-file_name <- file.path(data_dir, "ESU8.csv")
+dir_name <- "C:/Develop/data/ib_data"
+file_name <- file.path(dir_name, "ESU8.csv")
 ES_U8 <- data.table::fread(file_name)
 data.table::setDF(ES_U8)
 ES_U8 <- xts::xts(ES_U8[, 2:6],
@@ -296,7 +290,7 @@ ES_U8 <- xts::xts(ES_U8[, 2:6],
     tz="America/New_York", origin="1970-01-01")))
 colnames(ES_U8) <- c("Open", "High", "Low", "Close", "Volume")
 # Load ESM8 data
-file_name <- file.path(data_dir, "ESM8.csv")
+file_name <- file.path(dir_name, "ESM8.csv")
 ES_M8 <- data.table::fread(file_name)
 data.table::setDF(ES_M8)
 ES_M8 <- xts::xts(ES_M8[, 2:6],
@@ -446,13 +440,13 @@ chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
 chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
        theme=plot_theme, name="SVXY ETF")
 library(xtable)
-# Read etf database into data frame
+# Read table of fundamental data into data frame
 fundamental_data <-
   read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
                stringsAsFactors=FALSE)
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
 library(xtable)
-# Read etf database into data frame
+# Read table of fundamental data into data frame
 fundamental_data <-
   read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
                stringsAsFactors=FALSE)
@@ -468,7 +462,7 @@ Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
 # Download RAYMOND metadata
 # https://www.quandl.com/data/RAYMOND-Raymond/documentation/metadata
 
-# Download S&P500 Index sonstituents
+# Download S&P500 Index constituents
 # https://s3.amazonaws.com/static.quandl.com/tickers/SP500.csv
 
 # Download AAPL gross profits from RAYMOND
@@ -619,6 +613,8 @@ data(package="IBrokers")
 ls("package:IBrokers")
 # Remove IBrokers from search path
 detach("package:IBrokers")
+# Install package IBrokers2
+devtools::install_github(repo="algoquant/IBrokers2")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
@@ -641,21 +637,21 @@ IBrokers::twsPortfolioValue(ib_account)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
+con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
+# Define S&P Emini future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define 10yr Treasury future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
+  exch="ECBOT", expiry="201906")
+# Define euro currency future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define Gold future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
+  exch="NYMEX", expiry="201906")
 # Define Oil future January 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="QM",
   exch="NYMEX", expiry="201901")
@@ -669,39 +665,66 @@ install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 con_tract <- twsInstrument::getContract("317631411")
 # Download list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
-# Define VIX monthly and weekly futures October 2018 contract
+# Define VIX monthly and weekly futures June 2019 contract
 sym_bol <- "VIX"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="CFE", expiry="201810")
-# Define VIX monthly futures October 2018 contract
+  exch="CFE", expiry="201906")
+# Define VIX monthly futures June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  local="VXV8", exch="CFE", expiry="201810")
+  local="VXV8", exch="CFE", expiry="201906")
 # Define VIX weekly futures October 3rd 2018 contract
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  local="VX40V8", exch="CFE", expiry="201810")
+  local="VX40V8", exch="CFE", expiry="201906")
 # Download list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect,
   Contract=con_tract)
-# Define S&P Emini futures December 2018 contract
+# Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
+  exch="GLOBEX", expiry="201906")
 # Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_201812.csv"))
+dir_name <- "C:/Develop/data/ib_data"
+dir.create(dir_name)
+file_name <- file.path(dir_name, paste0(sym_bol, "_201906.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
+# Write header to file
+cat(paste(paste(sym_bol, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "Count"), sep="."), collapse=","), "\n", file=file_connect)
 # Download historical data to file
 IBrokers::reqHistoricalData(conn=ib_connect,
   Contract=con_tract,
-  # whatToShow="MIDPOINT",
-  # endDateTime=ib_time,
   barSize="1 day", duration="6 M",
   file=file_connect)
 # Close data file
 close(file_connect)
+# Close the Interactive Brokers API connection
+IBrokers::twsDisconnect(ib_connect)
+# Define IB contract objects for stock symbols
+sym_bols <- c("AAPL", "F", "MSFT")
+con_tracts <- lapply(sym_bols, IBrokers::twsEquity, primary="ISLAND")
+# Open file connections for data download
+dir_name <- "C:/Develop/data/ib_data"
+file_names <- file.path(dir_name, paste0(sym_bols, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
+file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
+# Connect to Interactive Brokers TWS
+ib_connect <- IBrokers::twsConnect(port=7497)
+# Download historical 1-minute bar data to files
+for (it in 1:NROW(sym_bols)) {
+  sym_bol <- sym_bols[it]
+  file_connect <- file_connects[[it]]
+  con_tract <- con_tracts[[it]]
+  cat("Downloading data for: ", sym_bol, "\n")
+  # Write header to file
+  cat(paste(paste(sym_bol, c("Index", "Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"), sep="."), collapse=","), "\n", file=file_connect)
+  IBrokers::reqHistoricalData(conn=ib_connect,
+                         Contract=con_tract,
+                         barSize="1 min", duration="2 D",
+                         file=file_connect)
+  Sys.sleep(10) # 10s pause to avoid IB pacing violation
+}  # end for
+# Close data files
+for (file_connect in file_connects) close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
 # Define S&P Emini futures June 2018 contract
@@ -709,8 +732,8 @@ sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
-# Open file for ESM8 data download
-file_name <- file.path(data_dir, paste0(sym_bol, "M8.csv"))
+# Open file connection for ESM8 data download
+file_name <- file.path(dir_name, paste0(sym_bol, "M8.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -741,10 +764,10 @@ sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, ".csv"))
+# Open file connection for data download
+dir_name <- "C:/Develop/data/ib_data"
+dir.create(dir_name)
+file_name <- file.path(dir_name, paste0(sym_bol, ".csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -757,14 +780,14 @@ IBrokers::reqHistoricalData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
-# Define S&P Emini futures December 2018 contract
+# Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_taq_live.csv"))
+  exch="GLOBEX", expiry="201906")
+# Open file connection for data download
+dir_name <- "C:/Develop/data/ib_data"
+# Dir.create(dir_name)
+file_name <- file.path(dir_name, paste0(sym_bol, "_taq_live.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -777,14 +800,14 @@ IBrokers::reqMktData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
-# Define S&P Emini futures December 2018 contract
+# Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
-  exch="GLOBEX", expiry="201812")
-# Open file for data download
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
-file_name <- file.path(data_dir, paste0(sym_bol, "_ohlc_live.csv"))
+  exch="GLOBEX", expiry="201906")
+# Open file connection for data download
+dir_name <- "C:/Develop/data/ib_data"
+# Dir.create(dir_name)
+file_name <- file.path(dir_name, paste0(sym_bol, "_ohlc_live.csv"))
 file_connect <- file(file_name, open="w")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
@@ -806,21 +829,21 @@ colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
 # Plot OHLC data in x11 window
 x11()
 chart_Series(x=price_s, TA="add_Vo()",
-       name="S&P500 ESZ8 futures")
+       name="S&P500 ESM9 futures")
 # Plot dygraph
 library(dygraphs)
-dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESZ8 futures") %>%
+dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM9 futures") %>%
   dyCandlestick()
 library(IBrokers)
 # Define list of S&P futures and 10yr Treasury contracts
-con_tracts <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201812"),
-             ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201812"))
-# Open the file for storing the bar data
-data_dir <- "C:/Develop/data/ib_data"
-file_names <- file.path(data_dir, paste0(c("ES_", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
+con_tracts <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906"),
+             ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201906"))
+# Open the file connection for storing the bar data
+dir_name <- "C:/Develop/data/ib_data"
+file_names <- file.path(dir_name, paste0(c("ES_", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
 file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
 # Connect to Interactive Brokers TWS
-ib_connect <- IBrokers2::twsConnect(port=7497)
+ib_connect <- IBrokers::twsConnect(port=7497)
 # Download live data to file
 IBrokers::reqRealTimeBars(conn=ib_connect,
                     Contract=con_tracts,
@@ -833,16 +856,16 @@ IBrokers::twsDisconnect(ib_connect)
 for (file_connect in file_connects)
   close(file_connect)
 library(data.table)
-# Load ES futures December 2018 contract and coerce it into xts series
+# Load ES futures June 2019 contract and coerce it into xts series
 price_s <- data.table::fread(file_names[1])
 price_s <- xts::xts(price_s[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(price_s[, V1]), tz="America/New_York", origin="1970-01-01"))
 colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
 # Plot dygraph
 library(dygraphs)
-dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESZ8 futures") %>%
+dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM9 futures") %>%
   dyCandlestick()
-# Load ZN 10yr Treasury futures December 2018 contract
+# Load ZN 10yr Treasury futures June 2019 contract
 price_s <- data.table::fread(file_names[2])
 price_s <- xts::xts(price_s[, paste0("V", 2:6)],
   as.POSIXct.numeric(as.numeric(price_s[, V1]), tz="America/New_York", origin="1970-01-01"))
@@ -850,18 +873,18 @@ colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
 # Plot dygraph
 dygraphs::dygraph(price_s[, 1:4], main="ZN 10yr Treasury futures") %>%
   dyCandlestick()
-# Define S&P Emini future December 2018 contract
-con_tract <- IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201812")
+# Define S&P Emini future June 2019 contract
+con_tract <- IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906")
 # Define euro currency contract EUR.USD
 con_tract <- IBrokers::twsCurrency("EUR", currency="USD")
-# Define euro currency E-mini futures December 2018 contract E7Z8
-con_tract <- IBrokers::twsFuture(symbol="E7", exch="GLOBEX", expiry="201812")
+# Define euro currency E-mini futures June 2019 contract E7Z8
+con_tract <- IBrokers::twsFuture(symbol="E7", exch="GLOBEX", expiry="201906")
 # Define Japanese yen currency contract JPY.USD
 con_tract <- IBrokers::twsCurrency("JPY", currency="USD")
-# Define Japanese yen currency E-mini futures December 2018 contract J7Z8
-con_tract <- IBrokers::twsFuture(symbol="J7", exch="GLOBEX", expiry="201812")
-# Define Japanese yen currency futures December 2018 contract 6JZ8
-con_tract <- IBrokers::twsFuture(symbol="JPY", exch="GLOBEX", expiry="201812")
+# Define Japanese yen currency E-mini futures June 2019 contract J7Z8
+con_tract <- IBrokers::twsFuture(symbol="J7", exch="GLOBEX", expiry="201906")
+# Define Japanese yen currency futures June 2019 contract 6JZ8
+con_tract <- IBrokers::twsFuture(symbol="JPY", exch="GLOBEX", expiry="201906")
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
@@ -986,34 +1009,34 @@ eWrapper_realtimebars <- function(n = 1) {
   }  # end eW$realtimeBars
   return(eW)
 }  # end eWrapper_realtimebars
-# Define S&P Emini futures December 2018 contract
+# Define S&P Emini futures June 2019 contract
 snp_contract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define VIX futures December 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define VIX futures June 2019 contract
 vix_contract <- IBrokers::twsFuture(symbol="VIX",
-  local="VXZ8", exch="CFE", expiry="201812")
-# Define 10yr Treasury futures December 2018 contract
+  local="VXZ8", exch="CFE", expiry="201906")
+# Define 10yr Treasury futures June 2019 contract
 trs_contract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define Emini gold futures December 2018 contract
+  exch="ECBOT", expiry="201906")
+# Define Emini gold futures June 2019 contract
 gold_contract <- IBrokers::twsFuture(symbol="YG",
-  exch="NYSELIFFE", expiry="201812")
-# Define euro currency future December 2018 contract
+  exch="NYSELIFFE", expiry="201906")
+# Define euro currency future June 2019 contract
 euro_contract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201812")
+  exch="GLOBEX", expiry="201906")
 IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
 
 # Define data directory
-data_dir <- "C:/Develop/data/ib_data"
-# Dir.create(data_dir)
+dir_name <- "C:/Develop/data/ib_data"
+# Dir.create(dir_name)
 
 # Open file for error messages
 file_root <- "replay"
-file_name <- file.path(data_dir, paste0(file_root, "_error.csv"))
+file_name <- file.path(dir_name, paste0(file_root, "_error.csv"))
 error_connect <- file(file_name, open="w")
 
 # Open file for raw data
-file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+file_name <- file.path(dir_name, paste0(file_root, "_raw.csv"))
 raw_connect <- file(file_name, open="w")
 
 # Create empty eWrapper to redirect error messages to error file
@@ -1044,14 +1067,14 @@ close(error_connect)
 Replay the raw data
 
 # Open file with raw data
-file_name <- file.path(data_dir, paste0(file_root, "_raw.csv"))
+file_name <- file.path(dir_name, paste0(file_root, "_raw.csv"))
 raw_connect <- IBrokers::twsConnect(file_name)
 class(raw_connect) <- c("twsPlayback", class(raw_connect))
 # Replay the raw data
 IBrokers::reqMktData(raw_connect, list(snp_contract, vix_contract))
 
 # Open file for data
-file_connect <- file(file.path(data_dir, "temp.csv"), open="w")
+file_connect <- file(file.path(dir_name, "temp.csv"), open="w")
 # Download TAQ data to file
 IBrokers::reqMktData(conn=raw_connect,
      Contract=snp_contract,
@@ -1064,21 +1087,21 @@ close(file_connect)
 IBrokers::twsDisconnect(raw_connect)
 
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
+con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
+# Define S&P Emini future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define 10yr Treasury future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
+  exch="ECBOT", expiry="201906")
+# Define euro currency future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define Gold future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
+  exch="NYMEX", expiry="201906")
 # test if contract object is correct
 IBrokers::is.twsContract(con_tract)
 # Download list with instrument information
@@ -1090,21 +1113,21 @@ con_tract <- twsInstrument::getContract("317631411")
 # Download list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL")
+con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
-# Define S&P Emini future December 2018 contract
+# Define S&P Emini future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ES",
-  exch="GLOBEX", expiry="201812")
-# Define 10yr Treasury future December 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define 10yr Treasury future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ZN",
-  exch="ECBOT", expiry="201812")
-# Define euro currency future October 2018 contract
+  exch="ECBOT", expiry="201906")
+# Define euro currency future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="EUR",
-  exch="GLOBEX", expiry="201810")
-# Define Gold future July 2018 contract
+  exch="GLOBEX", expiry="201906")
+# Define Gold future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="GC",
-  exch="NYMEX", expiry="201807")
+  exch="NYMEX", expiry="201906")
 # test if contract object is correct
 IBrokers::is.twsContract(con_tract)
 # Download list with instrument information

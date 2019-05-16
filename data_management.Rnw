@@ -722,7 +722,7 @@ save(list=ls(), file="my_data.RData")
       The vector of names can be used to manipulate the objects in loops, or to pass them to functions.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<>>=
+      <<echo=TRUE,eval=FALSE>>=
 rm(list=ls())  # Remove all objects
 # Load objects from file
 load_ed <- load(file="my_data.RData")
@@ -817,11 +817,13 @@ dev.off()  # turn png output off
     \column{0.5\textwidth}
       The package 
       \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}} 
-      contains functions designed for high performance data management.
+      is designed for high performance data management.
       \vskip1ex
       The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
       \vskip1ex
-      The package \emph{data.table} is optimized for high performance (speed), and \emph{data tables} are faster and more convenient to work with than \emph{data frames}.
+      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
+      \vskip1ex
+      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place) without copying data in memory.
       \vskip1ex
       Some of the attractive features of package \emph{data.table} are:
       \begin{itemize}
@@ -869,45 +871,46 @@ detach("package:data.table")
     \column{0.5\textwidth}
       \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
       \vskip1ex
+      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
+      \vskip1ex
       The function \texttt{data.table::data.table()} creates a \emph{data table} object.
       \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (not by strings), and their rows can be referenced without a following comma.
+      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
       \vskip1ex
-      The function \texttt{data.table::setDT()} coerces \emph{data frames} to \emph{data tables} by reference (in place without copying data), which is very fast.
+      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
       \vskip1ex
-      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{setDT()}.
+      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
       \vskip1ex
-      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{as.data.table()}.
+      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create a data table
 library(data.table)
-data_table <- data.table::data.table(col1=rnorm(5e3), col2=rnorm(5e3), col3=rnorm(5e3))
-class(data_table)
-head(data_table)
-# Create a matrix and coerce it to a data table
-mat_rix <- matrix(rnorm(5e3), nc=5)
-data_table <- as.data.frame(mat_rix)
-data.table::setDT(data_table)
-# Coerce xts to a data frame
-library(rutils)
-price_s <- rutils::etf_env$VTI
-class(price_s)
-head(price_s)
-price_s <- as.data.frame(price_s)
-# Coerce data frame to a data table
-data.table::setDT(price_s, keep.rownames=TRUE)
-# Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
-  keep.rownames=TRUE)
-all.equal(price_s, data_table, check.attributes=FALSE)
-sapply(price_s, class)
-sapply(data_table, class)
-# column referenced by name not string
-head(data_table[, VTI.Open])
+data_table <- data.table::data.table(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+# Print data_table
+class(data_table); data_table
+# column referenced without quotes
+data_table[, col2]
 # row referenced without a following comma
-data_table[1]
+data_table[2]
+# Print option "datatable.print.nrows"
+getOption("datatable.print.nrows")
+options(datatable.print.nrows=10)
+getOption("datatable.print.nrows")
+# Number of rows in data_table
+NROW(data_table)
+# Or
+data_table[, NROW(col1)]
+# Or
+data_table[, .N]
+# microbenchmark speed of data.table syntax
+library(microbenchmark)
+summary(microbenchmark(
+  dt=data_table[, .N],
+  pure_r=NROW(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -921,25 +924,72 @@ data_table[1]
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{data.table::setDF()} coerces a \emph{data table} object into a \emph{data frame} using a \emph{side effect}, without making copies of data.
+    \column{0.4\textwidth}
+      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
+      \vskip1ex
+      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference, without returning any values or copying data to a new memory location, which makes them very fast.
       \vskip1ex
       \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
       \vskip1ex
-    \column{0.5\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Create data frame and coerce it to data table
+data_table <- data.frame(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+class(data_table); data_table
+data.table::setDT(data_table)
+class(data_table); data_table
 # Coerce data_table into data frame
 data.table::setDF(data_table)
-class(data_table)
+class(data_table); data_table
 # Or
 data_table <- data.table:::as.data.frame.data.table(data_table)
 # SetDF() is much faster than as.data.frame()
-library(microbenchmark)
 summary(microbenchmark(
   as.data.frame=data.table:::as.data.frame.data.table(data_table),
   setDF=data.table::setDF(data_table),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Frames}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
+      \vskip1ex
+      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
+      \vskip1ex
+      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -968,17 +1018,17 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Read a data table from CSV file
 dir_name <- "C:/Develop/R/lecture_slides/data/"
-data_table <- data.table::fread(file.path(dir_name, "weather_delays14.csv"))
-class(data_table)
-dim(data_table)
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
 # fread() reads the same data as read.csv()
-all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
-          data.table::setDF(data.table::fread("weather_delays14.csv")))
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+          setDF(fread(file_name)))
 # fread() is much faster than read.csv()
-library(microbenchmark)
 summary(microbenchmark(
-  pure_r=read.csv("weather_delays14.csv"),
-  data.table=data.table:::setDF(data.table::fread("weather_delays14.csv")),
+  pure_r=read.csv(file_name),
+  data.table=setDF(fread(file_name)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Write data table to file in different ways
 data.table::fwrite(data_table, file="data_table.csv")
@@ -998,35 +1048,222 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Manipulating \protect\emph{Data Table} Objects}
+\subsection{Subsetting \protect\emph{Data Table} Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} columns can be referenced directly by their names, as if they were variables.
+    \column{0.4\textwidth}
+      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}. 
       \vskip1ex
       \emph{Data table} rows can be subset without a following comma.
-    \column{0.5\textwidth}
+      \vskip1ex
+      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables) after a comma.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of their names.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load data table from CSV file
-data_table <- data.table::fread(file.path(dir_name, "flights14.csv"))
-class(data_table); dim(data_table)
-# Subset using multiple logical clauses
-jfk_flights <- data_table[origin == "JFK" & month == 6]
-# Subset first five rows
-jfk_flights[1:5]
-# Sort data table by "origin" column in ascending order, then by "dest" in descending order
-data_table <- data_table[order(origin, -dest)]
-# fsort() is much slower than sort() !
-da_ta <- runif(1e3)
-all.equal(sort(da_ta), data.table::fsort(da_ta))
-library(microbenchmark)
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+# Or
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+# Or
+data_table[, .(origin, month)]
+# Select two columns and rename them
+data_table[, list(or=origin, mo=month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Computations on \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Computations on \emph{data tables} can be performed using commands resembling the \emph{SQL} database language.
+      \vskip1ex
+      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
+      \vskip1ex
+      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or
+NROW(data_table[carrier_delay > 0])
+# microbenchmark speed of data.table syntax
 summary(microbenchmark(
-  pure_r=sort(da_ta),
-  data.table=data.table::fsort(da_ta),
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=NROW(data_table[carrier_delay > 0]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay), 
+               aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{data table} can be \emph{aggregated} over groups defined by one or more columns, passed to the \texttt{by} operator.
+      \vskip1ex
+      The square braces (brackets) \texttt{"[]"} operator accepts three arguments separated by commas:      \begin{itemize}
+        \item row numbers to select, 
+        \item list of columns to select, 
+        \item the \texttt{by} operator with the aggregation columns (function).
+      \end{itemize}
+      The \texttt{keyby} operator sorts the output according to the aggregation columns.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of their names.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Or with names for output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N), 
+           by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N), 
+           by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)), 
+           by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           keyby=.(airport=origin, month=month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sorting \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
+      \vskip1ex
+      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order.
+      \vskip1ex
+      The brackets \texttt{"[]"} operators can be chained together to perform several computations.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Sort data_table by origin in ascending order, then by dest in descending order
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)]
+# Sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)][order(month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Selecting and Aggregating \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The operator \texttt{.SD} returns the \emph{data table} columns passed to the \texttt{by} operator, followed by all the other columns.
+      \vskip1ex
+      The operator \texttt{.SDcols} allows selecting the additional columns after the \texttt{.SD} operator columns.
+      \vskip1ex
+      The operator \texttt{.SDcols} selects the additional columns returned after the \texttt{.SD} operator columns.
+      \vskip1ex
+      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Return all columns except origin and dest
+data_table[1:7]
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+# Return all columns except origin and dest
+data_table[1:7, .SD, 
+           by=.(origin, dest), .SDcols="aircraft_delay"]
+# Return the columns carrier_delay, weather_delay, aircraft_delay
+data_table[1:7, .SD, 
+           by=.(origin, dest), 
+           .SDcols=c("carrier_delay", "weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay by origin
+data_table[, 
+           lapply(.SD, mean), 
+           by=.(origin), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[, 
+           .(weather_delay=mean(weather_delay), aircraft_delay=mean(aircraft_delay)), 
+           by=.(origin)]
       @
   \end{columns}
 \end{block}
@@ -1041,18 +1278,16 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Data table} columns can be referenced directly by their names, as if they were variables.
+      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables) after a comma.
       \vskip1ex
       \emph{Data table} rows can be subset without a following comma.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Load data table from CSV file
-data_table <- data.table::fread(file.path(dir_name, "flights14.csv"))
-class(data_table); dim(data_table)
-# Subset using multiple logical clauses
-jfk_flights <- data_table[origin == "JFK" & month == 6]
-# Subset first five rows
+# Select using multiple logical clauses
+jfk_flights <- data_table[origin=="JFK" & month==6]
+dim(data_table); dim(jfk_flights)
+# Select first five rows
 jfk_flights[1:5]
 # Sort data table by "origin" column in ascending order, then by "dest" in descending order
 data_table <- data_table[order(origin, -dest)]
@@ -1134,8 +1369,8 @@ detach("package:fst")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read a data frame from CSV file
-setwd("C:/Develop/R/lecture_slides/data")
-data_frame <- data.table::fread("weather_delays14.csv")
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
 data.table::setDF(data_frame)
 class(data_frame); dim(data_frame)
 # Write data frame to .fst file in different ways
@@ -1149,12 +1384,12 @@ summary(microbenchmark(
   cat=cat(unlist(data_frame), file="data_frame3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
           fst::read_fst("data_frame.fst"))
 # fst::read_fst() is 10 times faster than read.csv()
 summary(microbenchmark(
   fst=fst::read_fst("data_frame.fst"),
-  read_csv=read.csv("weather_delays14.csv"),
+  read_csv=read.csv(file_name),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Create reference to data file similar to a data frame
 fs_t <- fst::fst("data_frame.fst")
@@ -1239,7 +1474,7 @@ tail(ts_stx_adj)
       \vskip1ex
       The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
       \vskip1ex
-      The \texttt{"AdjClose"} data field is for the \emph{close} price adjusted for stock splits and dividends,
+      The \texttt{"AdjClose"} data field is for the \emph{Close} price adjusted for stock splits and dividends,
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -1387,10 +1622,10 @@ sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "IWB", "IWD", "IWF", "VXX", "SVXY")
 # Read etf database into data frame
 etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv',
+  file="C:/Develop/R/lecture_slides/data/etf_list.csv",
                stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
-# Subset etf_list only those ETF's in sym_bols
+# Select from etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
 # Shorten names
 etf_names <- sapply(etf_list$Name,
@@ -1487,9 +1722,9 @@ names(zoo_series) <-
   as.vector(sapply(sym_bols,
     paste, c("Close", "Volume"), sep="."))
 # Save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file='zoo_series.csv', sep=",")
+write.zoo(zoo_series, file="zoo_series.csv", sep=",")
 # Save zoo_series to a binary .RData file
-save(zoo_series, file='zoo_series.RData')
+save(zoo_series, file="zoo_series.RData")
       @
   \end{columns}
 \end{block}
@@ -1645,10 +1880,10 @@ head(price_s[, 1:2], 3)
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
-  file='etf_series.csv', sep=",")
+  file="etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
-save(etf_env, file='etf_data.RData')
+save(etf_env, file="etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -1696,7 +1931,7 @@ class(re_turns)
 dim(re_turns)
 # Copy re_turns into etf_env and save to .RData file
 assign("re_turns", re_turns, envir=etf_env)
-save(etf_env, file='etf_data.RData')
+save(etf_env, file="etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -1721,10 +1956,10 @@ save(etf_env, file='etf_data.RData')
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)
 start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# Subset all objects in environment and return as environment
+# Select all objects in environment and return as environment
 new_env <- as.environment(eapply(etf_env, "[",
                   paste(start_date, end_date, sep="/")))
-# Subset only sym_bols in environment and return as environment
+# Select only sym_bols in environment and return as environment
 new_env <- as.environment(
   lapply(as.list(etf_env)[sym_bols], "[",
          paste(start_date, end_date, sep="/")))
@@ -1787,9 +2022,9 @@ sp_500[sym_bols %in% dupli_cate, ]
 # Get unique tickers
 sym_bols <- unique(sym_bols)
 # Find index of ticker "BRK.B"
-which(sym_bols == "BRK.B")
+which(sym_bols=="BRK.B")
 # Remove "BRK.B" and later download it separately
-sym_bols <- sym_bols[-which(sym_bols == "BRK.B")]
+sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 @
   \end{columns}
 \end{block}
