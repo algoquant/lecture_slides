@@ -3019,12 +3019,12 @@ for_mula <- as.formula(paste(col_names[1],
   paste(col_names[-1], collapse="+"), sep=" ~ "))
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
 # Perform forecast in-sample
-fore_casts <- predict(g_lm, type="response")
-all.equal(g_lm$fitted.values, fore_casts)
+forecast_s <- predict(g_lm, type="response")
+all.equal(g_lm$fitted.values, forecast_s)
 # Define discrimination threshold
 thresh_old <- 0.05
 # Calculate confusion matrix in-sample
-table(default=="No", (fore_casts < thresh_old))
+table(default=="No", (forecast_s < thresh_old))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 n_rows <- NROW(Default)
@@ -3033,7 +3033,7 @@ train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 # Forecast over test data out-of-sample
 test_data <- Default[-sam_ple, ]
-fore_casts <- predict(g_lm, newdata=test_data, type="response")
+forecast_s <- predict(g_lm, newdata=test_data, type="response")
       @
   \end{columns}
 \end{block}
@@ -3062,16 +3062,16 @@ fore_casts <- predict(g_lm, newdata=test_data, type="response")
       <<echo=TRUE,eval=TRUE>>=
 # Fit logit model and forecast in-sample
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-fore_casts <- predict(g_lm, type="response")
+forecast_s <- predict(g_lm, type="response")
 # Calculate FALSE positive (type I error)
 sum(default=="No" & 
-      (fore_casts > thresh_old))
+      (forecast_s > thresh_old))
 # Calculate FALSE negative (type II error)
 sum(default=="Yes" & 
-      (fore_casts < thresh_old))
+      (forecast_s < thresh_old))
 # Calculate confusion matrix
 table(default=="No",
-      (fore_casts < thresh_old))
+      (forecast_s < thresh_old))
 detach(Default)
       @
   \end{columns}
@@ -3113,11 +3113,11 @@ sam_ple <- sample(x=1:n_rows, size=n_rows/2)
 train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 test_data <- Default[-sam_ple, ]
-fore_casts <- predict(g_lm, newdata=test_data, type="response")
+forecast_s <- predict(g_lm, newdata=test_data, type="response")
 thresh_old <- 0.05
 # Calculate confusion matrix
 confu_sion <- table(test_data$default=="No",
-                    (fore_casts < thresh_old))
+                    (forecast_s < thresh_old))
 dimnames(confu_sion) <- list(actual=rownames(confu_sion),
   forecast=colnames(confu_sion))
 confu_sion
@@ -3172,25 +3172,25 @@ print(xtable::xtable(confusion_matrix,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of thresh_old
-con_fuse <- function(actu_al, fore_casts, thresh_old) {
-    confu_sion <- table(actu_al, (fore_casts < thresh_old))
+con_fuse <- function(res_ponse, forecast_s, thresh_old) {
+    confu_sion <- table(res_ponse, (forecast_s < thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$default=="No", fore_casts, thresh_old=thresh_old)
+con_fuse(test_data$default=="No", forecast_s, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
 threshold_s <- seq(0.01, 0.95, by=0.01)^2
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=(test_data$default=="No"),
-  fore_casts=fore_casts)  # end sapply
+  res_ponse=(test_data$default=="No"),
+  forecast_s=forecast_s)  # end sapply
 error_rates <- t(error_rates)
 # Calculate area under ROC curve (AUC)
-true_pos <- sort(1- c(error_rates[, "typeII"], 0))
+true_pos <- (1 - c(0, error_rates[, "typeII"]))
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
-false_pos <- c(sort(error_rates[, "typeI"]), 1)
+false_pos <- c(1, error_rates[, "typeI"])
 false_pos <- rutils::diff_it(false_pos)
-sum(true_pos*false_pos)
+abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3281,7 +3281,7 @@ sam_ple <- sample(x=1:n_rows, size=n_rows/2)
 train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 test_data <- Default[-sam_ple, ]
-fore_casts <- predict(g_lm, newdata=test_data, type="response")
+forecast_s <- predict(g_lm, newdata=test_data, type="response")
 thresh_old <- 0.05
 
 
@@ -3289,13 +3289,13 @@ thresh_old <- 0.05
 for_mula <- as.formula(paste(col_names[1],
   paste(col_names[-1], collapse="+"), sep=" ~ "))
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-fore_casts <- predict(g_lm, type="response")
-fore_casts[1:6]
-all.equal(g_lm$fitted.values, fore_casts)
+forecast_s <- predict(g_lm, type="response")
+forecast_s[1:6]
+all.equal(g_lm$fitted.values, forecast_s)
 # Discrimination threshold
 thresh_old <- 0.05
 # Calculate confusion matrix
-table(default_ed, (fore_casts>thresh_old))
+table(default_ed, (forecast_s>thresh_old))
 sum(default_ed)
 sum(Default$default=="Yes")
 # Fit logistic regression over training data
@@ -3305,14 +3305,14 @@ train_data <- Default[sam_ple, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
 # Forecast over test data
 test_data <- Default[-sam_ple, ]
-fore_casts <- predict(g_lm, newdata=test_data, type="response")
+forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix
 table(test_data$default=="No",
-      (fore_casts<thresh_old))
+      (forecast_s<thresh_old))
 # FALSE positive (type I error)
-sum(test_data$default=="No" & (fore_casts>thresh_old))
+sum(test_data$default=="No" & (forecast_s > thresh_old))
 # FALSE negative (type II error)
-sum(test_data$default=="Yes" & (fore_casts<thresh_old))
+sum(test_data$default=="Yes" & (forecast_s < thresh_old))
 detach(Default)
       @
   \end{columns}

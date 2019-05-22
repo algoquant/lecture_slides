@@ -1,36 +1,45 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
-library(quantmod)  # load package quantmod
+library(quantmod)  # Load package quantmod
 rates_env <- new.env()  # new environment for data
 # Download data for sym_bols into rates_env
 getSymbols(sym_bols, env=rates_env, src="FRED")
 ls(rates_env)  # list files in rates_env
-# get class of object in rates_env
+# Get class of object in rates_env
 class(get(x=sym_bols[1], envir=rates_env))
 # another way
 class(rates_env$DGS10)
 colnames(rates_env$DGS10)
 save(rates_env, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+
 x11(width=6, height=4)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
 head(rates_env$DGS10, 3)
-# get class of all objects in rates_env
+# Get class of all objects in rates_env
 eapply(rates_env, class)
-# get class of all objects in R workspace
+# Get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
 # Plot 10-year constant maturity Treasury rate
 chart_Series(rates_env$DGS10["1990/"],
   name="10-year constant maturity Treasury rate")
+
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-# load constant maturity Treasury rates
+# Load constant maturity Treasury rates
 load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
-# get end-of-year dates since 2006
+# Get end-of-year dates since 2006
 date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
 date_s <- zoo::index(rates_env$DGS1["2006/"])[date_s]
 # Create time series of end-of-year rates
 rate_s <- eapply(rates_env, function(ra_te) ra_te[date_s])
 rate_s <- rutils::do_call(cbind, rate_s)
-# rename columns and rows, sort columns, and transpose into matrix
+# Rename columns and rows, sort columns, and transpose into matrix
 colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
 rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
 colnames(rate_s) <- paste0(colnames(rate_s), "yr")
@@ -45,6 +54,7 @@ axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # Add legend
 legend("bottomright", legend=colnames(rate_s),
  col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+
 # alternative plot using matplot()
 matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
   type="l", xlab="maturity", ylab="yield", col=col_ors)
@@ -53,9 +63,10 @@ axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # Add legend
 legend("bottomright", legend=colnames(rate_s),
  col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
+
 x11(width=6, height=4)
 par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
-# load constant maturity Treasury rates
+# Load constant maturity Treasury rates
 load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
@@ -77,6 +88,7 @@ library(corrplot)
 or_der <- corrMatOrder(cor_mat, order="hclust",
   hclust.method="complete")
 cor_mat <- cor_mat[or_der, or_der]
+
 # Plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title=NA, tl.col="black",
@@ -87,6 +99,7 @@ title("Correlation of Treasury rates", line=-1)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
   method="complete", col="red")
+
 # Create initial vector of portfolio weights
 n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
@@ -104,6 +117,7 @@ summary(microbenchmark(
   trans_pose=t(re_turns) %*% re_turns,
   s_um=sum(re_turns*re_turns),
   times=10))[, c(1, 4, 5)]
+
 # find weights with maximum variance
 optim_run <- optim(par=weight_s,
   fn=object_ive,
@@ -118,6 +132,7 @@ weight_s <- optim_run$par
 barplot(weight_s, names.arg=names(weight_s),
   xlab="", ylab="",
   main="first principal component loadings")
+
 # pc1 weights and returns
 weights_1 <- weight_s
 pc_1 <- re_turns %*% weights_1
@@ -135,6 +150,7 @@ optim_run <- optim(par=weight_s,
              method="L-BFGS-B",
              upper=rep(1.0, n_weights),
              lower=rep(-1.0, n_weights))
+
 # pc2 weights and returns
 weights_2 <- optim_run$par
 pc_2 <- re_turns %*% weights_2
@@ -143,6 +159,7 @@ sum(pc_1*pc_2)
 barplot(weights_2, names.arg=names(weights_2),
   xlab="", ylab="",
   main="second principal component loadings")
+
 # Covariance matrix and variance vector of returns
 cov_mat <- cov(re_turns)
 vari_ance <- diag(cov_mat)
@@ -163,7 +180,27 @@ sum(ei_gen$values)
 barplot(ei_gen$values, # Plot eigenvalues
   names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
-# perform principal component analysis PCA
+
+# eigen decomposition of covariance matrix
+cov_mat <- cov(re_turns)
+ei_gen <- eigen(cov_mat)
+# Perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+    check.attributes=FALSE)
+# eigen decomposition of correlation matrix
+cor_mat <- cor(re_turns)
+ei_gen <- eigen(cor_mat)
+# Perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
+# compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
+    check.attributes=FALSE)
+
+# Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Plot standard deviations
 barplot(pc_a$sdev,
@@ -171,8 +208,9 @@ barplot(pc_a$sdev,
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components
   of Treasury rates")
+
 x11(width=6, height=7)
-# principal component loadings (weights)
+# Calculate principal component loadings (weights)
 pc_a$rotation
 # Plot loading barplots in multiple panels
 par(mfrow=c(3,2))
@@ -183,7 +221,8 @@ for (or_der in 1:NCOL(pc_a$rotation)) {
   title(paste0("PC", or_der), line=-2.0,
   col.main="red")
 }  # end for
-# principal component time series
+
+# Calculate principal component time series
 pca_ts <- xts(re_turns %*% pc_a$rotation,
           order.by=index(re_turns))
 pca_ts <- cumsum(pca_ts)
@@ -197,8 +236,31 @@ for (or_der in 1:NCOL(pca_ts)) {
      xlab="", ylab="")
   title(paste0("PC", or_der), line=-2.0)
 }  # end for
-library(quantmod)  # load quantmod
-library(RQuantLib)  # load RQuantLib
+
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+# Invert all the principal component time series
+pca_rets <- re_turns %*% pc_a$rotation
+sol_ved <- pca_rets %*% solve(pc_a$rotation)
+all.equal(coredata(re_turns), sol_ved)
+# Invert first 3 principal component time series
+sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
+sol_ved <- xts::xts(sol_ved, date_s)
+sol_ved <- xts:::cumsum.xts(sol_ved)
+cum_returns <- xts:::cumsum.xts(re_turns)
+# Plot the solved returns
+for (sym_bol in sym_bols) {
+  plot.zoo(
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topleft", bty="n",
+   legend=paste0(sym_bol, c("", " solved")),
+   title=NULL, inset=0.0, cex=1.0, lwd=6,
+   lty=1, col=c("black", "blue"))
+}  # end for
+
+library(quantmod)  # Load quantmod
+library(RQuantLib)  # Load RQuantLib
 # Specify curve parameters
 curve_params <- list(tradeDate=as.Date("2018-01-17"),
                settleDate=as.Date("2018-01-19"),
@@ -225,6 +287,7 @@ disc_curves <- DiscountCurve(params=curve_params,
 # Plot the zero rates
 x11()
 plot(x=disc_curves$zerorates, t="l", main="zerorates")
+
 # futures contracts codes
 future_s <- rbind(c("S&P500 index", "ES"),
               c("10yr Treasury", "ZN"),
@@ -236,11 +299,13 @@ future_s <- rbind(c("S&P500 index", "ES"),
               c("Japanese Yen", "JY"))
 colnames(future_s) <- c("Futures contract", "Code")
 print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
-# monthly futures contract codes
+
+# Monthly futures contract codes
 month_codes <- cbind(c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
                      c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z"))
 colnames(month_codes) <- c("Month", "Code")
 print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushright")
+
 # futures contracts codes
 future_s <- rbind(c("S&P500 index", "SP", "ES"),
               c("10yr Treasury", "ZN", "ZN"),
@@ -252,6 +317,7 @@ future_s <- rbind(c("S&P500 index", "SP", "ES"),
               c("Japanese Yen", "JY", "J7"))
 colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
 print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
+
 # Load data for S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 dir_name <- "C:/Develop/data/ib_data"
@@ -272,14 +338,16 @@ price_s <- xts::xts(price_s[, 2:6],
     origin="1970-01-01")))
 colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
 tail(price_s)
-# plot OHLC data in x11 window
+
+# Plot OHLC data in x11 window
 x11(width=5, height=4)  # Open x11 for plotting
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 chart_Series(x=price_s, TA="add_Vo()",
   name="S&P500 futures")
-# plot dygraph
+# Plot dygraph
 dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
   dyCandlestick()
+
 # Load ESU8 data
 dir_name <- "C:/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ESU8.csv")
@@ -297,8 +365,9 @@ ES_M8 <- xts::xts(ES_M8[, 2:6],
   order.by=as.Date(as.POSIXct.numeric(ES_M8[, 1],
     tz="America/New_York", origin="1970-01-01")))
 colnames(ES_M8) <- c("Open", "High", "Low", "Close", "Volume")
+
 x11(width=6, height=5)  # Open x11 for plotting
-# plot last month of ESU8 and ESM8 volume data
+# Plot last month of ESU8 and ESM8 volume data
 en_d <- end(ES_M8)
 star_t <- (en_d - 30*24*60^2)
 vol_ume <- cbind(Vo(ES_U8),
@@ -310,6 +379,7 @@ plot(vol_ume, col=col_ors, lwd=3, major.ticks="days",
      main="Volumes of ESU8 and ESM8 futures")
 legend("topleft", legend=colnames(vol_ume), col=col_ors,
  title=NULL, bty="n", lty=1, lwd=6, inset=0.1, cex=0.7)
+
 # Find date when ESU8 volume exceeds ESM8
 exceed_s <- (vol_ume[, "ESU8"] > vol_ume[, "ESM8"])
 in_deks <- min(which(exceed_s))
@@ -327,6 +397,7 @@ chain_ed <- rbind(ES_M8[index(ES_M8) < in_deks],
 # Plot continuous contract prices
 chart_Series(x=chain_ed["2018"], TA="add_Vo()",
   name="S&P500 chained futures")
+
 # Download VIX index data from CBOE
 vix_index <- data.table::fread("http://www.cboe.com/publish/scheduledtask/mktdata/datahouse/vixcurrent.csv", skip=1)
 class(vix_index)
@@ -342,31 +413,33 @@ ls(vix_env)
 vix_env$vix_index <- vix_index
 ls(vix_env)
 save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
-# plot OHLC data in x11 window
+# Plot OHLC data in x11 window
 chart_Series(x=vix_index["2018"], name="VIX Index")
-# plot dygraph
+# Plot dygraph
 dygraphs::dygraph(vix_index, main="VIX Index") %>%
   dyCandlestick()
+
 # Read CBOE monthly futures expiration dates
 date_s <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates.csv",
+  file="C:/Develop/data/vix_data/vix_dates.csv",
   stringsAsFactors=FALSE)
 date_s <- as.Date(date_s[, 1])
 year_s <- format(date_s, format="%Y")
 year_s <- substring(year_s, 4)
-# monthly futures contract codes
+# Monthly futures contract codes
 month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
 sym_bols <- paste0("VX", month_codes, year_s)
 date_s <- as.data.frame(date_s)
-colnames(date_s) <- "monthly_expiration_dates"
+colnames(date_s) <- "exp_dates"
 rownames(date_s) <- sym_bols
 # write dates to CSV file, with row names
 write.csv(date_s, row.names=TRUE,
-  file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv")
+  file="C:/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
+date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
   stringsAsFactors=FALSE, row.names=1)
 date_s[, 1] <- as.Date(date_s[, 1])
+
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
 # Get all VIX futures for 2018 except January
@@ -386,6 +459,7 @@ colnames(curve_s) <- sym_bols
 curve_s <- t(coredata(curve_s))
 colnames(curve_s) <- c("Contango 01/11/2018",
                  "Backwardation 02/05/2018")
+
 x11(width=7, height=5)
 par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0))
 plot(curve_s[, 1], type="l", lty=1, col="blue", lwd=3,
@@ -396,22 +470,23 @@ lines(curve_s[, 2], lty=1, lwd=3, col="red")
 legend(x="topright", legend=colnames(curve_s),
  inset=0.05, cex=1.0, bty="n",
  col=c("blue", "red"), lwd=6, lty=1)
+
 # Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
+date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
   stringsAsFactors=FALSE, row.names=1)
 sym_bols <- rownames(date_s)
-expiration_dates <- as.Date(date_s[, 1])
+date_s <- as.Date(date_s[, 1])
 to_day <- as.Date("2018-05-07")
 maturi_ty <- to_day + 30
 # Find neighboring futures contracts
-in_deks <- match(TRUE, expiration_dates > maturi_ty)
-# In_deks <- min(which(expiration_dates > to_day))
-expiration_dates[in_deks-1]
-expiration_dates[in_deks]
+in_deks <- match(TRUE, date_s > maturi_ty)
+# In_deks <- min(which(date_s > to_day))
+date_s[in_deks-1]
+date_s[in_deks]
 front_symbol <- sym_bols[in_deks-1]
 back_symbol <- sym_bols[in_deks]
-front_date <- expiration_dates[in_deks-1]
-back_date <- expiration_dates[in_deks]
+front_date <- date_s[in_deks-1]
+back_date <- date_s[in_deks]
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
 front_price <- get(x=front_symbol, envir=vix_env)
@@ -424,33 +499,40 @@ fra_c <- as.numeric(maturi_ty - front_date) /
   as.numeric(back_date - front_date)
 pric_e <- (fra_c*back_price +
   (1-fra_c)*front_price)
+
 library(HighFreq)
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
-# plot VIX and SVXY data in x11 window
+# Plot VIX and SVXY data in x11 window
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
 chart_Series(x=Cl(vix_env$vix_index["2007/"]),
        theme=plot_theme, name="VIX Index")
 chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
        theme=plot_theme, name="VTI ETF")
+
 chart_Series(x=Cl(vix_env$vix_index["2017/2018"]),
        theme=plot_theme, name="VIX Index")
 chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
        theme=plot_theme, name="SVXY ETF")
+
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
+  read.csv(file="C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv",
                stringsAsFactors=FALSE)
+
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file='C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv',
+  read.csv(file="C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv",
                stringsAsFactors=FALSE)
+
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+
 library(Quandl)  # Load package Quandl
 # Register Quandl API key
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
@@ -509,6 +591,7 @@ funda_mentals <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
 viewFinancials(funda_mentals)
 
 
+
 library(HighFreq)  # Load package HighFreq
 install.packages("devtools")
 library(devtools)
@@ -517,12 +600,13 @@ install_github("WRDS/R-package")
 library(WRDS)  # Load package WRDS
 # Register WRDS API key
 WRDS.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
+# Get short description
 packageDescription("WRDS")
 # Load help page
 help(package="WRDS")
 # Remove WRDS from search path
 detach("package:WRDS")
+
 library(HighFreq)  # Load package HighFreq
 env_sp500 <- new.env()  # new environment for data
 # Remove all files (if necessary)
@@ -542,6 +626,7 @@ for (tick_er in tick_ers[!down_loaded]) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
+
 library(HighFreq)  # Load package HighFreq
 # Download Fama-French factors from KFRENCH database
 fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
@@ -551,18 +636,25 @@ head(fac_tors)
 tail(fac_tors)
 chart_Series(cumsum(fac_tors["2001/", 1]/100),
   name="Fama-French factors")
+
 # Load package HighFreq
 library(HighFreq)
+# Or load the high frequency data file directly:
+symbol_s <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
 head(SPY_TAQ)
+head(SPY)
+tail(SPY)
+
 # Load package HighFreq
 library(HighFreq)
 head(SPY)
+
 # Install package HighFreq from github
 devtools::install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
 library(HighFreq)
-# get documentation for package HighFreq
-# get short description
+# Get documentation for package HighFreq
+# Get short description
 packageDescription("HighFreq")
 # Load help page
 help(package="HighFreq")
@@ -572,6 +664,7 @@ data(package="HighFreq")
 ls("package:HighFreq")
 # Remove HighFreq from search path
 detach("package:HighFreq")
+
 # Load package HighFreq
 library(HighFreq)
 # you can see SPY when listing objects in HighFreq
@@ -586,24 +679,13 @@ head(SPY)
 data(hf_data)
 # HighFreq datasets are now loaded and in the workspace
 head(SPY)
-# Library(xts)  # Load package xts
-# Load package "PerformanceAnalytics"
-library(PerformanceAnalytics)
-data(managers)  # Load "managers" data set
-ham_1 <- managers[, c("HAM1", "EDHEC LS EQ",
-                "SP500 TR")]
 
-chart.CumReturns(ham_1, lwd=2, ylab="",
-  legend.loc="topleft", main="")
-# Add title
-title(main="Managers cumulative returns",
-line=-1)
 # Install package IBrokers
 install.packages("IBrokers")
 # Load package IBrokers
 library(IBrokers)
-# get documentation for package IBrokers
-# get short description
+# Get documentation for package IBrokers
+# Get short description
 packageDescription("IBrokers")
 # Load help page
 help(package="IBrokers")
@@ -615,6 +697,7 @@ ls("package:IBrokers")
 detach("package:IBrokers")
 # Install package IBrokers2
 devtools::install_github(repo="algoquant/IBrokers2")
+
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
@@ -623,6 +706,7 @@ ib_connect <- IBrokers::twsConnect(port=7497)
 IBrokers::isConnected(ib_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Connect to Interactive Brokers TWS
 ib_connect <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
@@ -636,6 +720,7 @@ balance_s$AvailableFunds
 IBrokers::twsPortfolioValue(ib_account)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Define AAPL stock contract (object)
 con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
@@ -655,16 +740,17 @@ con_tract <- IBrokers::twsFuture(symbol="GC",
 # Define Oil future January 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="QM",
   exch="NYMEX", expiry="201901")
-# test if contract object is correct
+# Test if contract object is correct
 IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+
 # Define VIX monthly and weekly futures June 2019 contract
 sym_bol <- "VIX"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -675,9 +761,10 @@ con_tract <- IBrokers::twsFuture(symbol=sym_bol,
 # Define VIX weekly futures October 3rd 2018 contract
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   local="VX40V8", exch="CFE", expiry="201906")
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect,
   Contract=con_tract)
+
 # Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -700,6 +787,7 @@ IBrokers::reqHistoricalData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Define IB contract objects for stock symbols
 sym_bols <- c("AAPL", "F", "MSFT")
 con_tracts <- lapply(sym_bols, IBrokers::twsEquity, primary="ISLAND")
@@ -727,6 +815,7 @@ for (it in 1:NROW(sym_bols)) {
 for (file_connect in file_connects) close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Define S&P Emini futures June 2018 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -746,6 +835,7 @@ IBrokers::reqHistoricalData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Load OHLC data and coerce it into xts series
 price_s <- data.table::fread(file_name)
 data.table::setDF(price_s)
@@ -753,12 +843,13 @@ price_s <- xts::xts(price_s[, 2:6],
   order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
     tz="America/New_York", origin="1970-01-01")))
 colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
-# plot OHLC data in x11 window
+# Plot OHLC data in x11 window
 chart_Series(x=price_s, TA="add_Vo()",
   name="S&P500 ESM8 futures")
-# plot dygraph
+# Plot dygraph
 dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM8 futures") %>%
   dyCandlestick()
+
 # Define S&P Emini futures June 2018 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -780,6 +871,7 @@ IBrokers::reqHistoricalData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -800,6 +892,7 @@ IBrokers::reqMktData(conn=ib_connect,
 close(file_connect)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 # Define S&P Emini futures June 2019 contract
 sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
@@ -834,6 +927,7 @@ chart_Series(x=price_s, TA="add_Vo()",
 library(dygraphs)
 dygraphs::dygraph(price_s[, 1:4], main="S&P500 ESM9 futures") %>%
   dyCandlestick()
+
 library(IBrokers)
 # Define list of S&P futures and 10yr Treasury contracts
 con_tracts <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906"),
@@ -873,6 +967,7 @@ colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
 # Plot dygraph
 dygraphs::dygraph(price_s[, 1:4], main="ZN 10yr Treasury futures") %>%
   dyCandlestick()
+
 # Define S&P Emini future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906")
 # Define euro currency contract EUR.USD
@@ -905,6 +1000,7 @@ order_id <- IBrokers::reqIds(ib_connect)
 ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
   action="BUY", totalQuantity=1)
 IBrokers::placeOrder(ib_connect, con_tract, ib_order)
+
 # Request trade order ID
 order_id <- IBrokers::reqIds(ib_connect)
 # Create buy limit order object
@@ -923,6 +1019,7 @@ IBrokers::placeOrder(ib_connect, con_tract, ib_order)
 IBrokers::cancelOrder(ib_connect, order_id)
 # Close the Interactive Brokers API connection
 IBrokers::twsDisconnect(ib_connect)
+
 eWrapper_realtimebars <- function(n = 1) {
   eW <- eWrapper_new(NULL)
   # eW <- IBrokers::eWrapper(NULL)
@@ -966,6 +1063,7 @@ eWrapper_realtimebars <- function(n = 1) {
   }  # end eW$realtimeBars
   return(eW)
 }  # end eWrapper_realtimebars
+
 eWrapper_realtimebars <- function(n = 1) {
   eW <- eWrapper_new(NULL)
   # eW <- IBrokers::eWrapper(NULL)
@@ -1009,6 +1107,7 @@ eWrapper_realtimebars <- function(n = 1) {
   }  # end eW$realtimeBars
   return(eW)
 }  # end eWrapper_realtimebars
+
 # Define S&P Emini futures June 2019 contract
 snp_contract <- IBrokers::twsFuture(symbol="ES",
   exch="GLOBEX", expiry="201906")
@@ -1086,6 +1185,7 @@ close(file_connect)
 # Close file with raw data
 IBrokers::twsDisconnect(raw_connect)
 
+
 # Define AAPL stock contract (object)
 con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
@@ -1102,16 +1202,17 @@ con_tract <- IBrokers::twsFuture(symbol="EUR",
 # Define Gold future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="GC",
   exch="NYMEX", expiry="201906")
-# test if contract object is correct
+# Test if contract object is correct
 IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
+
 # Define AAPL stock contract (object)
 con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
 # Define CHF currency contract
@@ -1128,13 +1229,13 @@ con_tract <- IBrokers::twsFuture(symbol="EUR",
 # Define Gold future June 2019 contract
 con_tract <- IBrokers::twsFuture(symbol="GC",
   exch="NYMEX", expiry="201906")
-# test if contract object is correct
+# Test if contract object is correct
 IBrokers::is.twsContract(con_tract)
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 # Install the package twsInstrument
 install.packages("twsInstrument", repos="http://r-forge.r-project.org")
 # Define euro future using getContract() and Conid
 con_tract <- twsInstrument::getContract("317631411")
-# Download list with instrument information
+# Get list with instrument information
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)

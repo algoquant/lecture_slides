@@ -4,6 +4,7 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+
 cat("Enter\ttab")  # Cat() interprets backslash escape sequences
 print("Enter\ttab")
 
@@ -13,20 +14,22 @@ my_text  # print() returns its argument
 # Create string
 my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
 
-cat(my_text, file="mytext.txt")  # write to text file
+cat(my_text, file="mytext.txt")  # Write to text file
 
-cat("Title: My Text",  # write several lines to text file
+cat("Title: My Text",  # Write several lines to text file
     "Some numbers: 1,2,3,...",
     "Rprofile files contain code executed at R startup,",
     file="mytext.txt", sep="\n")
 
-save(my_text, file="mytext.RData")  # write to binary file
+save(my_text, file="mytext.RData")  # Write to binary file
+
 print(pi)
 print(pi, digits=10)
 getOption("digits")
 foo <- 12
 bar <- "months"
 sprintf("There are %i %s in the year", foo, bar)
+
 # Read text from file
 scan(file="mytext.txt", what=character(), sep="\n")
 
@@ -42,16 +45,17 @@ in_put <- as.numeric(in_put)
 # Read text from file and display in editor:
 # file.show("mytext.txt")
 # file.show("mytext.txt", pager="")
+
 setwd("C:/Develop/R/lecture_slides/data")
 data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
 mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
 rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
-# write data frame to text file, and then read it back
+# Write data frame to text file, and then read it back
 write.table(data_frame, file="florist.txt")
 data_read <- read.table(file="florist.txt")
 data_read  # A data frame
 
-# write matrix to text file, and then read it back
+# Write matrix to text file, and then read it back
 write.table(mat_rix, file="matrix.txt")
 mat_read <- read.table(file="matrix.txt")
 mat_read  # write.table() coerced matrix to data frame
@@ -59,6 +63,7 @@ class(mat_read)
 # Coerce from data frame back to matrix
 mat_read <- as.matrix(mat_read)
 class(mat_read)
+
 setwd("C:/Develop/R/lecture_slides/data")
 data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
 data_frame <- read.table("mydata.txt", header=TRUE)
@@ -66,7 +71,7 @@ data_frame <- read.table("clipboard", header=TRUE)
 
 write.table(x=data_frame, file="clipboard", sep="\t")
 
-# wrapper function for copying data frame from clipboard into R
+# Wrapper function for copying data frame from clipboard into R
 # by default, data is tab delimited, with a header
 read_clip <- function(file="clipboard", sep="\t",
               header=TRUE, ...) {
@@ -75,7 +80,7 @@ read_clip <- function(file="clipboard", sep="\t",
 
 data_frame <- read_clip()
 
-# wrapper function for copying data frame from R into clipboard
+# Wrapper function for copying data frame from R into clipboard
 # by default, data is tab delimited, with a header
 write_clip <- function(data, row.names=FALSE,
                col.names=TRUE, ...) {
@@ -87,7 +92,8 @@ write_clip(data=data_frame)
 
 # Launch spreadsheet-style data editor
 data_frame <- edit(data_frame)
-# write data frame to CSV file, and then read it back
+
+# Write data frame to CSV file, and then read it back
 write.csv(data_frame, file="florist.csv")
 data_read <- read.csv(file="florist.csv",
                  stringsAsFactors=FALSE)
@@ -99,33 +105,13 @@ data_read
 # Read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv", row.names=1)
 data_read
-# write data frame to CSV file, without row names
+
+# Write data frame to CSV file, without row names
 write.csv(data_frame, row.names=FALSE, file="florist.csv")
 data_read <- read.csv(file="florist.csv")
 data_read  # A data frame without row names
-# Read a data table from CSV file
-setwd("C:/Develop/R/lecture_slides/data")
-data_table <- data.table::fread("weather_delays14.csv")
-# fread() reads the same data as read.csv()
-all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
-    data.table::setDF(data.table::fread("weather_delays14.csv")))
-# fread() is much faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=read.csv("weather_delays14.csv"),
-  data.table=data.table:::setDF(data.table::fread("weather_delays14.csv")),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# write matrix to csv file, and then read it back
+
+# Write matrix to csv file, and then read it back
 write.csv(mat_rix, file="matrix.csv")
 mat_read <- read.csv(file="matrix.csv", row.names=1)
 mat_read  # Read.csv() reads matrix as data frame
@@ -137,9 +123,10 @@ write.csv(mat_rix, row.names=FALSE,
 mat_read <- read.csv(file="matrix_ex_rows.csv")
 mat_read <- as.matrix(mat_read)
 mat_read  # A matrix without row names
+
 setwd("C:/Develop/R/lecture_slides/data")
 library(MASS)  # Load package "MASS"
-# write to CSV file by row - it's very SLOW!!!
+# Write to CSV file by row - it's very SLOW!!!
 MASS::write.matrix(mat_rix,
   file="matrix.csv", sep=",")
 # Read using scan() and skip first line with colnames
@@ -158,13 +145,14 @@ mat_read <- matrix(mat_read,
 # Restore colnames
 colnames(mat_read) <- col_names
 mat_read
-# scan() is a little faster than read.csv()
+# Scan() is a little faster than read.csv()
 library(microbenchmark)
 summary(microbenchmark(
   read_csv=read.csv("matrix.csv"),
   scan=scan(file="matrix.csv", sep=",",
     skip=1, what=numeric()),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # Read data from a csv file, including row names
 mat_rix <- read.csv(file="matrix_bad.csv",
   row.names=1, stringsAsFactors=FALSE)
@@ -182,120 +170,109 @@ row.names(mat_rix) <- row_names
 mat_rix[is.na(mat_rix)] <- 0
 # matrix without NAs
 mat_rix
+
 setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo with Date index
 in_dex <- seq(from=as.Date("2013-06-15"),
-            by="day", length.out=100)
-zoo_series <- zoo(cumsum(rnorm(NROW(in_dex))),
-            order.by=in_dex)
-tail(zoo_series, 3)
-# write zoo series to text file, and then read it back
+        by="day", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to text file, and then read it back
 write.zoo(zoo_series, file="zoo_series.txt")
-zoo_series_read <- read.zoo("zoo_series.txt")  # Read it back
-tail(zoo_series, 3)
-all.equal(zoo_series_read, zoo_series)
+zoo_read <- read.zoo("zoo_series.txt")  # Read it back
+all.equal(zoo_read, zoo_series)
 # Perform the same using write.table() and read.table()
 # first coerce zoo_series into data frame
 data_frame <- as.data.frame(zoo_series)
 data_frame <- cbind(in_dex, data_frame)
-# write zoo_series to text file using write.table
+# Write zoo_series to text file using write.table
 write.table(data_frame, file="zoo_series.txt",
       row.names=FALSE, col.names=FALSE)
 # Read data frame from file
-zoo_series_read <- read.table(file="zoo_series.txt",
-                        stringsAsFactors=FALSE)
-sapply(zoo_series_read, class)  # A data frame
+zoo_read <- read.table(file="zoo_series.txt",
+                 stringsAsFactors=FALSE)
+sapply(zoo_read, class)  # A data frame
 # Coerce data frame into zoo_series
-zoo_series_read <- zoo::zoo(
-  drop(as.matrix(zoo_series_read[, -1])),
-  order.by=as.Date(zoo_series_read[, 1]))
-all.equal(zoo_series_read, zoo_series)
-set.seed(1121)  # Reset random number generator
+zoo_read <- zoo::zoo(
+  drop(as.matrix(zoo_read[, -1])),
+  order.by=as.Date(zoo_read[, 1]))
+all.equal(zoo_read, zoo_series)
+
 library(zoo)  # Load package zoo
-# Create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"),
-            by="hour", length.out=1000)
-zoo_series <- zoo(cumsum(rnorm(NROW(in_dex))),
-            order.by=in_dex)
-# write zoo series to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_series_read <- read.zoo("zoo_series.txt")  # Read it back
-# time field was read as a separate column
-tail(zoo_series_read, 3)
-# Read and specify that second column is time field
-zoo_series_read <- read.zoo(file="zoo_series.txt",
-                 index.column=list(1,2),
-                 tz="America/New_York")
-all.equal(zoo_series_read, zoo_series)
-# Perform the same using write.table() and read.table()
-# first coerce zoo_series into data frame
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(in_dex, data_frame)
-# write zoo_series to text file using write.table
-write.table(data_frame, file="zoo_series.txt",
-      row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-zoo_series_read <- read.table(file="zoo_series.txt",
-                        stringsAsFactors=FALSE)
-sapply(zoo_series_read, class)  # A data frame
-# paste first two date columns together and coerce into as.POSIXct
-date_col <- 1:2
-in_dex <- do.call(paste, zoo_series_read[, date_col])
-in_dex <- as.POSIXct(in_dex, tz="America/New_York")
-# Coerce data frame into zoo_series
-zoo_series_read <- zoo::zoo(
-  drop(as.matrix(zoo_series_read[, -date_col])),
-  order.by=in_dex)
-all.equal(zoo_series_read, zoo_series)
-library(zoo)  # Load package zoo
-# write zoo series to CSV file, and then read it back
+# Write zoo series to CSV file, and then read it back
 write.zoo(zoo_series, file="zoo_series.csv",
     sep=",", col.names=TRUE)
-zoo_series <- read.zoo(file="zoo_series.csv",
-            header=TRUE, sep=",",
-            drop=FALSE,
-            FUN=as.POSIXct, tz="America/New_York")
-tail(zoo_series, 3)
-# Read zoo from CSV file, with custom date-time format
-zoo_frame <- read.table(file="zoo_series2.csv",
-                  sep=",")
-tail(zoo_frame, 3)  # Date-time format mm/dd/yyyy hh:mm
-zoo_series <- read.zoo(file="zoo_series2.csv",
-            header=TRUE, sep=",",
-            drop=FALSE,
-            FUN=as.POSIXct,
-            tz="America/New_York",
-            format="%m/%d/%Y %H:%M")
-tail(zoo_series, 3)
-# Read zoo from CSV file, with numeric date-time
-zoo_series <- read.csv(file="es_ohlc.csv",
-  sep=",")
-zoo_series <- zoo::zoo(zoo_series[, -1],
-  order.by=as.POSIXct.numeric(zoo_series[, 1],
-    tz="America/New_York",
-    origin="1970-01-01"))
-head(zoo_series, 11)
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=TRUE, sep=",", drop=FALSE)
+all.equal(zoo_series, drop(zoo_read))
+
+set.seed(1121)  # Reset random number generator
+# Create zoo with POSIXct date-time index
+in_dex <- seq(from=as.POSIXct("2013-06-15"),
+        by="hour", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+    sep=",", col.names=TRUE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv")
+all.equal(zoo_series, zoo_read)
+# Coerce to xts series
+x_ts <- xts::as.xts(zoo_read)
+class(x_ts); head(x_ts, 3)
+# Coerce zoo series into data frame with custom date format
+data_frame <- as.data.frame(zoo_series)
+data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
+head(data_frame, 3)
+# Write zoo series to csv file using write.table
+write.table(data_frame, file="zoo_series.csv",
+      sep=",", row.names=FALSE, col.names=FALSE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=FALSE, sep=",", FUN=as.POSIXct,
+  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+# Or using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv",
+  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+head(zoo_read, 3)
+all.equal(zoo_series, zoo_read)
+
+# Read time series from CSV file, with numeric date-time
+zoo_read <- read.table(file="C:/Develop/R/lecture_slides/data/es_ohlc.csv",
+  header=TRUE, sep=",")
+# A data frame
+class(zoo_read)
+sapply(zoo_read, class)
+# Coerce data frame into xts series
+zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
+  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
+# An xts series
+class(zoo_read)
+head(zoo_read, 3)
+
 rm(list=ls())  # Remove all objects
 var1 <- 1; var2 <- 2
 ls()  # List all objects
 ls()[1]  # List first object
 args(save)  # List arguments of save function
-# save "var1" to a binary file using string argument
+# Save "var1" to a binary file using string argument
 save("var1", file="my_data.RData")
-# save "var1" to a binary file using object name
+# Save "var1" to a binary file using object name
 save(var1, file="my_data.RData")
-# save multiple objects
+# Save multiple objects
 save(var1, var2, file="my_data.RData")
-# save first object in list by passing to "..." argument
+# Save first object in list by passing to "..." argument
 # Ls()[1] is not evaluated
 save(ls()[1], file="my_data.RData")
-# save first object in list by passing to "list" argument
+# Save first object in list by passing to "list" argument
 save(list=ls()[1], file="my_data.RData")
-# save whole list by passing it to the "list" argument
+# Save whole list by passing it to the "list" argument
 save(list=ls(), file="my_data.RData")
+
 rm(list=ls())  # Remove all objects
 # Load objects from file
 load_ed <- load(file="my_data.RData")
@@ -311,12 +288,13 @@ for (sym_bol in load_ed) {
   assign(sym_bol, runif(1))
 }  # end for
 ls()  # List objects
-# save vector of objects
+# Save vector of objects
 save(list=load_ed, file="my_data.RData")
 # Remove only loaded objects
 rm(list=load_ed)
 # Remove the object "load_ed"
 rm(load_ed)
+
 sink("sinkdata.txt")# Redirect text output to file
 
 cat("Redirect text output from R\n")
@@ -343,6 +321,7 @@ plot(x=my_var, y=sin(my_var), main="Sine wave",
 cat("\nEnd data\nbye\n")
 
 dev.off()  # turn png output off
+
 # Install package data.table
 install.packages("data.table")
 # Load package data.table
@@ -358,55 +337,82 @@ data(package="data.table")
 ls("package:data.table")
 # Remove data.table from search path
 detach("package:data.table")
+
 # Create a data table
 library(data.table)
-data_table <- data.table::data.table(col1=rnorm(5e3), col2=rnorm(5e3), col3=rnorm(5e3))
-class(data_table)
-tail(data_table)
-# Create a matrix and coerce it to a data table
-mat_rix <- matrix(rnorm(5e3), nc=5)
-data_table <- as.data.frame(mat_rix)
-data.table::setDT(data_table)
-# Coerce xts to a data frame
-library(rutils)
-price_s <- rutils::etf_env$VTI
-class(price_s)
-tail(price_s)
-price_s <- as.data.frame(price_s)
-# Coerce data frame to a data table
-data.table::setDT(price_s, keep.rownames=TRUE)
-# Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
-  keep.rownames=TRUE)
-all.equal(price_s, data_table, check.attributes=FALSE)
-sapply(price_s, class)
-sapply(data_table, class)
-# column referenced by name not string
-tail(data_table[, VTI.Open])
+data_table <- data.table::data.table(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+# Print data_table
+class(data_table); data_table
+# column referenced without quotes
+data_table[, col2]
 # row referenced without a following comma
-data_table[1]
+data_table[2]
+# Print option "datatable.print.nrows"
+getOption("datatable.print.nrows")
+options(datatable.print.nrows=10)
+getOption("datatable.print.nrows")
+# Number of rows in data_table
+NROW(data_table)
+# Or
+data_table[, NROW(col1)]
+# Or
+data_table[, .N]
+# microbenchmark speed of data.table syntax
+library(microbenchmark)
+summary(microbenchmark(
+  dt=data_table[, .N],
+  pure_r=NROW(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Create data frame and coerce it to data table
+data_table <- data.frame(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+class(data_table); data_table
+data.table::setDT(data_table)
+class(data_table); data_table
 # Coerce data_table into data frame
 data.table::setDF(data_table)
-class(data_table)
+class(data_table); data_table
 # Or
 data_table <- data.table:::as.data.frame.data.table(data_table)
-# setDF() is much faster than as.data.frame()
-library(microbenchmark)
+# SetDF() is much faster than as.data.frame()
 summary(microbenchmark(
   as.data.frame=data.table:::as.data.frame.data.table(data_table),
   setDF=data.table::setDF(data_table),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
+
 # Read a data table from CSV file
-setwd("C:/Develop/R/lecture_slides/data")
-data_table <- data.table::fread("weather_delays14.csv")
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
 # fread() reads the same data as read.csv()
-all.equal(read.csv("weather_delays14.csv", stringsAsFactors=FALSE),
-    data.table::setDF(data.table::fread("weather_delays14.csv")))
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+    setDF(fread(file_name)))
 # fread() is much faster than read.csv()
-library(microbenchmark)
 summary(microbenchmark(
-  pure_r=read.csv("weather_delays14.csv"),
-  data.table=data.table:::setDF(data.table::fread("weather_delays14.csv")),
+  pure_r=read.csv(file_name),
+  data.table=setDF(fread(file_name)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # Write data table to file in different ways
 data.table::fwrite(data_table, file="data_table.csv")
@@ -418,12 +424,117 @@ summary(microbenchmark(
   write_csv=write.csv(data_table, file="data_table2.csv"),
   cat=cat(unlist(data_table), file="data_table3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-data_table <- data.table::fread("flights14.csv")
-# subset using multiple logical clauses
-jfk_flights <- data_table[origin == "JFK" & month == 6]
-# subset first five rows
+
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+# Or
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+# Or
+data_table[, .(origin, month)]
+# Select two columns and rename them
+data_table[, list(or=origin, mo=month)]
+
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or
+NROW(data_table[carrier_delay > 0])
+# microbenchmark speed of data.table syntax
+summary(microbenchmark(
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=NROW(data_table[carrier_delay > 0]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay),
+         aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Or with names for output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N),
+     by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N),
+     by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)),
+     by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     keyby=.(airport=origin, month=month)]
+
+# Sort data_table by origin in ascending order, then by dest in descending order
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)]
+# Sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)][order(month)]
+
+# Return all columns except origin and dest
+data_table[1:7]
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+# Return all columns except origin and dest
+data_table[1:7, .SD,
+     by=.(origin, dest), .SDcols="aircraft_delay"]
+# Return the columns carrier_delay, weather_delay, aircraft_delay
+data_table[1:7, .SD,
+     by=.(origin, dest),
+     .SDcols=c("carrier_delay", "weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay by origin
+data_table[,
+     lapply(.SD, mean),
+     by=.(origin),
+     .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[,
+     .(weather_delay=mean(weather_delay), aircraft_delay=mean(aircraft_delay)),
+     by=.(origin)]
+
+# Select using multiple logical clauses
+jfk_flights <- data_table[origin=="JFK" & month==6]
+dim(data_table); dim(jfk_flights)
+# Select first five rows
 jfk_flights[1:5]
-# sort data_table by "origin" column in ascending order, then by "dest" in descending order
+# Sort data table by "origin" column in ascending order, then by "dest" in descending order
 data_table <- data_table[order(origin, -dest)]
 # fsort() is much slower than sort() !
 da_ta <- runif(1e3)
@@ -433,6 +544,57 @@ summary(microbenchmark(
   pure_r=sort(da_ta),
   data.table=data.table::fsort(da_ta),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Install package fst
+install.packages("fst")
+# Load package fst
+library(fst)
+# get documentation for package fst
+# get short description
+packageDescription("fst")
+# Load help page
+help(package="fst")
+# List all datasets in "fst"
+data(package="fst")
+# List all objects in "fst"
+ls("package:fst")
+# Remove fst from search path
+detach("package:fst")
+
+# Read a data frame from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data.table::setDF(data_frame)
+class(data_frame); dim(data_frame)
+# Write data frame to .fst file in different ways
+fst::write_fst(data_frame, path="data_frame.fst")
+write.csv(data_frame, file="data_frame2.csv")
+# microbenchmark speed of fst::write_fst()
+library(microbenchmark)
+summary(microbenchmark(
+  fst=fst::write_fst(data_frame, path="data_frame.csv"),
+  write_csv=write.csv(data_frame, file="data_frame2.csv"),
+  cat=cat(unlist(data_frame), file="data_frame3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# fst::read_fst() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+    fst::read_fst("data_frame.fst"))
+# fst::read_fst() is 10 times faster than read.csv()
+summary(microbenchmark(
+  fst=fst::read_fst("data_frame.fst"),
+  read_csv=read.csv(file_name),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Create reference to data file similar to a data frame
+fs_t <- fst::fst("data_frame.fst")
+class(fs_t)
+dim(data_frame); dim(fs_t)
+# Get classes of data frame columns
+sapply(data_frame, class)
+sapply(fs_t, class)
+# Get sizes of all objects in workspace
+sort(sapply(mget(ls()), object.size))
+
+load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(tseries)  # Load package tseries
 # Download MSFT data in ts format
 ts_stx <- suppressWarnings(
@@ -445,7 +607,6 @@ ts_stx <- suppressWarnings(
       "AdjClose","Volume"),
     origin="1970-01-01")
 )  # end suppressWarnings
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 # Calculate price adjustment vector
 adj_vector <-
   as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
@@ -458,6 +619,7 @@ tsp(ts_stx_adj)  # frequency=1
 head(time(ts_stx_adj))
 head(ts_stx_adj)
 tail(ts_stx_adj)
+
 library(tseries)  # Load package tseries
 # Download MSFT data
 zoo_stx <- suppressWarnings(
@@ -469,10 +631,12 @@ zoo_stx <- suppressWarnings(
       "AdjClose","Volume"),
     origin="1970-01-01")
 )  # end suppressWarnings
+
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 class(zoo_stx)
 dim(zoo_stx)
 head(zoo_stx, 4)
+
 library(tseries)  # Load package tseries
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 # Calculate price adjustment vector
@@ -486,6 +650,7 @@ zoo_stx_adj[, c("Open","High","Low","Close")] <-
   adj_vector * zoo_stx[, c("Open","High","Low","Close")]
 head(zoo_stx_adj)
 tail(zoo_stx_adj)
+
 library(tseries)  # Load package tseries
 # Download EUR/USD data
 zoo_eurusd <- suppressWarnings(
@@ -506,10 +671,12 @@ save(zoo_stx, zoo_stx_adj,
      ts_stx, ts_stx_adj,
      zoo_eurusd, zoo_stxeur,
      file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 # Inspect the data
 class(zoo_eurusd)
-tail(zoo_eurusd, 4)
+head(zoo_eurusd, 4)
+
 library(xtable)
 # Define ETF symbols for asset allocation
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
@@ -518,12 +685,12 @@ sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
   "IWB", "IWD", "IWF", "VXX", "SVXY")
 # Read etf database into data frame
 etf_list <- read.csv(
-  file='C:/Develop/R/lecture_slides/data/etf_list.csv',
+  file="C:/Develop/R/lecture_slides/data/etf_list.csv",
          stringsAsFactors=FALSE)
 rownames(etf_list) <- etf_list$Symbol
-# subset etf_list only those ETF's in sym_bols
+# Select from etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
-# shorten names
+# Shorten names
 etf_names <- sapply(etf_list$Name,
               function(name) {
   name_split <- strsplit(name, split=" ")[[1]]
@@ -538,7 +705,9 @@ etf_list$Name <- etf_names
 etf_list["IEF", "Name"] <- "Treasury Bond Fund"
 etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
 etf_list["SVXY", "Name"] <- "Short VIX Futures"
+
 print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+
 library(tseries)  # Load package tseries
 # Download price and volume data for sym_bols into list of zoo objects
 zoo_series <- suppressWarnings(
@@ -557,16 +726,18 @@ zoo_series <- rutils::do_call(cbind, zoo_series)
 names(zoo_series) <-
   as.vector(sapply(sym_bols,
     paste, c("Close", "Volume"), sep="."))
-# save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file='zoo_series.csv', sep=",")
-# save zoo_series to a binary .RData file
-save(zoo_series, file='zoo_series.RData')
+# Save zoo_series to a comma-separated CSV file
+write.zoo(zoo_series, file="zoo_series.csv", sep=",")
+# Save zoo_series to a binary .RData file
+save(zoo_series, file="zoo_series.RData")
+
 library(HighFreq)  # Load package HighFreq
 etf_env <- new.env()  # new environment for data
 # Download data for sym_bols into etf_env from Alpha Vantage
 getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
   output.size="full", api.key="T7JPW54ES8G75310")
 # getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
+
 library(HighFreq)  # Load package HighFreq
 ls(etf_env)  # List files in etf_env
 # get class of object in etf_env
@@ -579,6 +750,7 @@ head(etf_env$VTI, 3)
 eapply(etf_env, class)
 # get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
+
 library(HighFreq)  # Load package HighFreq
 # Check of object is an OHLC time series
 is.OHLC(etf_env$VTI)
@@ -599,6 +771,7 @@ for (sym_bol in ls(etf_env)) {
               use.Adjusted=TRUE),
    envir=etf_env)
 }  # end for
+
 library(HighFreq)  # Load package HighFreq
 # extract and cbind all data, subset by symbols
 price_s <- rutils::do_call(cbind,
@@ -609,7 +782,7 @@ price_s <- rutils::do_call(cbind,
 # extract and cbind adjusted prices, subset by symbols
 price_s <- rutils::do_call(cbind,
   lapply(as.list(etf_env)[sym_bols], Ad))
-# same, but works only for OHLC series
+# Same, but works only for OHLC series
 price_s <- rutils::do_call(cbind,
   eapply(etf_env, Ad)[sym_bols])
 # Drop ".Adjusted" from colnames
@@ -618,15 +791,16 @@ colnames(price_s) <-
     function(col_name)
 strsplit(col_name, split="[.]")[[1]],
     USE.NAMES=FALSE)[1, ]
-tail(price_s[, 1:2], 3)
-# which objects in global environment are class xts?
+head(price_s[, 1:2], 3)
+# Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
-# save xts to csv file
+# Save xts to csv file
 write.zoo(price_s,
-  file='etf_series.csv', sep=",")
+  file="etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
-save(etf_env, file='etf_data.RData')
+save(etf_env, file="etf_data.RData")
+
 # extract VTI prices
 vt_i <- etf_env$price_s[ ,"VTI"]
 vt_i <- na.omit(vt_i)
@@ -654,13 +828,14 @@ class(re_turns)
 dim(re_turns)
 # Copy re_turns into etf_env and save to .RData file
 assign("re_turns", re_turns, envir=etf_env)
-save(etf_env, file='etf_data.RData')
+save(etf_env, file="etf_data.RData")
+
 library(quantmod)
 start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# subset all objects in environment and return as environment
+# Select all objects in environment and return as environment
 new_env <- as.environment(eapply(etf_env, "[",
             paste(start_date, end_date, sep="/")))
-# subset only sym_bols in environment and return as environment
+# Select only sym_bols in environment and return as environment
 new_env <- as.environment(
   lapply(as.list(etf_env)[sym_bols], "[",
    paste(start_date, end_date, sep="/")))
@@ -683,29 +858,44 @@ assign("price_s", rutils::do_call(cbind,
                   colnames(x_ts) <- col_name(x_ts)
                   x_ts
          })), envir=new_env)
-library(HighFreq)  # Load package HighFreq
+
 # Load data frame of S&P500 constituents from CSV file
 sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+# Inspect data frame of S&P500 constituents
+dim(sp_500)
+colnames(sp_500)
+# Extract tickers from the column co_tic
 sym_bols <- sp_500$co_tic
-# Get duplicate sym_bols
+# Get duplicate tickers
 ta_ble <- table(sym_bols)
 ta_ble[ta_ble>1]
+dupli_cate <- names(ta_ble[ta_ble>1])
+# Get duplicate records (rows) of sp_500
+sp_500[sym_bols %in% dupli_cate, ]
+# Get unique tickers
 sym_bols <- unique(sym_bols)
-# Remove "BRK.B" and later download separately
+# Find index of ticker "BRK.B"
+which(sym_bols=="BRK.B")
+# Remove "BRK.B" and later download it separately
 sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
-env_sp500 <- new.env()  # new environment for data
-# Download in while loop from Tiingo and copy into environment
+
+# Load package HighFreq
+library(HighFreq)
+# Create new environment for data
+env_sp500 <- new.env()
+# Boolean vector of symbols already downloaded
 down_loaded <- sym_bols %in% ls(env_sp500)
-it_er <- 0
-while (((sum(!down_loaded)) > 0) & (it_er<10)) {
-  # Boolean vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
+# Download in while loop from Tiingo and copy into environment
+at_tempt <- 0  # number of download attempts
+while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
   # Download data and copy it into environment
+  at_tempt <- at_tempt + 1
+  cat("Download attempt = ", at_tempt, "\n")
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
-    tryCatch(  # with error handler
+    tryCatch(  # With error handler
 getSymbols(sym_bol, src="tiingo", adjust=TRUE,
-  from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+           from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
 # error handler captures error condition
 error=function(error_cond) {
   print(paste("error handler: ", error_cond))
@@ -713,54 +903,103 @@ error=function(error_cond) {
 finally=print(paste("sym_bol=", sym_bol))
     )  # end tryCatch
   }  # end for
-  it_er <- it_er + 1
-  Sys.sleep(2*60)
+  # Update vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
+class(env_sp500$AAPL)
+class(index(env_sp500$AAPL))
+
+library(quantmod)
 # Rename "LOW" colnames to "LO_WES"
-colnames(env_sp500$LOW) <-
-  sapply(colnames(env_sp500$LOW),
-    function(col_name) {
-col_name <- strsplit(col_name, split="[.]")[[1]]
-paste("LO_WES", col_name[2], sep=".")
-    })
+colnames(env_sp500$LOW) <- paste("LO_WES",
+  sapply(strsplit(colnames(env_sp500$LOW), split="[.]"),
+   function(col_name) col_name[2]), sep=".")
 env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
 rm(LOW, envir=env_sp500)
-# Download "BRK.B" separately
+chart_Series(x=env_sp500$LO_WES["2017-06/"],
+  TA="add_Vo()", name="LOWES stock")
+# Download "BRK.B" separately with auto.assign=FALSE
 BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
-colnames(BRK_B) <- paste("BRK_B", sapply(strsplit(colnames(BRK_B), split="[.]"), function(x) x[2]), sep=".")
+colnames(BRK_B) <- paste("BRK_B",
+  sapply(strsplit(colnames(BRK_B), split="[.]"),
+   function(col_name) col_name[2]), sep=".")
 env_sp500$BRK_B <- BRK_B
+
 # Rename "BF-B" colnames to "BF_B"
-colnames(env_sp500$"BF-B") <-
-  sapply(colnames(env_sp500$"BF-B"),
-    function(col_name) {
-col_name <- strsplit(col_name, split="[.]")[[1]]
-paste("BF_B", col_name[2], sep=".")
-    })
+colnames(env_sp500$"BF-B") <- paste("BF_B",
+  sapply(strsplit(colnames(env_sp500$"BF-B"), split="[.]"),
+   function(col_name) col_name[2]), sep=".")
+names(colnames(env_sp500$"BF-B")) <- NULL
 env_sp500$BF_B <- env_sp500$"BF-B"
-names(colnames(env_sp500$BF_B)) <- NULL
 rm("BF-B", envir=env_sp500)
-# Coerce the time indices from class POSIXct to class Date
+
+class(env_sp500$AAPL)
+# The date-time index is class POSIXct not Date
+class(index(env_sp500$AAPL))
+# Coerce time indices from class POSIXct to class Date
 for (sym_bol in ls(env_sp500)) {
   x_ts <- get(sym_bol, envir=env_sp500)
   index(x_ts) <- as.Date(index(x_ts))
   assign(sym_bol, x_ts, envir=env_sp500)
 }  # end for
-save(env_sp500,
-  file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$LO_WES["2017-06/"],
-  TA="add_Vo()", name="LOWES stock")
+class(index(env_sp500$AAPL))
+# Save the environment to compressed .RData file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+save(env_sp500, file=paste0(dir_name, "sp500.RData"))
+# Save the ETF prices into CSV files
+dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+for (sym_bol in ls(env_sp500)) {
+  zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
+}  # end for
+# Or using lapply()
+file_names <- lapply(ls(env_sp500), function(sym_bol) {
+  x_ts <- get(sym_bol, envir=env_sp500)
+  zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
+  sym_bol
+})  # end lapply
+unlist(file_names)
+# Or using eapply() and data.table::fwrite()
+file_names <- eapply(env_sp500 , function(x_ts) {
+  file_name <- rutils::get_name(colnames(x_ts)[1])
+  data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
+  file_name
+})  # end eapply
+unlist(file_names)
+
+# Load the environment from compressed .RData file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+load(file=paste0(dir_name, "sp500.RData"))
+# Get all the .csv file names in the directory
+dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+file_names <- Sys.glob(paste0(dir_name, "*.csv"))
+# Create new environment for data
+env_sp500 <- new.env()
+for (file_name in file_names) {
+  x_ts <- xts::as.xts(zoo::read.csv.zoo(file_name))
+  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
+  assign(sym_bol, x_ts, envir=env_sp500)
+}  # end for
+# Or using fread()
+for (file_name in file_names) {
+  x_ts <- data.table::fread(file_name)
+  data.table::setDF(x_ts)
+  x_ts <- xts::xts(x_ts[, -1], as.Date(x_ts[, 1]))
+  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
+  assign(sym_bol, x_ts, envir=env_sp500)
+}  # end for
+
 # Remove all files from environment(if necessary)
 rm(list=ls(env_sp500), envir=env_sp500)
 # Download in while loop from Alpha Vantage and copy into environment
 down_loaded <- sym_bols %in% ls(env_sp500)
-it_er <- 0
-while (((sum(!down_loaded)) > 0) & (it_er<10)) {
-  # Boolean vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
+at_tempt <- 0
+while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
   # Download data and copy it into environment
+  at_tempt <- at_tempt + 1
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
-    tryCatch(  # with error handler
+    tryCatch(  # With error handler
 getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500,
            output.size="full", api.key="T7JPW54ES8G75310"),
 # error handler captures error condition
@@ -770,8 +1009,9 @@ error=function(error_cond) {
 finally=print(paste("sym_bol=", sym_bol))
     )  # end tryCatch
   }  # end for
-  it_er <- it_er + 1
-  Sys.sleep(2*60)
+  # Update vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(env_sp500)
+  Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
 # Adjust all OHLC prices in environment
 for (sym_bol in ls(env_sp500)) {
@@ -779,6 +1019,7 @@ for (sym_bol in ls(env_sp500)) {
     adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE),
     envir=env_sp500)
 }  # end for
+
 library(HighFreq)  # Load package HighFreq
 # Assign name SP500 to ^GSPC symbol
 setSymbolLookup(
@@ -793,6 +1034,7 @@ getSymbols("SP500", env=etf_env,
 chart_Series(x=etf_env$SP500["2016/"],
        TA="add_Vo()",
        name="S&P500 index")
+
 library(HighFreq)  # Load package HighFreq
 # Assign name DJIA to ^DJI symbol
 setSymbolLookup(
@@ -807,6 +1049,7 @@ getSymbols("DJIA", env=etf_env,
 chart_Series(x=etf_env$DJIA["2016/"],
        TA="add_Vo()",
        name="DJIA index")
+
 library(HighFreq)  # Load package HighFreq
 # Create name corresponding to "^GSPC" symbol
 setSymbolLookup(
@@ -821,6 +1064,7 @@ getSymbols("SP500", env=etf_env,
 chart_Series(x=etf_env$SP500["2016/"],
        TA="add_Vo()",
        name="S&P500 index")
+
 library(HighFreq)  # Load package HighFreq
 library(RCurl)  # Load package RCurl
 library(XML)  # Load package XML
@@ -839,10 +1083,11 @@ head(sp_500)
 # Create valid R names from symbols containing "-" or "."characters
 sp_500$names <- gsub("-", "_", sp_500$Ticker)
 sp_500$names <- gsub("[.]", "_", sp_500$names)
-# write data frame of S&P500 constituents to CSV file
+# Write data frame of S&P500 constituents to CSV file
 write.csv(sp_500,
   file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
   row.names=FALSE)
+
 library(HighFreq)  # Load package HighFreq
 # Load data frame of S&P500 constituents from CSV file
 sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
@@ -869,6 +1114,7 @@ for (sym_bol in sp_500$names) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
+
 library(quantmod)
 # Download U.S. unemployment rate data
 unemp_rate <- getSymbols("UNRATE",
@@ -877,6 +1123,7 @@ unemp_rate <- getSymbols("UNRATE",
 # plot U.S. unemployment rate data
 chart_Series(unemp_rate["1990/"],
       name="U.S. unemployment rate")
+
 library(HighFreq)  # Load package HighFreq
 install.packages("devtools")
 library(devtools)
@@ -891,6 +1138,7 @@ packageDescription("Quandl")
 help(package="Quandl")
 # Remove Quandl from search path
 detach("package:Quandl")
+
 library(HighFreq)  # Load package HighFreq
 # Download EOD AAPL prices from WIKI free database
 price_s <- Quandl(code="WIKI/AAPL",
@@ -916,6 +1164,7 @@ price_s <- Quandl(code="PE/AAPL_HURST",
     start_date="2013-01-01", type="xts")
 chart_Series(price_s["2016/", 1],
        name="AAPL Hurst")
+
 library(HighFreq)  # Load package HighFreq
 # Load S&P500 stock Quandl codes
 sp_500 <- read.csv(
@@ -934,6 +1183,7 @@ tick_ers <- matrix(unlist(
 # Or
 tick_ers <- do_call_rbind(
   strsplit(sp_500$free_code, split="/"))[, 2]
+
 library(HighFreq)  # Load package HighFreq
 env_sp500 <- new.env()  # new environment for data
 # Remove all files (if necessary)
@@ -953,6 +1203,7 @@ for (tick_er in tick_ers[!down_loaded]) {
 save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
+
 library(HighFreq)
 library(Quandl)
 # Register Quandl API key
@@ -971,22 +1222,23 @@ chart_Series(x=price_s["2008-06/2009-06"],
 dygraphs::dygraph(price_s["2008-06/2009-06", -5],
   main="S&P500 Futures") %>%
   dyCandlestick()
+
 # Read CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
   stringsAsFactors=FALSE, row.names=1)
-data_dir <- "C:/Develop/data/vix_data"
-dir.create(data_dir)
+dir_name <- "C:/Develop/data/vix_data"
+dir.create(dir_name)
 sym_bols <- rownames(date_s)
-file_names <- file.path(data_dir, paste0(sym_bols, ".csv"))
-log_file <- file.path(data_dir, "log_file.txt")
+file_names <- file.path(dir_name, paste0(sym_bols, ".csv"))
+log_file <- file.path(dir_name, "log_file.txt")
 cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
 url_s <- paste0(cboe_url, date_s[, 1])
 # Download files in loop
 for (it in seq_along(url_s)) {
-    tryCatch(  # warning and error handler
+    tryCatch(  # Warning and error handler
   download.file(url_s[it],
           destfile=file_names[it], quiet=TRUE),
-# warning handler captures warning condition
+# Warning handler captures warning condition
 warning=function(warning_cond) {
   cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
 },  # end warning handler
@@ -997,6 +1249,7 @@ error=function(error_cond) {
 finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
     )  # end tryCatch
 }  # end for
+
 # Create new environment for data
 vix_env <- new.env()
 # Download VIX data for the months 6, 7, and 8 in 2018
@@ -1016,3 +1269,147 @@ colnames(vix_env$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
 save(vix_env,
   file="C:/Develop/data/vix_data/vix_cboe.RData")
+
+# Install and load package readxl
+install.packages("readxl")
+library(readxl)
+dir_name <- "C:/Develop/R/lecture_slides/data"
+fil_e <- file.path(dir_name, "multi_tabs.xlsx")
+# Read a time series from first sheet of xlsx file
+tib_ble <- readxl::read_xlsx(fil_e)
+class(tib_ble)
+# Coerce POSIXct dates into Date class
+class(tib_ble$Dates)
+tib_ble$Dates <- as.Date(tib_ble$Dates)
+# Some columns are character strings
+sapply(tib_ble, class)
+sapply(tib_ble, is.character)
+# Coerce columns with strings to numeric
+lis_t <- lapply(tib_ble, function(x) {
+  if (is.character(x))
+    as.numeric(x)
+  else
+    x
+})  # end lapply
+# Coerce list into xts time series
+xt_s <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
+class(xt_s); dim(xt_s)
+# Replace NA values with the most recent non-NA values
+sum(is.na(xt_s))
+xt_s <- zoo::na.locf(xt_s)
+xt_s <- zoo::na.locf(xt_s, fromLast=TRUE)
+
+# Read names of all the sheets in an Excel spreadsheet
+name_s <- readxl::excel_sheets(fil_e)
+# Read all the sheets from an Excel spreadsheet
+sheet_s <- lapply(name_s, read_xlsx, path=fil_e)
+names(sheet_s) <- name_s
+# sheet_s is a list of tibbles
+sapply(sheet_s, class)
+# Create function to coerce tibble to xts
+to_xts <- function(tib_ble) {
+  tib_ble$Dates <- as.Date(tib_ble$Dates)
+  # Coerce columns with strings to numeric
+  lis_t <- lapply(tib_ble, function(x) {
+    if (is.character(x))
+      as.numeric(x)
+    else
+      x
+  })  # end lapply
+  # Coerce list into xts series
+  xts::xts(do.call(cbind, lis_t)[, -1], lis_t$Dates)
+}  # end to_xts
+# Coerce list of tibbles to list of xts
+class(sheet_s)
+sheet_s <- lapply(sheet_s, to_xts)
+sapply(sheet_s, class)
+# Replace NA values with the most recent non-NA values
+sapply(sheet_s, function(xt_s) sum(is.na(xt_s)))
+sheet_s <- lapply(sheet_s, zoo::na.locf)
+sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
+
+#perform calculations in R,
+#And export to CSV files
+setwd("C:/Develop/R/lecture_slides/data")
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv",
+              row.names=1)
+# Subset data frame
+data_read <-
+  data_read[data_read[, "type"]=="daisy", ]
+# Write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
+
+#perform calculations in R,
+#And export to CSV files
+setwd("C:/Develop/R/lecture_slides/data")
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv",
+              row.names=1)
+# Subset data frame
+data_read <-
+  data_read[data_read[, "type"]=="daisy", ]
+# Write data frame to CSV file, with row names
+write.csv(data_read, file="daisies.csv")
+
+# Install latest version of googlesheets
+devtools::install_github("jennybc/googlesheets")
+# Load package googlesheets
+library(googlesheets)
+library(dplyr)
+# Authenticate authorize R to view and manage your files
+gs_auth(new_user=TRUE)
+# List the files in Google Sheets
+googlesheets::gs_ls()
+# Register a sheet
+google_sheet <- gs_title("my_data")
+# view sheet summary
+google_sheet
+# List tab names in sheet
+tab_s <- gs_ws_ls(google_sheet)
+# Set curl options
+library(httr)
+httr::set_config(config(ssl_verifypeer=0L))
+# Read data from sheet
+gs_read(google_sheet)
+# Read data from single tab of sheet
+gs_read(google_sheet, ws=tab_s[1])
+gs_read_csv(google_sheet, ws=tab_s[1])
+# Or using dplyr pipes
+google_sheet %>% gs_read(ws=tab_s[1])
+# Download data from sheet into file
+gs_download(google_sheet, ws=tab_s[1],
+      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
+# Open sheet in internet browser
+gs_browse(google_sheet)
+
+# Install latest version of googlesheets
+devtools::install_github("jennybc/googlesheets")
+# Load package googlesheets
+library(googlesheets)
+library(dplyr)
+# Authenticate authorize R to view and manage your files
+gs_auth(new_user=TRUE)
+# List the files in Google Sheets
+googlesheets::gs_ls()
+# Register a sheet
+google_sheet <- gs_title("my_data")
+# view sheet summary
+google_sheet
+# List tab names in sheet
+tab_s <- gs_ws_ls(google_sheet)
+# Set curl options
+library(httr)
+httr::set_config(config(ssl_verifypeer=0L))
+# Read data from sheet
+gs_read(google_sheet)
+# Read data from single tab of sheet
+gs_read(google_sheet, ws=tab_s[1])
+gs_read_csv(google_sheet, ws=tab_s[1])
+# Or using dplyr pipes
+google_sheet %>% gs_read(ws=tab_s[1])
+# Download data from sheet into file
+gs_download(google_sheet, ws=tab_s[1],
+      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
+# Open sheet in internet browser
+gs_browse(google_sheet)

@@ -4,6 +4,7 @@ options(width=60, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+
 # define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # body
   first_arg + second_arg  # returns last evaluated statement
@@ -20,6 +21,7 @@ test_func <- function(first_arg, second_arg) {
 test_func(3, 2)  # error - glob_var doesn't exist yet!
 glob_var <- 10  # create glob_var
 test_func(3, 2)  # now works
+
 # define function that returns NULL for non-numeric argument
 test_func <- function(in_put) {
   if (!is.numeric(in_put)) {
@@ -31,6 +33,7 @@ test_func <- function(in_put) {
 
 test_func(2)
 test_func("hello")
+
 # define a function that returns invisibly
 return_invisible <- function(in_put) {
   invisible(in_put)
@@ -46,6 +49,7 @@ rm(list=ls())  # remove all objects
 loaded <- load(file="C:/Develop/data/my_data.RData")
 loaded  # vector of loaded objects
 ls()  # list objects
+
 test_func <- function(first_arg, second_arg) {
 # last statement of function is return value
   first_arg + 2*second_arg
@@ -56,6 +60,7 @@ test_func(3, 2)  # bind by position
 test_func(second_arg=2, 3)  # mixed binding
 test_func(3, 2, 1)  # too many arguments
 test_func(2)  # not enough arguments
+
 # function "paste" has two arguments with default values
 str(paste)
 # default values of arguments can be specified in argument list
@@ -72,6 +77,7 @@ test_func <- function(in_put=c("first_val", "second_val")) {
 test_func("second_val")
 test_func("se")  # partial name binding
 test_func("some_val")  # invalid string
+
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 # calc_skew() calculates skew of time series of returns
@@ -93,6 +99,7 @@ calc_skew(se_ries=re_turns)
 calc_skew(re_turns)
 # use default value of arguments
 calc_skew()
+
 str(plot)  # dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
   paste0("in_put=", in_put,
@@ -106,6 +113,7 @@ bind_dots <- function(arg1, arg2, ...) {
 }  # end bind_dots
 bind_dots(3, 2)  # bind arguments by position
 bind_dots(3, 2, 5, 8)  # extra arguments bound to dots
+
 str(sum)  # dots before other arguments
 sum(1, 2, 3)  # dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
@@ -122,6 +130,7 @@ bind_dots <- function(..., in_put=10) {
  ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
+
 # wrapper for mean() with default na.rm=TRUE
 my_mean <- function(x, na.rm=TRUE, ...) {
   mean(x=x, na.rm=na.rm, ...)
@@ -155,6 +164,7 @@ my_sqrt <- function(in_put) {
 my_sqrt(2)
 my_sqrt(-2)
 my_sqrt(NA)
+
 # recursive function sums its argument list
 sum_dots <- function(in_put, ...) {
   if (missing(...)) {  # check if dots are empty
@@ -173,6 +183,7 @@ sum_dots <- function(in_put, ...) {
   }  # end if
 }  # end sum_dots
 sum_dots(1, 2, 3, 4)
+
 fibo_nacci <- function(len_gth) {
   if (len_gth > 2) {
     fib_seq <- fibo_nacci(len_gth-1)  # recursion
@@ -183,10 +194,12 @@ fibo_nacci <- function(len_gth) {
 }  # end fibo_nacci
 fibo_nacci(10)
 tail(fibo_nacci(9), 2)
+
 # show the function code
 plot.default
 # display function
 getAnywhere(plot.default)
+
 # sum() is a compiled primitive function
 sum
 # mean() is a generic function
@@ -195,10 +208,12 @@ mean
 methods(generic.function=mean)
 # show code for mean.default()
 mean.default
+
 # get all methods for generic function "plot"
 methods("plot")
 
 getAnywhere(plot)  # display function
+
 rm(list=ls())
 lazy_func <- function(arg1, arg2) {  # define function lazy_func
   2*arg1  # just multiply first argument
@@ -211,6 +226,7 @@ lazy_func <- function(arg1, arg2) {  # define function lazy_func
 }  # end lazy_func
 lazy_func(3, 2)  # bind arguments by position
 lazy_func(3)  # first argument written to output
+
 rm(list=ls())
 glob_var <- 1  # define a global variable
 ls(environment())  # get all variables in environment
@@ -227,6 +243,7 @@ func_env()
 
 environment(func_env)
 environment(print)  # package namespace is the enclosure
+
 rm(list=ls())
 glob_var <- 1  # define a global variable
 probe_scope <- function() {  # explore function scope
@@ -245,6 +262,7 @@ probe_scope()
 glob_var  # global variable is unaffected
 new_globvar  # new_globvar is preserved
 loc_var  # local variable is gone!
+
 a <- 1  # define a variable
 # new variable "b" points to value of "a"
 b <- a  # define a new variable
@@ -258,6 +276,7 @@ double_it <- function(in_put) {
 }
 double_it(a)
 a  # variable "a" is unchanged
+
 setwd("C:/Develop/R/lecture_slides/data")
 rm(list=ls())  # remove all objects
 ls()  # list objects
@@ -277,6 +296,7 @@ side_effect <- function() {
 side_effect()
 # global variable was modified as side effect
 glob_var
+
 # standard infix operator call syntax
 2 + 3
 # infix operator applied using prefix syntax
@@ -287,11 +307,13 @@ vec_tor[2]
 # bracket operator applied using prefix syntax
 "["(vec_tor, 2)
 
+
 # define infix operator that returns string
 '%+%' <- function(a, b) paste(a, b, sep=" + ")
 2 %+% 3
 2 %+% 3 %+% 4
 "hello" %+% 2 %+% 3 %+% "bye"
+
 obj_string <- "hello"
 class(obj_string)
 # assign to value returned by "class" function
@@ -310,6 +332,7 @@ last(1:10)
 x <- 1:5
 last(x) <- 11
 x
+
 # create functional that accepts a function as input argument
 func_tional <- function(func_name) {
 # calculates statistic on random numbers
@@ -318,6 +341,7 @@ func_tional <- function(func_name) {
 }  # end func_tional
 func_tional(mean)
 func_tional(sd)
+
 # define a power function factory
 make_func <- function(arg_param) {  # wrapper function
   function(in_put) {  # anonymous closure
@@ -331,6 +355,7 @@ cube_func <- make_func(3)  # define cube function
 cube_func(2)
 cube_root_func <- make_func(1/3)  # define cube root function
 cube_root_func(8)
+
 make_counter <- function() {
 # counter function with mutable state
   counter <- 0  # initialize counter
@@ -349,6 +374,7 @@ advance_counter_two()  # advance counter two
 advance_counter()  # advance counter one
 advance_counter_two()  # advance counter two
 advance_counter()  # advance counter one
+
 # Returns the pseudo-random generating function random_generator
 # the formal argument 'seed' persists in the evaluation environment of seed_random
 seed_random <- function(seed) {  # seed must be an integer
@@ -369,6 +395,7 @@ seed_random <- function(seed) {  # seed must be an integer
 make_random <- seed_random(88)
 make_random(10)  #  calculate vector of 10 pseudo-random numbers
 ls(environment(make_random))  # list objects in scope of make_random
+
 rm(list=ls())
 # the super-assignment operator '<<-' adjusts the balance
 # 'balance' exists in open_account evaluation environment
@@ -400,6 +427,7 @@ cat("You don't have that much money!\n")
     }  # end get_balance
   )  # end list
 }  # end open_account
+
 # perform account operations
 # open an account with 100 deposit
 my_account <- open_account(100)
@@ -415,6 +443,7 @@ get_balance()  # get account balance
 ls(environment(get_balance))
 
 detach(my_account)  # remove my_account from search path
+
 # func_tional accepts function name and additional argument
 func_tional <- function(func_name, in_put) {
 # produce function name from argument
@@ -428,6 +457,7 @@ func_tional("sqrt", 4)
 str(sum)  # sum() accepts multiple arguments
 # func_tional can't accept indefinite number of arguments
 func_tional(sum, 1, 2, 3)
+
 # func_tional accepts function name and dots '...' argument
 func_tional <- function(func_name, ...) {
   func_name <- match.fun(func_name)
@@ -444,8 +474,10 @@ dots=c(...))
 my_func(1, 2, 3, param2=4, param1=5)
 func_tional(my_func, 1, 2, 3, param2=4, param1=5)
 func_tional(my_func, 1, 2, 3, 4, 5)
+
 # simple anonymous function
 (function(x) (x + 3)) (10)
+
 # anonymous function passed to func_tional
 func_tional(func_name=(function(x) (x + 3)), 5)
 # anonymous function is default value
@@ -461,6 +493,7 @@ func_tional(func_name=sum, 2, 3, 4, 5)
 # pass anonymous function to func_name
 func_tional(func_name=function(x, y, z) {x*y*z},
     2, 3, 4)
+
 str(sum)  # sum() accepts multiple arguments
 # sum() can't accept list of arguments
 sum(list(1, 2, 3))
@@ -482,6 +515,7 @@ func_tional(arg_list)
 all.equal(
   do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
   rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
+
 rm(list=ls())
 str(apply)  # get list of arguments
 # create a matrix
@@ -495,17 +529,20 @@ mat_rix <- cbind(c(sum(row_sums), row_sums),
 dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"),
                  c("row_sums", "col1", "col2", "col3"))
 mat_rix
+
 str(apply)  # get list of arguments
 mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
 mat_rix
 apply(mat_rix, 2, sort)  # sort matrix columns
 apply(mat_rix, 2, sort, decreasing=TRUE)  # sort decreasing order
+
 mat_rix[2, 2] <- NA  # introduce NA value
 mat_rix
 # calculate median of columns
 apply(mat_rix, 2, median)
 # calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
+
 rm(list=ls())
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
@@ -525,6 +562,7 @@ apply(X=moment_orders, MARGIN=1,
 # another way of passing parameters into moment() function
 apply(X=moment_orders, MARGIN=1, FUN=moment,
       x=re_turns)
+
 # function with three arguments
 my_func <- function(arg1, arg2, arg3) {
   c(arg1=arg1, arg2=arg2, arg3=arg3)
@@ -537,6 +575,7 @@ apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
 # pass da_ta to arg3
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
+
 # vector of means of numeric columns
 sapply(iris[, -5], mean)
 # list of means of numeric columns
@@ -550,6 +589,7 @@ unlist(lapply(iris,
        )  # end unlist
 unlist(sapply(iris, function(col_umn) {
   if (is.numeric(col_umn)) mean(col_umn)}))
+
 sapply(6:10, sqrt)  # sapply on vector
 sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
 
@@ -567,6 +607,7 @@ sapply(1:NCOL(mat_rix),
  mean(mat_rix[, col_index])
   }  # end anonymous function
 )  # end sapply
+
 # vectors form columns of matrix returned by sapply
 sapply(2:4, function(num) c(el1=num, el2=2*num))
 # vectors of different lengths returned as list
@@ -577,16 +618,19 @@ vapply(2:4, function(num) c(el1=num, el2=2*num),
 # vapply produces an error if it can't simplify
 vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
+
 library(zoo)  # load package zoo
 # show the generic function "merge"
 merge
 # show the "merge" method dispatched to "zoo" objects
 merge.zoo
+
 library(zoo)  # load package zoo
 # get all methods for generic function merge()
 methods(generic.function="merge")
 # get generic function methods applied to "zoo" objects
 methods(class="zoo")
+
 # define a generic function
 gen_sum <- function(a, b, ...) {
   UseMethod("gen_sum")
@@ -606,8 +650,10 @@ gen_sum.character <- function(a, b, ...) {
 gen_sum(1, 2)
 # apply gen_sum to "character" objects
 gen_sum("a", "b")
+
 # 'cbind' is an internal generic function
 cbind
+
 # define "+" method for "character" class
 "+.character" <- function(a, b, ...) {
   paste(a, "plus", b)
@@ -624,6 +670,7 @@ char2 <- structure("b", class="character")
 attributes(char1)  # now has explicit "character" class
 # add two "character" objects
 char1 + char2
+
 # define object of class "string"
 obj_string <- "how are you today?"
 class(obj_string) <- "string"
@@ -637,6 +684,7 @@ print.string <- function(str_ing) {
 # methods("print")  # view new methods for "print" function
 print(obj_string)
 obj_string
+
 # overwrite "+" operator
 "+" = function(a, b) {
   if (is.character(a) && is.character(b)) {
@@ -650,6 +698,7 @@ methods("+")  # view methods for "+" operator
 1 + 2
 # add two "character" objects
 "a" + "b"
+
 # overwrite "+" operator with a generic function
 "+" <- function(a, b, ...) {
   UseMethod("+")
@@ -667,10 +716,12 @@ methods("+")  # view methods for "+" operator
 1 + 2
 # add two "character" objects
 "a" + "b"
+
 cbind.ts  # can't view non-visible method
 stats::cbind.ts  # can't view non-visible method
 stats:::cbind.ts  # display non-visible method
 getAnywhere(cbind.ts)  # display non-visible method
+
 rm(list=ls())
 new_zoo <- zoo(rnorm(10), order.by=(Sys.Date() + 0:9))
 # coerce "zoo" object to new class "zoo_xtra"
@@ -686,6 +737,7 @@ length.zoo_xtra <- function(in_ts) {
 }  # end length.zoo_xtra
 NROW(new_zoo)  # apply "length" method to "zoo_xtra" object
 methods(generic.function="length")
+
 # define "last" method for class "zoo_xtra"
 last.zoo_xtra <- function(in_ts) {
   in_ts[NROW(in_ts)]
@@ -697,6 +749,7 @@ last <- function(a, b, ...) {
   UseMethod("last")
 }  # end last
 last(new_zoo)  # now works
+
 # define generic "string" class converter
 as.string <- function(str_ing, ...)
   UseMethod("as.string")
@@ -716,6 +769,7 @@ is.string(obj_string)
 is.string("hello")
 as.string(123)
 is.string(as.string(123))
+
 rm(list=ls())
 library(xts)
 new_xts <- xts(rnorm(10), order.by=(Sys.Date() + 0:9))
@@ -729,6 +783,7 @@ class(new_xts) <- c("xts_xtra", class(new_xts))
 class(new_xts)  # class attribute is a vector
 # "xts_xtra" object inherits "last" method from "xts" class
 last(new_xts)
+
 # define new "last" method for class "xts_xtra"
 last.xts_xtra <- function(in_ts) {
   cat("last element of xts_xtra object:\n")
