@@ -245,7 +245,7 @@ class(mat_read)
       \vskip1ex
       \emph{Data frames} in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()},
       \vskip1ex
-      This allows convenient copying of \emph{data frames} between \texttt{R} and \emph{Excel},
+      This allows convenient copying of \emph{data frames} between \texttt{R} and \texttt{Excel},
       \vskip1ex
       \emph{Data frames} can also be manipulated directly in the \texttt{R} spreadsheet-style data editor,
     \column{0.5\textwidth}
@@ -293,7 +293,7 @@ data_frame <- edit(data_frame)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
       The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
       \vskip1ex
@@ -834,7 +834,7 @@ dev.off()  # turn png output off
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Install package data.table
 install.packages("data.table")
 # Load package data.table
@@ -1004,7 +1004,7 @@ all.equal(price_s, data_table, check.attributes=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
       The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
       \vskip1ex
@@ -1326,7 +1326,7 @@ summary(microbenchmark(
       \hskip1em\url{http://www.fstpackage.org/}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Install package fst
 install.packages("fst")
 # Load package fst
@@ -1356,15 +1356,13 @@ detach("package:fst")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
+      The package 
+      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
+      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format. 
       \vskip1ex
       The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
       \vskip1ex
       The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-      \vskip1ex
-      The function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the data.
-      \vskip1ex
-      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1391,15 +1389,56 @@ summary(microbenchmark(
   fst=fst::read_fst("data_frame.fst"),
   read_csv=read.csv(file_name),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Create reference to data file similar to a data frame
-fs_t <- fst::fst("data_frame.fst")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Access to Large Data Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
+      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
+      \vskip1ex
+      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
+      \vskip1ex
+      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
+      \vskip1ex
+      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce TAQ xts to a data frame
+library(HighFreq)
+t_aq <- HighFreq::SPY_TAQ
+t_aq <- as.data.frame(t_aq)
+class(t_aq)
+# Coerce data frame to a data table
+data.table::setDT(t_aq, keep.rownames=TRUE)
+class(t_aq); head(t_aq)
+# Get memory size of data table
+format(object.size(t_aq), units="MB")
+# Save data table to .fst file
+fst::write_fst(t_aq, path="C:/Develop/data/taq.fst")
+# Create reference to .fst file similar to a data frame
+fs_t <- fst::fst("C:/Develop/data/taq.fst")
 class(fs_t)
-dim(data_frame); dim(fs_t)
-# Get classes of data frame columns
-sapply(data_frame, class)
-sapply(fs_t, class)
+# Memory size of reference to .fst is very small
+format(object.size(fs_t), units="MB")
 # Get sizes of all objects in workspace
 sort(sapply(mget(ls()), object.size))
+# reference to .fst can be treated similar to a data table
+dim(t_aq); dim(fs_t)
+fst:::print.fst_table(fs_t)
+# Subset reference to .fst just like a data table
+fs_t[1e4:(1e4+5), ]
       @
   \end{columns}
 \end{block}
@@ -2149,7 +2188,7 @@ rm("BF-B", envir=env_sp500)
       \vskip1ex
       The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
       \vskip1ex
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
       The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
       \vskip1ex
@@ -2209,7 +2248,7 @@ unlist(file_names)
       \vskip1ex
       The function \texttt{Sys.glob()} lists files matching names obtained from wildcard expansion.
       \vskip1ex
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
       The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
       \vskip1ex
@@ -2902,22 +2941,22 @@ save(vix_env,
 
 
 %%%%%%%%%%%%%%%
-\section{Combining \texttt{R} with \protect\emph{Excel}}
+\section{Combining \texttt{R} with \texttt{Excel}}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Data From \protect\emph{Excel} Files}
+\subsection{Reading Data From \texttt{Excel} Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
       The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \emph{Excel} spreadsheet files into \texttt{R}.
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
       \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \emph{Excel} file.
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
       \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \emph{Excel} file in \texttt{.xlsx} format.
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
       \vskip1ex
       The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
       \vskip1ex
@@ -2967,20 +3006,20 @@ xt_s <- zoo::na.locf(xt_s, fromLast=TRUE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Multiple Sheets From \protect\emph{Excel} Files}
+\subsection{Reading Multiple Sheets From \texttt{Excel} Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \emph{Excel} spreadsheet.
+      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
       \vskip1ex
       The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \emph{Excel} spreadsheet files into \texttt{R}.
+      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
       \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \emph{Excel} file.
+      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
       \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \emph{Excel} file in \texttt{.xlsx} format.
+      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
       \vskip1ex
       The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
       \vskip1ex
@@ -3027,24 +3066,24 @@ sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performing Calculations in \protect\emph{Excel} Using \texttt{R}}
+\subsection{Performing Calculations in \texttt{Excel} Using \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Excel} can run \texttt{R} using either \emph{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only),
+      \texttt{Excel} can run \texttt{R} using either \texttt{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only),
       \vskip1ex
-      \texttt{R} can perform calculations and export its output to \emph{Excel} files, or it can modify \emph{Excel} files (requires packages using \emph{Java} or \emph{Perl} code), 
+      \texttt{R} can perform calculations and export its output to \texttt{Excel} files, or it can modify \texttt{Excel} files (requires packages using \texttt{Java} or \texttt{Perl} code), 
       \vskip1ex
-      Calculations in \texttt{R} and \emph{Excel} can be combined in several different ways: 
+      Calculations in \texttt{R} and \texttt{Excel} can be combined in several different ways: 
       \begin{itemize}
-        \item Data from \emph{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method), 
-        \item \emph{Excel} can execute \texttt{R} commands using \emph{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
-        \item An \emph{Excel} add-in can execute \texttt{R} commands as \emph{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins 
+        \item Data from \texttt{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method), 
+        \item \texttt{Excel} can execute \texttt{R} commands using \texttt{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
+        \item An \texttt{Excel} add-in can execute \texttt{R} commands as \texttt{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins 
         \emph{\href{http://bert-toolkit.com/}{BERT}}, 
         \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}}, 
-        \item \texttt{R} can modify \emph{Excel} files and run \emph{Excel} functions (requires packages using \emph{Java} or \emph{Perl} code): packages 
+        \item \texttt{R} can modify \texttt{Excel} files and run \texttt{Excel} functions (requires packages using \texttt{Java} or \texttt{Perl} code): packages 
         \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}}, 
         \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}}, 
         \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}}, 
@@ -3071,17 +3110,17 @@ write.csv(data_read, file="daisies.csv")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code from \protect\emph{Excel}}
+\subsection{Running \texttt{R} Code from \texttt{Excel}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \emph{Excel}:
+      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \texttt{Excel}:
       \begin{itemize}
-        \item Export data from \emph{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \emph{Excel} via \texttt{.csv} files (simplest and best method),
-        \item Run \texttt{R} from \emph{Excel} using \emph{VBA} scripts, and exchange data via \texttt{.csv} files, 
-        \item Run \texttt{R} from \emph{Excel} using an \emph{Excel} add-in, and execute \texttt{R} commands as \emph{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
+        \item Export data from \texttt{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \texttt{Excel} via \texttt{.csv} files (simplest and best method),
+        \item Run \texttt{R} from \texttt{Excel} using \texttt{VBA} scripts, and exchange data via \texttt{.csv} files, 
+        \item Run \texttt{R} from \texttt{Excel} using an \texttt{Excel} add-in, and execute \texttt{R} commands as \texttt{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
       \end{itemize}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3105,19 +3144,19 @@ write.csv(data_read, file="daisies.csv")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code Using \protect\emph{VBA} Scripts}
+\subsection{Running \texttt{R} Code Using \protect\texttt{VBA} Scripts}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      An \texttt{R} session can be launched from \emph{Excel} using a \emph{VBA} script (macro),
+      An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro),
       \vskip1ex
-      The \emph{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}),
+      The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}),
       \vskip1ex
-      A \emph{VBA} script can also run an \texttt{R} \emph{batch} process,
+      A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process,
       \vskip1ex
-      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \emph{Excel},
+      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel},
     \column{0.6\textwidth}
       \renewcommand{\ttdefault}{pcr}
       \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
@@ -3157,16 +3196,16 @@ End Sub
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{BERT} is an \emph{Excel} add-in which allows executing \texttt{R} commands as \emph{Excel} functions:\\
+      \emph{BERT} is an \texttt{Excel} add-in which allows executing \texttt{R} commands as \texttt{Excel} functions:\\
       \hskip1em\url{http://bert-toolkit.com/}\\
       \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
       \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
       \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
       \vskip1ex
-      \emph{BERT} launches its own \texttt{R} process from \emph{Excel},
+      \emph{BERT} launches its own \texttt{R} process from \texttt{Excel},
       \vskip1ex
-      \emph{BERT} can create its own menu in the \emph{Excel} add-ins tab:\\
-      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \emph{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll, 
+      \emph{BERT} can create its own menu in the \texttt{Excel} add-ins tab:\\
+      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \texttt{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll, 
       \vskip1ex
       \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows},
     \column{0.5\textwidth}
@@ -3216,7 +3255,7 @@ R.EigenValues(A1:H8)
       \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/managing-auth-tokens.html}{managing authentication tokens}, 
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Install latest version of googlesheets
 devtools::install_github("jennybc/googlesheets")
 # Load package googlesheets
@@ -3280,7 +3319,7 @@ gs_browse(google_sheet)
       \vskip1ex
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 # Install latest version of googlesheets
 devtools::install_github("jennybc/googlesheets")
 # Load package googlesheets
