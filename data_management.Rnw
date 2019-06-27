@@ -823,7 +823,7 @@ dev.off()  # turn png output off
       \vskip1ex
       \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
       \vskip1ex
-      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place) without copying data in memory.
+      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
       \vskip1ex
       Some of the attractive features of package \emph{data.table} are:
       \begin{itemize}
@@ -919,6 +919,498 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
+\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
+      \vskip1ex
+      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
+      \vskip1ex
+      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
+      \vskip1ex
+      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
+      \vskip1ex
+      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read a data table from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
+# fread() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+          setDF(data.table::fread(file_name)))
+# fread() is much faster than read.csv()
+summary(microbenchmark(
+  pure_r=read.csv(file_name),
+  fread=setDF(data.table::fread(file_name)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+library(microbenchmark)
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting \protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}. 
+      \vskip1ex
+      \emph{Data table} rows can be subset without a following comma.
+      \vskip1ex
+      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of names.
+      \vskip1ex
+      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+data_table[, .(origin, month)]
+column_s <- c("origin", "month")
+data_table[, ..column_s]
+data_table[, month, origin]
+# Select two columns and rename them
+data_table[, .(orig=origin, mon=month)]
+# Select all columns except origin
+head(data_table[, !c("origin")])
+head(data_table[, -c("origin")])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Computations on \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
+      \vskip1ex
+      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
+      \vskip1ex
+      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
+      \vskip1ex
+      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or standard R commands
+sum(data_table[, carrier_delay > 0])
+# microbenchmark speed of data.table syntax
+summary(microbenchmark(
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=sum(data_table[, carrier_delay > 0]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay), 
+               aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
+      \begin{itemize}
+        \item \texttt{i}: the row index to select, 
+        \item \texttt{j}: a list of columns or functions on columns, 
+        \item \texttt{by}: the columns of factors.
+      \end{itemize}
+      The computations on \emph{data table} columns can be \emph{grouped} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
+      \vskip1ex
+      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of names.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Same, but add names to output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N), 
+           by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N), 
+           by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)), 
+           by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           keyby=.(airport=origin, month=month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
+      \vskip1ex
+      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
+      \vskip1ex
+      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
+      \vskip1ex
+      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
+      \vskip1ex
+      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Sort ascending by origin, then descending by dest
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Sort data_table by reference
+setorder(data_table, origin, -dest)
+all.equal(data_table, order_table)
+# setorder() is much faster than order()
+summary(microbenchmark(
+  order=data_table[order(origin, -dest)],
+  setorder=setorder(data_table, origin, -dest),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)]
+# Chained brackets to sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)][order(month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
+      \vskip1ex
+      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
+      \vskip1ex
+      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
+      \vskip1ex
+      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol. 
+      \vskip1ex
+      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select weather_delay and aircraft_delay in two different ways
+data_table[1:7, .SD, 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+data_table[1:7, .(weather_delay, aircraft_delay)]
+# Calculate mean of weather_delay and aircraft_delay
+data_table[, sapply(.SD, mean), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+sapply(data_table[, .SD, 
+           .SDcols=c("weather_delay", "aircraft_delay")], mean)
+# Return origin and dest, then all other columns
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return origin and dest, then weather_delay and aircraft_delay columns
+data_table[1:7, .SD, 
+           by=.(origin, dest), 
+           .SDcols="weather_delay", "aircraft_delay"]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+data_table[, head(.SD, 2), by=.(month), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay, grouped by origin
+data_table[, lapply(.SD, mean), 
+           by=.(origin), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[, .(weather_delay=mean(weather_delay), 
+               aircraft_delay=mean(aircraft_delay)), 
+           by=.(origin)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
+      \vskip1ex
+      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
+      \vskip1ex
+      The computations are recycled to fit the size of each group. 
+      \vskip1ex
+      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
+      \vskip1ex
+      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
+      \vskip1ex
+      Modifying by reference is several times faster than standard \texttt{R} assignment.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add tot_delay column
+data_table[, tot_delay := (carrier_delay + aircraft_delay)]
+head(data_table, 4)
+# Delete tot_delay column
+data_table[, tot_delay := NULL]
+# Add max_delay column grouped by origin and dest
+data_table[, max_delay := max(aircraft_delay), 
+           by=.(origin, dest)]
+data_table[, max_delay := NULL]
+# Add date and tot_delay columns
+data_table[, c("date", "tot_delay") := 
+             list(paste(month, day, year, sep="/"), 
+                  (carrier_delay + aircraft_delay))]
+# Modify select rows of tot_delay column
+data_table[month == 12, tot_delay := carrier_delay]
+data_table[, c("date", "tot_delay") := NULL]
+# Add several columns
+data_table[, c("max_carrier", "max_aircraft") := 
+             lapply(.SD, max), 
+           by=.(origin, dest), 
+           .SDcols=c("carrier_delay", "aircraft_delay")]
+data_table[, c("max_carrier", "max_aircraft") := NULL]
+# Modifying by reference is much faster than standard R
+summary(microbenchmark(
+  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
+  pure_r=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows. 
+      \vskip1ex
+      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
+      \vskip1ex
+      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
+      \vskip1ex
+      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add a key based on the "origin" column
+setkey(data_table, origin)
+haskey(data_table)
+key(data_table)
+# Select rows with LGA using the key
+data_table["LGA"]
+all.equal(data_table["LGA"], 
+          data_table[origin == "LGA"])
+# Select rows with LGA and JFK using the key
+data_table[c("LGA", "JFK")]
+# Add a key based on the "origin" and "dest" columns
+setkey(data_table, origin, dest)
+key(data_table)
+# Select rows with origin from JFK and MIA
+data_table[c("JFK", "MIA")]
+# Select rows with origin from JFK and dest to MIA
+data_table[.("JFK", "MIA")]
+all.equal(data_table[.("JFK", "MIA")], 
+          data_table[origin == "JFK" & dest == "MIA"])
+# Selecting rows using a key is much faster than standard R
+summary(microbenchmark(
+  with_key=data_table[.("JFK", "MIA")],
+  standard_r=data_table[origin == "JFK" & dest == "MIA"],
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Subsetting and Grouping \protect\emph{Data Tables} Using \protect\emph{keys}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Subsetting and grouping \protect\emph{data tables} using \emph{keys} can be several times faster than standard \texttt{R}.
+      \vskip1ex
+      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows. 
+      \vskip1ex
+      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
+      \vskip1ex
+      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select rows with dest to MIA
+data_table[.(unique(origin), "MIA")]
+# Select carrier_delay for all flights from JFK to MIA
+data_table[.("JFK", "MIA"), carrier_delay]
+data_table[.("JFK", "MIA"), .(carrier_delay)]
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)]
+# Calculate longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA"), max(carrier_delay)]
+# Chain commands to sort the carrier_delay
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][order(-carrier_delay)]
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][carrier_delay>0][order(-carrier_delay)]
+# Calculate carrier with longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][carrier_delay == max(carrier_delay)]
+# Calculate longest carrier_delay from JFK to every dest
+data_table["JFK", .(max_delay=max(carrier_delay)), keyby=.(dest)]
+# Calculate longest carrier_delay for every carrier, from JFK to every dest
+data_table["JFK", .(max_delay=max(carrier_delay)), keyby=.(dest, carrier)]
+# Calculate carriers with longest carrier_delay from JFK to every dest
+# doesn't work
+data_table["JFK"][carrier_delay == max(carrier_delay), .(carrier, carrier_delay), by=.(dest)]
+data_table["JFK", 
+           lapply(.SD, function(x) x[max(carrier_delay)]), 
+           by=.(dest), 
+           .SDcols=c("dest", "carrier_delay")]
+# Set carrier_delay to longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA", carrier_delay == max(carrier_delay)), carrier_delay := carrier_delay]
+# Show the modified row (record)
+data_table[.("JFK", "MIA")][carrier_delay == max(carrier_delay)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Splitting \protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
+      \vskip1ex
+      \emph{Data table} rows can be subset without a following comma.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select using multiple logical clauses
+jfk_flights <- data_table[origin=="JFK" & month==6]
+dim(data_table); dim(jfk_flights)
+# Select first five rows
+jfk_flights[1:5]
+# Sort data table by "origin" column in ascending order, then by "dest" in descending order
+data_table <- data_table[order(origin, -dest)]
+# fsort() is much slower than sort() !
+da_ta <- runif(1e3)
+all.equal(sort(da_ta), data.table::fsort(da_ta))
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=sort(da_ta),
+  dt=data.table::fsort(da_ta),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -927,7 +1419,7 @@ summary(microbenchmark(
     \column{0.4\textwidth}
       The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
       \vskip1ex
-      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference, without returning any values or copying data to a new memory location, which makes them very fast.
+      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
       \vskip1ex
       \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
       \vskip1ex
@@ -998,307 +1490,38 @@ all.equal(price_s, data_table, check.attributes=FALSE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
+\subsection{draft: The \protect\emph{IDateTime} date class}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
+      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
       \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
+      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
       \vskip1ex
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
+      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
       \vskip1ex
-      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Read a data table from CSV file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data_table <- data.table::fread(file_name)
-class(data_table); dim(data_table)
-data_table
-# fread() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
-          setDF(fread(file_name)))
-# fread() is much faster than read.csv()
-summary(microbenchmark(
-  pure_r=read.csv(file_name),
-  data.table=setDF(fread(file_name)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}. 
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables) after a comma.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of their names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select first five rows of data_table
-data_table[1:5]
-# Select rows with JFK flights
-jfk_flights <- data_table[origin=="JFK"]
-# Select rows JFK flights in June
-jfk_flights <- data_table[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfk_flights <- data_table[!(origin=="JFK")]
-# Select flights with carrier_delay
-data_table[carrier_delay > 0]
-# Select column of data_table and return a vector
-head(data_table[, origin])
-# Select column of data_table and return a data_table, not vector
-head(data_table[, list(origin)])
-# Or
-head(data_table[, .(origin)])
-# Select two columns of data_table
-data_table[, list(origin, month)]
-# Or
-data_table[, .(origin, month)]
-# Select two columns and rename them
-data_table[, list(or=origin, mo=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Computations on \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Computations on \emph{data tables} can be performed using commands resembling the \emph{SQL} database language.
-      \vskip1ex
-      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select flights with positive carrier_delay
-data_table[carrier_delay > 0]
-# Number of flights with carrier_delay
-data_table[, sum(carrier_delay > 0)]
-# Or
-NROW(data_table[carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=data_table[, sum(carrier_delay > 0)],
-  pure_r=NROW(data_table[carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average carrier_delay
-data_table[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-data_table[, .(carrier=mean(carrier_delay), 
-               aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-data_table[origin=="JFK", NROW(aircraft_delay)]
-# Or
-data_table[origin=="JFK", .N]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Aggregating \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      A \emph{data table} can be \emph{aggregated} over groups defined by one or more columns, passed to the \texttt{by} operator.
-      \vskip1ex
-      The square braces (brackets) \texttt{"[]"} operator accepts three arguments separated by commas:      \begin{itemize}
-        \item row numbers to select, 
-        \item list of columns to select, 
-        \item the \texttt{by} operator with the aggregation columns (function).
-      \end{itemize}
-      The \texttt{keyby} operator sorts the output according to the aggregation columns.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of their names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the function \texttt{list()}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of flights from each airport
-data_table[, .N, by=origin]
-# Or with names for output
-data_table[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-data_table[carrier=="AA", .(flights=.N), 
-           by=.(airport=origin)]
-# Number of flights from each airport and airline
-data_table[, .(flights=.N), 
-           by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-data_table[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-data_table[, .(delay=mean(aircraft_delay)), 
-           by=.(airport=origin)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
-           by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
-           keyby=.(airport=origin, month=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sorting \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order.
-      \vskip1ex
-      The brackets \texttt{"[]"} operators can be chained together to perform several computations.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sort data_table by origin in ascending order, then by dest in descending order
-order_table <- data_table[order(origin, -dest)]
-order_table
-# Doesn't work outside data_table
-order(origin, -dest)
-# Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)), 
-            by=.(month=month)]
-# Sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)), 
-            by=.(month=month)][order(month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Selecting and Aggregating \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The operator \texttt{.SD} returns the \emph{data table} columns passed to the \texttt{by} operator, followed by all the other columns.
-      \vskip1ex
-      The operator \texttt{.SDcols} allows selecting the additional columns after the \texttt{.SD} operator columns.
-      \vskip1ex
-      The operator \texttt{.SDcols} selects the additional columns returned after the \texttt{.SD} operator columns.
-      \vskip1ex
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Return all columns except origin and dest
-data_table[1:7]
-data_table[1:7, .SD, by=.(origin, dest)]
-# Return first two rows from each month
-data_table[, head(.SD, 2), by=.(month)]
-# Return all columns except origin and dest
-data_table[1:7, .SD, 
-           by=.(origin, dest), .SDcols="aircraft_delay"]
-# Return the columns carrier_delay, weather_delay, aircraft_delay
-data_table[1:7, .SD, 
-           by=.(origin, dest), 
-           .SDcols=c("carrier_delay", "weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay by origin
-data_table[, 
-           lapply(.SD, mean), 
-           by=.(origin), 
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-data_table[, 
-           .(weather_delay=mean(weather_delay), aircraft_delay=mean(aircraft_delay)), 
-           by=.(origin)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Splitting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables) after a comma.
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select using multiple logical clauses
-jfk_flights <- data_table[origin=="JFK" & month==6]
-dim(data_table); dim(jfk_flights)
-# Select first five rows
-jfk_flights[1:5]
-# Sort data table by "origin" column in ascending order, then by "dest" in descending order
-data_table <- data_table[order(origin, -dest)]
-# fsort() is much slower than sort() !
-da_ta <- runif(1e3)
-all.equal(sort(da_ta), data.table::fsort(da_ta))
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sort(da_ta),
-  data.table=data.table::fsort(da_ta),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}

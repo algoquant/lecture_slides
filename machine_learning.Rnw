@@ -1642,6 +1642,11 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
 \end{frame}
 
 
+
+%%%%%%%%%%%%%%%
+\section{Multivariate Regression}
+
+
 %%%%%%%%%%%%%%%
 \subsection{\protect\emph{Multivariate} Linear Regression}
 \begin{frame}[fragile,t]{\subsecname}
@@ -1783,265 +1788,6 @@ sapply(resid_uals %*% de_sign,
 all.equal(sum(resid_uals*fit_ted), target=0)
       @
       \vspace{-1em}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
-      \begin{flalign*}
-        & TSS = (y - \bar{y})^T (y - \bar{y})\\
-        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
-        & RSS = (y - y_{fit})^T (y - y_{fit})
-      \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values: 
-      \begin{displaymath}
-        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
-      \end{displaymath}
-      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
-      \begin{displaymath}
-        TSS = ESS + RSS
-      \end{displaymath}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# TSS = ESS + RSS
-t_ss <- sum((res_ponse-mean(res_ponse))^2)
-e_ss <- sum((fit_ted-mean(fit_ted))^2)
-r_ss <- sum(resid_uals^2)
-all.equal(t_ss, e_ss + r_ss)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_tss.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{R-squared} of \protect\emph{Multivariate Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{R-squared} is the fraction of the response variance (\emph{TSS}) that is explained by the model (\emph{ESS}):
-      \begin{displaymath}
-        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
-      \end{displaymath}
-      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to \texttt{1} for models fitting the data very well, and \emph{R-squared} close to \texttt{0} for poorly fitting models,
-      \vskip1ex
-      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
-      \begin{flalign*}
-        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
-        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
-      \end{flalign*}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Regression summary
-model_sum <- summary(mod_el)
-# Regression R-squared
-r_squared <- e_ss/t_ss
-all.equal(r_squared, model_sum$r.squared)
-# Correlation between response and fitted values
-cor_fitted <- drop(cor(res_ponse, fit_ted))
-# Squared correlation between response and fitted values
-all.equal(cor_fitted^2, r_squared)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fisher's \protect\emph{F-distribution}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $\chi_m^2$ and $\chi_n^2$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
-      \vskip1ex
-      Then the random variable:
-      \begin{displaymath}
-        F = \frac{m \, \chi_n^2}{n \, \chi_m^2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{n/2-1}}{(m+nF)^{(m+n)/2}}
-      \end{displaymath}
-      \vspace{-1em}
-        <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 5, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- paste0("df1=", deg_free, ", df2=3")
-for (in_dex in 1:NROW(deg_free)) {  # Plot four curves
-curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      type="l", xlim=c(0, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Add title
-title(main="F-Distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1,
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Fisher's \protect\emph{F-statistic} for Linear Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values: 
-      \begin{displaymath}
-        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
-      \end{displaymath}
-      Therefore the \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n - k - 1)$ and $k$ degrees of freedom.
-      \vskip1ex
-      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}: 
-      \begin{displaymath}
-        F = \frac{ESS/k}{RSS/(n - k - 1)}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(n - k - 1)$ and $k$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-      \vskip1ex
-      The \emph{F-test} is used to test the \emph{null hypotheses} that an \emph{unrestricted} model with more parameters does not explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
-      \vskip1ex
-      Let the \emph{unrestricted} model have $p_2$ parameters and $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters and $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
-      \vskip1ex
-      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# F-statistic from lm()
-model_sum$fstatistic
-# Degrees of freedom of residuals
-deg_free <- (n_rows - n_cols - 1)
-# F-statistic from RSS
-f_stat <- e_ss*deg_free/r_ss/n_cols
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Fisher's \protect\emph{F-statistic} of Model Significance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{F-test} is used to test the \emph{null hypotheses} that an \emph{unrestricted} model with more parameters does not explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
-      \vskip1ex
-      Let the \emph{unrestricted} model have $p_2$ parameters and $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters and $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
-      \vskip1ex
-      Then the \emph{F}-statistic, defined as the ratio: 
-      \begin{displaymath}
-        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-      \vskip1ex
-      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
-    \column{0.5\textwidth}
-      Let $y_i$ be a vector of $n$ observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional \emph{design matrix} of \emph{predictors}.
-      \vskip1ex
-      Let $y^{fit}_i$ be a vector of \emph{fitted values} of the model, using the \emph{design matrix} $x_{ij}$.
-      \vskip1ex
-      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$.
-      \vskip1ex
-      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - y_{fit})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
-      \begin{displaymath}
-        F = \frac{ESS/k}{RSS/(n - k - 1)}
-      \end{displaymath}
-      \vspace{-2em}
-        <<echo=TRUE,eval=TRUE>>=
-# F-statistic from lm()
-model_sum$fstatistic
-# Degrees of freedom of residuals
-deg_free <- (n_rows - n_cols - 1)
-# F-statistic from RSS
-f_stat <- e_ss*deg_free/r_ss/n_cols
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Fisher's \protect\emph{F-test} of Model Significance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
-      \vskip1ex
-      Let $y_i$ be a vector of $n$ observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional \emph{design matrix} of \emph{predictors}.
-      \vskip1ex
-      Let $y^{fit}_i$ be a vector of \emph{fitted values} of the model, using the \emph{design matrix} $x_{ij}$.
-      \vskip1ex
-      Let the \emph{unrestricted} model have $p_2$ parameters, so its \emph{fitted values} have $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters, so its \emph{fitted values} have $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
-      \vskip1ex
-      Then the \emph{F}-statistic, defined as the ratio: 
-      \begin{displaymath}
-        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
-    \column{0.5\textwidth}
-      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$.
-      \vskip1ex
-      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - y_{fit})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
-      \begin{displaymath}
-        F = \frac{ESS/k}{RSS/(n - k - 1)}
-      \end{displaymath}
-      \vspace{-2em}
-        <<echo=TRUE,eval=TRUE>>=
-# F-statistic from lm()
-model_sum$fstatistic
-# Degrees of freedom of residuals
-deg_free <- (n_rows - n_cols - 1)
-# F-statistic from RSS
-f_stat <- e_ss*deg_free/r_ss/n_cols
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
-      @
   \end{columns}
 \end{block}
 
@@ -2231,41 +1977,80 @@ all.equal(influ_ence, influence_trans)
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{draft: Principal Component Regression}
+\section{Regression Diagnostics}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      \begin{flalign*}
+        & TSS = (y - \bar{y})^T (y - \bar{y})\\
+        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
+        & RSS = (y - y_{fit})^T (y - y_{fit})
+      \end{flalign*}
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values: 
       \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
       \end{displaymath}
-      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# TSS = ESS + RSS
+t_ss <- sum((res_ponse-mean(res_ponse))^2)
+e_ss <- sum((fit_ted-mean(fit_ted))^2)
+r_ss <- sum(resid_uals^2)
+all.equal(t_ss, e_ss + r_ss)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/reg_tss.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{R-squared} of \protect\emph{Multivariate Regression}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{R-squared} is the fraction of the response variance (\emph{TSS}) that is explained by the model (\emph{ESS}):
+      \begin{displaymath}
+        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+      \end{displaymath}
+      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to \texttt{1} for models fitting the data very well, and \emph{R-squared} close to \texttt{0} for poorly fitting models,
       \vskip1ex
-      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
-      \vskip1ex
-      \emph{Principal Component Regression} is used to: 
-      \begin{itemize}
-        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
-        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
-        \item Reduce model overfitting, by reducing the number of predictors and parameters.
-      \end{itemize}
+      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
+      \begin{flalign*}
+        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
+        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
+      \end{flalign*}
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Perform PCA
-pc_a <- prcomp(de_sign, 
-               center=FALSE, scale=FALSE)
-design_pcr <- pc_a$x
-# Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
-  function(x) c(mean=mean(x), sd=sd(x))), 3)
-# Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
-all.equal(influ_ence, influence_pcr)
+# Set regression attribute for intercept
+attributes(mod_el$terms)$intercept <- 1
+# Regression summary
+model_sum <- summary(mod_el)
+# Regression R-squared
+r_squared <- e_ss/t_ss
+all.equal(r_squared, model_sum$r.squared)
+# Correlation between response and fitted values
+cor_fitted <- drop(cor(res_ponse, fit_ted))
+# Squared correlation between response and fitted values
+all.equal(cor_fitted^2, r_squared)
       @
   \end{columns}
 \end{block}
@@ -2274,40 +2059,48 @@ all.equal(influ_ence, influence_pcr)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Principal Component Regression With Shrinkage}
+\subsection{Fisher's \protect\emph{F-distribution}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      Let $\chi_m^2$ and $\chi_n^2$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the random variable:
       \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+        F = \frac{m \, \chi_n^2}{n \, \chi_m^2}
       \end{displaymath}
-      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
-      \vskip1ex
-      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
-      \vskip1ex
-      \emph{Principal Component Regression} is used to: 
-      \begin{itemize}
-        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
-        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
-        \item Reduce model overfitting, by reducing the number of predictors and parameters.
-      \end{itemize}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{n/2-1}}{(m+nF)^{(m+n)/2}}
+      \end{displaymath}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+deg_free <- c(3, 5, 9)  # df values
+col_ors <- c("black", "red", "blue", "green")
+lab_els <- paste0("df1=", deg_free, ", df2=3")
+for (in_dex in 1:NROW(deg_free)) {  # Plot four curves
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      type="l", xlim=c(0, 4),
+      xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex],
+      add=as.logical(in_dex-1))
+}  # end for
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Perform PCA
-pc_a <- prcomp(de_sign, 
-               center=FALSE, scale=FALSE)
-design_pcr <- pc_a$x
-# Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
-  function(x) c(mean=mean(x), sd=sd(x))), 3)
-# Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
-all.equal(influ_ence, influence_pcr)
+      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
       @
   \end{columns}
 \end{block}
@@ -2316,40 +2109,41 @@ all.equal(influ_ence, influence_pcr)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Standard Errors of Principal Component Regression}
+\subsection{draft: Fisher's \protect\emph{F-statistic} for Linear Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values: 
       \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
       \end{displaymath}
-      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      Therefore the \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n - k)$ and $(k-1)$ degrees of freedom.
       \vskip1ex
-      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}: 
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(n - k)$ and $(k-1)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
       \vskip1ex
-      \emph{Principal Component Regression} is used to: 
-      \begin{itemize}
-        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
-        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
-        \item Reduce model overfitting, by reducing the number of predictors and parameters.
-      \end{itemize}
+      The \emph{F-test} is used to test the \emph{null hypotheses} that an \emph{unrestricted} model with more parameters does not explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
+      \vskip1ex
+      Let the \emph{unrestricted} model have $p_2$ parameters and $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters and $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
+      \vskip1ex
+      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Perform PCA
-pc_a <- prcomp(de_sign, 
-               center=FALSE, scale=FALSE)
-design_pcr <- pc_a$x
-# Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
-  function(x) c(mean=mean(x), sd=sd(x))), 3)
-# Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
-all.equal(influ_ence, influence_pcr)
+# F-statistic from lm()
+model_sum$fstatistic
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols)
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/(n_cols-1)
+all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
       @
   \end{columns}
 \end{block}
@@ -2358,40 +2152,90 @@ all.equal(influ_ence, influence_pcr)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Forecasting Using Principal Component Regression}
+\subsection{draft: Fisher's \protect\emph{F-statistic} of Model Significance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      The \emph{F-test} is used to test the \emph{null hypotheses} that an \emph{unrestricted} model with more parameters does not explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
+      \vskip1ex
+      Let the \emph{unrestricted} model have $p_2$ parameters and $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters and $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
+      \vskip1ex
+      Then the \emph{F}-statistic, defined as the ratio: 
       \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
       \end{displaymath}
-      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
       \vskip1ex
-      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
-      \vskip1ex
-      \emph{Principal Component Regression} is used to: 
-      \begin{itemize}
-        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
-        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
-        \item Reduce model overfitting, by reducing the number of predictors and parameters.
-      \end{itemize}
+      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
     \column{0.5\textwidth}
-      \vspace{-1em}
+      Let $y_i$ be a vector of $n$ observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional \emph{design matrix} of \emph{predictors}.
+      \vskip1ex
+      Let $y^{fit}_i$ be a vector of \emph{fitted values} of the model, using the \emph{design matrix} $x_{ij}$.
+      \vskip1ex
+      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$.
+      \vskip1ex
+      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - y_{fit})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      \vspace{-2em}
         <<echo=TRUE,eval=TRUE>>=
-# Perform PCA
-pc_a <- prcomp(de_sign, 
-               center=FALSE, scale=FALSE)
-design_pcr <- pc_a$x
-# Principal components are orthogonal to each other
-round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
-  function(x) c(mean=mean(x), sd=sd(x))), 3)
-# Calculate the PCR influence matrix
-influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
-all.equal(influ_ence, influence_pcr)
+# F-statistic from lm()
+model_sum$fstatistic
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols - 1)
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/n_cols
+all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Fisher's \protect\emph{F-test} of Model Significance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters.
+      \vskip1ex
+      Let $y_i$ be a vector of $n$ observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional \emph{design matrix} of \emph{predictors}.
+      \vskip1ex
+      Let $y^{fit}_i$ be a vector of \emph{fitted values} of the model, using the \emph{design matrix} $x_{ij}$.
+      \vskip1ex
+      Let the \emph{unrestricted} model have $p_2$ parameters, so its \emph{fitted values} have $df_2 = n - p_2$ degrees of freedom, and the \emph{restricted} model have $p_1$ parameters, so its \emph{fitted values} have $df_1 = n - p_1$ degrees of freedom, with $p_1 < p_2$.
+      \vskip1ex
+      Then the \emph{F}-statistic, defined as the ratio: 
+      \begin{displaymath}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$.
+      \vskip1ex
+      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - y_{fit})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      \vspace{-2em}
+        <<echo=TRUE,eval=TRUE>>=
+# F-statistic from lm()
+model_sum$fstatistic
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols - 1)
+# F-statistic from RSS
+f_stat <- e_ss*deg_free/r_ss/n_cols
+all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
       @
   \end{columns}
 \end{block}
@@ -2878,6 +2722,180 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
 \end{block}
 
 \end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Regularization}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Principal Component Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+      \end{displaymath}
+      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      \vskip1ex
+      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
+      \vskip1ex
+      \emph{Principal Component Regression} is used to: 
+      \begin{itemize}
+        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
+        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
+        \item Reduce model overfitting, by reducing the number of predictors and parameters.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Perform PCA
+pc_a <- prcomp(de_sign, 
+               center=FALSE, scale=FALSE)
+design_pcr <- pc_a$x
+# Principal components are orthogonal to each other
+round(t(design_pcr) %*% design_pcr, 2)
+round(apply(design_pcr, 2, 
+  function(x) c(mean=mean(x), sd=sd(x))), 3)
+# Calculate the PCR influence matrix
+influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+all.equal(influ_ence, influence_pcr)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Principal Component Regression With Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+      \end{displaymath}
+      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      \vskip1ex
+      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
+      \vskip1ex
+      \emph{Principal Component Regression} is used to: 
+      \begin{itemize}
+        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
+        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
+        \item Reduce model overfitting, by reducing the number of predictors and parameters.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Perform PCA
+pc_a <- prcomp(de_sign, 
+               center=FALSE, scale=FALSE)
+design_pcr <- pc_a$x
+# Principal components are orthogonal to each other
+round(t(design_pcr) %*% design_pcr, 2)
+round(apply(design_pcr, 2, 
+  function(x) c(mean=mean(x), sd=sd(x))), 3)
+# Calculate the PCR influence matrix
+influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+all.equal(influ_ence, influence_pcr)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Standard Errors of Principal Component Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+      \end{displaymath}
+      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      \vskip1ex
+      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
+      \vskip1ex
+      \emph{Principal Component Regression} is used to: 
+      \begin{itemize}
+        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
+        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
+        \item Reduce model overfitting, by reducing the number of predictors and parameters.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Perform PCA
+pc_a <- prcomp(de_sign, 
+               center=FALSE, scale=FALSE)
+design_pcr <- pc_a$x
+# Principal components are orthogonal to each other
+round(t(design_pcr) %*% design_pcr, 2)
+round(apply(design_pcr, 2, 
+  function(x) c(mean=mean(x), sd=sd(x))), 3)
+# Calculate the PCR influence matrix
+influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+all.equal(influ_ence, influence_pcr)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Forecasting Using Principal Component Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In \emph{Principal Component Regression} (\emph{PCR}), the \emph{design matrix} $\mathbb{X}$ is mulltiplied by a \emph{PCA rotation matrix} $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
+      \end{displaymath}
+      The matrix $\mathbb{W}$ is chosen so that the columns (principal components) of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ form an orthogonal set of predictors.
+      \vskip1ex
+      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
+      \vskip1ex
+      \emph{Principal Component Regression} is used to: 
+      \begin{itemize}
+        \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
+        \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
+        \item Reduce model overfitting, by reducing the number of predictors and parameters.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Perform PCA
+pc_a <- prcomp(de_sign, 
+               center=FALSE, scale=FALSE)
+design_pcr <- pc_a$x
+# Principal components are orthogonal to each other
+round(t(design_pcr) %*% design_pcr, 2)
+round(apply(design_pcr, 2, 
+  function(x) c(mean=mean(x), sd=sd(x))), 3)
+# Calculate the PCR influence matrix
+influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
+all.equal(influ_ence, influence_pcr)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 
