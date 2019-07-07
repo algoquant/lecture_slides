@@ -175,14 +175,14 @@ library(lubridate)  # load lubridate
 start_date <- decimal_date(start(zoo_stx))
 end_date <- decimal_date(end(zoo_stx))
 # Calculate frequency of zoo_stx
-fre_quency <- 
+fre_quency <-
   NROW(zoo_stx)/(end_date-start_date)
 # Extract data from zoo_stx
 da_ta <- zoo::coredata(
   window(zoo_stx, start=as.Date("2015-01-01"),
          end=end(zoo_stx)))
 # Create ts object using ts()
-ts_stx <- ts(data=da_ta, 
+ts_stx <- ts(data=da_ta,
   start=decimal_date(as.Date("2015-01-01")),
   frequency=fre_quency)
 seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
@@ -893,7 +893,7 @@ dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       The package \emph{qmao} is designed for downloading, manipulating, and visualizing \emph{OHLC} time series data,
-package \emph{quantmod} 
+package \emph{quantmod}
       \vskip1ex
       \emph{qmao} uses time series of class \texttt{"xts"}, and provides many useful functions for building quantitative financial models:
       \begin{itemize}
@@ -954,17 +954,17 @@ detach("package:qmao")
       \begin{displaymath}
         P_t = P_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma W_t]
       \end{displaymath}
-      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma),
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma).
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/brown_geom.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 1000
 # Simulate geometric Brownian motion
-re_turns <- vol_at*rnorm(len_gth) +
-  dri_ft - vol_at^2/2
+re_turns <- sigma_r*rnorm(len_gth) +
+  dri_ft - sigma_r^2/2
 price_s <- exp(cumsum(re_turns))
 plot(price_s, type="l",
      xlab="periods", ylab="prices",
@@ -986,12 +986,12 @@ plot(price_s, type="l",
       Random \emph{OHLC} prices are useful for testing financial models,
       <<echo=TRUE,eval=FALSE>>=
 # Simulate geometric Brownian motion
-vol_at <- 0.01/sqrt(48)
+sigma_r <- 0.01/sqrt(48)
 dri_ft <- 0.0
 len_gth <- 1e4
 in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(vol_at*rnorm(len_gth) + dri_ft - vol_at^2/2)),
+price_s <- xts(exp(cumsum(sigma_r*rnorm(len_gth) + dri_ft - sigma_r^2/2)),
   order.by=in_dex)
 price_s <- cbind(price_s,
   volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
@@ -1000,7 +1000,7 @@ oh_lc <- xts::to.daily(price_s)
 quantmod::chart_Series(oh_lc, name="random prices")
 # dygraphs candlestick plot using pipes syntax
 library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>% 
+dygraphs::dygraph(oh_lc[, 1:4]) %>%
   dyCandlestick()
 # dygraphs candlestick plot without using pipes syntax
 dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
@@ -1014,24 +1014,147 @@ dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
 
 
 %%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If \texttt{x} follows the \emph{Normal} distribution $N(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution:
+      \begin{displaymath}
+        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
+      <<echo=TRUE,eval=FALSE>>=
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+        type="l", xlim=c(0, 3), lwd=2,
+        xlab="", ylab="", col=col_ors[in_dex],
+        add=as.logical(in_dex-1))
+}  # End for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sig_mas, sep="="),
+       cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
+      \vskip1ex
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\gamma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI ETF
+sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmar_2 <- sigma_r^2
+n_rows <- NROW(rutils::etf_env$VTI)
+# Standard deviation of log-normal prices
+sqrt(n_rows)*sigma_r
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_skew.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigmar_2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Skewness", col="blue",
+      main="Skewness of Log-normal Prices
+      as a Function of Time")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
+      \vskip1ex
+      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
+      \vskip1ex
+      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
+      \vskip1ex
+      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_prob.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigma_r*sqrt(x)/2),
+      xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Probability", col="blue",
+      main="Probability That Random Log-normal Price
+      Will be Lower Than the Mean Price")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Paths of Geometric Brownian Motion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If asset prices follow \emph{Geometric Brownian motion}, then at any point in time, they are distributed according to the \emph{Log-normal} distribution,
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
       \vskip1ex
-      The volatility increases with time as the square root of time: $\sigma \propto \sqrt{t}$
-      \vskip1ex
-      The skewness of the price distribution increases exponentially with the volatility and time: $\mathbb{E}[(x - \mathbb{E}[x])^3] \propto e^{1.5 \sigma^2} \propto e^{1.5 t}$
+      For large standard deviation, the skewness $\gamma$ increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
       <<echo=TRUE,eval=FALSE>>=
 # define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 5000
 path_s <- 10
 # Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
-    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
 price_s <- exp(matrixStats::colCumsums(price_s))
 # Create xts time series
 price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
@@ -1057,16 +1180,16 @@ plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value,
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
       \vskip1ex
-      The skewness of the price distribution increases exponentially with the volatility and time: $\mathbb{E}[(x - \mathbb{E}[x])^3] \propto e^{1.5 \sigma^2} \propto e^{1.5 t}$
+      For large standard deviation, the skewness $\gamma$ increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
       <<echo=TRUE,eval=FALSE>>=
 # define daily volatility and growth rate
-vol_at <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 10000
 path_s <- 100
 # Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(vol_at*rnorm(path_s*len_gth) +
-    dri_ft - vol_at^2/2, nc=path_s)
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
 price_s <- exp(matrixStats::colCumsums(price_s))
 # Calculate percentage of paths below the expected value
 per_centage <- rowSums(price_s < 1.0) / path_s
@@ -1086,66 +1209,13 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Log-normal} Probability Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let \texttt{x} be a random variable which follows the \emph{Normal} distribution $N(x, \mu, \sigma)$,
-      \vskip1ex
-      Then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution:,
-      \begin{displaymath}
-        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
-      \end{displaymath}
-      The mean of the \emph{Log-normal} distribution is equal to: $\mathbb{E}[x] = \exp(\mu + \sigma^2/2)$
-      \vskip1ex
-      The \emph{Log-normal} distribution has a positive skewness (third moment) equal to: $\mathbb{E}[(x - \mathbb{E}[x])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
-      \vskip1ex
-      If asset returns follow the \emph{Normal} probability distribution, then asset prices follow the \emph{Log-normal} distribution,
-      <<echo=TRUE,eval=FALSE>>=
-# Sigma values
-sig_mas <- c(0.5, 1, 1.5)
-# Create plot colors
-col_ors <- c("black", "red", "blue")
-# Create legend labels
-lab_els <- paste("sigma", sig_mas, sep="=")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-        type="l", xlim=c(0, 3),
-        xlab="", ylab="", lwd=2,
-        col=col_ors[in_dex],
-        add=as.logical(in_dex-1))
-}  # End for
-# Add title
-title(main="Log-normal Distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, title="Sigmas",
-       lab_els, cex=0.8, lwd=2,
-       lty=rep(1, NROW(sig_mas)),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Time Evolution of Stock Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices,
+      Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
       <<echo=TRUE,eval=FALSE>>=
 # load S&P500 stock prices
 load("C:/Develop/R/lecture_slides/data/sp500.RData")
@@ -1196,9 +1266,14 @@ legend(x="topleft", inset=0.05, cex=0.8,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In most stock indices, a small number of stocks reach very high prices, while the prices of the majority of the other stocks remain below the average index price,
+      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
       \vskip1ex
-      For example, for a recent cohort of S\&P500 stocks (but with prices starting from 1990), the current prices of almost 80\% of the stocks are now below the average price of the cohort,
+      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate average of valid stock prices
 val_id <- (price_s != 1)  # valid stocks
@@ -1209,9 +1284,16 @@ in_dex <- rowSums(price_s * val_id) / n_stocks
 per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
 # Create xts time series of average stock prices
 in_dex <- xts(in_dex, order.by=index(price_s))
-# Plot xts time series of average stock prices
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+    %   \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices.png}
+    % \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
+      <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=4)
 par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+# Plot xts time series of average stock prices
 plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
          xlab=NA, ylab=NA, col="blue")
 # Create xts time series of percentage of stock prices below the average price
@@ -1220,13 +1302,6 @@ per_centage <- xts(per_centage, order.by=index(price_s))
 plot.zoo(per_centage[-(1:2),],
          main="Percentage of S&P500 stock prices below the average price",
          xlab=NA, ylab=NA, col="blue")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices.png}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
-      <<echo=TRUE,eval=FALSE>>=
       @
   \end{columns}
 \end{block}
@@ -1259,7 +1334,7 @@ plot.zoo(per_centage[-(1:2),],
 x11(width=6, height=4)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
 library(zoo)
-re_turns <- 
+re_turns <-
   diff(log(as.numeric(EuStockMarkets[, 1])))
 # acf() autocorrelation from package stats
 acf(re_turns, lag=10, main="")
@@ -1493,9 +1568,9 @@ theme(  # modify plot theme
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 macro_diff <- na.omit(diff(macro_zoo))
-acf_plus(coredata(macro_diff[, "unemprate"]), 
+acf_plus(coredata(macro_diff[, "unemprate"]),
   lag=10, main="quarterly unemployment rate")
-acf_plus(coredata(macro_diff[, "3mTbill"]), 
+acf_plus(coredata(macro_diff[, "3mTbill"]),
   lag=10, main="3 month T-bill EOQ")
       @
       The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
@@ -1539,7 +1614,7 @@ acf_plus(coredata(macro_diff[, "3mTbill"]),
 se_ries <- EuStockMarkets[, 1]
 # Filter only over past values (sides=1)
 co_eff <- rep(1/5,5)
-filter_ed <- filter(se_ries, filter=co_eff, 
+filter_ed <- filter(se_ries, filter=co_eff,
                    method="convolution", sides=1)
 # filter() returns a time series of class "ts"
 class(filter_ed)
@@ -1556,7 +1631,7 @@ summary(microbenchmark(
   ), times=10)[, c(1, 4, 5)]
 # Simulate ARIMA using filter()
 in_nov <- rnorm(NROW(EuStockMarkets))
-arima_filter <- filter(x=in_nov, 
+arima_filter <- filter(x=in_nov,
   filter=co_eff, method="recursive")
       @
   \end{columns}
@@ -1750,7 +1825,7 @@ theme(
       \vskip1ex
       Non-stationary processes with unit roots are called \emph{unit-root} processes.
       \vskip1ex
-      A simple example of a \emph{unit-root} process is the process: 
+      A simple example of a \emph{unit-root} process is the process:
       $r_i = r_{i-1} + \varepsilon_i$,
       which is called a \emph{Wiener} process (Brownian motion, random walk).
     \column{0.5\textwidth}
@@ -1809,14 +1884,14 @@ set.seed(1121)
 len_gth <- 1e4
 in_nov <- rnorm(len_gth + warm_up)
 # Simulate ARIMA using arima.sim()
-ari_ma <- arima.sim(n=len_gth, 
-  model=list(ar=co_eff), 
-  start.innov=in_nov[1:warm_up], 
+ari_ma <- arima.sim(n=len_gth,
+  model=list(ar=co_eff),
+  start.innov=in_nov[1:warm_up],
   innov=in_nov[(warm_up+1):NROW(in_nov)])
 # Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov, 
+arima_filter <- filter(x=in_nov,
   filter=co_eff, method="recursive")
-all.equal(arima_filter[-(1:warm_up)], 
+all.equal(arima_filter[-(1:warm_up)],
   as.numeric(ari_ma))
 # Simulate ARIMA using for() loop
 arima_loop <- numeric(NROW(in_nov))
@@ -1825,15 +1900,15 @@ arima_loop[2] <- co_eff[1]*arima_loop[1] + in_nov[2]
 for (it in 3:NROW(arima_loop)) {
   arima_loop[it] <- arima_loop[(it-1):(it-2)] %*% co_eff + in_nov[it]
 }  # End for
-all.equal(arima_loop, 
+all.equal(arima_loop,
   as.numeric(arima_filter))
 # microbenchmark the speed of the three methods of simulating ARIMA
 library(microbenchmark)
 summary(microbenchmark(
   arima_filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  arima_sim=arima.sim(n=len_gth, 
-                      model=list(ar=co_eff), 
-                      start.innov=in_nov[1:warm_up], 
+  arima_sim=arima.sim(n=len_gth,
+                      model=list(ar=co_eff),
+                      start.innov=in_nov[1:warm_up],
                       innov=in_nov[(warm_up+1):NROW(in_nov)]),
   arima_loop=for (it in 3:NROW(arima_loop)) {
     arima_loop[it] <- arima_loop[(it-1):(it-2)] %*% co_eff + in_nov[it]}
@@ -1887,8 +1962,8 @@ set.seed(1121)  # initialize random number generator
 rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
 vari_ance <- matrixStats::rowVars(rand_walks)
 par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot(vari_ance, xlab="time steps", ylab="", 
-     t="l", col="blue", lwd=2, 
+plot(vari_ance, xlab="time steps", ylab="",
+     t="l", col="blue", lwd=2,
      main="Variance of Random Walk")
       @
   \end{columns}
@@ -1940,9 +2015,9 @@ adf_test <- sapply(coeff_s, function(co_eff) {
   ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
   c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
 })  # End sapply
-plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient", 
+plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient",
      xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
-plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient", 
+plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient",
      xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
       @
       \vspace{-1em}
@@ -2029,7 +2104,7 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 # Simulate AR(1) process
 ari_ma <- arima.sim(n=729, model=list(ar=0.8))
 # ACF of AR(1) process
-ac_f <- acf_plus(ari_ma, lag=10, 
+ac_f <- acf_plus(ari_ma, lag=10,
   xlab="", ylab="",
   main="Autocorrelations of AR(1) process")
 ac_f$acf[1:5]
@@ -2066,9 +2141,9 @@ ac_f$acf[1:5]
       The \emph{AR(1)} process has an exponentially decaying ACF and a non-zero PACF at lag one.
       <<echo=TRUE,eval=FALSE>>=
 # PACF of AR(1) process
-pac_f <- pacf(ari_ma, lag=10, 
+pac_f <- pacf(ari_ma, lag=10,
   xlab="", ylab="", main="")
-title("Partial autocorrelations of AR(1) process", 
+title("Partial autocorrelations of AR(1) process",
   line=1)
 pac_f <- drop(pac_f$acf)
 pac_f[1:5]
@@ -2107,13 +2182,13 @@ ac_f <- drop(ac_f$acf)
 pac_f <- numeric(3)
 pac_f[1] <- ac_f[1]
 pac_f[2] <- ac_f[2] - ac_f[1]^2
-pac_f[3] <- ac_f[3] - 
+pac_f[3] <- ac_f[3] -
   pac_f[2]*ac_f[1] - ac_f[2]*pac_f[1]
 # Compute pacf recursively in a loop
 pac_f <- numeric(NROW(ac_f))
 pac_f[1] <- ac_f[1]
 for (it in 2:NROW(pac_f)) {
-  pac_f[it] <- ac_f[it] - 
+  pac_f[it] <- ac_f[it] -
     pac_f[1:(it-1)] %*% ac_f[(it-1):1]
 }  # End for
       @
@@ -2139,13 +2214,13 @@ for (it in 2:NROW(pac_f)) {
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # Set plot panels
 # Simulate AR(3) time series of returns
-ari_ma <- arima.sim(n=729, 
+ari_ma <- arima.sim(n=729,
   model=list(ar=c(0.1, 0.5, 0.1)))
 # ACF of AR(3) process
-acf_plus(ari_ma, lag=10, xlab="", ylab="", 
+acf_plus(ari_ma, lag=10, xlab="", ylab="",
          main="ACF of AR(3) process")
 # PACF of AR(3) process
-pacf(ari_ma, lag=10, xlab="", ylab="", 
+pacf(ari_ma, lag=10, xlab="", ylab="",
      main="PACF of AR(3) process")
       @
     \column{0.5\textwidth}
@@ -2178,7 +2253,7 @@ pacf(ari_ma, lag=10, xlab="", ylab="",
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calibrate ARIMA model using arima()
-arima_fit <- arima(ari_ma, 
+arima_fit <- arima(ari_ma,
   order=c(3,0,0), include.mean=FALSE)
 arima_fit$coef
 # Calibrate ARIMA model using auto.arima()
@@ -2221,7 +2296,7 @@ all.equal(arima_fit$coef, co_eff, check.attributes=FALSE)
           \rho_3 \\
           \vdots \\
           \rho_p
-        \end{pmatrix} = 
+        \end{pmatrix} =
         \begin{pmatrix}
           1 & \rho_1 & \dots & \rho_{p-1} \\
           \rho_1 & 1 & \dots & \rho_{p-2} \\
@@ -2284,23 +2359,23 @@ len_gth <- 1e2
 # Simulate AR(3) time series using filter()
 co_eff <- c(0.1, 0.39, 0.5)
 set.seed(1121); in_nov <- rnorm(len_gth)
-se_ries <- filter(x=in_nov, 
+se_ries <- filter(x=in_nov,
   filter=co_eff, method="recursive")
 # Forecast using AR(3) ARIMA
 forecast_s <- numeric(NROW(se_ries))
 forecast_s[2] <- co_eff[1]*se_ries[1]
-forecast_s[3] <- co_eff[1]*se_ries[2] + 
+forecast_s[3] <- co_eff[1]*se_ries[2] +
   co_eff[2]*se_ries[1]
 for (it in 4:NROW(forecast_s)) {
-  forecast_s[it] <- 
+  forecast_s[it] <-
     se_ries[(it-1):(it-3)] %*% co_eff
 }  # End for
 # Forecast using filter()
 forecasts_filter <- filter(x=se_ries, sides=1,
   filter=co_eff, method="convolution")
 class(forecasts_filter)
-all.equal(forecast_s[-(1:4)], 
-  forecasts_filter[-c(1:3, NROW(forecasts_filter))], 
+all.equal(forecast_s[-(1:4)],
+  forecasts_filter[-c(1:3, NROW(forecasts_filter))],
   check.attributes=FALSE)
 # Compare residuals with innovations
 residual_s <- (se_ries - forecast_s)
@@ -2312,12 +2387,12 @@ plot(residual_s, t="l", lwd=3, main="ARIMA Forecast Errors")
       Accurate forecasting requires knowing the order \texttt{p} of the \emph{AR(p)} process and its coefficients.
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
-plot.default(se_ries, 
+plot.default(se_ries,
   main="Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
 lines(forecast_s, col="orange", lwd=3)
 legend(x="topright", legend=c("series","forecasts"),
-       col=c("black", "orange"), lty=1, lwd=6, 
+       col=c("black", "orange"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
   \end{columns}
@@ -2361,8 +2436,8 @@ foo <- sapply(1:1e2, function(x) {
   c(actual=se_ries[len_gth+1], forecast=fore_cast, predict=as.numeric(pre_dict$pred))
 })  # end sapply
 foo <- t(foo)
-# hist(foo[, 1], breaks=30, 
-#   main="", ylim=c(0, 60), xlim=c(-0.04, 0.04), 
+# hist(foo[, 1], breaks=30,
+#   main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
 #   xlab="", ylab="", freq=FALSE)
 
 hist(foo[, 1], ylim=c(0, 0.15), freq=FALSE)
@@ -2374,18 +2449,18 @@ lines(density(foo[, 3]), col='red', lwd=3)
 # Forecast using AR(3) ARIMA
 forecast_s <- numeric(NROW(se_ries))
 forecast_s[2] <- co_eff[1]*se_ries[1]
-forecast_s[3] <- co_eff[1]*se_ries[2] + 
+forecast_s[3] <- co_eff[1]*se_ries[2] +
   co_eff[2]*se_ries[1]
 for (it in 4:NROW(forecast_s)) {
-  forecast_s[it] <- 
+  forecast_s[it] <-
     se_ries[(it-1):(it-3)] %*% co_eff
 }  # End for
 # Forecast using filter()
 forecasts_filter <- filter(x=se_ries, sides=1,
   filter=co_eff, method="convolution")
 class(forecasts_filter)
-all.equal(forecast_s[-(1:4)], 
-  forecasts_filter[-c(1:3, NROW(forecasts_filter))], 
+all.equal(forecast_s[-(1:4)],
+  forecasts_filter[-c(1:3, NROW(forecasts_filter))],
   check.attributes=FALSE)
 # Compare residuals with innovations
 residual_s <- (se_ries-forecast_s)
@@ -2396,12 +2471,12 @@ tail(cbind(in_nov, residual_s))
       Accurate forecasting requires knowing the order \texttt{p} of the \emph{AR(p)} process and its coefficients.
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
-plot.default(se_ries, 
+plot.default(se_ries,
   main="Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
 lines(forecast_s, col="orange", lwd=3)
 legend(x="topright", legend=c("series","forecasts"),
-       col=c("black", "orange"), lty=1, lwd=6, 
+       col=c("black", "orange"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
   \end{columns}
@@ -2428,23 +2503,23 @@ len_gth <- 1e2
 # Simulate AR(3) time series using filter()
 co_eff <- c(0.1, 0.39, 0.5)
 set.seed(1121)
-se_ries <- filter(x=rnorm(len_gth), 
+se_ries <- filter(x=rnorm(len_gth),
   filter=co_eff, method="recursive")
 # Forecast using AR(3) ARIMA
 forecast_s <- numeric(NROW(se_ries))
 forecast_s[2] <- co_eff[1]*se_ries[1]
-forecast_s[3] <- co_eff[1]*se_ries[2] + 
+forecast_s[3] <- co_eff[1]*se_ries[2] +
   co_eff[2]*se_ries[1]
 for (it in 4:NROW(forecast_s)) {
-  forecast_s[it] <- 
+  forecast_s[it] <-
     se_ries[(it-1):(it-3)] %*% co_eff
 }  # End for
 # Forecast using filter()
 forecasts_filter <- filter(x=se_ries, sides=1,
   filter=co_eff, method="convolution")
 class(forecasts_filter)
-all.equal(forecast_s[-(1:4)], 
-  forecasts_filter[-c(1:3, NROW(forecasts_filter))], 
+all.equal(forecast_s[-(1:4)],
+  forecasts_filter[-c(1:3, NROW(forecasts_filter))],
   check.attributes=FALSE)
 # Compare residuals with innovations
 residual_s <- (se_ries-forecast_s)
@@ -2455,12 +2530,12 @@ tail(cbind(in_nov, residual_s))
       Accurate forecasting requires knowing the order \texttt{p} of the \emph{AR(p)} process and its coefficients.
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
-plot.default(se_ries, 
+plot.default(se_ries,
   main="Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
 lines(forecast_s, col="orange", lwd=3)
 legend(x="topright", legend=c("series","forecasts"),
-       col=c("black", "orange"), lty=1, lwd=6, 
+       col=c("black", "orange"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
   \end{columns}
@@ -2490,7 +2565,7 @@ legend(x="topright", legend=c("series","forecasts"),
 len_gth <- 1e3
 co_eff <- c(0.1, 0.39, 0.5)
 set.seed(1121)
-se_ries <- filter(x=rnorm(len_gth), 
+se_ries <- filter(x=rnorm(len_gth),
   filter=co_eff, method="recursive")
 # Define design matrix and end_points
 de_sign <- sapply(1:3, function(lagg) {
@@ -2500,10 +2575,10 @@ de_sign <- cbind(se_ries, de_sign)
 look_back <- 100  # length of look-back interval
 end_points <- seq_along(se_ries)
 n_rows <- NROW(end_points)
-start_points <- c(rep_len(1, look_back-1), 
+start_points <- c(rep_len(1, look_back-1),
     end_points[1:(n_rows-look_back+1)])
 # Perform rolling forecasting
-forecast_s <- sapply(seq_along(end_points)[-(1:2)], 
+forecast_s <- sapply(seq_along(end_points)[-(1:2)],
   function(it) {
     de_sign <- de_sign[start_points[it]:end_points[it], ]
     # Calculate AR(3) coefficients
@@ -2542,12 +2617,12 @@ ms_e <- mean((forecast_s-se_ries)^2)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot with legend
-plot.default(se_ries, 
+plot.default(se_ries,
   main="Rolling Forecasting Using AR(3) Model",
   xlab="", ylab="", type="l")
 lines(forecast_s, col="orange", lwd=1)
 legend(x="topright", legend=c("series","forecasts"),
-       col=c("black", "orange"), lty=1, lwd=6, 
+       col=c("black", "orange"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
   \end{columns}
@@ -2578,16 +2653,16 @@ legend(x="topright", legend=c("series","forecasts"),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck parameters
-eq_price <- 1.0; vol_at <- 0.02
+eq_price <- 1.0; sigma_r <- 0.02
 the_ta <- 0.01; len_gth <- 1000
 drif_t <- the_ta*eq_price
 theta_1 <- 1-the_ta
 # Simulate Ornstein-Uhlenbeck process
-in_nov <- vol_at*rnorm(len_gth)
+in_nov <- sigma_r*rnorm(len_gth)
 price_s <- numeric(len_gth)
 price_s[1] <- in_nov[1]
 for (i in 2:len_gth) {
-  price_s[i] <- theta_1*price_s[i-1] + 
+  price_s[i] <- theta_1*price_s[i-1] +
     in_nov[i] + drif_t
 }  # End for
       @
@@ -2612,7 +2687,7 @@ plot(price_s, type="l",
      xlab="periods", ylab="prices",
      main="Ornstein-Uhlenbeck process")
 legend("topright",
-       title=paste(c(paste0("vol_at = ", vol_at),
+       title=paste(c(paste0("sigma_r = ", sigma_r),
                      paste0("eq_price = ", eq_price),
                      paste0("the_ta = ", the_ta)),
                    collapse="\n"),
@@ -2669,7 +2744,7 @@ abline(l_m, lwd=2, col="red")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # volatility parameter
-c(vol_at, sd(re_turns))
+c(sigma_r, sd(re_turns))
 # Extract OU parameters from regression
 co_eff <- summary(l_m)$coefficients
 # theta strength of mean reversion
@@ -2677,7 +2752,7 @@ round(co_eff[2, ], 3)
 # Equilibrium price
 co_eff[1, 1]/co_eff[2, 1]
 # Parameter and t-values
-co_eff <- cbind(c(the_ta*eq_price, the_ta), 
+co_eff <- cbind(c(the_ta*eq_price, the_ta),
   co_eff[, 1:2])
 rownames(co_eff) <- c("drift", "theta")
 round(co_eff, 3)
@@ -2710,7 +2785,7 @@ price_s[1] <- eq_price
 set.seed(1121)  # Reset random numbers
 for (i in 2:len_gth) {
   re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
+    sigma_r*rnorm(1)
   price_s[i] <- price_s[i-1] * exp(re_turns[i])
 }  # End for
       @
@@ -2723,7 +2798,7 @@ plot(price_s, type="l",
      xlab="periods", ylab="prices",
      main="Log-normal Ornstein-Uhlenbeck process")
 legend("topright",
-       title=paste(c(paste0("vol_at = ", vol_at),
+       title=paste(c(paste0("sigma_r = ", sigma_r),
                      paste0("eq_price = ", eq_price),
                      paste0("the_ta = ", the_ta)),
                    collapse="\n"),
@@ -2760,7 +2835,7 @@ abline(h=eq_price, col='red', lwd=2)
       The \emph{Ornstein-Uhlenbeck} process must be simulated using a \texttt{for()} loop, since it is path-dependent,
       <<echo=TRUE,eval=FALSE>>=
 # define Ornstein-Uhlenbeck parameters
-eq_price <- 5.0; vol_at <- 0.01
+eq_price <- 5.0; sigma_r <- 0.01
 the_ta <- 0.01; len_gth <- 1000
 # Simulate Ornstein-Uhlenbeck process
 re_turns <- numeric(len_gth)
@@ -2769,7 +2844,7 @@ price_s[1] <- 5.0
 set.seed(1121)  # Reset random numbers
 for (i in 2:len_gth) {
   re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    vol_at*rnorm(1)
+    sigma_r*rnorm(1)
   price_s[i] <- price_s[i-1] * exp(re_turns[i])
 }  # End for
       @
@@ -2782,7 +2857,7 @@ plot(price_s, type="l",
      xlab="periods", ylab="prices",
      main="Ornstein-Uhlenbeck process")
 legend("topright",
-       title=paste(c(paste0("vol_at = ", vol_at),
+       title=paste(c(paste0("sigma_r = ", sigma_r),
                      paste0("eq_price = ", eq_price),
                      paste0("the_ta = ", the_ta)),
                    collapse="\n"),
