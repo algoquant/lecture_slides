@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 cat("Enter\ttab")  # Cat() interprets backslash escape sequences
 print("Enter\ttab")
 
@@ -365,6 +358,252 @@ summary(microbenchmark(
   pure_r=NROW(data_table),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
+# Read a data table from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
+# fread() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+    setDF(data.table::fread(file_name)))
+# fread() is much faster than read.csv()
+summary(microbenchmark(
+  pure_r=read.csv(file_name),
+  fread=setDF(data.table::fread(file_name)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+library(microbenchmark)
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+data_table[, .(origin, month)]
+column_s <- c("origin", "month")
+data_table[, ..column_s]
+data_table[, month, origin]
+# Select two columns and rename them
+data_table[, .(orig=origin, mon=month)]
+# Select all columns except origin
+head(data_table[, !c("origin")])
+head(data_table[, -c("origin")])
+
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or standard R commands
+sum(data_table[, carrier_delay > 0])
+# microbenchmark speed of data.table syntax
+summary(microbenchmark(
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=sum(data_table[, carrier_delay > 0]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay),
+         aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Same, but add names to output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N),
+     by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N),
+     by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)),
+     by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
+     keyby=.(airport=origin, month=month)]
+
+# Sort ascending by origin, then descending by dest
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Sort data_table by reference
+setorder(data_table, origin, -dest)
+all.equal(data_table, order_table)
+# setorder() is much faster than order()
+summary(microbenchmark(
+  order=data_table[order(origin, -dest)],
+  setorder=setorder(data_table, origin, -dest),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)]
+# Chained brackets to sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)),
+      by=.(month=month)][order(month)]
+
+# Select weather_delay and aircraft_delay in two different ways
+data_table[1:7, .SD,
+     .SDcols=c("weather_delay", "aircraft_delay")]
+data_table[1:7, .(weather_delay, aircraft_delay)]
+# Calculate mean of weather_delay and aircraft_delay
+data_table[, sapply(.SD, mean),
+     .SDcols=c("weather_delay", "aircraft_delay")]
+sapply(data_table[, .SD,
+     .SDcols=c("weather_delay", "aircraft_delay")], mean)
+# Return origin and dest, then all other columns
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return origin and dest, then weather_delay and aircraft_delay columns
+data_table[1:7, .SD,
+     by=.(origin, dest),
+     .SDcols="weather_delay", "aircraft_delay"]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+data_table[, head(.SD, 2), by=.(month),
+     .SDcols=c("weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay, grouped by origin
+data_table[, lapply(.SD, mean),
+     by=.(origin),
+     .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[, .(weather_delay=mean(weather_delay),
+         aircraft_delay=mean(aircraft_delay)),
+     by=.(origin)]
+
+# Add tot_delay column
+data_table[, tot_delay := (carrier_delay + aircraft_delay)]
+head(data_table, 4)
+# Delete tot_delay column
+data_table[, tot_delay := NULL]
+# Add max_delay column grouped by origin and dest
+data_table[, max_delay := max(aircraft_delay),
+     by=.(origin, dest)]
+data_table[, max_delay := NULL]
+# Add date and tot_delay columns
+data_table[, c("date", "tot_delay") :=
+       list(paste(month, day, year, sep="/"),
+            (carrier_delay + aircraft_delay))]
+# Modify select rows of tot_delay column
+data_table[month == 12, tot_delay := carrier_delay]
+data_table[, c("date", "tot_delay") := NULL]
+# Add several columns
+data_table[, c("max_carrier", "max_aircraft") :=
+       lapply(.SD, max),
+     by=.(origin, dest),
+     .SDcols=c("carrier_delay", "aircraft_delay")]
+data_table[, c("max_carrier", "max_aircraft") := NULL]
+# Modifying by reference is much faster than standard R
+summary(microbenchmark(
+  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
+  pure_r=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Add a key based on the "origin" column
+setkey(data_table, origin)
+haskey(data_table)
+key(data_table)
+# Select rows with LGA using the key
+data_table["LGA"]
+all.equal(data_table["LGA"],
+    data_table[origin == "LGA"])
+# Select rows with LGA and JFK using the key
+data_table[c("LGA", "JFK")]
+# Add a key based on the "origin" and "dest" columns
+setkey(data_table, origin, dest)
+key(data_table)
+# Select rows with origin from JFK and MIA
+data_table[c("JFK", "MIA")]
+# Select rows with origin from JFK and dest to MIA
+data_table[.("JFK", "MIA")]
+all.equal(data_table[.("JFK", "MIA")],
+    data_table[origin == "JFK" & dest == "MIA"])
+# Selecting rows using a key is much faster than standard R
+summary(microbenchmark(
+  with_key=data_table[.("JFK", "MIA")],
+  standard_r=data_table[origin == "JFK" & dest == "MIA"],
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# Select rows with dest to MIA
+data_table[.(unique(origin), "MIA")]
+# Select carrier_delay for all flights from JFK to MIA
+data_table[.("JFK", "MIA"), carrier_delay]
+data_table[.("JFK", "MIA"), .(carrier_delay)]
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)]
+# Calculate longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA"), max(carrier_delay)]
+# Chain commands to sort the carrier_delay
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][order(-carrier_delay)]
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][carrier_delay>0][order(-carrier_delay)]
+# Calculate carrier with longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA"), .(carrier, carrier_delay)][carrier_delay == max(carrier_delay)]
+# Calculate longest carrier_delay from JFK to every dest
+data_table["JFK", .(max_delay=max(carrier_delay)), keyby=.(dest)]
+# Calculate longest carrier_delay for every carrier, from JFK to every dest
+data_table["JFK", .(max_delay=max(carrier_delay)), keyby=.(dest, carrier)]
+# Calculate carriers with longest carrier_delay from JFK to every dest
+# doesn't work
+data_table["JFK"][carrier_delay == max(carrier_delay), .(carrier, carrier_delay), by=.(dest)]
+data_table["JFK",
+     lapply(.SD, function(x) x[max(carrier_delay)]),
+     by=.(dest),
+     .SDcols=c("dest", "carrier_delay")]
+# Set carrier_delay to longest carrier_delay from JFK to MIA
+data_table[.("JFK", "MIA", carrier_delay == max(carrier_delay)), carrier_delay := carrier_delay]
+# Show the modified row (record)
+data_table[.("JFK", "MIA")][carrier_delay == max(carrier_delay)]
+
+# Select using multiple logical clauses
+jfk_flights <- data_table[origin=="JFK" & month==6]
+dim(data_table); dim(jfk_flights)
+# Select first five rows
+jfk_flights[1:5]
+# Sort data table by "origin" column in ascending order, then by "dest" in descending order
+data_table <- data_table[order(origin, -dest)]
+# fsort() is much slower than sort() !
+da_ta <- runif(1e3)
+all.equal(sort(da_ta), data.table::fsort(da_ta))
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r=sort(da_ta),
+  dt=data.table::fsort(da_ta),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 # Create data frame and coerce it to data table
 data_table <- data.frame(
   col1=sample(7), col2=sample(7), col3=sample(7))
@@ -400,150 +639,23 @@ class(data_table); head(data_table)
 sapply(data_table, class)
 all.equal(price_s, data_table, check.attributes=FALSE)
 
-# Read a data table from CSV file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data_table <- data.table::fread(file_name)
-class(data_table); dim(data_table)
-data_table
-# fread() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
-    setDF(fread(file_name)))
-# fread() is much faster than read.csv()
-summary(microbenchmark(
-  pure_r=read.csv(file_name),
-  data.table=setDF(fread(file_name)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-# Select first five rows of data_table
-data_table[1:5]
-# Select rows with JFK flights
-jfk_flights <- data_table[origin=="JFK"]
-# Select rows JFK flights in June
-jfk_flights <- data_table[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfk_flights <- data_table[!(origin=="JFK")]
-# Select flights with carrier_delay
-data_table[carrier_delay > 0]
-# Select column of data_table and return a vector
-head(data_table[, origin])
-# Select column of data_table and return a data_table, not vector
-head(data_table[, list(origin)])
-# Or
-head(data_table[, .(origin)])
-# Select two columns of data_table
-data_table[, list(origin, month)]
-# Or
-data_table[, .(origin, month)]
-# Select two columns and rename them
-data_table[, list(or=origin, mo=month)]
-
-# Select flights with positive carrier_delay
-data_table[carrier_delay > 0]
-# Number of flights with carrier_delay
-data_table[, sum(carrier_delay > 0)]
-# Or
-NROW(data_table[carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=data_table[, sum(carrier_delay > 0)],
-  pure_r=NROW(data_table[carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average carrier_delay
-data_table[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-data_table[, .(carrier=mean(carrier_delay),
-         aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-data_table[origin=="JFK", NROW(aircraft_delay)]
-# Or
-data_table[origin=="JFK", .N]
-
-# Number of flights from each airport
-data_table[, .N, by=origin]
-# Or with names for output
-data_table[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-data_table[carrier=="AA", .(flights=.N),
-     by=.(airport=origin)]
-# Number of flights from each airport and airline
-data_table[, .(flights=.N),
-     by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-data_table[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-data_table[, .(delay=mean(aircraft_delay)),
-     by=.(airport=origin)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-     by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
-     keyby=.(airport=origin, month=month)]
-
-# Sort data_table by origin in ascending order, then by dest in descending order
-order_table <- data_table[order(origin, -dest)]
-order_table
-# Doesn't work outside data_table
-order(origin, -dest)
-# Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-      by=.(month=month)]
-# Sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)),
-      by=.(month=month)][order(month)]
-
-# Return all columns except origin and dest
-data_table[1:7]
-data_table[1:7, .SD, by=.(origin, dest)]
-# Return first two rows from each month
-data_table[, head(.SD, 2), by=.(month)]
-# Return all columns except origin and dest
-data_table[1:7, .SD,
-     by=.(origin, dest), .SDcols="aircraft_delay"]
-# Return the columns carrier_delay, weather_delay, aircraft_delay
-data_table[1:7, .SD,
-     by=.(origin, dest),
-     .SDcols=c("carrier_delay", "weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay by origin
-data_table[,
-     lapply(.SD, mean),
-     by=.(origin),
-     .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-data_table[,
-     .(weather_delay=mean(weather_delay), aircraft_delay=mean(aircraft_delay)),
-     by=.(origin)]
-
-# Select using multiple logical clauses
-jfk_flights <- data_table[origin=="JFK" & month==6]
-dim(data_table); dim(jfk_flights)
-# Select first five rows
-jfk_flights[1:5]
-# Sort data table by "origin" column in ascending order, then by "dest" in descending order
-data_table <- data_table[order(origin, -dest)]
-# fsort() is much slower than sort() !
-da_ta <- runif(1e3)
-all.equal(sort(da_ta), data.table::fsort(da_ta))
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sort(da_ta),
-  data.table=data.table::fsort(da_ta),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
 
 # Install package fst
 install.packages("fst")
@@ -584,15 +696,31 @@ summary(microbenchmark(
   fst=fst::read_fst("data_frame.fst"),
   read_csv=read.csv(file_name),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Create reference to data file similar to a data frame
-fs_t <- fst::fst("data_frame.fst")
+
+# Coerce TAQ xts to a data frame
+library(HighFreq)
+t_aq <- HighFreq::SPY_TAQ
+t_aq <- as.data.frame(t_aq)
+class(t_aq)
+# Coerce data frame to a data table
+data.table::setDT(t_aq, keep.rownames=TRUE)
+class(t_aq); head(t_aq)
+# Get memory size of data table
+format(object.size(t_aq), units="MB")
+# Save data table to .fst file
+fst::write_fst(t_aq, path="C:/Develop/data/taq.fst")
+# Create reference to .fst file similar to a data frame
+fs_t <- fst::fst("C:/Develop/data/taq.fst")
 class(fs_t)
-dim(data_frame); dim(fs_t)
-# Get classes of data frame columns
-sapply(data_frame, class)
-sapply(fs_t, class)
+# Memory size of reference to .fst is very small
+format(object.size(fs_t), units="MB")
 # Get sizes of all objects in workspace
 sort(sapply(mget(ls()), object.size))
+# reference to .fst can be treated similar to a data table
+dim(t_aq); dim(fs_t)
+fst:::print.fst_table(fs_t)
+# Subset reference to .fst just like a data table
+fs_t[1e4:(1e4+5), ]
 
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(tseries)  # Load package tseries
@@ -1292,12 +1420,12 @@ lis_t <- lapply(tib_ble, function(x) {
     x
 })  # end lapply
 # Coerce list into xts time series
-xt_s <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
-class(xt_s); dim(xt_s)
+x_ts <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
+class(x_ts); dim(x_ts)
 # Replace NA values with the most recent non-NA values
-sum(is.na(xt_s))
-xt_s <- zoo::na.locf(xt_s)
-xt_s <- zoo::na.locf(xt_s, fromLast=TRUE)
+sum(is.na(x_ts))
+x_ts <- zoo::na.locf(x_ts)
+x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
 
 # Read names of all the sheets in an Excel spreadsheet
 name_s <- readxl::excel_sheets(fil_e)
@@ -1324,7 +1452,7 @@ class(sheet_s)
 sheet_s <- lapply(sheet_s, to_xts)
 sapply(sheet_s, class)
 # Replace NA values with the most recent non-NA values
-sapply(sheet_s, function(xt_s) sum(is.na(xt_s)))
+sapply(sheet_s, function(x_ts) sum(is.na(x_ts)))
 sheet_s <- lapply(sheet_s, zoo::na.locf)
 sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
 

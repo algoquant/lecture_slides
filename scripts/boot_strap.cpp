@@ -8,9 +8,9 @@ using namespace Rcpp; // use Rcpp C++ namespace
 // The function bootstrap_rcpp() simulates an Ornstein-Uhlenbeck process
 // [[Rcpp::export]]
 NumericVector bootstrap_rcpp(double eq_price, 
-                          double vol_at, 
-                          double the_ta, 
-                          NumericVector in_nov) {
+                             double vol_at, 
+                             double the_ta, 
+                             NumericVector in_nov) {
   int len_gth = in_nov.size();
   NumericVector price_s(len_gth);
   NumericVector re_turns(len_gth);

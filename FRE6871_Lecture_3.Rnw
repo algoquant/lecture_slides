@@ -31,6 +31,10 @@ knit_theme$set(thm)
 \usepackage{fancybox}
 \usepackage{url}
 \usepackage[backend=bibtex,style=alphabetic]{biblatex} % bibstyle=numeric
+\usepackage{animate}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{anti_flashwhite}{rgb}{0.95, 0.95, 0.96}
 % \bibliographystyle{amsalpha} % doesn't work
 \addbibresource{FRE_lectures.bib}
 % \addbibresource[location=remote]{http://www.citeulike.org/user/jerzyp}
@@ -56,13 +60,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#3]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#3, Spring 2019}
+\subtitle{Lecture\#3, Fall 2019}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 22, 2019}
+\date{September 23, 2019}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -837,89 +841,44 @@ out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\subsection{Variance Reduction Using Antithetic Sampling}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation.
+      \emph{Antithetic Sampling} is a \emph{variance reduction} technique in which a new random sample is computed from an existing sample, without generating new random numbers.
       \vskip1ex
-      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set.
+      In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
+      In the case of a \emph{Uniform} random sample $\phi$, the new \emph{antithetic} sample is equal to $1$ minus the existing sample: $\phi_{new} = 1-\phi$.
       \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
+      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$.
+      \vskip1ex
+      \emph{Antithetic Sampling} doesn't change any other parameters of the simulation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
-len_gth <- 1000; r_norm <- rnorm(len_gth)
-# Sample mean and standard deviation
-mean(r_norm); sd(r_norm)
-# Bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- r_norm[sample.int(len_gth,
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Estimate the 95% quantile
+boot_data <- sapply(1:10000, function(x) {
+  boot_sample <- da_ta[sample.int(n_rows,
                                     replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
+  quantile(boot_sample, 0.95)
 })  # end sapply
-boot_strap <- t(boot_strap)
-      @
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/boot_median.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-boot_strap[1:3, ]
-# Standard error from formula
-sd(r_norm)/sqrt(len_gth)
-# Standard error of mean from bootstrap
-sd(boot_strap[, "mean"])
-# Standard error of median from bootstrap
-sd(boot_strap[, "median"])
-plot(density(boot_strap[, "median"]),
-     lwd=2, xlab="regression slopes",
-     main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_strap[, "median"]),
-       lwd=2, col="red")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Random Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Bootstrapping is performed when it's not possible to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
-      \vskip1ex
-      But if the data consists of simulated random numbers then we can easily simulate another set of these random numbers, instead of sampling from the existing data.
-      \vskip1ex
-      The numbers won't be the same as before, but they will be statistically equivalent in the limit of many bootstrap simulations.
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-len_gth <- 1000
-r_norm <- rnorm(len_gth)
-# Bootstrap of sample mean and median
-boot_strap <- sapply(1:10000, function(x) {
-  # Boot_sample from Standard Normal Distribution
-  boot_sample <- rnorm(len_gth)
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
+sd(boot_data)
+# Estimate the 95% quantile using antithetic sampling
+boot_data <- sapply(1:10000, function(x) {
+  boot_sample <- da_ta[sample.int(n_rows,
+                                    replace=TRUE)]
+  quantile(c(boot_sample, -boot_sample), 0.95)
 })  # end sapply
-boot_strap[, 1:3]
-# Standard error from formula
-sd(r_norm)/sqrt(len_gth)
-# Standard error of mean from bootstrap
-sd(boot_strap["mean", ])
-# Standard error of median from bootstrap
-sd(boot_strap["median", ])
+# Standard error of quantile from bootstrap
+sd(boot_data)
+sqrt(2)*sd(boot_data)
       @
   \end{columns}
 \end{block}
@@ -928,125 +887,48 @@ sd(boot_strap["median", ])
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bootstrapping Standard Errors Using Parallel Computing}
+\subsection{Simulating Rare Events Using Probability Tilting}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
+      Rare events can be simulated more accurately by \emph{tilting} (deforming) their probability distribution, so that rare events occur more frequently.
       \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
-      \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores.
-      \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
-      \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument.
-      \vskip1ex
-      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-len_gth <- 1000
-r_norm <- rnorm(len_gth)
-# Bootstrap mean and median under Windows
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, r_norm, len_gth) {
-  boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, r_norm=r_norm, len_gth=len_gth)  # end parLapply
-# Bootstrap mean and median under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-  boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), std_error=sd(x)))
-# Standard error from formula
-sd(r_norm)/sqrt(len_gth)
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Bootstrapping of the \protect\emph{Median Absolute Deviation}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median instead of the mean:
+      A popular probability \emph{tilting} method is exponential (Esscher) tilting:
       \begin{displaymath}
-        \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(x_i - \operatorname{median}(\mathbf{x})))
+        p(x, \lambda) = \frac{\exp(\lambda x) p(x)}{\int _{-\infty}^{\infty} {\exp(\lambda x) p(x)} dx}
       \end{displaymath}
-      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
+      Where $p(x)$ is the probability density, $p(x, \lambda)$ is the tilted density, and $\lambda$ is the tilting coefficient.
       \vskip1ex
-      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
-      \vskip1ex
-      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
-      \vskip1ex
-      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
-      \vskip1ex
-      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
+      For the \emph{normal} distribution $N(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}$, exponential tilting is equivalent to shifting the distribution by $\lambda$:
+      \begin{align*}
+        N(x, \lambda) = \frac{\exp(\lambda x) \exp(-x^2/2)}{\int _{-\infty}^{\infty} {\exp(\lambda x) \exp(-x^2/2)} dx} = \\
+        \frac{\exp(-(x - \lambda)^2/2)}{\sqrt{2\pi}} = \\
+        \exp(x \lambda - \lambda^2/2) \cdot N(x, \lambda = 0)
+      \end{align*}
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-len_gth <- 1000
-r_norm <- rnorm(len_gth)
-sd(r_norm)
-mad(r_norm)
-median(abs(r_norm - median(r_norm)))
-median(abs(r_norm - median(r_norm)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    r_norm[sample.int(len_gth, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
-})  # end sapply
-boot_strap <- t(boot_strap)
-# Analyze bootstrapped variance
-head(boot_strap)
-sum(is.na(boot_strap))
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, r_norm) {
-    boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, r_norm=r_norm)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-    boot_sample <- r_norm[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), std_error=sd(x)))
+      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_shifted.png}\\
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-3, 4),
+      main="Shifted Normal distribution function",
+      xlab="", ylab="", lwd=3, col="blue")
+# Add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE,
+      lwd=3, col="red")
+# Add vertical dashed lines
+abline(v=0, lwd=3, col="blue", lty="dashed")
+abline(v=1, lwd=3, col="red", lty="dashed")
+arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
+       code=2, angle=20,
+       length=grid::unit(0.2, "cm"))
+text(x=0.3, 0.1, labels=bquote(lambda),
+     pos=3, cex=2)
       @
   \end{columns}
 \end{block}
@@ -1055,54 +937,73 @@ apply(boot_strap, MARGIN=2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Empirical Datasets}
+\subsection{Variance Reduction Using Importance Sampling}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
+      \emph{Importance sampling} is a \emph{variance reduction} technique used for simulating rare events more accurately.
       \vskip1ex
-      Resampling consists of randomly selecting data from an existing dataset, with replacement.
+      The \emph{variance} of an estimate produced by simulation decreases with the number of events which contribute to the estimate: $\sigma^2 \propto \frac{1}{n}$.
       \vskip1ex
-      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
+      \emph{Importance sampling} simulates rare events more frequently by \emph{tilting} the probability distribution, so that more events contribute to the simulation estimate.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
+      The simulation outputs are then weighted (multiplied) to compensate for the tilting of the probability.
       \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
+      The weights are equal to the ratio of the base probability distribution divided by the tilted distribution.
       \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
+      For the \emph{normal} distribution the weights are equal to:
+      \begin{displaymath}
+        w_x = \exp(-x \lambda + \lambda^2/2)
+      \end{displaymath}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Sample from time series of ETF returns
-re_turns <- rutils::etf_env$re_turns[, "VTI"]
-re_turns <- na.omit(re_turns)
-len_gth <- NROW(re_turns)
-# Bootstrap sd and MAD under Windows
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
-clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
-n_boot <- 1e4
-boot_strap <- parLapply(clus_ter, 1:n_boot,
-  function(x, re_turns, len_gth) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, re_turns=re_turns, len_gth=len_gth)  # end parLapply
-# Bootstrap sd and MAD under Mac-OSX or Linux
-boot_strap <- mclapply(1:n_boot,
-  function(x) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), std_error=sd(x)))
-# Standard error assuming normal distribution of returns
-sd(re_turns)/sqrt(n_boot)
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
+set.seed(1121) # reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+da_ta <- sort(da_ta)
+# Monte Carlo cumulative probability
+pnorm(-2)
+integrate(dnorm, low=2, up=Inf)
+sum(da_ta > 2)/n_rows
+# Generate importance sample
+lamb_da <- 1.5
+data_is <- da_ta + lamb_da
+# Importance cumulative probability
+sum(data_is > 2)/n_rows
+weight_s <- exp(-lamb_da*data_is + lamb_da^2/2)
+sum((data_is > 2)*weight_s)/n_rows
+# Bootstrap of standard errors of cumulative probability
+boot_data <- sapply(1:1000, function(x) {
+  da_ta <- rnorm(n_rows)
+  m_c <- sum(da_ta > 2)/n_rows
+  da_ta <- (da_ta + lamb_da)
+  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
+  i_s <- sum((da_ta > 2)*weight_s)/n_rows
+  c(MC=m_c,Importance=i_s)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+      function(x) c(mean=mean(x), sd=sd(x)))
+# Monte Carlo expected value
+integrate(function(x) x*dnorm(x), low=2, up=Inf)
+sum((da_ta > 2)*da_ta)/n_rows
+# Importance expected value
+sum((data_is > 2)*data_is)/n_rows
+sum((data_is > 2)*data_is*weight_s)/n_rows
+# Bootstrap of standard errors of expected value
+boot_data <- sapply(1:1000, function(x) {
+  da_ta <- rnorm(n_rows)
+  m_c <- sum((da_ta > 2)*da_ta)/n_rows
+  da_ta <- (da_ta + lamb_da)
+  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
+  i_s <- sum((da_ta > 2)*da_ta*weight_s)/n_rows
+  c(MC=m_c,Importance=i_s)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+      function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1126,9 +1027,9 @@ stopCluster(clus_ter)  # Stop R processes over cluster under Windows
       \vskip1ex
       At the end of the period, some of the assets default, while the rest don't,
       \vskip1ex
-      The default probabilities are equal to $p_i$, 
+      The default probabilities are equal to $p_i$,
       \vskip1ex
-      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$, 
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$,
       \vskip1ex
       Default occurs if $u_i$ is less than the default probability $p_i$:
       \begin{displaymath}
@@ -1151,14 +1052,14 @@ sum(uni_form < def_probs)
 n_simu <- 1000
 de_faults <- numeric(n_simu)
 # Simulate using for() loop (inefficient way)
-for (i in 1:n_simu) {  # perform loop
+for (i in 1:n_simu) {  # Perform loop
   uni_form <- runif(n_assets)
   de_faults[i] <- sum(uni_form < def_probs)
 }  # end for
 # Calculate average number of defaults
 mean(de_faults)
 # Simulate using vectorized functions  (efficient way)
-uni_form <- matrix(runif(n_simu*n_assets), 
+uni_form <- matrix(runif(n_simu*n_assets),
                    ncol=n_simu)
 sum(uni_form < def_probs)/n_simu
       @
@@ -1183,7 +1084,7 @@ sum(uni_form < def_probs)/n_simu
       \begin{displaymath}
         a_i < t_i
       \end{displaymath}
-      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative Standard Normal distribution, 
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative standard normal distribution,
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vasicek_def_threshold.png}
@@ -1212,13 +1113,13 @@ text(x=qnorm(0.025)-0.1, y=0.15,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$: 
+      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$:
       \begin{displaymath}
         a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
       \end{displaymath}
-      Where $\rho$ is the correlation between asset values, 
+      Where $\rho$ is the correlation between asset values,
       \vskip1ex
-      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$, 
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$,
       \vskip1ex
       The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor,
       \vskip1ex
@@ -1236,7 +1137,7 @@ n_assets <- 5 ; n_simu <- 10000
 # Calculate vector of systematic factors
 system_atic <- rnorm(n_simu)
 # Simulate asset values using vectorized functions (efficient way)
-asset_s <- rho_sqrt*system_atic + 
+asset_s <- rho_sqrt*system_atic +
   rho_sqrtm*rnorm(n_simu*n_assets)
 dim(asset_s) <- c(n_simu, n_assets)
 # Calculate correlations between asset values
@@ -1245,9 +1146,9 @@ cor(asset_s)
 # allocate matrix of assets
 asset_s <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
-for (i in 1:n_simu) {  # perform loop
-  asset_s[i, ] <- 
-    rho_sqrt*system_atic[i] + 
+for (i in 1:n_simu) {  # Perform loop
+  asset_s[i, ] <-
+    rho_sqrt*system_atic[i] +
     rho_sqrtm*rnorm(n_assets)
 }  # end for
 cor(asset_s)
@@ -1255,9 +1156,9 @@ cor(asset_s)
 library(microbenchmark)
 summary(microbenchmark(
   for_loop={for (i in 1:n_simu) {
-    rho_sqrt*system_atic[i] + 
+    rho_sqrt*system_atic[i] +
     rho_sqrtm*rnorm(n_assets)}},
-  vector_ized={rho_sqrt*system_atic + 
+  vector_ized={rho_sqrt*system_atic +
               rho_sqrtm*rnorm(n_simu*n_assets)},
   times=10))[, c(1, 4, 5)]
       @
@@ -1279,11 +1180,11 @@ summary(microbenchmark(
         a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i \\
         a_i < t_i
       \end{align*}
-      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession, 
+      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession,
       \vskip1ex
-      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults, 
+      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults,
       \vskip1ex
-      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults, 
+      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults,
       \vskip1ex
       This way the \emph{Vasicek} model introduces a correlation among defaults,
     \column{0.5\textwidth}
@@ -1297,7 +1198,7 @@ mean(def_probs)
 def_thresh <- qnorm(def_probs)
 # Calculate number of defaults using vectorized functions (efficient way)
 # Calculate vector of number of defaults
-de_faults <- 
+de_faults <-
   colSums(t(t(asset_s) < def_thresh))
 de_faults / n_simu
 def_probs
@@ -1305,8 +1206,8 @@ def_probs
 # allocate matrix of de_faults
 de_faults <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
-for (i in 1:n_simu) {  # perform loop
-  de_faults[i, ] <- 
+for (i in 1:n_simu) {  # Perform loop
+  de_faults[i, ] <-
     (asset_s[i, ] < def_thresh)
 }  # end for
 colSums(de_faults) / n_simu
@@ -1352,7 +1253,7 @@ rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
 n_simu <- 1000
 system_atic <- rnorm(n_simu)
 # Simulate asset values using vectorized functions
-asset_s <- rho_sqrt*system_atic + 
+asset_s <- rho_sqrt*system_atic +
   rho_sqrtm*rnorm(n_simu*n_assets)
 dim(asset_s) <- c(n_simu, n_assets)
 # Calculate number of defaults using vectorized functions
@@ -1376,13 +1277,13 @@ def_prob
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=N^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
+      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=\Phi^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
       \begin{displaymath}
-        p(s) = N(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
+        p(s) = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
       \end{displaymath}
       The cumulative probability $P(x)$ for the percentage \texttt{x} of portfolio defaults (the portfolio cumulative default distribution) is equal to:
       \begin{displaymath}
-        P(x) = N(\frac{{\sqrt{1-\rho}} N^{-1}(x) - t}{\sqrt{\rho}})
+        P(x) = \Phi(\frac{{\sqrt{1-\rho}} \Phi^{-1}(x) - t}{\sqrt{\rho}})
       \end{displaymath}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1394,7 +1295,7 @@ def_cumdistr(x=0.2, def_thresh=qnorm(def_prob), rh_o=rh_o)
 def_prob <- 0.4; def_thresh <- qnorm(def_prob)
 curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.05),
       xlim=c(0, 0.999), lwd=3,
-      xlab="percent default", ylab="probability", 
+      xlab="percent default", ylab="probability",
       col="green", main="Cumulative Default Probabilities")
       @
     \column{0.5\textwidth}
@@ -1407,9 +1308,9 @@ curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.2),
       xlim=c(0, 0.999), add=TRUE, lwd=3,
       col="blue", main="")
 # Add legend
-legend(x="topleft", 
+legend(x="topleft",
        legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.05, cex=0.8, bg="white", 
+       title=NULL, inset=0.05, cex=0.8, bg="white",
        bty="n", lwd=6, lty=1, col=c("blue", "green"))
 # Add unconditional default probability
 abline(v=def_prob, col="red", lwd=3)
@@ -1432,12 +1333,12 @@ text(x=def_prob, y=0.0,
     \column{0.5\textwidth}
       The probability density $f(x)$ of portfolio defaults is equal to the derivative of the cumulative default distribution:
       \begin{multline*}
-        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} N^{-1}(x) - t)^2 + \\ \frac{1}{2} {N^{-1}(x)^2)}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(x) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(x)^2)}
       \end{multline*}
       <<echo=TRUE,eval=FALSE>>=
 # Define default probability density function
 def_distr <- function(x, def_thresh=(-2), rh_o=0.2)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) - 
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
   def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
 # Define parameters
 rh_o <- 0.2 ; rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
@@ -1446,7 +1347,7 @@ def_distr(0.03, def_thresh=def_thresh, rh_o=rh_o)
 # Plot probability distribution of defaults
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
       xlim=c(0, 1.0), lwd=3,
-      xlab="percentage of defaults", ylab="density", 
+      xlab="percentage of defaults", ylab="density",
       col="green", main="Distribution of Defaults")
       @
     \column{0.5\textwidth}
@@ -1456,10 +1357,10 @@ curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
       <<echo=TRUE,eval=FALSE>>=
 # Plot default distribution with higher correlation
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.3),
-      xlab="default percentage", ylab="", 
+      xlab="default percentage", ylab="",
       add=TRUE, lwd=3, col="blue", main="")
 # Add legend
-legend(x="topright", 
+legend(x="topright",
        legend=c("high correlation", "low correlation"),
        title=NULL, inset=0.05, cex=0.8, bg="white",
        bty="n", lwd=6, lty=1, col=c("blue", "green"))
@@ -1492,11 +1393,11 @@ text(x=def_prob, y=2,
       <<echo=TRUE,eval=FALSE>>=
 # Plot default distribution with low correlation
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.01),
-      xlab="default percentage", ylab="", lwd=2, 
+      xlab="default percentage", ylab="", lwd=2,
       col="green", main="Distribution of Defaults")
 # Plot default distribution with high correlation
 curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
-      xlab="percentage of defaults", ylab="density", 
+      xlab="percentage of defaults", ylab="density",
       add=TRUE, lwd=2, n=10001, col="blue", main="")
       @
     \column{0.5\textwidth}
@@ -1505,7 +1406,7 @@ curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Add legend
-legend(x="top", 
+legend(x="top",
        legend=c("high correlation", "low correlation"),
        title=NULL, inset=0.1, cex=0.8, bg="white",
        bty="n", lwd=6, lty=1, col=c("blue", "green"))
@@ -1521,26 +1422,70 @@ text(x=0.1, y=10, lwd=2, pos=4,
 
 
 %%%%%%%%%%%%%%%
+\subsection{Numerical Integration of Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval.
+      \vskip1ex
+      Additional parameters can be passed to the integrated function through the dots \texttt{"..."} argument of the function \texttt{integrate()}.
+      \vskip1ex
+      The function \texttt{integrate()} accepts the integration limits \texttt{-Inf} and \texttt{Inf} equal to minus and plus infinity.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get help for integrate()
+?integrate
+# Calculate slowly converging integral
+func_tion <- function(x) {1/((x+1)*sqrt(x))}
+integrate(func_tion, lower=0, upper=10)
+integrate(func_tion, lower=0, upper=Inf)
+# Integrate function with parameter lamb_da
+func_tion <- function(x, lamb_da=1) {
+  exp(-x*lamb_da)
+}  # end func_tion
+integrate(func_tion, lower=0, upper=Inf)
+integrate(func_tion, lower=0, upper=Inf,
+          lamb_da=2)
+# Cumulative probability over normal distribution
+pnorm(-2)
+integrate(dnorm, low=2, up=Inf)
+str(dnorm)
+pnorm(-1)
+integrate(dnorm, low=2, up=Inf, mean=1)
+# Expected value over normal distribution
+integrate(function(x) x*dnorm(x),
+          low=2, up=Inf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Portfolio Loss Distribution}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The expected loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity): 
+      The expected loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity):
       \begin{displaymath}
         EL = \sum_{i=1}^{n} p_i LGD_i
       \end{displaymath}
       If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
       \begin{multline*}
-        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} N^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {N^{-1}(\frac{x}{LGD}))^2}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(\frac{x}{LGD}))^2}
       \end{multline*}
       <<echo=TRUE,eval=FALSE>>=
 rh_o <- 0.1; l_gd <- 0.4
-# Define Vasicek loss distribution density function
+# Define Vasicek loss distribution function
 loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
-integrate(loss_distr, low=0, up=l_gd, 
+integrate(loss_distr, low=0, up=l_gd,
   def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
       @
     \column{0.5\textwidth}
@@ -1551,7 +1496,7 @@ integrate(loss_distr, low=0, up=l_gd,
 # Plot probability distribution of losses
 def_prob <- 0.05; def_thresh <- qnorm(def_prob)
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 0.06), 
+      type="l", xlim=c(0, 0.06),
       xlab="loss percentage", ylab="density", lwd=3,
       col="orange", main="Distribution of Losses")
 # Add line for expected loss
@@ -1572,19 +1517,19 @@ text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$, 
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$,
       \vskip1ex
-      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution}, 
+      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution},
       <<echo=TRUE,eval=FALSE>>=
 # Add lines for unexpected loss
 abline(v=0.04, col="blue", lwd=3)
-arrows(x0=0.02, y0=35, x1=0.04, y1=35, 
+arrows(x0=0.02, y0=35, x1=0.04, y1=35,
        code=3, lwd=3, cex=0.5)
-text(x=0.03, y=36, labels="unexpected loss", 
+text(x=0.03, y=36, labels="unexpected loss",
      lwd=2, pos=3)
 # Add lines for VaR
 abline(v=0.055, col="red", lwd=3)
-arrows(x0=0.0, y0=25, x1=0.055, y1=25, 
+arrows(x0=0.0, y0=25, x1=0.055, y1=25,
        code=3, lwd=3, cex=0.5)
 text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
 text(x=0.055-0.001, y=10, labels="VaR",
@@ -1605,20 +1550,20 @@ text(x=0.055-0.001, y=10, labels="VaR",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$: 
+      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$:
       \begin{displaymath}
         \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^{\alpha} {\mathrm{VaR}(p) \, \mathrm{d}p} = \frac{1}{\alpha} \int_{\mathrm{VaR}}^{LGD} {x \, f(x) \, \mathrm{d}x}
       \end{displaymath}
-      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}), 
+      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}),
       <<echo=TRUE,eval=FALSE>>=
 va_r <- 0.04; var_max <- 4*l_gd*def_prob
 # Calculate CVaR
-c_var <- integrate(function(x, ...) x*loss_distr(x, ...), 
+c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
   low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
 c_var <- c_var/integrate(loss_distr, low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
 # Plot probability distribution of losses
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 0.06), 
+      type="l", xlim=c(0, 0.06),
       xlab="loss percentage", ylab="density", lwd=3,
       col="orange", main="Conditional Value at Risk")
 # Add line for expected loss
@@ -1637,7 +1582,7 @@ text(x=va_r-0.001, y=10, labels="VaR",
        lwd=2, srt=90, pos=3)
 # Add shading for CVaR
 var_s <- seq(va_r, var_max, length=100)
-dens_ity <- sapply(var_s, loss_distr, 
+dens_ity <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
 polygon(c(va_r, var_s, var_max), density=20,
@@ -1657,11 +1602,11 @@ text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$, 
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$,
       \vskip1ex
       The \emph{quantile} of the loss distribution (the \emph{VaR}), for a given a confidence level $\alpha$, is given by the inverse of the cumulative loss distribution:
       \begin{displaymath}
-        VaR(\alpha) = LGD \cdot N(\frac{{\sqrt{\rho}} N^{-1}(\alpha) + t}{\sqrt{1-\rho}})
+        VaR(\alpha) = LGD \cdot \Phi(\frac{{\sqrt{\rho}} \Phi^{-1}(\alpha) + t}{\sqrt{1-\rho}})
       \end{displaymath}
       <<echo=TRUE,eval=FALSE>>=
 # VaR (quantile of the loss distribution)
@@ -1670,7 +1615,7 @@ var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
 var_func(x=0.99, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
 # Plot VaR
 curve(expr=var_func(x, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-      type="l", xlim=c(0, 0.999), 
+      type="l", xlim=c(0, 0.999),
       xlab="confidence level", ylab="VaR", lwd=3,
       col="orange", main="VaR versus Confidence Level")
 # Add line for expected loss
@@ -1693,14 +1638,14 @@ text(x=0.2, y=l_gd*def_prob, labels="expected loss",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function, 
+      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function,
       <<echo=TRUE,eval=FALSE>>=
-# integrate loss_distr() over full range
-integrate(loss_distr, low=0.0, up=l_gd, 
+# Integrate loss_distr() over full range
+integrate(loss_distr, low=0.0, up=l_gd,
           def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
 # Calculate expected losses using loss_distr()
-integrate(function(x, ...) x*loss_distr(x, ...), 
-          low=0.0, up=l_gd, 
+integrate(function(x, ...) x*loss_distr(x, ...),
+          low=0.0, up=l_gd,
           def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
 # Calculate confidence levels corresponding to VaR values
 var_s <- seq(0.07, 0.12, 0.001)
@@ -1732,26 +1677,26 @@ plot(x=1-level_s[, "level_s"],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function, 
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function,
       <<echo=TRUE,eval=FALSE>>=
 # Calculate CVaR values
 cvar_s <- sapply(var_s, function(va_r, ...) {
-  integrate(function(x, ...) x*loss_distr(x, ...), 
+  integrate(function(x, ...) x*loss_distr(x, ...),
             low=va_r, up=l_gd, ...)
 }, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
 level_s <- cbind(level_s, as.numeric(t(cvar_s)[, 1]))
 colnames(level_s)[3] <- "CVaRs"
 # Divide CVaR by confidence level
-level_s[, "CVaRs"] <- 
+level_s[, "CVaRs"] <-
   level_s[, "CVaRs"]/level_s[, "level_s"]
 # Calculate 95% confidence level CVaR value
-level_s[match(TRUE, 
+level_s[match(TRUE,
   level_s[, "level_s"] < 0.05), "CVaRs"]
 # Plot CVaRs
 plot(x=1-level_s[, "level_s"],
-     y=level_s[, "CVaRs"], 
-     t="l", col="red", lwd=2, 
-     ylim=range(level_s[, c("VaRs", "CVaRs")]), 
+     y=level_s[, "CVaRs"],
+     t="l", col="red", lwd=2,
+     ylim=range(level_s[, c("VaRs", "CVaRs")]),
      xlab="Confidence Levels", ylab="CVaRs",
      main="CVaR Values and Confidence Levels")
       @
@@ -1766,7 +1711,7 @@ lines(x=1-level_s[, "level_s"],
 legend(x="topleft", legend=c("CVaRs", "VaRs"),
        title="default probability = 5%
 correlation = 10%
-loss given default = 40%", 
+loss given default = 40%",
        inset=0.1, cex=0.8, bg="white", bty="n",
        lwd=6, lty=1, col=c("red", "black"))
       @
@@ -1798,11 +1743,11 @@ def_thresh <- qnorm(def_probs)
 # Calculate vector of systematic factors
 system_atic <- rnorm(n_simu)
 # Simulate losses under Vasicek model
-asset_s <- 
+asset_s <-
   matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-asset_s <- 
+asset_s <-
   t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-loss_es <- 
+loss_es <-
   l_gd*colSums(asset_s < def_thresh)/n_assets
       @
     \column{0.5\textwidth}
@@ -1847,9 +1792,9 @@ cvar_s <- cbind(cvar_s, var_s)
 #   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
 # })  # end sapply
 # Plot CVaRs
-plot(x=level_s, y=cvar_s[, "cvar_s"], 
-     t="l", col="red", lwd=2, 
-     ylim=range(cvar_s), 
+plot(x=level_s, y=cvar_s[, "cvar_s"],
+     t="l", col="red", lwd=2,
+     ylim=range(cvar_s),
      xlab="Confidence Levels", ylab="CVaRs",
      main="Simulated CVaR and Confidence Levels")
       @
@@ -1885,7 +1830,7 @@ calc_var <- function(def_thresh, # Default thresholds
                      rho_sqrt, rho_sqrtm, # asset correlation
                      n_simu=1000, # number of simulations
                      level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) { 
+                     ) {
   # Define model parameters
   n_assets <- NROW(def_thresh)
   # Simulate losses under Vasicek model
@@ -1919,7 +1864,7 @@ calc_var <- function(def_thresh, # Default thresholds
     \column{0.5\textwidth}
       The values of \emph{VaR} and \emph{CVaR} produced by the function \texttt{calc\_var()} are subject to uncertainty because they're calculated from a simulation.
       \vskip1ex
-      We can calculate the standard errors of \emph{VaR} and \emph{CVaR} by running the function \texttt{calc\_var()} many times and repeating the simulation in a loop. 
+      We can calculate the standard errors of \emph{VaR} and \emph{CVaR} by running the function \texttt{calc\_var()} many times and repeating the simulation in a loop.
       \vskip1ex
       This bootstrap will only capture the uncertainty due to the finite number of trials in the simulation, but not due to the uncertainty of model parameters.
     \column{0.5\textwidth}
@@ -1936,15 +1881,16 @@ def_thresh <- qnorm(def_probs)
 n_boot <- 500
 # Perform bootstrap of calc_var
 set.seed(1121)
-boot_strap <- sapply(rep(l_gd, n_boot), calc_var, 
+boot_data <- sapply(rep(l_gd, n_boot),
+  calc_var,
   def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end sapply
-boot_strap <- t(boot_strap)
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+boot_data <- t(boot_data)
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
@@ -1981,9 +1927,9 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
 plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
-  xlab="level_s", ylab="CVaRs",
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="level_s", ylab="Standard errors",
   main="Scaled standard errors of CVaR and VaR")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
@@ -2010,24 +1956,24 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 # Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(clus_ter, 1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, n_boot), 
+boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
   fun=calc_var, def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, n_boot), 
+boot_data <- mclapply(rep(l_gd, n_boot),
   FUN=calc_var, def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
+boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
@@ -2040,9 +1986,9 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
 plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
-  xlab="level_s", ylab="CVaRs",
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="level_s", ylab="Standard errors",
   main="Scaled standard errors of CVaR and VaR")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
@@ -2071,8 +2017,8 @@ calc_var <- function(def_probs, # Default probabilities
                      rho_sqrt, rho_sqrtm, # asset correlation
                      n_simu=1000, # number of simulations
                      level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) { 
-  # Calculate default thresholds
+                     ) {
+  # Calculate random default thresholds
   def_thresh <- qnorm(runif(1, min=0.5, max=1.5)*def_probs)
   # Simulate losses under Vasicek model
   n_assets <- NROW(def_probs)
@@ -2108,24 +2054,24 @@ calc_var <- function(def_probs, # Default probabilities
       <<echo=TRUE,eval=FALSE>>=
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 # Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(clus_ter, 1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, n_boot), 
+boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
   fun=calc_var, def_probs=def_probs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, n_boot), 
+boot_data <- mclapply(rep(l_gd, n_boot),
   FUN=calc_var, def_probs=def_probs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
+boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2, 
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2, 
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
       @
     \column{0.5\textwidth}
@@ -2135,9 +2081,9 @@ std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
       <<echo=TRUE,eval=FALSE>>=
 # Plot the standard errors of VaRs and CVaRs
 plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2, 
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])), 
-  xlab="Confidence Levels", ylab="CVaRs",
+  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  xlab="Confidence Levels", ylab="Standard errors",
   main="Standard Errors of CVaR and VaR
   with Uncertain Default Probabilities")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
@@ -2191,7 +2137,7 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
     \column{0.5\textwidth}
       Single-tranche (synthetic) \emph{CDOs} are credit default swaps which reference credit portfolios.
       \vskip1ex
-      The expected loss \emph{EL} on a \emph{CDO} tranche is: 
+      The expected loss \emph{EL} on a \emph{CDO} tranche is:
       \begin{displaymath}
         EL = \frac{1}{d - a} \int_{a}^{d} {(x-a) \, f(x) \, \mathrm{d}x} + \int_{d}^{LGD} {f(x) \, \mathrm{d}x}
       \end{displaymath}
@@ -2205,7 +2151,7 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
 # Define cumulative default probability function
 cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
-# Define Vasicek loss distribution density function 
+# Define Vasicek loss distribution function
 # (vectorized version with error handling for x)
 loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
   q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
@@ -2221,16 +2167,16 @@ def_prob <- 0.2; def_thresh <- qnorm(def_prob)
 rh_o <- 0.1; l_gd <- 0.4
 at_tach <- 0.15; de_tach <- 0.2
 # Expected tranche loss is sum of two terms
-tranche_loss <- 
+tranche_loss <-
   # Loss between at_tach and de_tach
-  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x, 
-      def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd), 
-      low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) + 
+  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
+      def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
+      low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
   # Loss in excess of de_tach
         (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
 # Plot probability distribution of losses
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 3*l_gd*def_prob), 
+      type="l", xlim=c(0, 3*l_gd*def_prob),
       xlab="loss percentage", ylab="density", lwd=3,
       col="orange", main="CDO Tranche Losses")
 # Add line for expected loss
@@ -2246,12 +2192,278 @@ text(x=de_tach-0.001, y=4, labels="detach",
        lwd=2, srt=90, pos=3)
 # Add shading for CDO tranche
 var_s <- seq(at_tach, de_tach, length=100)
-dens_ity <- sapply(var_s, loss_distr, 
+dens_ity <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
 polygon(c(at_tach, var_s, de_tach), density=20,
   c(-1, dens_ity, -1), col="red", border=NA)
 text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Publishing Interactive Documents}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dynamic Documents Using \protect\emph{R markdown}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html},
+      \vskip1ex
+      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them,
+      \vskip1ex
+      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing:
+      \begin{itemize}
+        \item A \emph{YAML} header,
+        \item Text in \emph{R Markdown} code format,
+        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
+        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code),
+      \end{itemize}
+      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+---
+title: "My First R Markdown Document"
+author: Jerzy Pawlowski
+date: '`r format(Sys.time(), "%m/%d/%Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install package quantmod if it can't be loaded successfully
+if (!require("quantmod"))
+  install.packages("quantmod")
+```
+
+### R Markdown
+This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
+
+One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
+
+You can read more about publishing documents using *R* here:
+https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
+
+You can read more about using *R* to create *HTML* documents with interactive plots here:
+https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
+
+Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
+
+Example of an *R* code chunk:
+```{r cars}
+summary(cars)
+```
+
+### Plots in *R Markdown* documents
+
+Plots can also be embeded, for example:
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Math formulas in *R Markdown* documents
+Math formulas can also be embeded in *R Markdown* documents.
+
+For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
+Or display formulas (the Cauchy-Schwarz inequality):
+
+$$
+  \left( \sum_{k=1}^n a_k b_k \right)^2
+  \leq
+  \left( \sum_{k=1}^n a_k^2 \right)
+  \left( \sum_{k=1}^n b_k^2 \right)
+$$
+
+    \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Using Expression Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      It's sometimes convenient to create an \emph{expression} object containing plotting commands, to be able to later create plots using it.
+      \vskip1ex
+      The function \texttt{quote()} produces an \emph{expression} object without evaluating it.
+      \vskip1ex
+      The function \texttt{eval()} evaluates an \emph{expression} in a specified \emph{environment}.
+        <<echo=TRUE,eval=FALSE>>=
+# Create a plotting expression
+ex_pr <- quote({
+  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+  deg_free <- 2:20
+  rang_e <- (1:NROW(deg_free))
+  in_dex <- 4
+  # Plot a curve
+  curve(expr=dchisq(x, df=deg_free[in_dex]),
+        xlim=c(0, 30), ylim=c(0, 0.2),
+        xlab="", ylab="", lwd=3, col="red")
+  # Add grey lines to plot
+  for (it in rang_e[-in_dex]) {
+    curve(expr=dchisq(x, df=deg_free[it]),
+          xlim=c(0, 30), ylim=c(0, 0.2),
+          xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
+  }  # end for
+  # Add title
+  title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
+  # Add legend
+  text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
+      deg_free[in_dex]), pos=1, cex=1.3)
+})  # end quote
+@
+    \column{0.5\textwidth}
+      % \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth, height=0.3\paperwidth]{figure/png/chi_squared4.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# View the plotting expression
+ex_pr
+# Create plot by evaluating the plotting expression
+x11(width=6, height=4)
+eval(ex_pr)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Animated Plots Using Package \protect\emph{animation}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \href{https://yihui.name/animation/}{\emph{animation}} allows creating animated plots in the form of \emph{gif} and \emph{html} documents.
+      \vskip1ex
+      The function \texttt{saveGIF()} produces a \emph{gif} image with an animated plot.
+      \vskip1ex
+      The function \texttt{saveHTML()} produces an \emph{html} document with an animated plot.
+        <<echo=TRUE,eval=FALSE>>=
+library(animation)
+# Create an expression for creating multiple plots
+ex_pr <- quote({
+  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+  deg_free <- 2:20
+  rang_e <- (1:NROW(deg_free))
+  # Set image refesh interval
+  animation::ani.options(interval=0.25)
+  # Create multiple plots with curves
+  for (in_dex in rang_e) {
+    curve(expr=dchisq(x, df=deg_free[in_dex]),
+          xlim=c(0, 30), ylim=c(0, 0.2),
+          xlab="", ylab="", lwd=3, col="red")
+    # Add grey lines to plot
+    for (it in rang_e[-in_dex]) {
+      curve(expr=dchisq(x, df=deg_free[it]),
+            xlim=c(0, 30), ylim=c(0, 0.2),
+            xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
+    }  # end for
+    # Add title
+    title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
+    # Add legend
+    text(x=20, y=0.15, labels=paste0("Degrees of freedom=",
+      deg_free[in_dex]), pos=1, cex=1.3)
+  }  # end for
+})  # end quote
+      @
+    \column{0.5\textwidth}
+      % \vspace{-1em}
+      % Must include package animate in header:
+      % \usepackage{animate}
+      \animategraphics[width=0.4\paperwidth, height=0.3\paperwidth]{2}{figure/png/chi_squared}{1}{19}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Create plot by evaluating the plotting expression
+x11(width=6, height=4)
+eval(ex_pr)
+# Create gif with animated plot
+animation::saveGIF(expr=eval(ex_pr),
+  movie.name="chi_squared.gif",
+  img.name="chi_squared")
+# Create html with animated plot
+animation::saveHTML(expr=eval(ex_pr),
+  img.name="chi_squared",
+  htmlfile="chi_squared.html",
+  description="Chi-squared Distributions")  # end saveHTML
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive Charts Using Package \protect\emph{shiny}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} creates interactive charts that display the outputs of live models running in \texttt{R}.
+      \vskip1ex
+      The function \texttt{inputPanel()} creates a panel for user input of model parameters.
+      \vskip1ex
+      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R}.
+      \vskip1ex
+      To create a shiny chart, you can first create an \texttt{.Rmd} file, embed the \emph{shiny} code in an \texttt{R} chunk, and then compile the \texttt{.Rmd} file into an \emph{html} document, using the \emph{knitr} package.
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# R startup chunk
+# ```{r setup, include=FALSE}
+library(shiny)
+library(quantmod)
+inter_val <- 31
+cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("orange", "blue")
+# ```
+### end R startup chunk
+inputPanel(
+  sliderInput("lamb_da", label="lambda:",
+    min=0.01, max=0.2, value=0.1, step=0.01)
+)  # end inputPanel
+      @
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      \includegraphics[width=0.5\paperwidth]{figure/ewma_shiny.pdf}
+      \vspace{-5em}
+      <<echo=TRUE,eval=FALSE>>=
+renderPlot({
+  # Calculate EWMA prices
+  lamb_da <- input$lamb_da
+  weight_s <- exp(-lamb_da*1:inter_val)
+  weight_s <- weight_s/sum(weight_s)
+  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
+  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  colnames(ew_ma) <- c("VTI", "VTI EWMA")
+  # Plot EWMA prices
+  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
+  plot(ch_ob)
+  legend("top", legend=colnames(ew_ma),
+         inset=0.1, bg="white", lty=1, lwd=2,
+         col=plot_theme$col$line.col, bty="n")
+})  # end renderPlot
       @
   \end{columns}
 \end{block}
@@ -2271,16 +2483,18 @@ text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
 \begin{block}{Required}
   \begin{itemize}[]
     \item Study all the lecture slides in \emph{FRE6871\_Lecture\_3.pdf}, and run all the code in \emph{FRE6871\_Lecture\_3.R}
-    \item Read about the bootstrap technique in:\\
+    \item Read about the \emph{bootstrap technique} in:\\
     \emph{bootstrap\_technique.pdf} and \emph{doBootstrap\_primer.pdf}
+    \item Read about applying the \emph{importance sampling technique} for calculating \emph{CVaR}:\\
+    \emph{Muller CVAR Importance Sampling.pdf}
   \end{itemize}
 \end{block}
 \begin{block}{Recommended}
   \begin{itemize}[]
-    \item Read about why \emph{CVAR} is a coherent risk measure:\\
+    \item Read about why \emph{CVaR} is a coherent risk measure:\\
     \url{https://en.wikipedia.org/wiki/Expected_shortfall}\\
     \url{https://en.wikipedia.org/wiki/Coherent_risk_measure\#Value_at_risk}
-    \item Read about why \emph{CVAR} has very large standard errors:\\
+    \item Read about why \emph{CVaR} has very large standard errors:\\
     \emph{Danielsson CVAR Estimation Standard Error.pdf}\\
     \url{http://www.bloomberg.com/view/articles/2016-05-23/big-banks-risk-does-not-compute}
   \end{itemize}

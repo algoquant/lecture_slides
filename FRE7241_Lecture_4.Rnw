@@ -62,13 +62,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#4]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#4, Spring 2019}
+\subtitle{Lecture\#4, Fall 2019}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 30, 2019}
+\date{September 24, 2019}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -147,31 +147,25 @@ dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
       \vskip1ex
       Moving averages (such as \emph{VWAP}) are often used to define technical indicators (trading signals).
       <<echo=TRUE,eval=FALSE>>=
-# calculate open, close, and lagged prices
+# Calculate open, close, and lagged prices
 oh_lc <- rutils::etf_env$VTI
 op_en <- quantmod::Op(oh_lc)
 cl_ose <- quantmod::Cl(oh_lc)
-star_t <- as.numeric(cl_ose[1, ])
-prices_lag <- rutils::lag_it(cl_ose)
-# define aggregation interval and calculate VWAP
+star_t <- as.numeric(cl_ose[1])
+# Define aggregation interval and calculate VWAP
 look_back <- 150
-VTI_vwap <- HighFreq::roll_vwap(oh_lc, 
+v_wap <- HighFreq::roll_vwap(oh_lc, 
               look_back=look_back)
-# calculate VWAP indicator
-in_dic <- sign(cl_ose - VTI_vwap)
-# determine dates right after VWAP has crossed prices
-trade_dates <- (rutils::diff_it(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vwap_indic.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot prices and VWAP
+# Plot prices and VWAP
 chart_Series(x=cl_ose, 
-  name="VTI prices", col="orange")
-add_TA(VTI_vwap, on=1, lwd=2, col="blue")
+  name="VTI prices and VWAP", col="orange")
+add_TA(v_wap, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "VWAP"), 
   bg="white", lty=1, lwd=6, 
   col=c("orange", "blue"), bty="n")
@@ -191,38 +185,92 @@ legend("top", legend=c("VTI", "VWAP"),
     \column{0.5\textwidth}
       In a trend-following \emph{Moving Average Crossover} strategy, when the current price crosses above the \emph{VWAP}, then the strategy switches its position to long risk, and vice versa.
       \vskip1ex
-      The strategy trades at the \emph{Open} price in the next period after prices cross the \emph{VWAP}, to reflect that in practice it's impossible to trade immediately.
+      A single-period time lag is applied to the \emph{VWAP indicator}, so that the strategy trades immediately after the \emph{VWAP indicator} is evaluated at the end of the day
+      \vskip1ex
+      This assumption may be too optimistic because in practice it's difficult to trade immediately just before the close of markets.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
-position_s[1] <- 0
-position_s[trade_dates] <- in_dic[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
-pos_lagged <- rutils::lag_it(position_s)
-# Calculate daily profits and losses
-pnl_s <- pos_lagged*(cl_ose - prices_lag)
-pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# Calculate percentage returns
-pnl_s <- pnl_s/cl_ose
-# Calculate annualized Sharpe ratio of strategy returns
+# Calculate VWAP indicator
+indica_tor <- sign(cl_ose - v_wap)
+# Calculate positions as lagged indicator
+posi_tion <- rutils::lag_it(indica_tor)
+# Calculate simple dollar VTI re_turns
+re_turns <- rutils::diff_it(cl_ose)
+# Calculate daily profits and losses of strategy
+pnl_s <- re_turns*posi_tion
+cum_pnls <- star_t + cumsum(pnl_s)
+# Annualized Sharpe ratio of VWAP strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Annualized Sharpe ratio of VTI
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vwap_strat.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# plot prices and VWAP
-pnl_s <- xts(as.numeric(cl_ose[1])*exp(cumsum(pnl_s)), order.by=index(oh_lc))
-chart_Series(x=cl_ose, name="VTI prices", col="orange")
-add_TA(pnl_s, on=1, lwd=2, col="blue")
-add_TA(position_s > 0, on=-1,
+# Plot prices and VWAP
+chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI", col="orange")
+add_TA(cum_pnls, on=1, lwd=2, col="blue")
+add_TA(posi_tion > 0, on=-1,
        col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+legend("top", legend=c("VTI", "VWAP strategy"), 
+       inset=0.1, bg="white", lty=1, lwd=6, 
+       col=c("orange", "blue"), bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Trading at the \protect\emph{Open} Price}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A more realistic assumption is that the strategy trades at the \emph{Open} price next period.
+      <<echo=TRUE,eval=FALSE>>=
+# Determine dates right after VWAP has crossed prices
+trade_dates <- (rutils::diff_it(indica_tor) != 0)
+trade_dates <- which(trade_dates) + 1
+# Calculate positions, either: -1, 0, or 1
+posi_tion <- rep(NA_integer_, NROW(oh_lc))
+posi_tion[1] <- 0
+posi_tion[trade_dates] <- indica_tor[trade_dates-1]
+posi_tion <- na.locf(posi_tion)
+posi_tion <- xts(posi_tion, order.by=index(oh_lc))
+pos_lagged <- rutils::lag_it(posi_tion)
+# Calculate pnl for days without trade
+pnl_s <- re_turns*posi_tion
+# Calculate realized pnl for days with trade
+close_lag <- rutils::lag_it(cl_ose)
+pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
+  (op_en[trade_dates] - close_lag[trade_dates])
+# Calculate unrealized pnl for days with trade
+pnl_s[trade_dates] <- pnl_s[trade_dates] + 
+  posi_tion[trade_dates] * 
+  (cl_ose[trade_dates] - op_en[trade_dates])
+cum_pnls <- star_t + cumsum(pnl_s)
+# Annualized Sharpe ratio of VWAP strategy
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Annualized Sharpe ratio of VTI
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat_pnl_open.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot prices and VWAP
+chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
+add_TA(cum_pnls, on=1, lwd=2, col="blue")
+add_TA(posi_tion > 0, on=-1,
+       col="lightgreen", border="lightgreen")
+add_TA(posi_tion < 0, on=-1,
        col="lightgrey", border="lightgrey")
 legend("top", legend=c("VTI", "VWAP strategy"), 
        inset=0.1, bg="white", lty=1, lwd=6, 
@@ -263,7 +311,7 @@ colnames(ew_ma) <- c("VTI", "VTI EWMA")
       \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with custom line colors
+# Plot EWMA prices with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(ew_ma["2007/2010"], theme=plot_theme, 
@@ -294,29 +342,28 @@ legend("bottomleft", legend=colnames(ew_ma),
       The strategy is therefore always either in a long risk, or in a short risk position.
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# determine dates right after EWMA has crossed prices
-in_dic <- sign(cl_ose - ew_ma[, 2])
-trade_dates <- (rutils::diff_it(in_dic) != 0)
+# Determine dates right after VWAP has crossed prices
+indica_tor <- sign(cl_ose - ew_ma[, 2])
+trade_dates <- (rutils::diff_it(indica_tor) != 0)
 trade_dates <- which(trade_dates) + 1
-# calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(cl_ose))
-position_s[1] <- 0
-position_s[trade_dates] <- 
-  rutils::lag_it(in_dic)[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
+# Calculate positions, either: -1, 0, or 1
+posi_tion <- rep(NA_integer_, NROW(oh_lc))
+posi_tion[1] <- 0
+posi_tion[trade_dates] <- indica_tor[trade_dates-1]
+posi_tion <- na.locf(posi_tion)
+posi_tion <- xts(posi_tion, order.by=index(oh_lc))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_strat.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA prices with position shading
+# Plot EWMA prices with position shading
 chart_Series(ew_ma["2007/2010"], theme=plot_theme, 
              name="EWMA prices")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
        col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
        col="lightgrey", border="lightgrey")
 legend("bottomleft", legend=colnames(ew_ma), 
        inset=0.1, bg="white", lty=1, lwd=6, 
@@ -346,15 +393,15 @@ legend("bottomleft", legend=colnames(ew_ma),
       <<echo=TRUE,eval=FALSE>>=
 # bid_offer is equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
-# calculate open and lagged prices
+# Calculate open and lagged prices
 op_en <- Op(oh_lc)
-prices_lag <- rutils::lag_it(cl_ose)
-pos_lagged <- rutils::lag_it(position_s)
-# calculate the transaction cost for one share
-cost_s <- 0.0*position_s
+close_lag <- rutils::lag_it(cl_ose)
+pos_lagged <- rutils::lag_it(posi_tion)
+# Calculate the transaction cost for one share
+cost_s <- 0.0*posi_tion
 cost_s[trade_dates] <- 
   0.5*bid_offer*abs(pos_lagged[trade_dates] - 
-  position_s[trade_dates])*op_en[trade_dates]
+  posi_tion[trade_dates])*op_en[trade_dates]
       @
   \end{columns}
 \end{block}
@@ -374,18 +421,20 @@ cost_s[trade_dates] <-
       The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses
-re_turns <- pos_lagged*(cl_ose - prices_lag)
-re_turns[trade_dates] <- 
-  pos_lagged[trade_dates] * 
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates]) -
-  cost_s
-# Calculate percentage returns
-re_turns <- re_turns/cl_ose
-# Calculate annualized Sharpe ratio of strategy returns
-sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-pnl_s <- as.numeric(cl_ose[1])*exp(cumsum(re_turns))
+# Calculate pnl for days without trade
+pnl_s <- re_turns*posi_tion
+# Calculate realized pnl for days with trade
+close_lag <- rutils::lag_it(cl_ose)
+pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
+  (op_en[trade_dates] - close_lag[trade_dates])
+# Calculate unrealized pnl for days with trade
+pnl_s[trade_dates] <- pnl_s[trade_dates] + 
+  posi_tion[trade_dates] * 
+  (cl_ose[trade_dates] - op_en[trade_dates])
+# Annualized Sharpe ratio of EWMA strategy
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Cumulative pnls
+pnl_s <- star_t + cumsum(pnl_s)
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
       @
@@ -394,12 +443,12 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
       \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_pnl.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA PnL with position shading
+# Plot EWMA PnL with position shading
 chart_Series(pnl_s, theme=plot_theme, 
              name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
        col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
        col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s), 
        inset=0.05, bg="white", lty=1, lwd=6, 
@@ -427,34 +476,35 @@ legend("top", legend=colnames(pnl_s),
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
-  # calculate EWMA prices
+  # Calculate EWMA prices
   weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- quantmod::Cl(oh_lc)
   ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-  # determine dates right after EWMA has crossed prices
-  in_dic <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
-  trade_dates <- (rutils::diff_it(in_dic) != 0)
+  # Determine dates right after EWMA has crossed prices
+  indica_tor <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
+  indicator_lag <- rutils::lag_it(indica_tor)
+  trade_dates <- (rutils::diff_it(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
-  # calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(cl_ose))
-  position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_it(in_dic)[trade_dates]
-  position_s <- xts::xts(na.locf(position_s), order.by=index(oh_lc))
+  # Calculate positions, either: -1, 0, or 1
+  posi_tion <- rep(NA_integer_, NROW(oh_lc))
+  posi_tion[1] <- 0
+  posi_tion[trade_dates] <- indicator_lag[trade_dates]
+  posi_tion <- na.locf(posi_tion)
+  posi_tion <- xts(posi_tion, order.by=index(oh_lc))
   op_en <- quantmod::Op(oh_lc)
-  prices_lag <- rutils::lag_it(cl_ose)
-  pos_lagged <- rutils::lag_it(position_s)
-  # calculate transaction costs
-  cost_s <- 0.0*position_s
-  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - position_s[trade_dates])*op_en[trade_dates]
-  # calculate daily profits and losses
-  re_turns <- pos_lagged*(cl_ose - prices_lag)
-  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - prices_lag[trade_dates]) + position_s[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
-  # Calculate percentage returns
-  re_turns <- re_turns/cl_ose
-  out_put <- cbind(position_s, re_turns)
+  close_lag <- rutils::lag_it(cl_ose)
+  pos_lagged <- rutils::lag_it(posi_tion)
+  # Calculate transaction costs
+  cost_s <- 0.0*posi_tion
+  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - posi_tion[trade_dates])*op_en[trade_dates]
+  # Calculate daily profits and losses
+  re_turns <- pos_lagged*(cl_ose - close_lag)
+  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - close_lag[trade_dates]) + posi_tion[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
+  # Calculate strategy returns
+  out_put <- cbind(posi_tion, re_turns)
   colnames(out_put) <- c("positions", "returns")
   out_put
 }  # end simu_ewma
@@ -480,11 +530,11 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
 lamb_das <- seq(0.0001, 0.05, 0.005)
-# perform lapply() loop over lamb_das
+# Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(oh_lc=oh_lc, 
-    lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end lapply
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -493,7 +543,7 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
       \includegraphics[width=0.5\paperwidth]{figure/ewma_trend_returns.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA strategies with custom line colors
+# Plot EWMA strategies with custom line colors
 column_s <- seq(1, NCOL(pnl_s), by=3)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- 
@@ -530,19 +580,19 @@ library(parallel)
 clus_ter <- makeCluster(detectCores()-1)
 clusterExport(clus_ter, 
   varlist=c("oh_lc", "wid_th", "simu_ewma"))
-# perform parallel loop over lamb_das under Windows
+# Perform parallel loop over lamb_das under Windows
 pnl_s <- parLapply(clus_ter, lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end parLapply
-# perform parallel loop over lamb_das under Mac-OSX or Linux
+# Perform parallel loop over lamb_das under Mac-OSX or Linux
 re_turns <- mclapply(lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 pnl_s <- rutils::do_call(cbind, pnl_s)
@@ -570,7 +620,7 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
       The performance of trend-following \emph{EWMA} strategies depends on the $\lambda$ parameter, with larger $\lambda$ parameters performing worse than smaller ones.
       <<echo=TRUE,eval=FALSE>>=
 sharpe_ratios <- sqrt(252)*sapply(pnl_s, function(x_ts) {
-  # calculate annualized Sharpe ratio of strategy returns
+  # Calculate annualized Sharpe ratio of strategy returns
   x_ts <- rutils::diff_it(log(x_ts))
   sum(x_ts)/sd(x_ts)
 })/NROW(pnl_s)  # end sapply
@@ -601,17 +651,17 @@ trend_sharpe <- sharpe_ratios
 ewma_trend <- simu_ewma(oh_lc=oh_lc, 
   lamb_da=lamb_das[which.max(sharpe_ratios)], 
   wid_th=wid_th)
-position_s <- ewma_trend[, "positions"]
-pnl_s <- star_t*exp(cumsum(ewma_trend[, "returns"]))
+posi_tion <- ewma_trend[, "positions"]
+pnl_s <- star_t + cumsum(ewma_trend[, "returns"])
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL with position shading
+# Plot EWMA PnL with position shading
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme, 
              name="Performance of Trend-following EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
        col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
        col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s), 
   inset=0.05, bg="white", lty=1, lwd=6, 
@@ -640,11 +690,11 @@ legend("top", legend=colnames(pnl_s),
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/R/lecture_slides/scripts/ewma_model.R")
 lamb_das <- seq(0.05, 1.0, 0.05)
-# perform lapply() loop over lamb_das
+# Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # backtest EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "returns"]))
+  star_t + cumsum(simu_ewma(
+    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "returns"])
 })  # end lapply
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -653,7 +703,7 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
       \includegraphics[width=0.5\paperwidth]{figure/ewma_revert_returns.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA strategies with custom line colors
+# Plot EWMA strategies with custom line colors
 column_s <- seq(1, NCOL(pnl_s), by=4)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- 
@@ -693,7 +743,7 @@ legend("topleft", legend=colnames(pnl_s[, column_s]),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 sharpe_ratios <- sqrt(252)*sapply(pnl_s, function(x_ts) {
-  # calculate annualized Sharpe ratio of strategy returns
+  # Calculate annualized Sharpe ratio of strategy returns
   x_ts <- rutils::diff_it(log(x_ts))
   sum(x_ts)/sd(x_ts)
 })/NROW(pnl_s)  # end sapply
@@ -726,8 +776,8 @@ revert_sharpe <- sharpe_ratios
 ewma_revert <- simu_ewma(oh_lc=oh_lc, 
   lamb_da=lamb_das[which.max(sharpe_ratios)],
   wid_th=wid_th, tre_nd=(-1))
-position_s <- ewma_revert[, "positions"]
-pnl_s <- star_t*exp(cumsum(ewma_revert[, "returns"]))
+posi_tion <- ewma_revert[, "positions"]
+pnl_s <- star_t + cumsum(ewma_revert[, "returns"])
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
       @
@@ -735,13 +785,13 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
       \includegraphics[width=0.5\paperwidth]{figure/ewma_revert_best.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# plot EWMA PnL with position shading
+# Plot EWMA PnL with position shading
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme, 
              name="Performance of Mean-reverting EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
        col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
        col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s), 
   inset=0.05, bg="white", lty=1, lwd=6, 
@@ -762,7 +812,7 @@ legend("top", legend=colnames(pnl_s),
     \column{0.5\textwidth}
       The returns of trend-following and mean-reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk.
       <<echo=TRUE,eval=FALSE>>=
-# calculate correlation between trend-following and mean-reverting strategies
+# Calculate correlation between trend-following and mean-reverting strategies
 trend_ing <- ewma_trend[, "returns"]
 colnames(trend_ing) <- "trend"
 revert_ing <- ewma_revert[, "returns"]
@@ -772,11 +822,11 @@ cor(cbind(trend_ing, revert_ing, close_rets))
 # Calculate combined strategy
 com_bined <- trend_ing + revert_ing
 colnames(com_bined) <- "combined"
-# calculate annualized Sharpe ratio of strategy returns
+# Calculate annualized Sharpe ratio of strategy returns
 re_turns <- cbind(close_rets, trend_ing, revert_ing, com_bined)
 sqrt(252)*sapply(re_turns, function(x_ts) 
   sum(x_ts)/sd(x_ts))/NROW(com_bined)
-pnl_s <- lapply(re_turns, function(x_ts) star_t*exp(cumsum(x_ts)))
+pnl_s <- lapply(re_turns, function(x_ts) {star_t + cumsum(x_ts)})
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- c("VTI", "trending", "reverting", "EWMA combined PnL")
       @
@@ -816,10 +866,10 @@ weight_s <- weight_s/sum(weight_s)
 re_turns <- cbind(trend_returns, revert_returns)
 avg_returns <- re_turns %*% weight_s
 avg_returns <- xts(avg_returns, order.by=index(re_turns))
-pnl_s <- star_t*exp(cumsum(avg_returns))
+pnl_s <- (star_t + cumsum(avg_returns))
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# plot EWMA PnL without position shading
+# Plot EWMA PnL without position shading
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme, 
@@ -1450,642 +1500,7 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
 
 
 %%%%%%%%%%%%%%%
-\section{Estimating and Modeling Volatility and Skew}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time,
-      \vskip1ex
-      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time,
-      \vskip1ex
-      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
-      \end{align*}
-      Where \texttt{k} is the \emph{look-back interval} for performing aggregations over the past, 
-      \vskip1ex
-      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
-re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# Define end points
-end_points <- seq_along(re_turns)
-n_rows <- NROW(end_points)
-look_back <- 51
-# start_points are multi-period lag of end_points
-start_points <- c(rep_len(1, look_back-1), 
-    end_points[1:(n_rows-look_back+1)])
-# Define list of look-back intervals for aggregations over past
-look_backs <- lapply(seq_along(end_points), 
-  function(in_dex) {
-    start_points[in_dex]:end_points[in_dex]
-})  # end lapply
-# Calculate realized VTI variance in sapply() loop
-vari_ance <- sapply(look_backs, 
-  function(look_back) {
-    ret_s <- re_turns[look_back]
-    sum((ret_s - mean(ret_s))^2)
-}) / (look_back-1)  # end sapply
-tail(vari_ance)
-class(vari_ance)
-# Coerce vari_ance into xts
-vari_ance <- xts(vari_ance, order.by=index(re_turns))
-colnames(vari_ance) <- "VTI.variance"
-head(vari_ance)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Variance Using Package \protect\emph{roll}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects: 
-      \begin{itemize}
-        \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
-        \item \texttt{roll\_scale()} for rolling scaling and centering of time series, 
-        \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
-      \end{itemize}
-      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
-      \vskip1ex
-      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using packages \emph{Rcpp} and \emph{RcppArmadillo}.
-      \vskip1ex
-      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling VTI variance using package roll
-library(roll)  # load roll
-vari_ance <- 
-  roll::roll_var(re_turns, width=look_back)
-colnames(vari_ance) <- "VTI.variance"
-head(vari_ance)
-sum(is.na(vari_ance))
-vari_ance[1:(look_back-1)] <- 0
-# Benchmark calculation of rolling variance
-library(microbenchmark)
-summary(microbenchmark(
-  roll_sapply=sapply(look_backs, function(look_back) {
-    ret_s <- re_turns[look_back]
-    sum((ret_s - mean(ret_s))^2)
-  }),
-  ro_ll=roll::roll_var(re_turns, width=look_back),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling \protect\emph{EWMA} Realized Variance Estimator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator, 
-      \vskip1ex
-      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
-      \begin{displaymath}
-        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
-      \end{displaymath}
-      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance, 
-      \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa, 
-      \vskip1ex
-      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights), 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate EWMA VTI variance using filter()
-look_back <- 51
-weight_s <- exp(-0.1*1:look_back)
-weight_s <- weight_s/sum(weight_s)
-vari_ance <- stats::filter(re_turns^2, 
-    filter=weight_s, sides=1)
-vari_ance[1:(look_back-1)] <- vari_ance[look_back]
-class(vari_ance)
-vari_ance <- as.numeric(vari_ance)
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
-# Plot EWMA standard deviation
-chart_Series(x_ts, 
-  name="EWMA standard deviation")
-dygraphs::dygraph(x_ts, main="EWMA standard deviation")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
-      \end{align*}
-      Where $w_j$ is the vector of weights:
-      \begin{displaymath}
-        w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
-      \end{displaymath}
-      The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling VTI variance using package roll
-library(roll)  # load roll
-vari_ance <- roll::roll_var(re_turns, 
-  weights=rev(weight_s), width=look_back)
-colnames(vari_ance) <- "VTI.variance"
-class(vari_ance)
-head(vari_ance)
-sum(is.na(vari_ance))
-vari_ance[1:(look_back-1)] <- 0
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Variance calculated over non-overlapping intervals has very statistically significant autocorrelations,
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
-# VTI percentage returns
-re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# Calculate rolling VTI variance using package roll
-look_back <- 22
-vari_ance <- 
-  roll::roll_var(re_turns, width=look_back)
-vari_ance[1:(look_back-1)] <- 0
-colnames(vari_ance) <- "VTI.variance"
-# number of look_backs that fit over re_turns
-n_rows <- NROW(re_turns)
-n_agg <- n_rows %/% look_back
-end_points <- # Define end_points with beginning stub
-  n_rows-look_back*n_agg + (0:n_agg)*look_back
-n_rows <- NROW(end_points)
-# subset vari_ance to end_points
-vari_ance <- vari_ance[end_points]
-# improved autocorrelation function
-acf_plus(coredata(vari_ance), lag=10, main="")
-title(main="acf of variance", line=-1)
-# Partial autocorrelation
-pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
-title(main="pacf of variance", line=-1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_var.png}\\
-      \includegraphics[width=0.5\paperwidth]{figure/pacf_var.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
-      \begin{align*}
-        r_i = \mu + \sigma_{i-1} \varepsilon_i \\
-        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
-      \end{align*}
-      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$, 
-      \vskip1ex
-      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$,
-      \vskip1ex
-      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance, 
-      \vskip1ex
-      The parameter $\omega$ is proportional to the long-term average level of variance, which is given by:
-      \begin{displaymath}
-        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
-      \end{displaymath}
-      The sum of $\alpha$ plus $\beta$ should be less than \texttt{1}, otherwise the volatility is explosive,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define GARCH parameters
-om_ega <- 0.01 ; al_pha <- 0.2
-be_ta <- 0.79 ; n_rows <- 1000
-re_turns <- numeric(n_rows)
-vari_ance <- numeric(n_rows)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
-    be_ta*vari_ance[i-1]
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility.
-      \vskip1ex
-      But the decay of volatility in the \emph{GARCH} model is faster than what is observed in practice.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=5, height=3.5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-# Plot GARCH cumulative returns
-plot(cumsum(re_turns/100), t="l", 
-  lwd=2, col="blue", xlab="", ylab="",
-  main="GARCH cumulative returns")
-# Plot dygraphs GARCH standard deviation
-date_s <- seq.Date(from=Sys.Date()-n_rows+1, 
-  to=Sys.Date(), length.out=n_rows)
-x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
-# Plot GARCH standard deviation
-plot(sqrt(vari_ance), t="l", 
-  col="blue", xlab="", ylab="",
-  main="GARCH standard deviation")
-# Plot dygraphsGARCH standard deviation
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH standard deviation")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_returns.png}\\
-      \includegraphics[width=0.45\paperwidth]{figure/garch_stdev.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Properties}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The parameter $\alpha$ is the weight of the squared realized returns in the variance, 
-      \vskip1ex
-      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis,
-      <<echo=TRUE,eval=FALSE>>=
-# Define GARCH parameters
-om_ega <- 0.0001 ; al_pha <- 0.5
-be_ta <- 0.1 ; n_rows <- 10000
-re_turns <- numeric(n_rows)
-vari_ance <- numeric(n_rows)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 + 
-    be_ta*vari_ance[i-1]
-}  # end for
-# Calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) / 
-  moments::moment(re_turns, order=2)^2
-# Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-optim_fit <- MASS::fitdistr(re_turns, 
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05, bty="n",
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=1,
-       col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Calibration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{GARCH} models can be calibrated on returns using the \emph{maximum-likelihood} method, but it's a complex optimization procedure,
-      \vskip1ex
-      The package \emph{fGarch} contains functions for applying \emph{GARCH} models,
-      \vskip1ex
-      The function \texttt{garchFit()} calibrates a \emph{GARCH} model on a time series of returns,
-      \vskip1ex
-      The function \texttt{garchFit()} returns an \texttt{S4} object of class \emph{fGARCH}, with multiple slots containing the \emph{GARCH} model outputs and diagnostic information,
-      <<echo=(-(1:2)),eval=FALSE>>=
-# use fixed notation instead of exponential notation
-options(scipen=999)
-library(fGarch)
-# fit returns into GARCH
-garch_fit <- fGarch::garchFit(data=re_turns)
-# fitted GARCH parameters
-round(garch_fit@fit$coef, 5)
-# Actual GARCH parameters
-round(c(mu=mean(re_turns), omega=om_ega, 
-  alpha=al_pha, beta=be_ta), 5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_fitted.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot GARCH fitted standard deviation
-plot(sqrt(garch_fit@fit$series$h), t="l", 
-  col="blue", xlab="", ylab="",
-  main="GARCH fitted standard deviation")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{garchSpec()} from package \emph{fGarch} specifies a \emph{GARCH} model,
-      \vskip1ex
-      The function \texttt{garchSim()} simulates a \emph{GARCH} model,
-      <<echo=TRUE,eval=FALSE>>=
-# specify GARCH model
-garch_spec <- fGarch::garchSpec(
-  model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
-# simulate GARCH model
-garch_sim <- 
-  fGarch::garchSim(spec=garch_spec, n=n_rows)
-re_turns <- as.numeric(garch_sim)
-# Calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) / 
-  moments::moment(re_turns, order=2)^2
-# Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-# Plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# fit t-distribution into GARCH returns
-optim_fit <- MASS::fitdistr(re_turns, 
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05, bty="n",
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=1,
-       col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Volatility of Intraday Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{close-to-close} estimator depends on \texttt{close} prices specified over the aggregation intervals: 
-      \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{C_i}{C_{i-1}})-\bar{r})^2
-      \end{displaymath}
-      \vspace{-1em}
-      \begin{displaymath}
-        \bar{r} = \frac{1}{n} \sum_{i=1}^{n} \log(\frac{C_i}{C_{i-1}})
-      \end{displaymath}
-      Volatility estimates for intraday time series depend both on the units of returns (per second, minute, day, etc.), and on the aggregation interval (secondly, minutely, daily, etc.), 
-      \vskip1ex
-      A minutely time interval is equal to \texttt{60} seconds, a daily time interval is equal to \texttt{86,400=24*60*60} seconds, etc.), 
-      \vskip1ex
-      For example, it's possible to measure returns in minutely intervals in units per second, 
-      \vskip1ex
-      The estimated volatility is directly proportional to the measurement units, 
-      \vskip1ex
-      For example, the volatility estimated from per minute returns is \texttt{60} times the volatility estimated from per second returns, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-library(HighFreq)  # load HighFreq
-# minutely SPY returns (unit per minute) single day
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
-# minutely SPY volatility (unit per minute)
-sd(re_turns)
-# minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) / 
-  c(1, diff(.index(SPY["2012-02-13"])))
-# minutely SPY volatility scaled to unit per minute
-60*sd(re_turns)
-# minutely SPY returns multiple days no overnight scaling
-re_turns <- rutils::diff_it(log(SPY[, 4]))
-# minutely SPY volatility (unit per minute)
-sd(re_turns)
-# minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) / 
-  c(1, diff(.index(SPY)))
-# minutely SPY volatility scaled to unit per minute
-60*sd(re_turns)
-table(c(1, diff(.index(SPY))))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Volatility as Function of Aggregation Interval}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Return volatility depends on the length of the aggregation time interval approximately as the \emph{square root} of the interval:
-      \begin{displaymath}
-        \hat\sigma \propto {\Delta t} ^ {H/2}
-      \end{displaymath}
-      Where $\Delta t$ is the length of the aggregation interval, and \texttt{H} is the \emph{Hurst} exponent,
-      \vskip1ex
-      If prices follow \texttt{geometric Brownian motion} then the volatility is exactly proportional to the \emph{square root} of the interval length (\texttt{H=1}), 
-      \vskip1ex
-      If prices are \texttt{mean-reverting} then the volatility grows slower than the \emph{square root} of the interval length (\texttt{H<1}), 
-      \vskip1ex
-      If prices are \texttt{trending} then the volatility grows faster than the \emph{square root} of the interval length (\texttt{H>1}), 
-      \vskip1ex
-      The length of the daily time interval is often approximated to be equal to \texttt{390=6.5*60} minutes, since the trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by that of the trading session, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-library(HighFreq)  # load HighFreq
-# Daily OHLC SPY prices
-SPY_daily <- 
-  rutils::to_period(oh_lc=SPY, period="days")
-# Daily SPY returns and volatility
-sd(rutils::diff_it(log(SPY_daily[, 4])))
-# minutely SPY returns (unit per minute)
-re_turns <- rutils::diff_it(log(SPY[, 4]))
-# minutely SPY volatility scaled to daily interval
-sqrt(6.5*60)*sd(re_turns)
-
-# minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) / 
-  c(1, diff(.index(SPY)))
-# minutely SPY volatility scaled to daily aggregation interval
-60*sqrt(6.5*60)*sd(re_turns)
-
-# Daily SPY volatility
-# including extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) / 
-            c(1, diff(.index(SPY_daily))))
-table(c(1, diff(.index(SPY_daily))))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Range} Volatility Estimators of \texttt{OHLC} Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Range} volatility estimators utilize the \texttt{high} and \texttt{low} prices, and therefore have lower standard error than the standard \emph{close-to-close} estimator, 
-      \vskip1ex
-      The \emph{Garman-Klass} estimator uses the \emph{low-to-high} price range, but it underestimates volatility because it doesn't account for \emph{close-to-open} price jumps:
-      \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)\log(\frac{C_i}{O_i})^2)
-      \end{displaymath}
-      The \emph{Yang-Zhang} estimator is the most efficient (has the lowest standard error) among unbiased estimators, and also accounts for \emph{close-to-open} price jumps: 
-      \vspace{-1em}
-      \begin{multline*}
-        \hspace{-1em}\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
-        0.134(\log(\frac{C_i}{O_i})-\bar{r}_{oc})^2 + \\
-        \frac{0.866}{n} \sum_{i=1}^{n} (\log(\frac{H_i}{O_i})\log(\frac{H_i}{C_i}) + \log(\frac{L_i}{O_i})\log(\frac{L_i}{C_i}))
-      \end{multline*}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-# Daily SPY volatility from minutely prices using package TTR
-library(TTR)
-sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(SPY, N=1, 
-                  calc="yang.zhang"))^2))
-# SPY volatility using package HighFreq
-60*sqrt((6.5*60)*agg_regate(oh_lc=SPY, 
-            weight_ed=FALSE, mo_ment="run_variance", 
-            calc_method="yang_zhang"))
-      @
-      \vspace{-1em}
-      Theoretically, the \emph{Yang-Zhang} (\emph{YZ}) and \emph{Garman-Klass-Yang-Zhang} (\emph{GKYZ}) range variance estimators are unbiased and have up to seven times smaller standard errors than the standard close-to-close estimator, 
-      \vskip1ex
-      But in practice, prices are not observed continuously, so the price range is underestimated, and so is the variance when using the \emph{YZ} and \emph{GKYZ} range estimators, 
-      \vskip1ex
-      Therefore in practice the \emph{YZ} and \emph{GKYZ} range estimators underestimate volatility, 
-      \vskip1ex
-      In addition, their standard errors are reduced less than by the theoretical amount, for the same reason, 
-      \vskip1ex
-      The \emph{Garman-Klass-Yang-Zhang} estimator is another very efficient and unbiased estimator, and also accounts for \emph{close-to-open} price jumps: 
-      \vspace{-1em}
-      \begin{multline*}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
-        0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)(\log(\frac{C_i}{O_i})^2))
-      \end{multline*}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Regression Analysis}
+\section{Linear Algebra}
 
 
 %%%%%%%%%%%%%%%
@@ -2101,7 +1516,792 @@ sqrt((6.5*60)*mean(na.omit(
       \vskip1ex
       We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$,
       \vskip1ex
-      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v_i^2}$,
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$,
+      \vskip1ex
+      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$,
+      \vskip1ex
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
+      \begin{displaymath}
+        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
+      \begin{align*}
+        \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T\\
+        d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T\\
+        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
+      \end{align*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvectors and Eigenvalues of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The vector $w$ is an \emph{eigenvector} of the matrix $\mathbb{A}$, if it satisfies the \emph{eigenvalue} equation:
+      \begin{displaymath}
+        \mathbb{A} \, w = \lambda \, w
+      \end{displaymath}
+      Where $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $w$,
+      \vskip1ex
+      The number of \emph{eigenvalues} of a matrix is equal to its dimension,
+      \vskip1ex
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other,
+      \vskip1ex
+      The \emph{eigenvectors} can be normalized to $1$,
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal,
+      \vskip1ex
+      The function \texttt{eigen()} calculates the \emph{eigenvectors} and \emph{eigenvalues} of numeric matrices,
+      \vskip1ex
+      An excellent interactive visualization of \emph{eigenvectors} and \emph{eigenvalues} is available here:\\
+      \hskip1em\url{http://setosa.io/ev/eigenvectors-and-eigenvalues/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_values.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create random real symmetric matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- mat_rix + t(mat_rix)
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
+dim(eigen_vec)
+# Plot eigenvalues
+barplot(ei_gen$values,
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of a real symmetric matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigen Decomposition of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Real symmetric matrices have real \emph{eigenvalues}, and their \emph{eigenvectors} are orthogonal to each other.
+      \vskip1ex
+      The \emph{eigenvectors} form an \emph{orthonormal basis} in which the matrix $\mathbb{A}$ is diagonal:
+      \begin{displaymath}
+        \mathbb{D} = \mathbb{O}^T \mathbb{A} \, \mathbb{O}
+      \end{displaymath}
+      Where $\mathbb{D}$ is a \emph{diagonal} matrix containing the \emph{eigenvalues} of matrix $\mathbb{A}$, and $\mathbb{O}$ is an \emph{orthogonal} matrix of its \emph{eigenvectors}, with $\mathbb{O}^T \mathbb{O} = \mathbbm{1}$.
+      \vskip1ex
+      Any real symmetric matrix $\mathbb{A}$ can be decomposed into a product of its \emph{eigenvalues} and its \emph{eigenvectors} (the \emph{eigen decomposition}):
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{O} \, \mathbb{D} \, \mathbb{O}^T
+      \end{displaymath}
+      The \emph{eigen decomposition} expresses a matrix as the product of a rotation, followed by a scaling, followed by the inverse rotation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# eigenvectors form an orthonormal basis
+round(t(eigen_vec) %*% eigen_vec,
+  digits=4)
+# Diagonalize matrix using eigenvector matrix
+round(t(eigen_vec) %*% (mat_rix %*% eigen_vec),
+  digits=4)
+ei_gen$values
+# eigen decomposition of matrix by rotating the diagonal matrix
+de_comp <- eigen_vec %*% (ei_gen$values * t(eigen_vec))
+# Create diagonal matrix of eigenvalues
+# diago_nal <- diag(ei_gen$values)
+# de_comp <- eigen_vec %*% (diago_nal %*% t(eigen_vec))
+all.equal(mat_rix, de_comp)
+      @
+      \emph{Orthogonal} matrices represent rotations in \emph{hyperspace}, and their inverse is equal to their transpose: $\mathbb{O}^{-1} = \mathbb{O}^T$,
+      \vskip1ex
+      The \emph{diagonal} matrix $\mathbb{D}$ represents a scaling (stretching) transformation proportional to the \emph{eigenvalues},
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Positive Definite} Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Matrices with positive \emph{eigenvalues} are called \emph{positive definite} matrices.
+      \vskip1ex
+      Matrices with non-negative \emph{eigenvalues} are called \emph{positive semi-definite} matrices (some of their \emph{eigenvalues} may be zero).
+      \vskip1ex
+      An example of \emph{positive definite} matrices are the covariance matrices of linearly independent variables.
+      \vskip1ex
+      But the covariance matrices of linearly dependent variables have some \emph{eigenvalues} equal to zero, in which case they are \emph{singular}, and only \emph{positive semi-definite}.
+      \vskip1ex
+      All covariance matrices are \emph{positive semi-definite} and all \emph{positive semi-definite} matrices are the covariance matrix of some multivariate distribution.
+      \vskip1ex
+      Matrices which have some \emph{eigenvalues} equal to zero are called \emph{singular} (degenerate) matrices.
+      \vskip1ex
+      For any real matrix $\mathbb{A}$, the matrix $\mathbb{A}^T \mathbb{A}$ is \emph{positive semi-definite}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_posdef.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+ei_gen$values
+# Plot eigenvalues
+barplot(ei_gen$values, las=3,
+  xlab="", ylab="",
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of positive semi-definite matrix")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Singular Value Decomposition (\protect\emph{SVD}) of Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Singular Value Decomposition} (\emph{SVD}) is a generalization of the \emph{eigen decomposition} of square matrices.
+      \vskip1ex
+      The \emph{SVD} of a rectangular matrix $\mathbb{A}$ is defined as the factorization:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{U} \Sigma \mathbb{V}^T
+      \end{displaymath}
+      Where $\mathbb{U}$ and $\mathbb{V}$ are the left and right \emph{singular matrices}, and $\Sigma$ is a diagonal matrix of \emph{singular values}.
+      \vskip1ex
+      If $\mathbb{A}$ has \texttt{m} rows and \texttt{n} columns and if (\texttt{m > n}), then $\mathbb{U}$ is an (\texttt{m x n}) \emph{rectangular} matrix, $\Sigma$ is an (\texttt{n x n}) \emph{diagonal} matrix, and $\mathbb{V}$ is an (\texttt{n x n}) \emph{orthogonal} matrix, and if (\texttt{m < n}) then the dimensions are: (\texttt{m x m}), (\texttt{m x m}), and (\texttt{m x n}).
+      \vskip1ex
+      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices consist of columns of \emph{orthonormal} vectors, so that $\mathbb{U}^T \mathbb{U} = \mathbb{V}^T \mathbb{V} = \mathbbm{1}$.
+      \vskip1ex
+      In the special case when $\mathbb{A}$ is a square matrix, then $\mathbb{U} = \mathbb{V}$, and the \emph{SVD} reduces to the \emph{eigen decomposition}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform singular value decomposition
+mat_rix <- matrix(rnorm(50), nc=5)
+s_vd <- svd(mat_rix)
+# Recompose mat_rix from SVD mat_rices
+all.equal(mat_rix,
+  s_vd$u %*% (s_vd$d*t(s_vd$v)))
+# Columns of U and V are orthonormal
+round(t(s_vd$u) %*% s_vd$u, 4)
+round(t(s_vd$v) %*% s_vd$v, 4)
+      @
+      \vspace{-1em}
+      The function \texttt{svd()} performs \emph{Singular Value Decomposition} (\emph{SVD}) of a rectangular matrix, and returns a list of three elements: the \emph{singular values}, and the matrices of left-\emph{singular} vectors and the right-\emph{singular} vectors.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Left and Right Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The left $\mathbb{U}$ and right $\mathbb{V}$ singular matrices define rotation transformations into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+      The columns of $\mathbb{U}$ and $\mathbb{V}$ are called the \emph{singular} vectors, and they are only defined up to a reflection (change in sign), i.e. if \texttt{vec} is a singular vector, then so is \texttt{-vec}.
+      \vskip1ex
+      The left singular matrix $\mathbb{U}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A} \mathbb{A}^T$.
+      \vskip1ex
+      The right singular matrix $\mathbb{V}$ forms the \emph{eigenvectors} of the matrix $\mathbb{A}^T \mathbb{A}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Dimensions of left and right matrices
+n_left <- 6 ; n_right <- 4
+# Calculate left matrix
+left_mat <- matrix(runif(n_left^2), nc=n_left)
+ei_gen <- eigen(crossprod(left_mat))
+left_mat <- ei_gen$vectors[, 1:n_right]
+# Calculate right matrix and singular values
+right_mat <- matrix(runif(n_right^2), nc=n_right)
+ei_gen <- eigen(crossprod(right_mat))
+right_mat <- ei_gen$vectors
+sing_values <- sort(runif(n_right, min=1, max=5), decreasing=TRUE)
+# Compose rectangular matrix
+mat_rix <- left_mat %*% (sing_values * t(right_mat))
+# Perform singular value decomposition
+s_vd <- svd(mat_rix)
+# Recompose mat_rix from SVD
+all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
+# Compare SVD with mat_rix components
+all.equal(abs(s_vd$u), abs(left_mat))
+all.equal(abs(s_vd$v), abs(right_mat))
+all.equal(s_vd$d, sing_values)
+# Eigen decomposition of mat_rix squared
+square_d <- mat_rix %*% t(mat_rix)
+ei_gen <- eigen(square_d)
+all.equal(ei_gen$values[1:n_right], sing_values^2)
+all.equal(abs(ei_gen$vectors[, 1:n_right]), abs(left_mat))
+# Eigen decomposition of mat_rix squared
+square_d <- t(mat_rix) %*% mat_rix
+ei_gen <- eigen(square_d)
+all.equal(ei_gen$values, sing_values^2)
+all.equal(abs(ei_gen$vectors), abs(right_mat))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Inverse of Symmetric Square Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The inverse of a square matrix $\mathbb{A}$ is defined as a square matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}
+      \end{displaymath}
+      Where $\mathbbm{1}$ is the identity matrix.
+      \vskip1ex
+      The inverse $\mathbb{A}^{-1}$ of a \emph{symmetric} square matrix $\mathbb{A}$ can also be expressed as the product of the inverse of its \emph{eigenvalues} ($\mathbb{D}$) and its \emph{eigenvectors} ($\mathbb{O}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{O} \, \mathbb{D}^{-1} \, \mathbb{O}^T
+      \end{displaymath}
+      But \emph{singular} (degenerate) matrices (which have some \emph{eigenvalues} equal to zero) don't have an inverse.
+      \vskip1ex
+      The inverse of \emph{non-symmetric} matrices can be calculated using \emph{Singular Value Decomposition} (\emph{SVD}).
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create random positive semi-definite matrix
+mat_rix <- matrix(runif(25), nc=5)
+mat_rix <- t(mat_rix) %*% mat_rix
+# Calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+# Multiply inverse with matrix
+round(in_verse %*% mat_rix, 4)
+round(mat_rix %*% in_verse, 4)
+
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(mat_rix)
+eigen_vec <- ei_gen$vectors
+
+# Perform eigen decomposition of inverse
+eigen_inverse <-
+  eigen_vec %*% (t(eigen_vec) / ei_gen$values)
+all.equal(in_verse, eigen_inverse)
+# Decompose diagonal matrix with inverse of eigenvalues
+# diago_nal <- diag(1/ei_gen$values)
+# eigen_inverse <-
+#   eigen_vec %*% (diago_nal %*% t(eigen_vec))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Generalized Inverse of Rectangular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generalized inverse of an (\texttt{m x n}) rectangular matrix $\mathbb{A}$ is defined as an (\texttt{n x m}) matrix $\mathbb{A}^{-1}$ that satisfies the equation:
+      \begin{displaymath}
+        \mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}
+      \end{displaymath}
+      The generalized inverse matrix $\mathbb{A}^{-1}$ can be expressed as a product of the inverse of its \emph{singular values} ($\Sigma$) and its left and right \emph{singular} matrices ($\mathbb{U}$ and $\mathbb{V}$):
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V} \, \Sigma^{-1} \, \mathbb{U}^T
+      \end{displaymath}
+      The generalized inverse $\mathbb{A}^{-1}$ can also be expressed as the \emph{Moore-Penrose pseudo-inverse}:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = (\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T
+      \end{displaymath}
+      In the case when the inverse matrix $\mathbb{A}^{-1}$ exists, then the \emph{pseudo-inverse} matrix simplifies to the inverse: $(\mathbb{A}^T \mathbb{A})^{-1} \mathbb{A}^T = \mathbb{A}^{-1} (\mathbb{A}^T)^{-1} \mathbb{A}^T = \mathbb{A}^{-1}$
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the generalized inverse of a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Random rectangular matrix: n_left > n_right
+n_left <- 6 ; n_right <- 4
+mat_rix <- matrix(runif(n_left*n_right),
+  nc=n_right)
+# Calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+round(in_verse %*% mat_rix, 4)
+all.equal(mat_rix,
+  mat_rix %*% in_verse %*% mat_rix)
+# Random rectangular matrix: n_left < n_right
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right),
+  nc=n_right)
+# Calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+all.equal(mat_rix, mat_rix %*% in_verse %*% mat_rix)
+round(mat_rix %*% in_verse, 4)
+round(in_verse %*% mat_rix, 4)
+# Perform singular value decomposition
+s_vd <- svd(mat_rix)
+# Calculate generalized inverse from SVD
+svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+all.equal(svd_inverse, in_verse)
+# Calculate Moore-Penrose pseudo-inverse
+mp_inverse <-
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$
+      \vskip1ex
+      But if the \emph{singular values} that are equal to zero are removed, then a \emph{regularized inverse} for \emph{singular} matrices can be specified by:
+      \begin{displaymath}
+        \mathbb{A}^{-1} = \mathbb{V}_n \, \Sigma_n^{-1} \, \mathbb{U}_n^T
+      \end{displaymath}
+      Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with rows and columns corresponding to zero \emph{singular values} removed.
+      <<echo=TRUE,eval=FALSE>>=
+# Create random singular matrix
+n_left <- 4 ; n_right <- 6
+mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
+mat_rix <- t(mat_rix) %*% mat_rix
+# Calculate generalized inverse of mat_rix
+in_verse <- MASS::ginv(mat_rix)
+# Verify inverse property of mat_rix
+all.equal(mat_rix,
+  mat_rix %*% in_verse %*% mat_rix)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform singular value decomposition
+s_vd <- svd(mat_rix)
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# Check for zero singular values
+s_vd$d
+not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
+# Calculate generalized inverse from SVD
+svd_inverse <-
+  s_vd$v[, not_zero] %*%
+  (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+all.equal(svd_inverse, in_verse)
+# Calculate Moore-Penrose pseudo-inverse
+mp_inverse <-
+  MASS::ginv(t(mat_rix) %*% mat_rix) %*% t(mat_rix)
+all.equal(mp_inverse, in_verse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Diagonalizing the Inverse of Singular Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The left-\emph{singular} matrix $\mathbb{U}$ combined with the right-\emph{singular} matrix $\mathbb{V}$ define a rotation transformation into a coordinate system where the matrix $\mathbb{A}$ becomes diagonal:
+      \begin{displaymath}
+        \Sigma = \mathbb{U}^T \mathbb{A} \mathbb{V}
+      \end{displaymath}
+      The generalized inverse of \emph{singular} matrices doesn't satisfy the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$, but if it's rotated into the same coordinate system where $\mathbb{A}$ is diagonal, then we have:
+      \begin{displaymath}
+        \mathbb{U}^T (\mathbb{A}^{-1} \mathbb{A}) \, \mathbb{V} = \mathbbm{1}_n
+      \end{displaymath}
+      So that $\mathbb{A}^{-1} \mathbb{A}$ is diagonal in the same coordinate system where $\mathbb{A}$ is diagonal.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Diagonalize the "unit" matrix
+uni_t <- mat_rix %*% in_verse
+round(uni_t, 4)
+round(mat_rix %*% in_verse, 4)
+round(t(s_vd$u) %*% uni_t %*% s_vd$v, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Solving Linear Equations Using \texttt{solve()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A system of linear equations can be defined as:
+      \begin{displaymath}
+        \mathbb{A} \, x = b
+      \end{displaymath}
+      Where $\mathbb{A}$ is a matrix, $b$ is a vector, and \texttt{x} is the unknown vector,
+      \vskip1ex
+      The solution of the system of linear equations is equal to:
+      \begin{displaymath}
+        x = \mathbb{A}^{-1} b
+      \end{displaymath}
+      Where $\mathbb{A}^{-1}$ is the \emph{inverse} of the matrix $\mathbb{A}$,
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices,
+      \vskip1ex
+      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
+      \vskip1ex
+      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define a square matrix
+mat_rix <- matrix(c(1, 2, -1, 2), nc=2)
+vec_tor <- c(2, 1)
+# Calculate the inverse of mat_rix
+in_verse <- solve(a=mat_rix)
+in_verse %*% mat_rix
+# Calculate solution using inverse of mat_rix
+solu_tion <- in_verse %*% vec_tor
+mat_rix %*% solu_tion
+# Calculate solution of linear system
+solu_tion <- solve(a=mat_rix, b=vec_tor)
+mat_rix %*% solu_tion
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cholesky Decomposition}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a \emph{positive definite} matrix $\mathbb{A}$ is defined as:
+      \begin{displaymath}
+        \mathbb{A} = \mathbb{L}^T \mathbb{L}
+      \end{displaymath}
+      Where $\mathbb{L}$ is an upper triangular matrix with positive diagonal elements,
+      \vskip1ex
+      The matrix $\mathbb{L}$ can be considered the square root of $\mathbb{A}$,
+      \vskip1ex
+      The vast majority of random \emph{positive semi-definite} matrices are also \emph{positive definite},
+      \vskip1ex
+      The function \texttt{chol()} calculates the \emph{Cholesky} decomposition of a \emph{positive definite} matrix,
+      \vskip1ex
+      The functions \texttt{chol2inv()} and \texttt{chol()} calculate the inverse of a \emph{positive definite} matrix two times faster than \texttt{solve()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create large random positive semi-definite matrix
+mat_rix <- matrix(runif(1e4), nc=100)
+mat_rix <- t(mat_rix) %*% mat_rix
+# Calculate eigen decomposition
+ei_gen <- eigen(mat_rix)
+eigen_val <- ei_gen$values
+eigen_vec <- ei_gen$vectors
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# If needed convert to positive definite matrix
+not_zero <- (eigen_val > (to_l * eigen_val[1]))
+if (sum(!not_zero) > 0) {
+  eigen_val[!not_zero] <- 2*to_l
+  mat_rix <- eigen_vec %*%
+    (eigen_val * t(eigen_vec))
+}  # end if
+# Calculate the Cholesky mat_rix
+choles_ky <- chol(mat_rix)
+choles_ky[1:5, 1:5]
+all.equal(mat_rix, t(choles_ky) %*% choles_ky)
+# Calculate inverse from Cholesky
+chol_inverse <- chol2inv(choles_ky)
+all.equal(solve(mat_rix), chol_inverse)
+# Compare speed of Cholesky inversion
+library(microbenchmark)
+summary(microbenchmark(
+  sol_ve=solve(mat_rix),
+  choles_ky=chol2inv(chol(mat_rix)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Correlated Returns Using Cholesky Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cholesky} decomposition of a covariance matrix can be used to simulate correlated \emph{Normal} returns following the given covariance matrix: $\mathbb{C} = \mathbb{L}^T \mathbb{L}$
+      \vskip1ex
+      Let $\mathbb{R}$ be a matrix with columns of \emph{uncorrelated} returns following the \emph{Standard Normal} distribution,
+      \vskip1ex
+      The \emph{correlated} returns $\mathbb{R}_c$ can be calculated from the \emph{uncorrelated} returns $\mathbb{R}$ by multiplying them by the \emph{Cholesky} matrix $\mathbb{L}$:
+      \begin{displaymath}
+        \mathbb{R}_c = \mathbb{L}^T \mathbb{R}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random covariance matrix
+cov_mat <- matrix(runif(25), nc=5)
+cov_mat <- t(cov_mat) %*% cov_mat
+# Calculate the Cholesky mat_rix
+choles_ky <- chol(cov_mat)
+choles_ky
+# Simulate random uncorrelated returns
+n_assets <- 5
+n_rows <- 10000
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# Calculate correlated returns by applying Cholesky
+corr_returns <- re_turns %*% choles_ky
+# Calculate covariance matrix
+cov_returns <- crossprod(corr_returns) / (n_rows-1)
+all.equal(cov_mat, cov_returns)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of Singular Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If $\mathbb{R}$ is a matrix of returns (with zero mean) for a portfolio of \texttt{k} assets (columns), over \texttt{n} time periods (rows), then the sample covariance matrix is equal to:
+      \begin{displaymath}
+        \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
+      \end{displaymath}
+      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero),
+      \vskip1ex
+      The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster,
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate random portfolio returns
+n_assets <- 10
+n_rows <- 100
+set.seed(1121)  # Initialize random number generator
+re_turns <- matrix(rnorm(n_assets*n_rows), nc=n_assets)
+# Calculate de-meaned re_turns matrix
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+# Or
+re_turns <- apply(re_turns, MARGIN=2, function(x) (x-mean(x)))
+# Calculate covariance matrix
+cov_mat <- crossprod(re_turns) / (n_rows-1)
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$values
+barplot(ei_gen$values, # Plot eigenvalues
+  xlab="", ylab="", las=3,
+  names.arg=paste0("ev", 1:NROW(ei_gen$values)),
+  main="Eigenvalues of covariance matrix")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/eigen_covmat.png}\\
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate eigenvectors and eigenvalues
+# as function of number of returns
+n_data <- ((n_assets/2):(2*n_assets))
+e_values <- sapply(n_data, function(x) {
+  re_turns <- re_turns[1:x, ]
+  re_turns <- apply(re_turns, MARGIN=2,
+    function(y) (y-mean(y)))
+  cov_mat <- crossprod(re_turns) / (x-1)
+  min(eigen(cov_mat)$values)
+})  # end sapply
+plot(y=e_values, x=n_data, t="l",
+  xlab="", ylab="", lwd=3, col="blue",
+  main="Smallest eigenvalue of covariance matrix\nas function of number of returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Singular Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The covariance matrix of collinear vectors is \emph{singular}.
+      \vskip1ex
+      The statistical errors in the covariance matrix are most pronounced in the higher order eigenvalues and eigenvectors.
+      \vskip1ex
+      The \emph{regularization} technique calculates the inverse of the covariance matrix while reducing the effects of statistical errors.
+      \vskip1ex
+      The \emph{regularization} technique involves calculating the inverse of the covariance matrix $\mathbb{C}$ from a limited number of eigenvectors, ignoring the higher order eigenvectors:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+      \end{displaymath}
+      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create rectangular matrix with collinear columns
+se_ries <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+cov_mat <- cov(se_ries)
+# Calculate inverse of cov_mat - error
+in_verse <- solve(cov_mat)
+# Calculate regularized inverse of cov_mat
+in_verse <- MASS::ginv(cov_mat)
+# Verify inverse property of mat_rix
+all.equal(cov_mat,
+  cov_mat %*% in_verse %*% cov_mat)
+# Perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+eigen_val <- ei_gen$values
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# Calculate regularized inverse matrix
+not_zero <- (eigen_val > (to_l * eigen_val[1]))
+reg_inverse <- eigen_vec[, not_zero] %*%
+  (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
+# Verify inverse property of mat_rix
+all.equal(in_verse, reg_inverse)
+# Create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(rnorm(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+# Perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+# Calculate regularized inverse matrix
+max_eigen <- 2
+in_verse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shrinkage Estimator of Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The estimates of the covariance matrix suffer from statistical errors, and those errors are magnified when the covariance matrix is inverted,
+      \vskip1ex
+      In the \emph{shrinkage} technique the covariance matrix $\mathbb{C}_s$ is estimated as a weighted sum of the sample covariance estimator $\mathbb{C}$ plus a target matrix $\mathbb{T}$:
+      \begin{displaymath}
+        \mathbb{C}_s = (1-\alpha) \, \mathbb{C} + \alpha \, \mathbb{T}
+      \end{displaymath}
+      The target matrix $\mathbb{T}$ represents an estimate of the covariance matrix subject to some constraint, such as that all the correlations are equal to each other,
+      \vskip1ex
+      The shrinkage intensity $\alpha$ determines the amount of shrinkage that is applied, with $\alpha = 1$ representing a complete shrinkage towards the target matrix,
+      \vskip1ex
+      The \emph{shrinkage} estimator reduces the estimate variance at the expense of increasing its bias (known as the bias-variance tradeoff),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create random covariance matrix
+set.seed(1121)
+mat_rix <- matrix(rnorm(5e2), nc=5)
+cov_mat <- cov(mat_rix)
+cor_mat <- cor(mat_rix)
+std_dev <- sqrt(diag(cov_mat))
+# Calculate target matrix
+cor_mean <- mean(cor_mat[upper.tri(cor_mat)])
+tar_get <- matrix(cor_mean, nr=NROW(cov_mat), nc=NCOL(cov_mat))
+diag(tar_get) <- 1
+tar_get <- t(t(tar_get * std_dev) * std_dev)
+# Calculate shrinkage covariance matrix
+al_pha <- 0.5
+cov_shrink <- (1-al_pha)*cov_mat + al_pha*tar_get
+# Calculate inverse matrix
+in_verse <- solve(cov_shrink)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Univariate Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vector and Matrix Calculus}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+    \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\mathbf{v}$ and $\mathbf{w}$ be vectors, with $\mathbf{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$,
+      \vskip1ex
+      Then the inner product of $\mathbf{v}$ and $\mathbf{w}$ can be written as $\mathbf{v}^T \mathbf{w} = \mathbf{w}^T \mathbf{v} = {\sum_{i=1}^n {v_i w_i}}$,
+      \vskip1ex
+      We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$,
+      \vskip1ex
+      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$,
       \vskip1ex
       Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$,
       \vskip1ex
@@ -2146,7 +2346,7 @@ sqrt((6.5*60)*mean(na.omit(
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# formula of linear model with zero intercept
+# Formula of linear model with zero intercept
 for_mula <- z ~ x + y - 1
 for_mula
 
@@ -2179,13 +2379,13 @@ update(for_mula, log(.) ~ . + beta)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A Simple Linear Regression is a linear model between a \emph{response vector} $z$ and a single \emph{predictor} $x$, defined by the formula:
+      A Simple Linear Regression is a linear model between a \emph{response vector} $y$ and a single \emph{predictor} $x$, defined by the formula:
       \begin{displaymath}
         y_i = \alpha + \beta x_i + \varepsilon_i
       \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown \emph{regression coefficients},
+      $\alpha$ and $\beta$ are the unknown \emph{regression coefficients}.
       \vskip1ex
-      $\varepsilon_i$ are the \emph{residuals}, which are usually assumed to be normally distributed $N(0, \sigma_\varepsilon)$, independent, and stationary,
+      $\varepsilon_i$ are the \emph{residuals}, which are usually assumed to be normally distributed $N(0, \sigma_\varepsilon)$, independent, and stationary.
       \vskip1ex
       In the Ordinary Least Squares method (\emph{OLS}), the regression parameters are estimated by minimizing the \emph{Residual Sum of Squares} (\emph{RSS}):
       \begin{align*}
@@ -2193,15 +2393,15 @@ update(for_mula, log(.) ~ . + beta)
       \end{align*}
       Where $\mathbbm{1}$ is the unit vector, with $\mathbbm{1}^T \mathbbm{1} = n$ and $\mathbbm{1}^T x = x^T \mathbbm{1} = \sum_{i=1}^n {x_i}$
       \vskip1ex
-      The data consists of $n$ pairs of observations $(x_i, y_i)$ of the response and predictor variables, with the index $i$ ranging from \texttt{1} to $n$,
+      The data consists of $n$ pairs of observations $(x_i, y_i)$ of the response and predictor variables, with the index $i$ ranging from $1$ to $n$.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/reg_scatter_plot.png}
       \vspace{-2em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
+        <<echo=TRUE,eval=TRUE>>=
 # Define explanatory (design) variable
 len_gth <- 100
+set.seed(1121)  # initialize random number generator
 de_sign <- runif(len_gth)
 noise <- rnorm(len_gth)
 # Response equals linear form plus random noise
@@ -2233,8 +2433,8 @@ res_ponse <- (1 + de_sign + noise)
       \end{displaymath}
       The solution for $\beta$ can be obtained by manipulating the equation for $RSS_\beta$ as follows:
       \begin{flalign*}
-        & (y - (\bar{y} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) =\\
-        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) =\\
+        & (y - (\bar{y} - \beta \bar{x}) \mathbbm{1} - \beta x)^T (x - \bar{x} \mathbbm{1}) = \\
+        & ((y - \bar{y} \mathbbm{1}) - \beta (x - \bar{x} \mathbbm{1}))^T (x - \bar{x} \mathbbm{1}) = \\
         & (\hat{y} - \beta \hat{x})^T \hat{x} = \hat{y}^T \hat{x} - \beta \hat{x}^T \hat{x} = 0
       \end{flalign*}
       Where $\hat{x} = x - \bar{x} \mathbbm{1}$ and $\hat{y} = y - \bar{y} \mathbbm{1}$ are the de-meaned variables.  Then $\beta$ is given by:
@@ -2260,7 +2460,7 @@ al_pha <- mean(res_ponse) - be_ta*mean(de_sign)
       \vskip1ex
       The \emph{residuals} $\varepsilon$ are orthogonal to the \emph{predictor} $x$: $RSS_\beta = -2 \varepsilon^T x = 0$.
       \vskip1ex
-      The expected value of the \emph{RSS} is equal to the degrees of freedom $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
+      The expected value of the \emph{RSS} is equal to the \emph{degrees of freedom} $(n-2)$ times the variance $\sigma^2_\varepsilon$ of the \emph{residuals} $\varepsilon_i$: $\mathbb{E}[RSS] = (n-2) \sigma^2_\varepsilon$.
   \end{columns}
 \end{block}
 
@@ -2313,7 +2513,7 @@ all.equal(coef(mod_el), c(al_pha, be_ta),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The generic function \texttt{plot()} produces a scatterplot when it's called on the regression formula,
+      The \emph{generic function} \texttt{plot()} produces a scatterplot when it's called on the regression formula,
       \vskip1ex
       \texttt{abline()} plots a straight line corresponding to the regression coefficients, when it's called on the regression object,
       \vskip1ex
@@ -2365,7 +2565,7 @@ legend(x="topleft", # Add legend
       The fitted (predicted) values are the values of the \emph{response vector} obtained from applying the regression model to the \emph{design matrix} of \emph{predictors}.
         <<echo=TRUE,eval=FALSE>>=
 # Sum of residuals = 0 
-sum(mod_el$residuals)
+all.equal(sum(mod_el$residuals), target=0)
 x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 1, 1), oma=c(0, 0, 0, 0))
@@ -2397,7 +2597,7 @@ abline(h=0, lwd=3, col="red")
         \item coefficients: matrix with estimated coefficients, their \emph{t}-statistics, and \emph{p}-values,
         \item r.squared: fraction of response variance explained by the model,
         \item adj.r.squared: r.squared adjusted for higher model complexity,
-        \item fstatistic: ratio of variance explained by model divided by unexplained variance,
+        \item fstatistic: ratio of variance explained by the model divided by unexplained variance,
       \end{itemize}
       The regression \emph{null} hypothesis is that the regression coefficients are \emph{zero},
       \vskip1ex
@@ -2470,10 +2670,10 @@ anova(mod_el)
       \vspace{-1em}
         <<echo=(-(1:1)),eval=TRUE>>=
 set.seed(1121)  # initialize random number generator
-# high noise compared to coefficient
-res_ponse <- (1 + de_sign + rnorm(30, sd=8))
+# High noise compared to coefficient
+res_ponse <- (1 + de_sign + rnorm(len_gth, sd=8))
 mod_el <- lm(for_mula)  # Perform regression
-# values of regression coefficients are not
+# Values of regression coefficients are not
 # Statistically significant
 summary(mod_el)
       @
@@ -2493,7 +2693,7 @@ summary(mod_el)
     \vspace{-2em}
       <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-reg_stats <- function(std_dev) {  # noisy regression
+reg_stats <- function(std_dev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
 # Define explanatory (design) and response variables
   de_sign <- rnorm(100, mean=2)
@@ -2638,7 +2838,7 @@ plot(mod_el, which=2)  # Plot just Q-Q
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression \emph{residuals} are equal to zero,
+      The \emph{Durbin-Watson} test is designed to test the \emph{null hypothesis} that the autocorrelations of regression \emph{residuals} are equal to zero.
       \vskip1ex
       The test statistic is equal to:
       \begin{displaymath}
@@ -2646,15 +2846,15 @@ plot(mod_el, which=2)  # Plot just Q-Q
       \end{displaymath}
       Where $\varepsilon_i$ are the regression \emph{residuals},
       \vskip1ex
-      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations,
+      The value of the \emph{Durbin-Watson} statistic \emph{DW} is close to zero for large positive autocorrelations, and close to four for large negative autocorrelations.
       \vskip1ex
-      The \emph{DW} is close to two for autocorrelations close to zero,
+      The \emph{DW} is close to two for autocorrelations close to zero.
       \vskip1ex
-      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression \emph{residuals} are uncorrelated,
+      The \emph{p}-value for the \texttt{reg\_model} regression is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and the regression \emph{residuals} are uncorrelated.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-library(lmtest)  # load lmtest
+library(lmtest)  # Load lmtest
 # Perform Durbin-Watson test
 lmtest::dwtest(mod_el)
       @
@@ -2664,477 +2864,19 @@ lmtest::dwtest(mod_el)
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate} Linear Regression}
+\section{Predictions From Univariate Regression Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Leverage} for Univariate Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{multivariate} linear regression model with $k$ \emph{predictors} ${x_j}$, is defined by the formula:
-      \begin{displaymath}
-        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
-      \end{displaymath}
-      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$.
-      \vskip1ex
-      The \emph{residuals} $\varepsilon_i$ are assumed to be normally distributed $N(0, \sigma_\varepsilon)$, independent, and stationary, 
-      \vskip1ex
-      The data consists of $n$ observations, with each observation containing $k$ \emph{predictors} and one \emph{response} value.
-      \vskip1ex
-      The \emph{response vector} $y$, the \emph{predictor} vectors ${x_j}$, and the \emph{residuals} $\varepsilon$ are vectors of length $n$.
-      \vskip1ex
-      The $k$ \emph{predictors} ${x_j}$ form the columns of the $(n,k)$-dimensional \emph{design matrix} $\mathbb{X}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
-# Define design matrix
-n_rows <- 100
-n_cols <- 5
-de_sign <- sapply(1:n_cols, function(col_umn) {
-  sin(pi*col_umn*((1:n_rows)-(n_rows+1)/2)/n_rows)
-})  # end sapply
-# Add column names
-colnames(de_sign) <- paste0("col", 1:n_cols)
-# Plot design matrix
-# matplot(de_sign, type="l", lty="solid", lwd=3)
-# Define the design weights
-weight_s <- runif(n_cols, min=(-10), max=10)
-# Response equals linear form plus random noise
-noise <- rnorm(n_rows, sd=0.1)
-res_ponse <- (-1 + de_sign %*% weight_s + noise)
-      @
-      The \emph{multivariate regression} model can be written in vector notation as:
-      \begin{flalign*}
-        & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
-        & y_{fit} = \alpha + \mathbb{X} \beta
-      \end{flalign*}
-      Where $y_{fit}$ are the \emph{fitted values} of the model.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Solution of \protect\emph{Multivariate Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared \emph{residuals}:
-      \begin{align*}
-        RSS = \varepsilon^T \varepsilon = (y - y_{fit})^T (y - y_{fit}) =\\ (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
-      \end{align*}
-      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
-      \begin{flalign*}
-        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0\\
-        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
-      \end{flalign*}
-      The solutions for $\alpha$ and $\beta$ are given by:
-      \begin{flalign*}
-        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
-        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
-        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
-        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
-      \end{flalign*}
-      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate de-meaned design matrix
-design_zm <- t(t(de_sign) - colMeans(de_sign))
-# Or
-# design_zm <- apply(design_zm, 2, function(x) (x-mean(x)))
-# Calculate de-meaned response vector
-response_zm <- res_ponse - mean(res_ponse)
-# Calculate the regression coefficients
-beta_s <- MASS::ginv(design_zm) %*% response_zm
-# Solve for the regression alpha
-al_pha <- mean(res_ponse) - 
-  sum(colSums(de_sign)*drop(beta_s))/n_rows
-# Perform multivariate regression using lm()
-mod_el <- lm(res_ponse ~ de_sign)
-# Compare with coefficients from lm()
-all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
-# Compare with actual coefficients
-all.equal(c(-1, weight_s), c(al_pha, beta_s), check.attributes=FALSE)
-      @
-      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the de-meaned \emph{design matrix} $\hat{\mathbb{X}}$.
-      \vskip1ex
-      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Residuals of \protect\emph{Multivariate Regression}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{residuals} of \emph{linear regression} have zero mean, and they are also orthogonal to the \emph{predictors}: 
-      \begin{flalign*}
-        \varepsilon^T \mathbbm{1} = 0\\
-        \varepsilon^T \mathbb{X} = 0
-      \end{flalign*}
-      The \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = 0$.
-      \vskip1ex
-      Since the number of \emph{residuals} is equal to $n$ and the number of \emph{predictors} is equal to $k+1$ (including the the intercept term), the number of \emph{degrees of freedom} of the \emph{residuals} is equal to: $n_{free} = (n-k-1)$.
-      \vskip1ex
-      The variance of the \emph{residuals} is equal to the expected value of the \emph{RSS} divided by the number of \emph{degrees of freedom}: 
-      \begin{displaymath}
-        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{n_{free}}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate fitted values from regression coefficients
-fit_ted <- drop(al_pha + de_sign %*% beta_s)
-all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-# Calculate fitted values from zero mean data
-fit_ted <- drop(mean(res_ponse) + design_zm %*% beta_s)
-all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-# Calculate the residuals
-resid_uals <- drop(res_ponse - fit_ted)
-all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
-# the residuals have zero mean
-all.equal(sum(resid_uals), target=0)
-# the residuals are orthogonal to the predictors
-sapply(resid_uals %*% de_sign, 
-       all.equal, target=0)
-# the residuals are orthogonal to the fitted values
-all.equal(sum(resid_uals*fit_ted), target=0)
-      @
-      \vspace{-1em}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} With de-Meaned Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{multivariate regression} model can be written in vector notation as:
-      \begin{displaymath}
-        y = \alpha + \mathbb{X} \beta + \varepsilon
-      \end{displaymath}
-      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with de-meaned response and design matrix:
-      \begin{flalign*}
-        & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
-        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
-      \end{flalign*}
-      The de-meaned regression model produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate zero mean fitted values
-fitted_zm <- drop(design_zm %*% beta_s)
-all.equal(fitted_zm+mean(res_ponse), 
-          mod_el$fitted.values, check.attributes=FALSE)
-# Calculate the residuals
-resid_uals <- drop(response_zm - fitted_zm)
-all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Multivariate Regression} in Homogeneous Form}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      We can add an extra unit column to the \emph{design matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
-      \begin{displaymath}
-        y = \mathbb{X} \beta + \varepsilon
-      \end{displaymath}
-      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{design matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
-      \vskip1ex
-      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
-      \begin{flalign*}
-        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
-        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
-        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}_{inv} y
-      \end{flalign*}
-      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{design matrix} $\mathbb{X}$.
-      \vskip1ex
-      The coefficients $\beta$ can be interpreted as the coefficients of the projections of the \emph{response vector} $y$ onto the columns of the \emph{design matrix} $\mathbb{X}$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Add intercept column to design matrix
-de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
-# Add column name
-colnames(de_sign)[1] <- "intercept"
-# Calculate generalized inverse of the design matrix
-design_inv <- MASS::ginv(de_sign)
-# Add weight for intercept
-weight_s <- c(-1, weight_s)
-# Response equals linear form plus random noise
-# noise <- rnorm(n_rows, sd=0.1)
-res_ponse <- de_sign %*% weight_s + noise
-# Calculate the regression coefficients
-beta_s <- design_inv %*% res_ponse
-# Perform multivariate regression without intercept term
-mod_el <- lm(res_ponse ~ de_sign - 1)
-all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
-      @
-      The \emph{design matrix} $\mathbb{X}$ maps the \emph{regression coefficients} $\beta$ into the \emph{response vector} $y$.
-      \vskip1ex
-      The generalized inverse of the \emph{design matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Fitted Values} and \protect\emph{Residuals} of Multivariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The vector $y_{fit} = \mathbb{X} \beta$ contains the \emph{fitted values} corresponding to the \emph{response vector} $y$:
-      \begin{displaymath}
-        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
-      \end{displaymath}
-      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
-      \vskip1ex
-      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
-      \vskip1ex
-      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$. 
-      \vskip1ex
-      The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{design matrix} $\mathbb{X}$ (the \emph{predictors}):
-      \begin{flalign*}
-        & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} =\\
-        & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
-      \end{flalign*}
-      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$. 
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Calculate the influence matrix
-influ_ence <- de_sign %*% design_inv
-# Calculate fitted values using influence matrix
-fit_ted <- drop(influ_ence %*% res_ponse)
-all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-# Calculate fitted values from regression coefficients
-fit_ted <- drop(de_sign %*% beta_s)
-all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
-# Calculate the residuals
-resid_uals <- drop(res_ponse - fit_ted)
-all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
-      @
-      The \emph{influence matrix} $\mathbb{H}$ measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$:
-      \begin{displaymath}
-        \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Linear Transformation of the Design Matrix}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{multivariate} linear regression model can be transformed by replacing its \emph{predictors} ${x_j}$ with their own linear combinations.
-      \vskip1ex
-      This is equivalent to multiplying the \emph{design matrix} $\mathbb{X}$ by a transformation matrix $\mathbb{V}$:
-      \begin{displaymath}
-        \mathbb{X}_{trans} = \mathbb{X} \, \mathbb{V}
-      \end{displaymath}
-      The transformed \emph{design matrix} $\mathbb{X}_{trans}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$:
-      \begin{flalign*}
-        & \mathbb{H}_{trans} = \mathbb{X}_{trans} (\mathbb{X}^T_{trans} \mathbb{X}_{trans})^{-1} \mathbb{X}^T_{trans} =\\
-        & \mathbb{X}\mathbb{V} (\mathbb{V}^T \mathbb{X}^T \mathbb{X} \mathbb{V})^{-1} \mathbb{V}^T \mathbb{X}^T =\\
-        & \mathbb{X}\mathbb{V} \mathbb{V}^{-1} (\mathbb{X}^T \mathbb{X})^{-1} {\mathbb{V}^T}^{-1} \mathbb{V}^T \mathbb{X}^T =\\
-        & \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{H}
-      \end{flalign*}
-      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same \emph{fitted values} and \emph{residuals} as the original regression model, so it's equivalent to it.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Define transformation matrix
-n_cols <- NCOL(de_sign)
-trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), 
-                    ncol=n_cols)
-# Calculate linear combinations of design columns
-design_trans <- de_sign %*% trans_mat
-# Calculate the influence matrix
-influence_trans <- design_trans %*% MASS::ginv(design_trans)
-# Compare the influence matrices
-all.equal(influ_ence, influence_trans)
-# De-mean the design matrix columns
-design_trans <- cbind(de_sign[, 1], t(t(de_sign[, -1])-colMeans(de_sign[, -1])))
-round(apply(design_trans, 2, mean), 3)
-# Calculate the influence matrix
-influence_trans <- design_trans %*% MASS::ginv(design_trans)
-# Compare the influence matrices
-all.equal(influ_ence, influence_trans)
-      @
-      For example, the regression model with a de-meaned \emph{design matrix} is equivalent to the original regression model.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Regression Coefficients as \protect\emph{Random Variables}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{residuals} $\hat{\varepsilon}$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat{\varepsilon}] = 0$, and variance equal to $\sigma^2_\varepsilon$.
-      \vskip1ex
-      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}: 
-      \begin{displaymath}
-        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{n_{free}}
-      \end{displaymath}
-      Where $n_{free} = (n-k-1)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k+1$ (including the intercept term).
-      \vskip1ex
-      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat{\varepsilon}$:
-      \begin{displaymath}
-        \hat{y} = \mathbb{X} \beta + \hat{\varepsilon} = y_{fit} + \hat{\varepsilon}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Regression model summary
-model_sum <- summary(mod_el)
-# Degrees of freedom of residuals
-deg_free <- (n_rows - NCOL(de_sign))
-all.equal(deg_free, model_sum$df[2])
-# variance of residuals
-resid_var <- sum(resid_uals^2)/deg_free
-      @
-      The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat{\beta}$:
-      \begin{flalign*}
-        & \hat{\beta} = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat{\varepsilon}) = \\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat{\varepsilon}) = 
-        \beta + \mathbb{X}_{inv} \hat{\varepsilon}
-      \end{flalign*}
-      Where $\beta$ is equal to the expected value of $\hat{\beta}$: $\beta = \mathbbm{E}[\hat{\beta}] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat{\beta}$ is given by:
-      \begin{align*}
-        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat{\beta} - \beta) (\hat{\beta} - \beta)^T]}{n_{free}} = \\
-        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat{\varepsilon} (\mathbb{X}_{inv} \hat{\varepsilon})^T]}{n_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat{\varepsilon} \hat{\varepsilon}^T \mathbb{X}_{inv}^T]}{n_{free}} =\\
-        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat{\varepsilon} \hat{\varepsilon}^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{n_{free}} =\\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
-        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
-      \end{align*}
-      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat{\varepsilon} \hat{\varepsilon}^T]}{n_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Design matrix squared
-design_2 <- crossprod(de_sign)
-# design_2 <- t(de_sign) %*% de_sign
-# Calculate covariance matrix of betas
-beta_covar <- resid_var*MASS::ginv(design_2)
-# Round(beta_covar, 3)
-beta_sd <- sqrt(diag(beta_covar))
-all.equal(beta_sd, model_sum$coeff[, 2], check.attributes=FALSE)
-# Calculate t-values of betas
-beta_tvals <- drop(beta_s)/beta_sd
-all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
-# Calculate two-sided p-values of betas
-beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
-all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Covariance Matrix} of the Fitted Values}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{fitted values} $y_{fit}$ can be considered to be \emph{random variables} $\hat{y}_{fit}$:
-      \begin{displaymath}
-        \hat{y}_{fit} = \mathbb{H} \hat{y} = \mathbb{H} (y_{fit} + \hat{\varepsilon}) = y_{fit} + \mathbb{H} \hat{\varepsilon}
-      \end{displaymath}
-      The \emph{covariance matrix} of the \emph{fitted values} $\hat{y}_{fit}$ is:
-      \begin{align*}
-        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{H} \hat{\varepsilon} (\mathbb{H} \hat{\varepsilon})^T]}{n_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat{\varepsilon} \hat{\varepsilon}^T \mathbb{H}^T]}{n_{free}} =\\
-        & \frac{\mathbb{H} \, \mathbbm{E}[\hat{\varepsilon} \hat{\varepsilon}^T] \, \mathbb{H}^T}{n_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
-      \end{align*}
-      Where the square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself: $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$ (it's idempotent).
-      \vskip1ex
-      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
-      \vskip1ex
-      This is because the \emph{fitted values} farther from the \emph{predictor} mean are more sensitive to the variance of the regression slope.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_fitvar.png}
-      \vspace{-2em}
-        <<echo=TRUE,eval=FALSE>>=
-# Calculate the influence matrix
-influ_ence <- de_sign %*% design_inv
-all.equal(influ_ence, influ_ence %*% influ_ence)
-# Calculate covariance matrix of fitted values
-fit_covar <- resid_var*influ_ence
-# Calculate standard deviations of the fitted values
-fit_sd <- sqrt(diag(fit_covar))
-# Plot the standard deviations
-plot(fit_sd, type="l", lwd=3, col="blue", ylab="", 
-     main="Standard Deviations of Fitted Values")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Influence Matrix} for Univariate Regression}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A univariate regression model with a single \emph{predictor} can be written as:
+      We can add an extra unit column to the \emph{design matrix} $\mathbb{X}$ so that the univariate regression can be written in \emph{homogeneous form} as:
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
@@ -3161,20 +2903,75 @@ plot(fit_sd, type="l", lwd=3, col="blue", ylab="",
       \includegraphics[width=0.5\paperwidth]{figure/reg_leverage.png}
       \vspace{-2em}
         <<echo=(-(1:3)),eval=FALSE>>=
-x11(width=5, height=4)  # Open x11 for plotting
+x11(width=6, height=5)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
-# univariate regression with linear predictor
-de_sign <- cbind(rep(1, n_rows), 1:n_rows/n_rows)
+# Add unit column to the design matrix
+de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
 # Calculate generalized inverse of the design matrix
 design_inv <- MASS::ginv(de_sign)
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
 # Plot the leverage vector
-plot(x=de_sign[,2], y=diag(influ_ence), 
+or_der <- order(de_sign[, 2])
+plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der], 
      type="l", lwd=3, col="blue", 
      xlab="predictor", ylab="leverage", 
      main="Leverage as Function of Predictor")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of Fitted Values in Univariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{fitted values} $y_{fit}$ can be considered to be \emph{random variables} $\hat{y}_{fit}$:
+      \begin{displaymath}
+        \hat{y}_{fit} = \mathbb{H} \hat{y} = \mathbb{H} (y_{fit} + \hat\varepsilon) = y_{fit} + \mathbb{H} \hat\varepsilon
+      \end{displaymath}
+      The \emph{covariance matrix} of the \emph{fitted values} $\hat{y}_{fit}$ is:
+      \begin{align*}
+        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{H} \hat\varepsilon (\mathbb{H} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
+        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
+      \end{align*}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      \vskip1ex
+      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the influence matrix
+influ_ence <- de_sign %*% design_inv
+# The influence matrix is idempotent
+all.equal(influ_ence, influ_ence %*% influ_ence)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/reg_fitsd.png}
+      \vspace{-2em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate covariance and standard deviations of fitted values
+beta_s <- design_inv %*% res_ponse
+fit_ted <- drop(de_sign %*% beta_s)
+resid_uals <- drop(res_ponse - fit_ted)
+deg_free <- (NROW(de_sign) - NCOL(de_sign))
+var_resid <- sqrt(sum(resid_uals^2)/deg_free)
+fit_covar <- var_resid*influ_ence
+fit_sd <- sqrt(diag(fit_covar))
+# Plot the standard deviations
+fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
+fit_sd <- fit_sd[order(fit_ted), ]
+plot(fit_sd, type="l", lwd=3, col="blue", 
+     xlab="Fitted Value", ylab="Standard Deviation",
+     main="Standard Deviations of Fitted Values\nin Univariate Regression")
       @
   \end{columns}
 \end{block}
@@ -3192,15 +2989,17 @@ plot(x=de_sign[,2], y=diag(influ_ence),
       The fitted values are more volatile for \emph{predictor} values that are further away from their mean, because those points have higher \emph{leverage}.
       \vskip1ex
       The higher \emph{leverage} of points further away from the mean of the \emph{predictor} is due to their greater sensitivity to changes in the slope of the regression.
+      \vskip1ex
+      The fitted values for different realizations of random noise can be calculated using the influence matrix.
         <<echo=TRUE,eval=FALSE>>=
-# Define the design weights
+# Calculate response without random noise for univariate regression, 
+# equal to weighted sum over columns of de_sign
 weight_s <- c(-1, 1)
-# Response without random noise equals weighted sum over columns of de_sign
 res_ponse <- de_sign %*% weight_s
 # Perform loop over different realizations of random noise
 fit_ted <- lapply(1:50, function(it) {
   # Add random noise to response
-  res_ponse <- res_ponse + rnorm(n_rows, sd=1.0)
+  res_ponse <- res_ponse + rnorm(len_gth, sd=1.0)
   # Calculate fitted values using influence matrix
   influ_ence %*% res_ponse
 })  # end lapply
@@ -3233,52 +3032,45 @@ legend(x="topleft", # Add legend
 
 
 %%%%%%%%%%%%%%%
-\subsection{Predictions From \protect\emph{Linear Regression} Models}
+\subsection{Predictions From \protect\emph{Univariate Regression} Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{response value} $y_{pred}$ predicted by a regression model with coefficients $\beta$ is given by:
+    \column{0.4\textwidth}
+      The prediction $y_{pred}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
       \begin{displaymath}
-        y_{pred} = p \, \beta
+        y_{pred} = \mathbb{X}_{new} \, \beta
       \end{displaymath}
-      Where $p$ is a vector of \emph{predictor} values.
-      \vskip1ex
-      The formula for the variance of the \emph{predicted value} $\sigma^2_y$ is similar to the variance of the \emph{fitted values} $\sigma^2_{fit}$:
-      \begin{displaymath}
-        \sigma^2_y = \sigma^2_\varepsilon \, p \, (\mathbb{X}^T \mathbb{X})^{-1} p^T
-      \end{displaymath}
-    \column{0.5\textwidth}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is:
+      \begin{align*}
+        & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
+        & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
+      \end{align*}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+    \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# univariate regression with linear predictor
-de_sign <- cbind(rep(1, n_rows), 1:n_rows/n_rows)
-res_ponse <- de_sign %*% weight_s + rnorm(n_rows, sd=0.3)
-design_inv <- MASS::ginv(de_sign)
-influ_ence <- de_sign %*% design_inv
-beta_s <- design_inv %*% res_ponse
-fit_ted <- drop(de_sign %*% beta_s)
-resid_uals <- drop(res_ponse - fit_ted)
-deg_free <- (n_rows - NCOL(de_sign))
-r_ss <- sqrt(sum(resid_uals^2)/deg_free)
 # Inverse of design matrix squared
 design_2 <- MASS::ginv(crossprod(de_sign))
 # Define new predictors
-new_predictors <- (max(de_sign[, 2]) + 10*(1:5)/n_rows)
+new_data <- (max(de_sign[, 2]) + 10*(1:5)/len_gth)
 # Calculate the predicted values and standard errors
-new_design <- cbind(rep(1, NROW(new_predictors)), new_predictors)
+design_new <- cbind(rep(1, NROW(new_data)), new_data)
 predic_tions <- cbind(
-  predicted=drop(new_design %*% beta_s),
-  stddev=diag(r_ss*sqrt(new_design %*% design_2 %*% t(new_design))))
-# OR: Perform loop over new_predictors
-predic_tions <- sapply(new_predictors, function(predic_tor) {
+  prediction=drop(design_new %*% beta_s),
+  stddev=diag(var_resid*sqrt(design_new %*% design_2 %*% t(design_new))))
+# OR: Perform loop over new_data
+predic_tions <- sapply(new_data, function(predic_tor) {
   predic_tor <- cbind(1, predic_tor)
   # Calculate predicted values
-  predic_ted <- predic_tor %*% beta_s
+  predic_tion <- predic_tor %*% beta_s
   # Calculate standard deviation
-  predict_sd <- r_ss*sqrt(predic_tor %*% design_2 %*% t(predic_tor))
-  c(predicted=predic_ted, stddev=predict_sd)
+  predict_sd <- var_resid*sqrt(predic_tor %*% design_2 %*% t(predic_tor))
+  c(prediction=predic_tion, stddev=predict_sd)
 })  # end sapply
 predic_tions <- t(predic_tions)
       @
@@ -3295,11 +3087,11 @@ predic_tions <- t(predic_tions)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $n_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}. 
+      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}. 
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
-x_data <- c(de_sign[,2], new_predictors)
+x_data <- c(de_sign[,2], new_data)
 x_lim <- range(x_data)
 y_data <- c(fit_ted, predic_tions[, 1])
 # Calculate t-quantile
@@ -3314,9 +3106,9 @@ plot(x=x_data, y=y_data,
      xlab="predictor", ylab="fitted or predicted", 
      main="Predictions from Linear Regression")
 points(x=de_sign[,2], y=res_ponse, col="blue")
-points(x=new_predictors, y=predic_tions[, 1], pch=16, col="blue")
-lines(x=new_predictors, y=predict_high, lwd=3, col="red")
-lines(x=new_predictors, y=predict_low, lwd=3, col="green")
+points(x=new_data, y=predic_tions[, 1], pch=16, col="blue")
+lines(x=new_data, y=predict_high, lwd=3, col="red")
+lines(x=new_data, y=predict_low, lwd=3, col="green")
 legend(x="topleft", # Add legend
        legend=c("predictions", "+2SD", "-2SD"),
        title=NULL, inset=0.05, cex=0.8, lwd=6,
@@ -3338,15 +3130,15 @@ legend(x="topleft", # Add legend
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{predict()} is a generic function for forecasting based on a given model.
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
       \vskip1ex
-      \texttt{predict.lm()} is the predict method for linear models (regressions) produced by \texttt{lm()}.
+      \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
         <<echo=TRUE,eval=FALSE>>=
-# Perform regression
+# Perform univariate regression
 predic_tor <- de_sign[, 2]
 mod_el <- lm(res_ponse ~ predic_tor)
 # Perform prediction from regression
-new_data <- data.frame(predic_tor=new_predictors)
+new_data <- data.frame(predic_tor=new_data)
 predict_lm <- predict(object=mod_el,
   newdata=new_data, level=1-2*(1-pnorm(2)),
   interval="confidence")
@@ -3382,39 +3174,105 @@ legend(x="topleft", # Add legend
 
 
 %%%%%%%%%%%%%%%
-\subsection{Principal Component Regression}
+\subsection{Spurious Time Series Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The transformed regression model with a de-meaned \emph{response vector} and \emph{design matrix} can be written as:
-      \begin{displaymath}
-        \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
-      \end{displaymath}
-      We can assume that the data has been de-meaned, so that: $\hat{y} = y ; \hat{\mathbb{X}} = \mathbb{X}$, and write the regression model simply as: $y = \mathbb{X} \beta + \varepsilon$.
+      Regression of non-stationary time series creates \emph{spurious} regressions,
       \vskip1ex
-      \emph{Principal Component Regression} (\emph{PCR} or \emph{PCA}) consists of mulltiplying the \emph{design matrix} $\mathbb{X}$ by a \emph{PCA rotation matrix} $\mathbb{W}$:
-      \begin{displaymath}
-        \mathbb{X}_{pca} = \mathbb{X} \mathbb{W}
-      \end{displaymath}
-      The columns of the \emph{PCA rotation matrix} $\mathbb{W}$ are vectors of weights (loadings) $\mathbf{w}_j$, chosen so that the columns of the \emph{PCA design matrix} $\mathbb{X}_{pca}$ are orthogonal to each other.
+      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
       \vskip1ex
-      The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
-    \column{0.5\textwidth}
-        <<echo=TRUE,eval=TRUE>>=
-# Perform PCA
-pc_a <- prcomp(design_zm, 
-               center=TRUE, scale=TRUE)
-design_pca <- pc_a$x
-round(cov(design_pca), 2)
-round(apply(design_pca, 2, mean), 3)
-round(apply(design_pca, 2, sd), 2)
-# Calculate the influence matrix
-influ_ence <- design_zm %*% MASS::ginv(design_zm)
-influence_pca <- design_pca %*% MASS::ginv(design_pca)
-all.equal(influ_ence, influence_pca)
+      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
+      \vskip1ex
+      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      \vspace{-1em}
+        <<echo=(-(1:3)),eval=FALSE>>=
+set.seed(1121)
+library(lmtest)
+# Spurious regression in unit root time series
+de_sign <- cumsum(rnorm(100))  # Unit root time series
+res_ponse <- cumsum(rnorm(100))
+for_mula <- res_ponse ~ de_sign
+mod_el <- lm(for_mula)  # Perform regression
+# Summary indicates statistically significant regression
+model_sum <- summary(mod_el)
+model_sum$coeff
+model_sum$r.squared
+# Durbin-Watson test shows residuals are autocorrelated
+dw_test <- dwtest(mod_el)
+c(dw_test$statistic[[1]], dw_test$p.value)
       @
+      \vspace{-2em}
+        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
+par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mfrow=c(2,1))  # Set plot panels
+plot(for_mula, xlab="", ylab="")  # Plot scatterplot using formula
+title(main="Spurious Regression", line=-1)
+# Add regression line
+abline(mod_el, lwd=2, col="red")
+plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \hspace*{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/spur_reg-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Multivariate Regression}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate} Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{multivariate} linear regression model with $k$ \emph{predictors} ${x_j}$, is defined by the formula:
+      \begin{displaymath}
+        y_i = \alpha + \sum_{j=1}^{k} {\beta_j x_{i,j}} + \varepsilon_i
+      \end{displaymath}
+      $\alpha$ and $\beta$ are the unknown regression coefficients, with $\alpha$ a scalar and $\beta$ a vector of length $k$.
+      \vskip1ex
+      The \emph{residuals} $\varepsilon_i$ are assumed to be normally distributed $N(0, \sigma_\varepsilon)$, independent, and stationary, 
+      \vskip1ex
+      The data consists of $n$ observations, with each observation containing $k$ \emph{predictors} and one \emph{response} value.
+      \vskip1ex
+      The \emph{response vector} $y$, the \emph{predictor} vectors ${x_j}$, and the \emph{residuals} $\varepsilon$ are vectors of length $n$.
+      \vskip1ex
+      The $k$ \emph{predictors} ${x_j}$ form the columns of the $(n,k)$-dimensional \emph{design matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=(-(1:1)),eval=TRUE>>=
+set.seed(1121)  # initialize random number generator
+# Define design matrix
+n_rows <- 100
+n_cols <- 5
+de_sign <- sapply(rep(n_rows, n_cols), rnorm)
+# Add column names
+colnames(de_sign) <- paste0("col", 1:n_cols)
+# Plot design matrix
+# matplot(de_sign, type="l", lty="solid", lwd=3)
+# Define the design weights
+weight_s <- sample(3:(n_cols+2))
+# Response equals linear form plus random noise
+noise <- rnorm(n_rows, sd=5)
+res_ponse <- (-1 + de_sign %*% weight_s + noise)
+      @
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \alpha + \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \alpha + \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
   \end{columns}
 \end{block}
 
@@ -3422,47 +3280,147 @@ all.equal(influ_ence, influence_pca)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
+\subsection{Solution of \protect\emph{Multivariate Regression}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      The \emph{Residual Sum of Squares} (\emph{RSS}) is defined as the sum of the squared \emph{residuals}:
+      \begin{align*}
+        RSS = \varepsilon^T \varepsilon = (y - y_{fit})^T (y - y_{fit}) = \\ (y - \alpha + \mathbb{X} \beta)^T (y - \alpha + \mathbb{X} \beta)
+      \end{align*}
+      The \emph{OLS} solution for the regression coefficients is found by equating the \emph{RSS} derivatives to zero:
       \begin{flalign*}
-        & TSS = (y - \bar{y})^T (y - \bar{y})\\
-        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
-        & RSS = (y - y_{fit})^T (y - y_{fit})
+        RSS_\alpha = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbbm{1} = 0\\
+        RSS_\beta = -2 (y - \alpha - \mathbb{X} \beta)^T \mathbb{X} = 0
       \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values: 
-      \begin{displaymath}
-        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
-      \end{displaymath}
-      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
-      \begin{displaymath}
-        TSS = ESS + RSS
-      \end{displaymath}
-      \vspace{-2em}
+      The solutions for $\alpha$ and $\beta$ are given by:
+      \begin{flalign*}
+        & \alpha = \bar{y} - \bar{\mathbb{X}} \beta\\
+        & RSS_\beta = -2 (\hat{y} - \hat{\mathbb{X}} \beta)^T \hat{\mathbb{X}} = 0\\
+        & \hat{\mathbb{X}}^T \hat{y} - \hat{\mathbb{X}}^T \hat{\mathbb{X}} \beta = 0\\
+        & \beta = (\hat{\mathbb{X}}^T \hat{\mathbb{X}})^{-1} \hat{\mathbb{X}}^T \hat{y} = \hat{\mathbb{X}}^{inv} \hat{y}
+      \end{flalign*}
+      Where $\bar{y}$ and $\bar{\mathbb{X}}$ are the column means, and $\hat{\mathbb{X}} = \mathbb{X} - \bar{\mathbb{X}}$ and $\hat{y} = y - \bar{y} = \hat{\mathbb{X}} \beta + \varepsilon$ are the de-meaned variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Calculate the fitted values
+# Perform multivariate regression using lm()
+mod_el <- lm(res_ponse ~ de_sign)
+# Solve multivariate regression using matrix algebra
+# Calculate de-meaned design matrix and response vector
+design_zm <- t(t(de_sign) - colMeans(de_sign))
+# de_sign <- apply(de_sign, 2, function(x) (x-mean(x)))
+response_zm <- res_ponse - mean(res_ponse)
+# Calculate the regression coefficients
+beta_s <- MASS::ginv(design_zm) %*% response_zm
+# Calculate the regression alpha
+al_pha <- mean(res_ponse) - 
+  sum(colSums(de_sign)*drop(beta_s))/n_rows
+# Compare with coefficients from lm()
+all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
+# Compare with actual coefficients
+all.equal(c(-1, weight_s), c(al_pha, beta_s), check.attributes=FALSE)
+      @
+      The matrix $\hat{\mathbb{X}}^{inv}$ is the generalized inverse of the de-meaned \emph{design matrix} $\hat{\mathbb{X}}$.
+      \vskip1ex
+      The matrix $\mathbb{C} = \hat{\mathbb{X}}^T \hat{\mathbb{X}} / (n-1)$ is the \emph{covariance matrix} of the matrix $\mathbb{X}$, and it's invertible only if the columns of $\mathbb{X}$ are linearly independent.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Multivariate Regression} in Homogeneous Form}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      We can add an extra unit column to the \emph{design matrix} $\mathbb{X}$ to represent the intercept term, and express the \emph{linear regression} formula in \emph{homogeneous form}:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where the \emph{regression coefficients} $\beta$ now contain the intercept $\alpha$: $\beta = (\alpha, \beta_1, \ldots, \beta_k)$, and the \emph{design matrix} $\mathbb{X}$ has $k+1$ columns and $n$ rows.
+      \vskip1ex
+      The \emph{OLS} solution for the $\beta$ coefficients is found by equating the \emph{RSS} derivative to zero:
+      \begin{flalign*}
+        & RSS_\beta = -2 (y - \mathbb{X} \beta)^T \mathbb{X} = 0\\
+        & \mathbb{X}^T y - \mathbb{X}^T \mathbb{X} \beta = 0\\
+        & \beta = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X}_{inv} y
+      \end{flalign*}
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{design matrix} $\mathbb{X}$.
+      \vskip1ex
+      The coefficients $\beta$ can be interpreted as the projections of the \emph{response vector} $y$ onto the columns of the \emph{design matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Add intercept column to design matrix
+de_sign <- cbind(rep(1, NROW(de_sign)), de_sign)
+n_cols <- NCOL(de_sign)
+# Add column name
+colnames(de_sign)[1] <- "intercept"
+# Calculate generalized inverse of the design matrix
+design_inv <- MASS::ginv(de_sign)
+# Calculate the regression coefficients
+beta_s <- design_inv %*% res_ponse
+# Perform multivariate regression without intercept term
+mod_el <- lm(res_ponse ~ de_sign - 1)
+all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
+      @
+      The \emph{design matrix} $\mathbb{X}$ maps the \emph{regression coefficients} $\beta$ into the \emph{response vector} $y$.
+      \vskip1ex
+      The generalized inverse of the \emph{design matrix} $\mathbb{X}_{inv}$ maps the \emph{response vector} $y$ into the \emph{regression coefficients} $\beta$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Residuals} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{flalign*}
+        & y = \mathbb{X} \beta + \varepsilon = y_{fit} + \varepsilon\\
+        & y_{fit} = \mathbb{X} \beta
+      \end{flalign*}
+      Where $y_{fit}$ are the \emph{fitted values} of the model.
+      \vskip1ex
+      The \emph{residuals} are equal to the \emph{response vector} minus the \emph{fitted values}: $\varepsilon = y - y_{fit}$. 
+      \vskip1ex
+      The \emph{residuals} $\varepsilon$ are orthogonal to the columns of the \emph{design matrix} $\mathbb{X}$ (the \emph{predictors}):
+      \begin{flalign*}
+        & \varepsilon^T \mathbb{X} = (y - \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y)^T \mathbb{X} = \\
+        & y^T \mathbb{X} - y^T \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbb{X} = y^T \mathbb{X} - y^T \mathbb{X} = 0
+      \end{flalign*}
+      Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
+      \vskip1ex
+      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$. 
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate fitted values from regression coefficients
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
 resid_uals <- drop(res_ponse - fit_ted)
 all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/reg_tss.png}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-# Residuals are orthogonal to fitted values
+# The residuals are orthogonal to the de_sign columns (predictors)
+sapply(resid_uals %*% de_sign, 
+       all.equal, target=0)
+# The residuals are orthogonal to the fitted values
 all.equal(sum(resid_uals*fit_ted), target=0)
-# TSS = ESS + RSS
-t_ss <- (n_rows-1)*var(drop(res_ponse))
-e_ss <- (n_rows-1)*var(fit_ted)
-r_ss <- (n_rows-1)*var(resid_uals)
-all.equal(t_ss, e_ss + r_ss)
+# The residuals have zero mean
+all.equal(mean(resid_uals), target=0)
       @
+      \vspace{-1em}
   \end{columns}
 \end{block}
 
@@ -3470,35 +3428,36 @@ all.equal(t_ss, e_ss + r_ss)
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{R-squared} of \protect\emph{Multivariate Regression}}
+\subsection{The \protect\emph{Influence Matrix} of Multivariate Regression}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{R-squared} is the fraction of the response variance (\emph{TSS}) that is explained by the model (\emph{ESS}):
+      The vector $y_{fit} = \mathbb{X} \beta$ are the \emph{fitted values} corresponding to the \emph{response vector} $y$:
       \begin{displaymath}
-        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+        y_{fit} = \mathbb{X} \beta = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T y = \mathbb{X} \mathbb{X}_{inv} y = \mathbb{H} y
       \end{displaymath}
-      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to \texttt{1} for models fitting the data very well, and \emph{R-squared} close to \texttt{0} for poorly fitting models,
+      Where $\mathbb{H} = \mathbb{X} \mathbb{X}_{inv} = \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the \emph{influence matrix} (or hat matrix), which maps the \emph{response vector} $y$ into the \emph{fitted values} $y_{fit}$.
       \vskip1ex
-      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
-      \begin{flalign*}
-        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
-        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
-      \end{flalign*}
+      The \emph{influence matrix} $\mathbb{H}$ is a projection matrix, and it measures the changes in the \emph{fitted values} $y_{fit}$ due to changes in the \emph{response vector} $y$.
+      \begin{displaymath}
+        \mathbb{H}_{ij} = \frac{\partial{y^{fit}_i}}{\partial{y_j}}
+      \end{displaymath}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
-# Regression summary
-model_sum <- summary(mod_el)
-# Regression R-squared
-r_squared <- e_ss/t_ss
-all.equal(r_squared, model_sum$r.squared)
-# Correlation between response and fitted values
-cor_fitted <- drop(cor(res_ponse, fit_ted))
-# Squared correlation between response and fitted values
-all.equal(cor_fitted^2, r_squared)
+# Calculate the influence matrix
+influ_ence <- de_sign %*% design_inv
+# The influence matrix is idempotent
+all.equal(influ_ence, influ_ence %*% influ_ence)
+# Calculate fitted values using influence matrix
+fit_ted <- drop(influ_ence %*% res_ponse)
+all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
+# Calculate fitted values from regression coefficients
+fit_ted <- drop(de_sign %*% beta_s)
+all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3507,93 +3466,45 @@ all.equal(cor_fitted^2, r_squared)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fisher's \protect\emph{F-distribution}}
+\subsection{\protect\emph{Multivariate Regression} With de-Meaned Variables}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $\chi_m^2$ and $\chi_n^2$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom,
+      The \emph{multivariate regression} model can be written in vector notation as:
+      \begin{displaymath}
+        y = \alpha + \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      The intercept $\alpha$ can be substituted with its solution: $\alpha = \bar{y} - \bar{\mathbb{X}} \beta$ to obtain the regression model with de-meaned response and design matrix:
+      \begin{flalign*}
+        & y = \bar{y} - \bar{\mathbb{X}} \beta + \mathbb{X} \beta \\
+        & \hat{y} = \hat{\mathbb{X}} \beta + \varepsilon
+      \end{flalign*}
+      The regression model with a de-meaned \emph{design matrix} produces the same \emph{fitted values} (only shifted by their mean) and \emph{residuals} as the original regression model, so it's equivalent to it.
+has the same influence matrix, and
       \vskip1ex
-      Then the random variable:
-      \begin{displaymath}
-        F = \frac{m \, \chi_n^2}{n \, \chi_m^2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{n/2-1}}{(m+nF)^{(m+n)/2}}
-      \end{displaymath}
-      \vspace{-1em}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 5, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- paste0("df1=", deg_free, ", df2=3")
-for (in_dex in 1:NROW(deg_free)) {  # Plot four curves
-curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      type="l", xlim=c(0, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
-}  # end for
-      @
+      But the de-meaned regression model has a different \emph{influence matrix}, which maps the de-meaned \emph{response vector} $\hat{y}$ into the de-meaned \emph{fitted values} $\hat{y}_{fit}$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# Add title
-title(main="F-Distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1,
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fisher's \protect\emph{F-test} of Model Significance}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{F-test} can be used to determine if an \emph{unrestricted} model with more parameters is able explain the variance of the \emph{response} better than a \emph{restricted} model with fewer parameters,
-      \vskip1ex
-      Let $y_i$ be a vector of $n$ observations (\emph{responses}), and $x_{ij}$ be a $(n,k)$-dimensional \emph{design matrix} of \emph{predictors}, 
-      \vskip1ex
-      Let $y^{fit}_i$ be a vector of \emph{fitted values} of the model, using the \emph{design matrix} $x_{ij}$, 
-      \vskip1ex
-      Let the \emph{restricted} model have $p_1$ parameters, so its \emph{fitted values} have $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters, so its \emph{fitted values} have $df_2 = n - p_2$ degrees of freedom, with $p_1 < p_2$,
-      \vskip1ex
-      Then the \emph{F}-statistic, defined as the ratio: 
-      \begin{displaymath}
-        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed), 
-    \column{0.5\textwidth}
-      If the \emph{restricted} regression model has \emph{zero} parameters, then the \emph{fitted values} are all simply equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, with $df_1 = n - 1$, and its \emph{Residual Sum of Squares} is equal to $TSS = (y - \bar{y})^2$,
-      \vskip1ex
-      If the \emph{unrestricted} model has \emph{k} parameters, then its \emph{Residual Sum of Squares} is equal to $RSS = (y - y_{fit})^2$, with $df_2 = n - k - 1$, and the \emph{F}-statistic is equal to: 
-      \begin{displaymath}
-        F = \frac{ESS/k}{RSS/(n - k - 1)}
-      \end{displaymath}
-      \vspace{-2em}
-        <<eval=TRUE,echo=TRUE>>=
-# F-statistic from lm()
-model_sum$fstatistic
-# Degrees of freedom of residuals
-deg_free <- (n_rows - n_cols - 1)
-# F-statistic from RSS
-f_stat <- e_ss*deg_free/r_ss/n_cols
-all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
-# p-value of F-statistic
-1-pf(q=f_stat, df1=n_rows-n_cols-1, df2=n_cols)
+        <<echo=TRUE,eval=TRUE>>=
+# Calculate zero mean fitted values
+design_zm <- t(t(de_sign) - colMeans(de_sign))
+fitted_zm <- drop(design_zm %*% beta_s)
+all.equal(fitted_zm, 
+          mod_el$fitted.values - mean(res_ponse), 
+          check.attributes=FALSE)
+# Calculate the residuals
+response_zm <- res_ponse - mean(res_ponse)
+resid_uals <- drop(response_zm - fitted_zm)
+all.equal(resid_uals, mod_el$residuals, 
+          check.attributes=FALSE)
+# Calculate the influence matrix
+influence_zm <- design_zm %*% MASS::ginv(design_zm)
+# Compare the fitted values
+all.equal(fitted_zm, 
+          drop(influence_zm %*% response_zm), 
+          check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3615,7 +3526,7 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
       But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests,
       \vspace{-1em}
         <<echo=(-(1:1)),eval=FALSE>>=
-library(lmtest)  # load lmtest
+library(lmtest)  # Load lmtest
 de_sign <- data.frame(  # Design matrix
   de_sign=1:30, omit_var=sin(0.2*1:30))
 # Response depends on both predictors
@@ -3649,51 +3560,1006 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Spurious Time Series Regression}
+\section{Regression Diagnostics}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regression Coefficients as \protect\emph{Random Variables}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Regression of non-stationary time series creates \emph{spurious} regressions,
+      The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
       \vskip1ex
-      The \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression,
+      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}: 
+      \begin{displaymath}
+        \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}, equal to the number of observations $n$, minus the number of \emph{predictors} $k$ (including the intercept term).
       \vskip1ex
-      But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests,
-      \vskip1ex
-      The Q-Q plot also shows that residuals are \emph{not} normally distributed,
+      The \emph{response vector} $y$ can also be considered to be a \emph{random variable} $\hat{y}$, equal to the sum of the deterministic \emph{fitted values} $y_{fit}$ plus the random \emph{residuals} $\hat\varepsilon$:
+      \begin{displaymath}
+        \hat{y} = \mathbb{X} \beta + \hat\varepsilon = y_{fit} + \hat\varepsilon
+      \end{displaymath}
+    \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-set.seed(1121)
-library(lmtest)
-# Spurious regression in unit root time series
-de_sign <- cumsum(rnorm(100))  # unit root time series
-res_ponse <- cumsum(rnorm(100))
-for_mula <- res_ponse ~ de_sign
-mod_el <- lm(for_mula)  # Perform regression
-# Summary indicates statistically significant regression
+        <<echo=TRUE,eval=TRUE>>=
+# Regression model summary
 model_sum <- summary(mod_el)
-model_sum$coeff
-model_sum$r.squared
-# Durbin-Watson test shows residuals are autocorrelated
-dw_test <- dwtest(mod_el)
-c(dw_test$statistic[[1]], dw_test$p.value)
+# Degrees of freedom of residuals
+n_rows <- NROW(de_sign)
+n_cols <- NCOL(de_sign)
+deg_free <- (n_rows - n_cols)
+all.equal(deg_free, model_sum$df[2])
+# Variance of residuals
+var_resid <- sum(resid_uals^2)/deg_free
       @
-      \vspace{-2em}
-        <<spur_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-plot(for_mula, xlab="", ylab="")  # Plot scatterplot using formula
-title(main="Spurious Regression", line=-1)
-# Add regression line
-abline(mod_el, lwd=2, col="red")
-plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
+      The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
+      \begin{flalign*}
+        & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) = 
+        \beta + \mathbb{X}_{inv} \hat\varepsilon
+      \end{flalign*}
+      Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Regression Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{covariance matrix} of the \emph{regression coefficients} $\hat\beta$ is given by:
+      \begin{align*}
+        & \sigma^2_\beta = \frac{\mathbbm{E}[(\hat\beta - \beta) (\hat\beta - \beta)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon (\mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T]}{d_{free}} = \\
+        & \frac{(\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1}}{d_{free}} = \\
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T \sigma^2_\varepsilon \mathbbm{1} \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} =
+        \sigma^2_\varepsilon (\mathbb{X}^T \mathbb{X})^{-1}
+      \end{align*}
+      Where the expected values of the squared residuals are proportional to the diagonal unit matrix $\mathbbm{1}$: $\frac{\mathbbm{E}[\hat\varepsilon \hat\varepsilon^T]}{d_{free}} = \sigma^2_\varepsilon \mathbbm{1}$
+      \vskip1ex
+      If any of the design matrix columns are close to being \emph{collinear}, then the squared design matrix becomes singular, and the covariance of their regression coefficients becomes very large.
+      \vskip1ex
+      The matrix $\mathbb{X}_{inv} = (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T$ is the generalized inverse of the \emph{design matrix} $\mathbb{X}$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Inverse of design matrix squared
+design_2 <- MASS::ginv(crossprod(de_sign))
+# design_2 <- t(de_sign) %*% de_sign
+# Variance of residuals
+var_resid <- sum(resid_uals^2)/deg_free
+# Calculate covariance matrix of betas
+beta_covar <- var_resid*design_2
+# Round(beta_covar, 3)
+beta_sd <- sqrt(diag(beta_covar))
+all.equal(beta_sd, model_sum$coeff[, 2], check.attributes=FALSE)
+# Calculate t-values of betas
+beta_tvals <- drop(beta_s)/beta_sd
+all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
+# Calculate two-sided p-values of betas
+beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
+all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
+# The square of the generalized inverse is equal 
+# to the inverse of the square
+all.equal(MASS::ginv(crossprod(de_sign)), 
+          design_inv %*% t(design_inv))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Covariance Matrix} of the Fitted Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{fitted values} $y_{fit}$ can also be considered to be \emph{random variables} $\hat{y}_{fit}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: $\hat{y}_{fit} = \mathbb{X} \hat\beta = \mathbb{X} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = y_{fit} + \mathbb{X} \mathbb{X}_{inv} \hat\varepsilon$.
+      \vskip1ex
+      The \emph{covariance matrix} of the \emph{fitted values} $\sigma^2_{fit}$ is:
+      \begin{align*}
+        & \sigma^2_{fit} = \frac{\mathbbm{E}[\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \frac{\mathbbm{E}[\mathbb{H} \, \hat\varepsilon \hat\varepsilon^T \mathbb{H}^T]}{d_{free}} = \\
+        & \frac{\mathbb{H} \, \mathbbm{E}[\hat\varepsilon \hat\varepsilon^T] \, \mathbb{H}^T}{d_{free}} = \sigma^2_\varepsilon \, \mathbb{H} = \sigma^2_\varepsilon \, \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T
+      \end{align*}
+      The square of the \emph{influence matrix} $\mathbb{H}$ is equal to itself (it's idempotent): $\mathbb{H} \, \mathbb{H}^T = \mathbb{H}$.
+      \vskip1ex
+      The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
+      \vskip1ex
+      This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate the influence matrix
+influ_ence <- de_sign %*% design_inv
+# The influence matrix is idempotent
+all.equal(influ_ence, influ_ence %*% influ_ence)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/spur_reg-1}
+      \includegraphics[width=0.5\paperwidth]{figure/regm_fitsd.png}
+      \vspace{-2em}
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate covariance and standard deviations of fitted values
+fit_covar <- var_resid*influ_ence
+fit_sd <- sqrt(diag(fit_covar))
+# Sort the standard deviations
+fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
+fit_sd <- fit_sd[order(fit_ted), ]
+# Plot the standard deviations
+plot(fit_sd, type="l", lwd=3, col="blue", 
+     xlab="Fitted Value", ylab="Standard Deviation",
+     main="Standard Deviations of Fitted Values\nin Multivariate Regression")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Multivariate Regression} Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The prediction $y_{pred}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
+      \begin{displaymath}
+        y_{pred} = \mathbb{X}_{new} \, \beta
+      \end{displaymath}
+      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: 
+      \begin{align*}
+        \hat{y}_{pred} = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
+        y_{pred} + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
+      \end{align*}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is:
+      \begin{align*}
+        & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
+        & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
+        & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
+      \end{align*}
+    \column{0.5\textwidth}
+      The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
+        <<echo=TRUE,eval=TRUE>>=
+# New data predictor is a data frame or row vector
+set.seed(1121)
+new_data <- data.frame(matrix(c(1, rnorm(5)), nr=1))
+col_names <- colnames(de_sign)
+colnames(new_data) <- col_names
+new_datav <- as.matrix(new_data)
+predic_tion <- drop(new_datav %*% beta_s)
+std_dev <- drop(sqrt(
+    new_datav %*% beta_covar %*% t(new_datav)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Predictions From \protect\emph{Multivariate Regression} Using \texttt{lm()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
+      \vskip1ex
+      \texttt{predict.lm()} is the predict method for linear models (regressions) produced by the function \texttt{lm()}.
+      \vskip1ex
+      In order for \texttt{predict.lm()} to work properly, the multivariate regression must be specified using a formula.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Create formula from text string
+for_mula <- paste0("res_ponse ~ ", 
+  paste(colnames(de_sign), collapse=" + "), " - 1")
+# Specify multivariate regression using formula
+mod_el <- lm(for_mula, 
+             data=data.frame(cbind(res_ponse, de_sign)))
+model_sum <- summary(mod_el)
+# Predict from lm object
+predict_lm <- predict.lm(object=mod_el, newdata=new_data, 
+           interval="confidence", level=1-2*(1-pnorm(2)))
+# Calculate t-quantile
+t_quant <- qt(pnorm(2), df=deg_free)
+predict_high <- (predic_tion + t_quant*std_dev)
+predict_low <- (predic_tion - t_quant*std_dev)
+# Compare with matrix calculations
+all.equal(predict_lm[1, "fit"], predic_tion)
+all.equal(predict_lm[1, "lwr"], predict_low)
+all.equal(predict_lm[1, "upr"], predict_high)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Total Sum of Squares} and \protect\emph{Explained Sum of Squares}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Total Sum of Squares} (\emph{TSS}) and the \emph{Explained Sum of Squares} (\emph{ESS}) are defined as:
+      \begin{flalign*}
+        & TSS = (y - \bar{y})^T (y - \bar{y})\\
+        & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
+        & RSS = (y - y_{fit})^T (y - y_{fit})
+      \end{flalign*}
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$: 
+      \begin{displaymath}
+        (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
+      \end{displaymath}
+      Therefore the \emph{TSS} can be expressed as the sum of the \emph{ESS} plus the \emph{RSS}:
+      \begin{displaymath}
+        TSS = ESS + RSS
+      \end{displaymath}
+      It also follows that the $RSS$ and the $ESS$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      The degrees of freedom of the \emph{Total Sum of Squares} is equal to the sum of the $RSS$ plus the $ESS$: $d^{TSS}_{free} = (n-k) + (k-1) = n-1$.
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/reg_tss.png}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# TSS = ESS + RSS
+t_ss <- sum((res_ponse-mean(res_ponse))^2)
+e_ss <- sum((fit_ted-mean(fit_ted))^2)
+r_ss <- sum(resid_uals^2)
+all.equal(t_ss, e_ss + r_ss)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{R-squared} is the fraction of the \emph{Explained Sum of Squares} (\emph{ESS}) divided by the \emph{Total Sum of Squares} (\emph{TSS}):
+      \begin{displaymath}
+        R^2 = \frac{ESS}{TSS} = 1 - \frac{RSS}{TSS}
+      \end{displaymath}
+      The \emph{R-squared} is a measure of the model \emph{goodness of fit}, with \emph{R-squared} close to $1$ for models fitting the data very well, and \emph{R-squared} close to $0$ for poorly fitting models.
+      \vskip1ex
+      The \emph{R-squared} is equal to the squared correlation between the response and the \emph{fitted values}:
+      \begin{flalign*}
+        & \rho_{yy_{fit}} = \frac{(y_{fit} - \bar{y})^T (y - \bar{y})}{\sqrt{TSS \cdot ESS}} = \\
+        & \frac{(y_{fit} - \bar{y})^T (y_{fit} - \bar{y})}{\sqrt{TSS \cdot ESS}} = \sqrt{\frac{ESS}{TSS}}
+      \end{flalign*}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Set regression attribute for intercept
+attributes(mod_el$terms)$intercept <- 1
+# Regression summary
+model_sum <- summary(mod_el)
+# Regression R-squared
+r_squared <- e_ss/t_ss
+all.equal(r_squared, model_sum$r.squared)
+# Correlation between response and fitted values
+cor_fitted <- drop(cor(res_ponse, fit_ted))
+# Squared correlation between response and fitted values
+all.equal(cor_fitted^2, r_squared)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Adjusted R-squared} of Multivariate Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The weakness of \emph{R-squared} is that it increases with the number of predictors (even for predictors which are purely random), so it may provide an inflated measure of the quality of a model with many predictors.
+      \vskip1ex
+      This is remedied by using the \emph{residual variance} ($\sigma^2_\varepsilon = \frac{RSS}{d_{free}}$) instead of the \emph{RSS}, and the \emph{response variance} ($\sigma^2_y = \frac{TSS}{n-1}$) instead of the \emph{TSS}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is equal to $1$ minus the fraction of the \emph{residual variance} divided by the \emph{response variance}:
+      \begin{displaymath}
+        R^2_{adj} = 1 - \frac{\sigma^2_\varepsilon}{\sigma^2_y} = 1 - \frac{RSS/d_{free}}{TSS/(n-1)}
+      \end{displaymath}
+      Where $d_{free} = (n-k)$ is the number of \emph{degrees of freedom} of the \emph{residuals}.
+      \vskip1ex
+      The \emph{adjusted R-squared} is always smaller than the \emph{R-squared}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+n_rows <- NROW(de_sign)
+n_cols <- NCOL(de_sign)
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols)
+# Adjusted R-squared
+r_squared_adj <- 
+  (1-sum(resid_uals^2)/deg_free/var(res_ponse))
+# Compare adjusted R-squared from lm()
+all.equal(drop(r_squared_adj), 
+          model_sum$adj.r.squared)
+      @
+      The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F-statistic} random variable:
+      \begin{displaymath}
+        F = \frac{\chi^2_m / m}{\chi^2_n / n}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+      \end{displaymath}
+      The \emph{F-distribution} depends on the \emph{F-statistic} $F$ and also on the degrees of freedom, $m$ and $n$.
+      \vskip1ex
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot three curves in loop
+deg_free <- c(3, 5, 9)  # Degrees of freedom
+col_ors <- c("black", "red", "blue", "green")
+for (in_dex in 1:NROW(deg_free)) {
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      xlim=c(0, 4), xlab="", ylab="", lwd=2, 
+      col=col_ors[in_dex], add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} For the Variance Ratio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let 
+      $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
+      and
+      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$ 
+      be their sample variances.
+      \vskip1ex
+      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      The \emph{F-test} tests the \emph{null hypothesis} that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
+      \vskip1ex
+      The function \texttt{pf(q)} returns the cumulative probability of the \emph{F-distribution}, i.e. the cumulative probability that the \emph{F-statistic} $F$ is less than the quantile $q$.
+      \vskip1ex
+      This \emph{F-test} is very sensitive to the assumption of the normality of the variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+sigma_x <- var(rnorm(n_rows))
+sigma_y <- var(rnorm(n_rows))
+f_ratio <- sigma_x/sigma_y
+# Cumulative probability for q = f_ratio
+pf(f_ratio, n_rows-1, n_rows-1)
+# p-value for f_ratios
+1-pf((10:20)/10, n_rows-1, n_rows-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-statistic} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
+      \vskip1ex
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_2 < p_1$.
+      \vskip1ex
+      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}: 
+      \begin{displaymath}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
+      \vskip1ex
+      Let the \emph{unrestricted} multivariate regression model be defined as: 
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{design matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
+      \vskip1ex
+      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as: 
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}: 
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# F-statistic from lm()
+model_sum$fstatistic
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols)
+# F-statistic from ESS and RSS
+f_stat <- (e_ss/(n_cols-1))/(r_ss/deg_free)
+all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Principal Component Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Covariance Matrix of ETF Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The covariance matrix $\mathbb{C}$, of the return matrix $\mathbf{r}$, is given by:
+      \begin{displaymath}
+        \mathbb{C} = \frac{\mathbf{r}^T \mathbf{r}} {n-1}
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(HighFreq)
+# Select ETF symbols
+sym_bols <- c("IEF", "DBC", "XLU", "XLF", "XLP", "XLI")
+# Calculate ETF prices and simple returns (not percentage)
+price_s <- rutils::etf_env$price_s[, sym_bols]
+price_s <- xts:::na.locf.xts(price_s)
+price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
+date_s <- index(price_s)
+re_turns <- rutils::diff_it(price_s)
+# Center (de-mean) and scale the returns
+re_turns <- t(t(re_turns) - colMeans(re_turns))
+re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
+re_turns <- xts(re_turns, date_s)
+# Alternative center (de-mean) and scale the returns
+# re_turns <- scale(re_turns, center=TRUE, scale=TRUE)
+# re_turns <- xts(re_turns, date_s)
+# or
+# re_turns <- lapply(re_turns, function(x) {x - sum(x)/NROW(re_turns)})
+# re_turns <- rutils::do_call(cbind, re_turns)
+# re_turns <- apply(re_turns, 2, scale)
+# Covariance matrix and variance vector of returns
+cov_mat <- cov(re_turns)
+vari_ance <- diag(cov_mat)
+cor_mat <- cor(re_turns)
+# cov_mat <- crossprod(re_turns) / (NROW(re_turns)-1)
+# cor_mat <- cov_mat / sqrt(vari_ance)
+# cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
+# Reorder correlation matrix based on clusters
+library(corrplot)
+or_der <- corrMatOrder(cor_mat, 
+              order="hclust", 
+              hclust.method="complete")
+cor_mat <- cor_mat[or_der, or_der]
+# Plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="ETF Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
+    method="square", col=col_ors(8), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
+                method="complete", col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/corr_etf.png}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# Plot the correlation matrix
+col_ors <- colorRampPalette(c("red", "white", "blue"))
+corrplot(cor_mat, title="Correlation Matrix", 
+    tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
+    method="square", col=col_ors(NCOL(cor_mat)), 
+    cl.offset=0.75, cl.cex=0.7, 
+    cl.align.text="l", cl.ratio=0.25)
+# draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2, 
+                method="complete", col="red")
+      @
+
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Principal Component Vectors}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal components} are linear combinations of the \texttt{k} return vectors $\mathbf{r}_i$:
+      \begin{displaymath}
+        \mathbf{pc}_j = \sum_{i=1}^k {w_{ij} \, \mathbf{r}_i}
+      \end{displaymath}
+      Where $\mathbf{w}_j$ is a vector of weights (loadings) of the \emph{principal component} \texttt{j}, with $\mathbf{w}_j^T \mathbf{w}_j = 1$,
+      \vskip1ex
+      The weights $\mathbf{w}_j$ are chosen to maximize the variance of the \emph{principal components}, under the condition that they are orthogonal:
+      \begin{align*}
+        \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
+        \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
+      \end{align*}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# create initial vector of portfolio weights
+n_weights <- NROW(sym_bols)
+weight_s <- rep(1/sqrt(n_weights), n_weights)
+names(weight_s) <- sym_bols
+# objective function equal to minus portfolio variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2
+}  # end object_ive
+# objective for equal weight portfolio
+object_ive(weight_s, re_turns)
+# Compare speed of vector multiplication methods
+summary(microbenchmark(
+  trans_pose=(t(re_turns[, 1]) %*% re_turns[, 1]),
+  s_um=sum(re_turns[, 1]^2),
+  times=10))[, c(1, 4, 5)]
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load1.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# Find weights with maximum variance
+optim_run <- optim(par=weight_s,
+  fn=object_ive,
+  re_turns=re_turns,
+  method="L-BFGS-B",
+  upper=rep(10.0, n_weights),
+  lower=rep(-10.0, n_weights))
+# optimal weights and maximum variance
+weight_s <- optim_run$par
+-object_ive(weight_s, re_turns)
+# Plot first principal component weights
+barplot(weight_s, names.arg=names(weight_s), 
+        xlab="", ylab="", 
+        main="First Principal Component Weights")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Higher Order Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The second \emph{principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the first \emph{principal component}, 
+      \vskip1ex
+      Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}, 
+      <<echo=TRUE,eval=FALSE>>=
+# pc1 weights and returns
+weights_1 <- weight_s
+pc_1 <- re_turns %*% weights_1
+# Redefine objective function
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  -sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2 + 
+    1e7*(sum(weights_1*weight_s))^2
+}  # end object_ive
+# Find second PC weights using parallel DEoptim
+optim_run <- DEoptim::DEoptim(fn=object_ive,
+  upper=rep(10, NCOL(re_turns)),
+  lower=rep(-10, NCOL(re_turns)),
+  re_turns=re_turns, control=list(parVar="weights_1", 
+    trace=FALSE, itermax=1000, parallelType=1))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load2.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# pc2 weights and returns
+weights_2 <- optim_run$optim$bestmem
+names(weights_2) <- colnames(re_turns)
+sum(weights_2^2)
+sum(weights_1*weights_2)
+# Plot second principal component loadings
+barplot(weights_2, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="Second Principal Component Loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Eigenvalues of the Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The portfolio variance: $\mathbf{w}^T \mathbb{C} \, \mathbf{w}$ can be maximized under the \emph{quadratic} weights constraint $\mathbf{w}^T \mathbf{w} = 1$, by maximizing the \emph{Lagrangian} $\mathcal{L}$:
+      \begin{displaymath}
+        \mathcal{L} = \mathbf{w}^T \mathbb{C} \, \mathbf{w} \, - \, \lambda \, (\mathbf{w}^T \mathbf{w} - 1)
+      \end{displaymath}
+      Where $\lambda$ is a \emph{Lagrange multiplier}.
+      \vskip1ex
+      The maximum variance portfolio weights can be found by differentiating $\mathcal{L}$ with respect to $\mathbf{w}$ and setting it to zero:
+      \begin{displaymath}
+        \mathbb{C} \, \mathbf{w} = \lambda \, \mathbf{w}
+      \end{displaymath}
+      The above is the \emph{eigenvalue} equation of the covariance matrix $\mathbb{C}$, with the optimal weights $\mathbf{w}$ forming an \emph{eigenvector}, and $\lambda$ is the \emph{eigenvalue} corresponding to the \emph{eigenvector} $\mathbf{w}$.
+      \vskip1ex
+      The \emph{eigenvalues} are the variances of the \emph{eigenvectors}, and their sum is equal to the sum of the return variances:
+      \begin{displaymath}
+        \sum_{i=1}^k \lambda_i = \frac{1}{1-k} \sum_{i=1}^k {\mathbf{r}_i^T \mathbf{r}_i}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_eigenvalues.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate eigenvectors and eigenvalues
+ei_gen <- eigen(cov_mat)
+ei_gen$vectors
+weights_1
+weights_2
+ei_gen$values[1]
+var(pc_1)
+(cov_mat %*% weights_1) / weights_1
+ei_gen$values[2]
+var(pc_2)
+(cov_mat %*% weights_2) / weights_2
+sum(vari_ance)
+sum(ei_gen$values)
+barplot(ei_gen$values, # Plot eigenvalues
+  names.arg=paste0("PC", 1:n_weights), 
+  las=3, xlab="", ylab="", main="Principal Component Variances")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component Analysis} Versus \protect\emph{Eigen Decomposition}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the covariance or the correlation matrix,
+      \vskip1ex
+      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the covariance matrix,
+      \vskip1ex
+      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      Scaling the input time series improves the accuracy of the \emph{PCA dimension reduction}, allowing a smaller number of \emph{principal components} to more accurately capture the data contained in the input time series,
+      \vskip1ex
+      The number of \emph{eigenvalues} is equal to the dimension of the covariance matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Eigen decomposition of covariance matrix
+re_turns <- rutils::diff_it(price_s)
+cov_mat <- cov(re_turns)
+ei_gen <- eigen(cov_mat)
+# Perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
+# Compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation), 
+          check.attributes=FALSE)
+# Eigen decomposition of correlation matrix
+cor_mat <- cor(re_turns)
+ei_gen <- eigen(cor_mat)
+# Perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
+# Compare outputs
+all.equal(ei_gen$values, pc_a$sdev^2)
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation), 
+          check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Minimum Variance Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The highest order \emph{principal component}, with the smallest eigenvalue, has the lowest possible variance, under the \emph{quadratic} weights constraint: $\mathbf{w}^T \mathbf{w} = 1$.
+      \vskip1ex
+      So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
+      <<echo=TRUE,eval=FALSE>>=
+# Redefine objective function to minimize variance
+object_ive <- function(weight_s, re_turns) {
+  portf_rets <- re_turns %*% weight_s
+  sum(portf_rets^2) + 
+    1e7*(1 - sum(weight_s^2))^2
+}  # end object_ive
+# Find highest order PC weights using parallel DEoptim
+optim_run <- DEoptim::DEoptim(fn=object_ive,
+  upper=rep(10, NCOL(re_turns)),
+  lower=rep(-10, NCOL(re_turns)),
+  re_turns=re_turns, control=list(trace=FALSE, 
+    itermax=1000, parallelType=1))
+# pc6 weights and returns
+weights_6 <- optim_run$optim$bestmem
+names(weights_6) <- colnames(re_turns)
+sum(weights_6^2)
+sum(weights_1*weights_6)
+# Calculate objective function
+object_ive(weights_6, re_turns)
+object_ive(ei_gen$vectors[, 6], re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_load6.png}
+      \vspace{-3em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot highest order principal component loadings
+barplot(weights_6, names.arg=names(weights_2), 
+        xlab="", ylab="", 
+        main="Highest Order Principal Component Loadings")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component Analysis} of ETF Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal Component Analysis} (\emph{PCA}) is a \emph{dimension reduction} technique, that explains the returns of a large number of correlated time series as linear combinations of a smaller number of principal component time series,
+      \vskip1ex
+      The input time series are often scaled by their standard deviations, to improve the accuracy of \emph{PCA dimension reduction}, so that more information is retained by the first few \emph{principal component} time series,
+      \vskip1ex
+      If the input time series are not scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the covariance matrix, and if they are scaled, then \emph{PCA} analysis is equvalent to the \emph{eigen decomposition} of the correlation matrix,
+      \vskip1ex
+      The function \texttt{prcomp()} performs \emph{Principal Component Analysis} on a matrix of data (with the time series as columns), and returns the results as a list of class \texttt{prcomp}, 
+      \vskip1ex
+      The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations,
+      \vskip1ex
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_scree.png}
+      A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}, 
+      <<echo=TRUE,eval=FALSE>>=
+# Perform principal component analysis PCA
+pc_a <- prcomp(re_turns, scale=TRUE)
+# Plot standard deviations of principal components
+barplot(pc_a$sdev, 
+        names.arg=colnames(pc_a$rotation), 
+        las=3, xlab="", ylab="", 
+        main="Scree Plot: Volatilities of Principal Components 
+  of Stock Returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component} Loadings (Weights)}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Principal component} loadings are the weights of portfolios which have mutually orthogonal returns,
+      \vskip1ex
+      The \emph{principal component} (\emph{PC}) portfolios represent the different orthogonal modes of the return variance,
+      \vskip1ex
+      The \emph{PC} portfolios typically consist of long or short positions of highly correlated groups of assets (clusters), so that they represent relative value portfolios,
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate principal component loadings (weights)
+pc_a$rotation
+# Plot barplots with PCA weights in multiple panels
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+for (or_der in 1:n_weights) {
+  barplot(pc_a$rotation[, or_der], 
+        las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, 
+        col.main="red")
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_loadings.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Principal Component} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time series of the \emph{principal components} can be calculated by multiplying the loadings (weights) times the original data.
+      \vskip1ex
+      The \emph{principal component} time series have mutually orthogonal returns.
+      \vskip1ex
+      Higher order \emph{principal components} are gradually less volatile.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate products of principal component time series
+round(t(pc_a$x) %*% pc_a$x, 2)
+# Calculate principal component time series from re_turns
+pca_rets <- xts(re_turns %*% pc_a$rotation, 
+                order.by=date_s)
+round(cov(pca_rets), 3)
+all.equal(coredata(pca_rets), pc_a$x, check.attributes=FALSE)
+pca_ts <- xts:::cumsum.xts(pca_rets)
+# Plot principal component time series in multiple panels
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+ra_nge <- range(pca_ts)
+for (or_der in 1:n_weights) {
+  plot.zoo(pca_ts[, or_der], 
+           ylim=ra_nge, 
+           xlab="", ylab="")
+  title(paste0("PC", or_der), line=-2.0)
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Dimension Reduction} Using Principal Component Analysis}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The original time series can be calculated exactly from the time series of all the \emph{principal components}, by inverting the loadings matrix.
+      \vskip1ex
+      The original time series can be calculated approximately from just the first few \emph{principal components}, which demonstrates that \emph{PCA} is a form of \emph{dimension reduction}.
+      \vskip1ex
+      The \emph{Kaiser-Guttman} rule uses only \emph{principal components} with \emph{variance} greater than $1$.
+      \vskip1ex
+      Another rule is to use the \emph{principal components} with the largest standard deviations which sum up to \texttt{80\%} of the total variance of returns.
+      \vskip1ex
+      The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+par(mfrow=c(n_weights/2, 2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+# Invert all the principal component time series
+pca_rets <- re_turns %*% pc_a$rotation
+sol_ved <- pca_rets %*% solve(pc_a$rotation)
+all.equal(coredata(re_turns), sol_ved)
+# Invert first 3 principal component time series
+sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
+sol_ved <- xts::xts(sol_ved, date_s)
+sol_ved <- xts:::cumsum.xts(sol_ved)
+cum_returns <- xts:::cumsum.xts(re_turns)
+# Plot the solved returns
+for (sym_bol in sym_bols) {
+  plot.zoo(
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]), 
+    plot.type="single", col=c("black", "blue"), xlab="", ylab="")
+  legend(x="topleft", bty="n",
+         legend=paste0(sym_bol, c("", " solved")),
+         title=NULL, inset=0.0, cex=1.0, lwd=6,
+         lty=1, col=c("black", "blue"))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/pca_etf_series_solved.png}
   \end{columns}
 \end{block}
 

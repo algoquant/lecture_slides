@@ -1,7 +1,27 @@
 # display documentation on function "getwd"
 help(getwd)
 ?getwd  # equivalent to "help(getwd)"
+
 help.start()  # open the hypertext documentation
+
+# Calculate cumulative sum of a vector
+vec_tor <- runif(1e5)
+# Use compiled function
+cum_sum <- cumsum(vec_tor)
+# Use for loop
+cum_sum2 <- vec_tor
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+# Compare the two methods
+all.equal(cum_sum, cum_sum2)
+# Microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  cumsum=cumsum(vec_tor),
+  loop=for (i in 2:NROW(vec_tor))
+    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  times=10))[, c(1, 4, 5)]
+
 rm(list=ls())
 # get base environment
 baseenv()
@@ -31,6 +51,7 @@ ls(environment())
 new_env$new_var1
 # environments are subset like lists
 new_env[["new_var1"]]
+
 search()  # get search path for R objects
 my_list <- 
   list(flowers=c("rose", "daisy", "tulip"), 
@@ -41,6 +62,7 @@ trees
 search()  # get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
+
 library(HighFreq)  # load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
@@ -68,6 +90,7 @@ write.zoo(price_s,
 # copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file='etf_data.RData')
+
 # "trees" is in datasets base package
 head(trees, 3)
 colnames(trees)
@@ -75,20 +98,24 @@ mean(Girth)
 mean(trees$Girth)
 with(trees, 
      c(mean(Girth), mean(Height), mean(Volume)))
+
 getOption("repos")  # get default package source
 .libPaths()  # get package save directory
+
 install.packages("AER")  # install "AER" from CRAN
 # install "PerformanceAnalytics" from R-Forge
 install.packages(
   pkgs="PerformanceAnalytics",  # name
   lib="C:/Users/Jerzy/Downloads",  # directory
   repos="http://R-Forge.R-project.org")  # source
+
 # install devtools from CRAN
 install.packages("devtools")
 # load devtools
 library(devtools)
 # install package "babynames" from GitHub
 install_github(repo="hadley/babynames")
+
 # install package "PortfolioAnalytics" from source
 install.packages("PortfolioAnalytics",
   type="source",
@@ -102,11 +129,13 @@ download.packages(pkgs = "PortfolioAnalytics",
 install.packages(
   "C:/Users/Jerzy/Downloads/PortfolioAnalytics_0.9.3598.tar.gz",
   repos=NULL, type="source")
+
 getOption("defaultPackages")
 pack_info <- installed.packages()  # matrix of packages
 # get a few package names and their versions
 pack_info[sample(x=1:100, 5), c("Package", "Version")]
 t(pack_info["xts", ])  # get info for package "xts"
+
 # list directories in "PortfolioAnalytics" sub-directory
 gsub(
   "C:/Users/Jerzy/Documents/R/win-library/3.1",
@@ -115,6 +144,7 @@ gsub(
     file.path(
       .libPaths()[1],
       "PortfolioAnalytics")))
+
 # load package, produce error if can't be loaded
 library(MASS)
 # load package, return TRUE if loaded successfully
@@ -127,10 +157,12 @@ suppressMessages(library(MASS))
 detach(MASS)
 # install package if it can't be loaded successfully
 if (!require("xts")) install.packages("xts")
+
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
   price=quantmod::Ad(rutils::etf_env$VTI),
   volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
+
 library()  # list all packages installed on the system
 search()  # list all loaded packages on search path
 
@@ -142,22 +174,27 @@ data(package="Ecdat")  # list all datasets in "Ecdat"
 ls("package:Ecdat")  # list all objects in "Ecdat"
 browseVignettes("Ecdat")  # view package vignette
 detach("package:Ecdat")  # remove Ecdat from search path
+
 library(Ecdat)  # load econometric data sets
 class(Garch)  # Garch is a data frame from "Ecdat"
 dim(Garch)  # daily currency prices
 head(Garch[, -2])  # col 'dm' is Deutsch Mark
 detach("package:Ecdat")  # remove Ecdat from search path
+
 rm(list=ls())
 search()  # get search path for R objects
 library(MASS)  # load package "MASS"
 head(ls("package:MASS"))  # list some objects in "MASS"
 detach("package:MASS")  # remove "MASS" from search path
+
 loadedNamespaces()  # get names of loaded namespaces
 
 search()  # get search path for R objects
+
 # get session info,
 # including packages not attached to the search path
 sessionInfo()
+
 plot.xts  # package xts isn't loaded and attached
 head(xts::plot.xts, 3)
 methods("cbind")  # get all methods for function "cbind"
@@ -166,7 +203,9 @@ stats:::cbind.ts  # view the non-visible function
 getAnywhere("cbind.ts")
 library(MASS)  # load package 'MASS'
 select  # code of primitive function from package 'MASS'
+
 getAnywhere("cbind.ts")
+
 Sys.Date()  # get today's date
 as.Date(1e3)  # coerce numeric into date object
 date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
@@ -187,6 +226,7 @@ attributes(date_time) <- list(class="Date")
 date_time  # "Date" object
 structure(0, class="Date")  # "Date" object
 structure(10000.25, class="Date")
+
 date_time <- Sys.time()  # get today's date and time
 date_time
 class(date_time)  # POSIXct object
@@ -200,6 +240,7 @@ as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # format argument allows parsing different date-time string formats
 as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
      tz="America/New_York")
+
 # same moment of time corresponds to different clock times
 time_ny <- as.POSIXct("2014-07-14 13:30:10",
      tz="America/New_York")
@@ -219,6 +260,7 @@ trading_times <- seq(
   by="10 min")
 head(trading_times, 3)
 tail(trading_times, 3)
+
 # POSIXct is stored as integer moment of time
 int_time <- as.numeric(date_time)
 # same moment of time corresponds to different clock times
@@ -232,6 +274,7 @@ as.POSIXct("2014-07-14 13:30:10",
   as.POSIXct("2014-07-14 13:30:10", tz="UTC")
 # add 20 seconds to POSIXct
 date_time + 20
+
 date_time  # POSIXct date and time
 # parse POSIXct to string representing the clock time
 format(date_time)
@@ -249,6 +292,7 @@ as.POSIXct(Sys.Date())
 as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
      origin="1970-01-01",
      tz="UTC")
+
 # parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
 date_time <- as.POSIXlt("2014-07-14 18:30:10")
 date_time
@@ -262,6 +306,7 @@ trunc(date_time, units="hours")  # truncate to closest hour
 trunc(date_time, units="days")  # truncate to closest day
 methods(trunc)  # trunc methods
 trunc.POSIXt
+
 Sys.timezone()  # get time-zone
 Sys.setenv(TZ="UTC")  # set time-zone to UTC
 Sys.timezone()  # get time-zone
@@ -280,6 +325,7 @@ as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
 # set time-zone to New York
 Sys.setenv(TZ="America/New_York")
+
 library(lubridate)  # load lubridate
 # parse strings into date-times
 as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
@@ -297,6 +343,7 @@ dmy(14072014, tz="America/New_York")
 decimal_date(date_time)
 date_decimal(2014.25, tz="America/New_York")
 date_decimal(decimal_date(date_time), tz="America/New_York")
+
 library(lubridate)  # load lubridate
 date_time <- ymd_hms(20140714142010,
                tz="America/New_York")
@@ -316,6 +363,7 @@ date_time - with_tz(date_time, "UTC")
 
 # different moments of time
 date_time - force_tz(date_time, "UTC")
+
 library(lubridate)  # load lubridate
 # Daylight Savings Time handling periods vs durations
 date_time <- as.POSIXct("2013-03-09 11:00:00",
@@ -329,6 +377,7 @@ date_time <- dmy(01012012, tz="America/New_York")
 date_time
 date_time + dyears(1)  # add duration
 date_time + years(1)  # add period
+
 library(lubridate)  # load lubridate
 date_time <- ymd_hms(20140714142010, tz="America/New_York")
 date_time
@@ -343,6 +392,7 @@ date_time + months(0:2)
 date_time + 0:2 * months(2)  # bi-monthly dates
 date_time + seq(0, 5, by=2) * months(1)
 seq(date_time, length=3, by="2 months")
+
 library(lubridate)  # load lubridate
 # adding monthly periods can create invalid dates
 date_time <- ymd(20120131, tz="America/New_York")
@@ -352,6 +402,7 @@ date_time + months(2)
 
 # create vector of end-of-month dates
 date_time %m-% months(13:1)
+
 library(zoo)  # load zoo
 library(RQuantLib)  # load RQuantLib
 
@@ -366,6 +417,7 @@ is_busday <- isBusinessDay(  # RQuantLib calendar
 # create daily series of business days
 bus_index <- in_dex[is_busday]
 bus_index
+
 library(zoo)  # load package zoo
 date_time <- Sys.Date()  # create date series of class 'Date'
 in_dex <- date_time + 0:365  # daily series over one year
@@ -384,6 +436,7 @@ head(qrtly_index, 4)  # print first few dates
 # parse quarterly 'zoo' dates to POSIXct
 Sys.setenv(TZ="UTC")
 as.POSIXct(head(qrtly_index, 4))
+
 library(lubridate)  # load lubridate
 set.seed(1121)  # reset random number generator
 # create daily time series ending today
@@ -401,6 +454,7 @@ as.Date(date_decimal(coredata(time(ts_series))))
 # bi-monthly geometric Brownian motion starting mid-1990
 ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
        frequency=6, start=1990.5)
+
 # show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
@@ -411,18 +465,22 @@ tail(time(ts_series), 11)
 diff(tail(time(ts_series), 11))
 # subset the time series
 window(ts_series, start=1992, end=1992.25)
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 plot(ts_series, type="l",  # create plot
      col="red", lty="solid", xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
+
 class(EuStockMarkets)  # multiple ts object
 dim(EuStockMarkets)
 head(EuStockMarkets, 3)  # get first three rows
 # EuStockMarkets index is equally spaced
 diff(tail(time(EuStockMarkets), 11))
+
 par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
 # plot all the columns in separate panels
 plot(EuStockMarkets, main="EuStockMarkets", xlab="")
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot in single panel
 plot(EuStockMarkets, main="EuStockMarkets",
@@ -433,10 +491,12 @@ legend(x=1992, y=8000,
  legend=colnames(EuStockMarkets),
  col=c("black", "red", "blue", "green"),
  lwd=6, lty=1)
+
 # calculate DAX percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 # mean and standard deviation of returns
 c(mean(dax_rets), sd(dax_rets))
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot histogram
 hist(dax_rets, breaks=30, main="",
@@ -452,10 +512,12 @@ title(main="Return distributions", line=0)  # add title
 legend("topright", inset=0.05, cex=0.8, title=NULL,
  leg=c(colnames(EuStockMarkets)[1], "Normal"),
  lwd=2, bg="white", col=c("red", "blue"))
+
 # calculate percentage returns
 dax_rets <- diff(log(EuStockMarkets[, 1]))
 # perform Shapiro-Wilk test
 shapiro.test(dax_rets)
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # create normal Q-Q plot
 qqnorm(dax_rets, ylim=c(-0.04, 0.04),
@@ -465,12 +527,14 @@ qqline(dax_rets, col='red', lwd=2)
 plot_title <- paste(colnames(EuStockMarkets)[1],
             'Q-Q Plot')
 title(main=plot_title, line=-1)  # add title
+
 # boxplot method for formula
 boxplot(formula=mpg ~ cyl, data=mtcars,
   main="Mileage by number of cylinders",
   xlab="Cylinders", ylab="Miles per gallon")
 # boxplot method for data frame of EuStockMarkets percentage returns
 boxplot(x=diff(log(EuStockMarkets)))
+
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create zoo time series of random returns
@@ -481,6 +545,7 @@ zoo_series
 attributes(zoo_series)
 class(zoo_series)  # class 'zoo'
 tail(zoo_series, 3)  # get last few elements
+
 library(zoo)  # load package zoo
 coredata(zoo_series)  # extract coredata
 index(zoo_series)  # extract time index
@@ -492,6 +557,7 @@ coredata(zoo_series) <- rep(1, 4)  # replace coredata
 cumsum(zoo_series)  # cumulative sum
 cummax(cumsum(zoo_series))
 cummin(cumsum(zoo_series))
+
 library(zoo)  # load package zoo
 zoo_series <- 
   zoo(as.matrix(cumsum(rnorm(100)), nc=1), 
@@ -501,6 +567,7 @@ colnames(zoo_series) <- "zoo_series"
 tail(zoo_series)
 dim(zoo_series)
 attributes(zoo_series)
+
 library(zoo)  # load package zoo
 coredata(zoo_series) <- (1:4)^2  # replace coredata
 zoo_series
@@ -510,6 +577,7 @@ lag(zoo_series, k=-1)  # proper one day lag
 diff(zoo_series)  # diff with one day lag
 # proper lag and original length
 lag(zoo_series, -2, na.pad=TRUE)
+
 set.seed(1121)  # reset random number generator
 library(zoo)  # load package zoo
 # create index of daily dates
@@ -520,10 +588,12 @@ zoo_data <-
   exp(cumsum(rnorm(NROW(in_dex))/100))
 # create zoo series of geometric Brownian motion
 zoo_series <- zoo(x=zoo_data, order.by=in_dex)
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # plot using plot.zoo method
 plot(zoo_series, xlab="", ylab="")
 title(main="Random Prices", line=-1)  # add title
+
 library(zoo)  # load package zoo
 # subset zoo as matrix
 zoo_series[459:463, 1]
@@ -533,6 +603,7 @@ window(zoo_series,
  end=as.Date("2014-10-19"))
 # subset zoo using Date object
 zoo_series[as.Date("2014-10-15")]
+
 set.seed(1121)  # reset random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
@@ -556,6 +627,7 @@ plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
 abline(v=end(zoo_series1), col="blue", lty="dashed")
 abline(v=start(zoo_series2), col="red", lty="dashed")
 title(main="Random Prices", line=-1)  # add title
+
 # create daily date series of class 'Date'
 in_dex1 <- Sys.Date() + -3:1
 # create zoo time series of random returns
@@ -568,6 +640,7 @@ zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
 merge(zoo_series1, zoo_series2)  # union of dates
 # intersection of dates
 merge(zoo_series1, zoo_series2, all=FALSE)
+
 # create matrix containing NA values
 mat_rix <- sample(18)
 mat_rix[sample(NROW(mat_rix), 4)] <- NA
@@ -593,6 +666,7 @@ re_turns <- rutils::etf_env$re_turns
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 sum(is.na(re_turns))
+
 # Replace NAs in xts time series
 se_ries <- rutils::etf_env$price_s[, 1]
 head(se_ries)
@@ -606,6 +680,7 @@ summary(microbenchmark(
   zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
   xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # methods(as.zoo)  # many methods of coercing into zoo
@@ -622,6 +697,7 @@ head(zoo_series, 3)
 zoo_series <- as.zoo(EuStockMarkets)
 index(zoo_series) <- date_decimal(index(zoo_series))
 head(zoo_series, 3)
+
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 set.seed(1121)  # reset random number generator
@@ -651,6 +727,7 @@ window(ts_series, start=start(ts_series),
  end=start(ts_series)+4/365)
 head(time(ts_series))  # display index dates
 head(as.Date(date_decimal(coredata(time(ts_series)))))
+
 library(lubridate)  # load lubridate
 library(zoo)  # load package zoo
 # create weekday Boolean vector
@@ -670,6 +747,7 @@ in_dex <- seq(from=start(zoo_series),
 index(zoo_series) <- in_dex
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
+
 set.seed(1121)  # reset random number generator
 library(xts)  # load package xts
 # create xts time series of random returns
@@ -685,6 +763,7 @@ class(x_ts)  # class 'xts'
 attributes(x_ts)
 # get the time zone of an xts object
 indexTZ(x_ts)
+
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() coerces zoo series into xts series
@@ -694,6 +773,7 @@ head(st_ox[, 1:4], 4)
 # plot using plot.xts method
 xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
 title(main="MSFT Prices")  # add title
+
 library(xts)  # load xts
 library(lubridate)  # load lubridate
 # coerce EuStockMarkets into class xts
@@ -723,6 +803,7 @@ chart_Series(x=x_ts, theme=plot_theme,
 legend("topleft", legend=colnames(EuStockMarkets),
  inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
  lwd=3, col=col_ors, bg="white")
+
 library(rutils)
 library(ggplot2)
 price_s <- rutils::etf_env$price_s[, 1]
@@ -740,6 +821,7 @@ etf_gg <- qplot(x=index(price_s),
   )  # end theme
 # render ggplot object
 etf_gg
+
 library(rutils)  # load xts time series data
 library(reshape2)
 library(ggplot2)
@@ -762,6 +844,7 @@ ggplot(data=data_frame,
     legend.position=c(0.2, 0.8),
     plot.title=element_text(vjust=-2.0)
   )  # end theme
+
 # load rutils which contains etf_env dataset
 library(rutils)
 library(dygraphs)
@@ -771,6 +854,7 @@ price_s <- na.omit(price_s)
 dygraph(price_s, main="VTI and IEF prices") %>%
   dyOptions(colors=c("blue","green")) %>%
   dyRangeSelector()
+
 # load rutils which contains etf_env dataset
 library(rutils)
 library(plotly)
@@ -792,6 +876,7 @@ p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines"
 p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
 p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
 p_lot
+
 # subset xts using a date range string
 price_s <- rutils::etf_env$price_s
 sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
@@ -813,6 +898,7 @@ summary(microbenchmark(
   bracket=price_s[10:20, ],
   subset=xts::.subset_xts(price_s, 10:20),
   times=10))[, c(1, 4, 5)]
+
 # specify string representing a date
 dat_e <- "2014-10-15"
 # subset price_s in two different ways
@@ -832,6 +918,7 @@ summary(microbenchmark(
   boolean=(price_s[index(price_s) >= dat_e]),
   date=(price_s[paste0(dat_e, "/")]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
 price_s <- HighFreq::SPY["2012-04"]
 # subset recurring time interval using "T notation",
 price_s <- price_s["T10:30:00/T15:00:00"]
@@ -839,6 +926,7 @@ first(price_s["2012-04-16"])  # first element of day
 last(price_s["2012-04-16"])  # last element of day
 # suppress timezone warning messages
 options(xts_check_tz=FALSE)
+
 price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
 price_s <- na.omit(price_s)
 str(price_s)  # display structure of xts
@@ -851,6 +939,7 @@ c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
 # xts always have a dim attribute
 rbind(base=dim(price_s), subs=dim(price_s[, 1]))
 c(is.matrix(price_s), is.matrix(price_s[, 1]))
+
 # lag of zoo shortens it by one row
 rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
 # lag of xts doesn't shorten it
@@ -858,12 +947,14 @@ rbind(base=dim(price_s), lag=dim(lag(price_s)))
 # lag of zoo is in opposite direction from xts
 head(lag(zoo_prices, -1), 4)
 head(lag(price_s), 4)
+
 # library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
 end_points <- endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
+
 # lower the periodicity to months
 xts_monthly <- to.period(x=price_s,
              period="months", name="MSFT")
@@ -882,6 +973,7 @@ colnames(xts_yearly) <- sapply(
   function(na_me) na_me[-1]
   )  # end sapply
 head(xts_yearly)
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
@@ -893,6 +985,7 @@ stox_sub <- st_ox["2014-11", 1:4]
 # plot OHLC using plot.xts method
 xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
+
 load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
@@ -901,6 +994,7 @@ library(xts)
 st_ox <- as.xts(zoo_stx)
 class(st_ox)
 tail(st_ox[, 1:4])
+
 oh_lc <- rutils::etf_env$VTI
 # Number of data points
 n_rows <- NROW(oh_lc["2018-06/"])
@@ -915,6 +1009,7 @@ start_points <- c(rep_len(1, look_back-1),
 start_points <- (end_points-look_back+1)
 start_points <- ifelse(start_points > 0,
   start_points, 1)
+
 # Number of data points
 price_s <- Cl(oh_lc["2018/"])
 n_rows <- NROW(price_s)
@@ -931,6 +1026,7 @@ end_points <-
 end_points <- c((1:n_agg)*n_points, n_rows)
 # Or use xts::endpoints()
 end_points <- xts::endpoints(price_s, on="months")
+
 # Plot data and endpoints as vertical lines
 plot.xts(price_s, col="blue", lwd=2, xlab="", ylab="",
    main="Prices with Endpoints as Vertical Lines")
@@ -942,6 +1038,7 @@ plot_theme$col$line.col <- "blue"
 chart_Series(price_s, theme=plot_theme,
   name="prices with endpoints as vertical lines")
 abline(v=end_points, col="red", lwd=2)
+
 # Number of data points
 n_rows <- NROW(rutils::etf_env$VTI["2017/"])
 # Number of n_points that fit over n_rows
@@ -950,6 +1047,7 @@ n_agg <- n_rows %/% n_points
 # end_points with stub interval at beginning
 end_points <-
   n_rows-n_points*n_agg + (0:n_agg)*n_points
+
 # look_back defined as number of data points
 look_back <- 252
 # start_points are end_points lagged by look_back
@@ -961,6 +1059,7 @@ cbind(start_points, end_points)
 look_back <- 12
 start_points <- c(rep_len(1, look_back-1),
     end_points[1:(NROW(end_points)-look_back+1)])
+
 # Number of data points
 n_rows <- NROW(rutils::etf_env$VTI["2017/"])
 # Number of data points per interval
@@ -974,6 +1073,7 @@ end_points <-
 start_points <- c(1, end_points[1:(NROW(end_points)-1)])
 # Define exclusive start_points
 start_points <- c(1, end_points[1:(NROW(end_points)-1)]+1)
+
 price_s <- Cl(rutils::etf_env$VTI)
 end_points <- seq_along(price_s)  # define end points
 n_rows <- NROW(end_points)
@@ -999,6 +1099,7 @@ agg_regations <- t(agg_regations)
 # coerce agg_regations into xts series
 agg_regations <- xts(agg_regations,
                order.by=index(price_s[end_points]))
+
 library(HighFreq)  # load package HighFreq
 # perform aggregations over look_backs list
 agg_regations <- lapply(look_backs,
@@ -1019,6 +1120,7 @@ chart_Series(agg_regations, theme=plot_theme,
 legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
+
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations
 roll_agg <- function(x_ts, look_back, FUN, ...) {
@@ -1052,6 +1154,7 @@ agg_regations <- roll_agg(price_s, look_back=look_back,
               FUN=agg_regate)
 class(agg_regations)
 dim(agg_regations)
+
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a vector
 agg_vector <- function(x_ts)
@@ -1068,6 +1171,7 @@ summary(microbenchmark(
   agg_xts=roll_agg(price_s, look_back=look_back,
               FUN=agg_xts),
   times=10))[, c(1, 4, 5)]
+
 # library(HighFreq)  # load package HighFreq
 # define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
@@ -1088,6 +1192,7 @@ summary(microbenchmark(
   apply_rolling=apply.rolling(price_s,
                         width=look_back, FUN=max),
   times=10))[, c(1, 4, 5)]
+
 # library(HighFreq)  # load package HighFreq
 # rolling sum using cumsum()
 roll_sum <- function(x_ts, look_back) {
@@ -1116,6 +1221,7 @@ summary(microbenchmark(
   s_apply=sapply(look_backs,
     function(look_back) sum(price_s[look_back])),
   times=10))[, c(1, 4, 5)]
+
 # calculate the rolling maximum and minimum over a vector of data
 roll_maxminr <- function(vec_tor, look_back) {
   n_rows <- NROW(vec_tor)
@@ -1146,6 +1252,7 @@ summary(microbenchmark(
   rutils=rutils::roll_sum(price_s, look_back=look_back),
   ttr=TTR::runSum(price_s, n=look_back),
   times=10))[, c(1, 4, 5)]
+
 # Compile Rcpp functions
 Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/roll_maxmin.cpp")
 max_minarma <- roll_maxmin(price_s, look_back)
@@ -1173,6 +1280,7 @@ quantmod::chart_Series(da_ta["2008/2009"], theme=plot_theme,
 legend(x="topright", title=NULL, legend=colnames(da_ta),
  inset=0.1, cex=0.9, bg="white", bty="n",
  lwd=6, lty=1, col=col_ors)
+
 library(RcppRoll)  # load package RcppRoll
 # calculate rolling sum using RcppRoll
 sum_roll_rcpp <- RcppRoll::roll_sum(price_s, align="right", n=look_back)
@@ -1202,6 +1310,7 @@ chart_Series(prices_mean, theme=plot_theme,
 legend("top", legend=colnames(prices_mean),
  bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
+
 # library(HighFreq)  # load package HighFreq
 library(caTools)  # load package "caTools"
 # get documentation for package "caTools"
@@ -1222,12 +1331,14 @@ quan_tiles <- runquantile(x=price_s,
             k=look_back, probs=0.9,
             endrule="constant",
             align="center")
+
 library(HighFreq)  # load package HighFreq
 # indices of last observations in each hour
 end_points <- xts::endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
 head(price_s[end_points, ])
+
 price_s <- Cl(rutils::etf_env$VTI)
 # Number of data points
 n_rows <- NROW(price_s)
@@ -1269,6 +1380,7 @@ chart_Series(agg_regations, theme=plot_theme,
 legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
+
 # library(HighFreq)  # load package HighFreq
 # perform lapply() loop over look_backs list
 agg_regations <- lapply(look_backs,
@@ -1290,6 +1402,7 @@ chart_Series(agg_regations, theme=plot_theme,
 legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
+
 # library(HighFreq)  # load package HighFreq
 # define functional for rolling aggregations over end_points
 roll_agg <- function(x_ts, end_points, FUN, ...) {
@@ -1318,6 +1431,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 agg_regations <- period.sum(price_s, INDEX=end_points)
 head(agg_regations)
+
 # library(HighFreq)  # load package HighFreq
 # load package HighFreq
 library(HighFreq)
@@ -1326,6 +1440,7 @@ price_s <- Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 # apply "mean" over daily periods
 agg_regations <- apply.daily(price_s, FUN=sum)
 head(agg_regations)
+
 # Number of n_points that fit over n_rows
 n_points <- 22
 n_agg <- n_rows %/% n_points
@@ -1362,6 +1477,7 @@ chart_Series(agg_regations, theme=plot_theme,
 legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
+
 library(HighFreq)  # load package HighFreq
 agg_regations <- cbind(price_s, agg_regations)
 tail(agg_regations, 22)
@@ -1374,6 +1490,7 @@ chart_Series(agg_regations, theme=plot_theme,
 legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
+
 set.seed(1121)  # reset random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
@@ -1392,6 +1509,7 @@ zoo_agg <- cbind(zoo_series, zoo_agg)
 zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
 # extract aggregated zoo
 zoo_agg <- zoo_agg[index(zoo_series), 2]
+
 # library(HighFreq)  # load package HighFreq
 # plot original and aggregated cumulative returns
 plot(cumsum(zoo_series), xlab="", ylab="")
@@ -1401,6 +1519,7 @@ legend("topright", inset=0.05, cex=0.8,
  title="Aggregated Prices",
  leg=c("orig prices", "agg prices"),
  lwd=2, bg="white", col=c("black", "red"))
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # perform monthly mean aggregation
 zoo_agg <- aggregate(zoo_series, by=dates_agg,
@@ -1418,6 +1537,7 @@ lines(cumsum(zoo_agg), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
  leg=c("orig prices", "interpol prices"), lwd=2, bg="white",
  col=c("black", "red"))
+
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # "mean" aggregation over interval with width=11
 zoo_mean <- rollapply(zoo_series, width=11,

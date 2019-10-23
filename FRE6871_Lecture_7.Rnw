@@ -57,13 +57,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#7]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#7, Spring 2019}
+\subtitle{Lecture\#7, Fall 2019}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{May 20, 2019}
+\date{October 21, 2019}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -79,263 +79,736 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Publishing Interactive Documents}
+\section{High Performance Data Management}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
+\subsection{Package \protect\emph{data.table} for High Performance Data Management}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html},
+      The package 
+      \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}} 
+      is designed for high performance data management.
       \vskip1ex
-      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them,
+      The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
       \vskip1ex
-      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing:
+      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
+      \vskip1ex
+      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
+      \vskip1ex
+      Some of the attractive features of package \emph{data.table} are:
       \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code),
+        \item Very fast writing and reading from files,
+        \item Very fast sorting and merging operations,
+        \item Subsetting using multiple logical clauses,
+        \item Columns of type \texttt{character} are never converted to factors,
       \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents,
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here:
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2
-  \leq
-  \left( \sum_{k=1}^n a_k^2 \right)
-  \left( \sum_{k=1}^n b_k^2 \right)
-$$
-
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Using Expression Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      It's sometimes convenient to create an \emph{expression} object containing plotting commands, to be able to later create plots using it.
-      \vskip1ex
-      The function \texttt{quote()} produces an \emph{expression} object without evaluating it.
-      \vskip1ex
-      The function \texttt{eval()} evaluates an \emph{expression} in a specified \emph{environment}.
-        <<echo=TRUE,eval=FALSE>>=
-# Create a plotting expression
-ex_pr <- quote({
-  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-  deg_free <- 2:20
-  rang_e <- (1:NROW(deg_free))
-  in_dex <- 4
-  # Plot a curve
-  curve(expr=dchisq(x, df=deg_free[in_dex]),
-        xlim=c(0, 30), ylim=c(0, 0.2),
-        xlab="", ylab="", lwd=3, col="red")
-  # Add grey lines to plot
-  for (it in rang_e[-in_dex]) {
-    curve(expr=dchisq(x, df=deg_free[it]),
-          xlim=c(0, 30), ylim=c(0, 0.2),
-          xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-  }  # end for
-  # Add title
-  title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-  # Add legend
-  text(x=20, y=0.15, labels=paste0("Degrees of freedom=", 
-      deg_free[in_dex]), pos=1, cex=1.3)
-})  # end quote
-@
-    \column{0.5\textwidth}
-      % \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth, height=0.3\paperwidth]{figure/png/chi_squared4.png}\\
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# View the plotting expression
-ex_pr
-# Create plot by evaluating the plotting expression
-x11(width=6, height=4)
-eval(ex_pr)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Animated Plots Using Package \protect\emph{animation}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \href{https://yihui.name/animation/}{\emph{animation}} allows creating animated plots in the form of \emph{gif} and \emph{html} documents.
-      \vskip1ex
-      The function \texttt{saveGIF()} produces a \emph{gif} image with an animated plot.
-      \vskip1ex
-      The function \texttt{saveHTML()} produces an \emph{html} document with an animated plot.
-        <<echo=TRUE,eval=FALSE>>=
-library(animation)
-# Create an expression for creating multiple plots
-ex_pr <- quote({
-  par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-  deg_free <- 2:20
-  rang_e <- (1:NROW(deg_free))
-  # Set image refesh interval
-  animation::ani.options(interval=0.25)
-  # Create multiple plots with curves
-  for (in_dex in rang_e) {
-    curve(expr=dchisq(x, df=deg_free[in_dex]),
-          xlim=c(0, 30), ylim=c(0, 0.2),
-          xlab="", ylab="", lwd=3, col="red")
-    # Add grey lines to plot
-    for (it in rang_e[-in_dex]) {
-      curve(expr=dchisq(x, df=deg_free[it]),
-            xlim=c(0, 30), ylim=c(0, 0.2),
-            xlab="", ylab="", lwd=2, col="grey80", add=TRUE)
-    }  # end for
-    # Add title
-    title(main="Chi-squared Distributions", line=-1.5, cex.main=1.5)
-    # Add legend
-    text(x=20, y=0.15, labels=paste0("Degrees of freedom=", 
-      deg_free[in_dex]), pos=1, cex=1.3)
-  }  # end for
-})  # end quote
-      @
-    \column{0.5\textwidth}
-      % \vspace{-1em}
-      % Must include package animate in header:
-      % \usepackage{animate}
-      \animategraphics[width=0.4\paperwidth, height=0.3\paperwidth]{2}{figure/png/chi_squared}{1}{19}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Create plot by evaluating the plotting expression
-x11(width=6, height=4)
-eval(ex_pr)
-# Create gif with animated plot
-animation::saveGIF(expr=eval(ex_pr),
-  movie.name="chi_squared.gif", 
-  img.name="chi_squared")
-# Create html with animated plot
-animation::saveHTML(expr=eval(ex_pr),
-  img.name="chi_squared", 
-  htmlfile="chi_squared.html", 
-  description="Chi-squared Distributions")  # end saveHTML
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interactive Charts Using Package \protect\emph{shiny}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{shiny} creates interactive plots that display the outputs of live models running in \texttt{R},
-      \vskip1ex
-      The function \texttt{inputPanel()} creates a panel for user input of model parameters,
-      \vskip1ex
-      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R},
-      \vskip1ex
-      To create a shiny plot, you can first create an \texttt{.Rmd} file, embed the \emph{shiny} code in an \texttt{R} chunk, and then compile the \texttt{.Rmd} file into an \emph{html} document, using the \emph{knitr} package,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# R startup chunk
-# ```{r setup, include=FALSE}
-library(shiny)
-library(quantmod)
-inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-# ```
-### end R startup chunk
-inputPanel(
-  sliderInput("lamb_da", label="lambda:",
-    min=0.01, max=0.2, value=0.1, step=0.01)
-)  # end inputPanel
+# Install package data.table
+install.packages("data.table")
+# Load package data.table
+library(data.table)
+# get documentation for package data.table
+# get short description
+packageDescription("data.table")
+# Load help page
+help(package="data.table")
+# List all datasets in "data.table"
+data(package="data.table")
+# List all objects in "data.table"
+ls("package:data.table")
+# Remove data.table from search path
+detach("package:data.table")
       @
+      \vspace{-1em}
+      The package \emph{data.table} has extensive documentation:\\
+      \hskip1em\url{https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html}\\
+      \hskip1em\url{https://github.com/Rdatatable/data.table/wiki}
+      \vskip1ex
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
     \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_shiny.pdf}
-      \vspace{-5em}
+      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
+      \vskip1ex
+      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
+      \vskip1ex
+      The function \texttt{data.table::data.table()} creates a \emph{data table} object.
+      \vskip1ex
+      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
+      \vskip1ex
+      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
+      \vskip1ex
+      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
+      \vskip1ex
+      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
+    \column{0.5\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-renderPlot({
-  # Calculate EWMA prices
-  lamb_da <- input$lamb_da
-  weight_s <- exp(-lamb_da*1:inter_val)
-  weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
-  colnames(ew_ma) <- c("VTI", "VTI EWMA")
-  # Plot EWMA prices
-  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
-  plot(ch_ob)
-  legend("top", legend=colnames(ew_ma),
-         inset=0.1, bg="white", lty=1, lwd=2,
-         col=plot_theme$col$line.col, bty="n")
-})  # end renderPlot
+# Create a data table
+library(data.table)
+data_table <- data.table::data.table(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+# Print data_table
+class(data_table); data_table
+# column referenced without quotes
+data_table[, col2]
+# row referenced without a following comma
+data_table[2]
+# Print option "datatable.print.nrows"
+getOption("datatable.print.nrows")
+options(datatable.print.nrows=10)
+getOption("datatable.print.nrows")
+# Number of rows in data_table
+NROW(data_table)
+# Or
+data_table[, NROW(col1)]
+# Or
+data_table[, .N]
+# microbenchmark speed of data.table syntax
+library(microbenchmark)
+summary(microbenchmark(
+  dt=data_table[, .N],
+  pure_r=NROW(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
+      \vskip1ex
+      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
+      \vskip1ex
+      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
+      \vskip1ex
+      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
+      \vskip1ex
+      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read a data table from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data_table <- data.table::fread(file_name)
+class(data_table); dim(data_table)
+data_table
+# fread() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+          setDF(data.table::fread(file_name)))
+# fread() is much faster than read.csv()
+summary(microbenchmark(
+  pure_r=read.csv(file_name),
+  fread=setDF(data.table::fread(file_name)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Write data table to file in different ways
+data.table::fwrite(data_table, file="data_table.csv")
+write.csv(data_table, file="data_table2.csv")
+cat(unlist(data_table), file="data_table3.csv")
+# microbenchmark speed of data.table::fwrite()
+library(microbenchmark)
+summary(microbenchmark(
+  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
+  write_csv=write.csv(data_table, file="data_table2.csv"),
+  cat=cat(unlist(data_table), file="data_table3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting \protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}. 
+      \vskip1ex
+      \emph{Data table} rows can be subset without a following comma.
+      \vskip1ex
+      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of names.
+      \vskip1ex
+      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select first five rows of data_table
+data_table[1:5]
+# Select rows with JFK flights
+jfk_flights <- data_table[origin=="JFK"]
+# Select rows JFK flights in June
+jfk_flights <- data_table[origin=="JFK" & month==6]
+# Select rows without JFK flights
+jfk_flights <- data_table[!(origin=="JFK")]
+# Select flights with carrier_delay
+data_table[carrier_delay > 0]
+# Select column of data_table and return a vector
+head(data_table[, origin])
+# Select column of data_table and return a data_table, not vector
+head(data_table[, list(origin)])
+head(data_table[, .(origin)])
+# Select two columns of data_table
+data_table[, list(origin, month)]
+data_table[, .(origin, month)]
+column_s <- c("origin", "month")
+data_table[, ..column_s]
+data_table[, month, origin]
+# Select two columns and rename them
+data_table[, .(orig=origin, mon=month)]
+# Select all columns except origin
+head(data_table[, !c("origin")])
+head(data_table[, -c("origin")])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performing Computations on \protect\emph{Data Table} Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
+      \vskip1ex
+      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
+      \vskip1ex
+      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
+      \vskip1ex
+      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select flights with positive carrier_delay
+data_table[carrier_delay > 0]
+# Number of flights with carrier_delay
+data_table[, sum(carrier_delay > 0)]
+# Or standard R commands
+sum(data_table[, carrier_delay > 0])
+# microbenchmark speed of data.table syntax
+summary(microbenchmark(
+  dt=data_table[, sum(carrier_delay > 0)],
+  pure_r=sum(data_table[, carrier_delay > 0]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average carrier_delay
+data_table[, mean(carrier_delay)]
+# Average carrier_delay and aircraft_delay
+data_table[, .(carrier=mean(carrier_delay), 
+               aircraft=mean(aircraft_delay))]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Number of flights from JFK
+data_table[origin=="JFK", NROW(aircraft_delay)]
+# Or
+data_table[origin=="JFK", .N]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
+      \begin{itemize}
+        \item \texttt{i}: the row index to select, 
+        \item \texttt{j}: a list of columns or functions on columns, 
+        \item \texttt{by}: the columns of factors.
+      \end{itemize}
+      The computations on \emph{data table} columns can be \emph{grouped} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
+      \vskip1ex
+      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of names.
+      \vskip1ex
+      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Number of flights from each airport
+data_table[, .N, by=origin]
+# Same, but add names to output
+data_table[, .(flights=.N), by=.(airport=origin)]
+# Number of AA flights from each airport
+data_table[carrier=="AA", .(flights=.N), 
+           by=.(airport=origin)]
+# Number of flights from each airport and airline
+data_table[, .(flights=.N), 
+           by=.(airport=origin, airline=carrier)]
+# Average aircraft_delay
+data_table[, mean(aircraft_delay)]
+# Average aircraft_delay from JFK
+data_table[origin=="JFK", mean(aircraft_delay)]
+# Average aircraft_delay from each airport
+data_table[, .(delay=mean(aircraft_delay)), 
+           by=.(airport=origin)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           by=.(airport=origin, month=month)]
+# Average and max delays from each airport and month
+data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
+           keyby=.(airport=origin, month=month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
+      \vskip1ex
+      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
+      \vskip1ex
+      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
+      \vskip1ex
+      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
+      \vskip1ex
+      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Sort ascending by origin, then descending by dest
+order_table <- data_table[order(origin, -dest)]
+order_table
+# Doesn't work outside data_table
+order(origin, -dest)
+# Sort data_table by reference
+setorder(data_table, origin, -dest)
+all.equal(data_table, order_table)
+# setorder() is much faster than order()
+summary(microbenchmark(
+  order=data_table[order(origin, -dest)],
+  setorder=setorder(data_table, origin, -dest),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Average aircraft_delay by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)]
+# Chained brackets to sort output by month
+order_table[, .(mean_delay=mean(aircraft_delay)), 
+            by=.(month=month)][order(month)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
+      \vskip1ex
+      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
+      \vskip1ex
+      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
+      \vskip1ex
+      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol. 
+      \vskip1ex
+      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Select weather_delay and aircraft_delay in two different ways
+data_table[1:7, .SD, 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+data_table[1:7, .(weather_delay, aircraft_delay)]
+# Calculate mean of weather_delay and aircraft_delay
+data_table[, sapply(.SD, mean), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+sapply(data_table[, .SD, 
+           .SDcols=c("weather_delay", "aircraft_delay")], mean)
+# Return origin and dest, then all other columns
+data_table[1:7, .SD, by=.(origin, dest)]
+# Return origin and dest, then weather_delay and aircraft_delay columns
+data_table[1:7, .SD, 
+           by=.(origin, dest), 
+           .SDcols="weather_delay", "aircraft_delay"]
+# Return first two rows from each month
+data_table[, head(.SD, 2), by=.(month)]
+data_table[, head(.SD, 2), by=.(month), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+# Calculate mean of weather_delay and aircraft_delay, grouped by origin
+data_table[, lapply(.SD, mean), 
+           by=.(origin), 
+           .SDcols=c("weather_delay", "aircraft_delay")]
+# Or simply
+data_table[, .(weather_delay=mean(weather_delay), 
+               aircraft_delay=mean(aircraft_delay)), 
+           by=.(origin)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
+      \vskip1ex
+      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
+      \vskip1ex
+      The computations are recycled to fit the size of each group. 
+      \vskip1ex
+      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
+      \vskip1ex
+      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
+      \vskip1ex
+      Modifying by reference is several times faster than standard \texttt{R} assignment.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add tot_delay column
+data_table[, tot_delay := (carrier_delay + aircraft_delay)]
+head(data_table, 4)
+# Delete tot_delay column
+data_table[, tot_delay := NULL]
+# Add max_delay column grouped by origin and dest
+data_table[, max_delay := max(aircraft_delay), 
+           by=.(origin, dest)]
+data_table[, max_delay := NULL]
+# Add date and tot_delay columns
+data_table[, c("date", "tot_delay") := 
+             list(paste(month, day, year, sep="/"), 
+                  (carrier_delay + aircraft_delay))]
+# Modify select rows of tot_delay column
+data_table[month == 12, tot_delay := carrier_delay]
+data_table[, c("date", "tot_delay") := NULL]
+# Add several columns
+data_table[, c("max_carrier", "max_aircraft") := 
+             lapply(.SD, max), 
+           by=.(origin, dest), 
+           .SDcols=c("carrier_delay", "aircraft_delay")]
+data_table[, c("max_carrier", "max_aircraft") := NULL]
+# Modifying by reference is much faster than standard R
+summary(microbenchmark(
+  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
+  pure_r=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows. 
+      \vskip1ex
+      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
+      \vskip1ex
+      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
+      \vskip1ex
+      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add a key based on the "origin" column
+setkey(data_table, origin)
+haskey(data_table)
+key(data_table)
+# Select rows with LGA using the key
+data_table["LGA"]
+all.equal(data_table["LGA"], 
+          data_table[origin == "LGA"])
+# Select rows with LGA and JFK using the key
+data_table[c("LGA", "JFK")]
+# Add a key based on the "origin" and "dest" columns
+setkey(data_table, origin, dest)
+key(data_table)
+# Select rows with origin from JFK and MIA
+data_table[c("JFK", "MIA")]
+# Select rows with origin from JFK and dest to MIA
+data_table[.("JFK", "MIA")]
+all.equal(data_table[.("JFK", "MIA")], 
+          data_table[origin == "JFK" & dest == "MIA"])
+# Selecting rows using a key is much faster than standard R
+summary(microbenchmark(
+  with_key=data_table[.("JFK", "MIA")],
+  standard_r=data_table[origin == "JFK" & dest == "MIA"],
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
+      \vskip1ex
+      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
+      \vskip1ex
+      \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create data frame and coerce it to data table
+data_table <- data.frame(
+  col1=sample(7), col2=sample(7), col3=sample(7))
+class(data_table); data_table
+data.table::setDT(data_table)
+class(data_table); data_table
+# Coerce data_table into data frame
+data.table::setDF(data_table)
+class(data_table); data_table
+# Or
+data_table <- data.table:::as.data.frame.data.table(data_table)
+# SetDF() is much faster than as.data.frame()
+summary(microbenchmark(
+  as.data.frame=data.table:::as.data.frame.data.table(data_table),
+  setDF=data.table::setDF(data_table),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Frames}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
+      \vskip1ex
+      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
+      \vskip1ex
+      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
+      \vskip1ex
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce xts to a data frame
+price_s <- rutils::etf_env$VTI
+class(price_s); head(price_s)
+price_s <- as.data.frame(price_s)
+class(price_s); head(price_s)
+# Coerce data frame to a data table
+data.table::setDT(price_s, keep.rownames=TRUE)
+class(price_s); head(price_s)
+# Dates are coerced to strings
+sapply(price_s, class)
+# Coerce xts directly to a data table
+data_table <- as.data.table(rutils::etf_env$VTI,
+  keep.rownames=TRUE)
+class(data_table); head(data_table)
+# Dates are not coerced to strings
+sapply(data_table, class)
+all.equal(price_s, data_table, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{fst} for High Performance Data Management}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
+      provides functions for very fast writing and reading of \emph{data frames} from \emph{compressed binary files}.
+      \vskip1ex
+      The package \emph{fst} writes to \emph{compressed binary files} in the
+\texttt{fst} fast-storage format. 
+      \vskip1ex
+      The package \emph{fst} uses the \texttt{LZ4} and \texttt{ZSTD} compression algorithms, and utilizes multithreaded (parallel) processing on multiple CPU cores.
+      \vskip1ex
+      The package \emph{fst} has extensive documentation:\\
+      \hskip1em\url{http://www.fstpackage.org/}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Install package fst
+install.packages("fst")
+# Load package fst
+library(fst)
+# get documentation for package fst
+# get short description
+packageDescription("fst")
+# Load help page
+help(package="fst")
+# List all datasets in "fst"
+data(package="fst")
+# List all objects in "fst"
+ls("package:fst")
+# Remove fst from search path
+detach("package:fst")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing and Reading Data Using Package \protect\emph{fst}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
+      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format. 
+      \vskip1ex
+      The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
+      \vskip1ex
+      The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read a data frame from CSV file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+file_name <- file.path(dir_name, "weather_delays14.csv")
+data.table::setDF(data_frame)
+class(data_frame); dim(data_frame)
+# Write data frame to .fst file in different ways
+fst::write_fst(data_frame, path="data_frame.fst")
+write.csv(data_frame, file="data_frame2.csv")
+# microbenchmark speed of fst::write_fst()
+library(microbenchmark)
+summary(microbenchmark(
+  fst=fst::write_fst(data_frame, path="data_frame.csv"),
+  write_csv=write.csv(data_frame, file="data_frame2.csv"),
+  cat=cat(unlist(data_frame), file="data_frame3.csv"),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# fst::read_fst() reads the same data as read.csv()
+all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+          fst::read_fst("data_frame.fst"))
+# fst::read_fst() is 10 times faster than read.csv()
+summary(microbenchmark(
+  fst=fst::read_fst("data_frame.fst"),
+  read_csv=read.csv(file_name),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Random Access to Large Data Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The package 
+      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
+      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
+      \vskip1ex
+      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
+      \vskip1ex
+      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
+      \vskip1ex
+      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce TAQ xts to a data frame
+library(HighFreq)
+t_aq <- HighFreq::SPY_TAQ
+t_aq <- as.data.frame(t_aq)
+class(t_aq)
+# Coerce data frame to a data table
+data.table::setDT(t_aq, keep.rownames=TRUE)
+class(t_aq); head(t_aq)
+# Get memory size of data table
+format(object.size(t_aq), units="MB")
+# Save data table to .fst file
+fst::write_fst(t_aq, path="C:/Develop/data/taq.fst")
+# Create reference to .fst file similar to a data frame
+fs_t <- fst::fst("C:/Develop/data/taq.fst")
+class(fs_t)
+# Memory size of reference to .fst is very small
+format(object.size(fs_t), units="MB")
+# Get sizes of all objects in workspace
+sort(sapply(mget(ls()), object.size))
+# reference to .fst can be treated similar to a data table
+dim(t_aq); dim(fs_t)
+fst:::print.fst_table(fs_t)
+# Subset reference to .fst just like a data table
+fs_t[1e4:(1e4+5), ]
       @
   \end{columns}
 \end{block}
@@ -406,7 +879,7 @@ print(va_r, digits=20)
       \vskip1ex
       Rounding a number means replacing it with the closest number of a given precision,
       \vskip1ex
-      The \emph{IEC 60559} convention is to round to the nearest even number (\texttt{1.5} to \texttt{2}, and also \texttt{2.5} to \texttt{2}), which preserves the mean of a sequence,
+      The \emph{IEC 60559} convention is to round to the nearest even number ($1.5$ to $2$, and also $2.5$ to $2$), which preserves the mean of a sequence,
       \vskip1ex
       The function \texttt{round()} rounds a number to the specified number of decimal places,
       \vskip1ex
@@ -500,11 +973,11 @@ all.equal(num_ber, 1.0)
         \item "\texttt{\%/\%}" performs \emph{modulo} division,
         \item "\texttt{\%\%}" calculates remainder of \emph{modulo} division,
       \end{itemize}
-      \emph{Modulo} division of floating point (non-integer) numbers sometimes produces incorrect results because of limited \emph{machine precision} of floating point numbers,
+      \emph{Modulo} division of floating point (non-integer) numbers sometimes produces incorrect results because of limited \emph{machine precision} of floating point numbers.
       \vskip1ex
-      For example, the number \texttt{0.2} is stored as a binary number slightly larger than \texttt{0.2}, so the result of calculating \texttt{0.6 \%/\% 0.2} is \texttt{2} instead of \texttt{3},
+      For example, the number $0.2$ is stored as a binary number slightly larger than $0.2$, so the result of calculating \texttt{0.6 \%/\% 0.2} is $2$ instead of $3$.
       \vskip1ex
-      See discussion in:
+      See also the discussion in:
       \url{http://stackoverflow.com/questions/13614749/modulus-bug-in-r}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -535,7 +1008,7 @@ print(0.2, digits=22)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval. 
+      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval.
       \vskip1ex
       Additional parameters can be passed to the integrated function through the dots \texttt{"..."} argument of the function \texttt{integrate()}.
       \vskip1ex
@@ -554,7 +1027,7 @@ func_tion <- function(x, lamb_da=1) {
   exp(-x*lamb_da)
 }  # end func_tion
 integrate(func_tion, lower=0, upper=Inf)
-integrate(func_tion, lower=0, upper=Inf, 
+integrate(func_tion, lower=0, upper=Inf,
           lamb_da=2)
 # Cumulative probability over normal distribution
 pnorm(-2)
@@ -563,7 +1036,7 @@ str(dnorm)
 pnorm(-1)
 integrate(dnorm, low=2, up=Inf, mean=1)
 # Expected value over normal distribution
-integrate(function(x) x*dnorm(x), 
+integrate(function(x) x*dnorm(x),
           low=2, up=Inf)
       @
   \end{columns}
@@ -753,26 +1226,36 @@ microbenchmark(sqrt(va_r), va_r^0.5, times=10)
     \column{0.5\textwidth}
       How to write fast \texttt{R} code:
       \begin{itemize}
-        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets,
-        \item Use \emph{compiled} \texttt{C++} \texttt{R} functions instead of using interpreted \texttt{R} code for the same task,
-        \item Write functions in \texttt{C++} and compile them using \emph{Rcpp} and \emph{RcppArmadillo},
-        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler},
-        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them),
-        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function),
-        \item Use \emph{function methods} directly instead of using \emph{generic functions},
+        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets.
+        \item Use \texttt{R} functions which are \emph{compiled} \texttt{C++} code, instead of using interpreted \texttt{R} code.
+        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function).
+        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them).
+        \item Write \texttt{C++} functions in \emph{Rcpp} and \emph{RcppArmadillo}.
+        \item Use \emph{function methods} directly instead of using \emph{generic functions}.
         \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
+        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler}.
       \end{itemize}
     \column{0.5\textwidth}
+      \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the square root of a vector
-vec_tor <- runif(1e6)
-all.equal(sqrt(vec_tor), vec_tor^0.5)
+# Calculate cumulative sum of a vector
+vec_tor <- runif(1e5)
+# Use compiled function
+cum_sum <- cumsum(vec_tor)
+# Use for loop
+cum_sum2 <- vec_tor
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+# Compare the two methods
+all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
-  sqrt(vec_tor),
-  vec_tor^0.5,
+  cumsum=cumsum(vec_tor),
+  loop=for (i in 2:NROW(vec_tor))
+    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -975,7 +1458,7 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted much faster by a \emph{byte code interpreter}.
       \vskip1ex
-      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about \texttt{2} to \texttt{5} times.
+      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about $2$ to \texttt{5} times.
       \vskip1ex
       The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation},
       \vskip1ex
@@ -985,9 +1468,9 @@ summary(microbenchmark(
       \vskip1ex
       The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation},
       \vskip1ex
-      \emph{JIT} is disabled if the \texttt{level} argument is equal to \texttt{0}, with greater \texttt{level} values forcing more extensive compilation,
+      \emph{JIT} is disabled if the \texttt{level} argument is equal to $0$, with greater \texttt{level} values forcing more extensive compilation,
       \vskip1ex
-      The default \emph{JIT} \texttt{level} is \texttt{3},
+      The default \emph{JIT} \texttt{level} is $3$,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -1162,7 +1645,7 @@ profvis::profvis(
       \vskip1ex
       But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use,
     \column{0.5\textwidth}
-        <<eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 vec_tor1 <- rnorm(1000000)
 vec_tor2 <- rnorm(1000000)
 big_vector <- numeric(1000000)
@@ -1213,7 +1696,7 @@ summary(microbenchmark(
       These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 # Matrix with 5,000 rows
 mat_rix <- matrix(rnorm(10000), ncol=2)
 # Calculate row sums two different ways
@@ -1275,7 +1758,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package 
+      The package
       \href{https://cran.r-project.org/web/packages/matrixStats}{\color{blue}{\emph{matrixStats}}}
       contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
       \begin{itemize}
@@ -1290,7 +1773,7 @@ summary(microbenchmark(
       The \texttt{matrixStats} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 install.packages("matrixStats")  # Install package matrixStats
 library(matrixStats)  # Load package matrixStats
 # Calculate row min values three different ways
@@ -1319,7 +1802,7 @@ summary(microbenchmark(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package 
+      The package
       \href{https://cran.r-project.org/web/packages/Rfast}{\color{blue}{\emph{Rfast}}}
       contains functions for fast matrix and numerical computations, such as:
       \begin{itemize}
@@ -1330,7 +1813,7 @@ summary(microbenchmark(
       The \texttt{Rfast} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code),
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 install.packages("Rfast")  # Install package Rfast
 library(Rfast)  # Load package Rfast
 # Benchmark speed of calculating ranks
@@ -1374,7 +1857,7 @@ summary(microbenchmark(
       \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code,
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 summary(microbenchmark(  # Assign values to vector three different ways
 # Fast vectorized assignment loop performed in C using brackets "[]"
   brack_ets={vec_tor <- numeric(10)
@@ -1484,7 +1967,7 @@ sapply(me_ans, rnorm, n=2)
       \vskip1ex
       \texttt{Vectorize()} vectorizes the arguments passed to \texttt{"vectorize.args"},
       \vskip1ex
-      \texttt{Vectorize()} is an example of a \emph{higher-order} function: it accepts a function as its argument and returns a function as its value,
+      \texttt{Vectorize()} is an example of a \emph{higher order} function: it accepts a function as its argument and returns a function as its value,
       \vskip1ex
       Functions that are vectorized using \texttt{Vectorize()} or \texttt{apply()} loops are just as slow as \texttt{apply()} loops, but convenient to use,
     \column{0.5\textwidth}
@@ -1619,3467 +2102,6 @@ legend(x="bottomright", legend=colnames(vec_tor4),
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/func_ifelse-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Package \protect\emph{Rcpp} for Running \texttt{C++} Programs}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{Rcpp} for Calling \texttt{C++} Programs from \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{Rcpp} allows calling \texttt{C++} programs from \texttt{R}, by compiling the \texttt{C++} code and creating \texttt{R} functions,
-      \vskip1ex
-      \emph{Rcpp} functions are \texttt{R} functions that were compiled from \texttt{C++} code using package \emph{Rcpp},
-      \vskip1ex
-      \emph{Rcpp} functions are much faster than code written in \texttt{R}, so they're suitable for large numerical calculations,
-      \vskip1ex
-      The package \emph{Rcpp} relies on \emph{Rtools} for compiling the \texttt{C++} code: \\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
-      \vskip1ex
-      You can learn more about the package \emph{Rcpp} here: \\
-      \hskip1em\url{http://adv-r.had.co.nz/Rcpp.html}\\
-      \hskip1em\url{http://www.rcpp.org/}\\
-      \hskip1em\url{http://gallery.rcpp.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# Verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# Load package Rcpp
-library(Rcpp)
-# Get documentation for package Rcpp
-# Get short description
-packageDescription("Rcpp")
-# Load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# Remove Rcpp from search path
-detach("package:Rcpp")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function \texttt{cppFunction()} for Compiling \texttt{C++} code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cppFunction()} compiles \texttt{C++} code into an \texttt{R} function.
-      \vskip1ex
-      The function \texttt{cppFunction()} creates an \texttt{R} function only for the current \texttt{R} session, and it must be recompiled for every new \texttt{R} session.
-      \vskip1ex
-      The function \texttt{sourceCpp()} compiles \texttt{C++} code contained in a file into \texttt{R} functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# Run Rcpp function
-times_two(3)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
-# Multiply two numbers
-mult_rcpp(2, 3)
-mult_rcpp(1:3, 6:4)
-# Multiply two vectors
-mult_vec_rcpp(2, 3)
-mult_vec_rcpp(1:3, 6:4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Loops in \protect\emph{Rcpp Sugar}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Loops written in \emph{Rcpp} can be two orders of magnitude faster than loops in \texttt{R}!
-      \vskip1ex
-      \emph{Rcpp Sugar} allows using \texttt{R}-style vectorized syntax in \emph{Rcpp} code.
-      <<echo=TRUE,eval=FALSE>>=
-# Define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-      total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# Run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# Define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# Run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-      to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# Run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Ornstein-Uhlenbeck Process Using \protect\emph{Rcpp}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
-      <<echo=TRUE,eval=FALSE>>=
-# Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(len_gth=1000, eq_price=5.0,
-                    vol_at=0.01, the_ta=0.01) {
-  re_turns <- numeric(len_gth)
-  price_s <- numeric(len_gth)
-  price_s[1] <- eq_price
-  for (i in 2:len_gth) {
-    re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
-  }  # end for
-  price_s
-}  # end sim_ou
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; vol_at <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define Ornstein-Uhlenbeck function in Rcpp
-Rcpp::cppFunction("
-NumericVector sim_ou_rcpp(double eq_price,
-                      double vol_at,
-                      double the_ta,
-                      NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
-  price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
-    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
-    price_s[it] = price_s[it-1] * exp(re_turns[it]);
-  }  // end for
-  return price_s;
-}")  # end cppFunction
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=vol_at,
-  the_ta=the_ta,
-  in_nov=rnorm(len_gth))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, in_nov=rnorm(len_gth)),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Rcpp Attributes}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Rcpp attributes} are instructions for the \texttt{C++} compiler, embedded in the \emph{Rcpp} code as \texttt{C++} comments, and preceded by the \texttt{"//"} symbol.
-      \vskip1ex
-      The \texttt{Rcpp::depends} attribute specifies additional \texttt{C++} library dependencies.
-      \vskip1ex
-      The \texttt{Rcpp::export} attribute specifies that a function should be exported to \texttt{R}, where it can be called as an \texttt{R} function.
-      \vskip1ex
-      Only functions which are preceded by the \texttt{Rcpp::export} attribute are exported to \texttt{R}.
-      \vskip1ex
-      The function \texttt{sourceCpp()} compiles \texttt{C++} code contained in a file into \texttt{R} functions.
-      <<echo=TRUE,eval=FALSE>>=
-# Source Rcpp function for Ornstein-Uhlenbeck process from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_ou.cpp")
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=vol_at,
-  the_ta=the_ta,
-  in_nov=rnorm(len_gth))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=vol_at, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=vol_at, the_ta=the_ta, in_nov=rnorm(len_gth)),
-  times=10))[, c(1, 4, 5)]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namespace
-
-// The function sim_ou_rcpp() simulates an Ornstein-Uhlenbeck process
-// export the function roll_maxmin() to R
-// [[Rcpp::export]]
-NumericVector sim_ou_rcpp(double eq_price,
-                          double vol_at,
-                          double the_ta,
-                          NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
-  price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
-    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
-    price_s[it] = price_s[it-1] * exp(re_turns[it]);
-  }  // end for
-  return price_s;
-}  // end sim_ou_rcpp
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Generating Random Numbers Using Logistic Map in \protect\emph{Rcpp}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{logistic map} in \emph{Rcpp} is about seven times faster than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
-  out_put[1] <- see_d
-  for (i in 2:len_gth) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
-  }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
-
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
-# Microbenchmark Rcpp code
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <Rcpp.h> // include Rcpp C++ header files
-using namespace Rcpp; // use Rcpp C++ namespace
-
-// This is a simple example of exporting a C++ function to R.
-// You can source this function into an R session using the
-// function Rcpp::sourceCpp()
-// (or via the Source button on the editor toolbar).
-// Learn more about Rcpp at:
-//
-//   http://www.rcpp.org/
-//   http://adv-r.had.co.nz/Rcpp.html
-//   http://gallery.rcpp.org/
-
-// function uni_form() produces a vector of
-// uniformly distributed pseudo-random numbers
-// [[Rcpp::export]]
-NumericVector uniform_rcpp(double see_d, int len_gth) {
-// define pi
-static const double pi = 3.14159265;
-// allocate output vector
-  NumericVector out_put(len_gth);
-// initialize output vector
-  out_put[0] = see_d;
-// perform loop
-  for (int i=1; i < len_gth; ++i) {
-    out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
-  }  // end for
-// rescale output vector and return it
-  return acos(1-2*out_put)/pi;
-}
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{RcppArmadillo} for Fast Linear Algebra}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{RcppArmadillo} allows calling the high-level \emph{Armadillo} \texttt{C++} linear algebra library,
-      \vskip1ex
-      \emph{Armadillo} provides ease of use and speed, with syntax similar to \emph{Matlab}.
-      \vskip1ex
-      \emph{RcppArmadillo} functions are often faster than even compiled \texttt{R} functions, because they use better optimized \texttt{C++} code:\\
-      \url{http://arma.sourceforge.net/speed.html}\\
-      \vskip1ex
-      You can learn more about \emph{RcppArmadillo}: \\
-      \tiny \url{http://arma.sourceforge.net/}\\
-      \tiny \url{http://dirk.eddelbuettel.com/code/rcpp.armadillo.html}\\
-      \tiny \url{https://cran.r-project.org/web/packages/RcppArmadillo/index.html}\\
-      \tiny \url{https://github.com/RcppCore/RcppArmadillo}
-      <<echo=TRUE,eval=FALSE>>=
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
-vec1 <- runif(1e5)
-vec2 <- runif(1e5)
-vec_in(vec1, vec2)
-vec1 %*% vec2
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namespace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-// Examples of RcppArmadillo functions below
-
-// vec_in() calculates the inner (dot) product of two vectors.
-// It accepts pointers to the two vectors and returns a double.
-//' @export
-// [[Rcpp::export]]
-double vec_in(const arma::vec& vec1, const arma::vec& vec2){
-  return arma::dot(vec1, vec2);
-}  // end vec_in
-
-// mat_2vec_in() calculates the inner (dot) product of a matrix
-// with two vectors.
-// It accepts pointers to the matrix and vectors, and returns a double.
-//' @export
-// [[Rcpp::export]]
-double mat_2vec_in(const arma::vec& vec_tor2, const arma::mat& mat_rix, const arma::vec& vec_tor1){
-  return arma::as_scalar(trans(vec_tor2) * (mat_rix * vec_tor1));
-}  // end mat_2vec_in
-    \end{lstlisting}
-      \vspace{-1.5em}
-      <<echo=TRUE,eval=FALSE>>=
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  vec_in=vec_in(vec1, vec2),
-  r_code=(vec1 %*% vec2),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# vec_in() is several times faster than %*%, especially for longer vectors.
-#     expr     mean   median
-# 1 vec_in 110.7067 110.4530
-# 2 r_code 585.5127 591.3575
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fast Matrix Algebra Using \protect\emph{RcppArmadillo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{RcppArmadillo} functions can be made even faster by operating on pointers to matrices and performing calculations in place, without copying large matrices,
-      \vskip1ex
-      \emph{RcppArmadillo} functions can be compiled using the same \emph{Rtools} as those for \emph{Rcpp} functions:\\
-      \hskip1em\url{https://cran.r-project.org/bin/windows/Rtools/}
-      <<echo=TRUE,eval=FALSE>>=
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
-mat_rix <- matrix(runif(1e5), nc=1e3)
-# De-mean using apply()
-new_mat <- apply(mat_rix, 2,
-  function(x) (x-mean(x)))
-# De-mean using demean_mat()
-demean_mat(mat_rix)
-all.equal(new_mat, mat_rix)
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  demean_mat=demean_mat(mat_rix),
-  apply=(apply(mat_rix, 2, mean)),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# Demean_mat() is over 70 times faster than apply()
-#         expr       mean   median
-# 1 demean_mat   127.7539  125.604
-# 2      apply 10781.7534 9291.674
-
-# Perform matrix inversion
-# Create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
-# Invert the matrix
-matrix_inv <- solve(mat_rix)
-inv_mat(mat_rix)
-all.equal(inv_mat, mat_rix)
-# Microbenchmark RcppArmadillo code
-library(microbenchmark)
-summary(microbenchmark(
-  inv_mat=inv_mat(mat_rix),
-  solve=solve(mat_rix),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# inv_mat() is over 10 times faster than solve()
-#      expr     mean median
-# 1 inv_mat  3.42669  2.933
-# 2 solve   32.00254 31.280
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namespace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-// Examples of RcppArmadillo functions below
-
-// demean_mat() calculates a matrix with de-meaned columns.
-// It accepts a pointer to a matrix and operates on the matrix in place.
-// It returns the number of columns of the input matrix.
-//' @export
-// [[Rcpp::export]]
-double demean_mat(arma::mat& mat_rix){
-  for (unsigned int i = 0; i < mat_rix.n_cols; i++) {
-    mat_rix.col(i) -= arma::mean(mat_rix.col(i));
-  }  // end for
-  return mat_rix.n_cols;
-}  // end demean_mat
-
-// inv_mat() calculates the inverse of symmetric positive
-// definite matrix.
-// It accepts a pointer to a matrix and operates on the matrix in place.
-// It returns the number of columns of the input matrix.
-// It uses RcppArmadillo.
-//' @export
-// [[Rcpp::export]]
-double inv_mat(arma::mat& mat_rix){
-  mat_rix = arma::inv_sympd(mat_rix);
-  return mat_rix.n_cols;
-}  // end inv_mat
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{ARIMA} Processes Using \protect\emph{RcppArmadillo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{ARIMA} processes can be simulated using \protect\emph{RcppArmadillo} even faster than by using the function \texttt{filter()}.
-      <<echo=TRUE,eval=FALSE>>=
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
-# Define AR(2) coefficients
-co_eff <- c(0.9, 0.09)
-n_rows <- 1e4
-set.seed(1121)
-in_nov <- rnorm(n_rows)
-# Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-# Simulate ARIMA using sim_arima()
-ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma),
-  as.numeric(arima_filter))
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  sim_arima=sim_arima(in_nov, rev(co_eff)),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-    \column{0.5\textwidth}
-      % \vspace{-2em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
-// Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namespace from Armadillo library
-// declare dependency on RcppArmadillo
-// [[Rcpp::depends(RcppArmadillo)]]
-
-//' @export
-// [[Rcpp::export]]
-arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
-  uword n_rows = in_nov.n_elem;
-  uword look_back = co_eff.n_elem;
-  arma::vec ari_ma(n_rows);
-
-  // startup period
-  ari_ma(0) = in_nov(0);
-  ari_ma(1) = in_nov(1) + co_eff(look_back-1) * ari_ma(0);
-  for (uword it = 2; it < look_back-1; it++) {
-    ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
-  }  // end for
-
-  // remaining periods
-  for (uword it = look_back; it < n_rows; it++) {
-    ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
-  }  // end for
-
-  return ari_ma;
-}  // end sim_arima
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Downloading Time Series Data}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{ts} Time Series Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \texttt{get.hist.quote()} can download daily historical data in \emph{ts} format using the argument \texttt{"retclass="ts"}.
-      \vskip1ex
-      \texttt{get.hist.quote()} returns a \emph{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates.
-      \vskip1ex
-      The \emph{ts} contains \texttt{NA} values for weekends and holidays.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-library(tseries)  # Load package tseries
-# Download MSFT data in ts format
-ts_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    retclass="ts",
-    quote=c("Open","High","Low","Close",
-            "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# Calculate price adjustment vector
-adj_vector <-
-  as.vector(ts_stx[, "AdjClose"] / ts_stx[, "Close"])
-# Adjust OHLC prices
-ts_stx_adj <- ts_stx
-ts_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * ts_stx[, c("Open","High","Low","Close")]
-# Inspect the data
-tsp(ts_stx_adj)  # frequency=1
-head(time(ts_stx_adj))
-head(ts_stx_adj)
-tail(ts_stx_adj)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{zoo} Time Series Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{get.hist.quote()} downloads historical data from online sources,
-      \vskip1ex
-      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")},
-      \vskip1ex
-      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")},
-      \vskip1ex
-      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")},
-      \vskip1ex
-      The \texttt{"AdjClose"} data field is for the \emph{Close} price adjusted for stock splits and dividends,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # Load package tseries
-# Download MSFT data
-zoo_stx <- suppressWarnings(
-  get.hist.quote(
-    instrument="MSFT",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    quote=c("Open","High","Low","Close",
-            "AdjClose","Volume"),
-    origin="1970-01-01")
-)  # end suppressWarnings
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-class(zoo_stx)
-dim(zoo_stx)
-head(zoo_stx, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adjusting \protect\emph{OHLC} Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Stock prices experience jumps due to stock splits and dividends,
-      \vskip1ex
-      \emph{Adjusted} stock prices are stock prices that have been adjusted so they don't have jumps,
-      \vskip1ex
-      \emph{OHLC} data can be adjusted for stock splits and dividends,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-library(tseries)  # Load package tseries
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Calculate price adjustment vector
-adj_vector <-
-  as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
-head(adj_vector, 5)
-tail(adj_vector, 5)
-# Adjust OHLC prices
-zoo_stx_adj <- zoo_stx
-zoo_stx_adj[, c("Open","High","Low","Close")] <-
-  adj_vector * zoo_stx[, c("Open","High","Low","Close")]
-head(zoo_stx_adj)
-tail(zoo_stx_adj)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Data From \protect\emph{Oanda} Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Oanda} is a foreign exchange broker that also provides free historical currency rates data.
-      \vskip1ex
-      The function \texttt{get.hist.quote()} downloads historical data from online sources.
-      \vskip1ex
-      The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")}.
-      \vskip1ex
-      The \texttt{"retclass"} argument determines the \emph{return class}, and its default value is \texttt{c("zoo", "its", "ts")}.
-      \vskip1ex
-      The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")}.
-      \vskip1ex
-      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # Load package tseries
-# Download EUR/USD data
-zoo_eurusd <- suppressWarnings(
-  get.hist.quote(
-    instrument="EUR/USD",
-    provider="oanda",
-    start=Sys.Date()-3*365,
-    end=Sys.Date(),
-    origin="1970-01-01")
-)  # end suppressWarnings
-# bind and scrub data
-zoo_stxeur <- cbind(zoo_eurusd,
-                     zoo_stx[, "AdjClose"])
-colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
-zoo_stxeur <-
-  zoo_stxeur[complete.cases(zoo_stxeur),]
-save(zoo_stx, zoo_stx_adj,
-     ts_stx, ts_stx_adj,
-     zoo_eurusd, zoo_stxeur,
-     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Inspect the data
-class(zoo_eurusd)
-head(zoo_eurusd, 4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF Portfolio for Investment Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      We will define a portfolio of \emph{ETFs} for illustrating various investment strategies.
-      \vskip1ex
-      The portfolio contains \emph{ETFs} representing different \emph{investment styles} (value, growth, size), and \emph{industry sectors} (energy, financial, etc.)
-      \vskip1ex
-      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds}.
-      \vskip1ex
-      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
-      \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund.
-      \vskip1ex
-      The portfolio also contains the \emph{VXX} and \emph{SVXY} \emph{VIX} volatility funds.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(xtable)
-# Define ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
-  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
-  "IWB", "IWD", "IWF", "VXX", "SVXY")
-# Read etf database into data frame
-etf_list <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/etf_list.csv",
-               stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# Select from etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# Shorten names
-etf_names <- sapply(etf_list$Name,
-                    function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -NROW(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list["SVXY", "Name"] <- "Short VIX Futures"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF and ETN Mechanics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{ETNs} are similar to \emph{ETFs}, with the main difference that \emph{ETFs} are equity shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
-      \vskip1ex
-      \emph{ETNs} don't own the underlying assets and have additional counterparty credit risk to the \emph{ETN} issuer.
-      \vskip1ex
-      \emph{DBC} is a commodity \emph{ETF}, providing the return on an index of 14 commodity futures.
-      \vskip1ex
-      There are several exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}) which are linked to \emph{VIX} futures, providing an easy way to invest in \emph{VIX} futures.
-      \vskip1ex
-      \emph{VXX} is an \emph{ETN} providing the total return of a \emph{long VIX} futures contract (specifically the \emph{S\&P} VIX Short-Term Futures Index).
-      \vskip1ex
-      \emph{SVXY} is an \emph{ETF} providing the total return of a \emph{short VIX} futures contract.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
-      Standard and Poor's provides a document explaining the calculation of the total return on \emph{VIX} futures indices:\\
-      \hskip1em\href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Stock Prices Using \protect\emph{tseries}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Data for multiple symbols can be downloaded in an \texttt{lapply()} loop, which calls the function \texttt{tseries::get.hist.quote}.
-      \vskip1ex
-      If the body of an \texttt{apply()} loop returns a \emph{zoo} or \emph{xts} series, then the loop will produce an error, because \texttt{apply()} attempts to coerce its output into a vector or matrix.
-      \vskip1ex
-      So \texttt{lapply()} should be used instead of \texttt{apply()}.
-      \vskip1ex
-      The functional \texttt{lapply()} applies a function to a list of objects and returns a list of objects.
-      \vskip1ex
-      The list of \emph{zoo} time series can be flattened into a single \emph{zoo} series using functions \texttt{do.call()} and \texttt{cbind()}.
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
-      \vskip1ex
-      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(tseries)  # Load package tseries
-# Download price and volume data for sym_bols into list of zoo objects
-zoo_series <- suppressWarnings(
-  lapply(sym_bols, # Loop for loading data
-         get.hist.quote,
-         quote=c("AdjClose", "Volume"),
-         start=Sys.Date()-3650,
-         end=Sys.Date(),
-         origin="1970-01-01")  # end lapply
-)  # end suppressWarnings
-# flatten list of zoo objects into a single zoo object
-zoo_series <- rutils::do_call(cbind, zoo_series)
-# Or
-# zoo_series <- do.call(cbind, zoo_series)
-# Assign names in format "symbol.Close", "symbol.Volume"
-names(zoo_series) <-
-  as.vector(sapply(sym_bols,
-    paste, c("Close", "Volume"), sep="."))
-# Save zoo_series to a comma-separated CSV file
-write.zoo(zoo_series, file="zoo_series.csv", sep=",")
-# Save zoo_series to a binary .RData file
-save(zoo_series, file="zoo_series.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Stock Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
-      \vskip1ex
-      \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names),
-      \vskip1ex
-      It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect},
-      \vskip1ex
-      By default, \texttt{getSymbols()} downloads for each symbol the daily \emph{OHLC} prices and trading volume (Open, High, Low, Close, Adjusted, Volume),
-      \vskip1ex
-      The method \texttt{getSymbols.yahoo} accepts arguments \texttt{"from"} and \texttt{"to"} which specify the date range for the data,
-      \vskip1ex
-      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
-      \vskip1ex
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices,
-      \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, leaving \emph{Alpha Vantage} as the only major provider of free daily \emph{ETF} prices,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-etf_env <- new.env()  # new environment for data
-# Download data for sym_bols into etf_env from Alpha Vantage
-getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
-  output.size="full", api.key="T7JPW54ES8G75310")
-# getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
-      @
-      \vspace{-2em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-ls(etf_env)  # List files in etf_env
-# get class of object in etf_env
-class(get(x=sym_bols[1], envir=etf_env))
-# Another way
-class(etf_env$VTI)
-colnames(etf_env$VTI)
-head(etf_env$VTI, 3)
-# get class of all objects in etf_env
-eapply(etf_env, class)
-# get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adjusting Stock Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Traded stock and bond prices experience jumps after splits and dividends, and must be adjusted to account for them,
-      \vskip1ex
-      The function \texttt{adjustOHLC()} adjusts \emph{OHLC} prices,
-      \vskip1ex
-      The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names,
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-      \vskip1ex
-      The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings,
-      \vskip1ex
-      If the argument \texttt{"adjust"} in function \texttt{getSymbols()} is set to \texttt{TRUE}, then \texttt{getSymbols()} returns adjusted data,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Check of object is an OHLC time series
-is.OHLC(etf_env$VTI)
-# Adjust single OHLC object using its name
-etf_env$VTI <- adjustOHLC(etf_env$VTI,
-                          use.Adjusted=TRUE)
-
-# Adjust OHLC object using string as name
-assign(sym_bols[1], adjustOHLC(
-    get(x=sym_bols[1], envir=etf_env),
-    use.Adjusted=TRUE),
-  envir=etf_env)
-
-# Adjust objects in environment using vector of strings
-for (sym_bol in ls(etf_env)) {
-  assign(sym_bol,
-         adjustOHLC(get(sym_bol, envir=etf_env),
-                    use.Adjusted=TRUE),
-         envir=etf_env)
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting Prices Using Package \protect\emph{quantmod}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
-      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      The function \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
-      \vskip1ex
-      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# extract and cbind all data, subset by symbols
-price_s <- rutils::do_call(cbind,
-  as.list(etf_env)[sym_bols])
-# Or
-# price_s <- do.call(cbind,
-#   as.list(etf_env)[sym_bols])
-# extract and cbind adjusted prices, subset by symbols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(etf_env)[sym_bols], Ad))
-# Same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(etf_env, Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
-    function(col_name)
-      strsplit(col_name, split="[.]")[[1]],
-    USE.NAMES=FALSE)[1, ]
-head(price_s[, 1:2], 3)
-# Which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-# Save xts to csv file
-write.zoo(price_s,
-  file="etf_series.csv", sep=",")
-# Copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file="etf_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Calculating Percentage Returns from Adjusted Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{quantmod::dailyReturn()} calculates the percentage daily returns from the adjusted prices.
-      \vskip1ex
-      The \texttt{lapply()} and \texttt{sapply()} functionals perform a loop over the columns of \emph{zoo} and \emph{xts} series.
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# extract VTI prices
-vt_i <- etf_env$price_s[ ,"VTI"]
-vt_i <- na.omit(vt_i)
-# Calculate percentage returns "by hand"
-vti_lag <- as.numeric(vt_i)
-vti_lag <- c(vti_lag[1], vti_lag[-NROW(vti_lag)])
-vti_lag <- xts(vti_lag, index(vt_i))
-vti_returns <- (vt_i-vti_lag)/vti_lag
-# Calculate percentage returns using dailyReturn()
-daily_returns <- quantmod::dailyReturn(vt_i)
-head(cbind(daily_returns, vti_returns))
-all.equal(daily_returns, vti_returns, check.attributes=FALSE)
-# Calculate returns for all prices in etf_env$price_s
-re_turns <- lapply(etf_env$price_s, function(x_ts) {
-  daily_returns <- quantmod::dailyReturn(x_ts)
-  colnames(daily_returns) <- names(x_ts)
-  daily_returns
-})  # end lapply
-# "re_turns" is a list of xts
-class(re_turns)
-class(re_turns[[1]])
-# flatten list of xts into a single xts
-re_turns <- rutils::do_call(cbind, re_turns)
-class(re_turns)
-dim(re_turns)
-# Copy re_turns into etf_env and save to .RData file
-assign("re_turns", re_turns, envir=etf_env)
-save(etf_env, file="etf_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Managing Data Inside Environments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.environment()} coerces objects (lists) into an environment,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-      \vskip1ex
-      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-start_date <- "2012-05-10"; end_date <- "2013-11-20"
-# Select all objects in environment and return as environment
-new_env <- as.environment(eapply(etf_env, "[",
-                  paste(start_date, end_date, sep="/")))
-# Select only sym_bols in environment and return as environment
-new_env <- as.environment(
-  lapply(as.list(etf_env)[sym_bols], "[",
-         paste(start_date, end_date, sep="/")))
-# extract and cbind adjusted prices and return to environment
-assign("price_s", rutils::do_call(cbind,
-               lapply(ls(etf_env), function(sym_bol) {
-                 x_ts <- Ad(get(sym_bol, etf_env))
-                 colnames(x_ts) <- sym_bol
-                 x_ts
-               })), envir=new_env)
-# get sizes of OHLC xts series in etf_env
-sapply(mget(sym_bols, envir=etf_env), object.size)
-# extract and cbind adjusted prices and return to environment
-col_name <- function(x_ts)
-  strsplit(colnames(x_ts), split="[.]")[[1]][1]
-assign("price_s", rutils::do_call(cbind,
-               lapply(mget(etf_env$sym_bols, envir=etf_env),
-                      function(x_ts) {
-                        x_ts <- Ad(x_ts)
-                        colnames(x_ts) <- col_name(x_ts)
-                        x_ts
-               })), envir=new_env)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Loading Stock Tickers}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The file \texttt{sp500\_WRDS\_08-30-17.csv} contains a \emph{data frame} of \emph{S\&P500} constituents. 
-      \vskip1ex
-      The stock tickers are stored in the column \texttt{"co\_tic"}.
-      \vskip1ex
-      The \emph{data frame} contains duplicate tickers, which must be removed.
-      \vskip1ex
-      Some tickers (like "BRK.B") are not valid symbols in \texttt{R}, so they must be downloaded separately.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
-# Inspect data frame of S&P500 constituents
-dim(sp_500)
-colnames(sp_500)
-# Extract tickers from the column co_tic
-sym_bols <- sp_500$co_tic
-# Get duplicate tickers
-ta_ble <- table(sym_bols)
-ta_ble[ta_ble>1]
-dupli_cate <- names(ta_ble[ta_ble>1])
-# Get duplicate records (rows) of sp_500
-sp_500[sym_bols %in% dupli_cate, ]
-# Get unique tickers
-sym_bols <- unique(sym_bols)
-# Find index of ticker "BRK.B"
-which(sym_bols=="BRK.B")
-# Remove "BRK.B" and later download it separately
-sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Stock Time Series From \protect\emph{Tiingo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
-      \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
-      \vskip1ex
-      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
-      \vskip1ex
-      Users must first obtain a \emph{Tiingo} API key, and then pass it in \texttt{getSymbols.tiingo()} calls:\\
-      https://www.tiingo.com/
-      \vskip1ex
-      Note that the data are downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load package HighFreq
-library(HighFreq)
-# Create new environment for data
-env_sp500 <- new.env()
-# Boolean vector of symbols already downloaded
-down_loaded <- sym_bols %in% ls(env_sp500)
-# Download in while loop from Tiingo and copy into environment
-at_tempt <- 0  # number of download attempts
-while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
-  # Download data and copy it into environment
-  at_tempt <- at_tempt + 1
-  cat("Download attempt = ", at_tempt, "\n")
-  for (sym_bol in sym_bols[!down_loaded]) {
-    cat("processing: ", sym_bol, "\n")
-    tryCatch(  # With error handler
-      getSymbols(sym_bol, src="tiingo", adjust=TRUE,
-                 from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
-      # error handler captures error condition
-      error=function(error_cond) {
-        print(paste("error handler: ", error_cond))
-      },  # end error handler
-      finally=print(paste("sym_bol=", sym_bol))
-    )  # end tryCatch
-  }  # end for
-  # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
-  Sys.sleep(10)  # Wait 10 seconds until next attempt
-}  # end while
-class(env_sp500$AAPL)
-class(index(env_sp500$AAPL))
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Handling Exceptions in Stock Symbols}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The column names for symbol \texttt{"LOW"} (Lowe's company) must be renamed for the extractor function \texttt{quantmod::Lo()} to work properly.
-      \vskip1ex
-      Some tickers (like "BRK.B") are not valid symbols in \texttt{R}, so they must be downloaded separately.
-      \vskip1ex
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# Rename "LOW" colnames to "LO_WES"
-colnames(env_sp500$LOW) <- paste("LO_WES", 
-  sapply(strsplit(colnames(env_sp500$LOW), split="[.]"), 
-         function(col_name) col_name[2]), sep=".")
-env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
-rm(LOW, envir=env_sp500)
-chart_Series(x=env_sp500$LO_WES["2017-06/"],
-  TA="add_Vo()", name="LOWES stock")
-# Download "BRK.B" separately with auto.assign=FALSE
-BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
-colnames(BRK_B) <- paste("BRK_B", 
-  sapply(strsplit(colnames(BRK_B), split="[.]"), 
-         function(col_name) col_name[2]), sep=".")
-env_sp500$BRK_B <- BRK_B
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/lowes_stock.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Rename "BF-B" colnames to "BF_B"
-colnames(env_sp500$"BF-B") <- paste("BF_B", 
-  sapply(strsplit(colnames(env_sp500$"BF-B"), split="[.]"), 
-         function(col_name) col_name[2]), sep=".")
-names(colnames(env_sp500$"BF-B")) <- NULL
-env_sp500$BF_B <- env_sp500$"BF-B"
-rm("BF-B", envir=env_sp500)
-      @
-
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Time Series To Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The data from \emph{Tiingo} is downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
-      \vskip1ex
-      The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
-      \vskip1ex
-      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
-      \vskip1ex
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files over \texttt{6} times faster than the function \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{278} times faster than function \texttt{cat()}!
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-class(env_sp500$AAPL)
-# The date-time index is class POSIXct not Date
-class(index(env_sp500$AAPL))
-# Coerce time indices from class POSIXct to class Date
-for (sym_bol in ls(env_sp500)) {
-  x_ts <- get(sym_bol, envir=env_sp500)
-  index(x_ts) <- as.Date(index(x_ts))
-  assign(sym_bol, x_ts, envir=env_sp500)
-}  # end for
-class(index(env_sp500$AAPL))
-# Save the environment to compressed .RData file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
-save(env_sp500, file=paste0(dir_name, "sp500.RData"))
-# Save the ETF prices into CSV files
-dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
-for (sym_bol in ls(env_sp500)) {
-  zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
-}  # end for
-# Or using lapply()
-file_names <- lapply(ls(env_sp500), function(sym_bol) {
-  x_ts <- get(sym_bol, envir=env_sp500)
-  zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
-  sym_bol
-})  # end lapply
-unlist(file_names)
-# Or using eapply() and data.table::fwrite()
-file_names <- eapply(env_sp500 , function(x_ts) {
-  file_name <- rutils::get_name(colnames(x_ts)[1])
-  data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
-  file_name
-})  # end eapply
-unlist(file_names)
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Time Series from Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
-      \vskip1ex
-      The function \texttt{Sys.glob()} lists files matching names obtained from wildcard expansion.
-      \vskip1ex
-      The easiest way to share data between \texttt{R} and \emph{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
-      \vskip1ex
-      The function \texttt{data.table::setDF()} coerces a \emph{data table} object into a \emph{data frame} using a \emph{side effect}, without making copies of data.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files over \texttt{6} times faster than the function \texttt{read.csv()}!
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Load the environment from compressed .RData file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
-load(file=paste0(dir_name, "sp500.RData"))
-# Get all the .csv file names in the directory
-dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
-file_names <- Sys.glob(paste0(dir_name, "*.csv"))
-# Create new environment for data
-env_sp500 <- new.env()
-for (file_name in file_names) {
-  x_ts <- xts::as.xts(zoo::read.csv.zoo(file_name))
-  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
-  assign(sym_bol, x_ts, envir=env_sp500)
-}  # end for
-# Or using fread()
-for (file_name in file_names) {
-  x_ts <- data.table::fread(file_name)
-  data.table::setDF(x_ts)
-  x_ts <- xts::xts(x_ts[, -1], as.Date(x_ts[, 1]))
-  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
-  assign(sym_bol, x_ts, envir=env_sp500)
-}  # end for
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Stock Time Series From \protect\emph{Alpha Vantage}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
-      \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
-      \vskip1ex
-      The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()}.
-      \vskip1ex
-      Users must first obtain an \emph{Alpha Vantage} API key, and then pass it in \texttt{getSymbols.av()} calls:\\
-      https://www.alphavantage.co/
-      \vskip1ex
-      The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
-    \column{0.6\textwidth}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Remove all files from environment(if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Download in while loop from Alpha Vantage and copy into environment
-down_loaded <- sym_bols %in% ls(env_sp500)
-at_tempt <- 0
-while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
-  # Download data and copy it into environment
-  at_tempt <- at_tempt + 1
-  for (sym_bol in sym_bols[!down_loaded]) {
-    cat("processing: ", sym_bol, "\n")
-    tryCatch(  # With error handler
-      getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500,
-                 output.size="full", api.key="T7JPW54ES8G75310"),
-      # error handler captures error condition
-      error=function(error_cond) {
-        print(paste("error handler: ", error_cond))
-      },  # end error handler
-      finally=print(paste("sym_bol=", sym_bol))
-    )  # end tryCatch
-  }  # end for
-  # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
-  Sys.sleep(10)  # Wait 10 seconds until next attempt
-}  # end while
-# Adjust all OHLC prices in environment
-for (sym_bol in ls(env_sp500)) {
-  assign(sym_bol,
-    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE),
-    envir=env_sp500)
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{S\&P500} Index Time Series From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} stock market index is a capitalization-weighted average of the 500 largest U.S. companies, and covers about 80\% of the U.S. stock market capitalization,
-      \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{S\&P500} index (symbol \emph{\textasciicircum{}GSPC}), and for the \emph{S\&P500} total return index (symbol \emph{\textasciicircum{}SP500TR}),
-      \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
-      \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}GSPC} for the \emph{S\&P500} stock market index isn't a valid name in \texttt{R},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
-      \vskip1ex
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Assign name SP500 to ^GSPC symbol
-setSymbolLookup(
-  SP500=list(name="^GSPC", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# Download S&P500 prices into etf_env
-getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$SP500["2016/"],
-             TA="add_Vo()",
-             name="S&P500 index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading The \protect\emph{DJIA} Index Time Series From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Dow Jones Industrial Average (\emph{DJIA}) stock market index is a price-weighted average of the 30 largest U.S. companies (same number of shares per company),
-      \vskip1ex
-      \emph{Yahoo} provides daily \emph{OHLC} prices for the \emph{DJIA} index (symbol \emph{\textasciicircum{}DJI}), and for the \emph{DJITR} total return index (symbol \emph{DJITR}),
-      \vskip1ex
-      But special characters in some stock symbols, like \texttt{"-"} or \texttt{"\textasciicircum{}"} are not allowed in \texttt{R} names,
-      \vskip1ex
-      For example, the symbol \emph{\textasciicircum{}DJI} for the \emph{DJIA} stock market index isn't a valid name in \texttt{R},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Assign name DJIA to ^DJI symbol
-setSymbolLookup(
-  DJIA=list(name="^DJI", src="yahoo"))
-getSymbolLookup()
-# view and clear options
-options("getSymbols.sources")
-options(getSymbols.sources=NULL)
-# Download DJIA prices into etf_env
-getSymbols("DJIA", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
-chart_Series(x=etf_env$DJIA["2016/"],
-             TA="add_Vo()",
-             name="DJIA index")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Scraping \protect\emph{S\&P500} Stock Index Constituents From Websites}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{S\&P500} index constituents change over time, and \emph{Standard \& Poor's} replaces companies that have decreased in capitalization with ones that have increased,
-      \vskip1ex
-      The \emph{S\&P500} index may contain more than 500 stocks because some companies have several share classes of stock,
-      \vskip1ex
-      The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages,
-      \vskip1ex
-      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{html} text data from a \texttt{URL},
-      \vskip1ex
-      The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{html} text data or from a remote \texttt{URL}, and returns them as a list of \emph{data frames} or matrices,
-      \vskip1ex
-      \texttt{readHTMLTable()} can't parse secure \texttt{URLs}, so they must first be downloaded using function \texttt{getURL()}, and then parsed using \texttt{readHTMLTable()},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-library(RCurl)  # Load package RCurl
-library(XML)  # Load package XML
-# Download text data from URL
-sp_500 <- getURL(
-  "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-                    stringsAsFactors=FALSE)
-str(sp_500)
-# extract colnames of data frames
-lapply(sp_500, colnames)
-# extract S&P500 constituents
-sp_500 <- sp_500[[1]]
-head(sp_500)
-# Create valid R names from symbols containing "-" or "."characters
-sp_500$names <- gsub("-", "_", sp_500$Ticker)
-sp_500$names <- gsub("[.]", "_", sp_500$names)
-# Write data frame of S&P500 constituents to CSV file
-write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-  row.names=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{S\&P500} Time Series Data From \protect\emph{Yahoo}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Before time series data for the \emph{S\&P500} index constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"},
-      \vskip1ex
-      The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R},
-      \vskip1ex
-      For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()},
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
-# Register symbols corresponding to R names
-for (in_dex in 1:NROW(sp_500)) {
-  cat("processing: ", sp_500$Ticker[in_dex], "\n")
-  setSymbolLookup(structure(
-    list(list(name=sp_500$Ticker[in_dex])),
-    names=sp_500$names[in_dex]))
-}  # end for
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
-# Or download in loop
-for (sym_bol in sp_500$names) {
-  cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
-             name="BRK-B stock")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{FRED} Time Series Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{FRED} is a database of economic time series maintained by the Federal Reserve Bank of St. Louis:\\
-      \hskip1em\url{http://research.stlouisfed.org/fred2/}
-      \vskip1ex
-      The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment},
-      \vskip1ex
-      \texttt{getSymbols()} can download \emph{FRED} data with the argument \texttt{"src"} set to \texttt{FRED},
-      \vskip1ex
-      If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently,
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/fred_unemp_rate.png}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(quantmod)
-# Download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
-                  auto.assign=FALSE,
-                  src="FRED")
-# plot U.S. unemployment rate data
-chart_Series(unemp_rate["1990/"],
-            name="U.S. unemployment rate")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Quandl} Database}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets,
-      \vskip1ex
-      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license,
-      \vskip1ex
-      \emph{Quandl} offers online help and a guide to its datasets:\\
-      \hskip1em\url{https://www.quandl.com/help/r}\\
-      \hskip1em\url{https://www.quandl.com/browse}\\
-      \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
-      \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
-      \vskip1ex
-      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
-      \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-install.packages("devtools")
-library(devtools)
-# Install package Quandl from github
-install_github("quandl/R-package")
-library(Quandl)  # Load package Quandl
-# Register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# get short description
-packageDescription("Quandl")
-# Load help page
-help(package="Quandl")
-# Remove Quandl from search path
-detach("package:Quandl")
-      @
-      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R},
-      \vskip1ex
-      To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Time Series Data from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()},
-      \vskip1ex
-      The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
-      \vskip1ex
-      \emph{Quandl} datasets have a unique \emph{Quandl code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
-      \vskip1ex
-      \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
-      \hskip1em\url{https://www.quandl.com/data/WIKI}
-      \vskip1ex
-      \emph{SEC} is a free database of stock fundamentals extracted from \emph{SEC} \emph{10Q} and \emph{10K} filings (but not harmonized),\\
-      \hskip1em\url{https://www.quandl.com/data/SEC}
-      \vskip1ex
-      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond}
-      \hskip1em\url{https://www.quandl.com/data/RAYMOND-Raymond?keyword=aapl}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Download EOD AAPL prices from WIKI free database
-price_s <- Quandl(code="WIKI/AAPL",
-                  type="xts", start_date="1990-01-01")
-x11(width=14, height=7)
-chart_Series(price_s["2016", 1:4],
-    name="AAPL OHLC prices")
-# Add trade volume in extra panel
-add_TA(price_s["2016", 5])
-# Download euro currency rates
-price_s <- Quandl(code="BNP/USDEUR",
-    start_date="2013-01-01",
-    end_date="2013-12-01", type="xts")
-# Download multiple time series
-price_s <- Quandl(code=c("NSE/OIL", "WIKI/AAPL"),
-    start_date="2013-01-01", type="xts")
-# Download AAPL gross profits
-prof_it <- Quandl("RAYMOND/AAPL_GROSS_PROFIT_Q",
-    type="xts")
-chart_Series(prof_it, name="AAPL gross profits")
-# Download Hurst time series
-price_s <- Quandl(code="PE/AAPL_HURST",
-    start_date="2013-01-01", type="xts")
-chart_Series(price_s["2016/", 1],
-             name="AAPL Hurst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Stock Index and Instrument Metadata on \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
-      \vskip1ex
-      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
-      \hskip1em\url{https://www.quandl.com/blog/useful-lists}
-      \vskip1ex
-      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# Load S&P500 stock Quandl codes
-sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
-# Replace "-" with "_" in symbols
-sp_500$free_code <-
-  gsub("-", "_", sp_500$free_code)
-head(sp_500)
-# vector of symbols in sp_500 frame
-tick_ers <- gsub("-", "_", sp_500$ticker)
-# Or
-tick_ers <- matrix(unlist(
-  strsplit(sp_500$free_code, split="/"),
-  use.names=FALSE), ncol=2, byrow=TRUE)[, 2]
-# Or
-tick_ers <- do_call_rbind(
-  strsplit(sp_500$free_code, split="/"))[, 2]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Multiple Time Series from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl},
-      \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name),
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# Download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-                  start_date="1990-01-01",
-                  type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-             name="XOM stock")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading Futures Time Series from \protect\emph{Quandl}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Quandl} provides the
-      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} 
-      of time series of prices for \texttt{600} different futures contracts.
-      \vskip1ex
-      The
-      \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} contains daily \emph{OHLC} prices for continuous futures contracts.
-      \vskip1ex
-      A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
-      \vskip1ex
-      The data is curated by the \emph{Quandl} community from data provided by the \emph{CME}, \emph{ICE}, \emph{LIFFE}, and other exchanges.
-      \vskip1ex
-      The \emph{Quandl codes} are specified as \texttt{CHRIS/\{EXCHANGE\}\_\{CODE\}\{DEPTH\}}, where \texttt{\{DEPTH\}} is the depth of the chained contract.
-      \vskip1ex
-      The chained front month contracts have depth \texttt{1}, the back month contracts have depth \texttt{2}, etc.
-      \vskip1ex
-      The continuous front and back month contracts allow building continuous futures curves.
-      \vskip1ex
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)
-library(Quandl)
-# Register Quandl API key
-Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# Download E-mini S&P500 futures prices
-price_s <- Quandl(code="CHRIS/CME_ES1",
-  type="xts", start_date="1990-01-01")
-price_s <- price_s[, c("Open", "High", "Low", "Last", "Volume")]
-colnames(price_s)[4] <- "Close"
-# plot the prices
-x11(width=5, height=4)  # Open x11 for plotting
-chart_Series(x=price_s["2008-06/2009-06"],
-             TA="add_Vo()",
-             name="S&P500 Futures")
-# plot dygraph
-dygraphs::dygraph(price_s["2008-06/2009-06", -5],
-  main="S&P500 Futures") %>%
-  dyCandlestick()
-      @
-      \vspace{-1em}
-      For example, the \emph{Quandl code} for the continuous \emph{E-mini S\&P500} front month futures is \texttt{CHRIS/CME\_ES1}, while for the back month it's \texttt{CHRIS/CME\_ES2}, for the second back month it's \texttt{CHRIS/CME\_ES3}, etc.
-      \vskip1ex
-      The \emph{Quandl code} for the \emph{E-mini Oil} futures is \texttt{CHRIS/CME\_QM1}, for the \emph{E-mini euro FX} futures is \texttt{CHRIS/CME\_E71}, etc.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{VIX} Futures Files from CBOE}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The CFE (CBOE Futures Exchange) provides daily \href{https://markets.cboe.com/us/futures/market_statistics/historical_data/}{CBOE Historical Data for Volatility Futures}, including the \emph{VIX} futures.
-      \vskip1ex
-      The CBOE data incudes \emph{OHLC} prices and also the \emph{settlement} price (in column \texttt{"Settle"}).
-      \vskip1ex
-      The \emph{settlement} price is usually defined as the weighted average price (\emph{WAP}) or the midpoint price, and is different from the \emph{Close} price.
-      \vskip1ex
-      The \emph{settlement} price is used for calculating the daily \emph{mark to market} (value) of the futures contract.
-      \vskip1ex
-      Futures exchanges require that counterparties exchange (settle) the \emph{mark to market} value of the futures contract daily, to reduce counterparty default risk.
-      \vskip1ex
-      The function \texttt{download.file()} downloads files from the internet.
-      \vskip1ex
-      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
-  stringsAsFactors=FALSE, row.names=1)
-dir_name <- "C:/Develop/data/vix_data"
-dir.create(dir_name)
-sym_bols <- rownames(date_s)
-file_names <- file.path(dir_name, paste0(sym_bols, ".csv"))
-log_file <- file.path(dir_name, "log_file.txt")
-cboe_url <- "https://markets.cboe.com/us/futures/market_statistics/historical_data/products/csv/VX/"
-url_s <- paste0(cboe_url, date_s[, 1])
-# Download files in loop
-for (it in seq_along(url_s)) {
-    tryCatch(  # Warning and error handler
-        download.file(url_s[it],
-                destfile=file_names[it], quiet=TRUE),
-      # Warning handler captures warning condition
-      warning=function(warning_cond) {
-        cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
-      },  # end warning handler
-      # error handler captures error condition
-      error=function(error_cond) {
-        cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
-      },  # end error handler
-      finally=cat(paste("Processing file name =", file_names[it], "\n"), append=TRUE)
-    )  # end tryCatch
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Downloading \protect\emph{VIX} Futures Data Into an Environment}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{quantmod::getSymbols()} with the parameter \texttt{src="cfe"} downloads CFE data into the specified \emph{environment}. (But this requires first loading the package \emph{qmao}.)
-      \vskip1ex
-      Currently \texttt{quantmod::getSymbols()} doesn't download the most recent data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create new environment for data
-vix_env <- new.env()
-# Download VIX data for the months 6, 7, and 8 in 2018
-library(qmao)
-quantmod::getSymbols("VX", Months=1:12,
-  Years=2018, src="cfe", env=vix_env)
-# Or
-qmao::getSymbols.cfe(Symbols="VX",
-  Months=6:8, Years=2018, env=vix_env,
-  verbose=FALSE, auto.assign=TRUE)
-# Calculate the classes of all the objects
-# In the environment vix_env
-unlist(eapply(vix_env,
-  function(x) {class(x)[1]}))
-class(vix_env$VX_M18)
-colnames(vix_env$VX_M18)
-# Save the data to a binary file called "vix_cboe.RData".
-save(vix_env,
-  file="C:/Develop/data/vix_data/vix_cboe.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Combining \texttt{R} with \protect\emph{Excel}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Data From \protect\emph{Excel} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \emph{Excel} spreadsheet files into \texttt{R}.
-      \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \emph{Excel} file.
-      \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \emph{Excel} file in \texttt{.xlsx} format.
-      \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
-      \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
-      \vskip1ex
-      \emph{tibble} objects are also used by the package 
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-      \vskip1ex
-      DataCamp offers a 
-      \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Install and load package readxl
-install.packages("readxl")
-library(readxl)
-dir_name <- "C:/Develop/R/lecture_slides/data"
-fil_e <- file.path(dir_name, "multi_tabs.xlsx")
-# Read a time series from first sheet of xlsx file
-tib_ble <- readxl::read_xlsx(fil_e)
-class(tib_ble)
-# Coerce POSIXct dates into Date class
-class(tib_ble$Dates)
-tib_ble$Dates <- as.Date(tib_ble$Dates)
-# Some columns are character strings
-sapply(tib_ble, class)
-sapply(tib_ble, is.character)
-# Coerce columns with strings to numeric
-lis_t <- lapply(tib_ble, function(x) {
-  if (is.character(x))
-    as.numeric(x)
-  else
-    x
-})  # end lapply
-# Coerce list into xts time series
-xt_s <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
-class(xt_s); dim(xt_s)
-# Replace NA values with the most recent non-NA values
-sum(is.na(xt_s))
-xt_s <- zoo::na.locf(xt_s)
-xt_s <- zoo::na.locf(xt_s, fromLast=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Multiple Sheets From \protect\emph{Excel} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \emph{Excel} spreadsheet.
-      \vskip1ex
-      The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \emph{Excel} spreadsheet files into \texttt{R}.
-      \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \emph{Excel} file.
-      \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \emph{Excel} file in \texttt{.xlsx} format.
-      \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
-      \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
-      \vskip1ex
-      \emph{tibble} objects are also used by the package 
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Read names of all the sheets in an Excel spreadsheet
-name_s <- readxl::excel_sheets(fil_e)
-# Read all the sheets from an Excel spreadsheet
-sheet_s <- lapply(name_s, read_xlsx, path=fil_e)
-names(sheet_s) <- name_s
-# sheet_s is a list of tibbles
-sapply(sheet_s, class)
-# Create function to coerce tibble to xts
-to_xts <- function(tib_ble) {
-  tib_ble$Dates <- as.Date(tib_ble$Dates)
-  # Coerce columns with strings to numeric
-  lis_t <- lapply(tib_ble, function(x) {
-    if (is.character(x))
-      as.numeric(x)
-    else
-      x
-  })  # end lapply
-  # Coerce list into xts series
-  xts::xts(do.call(cbind, lis_t)[, -1], lis_t$Dates)
-}  # end to_xts
-# Coerce list of tibbles to list of xts
-class(sheet_s)
-sheet_s <- lapply(sheet_s, to_xts)
-sapply(sheet_s, class)
-# Replace NA values with the most recent non-NA values
-sapply(sheet_s, function(xt_s) sum(is.na(xt_s)))
-sheet_s <- lapply(sheet_s, zoo::na.locf)
-sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Calculations in \protect\emph{Excel} Using \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Excel} can run \texttt{R} using either \emph{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only),
-      \vskip1ex
-      \texttt{R} can perform calculations and export its output to \emph{Excel} files, or it can modify \emph{Excel} files (requires packages using \emph{Java} or \emph{Perl} code), 
-      \vskip1ex
-      Calculations in \texttt{R} and \emph{Excel} can be combined in several different ways: 
-      \begin{itemize}
-        \item Data from \emph{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method), 
-        \item \emph{Excel} can execute \texttt{R} commands using \emph{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
-        \item An \emph{Excel} add-in can execute \texttt{R} commands as \emph{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins 
-        \emph{\href{http://bert-toolkit.com/}{BERT}}, 
-        \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}}, 
-        \item \texttt{R} can modify \emph{Excel} files and run \emph{Excel} functions (requires packages using \emph{Java} or \emph{Perl} code): packages 
-        \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}}, 
-        \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}}, 
-        \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}}, 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### perform calculations in R, 
-### And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", 
-                      row.names=1)
-# Subset data frame
-data_read <- 
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code from \protect\emph{Excel}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \emph{Excel}:
-      \begin{itemize}
-        \item Export data from \emph{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \emph{Excel} via \texttt{.csv} files (simplest and best method),
-        \item Run \texttt{R} from \emph{Excel} using \emph{VBA} scripts, and exchange data via \texttt{.csv} files, 
-        \item Run \texttt{R} from \emph{Excel} using an \emph{Excel} add-in, and execute \texttt{R} commands as \emph{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### perform calculations in R, 
-### And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", 
-                      row.names=1)
-# Subset data frame
-data_read <- 
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code Using \protect\emph{VBA} Scripts}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      An \texttt{R} session can be launched from \emph{Excel} using a \emph{VBA} script (macro),
-      \vskip1ex
-      The \emph{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}),
-      \vskip1ex
-      A \emph{VBA} script can also run an \texttt{R} \emph{batch} process,
-      \vskip1ex
-      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \emph{Excel},
-    \column{0.6\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run R process
-Sub run_r()
- Call shell("R", vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run interactive R process
-Sub run_rinteractive()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_interactive.R"
- Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run batch R process
-Sub run_rbatch()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_to_file.R"
- Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{BERT} Excel Add-in for Running \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{BERT} is an \emph{Excel} add-in which allows executing \texttt{R} commands as \emph{Excel} functions:\\
-      \hskip1em\url{http://bert-toolkit.com/}\\
-      \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
-      \vskip1ex
-      \emph{BERT} launches its own \texttt{R} process from \emph{Excel},
-      \vskip1ex
-      \emph{BERT} can create its own menu in the \emph{Excel} add-ins tab:\\
-      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \emph{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll, 
-      \vskip1ex
-      \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows},
-    \column{0.5\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' calculate sum of Excel cells using R
-R.Add(B1:D1)
-
-' remove NAs over Excel cell range using R function
-R.na_omit(F2:H4)
-
-' calculate eigenValues of Excel matrix using R function
-R.EigenValues(A1:H8)
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{googlesheets} for Interacting with \protect\emph{Google Sheets}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/googlesheets/index.html}{\emph{googlesheets}} 
-      allows interacting with \emph{Google Sheets} using \texttt{R} commands.
-      \vskip1ex
-      If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
-      \hskip1em\url{https://docs.google.com/spreadsheets/}
-      \vskip1ex
-      The function \texttt{gs\_ls()} lists the files in \emph{Google Sheets}, 
-      \vskip1ex
-      The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object, 
-      \vskip1ex
-      A \texttt{googlesheet} object contains information (metadata) about a \emph{Google} sheet, such as its name and key, but not the sheet data itself, 
-      \vskip1ex
-      The function \texttt{gs\_browse()} opens a \emph{Google} sheet in an internet browser, 
-      \vskip1ex
-      You can find online a document about 
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/basic-usage.html}{using \emph{googlesheets}}, 
-      \vskip1ex
-      You can find online a document about 
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/managing-auth-tokens.html}{managing authentication tokens}, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# Install latest version of googlesheets
-devtools::install_github("jennybc/googlesheets")
-# Load package googlesheets
-library(googlesheets)
-library(dplyr)
-# Authenticate authorize R to view and manage your files
-gs_auth(new_user=TRUE)
-# List the files in Google Sheets
-googlesheets::gs_ls()
-# Register a sheet
-google_sheet <- gs_title("my_data")
-# view sheet summary
-google_sheet
-# List tab names in sheet
-tab_s <- gs_ws_ls(google_sheet)
-# Set curl options
-library(httr)
-httr::set_config(config(ssl_verifypeer=0L))
-# Read data from sheet
-gs_read(google_sheet)
-# Read data from single tab of sheet
-gs_read(google_sheet, ws=tab_s[1])
-gs_read_csv(google_sheet, ws=tab_s[1])
-# Or using dplyr pipes
-google_sheet %>% gs_read(ws=tab_s[1])
-# Download data from sheet into file
-gs_download(google_sheet, ws=tab_s[1], 
-            to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
-# Open sheet in internet browser
-gs_browse(google_sheet)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-% \section{First Steps in \texttt{R}}
-\section{The \texttt{R} Environment}
-
-
-%%%%%%%%%%%%%%%
-\subsection{A First \texttt{R} Session}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Variables are created by an assignment operation, and they don't have to be declared,
-      \vskip1ex
-      The standard assignment operator in \texttt{R} is the arrow symbol \texttt{"<-"},
-      \vskip1ex
-      \texttt{R} interprets text in quotes ("") as character strings,
-      \vskip1ex
-      Text that is not in quotes ("") is interpreted as a \emph{symbol} or \emph{expression},
-      \vskip1ex
-      Typing a \emph{symbol} or \emph{expression} evaluates it,
-      \vskip1ex
-      \texttt{R} uses the hash "\texttt{\#}" sign to mark text as comments, 
-      \vskip1ex
-      All text after the hash "\texttt{\#}" sign is treated as a comment, and is not executed as code, 
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE>>=
-# "<-" and "=" are valid assignment operators
-my_var <- 3
-
-# typing a symbol or expression evaluates it
-my_var
-
-# text in quotes is interpreted as a string
-my_var <- "Hello World!"
-
-# typing a symbol or expression evaluates it
-my_var
-
-my_var  # text after hash is treated as comment
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exploring an \texttt{R} Session}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{getwd()} returns a vector of length \texttt{1}, with the first element containing a string with the name of the current working directory (\texttt{cwd}),
-      \vskip1ex
-      The function \texttt{setwd()} accepts a character string as input (the name of the directory), and sets the working directory to that string,
-      \vskip1ex
-      \texttt{R} is a functional language, and \texttt{R} commands are functions, so they must be followed by parentheses \texttt{"()"},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-getwd()  # get cwd
-setwd("C:/Develop/R")  # Set cwd
-getwd()  # get cwd
-      @
-  \end{columns}
-\end{block}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Get system date and time
-      \vskip4ex
-      Just the date
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE>>=
-Sys.time()  # get date and time
-
-Sys.Date()  # get date only
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Workspace}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The workspace is the current \texttt{R} working environment, which includes all user-defined objects and the command history,
-      \vskip1ex
-      The function \texttt{ls()} returns names of objects in the \texttt{R} workspace,
-      \vskip1ex
-      The function \texttt{rm()} removes objects from the \texttt{R} workspace,
-      \vskip1ex
-      The workspace can be saved into and loaded back from an \texttt{.RData} file (compressed binary file format),
-      \vskip1ex
-      The function \texttt{save.image()} saves the whole workspace,
-      \vskip1ex
-      The function \texttt{save()} saves just the selected objects,
-      \vskip1ex
-      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-rm(list=ls())
-setwd("C:/Develop/R/lecture_slides/data")
-var1 <- 3  # Define new object
-ls()  # List all objects in workspace
-# List objects starting with "v"
-ls(pattern=glob2rx("v*"))
-# Remove all objects starting with "v"
-rm(list=ls(pattern=glob2rx("v*")))
-save.image()  # Save workspace to file .RData in cwd
-rm(var1)  # Remove object
-ls()  # List objects
-load(".RData")
-ls()  # List objects
-var2 <- 5  # Define another object
-save(var1, var2,  # Save selected objects
-     file="C:/Develop/R/lecture_slides/data/my_data.RData")
-rm(list=ls())  # Remove all objects
-ls()  # List objects
-load_ed <- load(file="C:/Develop/R/lecture_slides/data/my_data.RData")
-load_ed
-ls()  # List objects
-      @
-  \end{columns}
-\end{block}
-% \pause
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      When you quit \texttt{R} you'll be prompted "Save workspace image?"\\
-      \vskip1ex
-      If you answer $YES$ then the workspace will be saved into the \texttt{.RData} file in the \texttt{cwd},\\
-      \vskip1ex
-      When you start \texttt{R} again, the workspace will be automatically loaded from the existing \texttt{.RData} file,\\
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-        q()  # quit R session
-      @
-  \end{columns}
-\end{block}
-
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{history()} displays recent commands,\\
-      \vskip1ex
-      You can also save and load the command history from a file,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-history(5)  # Display last 5 commands
-savehistory(file="myfile")  # Default is ".Rhistory" 
-loadhistory(file="myfile")  # Default is ".Rhistory"
-      @
-  \end{columns}
-\end{block}
-% \pause
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} Session Info}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{sessionInfo()} returns information about the current \texttt{R} session,
-      \begin{itemize}
-        \item \texttt{R version},
-        \item \texttt{OS platform},
-        \item \texttt{locale} settings,
-        \item list of packages that are loaded and attached to the search path,
-        \item list of packages that are loaded, but \emph{not} attached to the search path,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE>>=
-sessionInfo()  # get R version and other session info
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Environment Variables}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} uses environment variables to store information about its environment, such as paths to directories containing files used by \texttt{R} (startup, history, OS),
-      \vskip1ex
-      For example the environment variables:
-      \begin{itemize}
-        \item \texttt{R\_USER} and \texttt{HOME} store the \texttt{R} user Home directory,
-        \item \texttt{R\_HOME} stores the root directory of the \texttt{R} installation,
-      \end{itemize}
-      The functions \texttt{Sys.getenv()} and \texttt{Sys.setenv()} display and set the values environment variables,
-      \vskip1ex
-      \texttt{Sys.getenv("env\_var")} displays the environment variable \texttt{"env\_var"},
-      \vskip1ex
-      \texttt{Sys.setenv("env\_var=value")} sets the environment variable \texttt{"env\_var"} equal to \texttt{"value"},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-Sys.getenv()[5:7]  # List some environment variables
-
-Sys.getenv("HOME")  # get R user HOME directory
-
-Sys.setenv(Home="C:/Develop/data")  # Set HOME directory
-
-Sys.getenv("HOME")  # get user HOME directory
-
-Sys.getenv("R_HOME")  # get R_HOME directory
-
-R.home()  # get R_HOME directory
-
-R.home("etc")  # get "etc" sub-directory of R_HOME
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Global \protect\emph{Options} Settings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} uses a list of global \emph{options} which affect how \texttt{R} computes and displays results,
-      \vskip1ex
-      The function \texttt{options()} either sets or displays the values of global \emph{options},
-      \vskip1ex
-      \texttt{options("globop")} displays the current value of option \texttt{"globop"},
-      \vskip1ex
-      \texttt{getOption("globop")} displays the current value of option \texttt{"globop"},
-      \vskip1ex
-      \texttt{options(globop=value)} sets the option \texttt{"globop"} equal to \texttt{"value"},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-# ?options  # Long list of global options
-# Interpret strings as characters, not factors
-getOption("stringsAsFactors")  # Display option
-options("stringsAsFactors")  # Display option
-options(stringsAsFactors=FALSE)  # Set option
-# number of digits printed for numeric values
-options(digits=3)
-# control exponential scientific notation of print method
-# positive "scipen" values bias towards fixed notation
-# negative "scipen" values bias towards scientific notation
-options(scipen=100)
-# maximum number of items printed to console
-options(max.print=30)
-# Warning levels options
-# negative - warnings are ignored
-options(warn=-1)
-# zero - warnings are stored and printed after top-level function has completed
-options(warn=0)
-# One - warnings are printed as they occur
-options(warn=1)
-# two or larger - warnings are turned into errors
-options(warn=2)
-# Save all options in variable
-op_tions <- options()
-# Restore all options from variable
-options(op_tions)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Constructing File Paths}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Names of \emph{file paths} can be constructed using the function \texttt{paste()},
-      \vskip1ex
-      The function \texttt{file.path()} is similar to \texttt{paste()}, but it also automatically uses the correct file separator for the computer platform,
-      \vskip1ex
-      The function \texttt{normalizePath()} performs tilde-expansions and displays file paths in user-readable format,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE>>=
-# R startup (site) directory
-paste(R.home(), "etc", sep="/")
-
-file.path(R.home(), "etc")  # better way
-
-# perform tilde-expansions and convert to readable format
-normalizePath(file.path(R.home(), "etc"), winslash="/")
-
-normalizePath(R.home("etc"), winslash="/")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} System Directories under \protect\emph{Windows}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} uses several different directories to search, read, and store files:
-      \begin{itemize}
-        \item \emph{Windows} user \texttt{personal} directory: \texttt{"\textasciitilde{}"} (\texttt{"\%USERPROFILE\%/Documents"}),
-        \item \texttt{R} user \texttt{HOME} directory (\texttt{R\_USER} and \texttt{Home}),
-        \item \texttt{cwd} current working directory - the default directory for storing and retrieving user files (such as \texttt{.Rhistory}, \texttt{.RData}, etc.),
-        \item \texttt{R\_HOME} root directory of the \texttt{R} installation,
-        \item \texttt{R} startup (site) directory: \texttt{R\_HOME/etc/},
-      \end{itemize}
-      By default, the \texttt{R} user \texttt{HOME} directory is the \emph{Windows} user \texttt{personal} directory,
-      \vskip1ex
-      The \texttt{cwd} is set to the directory from which \texttt{R} is invoked, or the \texttt{R} user \texttt{HOME} directory,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-normalizePath("~", winslash="/")  # Windows user HOME directory
-
-Sys.getenv("HOME")  # R user HOME directory
-
-setwd("C:/Develop/R")
-getwd()  # current working directory
-
-# R startup (site) directory
-normalizePath(file.path(R.home(), "etc"), winslash="/")
-
-# R executable directory
-normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
-
-# R documentation directory
-normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{File and Directory Listing Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vskip1ex
-      The functions \texttt{list.files()} and \texttt{dir()} return a vector of names of files in a given directory.
-      \vskip1ex
-      The function \texttt{list.dirs()} lists the directories in a given directory.
-      \vskip1ex
-      The function \texttt{Sys.glob()} lists files matching names obtained from wildcard expansion.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-sample(dir(), 5)  # get 5 file names - dir() lists all files
-sample(dir(pattern="csv"), 5)  # List files containing "csv"
-sample(list.files(R.home()), 5)  # All files in R_HOME directory
-sample(list.files(R.home("etc")), 5)  # All files in "etc" sub-directory of R_HOME directory
-sample(list.dirs(), 5)  # Directories in cwd
-list.dirs(R.home("etc"))  # Directories in "etc" sub-directory
-sample(Sys.glob("*.csv"), 5)
-Sys.glob(R.home("etc"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Invoking an \texttt{R} Session in \protect\emph{Windows}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \texttt{R} session can run in several different ways:
-      \begin{itemize}
-        \item In an \texttt{R} terminal (by invoking \texttt{R.exe} or \texttt{Rterm.exe}),
-        \item In an \texttt{R} RGui (by invoking \texttt{RGui.exe}),
-        \item In an \emph{RStudio} session (or some other IDE),
-      \end{itemize}
-      The initial value of the \texttt{cwd} depends on how the \texttt{R} session is invoked.\\
-      If \texttt{R} is invoked:
-      \begin{itemize}
-        \item from the \emph{Windows} menu, then \texttt{cwd} is set to the \texttt{R} user \texttt{HOME} directory,
-        \item by clicking on a file (\texttt{*.R}, \texttt{.RData}, etc.), then \texttt{cwd} is set to the file's directory,
-        \item by typing \texttt{R.exe} or \texttt{Rterm.exe} in the command shell (after setting the \texttt{PATH}), then \texttt{cwd} is set to the directory where the command was typed,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=TRUE>>=
-getwd()  # get cwd
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{R} Session Startup}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      At startup \texttt{R} sources (reads) several types of files, in the following order:
-      \begin{itemize}
-        \item \texttt{Renviron} files defining environment variables,
-        \item \texttt{Rprofile} files containing code executed at \texttt{R} startup,
-        \item \texttt{RData} files containing data to be loaded at \texttt{R} startup,
-      \end{itemize}
-      \texttt{R} sources files from several directories, in the following order:
-      \begin{itemize}
-        \item \texttt{R} startup directory: \texttt{Renviron.site} and \texttt{Rprofile.site} files,
-        \item \texttt{cwd} directory: \texttt{.Renviron}, \texttt{.Rprofile}, and \texttt{.RData} files,
-        \item \texttt{HOME} user directory (only if no files found in \texttt{cwd}),
-      \end{itemize}
-      The above startup process can be customized by setting environment variables,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-setwd("C:/Develop/R")
-# help(Startup)  # Description of R session startup mechanism
-
-# files in R startup directory directory
-dir(normalizePath(file.path(R.home(), "etc"), winslash="/"))
-
-# *.R* files in cwd directory
-getwd()
-dir(getwd(), all.files=TRUE, pattern="\\.R")
-dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Customizing the \texttt{R} Environment}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      users can customize their \texttt{R} environments and workspace by creating custom startup files in different working directories.
-      The {Renviron} and {Rprofile} files can be placed in any directory
-      \texttt{Renviron} files defining environment variables,
-      \texttt{Rprofile} files containing code executed at \texttt{R} startup,
-      If \texttt{R} is invoked from a terminal, then the directory from which it's invoked will be sourced.
-      At startup \texttt{R} searches for startup files in the \texttt{cwd} and \texttt{R} home directory,
-      every directory can have its own special initialization file
-
-      environment files (containing environment variables to be set), and 
-      .Rprofile files containing \texttt{R} scripts (code),
-      
-      startup files may contain environment variables, option settings, and other \texttt{R} scripts
-      startup profile file of R code
-      \href{C:/Program Files/R/R-3.1.2/}{C:/Program Files/R/R-3.1.2/}\\
-      to process for setting environment variables. 
-      executes
-      If no \texttt{.Rprofile} file is found
-in the startup directory, then R looks for a \texttt{.Rprofile} file in the user's home directory
-and uses that (if it exists).
-      The function \texttt{getwd()} returns a vector of length \texttt{1}, with the first element containing a string with the name of the current working directory (\texttt{cwd}),
-      \texttt{R} sources the \texttt{.Rprofile} file in the current working directory or in the user's home directory (in that order)
-      every directory can have its own custom initialization file
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("C:/Develop/R")
-
-scan(file=".Rprofile", what=character(), sep="\n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Renviron} files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      At startup \texttt{R} searches for startup files in the \texttt{cwd} and \texttt{R} home directory,
-
-Environment variables can be supplied as "symbol=value" pairs on the command line.
-      environment files (containing environment variables to be set), and 
-      .Rprofile files containing \texttt{R} scripts (code),
-      
-      startup files may contain environment variables, option settings, and other \texttt{R} scripts
-      startup profile file of R code
-      \href{C:/Program Files/R/R-3.1.2/}{C:/Program Files/R/R-3.1.2/}\\
-      to process for setting environment variables. 
-      executes
-      If no \texttt{.Rprofile} file is found
-in the startup directory, then R looks for a \texttt{.Rprofile} file in the user's home directory
-and uses that (if it exists).
-      The function \texttt{getwd()} returns a vector of length \texttt{1}, with the first element containing a string with the name of the current working directory (\texttt{cwd}),
-      \texttt{R} sources the \texttt{.Rprofile} file in the current working directory or in the user's home directory (in that order)
-      every directory can have its own custom initialization file
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-cat("sourcing .Rprofile file\n")
-
-
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Rprofile} files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      At startup \texttt{R} searches for startup files in the \texttt{cwd} and \texttt{R} home directory,
-
-
-      environment files (containing environment variables to be set), and 
-      .Rprofile files containing \texttt{R} scripts (code),
-      
-      startup files may contain environment variables, option settings, and other \texttt{R} scripts
-      startup profile file of R code
-      \href{C:/Program Files/R/R-3.1.2/}{C:/Program Files/R/R-3.1.2/}\\
-      to process for setting environment variables. 
-      executes
-      If no \texttt{.Rprofile} file is found
-in the startup directory, then R looks for a \texttt{.Rprofile} file in the user's home directory
-and uses that (if it exists).
-      \texttt{R} sources the \texttt{.Rprofile} file in the current working directory or in the user's home directory (in that order)
-      every directory can have its own custom initialization file
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-cat("sourcing .Rprofile file\n")
-
-
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-% \section{Managing the \texttt{R} Environment}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Environments in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\secname}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Environments consist of a \emph{frame} (a set of symbol-value pairs) and an \emph{enclosure} (a pointer to an enclosing environment),
-      \vskip1ex
-      There are three system environments:
-      \begin{itemize}
-        \item \texttt{globalenv()} the user's workspace,
-        \item \texttt{baseenv()} the environment of the base package,
-        \item \texttt{emptyenv()} the only environment without an enclosure,
-      \end{itemize}
-      Environments form a tree structure of successive enclosures, with the empty environment at its root,
-      \vskip1ex
-      Packages have their own environments,
-      \vskip1ex
-      The enclosure of the base package is the empty environment,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-rm(list=ls())
-# get base environment
-baseenv()
-# get global environment
-globalenv()
-# get current environment
-environment()
-# get environment class
-class(environment())
-# Define variable in current environment
-glob_var <- 1
-# get objects in current environment
-ls(environment())
-# create new environment
-new_env <- new.env()
-# get calling environment of new environment
-parent.env(new_env)
-# Assign Value to Name
-assign("new_var1", 3, envir=new_env)
-# create object in new environment
-new_env$new_var2 <- 11
-# get objects in new environment
-ls(new_env)
-# get objects in current environment
-ls(environment())
-# environments are subset like lists
-new_env$new_var1
-# environments are subset like lists
-new_env[["new_var1"]]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Search Path}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} evaluates variables using the search path, a series of environments:
-      \begin{itemize}
-        \item global environment,
-        \item package environments,
-        \item base environment,
-      \end{itemize}
-      The function \texttt{search()} returns the search path for \texttt{R} objects,
-      \vskip1ex
-      The function \texttt{attach()} attaches objects to the search path,
-      \vskip1ex
-      Using \texttt{attach()} allows referencing object components by their names alone, rather than as components of objects,
-      \vskip1ex
-      The function \texttt{detach()} detaches objects from the search path,
-      \vskip1ex
-      The function \texttt{find()} finds where objects are located on the search path,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=TRUE>>=
-search()  # get search path for R objects
-my_list <- 
-  list(flowers=c("rose", "daisy", "tulip"), 
-       trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is in datasets base package
-      @
-      \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
-        \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
-      \end{block}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Extracting Time Series from Environments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Time series can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()},
-      \vskip1ex
-      The function \texttt{do.call()} executes a function call using a function name and a list of arguments,
-      \vskip1ex
-      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument,
-      \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data,
-      \vskip1ex
-      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list,
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
-# ETF symbols
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind, # Do.call(merge
-  as.list(rutils::etf_env)[sym_bols])
-# extract and merge adjusted prices, subset by sym_bols
-price_s <- rutils::do_call(cbind, 
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
-# Same, but works only for OHLC series
-price_s <- rutils::do_call(cbind, 
-  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <- 
-  sapply(colnames(price_s), 
-    function(col_name) 
-      strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-# Which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-
-# Save xts to csv file
-write.zoo(price_s, 
-     file="etf_series.csv", sep=",")
-# copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file="etf_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Referencing Object Components Using \texttt{with()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{with()} evaluates an expression in an environment constructed from the data, 
-      \vskip1ex
-      \texttt{with()} allows referencing object components by their names alone,
-      \vskip1ex
-      It's often better to use \texttt{with()} instead of \texttt{attach()},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=TRUE>>=
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees, 
-     c(mean(Girth), mean(Height), mean(Volume)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Running \texttt{R} Scripts and Batch Processes}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sourcing \texttt{R} Script Files in an \texttt{R} Session}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} commands can be saved into a file, and then executed from an interactive \texttt{R} session using the function \texttt{source()}, 
-      \vskip1ex
-      The function \texttt{source()} executes \texttt{R} commands contained in a file, or in a \emph{URL},
-      \vskip1ex
-      The function \texttt{file.path()} is similar to \texttt{paste()}, but it also automatically uses the correct file separator for the computer platform,
-      \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-script_dir <- "C:/Develop/R/scripts"
-# execute script file and print the commands
-source(file.path(script_dir, "script.R"), 
-       echo=TRUE)
-
-####################################
-### Script.R file contains R script to demonstrate sourcing from script files
-
-# print information about this process
-print(paste0("print: This test script was run at: ", format(Sys.time())))
-cat("cat: This test script was run at:", format(Sys.time()), "\n")
-
-# Display first 6 rows of cars data frame
-head(cars)
-
-# Define a function
-fun_c <- function(x) x+1
-
-# Read a line from console
-readline("Press Return to continue")
-
-# plot sine function in x11 window
-x11()
-curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
-      xlab="", ylab="", lwd=2, col="orange",
-      main="Sine function")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Processes From the Command Window}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An interactive \texttt{R} process can be run from the command window, by simply typing the commands \texttt{R} or \texttt{Rterm} (provided that your \emph{PATH} variable contains the directory of the \texttt{R} executable file), 
-      \vskip1ex
-      The command \texttt{R} combined with the option \texttt{-e} can also execute \texttt{R} commands supplied on the command line, 
-      \vskip1ex
-      For example the command: 
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-R --vanilla -e head(cars) > out.txt
-        \end{lstlisting}
-      executes a single \texttt{R} command, and saves the output to a file,
-      \vskip1ex
-      The option \texttt{vanilla} instructs \texttt{R} to produce minimal output,
-      \vskip1ex
-      The manual \emph{Introduction to R} provides more information about running \texttt{R} processes from the command window:\\
-      \hskip1em\url{https://cran.r-project.org/doc/manuals/R-intro.html#Invoking-R-from-the-command-line}
-    \column{0.5\textwidth}
-      \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-# Start an interactive R process
-> R
-
-# get help about running R process
-> R --help
-
-# execute single R command and save output to file
-# vanilla option to produce minimal output
-> R --vanilla -e head(cars) > out.txt
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Executing \texttt{R} Scripts as Batch Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{batch} process is the execution of a set of commands in a script file, without manual intervention (non-interactive mode),
-      \vskip1ex
-      There are two ways of running an \texttt{R} script file: 
-      \begin{itemize}
-        \item in \emph{interactive} mode from within an \texttt{R} session using the function \texttt{source()}, 
-        \item in non-interactive \emph{batch} mode from a command window, 
-      \end{itemize}
-      \texttt{R} \emph{batch} processes can be executed using the commands \texttt{R}, \texttt{R CMD BATCH}, and \texttt{Rscript}, 
-      \vskip1ex
-      For example the command: 
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-Rscript script.R > out.txt
-        \end{lstlisting}
-      executes a \emph{batch} process on a script file containing a plot command and \texttt{readline()} for user input, and saves the output to a file,
-      \vskip1ex
-      The command \texttt{Rscript} can also execute \texttt{R} commands supplied on the command line, for example:
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-Rscript -e "head(cars)" > out.txt
-        \end{lstlisting}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# get help about running R scripts and batch processes
-?BATCH
-?Rscript
-      @
-      \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-# execute script file and save output to file
-# vanilla option to produce minimal output
-> cd C:/Develop/R/scripts
-> R --vanilla < script.R > out.txt
-
-# execute script file and save output to file
-# Slave option to produce minimal output
-> R CMD BATCH --slave script.R out.txt
-
-# execute script file and save output to file
-> Rscript script.R > out.txt
-
-# execute single R command from Windows
-> Rscript -e "head(cars)" > out.txt
-
-# execute several R commands and save output to file
-> Rscript -e "source('script.R'); fun_c(2)" > out.txt
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Executing \texttt{R} Scripts Using \texttt{Rscript}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{commandArgs()} returns a vector of strings containing the arguments supplied to the \texttt{R} process when called from the command line, 
-      \vskip1ex
-      The \texttt{Rscript} command is designed for fast execution of \texttt{R} scripts, and can also accept arguments to the \texttt{R} script supplied on the command line, for example:
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-Rscript --vanilla script_args.R  4 5 6
-        \end{lstlisting}
-      \vskip1ex
-      The \texttt{Rscript} command can also accept arguments supplied to \texttt{R} scripts on the command line, for example:
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-Rscript -e "2*as.numeric(commandArgs(TRUE))" 3
-
-Rscript -e "sum(as.numeric(commandArgs(TRUE)))" 4 5 6
-        \end{lstlisting}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-### Script_args.R contains R script that accepts arguments
-# print information about this process
-cat("cat: This script was run at:", format(Sys.time()), "\n")
-# Read arguments supplied on the command line
-arg_s <- commandArgs(TRUE)
-# print the arguments
-cat(paste0("arguments supplied on command line: ", paste(arg_s, collapse=", "), "\n"))
-# Return sum of arguments
-sum(as.numeric(arg_s))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting to a File From an \texttt{R} Script}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A \emph{batch} \texttt{R} process usually fails to produce a plot, because the \texttt{x11} plot window closes as soon as the \texttt{R} process terminates, 
-      \vskip1ex
-      The function \texttt{readline()} doesn't work in batch mode either, because it doesn't wait for user input, 
-      \vskip1ex
-      But a \emph{batch} \texttt{R} process can plot to a file by diverting its graphics output to a  graphics file,
-      \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert graphics output to graphics files (text output isn't diverted), 
-      \vskip1ex
-      The function \texttt{dev.off()} ends the diversion,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-### plot_to_file.R
-### R script to demonstrate plotting to file
-
-# Redirect graphics output to png file
-plot_dir <- "C:/Develop/data"
-png(file.path(plot_dir, "r_plot.png"))
-
-# plot sine function
-curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
-      xlab="", ylab="", lwd=2, col="orange",
-      main="Sine function")
-
-# turn png output off
-dev.off()
-      @
-      \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-# execute script file and save output to file
-> Rscript plot_to_file.R > out.txt
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interactive Plots in Batch \texttt{R} Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Interactive plots don't work in batch \texttt{R} processes, because the attached \texttt{x11} plot window closes as soon as an \texttt{R} process terminates,
-      \vskip1ex
-      One way to get around this is by pausing the \texttt{R} process using a \texttt{while()} loop, to wait until all the \texttt{x11} plot windows are closed,
-      \vskip1ex
-      The function \texttt{dev.list()} returns the number and names of active graphics devices,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-### plot_interactive.R
-### R script to demonstrate interactive plotting
-
-# plot sine function in x11 window
-x11()
-curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
-      xlab="", ylab="", lwd=2, col="orange",
-      main="Sine function")
-
-# Wait until x11 window is closed
-while (!is.null(dev.list())) Sys.sleep(1)
-      @
-      \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-# execute script file and save output to file
-> Rscript plot_interactive.R > out.txt
-      \end{lstlisting}
   \end{columns}
 \end{block}
 

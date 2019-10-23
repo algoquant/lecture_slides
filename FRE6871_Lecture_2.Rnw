@@ -54,13 +54,13 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE6871 Lecture\#2]{FRE6871 \texttt{R} in Finance}
-\subtitle{Lecture\#2, Spring 2019}
+\subtitle{Lecture\#2, Fall 2019}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 15, 2019}
+\date{September 16, 2019}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -72,398 +72,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-
-%%%%%%%%%%%%%%%
-\section{Manipulating Vectors and Matrices}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Allocating Memory to Vectors and Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} automatically allocates memory to new objects as needed during runtime, but at the cost of slowing down calculations,
-      \vskip1ex
-      Allocating memory of the correct \emph{mode} speeds up calculations by avoiding automatic memory allocation by \texttt{R},
-      \vskip1ex
-      The functions \texttt{character()}, \texttt{integer()}, and \texttt{numeric()} return zero-length vectors of the specified \emph{mode},
-      \vskip1ex
-      Zero length vectors are not the same as \texttt{NULL} objects,
-      \vskip1ex
-      The function \texttt{character(k)} returns a \texttt{character} vector of empty strings of length \texttt{k},
-      \vskip1ex
-      The function \texttt{integer(k)} returns a \texttt{integer} vector of zeros of length \texttt{k},
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a \texttt{numeric} vector of zeros of length \texttt{k},
-      \vskip1ex
-      The function \texttt{vector()} by default returns a \texttt{Boolean} vector, unless the \emph{mode} is specified,
-      \vskip1ex
-      The function \texttt{matrix()} by default returns a \texttt{Boolean} matrix containing \texttt{NA} values, unless the \emph{mode} is specified,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE>>=
-# allocate character vector
-character()
-character(5)
-is.character(character(5))
-# allocate integer vector
-integer()
-integer(5)
-is.integer(integer(5))
-is.numeric(integer(5))
-# allocate numeric vector
-numeric()
-numeric(5)
-is.integer(numeric(5))
-is.numeric(numeric(5))
-# allocate Boolean vector
-vector()
-vector(length=5)
-# allocate numeric vector
-vector(length=5, mode="numeric")
-is.null(vector())
-# allocate Boolean matrix
-matrix()
-is.null(matrix())
-# allocate integer matrix
-matrix(NA_integer_, nrow=3, ncol=2)
-is.integer(matrix(NA_integer_, nrow=3, ncol=2))
-# allocate numeric matrix
-matrix(NA_real_, nrow=3, ncol=2)
-is.numeric(matrix(NA_real_, nrow=3, ncol=2))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Logical Operators Applied to Vectors and Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      When logical operators are applied to vectors and matrices, they are applied element-wise, producing \texttt{Boolean} vectors and matrices,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE>>=
-vec_tor <- sample(1:9)
-vec_tor
-vec_tor < 5  # element-wise comparison
-vec_tor == 5  # element-wise comparison
-mat_rix <- matrix(vec_tor, ncol=3)
-mat_rix
-mat_rix < 5  # element-wise comparison
-mat_rix == 5  # element-wise comparison
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing Vectors Into Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Vectors can be coerced into matrices by adding a dimension attribute,
-      \vskip1ex
-      The \texttt{dimnames} attribute can be assigned a named list to convert it into a named matrix,
-      \vskip1ex
-      The function \texttt{structure()} adds attributes (specified as \texttt{symbol=value} pairs) to an object, and returns it,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-mat_rix <- 1:6  # create a vector
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-structure(mat_rix, dim=c(2, 3))  # matrix object
-# adding dimension attribute coerces into matrix
-dim(mat_rix) <- c(2, 3)
-class(mat_rix)  # get its class
-# is it vector or matrix?
-c(is.vector(mat_rix), is.matrix(mat_rix))
-# assign dimnames attribute
-dimnames(mat_rix) <- list(rows=c("row1", "row2"),
-                        columns=c("col1", "col2", "col3"))
-mat_rix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing Matrices Into Other Types}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Matrices can be explicitly coerced using the \texttt{"as.*"} coercion functions,
-      \vskip1ex
-      But coercion functions strip the \emph{attributes} from an object,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
-mat_rix
-# as.numeric strips dim attribute from matrix
-as.numeric(mat_rix)
-# explicitly coerce to "character"
-mat_rix <- as.character(mat_rix)
-c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
-c(is.matrix(mat_rix), is.vector(mat_rix))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Binding Vectors and Matrices Together}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Vectors can be bound into matrices using the functions \texttt{cbind()} and \texttt{rbind()},
-      \vskip1ex
-      The \emph{recycling rule} allows operations on vectors of different lengths:\\
-      \begin{enumerate}
-        \item Vectors are scanned from left to right,
-        \item Shorter vectors are extended in length by recycling their values until they match the length of longer vectors,
-      \end{enumerate}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-vec_tor1 <- 1:3  # define vector
-vec_tor2 <- 6:4  # define vector
-# bind vectors into columns
-cbind(vec_tor1, vec_tor2)
-# bind vectors into rows
-rbind(vec_tor1, vec_tor2)
-# extend to four elements
-vec_tor2 <- c(vec_tor2, 7)
-# recycling rule applied
-cbind(vec_tor1, vec_tor2)
-# another example of recycling rule
-1:6 + c(10, 20)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Replicating Objects Using \texttt{rep()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{rep()} replicates vectors and lists a given number of times,
-      \vskip1ex
-      \texttt{rep()} accepts a vector or list \texttt{"x"}, and an integer specifying the type and number of replications,
-      \vskip1ex
-      Argument \texttt{"times"} replicates the whole vector a given number of times,
-      \vskip1ex
-      Argument \texttt{"each"} replicates each vector element a given number of times,
-      \vskip1ex
-      Argument \texttt{"length.out"} replicates the whole vector a certain number of times, so that the output vector length is equal to \texttt{"length.out"},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# replicate a single element
-rep("a", 5)
-# replicate the whole vector several times
-rep(c("a", "b"), 5)
-rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
-rep(c("a", "b"), each=5)
-# replicate to specified length
-rep(c("a", "b"), length.out=5)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Multiplying Vectors and Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The multiplication \texttt{"*"} \emph{operator} performs \emph{element-wise} (\emph{element-by-element}) multiplication of vectors and matrices,
-      \vskip1ex
-      By default the matrix elements are multiplied column-wise by the vector elements: the first matrix element in the first column is multiplied by the first vector element, then the second matrix column is multiplied by the remaining vector elements, etc.
-      \vskip1ex
-      The \emph{recycling rule} is applied to the vector elements as needed,
-      \vskip1ex
-      The transpose function \texttt{t()} can be applied if we want to perform row-wise multiplication,
-     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# define vector and matrix
-vec_tor1 <- c(2, 4, 3)
-mat_rix <- matrix(sample(1:12), ncol=3)
-# multiply matrix by vector column-wise
-vec_tor1 * mat_rix
-mat_rix * vec_tor1
-# multiply matrix by vector row-wise
-t(vec_tor1 * t(mat_rix))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Inner Multiplication}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{\%*\%} operator performs \emph{inner} (\emph{scalar}) multiplication of vectors and matrices,
-      \vskip1ex
-      \emph{Inner} multiplication multiplies the rows of one matrix with the columns of another matrix, so that each pair produces a single number:
-      \begin{displaymath}
-        C_{i,j} = \sum_{k=1}^n A_{i,k} B_{k,j}
-      \end{displaymath}
-      \emph{Inner} multiplication produces a vector or matrix with a reduced dimension,
-      \vskip1ex
-      \emph{Inner} multiplication requires the dimensions of the matrices to be \emph{conformable} (number of columns in the first matrix must be equal to the number of rows in the second),
-      \vskip1ex
-      The function \texttt{drop()} removes any dimensions of length \emph{one},
-      \vskip1ex
-      The functions \texttt{rowSums()} and \texttt{colSums()} calculate the sums of rows and columns, and they're very fast because they pass their data to compiled \texttt{C++} code,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1))>>=
-vec_tor1
-vec_tor2 <- 6:4  # define vector
-# multiply two vectors element-by-element
-vec_tor1 * vec_tor2
-# calculate inner product
-vec_tor1 %*% vec_tor2
-# calculate inner product and drop dimensions
-drop(vec_tor1 %*% vec_tor2)
-# multiply columns of matrix by vector
-mat_rix %*% vec_tor1  # single column matrix
-drop(mat_rix %*% vec_tor1)  # vector
-rowSums(t(vec_tor1 * t(mat_rix)))
-# using rowSums() and t() is 10 times slower than %*%
-library(microbenchmark)
-summary(microbenchmark(
-  in_ner=drop(mat_rix %*% vec_tor1),
-  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Transpose}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{t()} returns the transpose of a matrix,
-      \vskip1ex
-      The function \texttt{crossprod()} also performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but is slightly faster,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# multiply matrix by vector fails because dimensions aren't conformable
-vec_tor1 %*% mat_rix
-# works after transpose
-drop(vec_tor1 %*% t(mat_rix))
-# calculate inner product
-crossprod(vec_tor1, vec_tor2)
-# create matrix and vector
-mat_rix <- matrix(1:3000, ncol=3)
-tmat_rix <- t(mat_rix)
-vec_tor <- 1:3
-# crossprod is slightly faster than "%*%" operator
-summary(microbenchmark(
-  cross_prod=crossprod(tmat_rix, vec_tor),
-  inner_prod=mat_rix %*% vec_tor,
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Matrix Outer Multiplication}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \emph{outer} product consists of all possible products of pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = A_i \cdot B_j
-      \end{displaymath}
-      An \emph{outer} product of a function consists of applying it to all possible pairs of elements of two objects:
-      \begin{displaymath}
-        C_{i,j} = f(A_i, B_j)
-      \end{displaymath}
-      \emph{Outer} multiplication produces an object with dimension equal to the sum of the factors' dimensions, and with the number of elements equal to the product of the factors' elements,
-      \vskip1ex
-      The function \texttt{outer()} calculates the \emph{outer} product of two matrices, and by default multiplies the elements of its arguments,
-      \vskip1ex
-      \texttt{outer()} can also calculate the values of a vectorized function of two variables passed to the \texttt{"FUN"} argument,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# define named vectors
-vec_tor1 <- sample(1:4)
-names(vec_tor1) <-
-  paste0("row", 1:4, "=", vec_tor1)
-vec_tor1
-vec_tor2 <- sample(1:3)
-names(vec_tor2) <-
-  paste0("col", 1:3, "=", vec_tor2)
-vec_tor2
-# calculate outer product of two vectors
-mat_rix <- outer(vec_tor1, vec_tor2)
-mat_rix
-# calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2,
-                 FUN=function(x1, x2) x2*sin(x1))
-mat_rix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -494,21 +102,21 @@ mat_rix
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# define a function with two arguments
-test_func <- function(first_arg, second_arg) {  # body
-  first_arg + second_arg  # returns last evaluated statement
+# Define a function with two arguments
+test_func <- function(first_arg, second_arg) {  # Body
+  first_arg + second_arg  # Returns last evaluated statement
 }  # end test_func
 
-test_func(1, 2)  # apply the function
-args(test_func)  # display argument
+test_func(1, 2)  # Apply the function
+args(test_func)  # Display argument
 
-# define function that uses variable from enclosure environment
+# Define function that uses variable from enclosure environment
 test_func <- function(first_arg, second_arg) {
   first_arg + second_arg + glob_var
 }  # end test_func
 
 test_func(3, 2)  # error - glob_var doesn't exist yet!
-glob_var <- 10  # create glob_var
+glob_var <- 10  # Create glob_var
 test_func(3, 2)  # now works
       @
   \end{columns}
@@ -530,7 +138,7 @@ test_func(3, 2)  # now works
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# define function that returns NULL for non-numeric argument
+# Define function that returns NULL for non-numeric argument
 test_func <- function(in_put) {
   if (!is.numeric(in_put)) {
     warning(paste("argument", in_put, "isn't numeric"))
@@ -565,7 +173,7 @@ test_func("hello")
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# define a function that returns invisibly
+# Define a function that returns invisibly
 return_invisible <- function(in_put) {
   invisible(in_put)
 }  # end return_invisible
@@ -575,11 +183,11 @@ return_invisible(2)
 glob_var <- return_invisible(2)
 glob_var
 
-rm(list=ls())  # remove all objects
-# load objects from file
+rm(list=ls())  # Remove all objects
+# Load objects from file
 loaded <- load(file="C:/Develop/data/my_data.RData")
-loaded  # vector of loaded objects
-ls()  # list objects
+loaded  # Vector of loaded objects
+ls()  # List objects
       @
   \end{columns}
 \end{block}
@@ -610,12 +218,12 @@ ls()  # list objects
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 test_func <- function(first_arg, second_arg) {
-# last statement of function is return value
+# Last statement of function is return value
   first_arg + 2*second_arg
 }  # end test_func
-test_func(first_arg=3, second_arg=2)  # bind by name
-test_func(first=3, second=2)  # partial name binding
-test_func(3, 2)  # bind by position
+test_func(first_arg=3, second_arg=2)  # Bind by name
+test_func(first=3, second=2)  # Partial name binding
+test_func(3, 2)  # Bind by position
 test_func(second_arg=2, 3)  # mixed binding
 test_func(3, 2, 1)  # too many arguments
 test_func(2)  # not enough arguments
@@ -649,22 +257,22 @@ test_func(2)  # not enough arguments
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# function "paste" has two arguments with default values
+# Function "paste" has two arguments with default values
 str(paste)
-# default values of arguments can be specified in argument list
+# Default values of arguments can be specified in argument list
 test_func <- function(first_arg, fac_tor=1) {
   fac_tor*first_arg
 }  # end test_func
-test_func(3)  # default value used for second argument
-test_func(3, 2)  # default value over-ridden
-# default values can be a vector of strings
+test_func(3)  # Default value used for second argument
+test_func(3, 2)  # Default value over-ridden
+# Default values can be a vector of strings
 test_func <- function(in_put=c("first_val", "second_val")) {
-  in_put <- match.arg(in_put)  # match to arg list
+  in_put <- match.arg(in_put)  # Match to arg list
   in_put
 }  # end test_func
 test_func("second_val")
-test_func("se")  # partial name binding
-test_func("some_val")  # invalid string
+test_func("se")  # Partial name binding
+test_func("some_val")  # Invalid string
       @
   \end{columns}
 \end{block}
@@ -695,24 +303,24 @@ test_func("some_val")  # invalid string
         <<echo=TRUE,eval=FALSE>>=
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
-# calc_skew() calculates skew of time series of returns
-# default is normal time series
+# Calc_skew() calculates skew of time series of returns
+# Default is normal time series
 calc_skew <- function(se_ries=rnorm(1000)) {
   # number of observations
   len_gth <- NROW(se_ries)
   # normalize se_ries
   se_ries <-
     (se_ries - mean(se_ries))/sd(se_ries)
-  # calculate skew - last statement automatically returned
+  # Calculate skew - last statement automatically returned
   len_gth*sum(se_ries^3)/((len_gth-1)*(len_gth-2))
 }  # end calc_skew
 
 # Calculate skew of DAX returns
-# bind arguments by name
+# Bind arguments by name
 calc_skew(se_ries=re_turns)
-# bind arguments by position
+# Bind arguments by position
 calc_skew(re_turns)
-# use default value of arguments
+# Use default value of arguments
 calc_skew()
       @
   \end{columns}
@@ -740,7 +348,7 @@ calc_skew()
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE>>=
-str(plot)  # dots for additional plot parameters
+str(plot)  # Dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
   paste0("in_put=", in_put,
          ", dots=", paste(..., sep=", "))
@@ -751,8 +359,8 @@ bind_dots(1, 2, 3, foo=10)  # named argument bound to dots
 bind_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
 }  # end bind_dots
-bind_dots(3, 2)  # bind arguments by position
-bind_dots(3, 2, 5, 8)  # extra arguments bound to dots
+bind_dots(3, 2)  # Bind arguments by position
+bind_dots(3, 2, 5, 8)  # Extra arguments bound to dots
       @
   \end{columns}
 \end{block}
@@ -775,16 +383,16 @@ bind_dots(3, 2, 5, 8)  # extra arguments bound to dots
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE>>=
-str(sum)  # dots before other arguments
-sum(1, 2, 3)  # dots bind before other arguments
+str(sum)  # Dots before other arguments
+sum(1, 2, 3)  # Dots bind before other arguments
 sum(1, 2, NA, 3, na.rm=TRUE)
 bind_dots <- function(..., in_put) {
   paste0("in_put=", in_put,
          ", dots=", paste(..., sep=", "))
 }  # end bind_dots
-# arguments after dots must be bound by full name
+# Arguments after dots must be bound by full name
 bind_dots(1, 2, 3, in_put=10)
-bind_dots(1, 2, 3, in_put=10, foo=4)  # dots bound
+bind_dots(1, 2, 3, in_put=10, foo=4)  # Dots bound
 bind_dots(1, 2, 3)  # "in_put" not bound
 bind_dots <- function(..., in_put=10) {
   paste0("in_put=", in_put,
@@ -815,7 +423,7 @@ bind_dots(1, 2, 3)  # "in_put" not bound, but has default
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# wrapper for mean() with default na.rm=TRUE
+# Wrapper for mean() with default na.rm=TRUE
 my_mean <- function(x, na.rm=TRUE, ...) {
   mean(x=x, na.rm=na.rm, ...)
 }  # end my_mean
@@ -823,24 +431,24 @@ foo <- sample(c(1:10, NA, rep(0.1, t=5)))
 mean(c(foo, NA))
 mean(c(foo, NA), na.rm=TRUE)
 my_mean(c(foo, NA))
-my_mean(c(foo, NA), trim=0.4)  # pass extra argument
-# wrapper for saving data into default directory
+my_mean(c(foo, NA), trim=0.4)  # Pass extra argument
+# Wrapper for saving data into default directory
 save_data <- function(...,
                       file=stop("error: no file name"),
                       my_dir="C:/Develop/data") {
-# create file path
+# Create file path
   file <- file.path(my_dir, file)
   save(..., file=file)
 }  # end save_data
 foo <- 1:10
 save_data(foo, file="scratch.RData")
 save_data(foo, file="scratch.RData", my_dir="C:/Develop")
-# wrapper for testing negative arguments
+# Wrapper for testing negative arguments
 stop_if_neg <- function(in_put) {
   if (!is.numeric(in_put) || in_put<0)
     stop("argument not numeric or negative")
 }  # end stop_if_neg
-# wrapper for sqrt()
+# Wrapper for sqrt()
 my_sqrt <- function(in_put) {
   stop_if_neg(in_put)
   sqrt(in_put)
@@ -848,6 +456,86 @@ my_sqrt <- function(in_put) {
 my_sqrt(2)
 my_sqrt(-2)
 my_sqrt(NA)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive \secname \hskip0.4em with dots \texttt{"..."} Argument}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions can also accept the dots \texttt{"..."} argument,
+      \vskip1ex
+      The dots \texttt{"..."} argument can be referenced inside a function by first converting it into a list using \texttt{"list(...)"},
+      \vskip1ex
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Recursive function sums its argument list
+sum_dots <- function(in_put, ...) {
+  if (missing(...)) {  # Check if dots are empty
+    return(in_put)  # just one argument left
+  } else {
+    in_put + sum_dots(...)  # Sum remaining arguments
+  }  # end if
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
+# Recursive function sums its argument list
+sum_dots <- function(in_put, ...) {
+  if (NROW(list(...)) == 0) {  # Check if dots are empty
+    return(in_put)  # just one argument left
+  } else {
+    in_put + sum_dots(...)  # Sum remaining arguments
+  }  # end if
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Recursive Function for Calculating Fibonacci Sequence}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \emph{Recursive} functions call themselves in their own body,
+      \vskip1ex
+      The \emph{Fibonacci} sequence of integers is defined by the recurrence relation:
+      \begin{displaymath}
+        F_n = F_{n-1} + F_{n-2},
+      \end{displaymath}
+      \begin{displaymath}
+        F_1 = 0, F_2 = 1,
+      \end{displaymath}
+      \begin{displaymath}
+        F_n = 0, 1, 1, 2, 3, 5, 8, 13, \ldots
+      \end{displaymath}
+      The \emph{Fibonacci} sequence was invented by \emph{Indian} mathematicians, and later described by the Italian mathematician \emph{Fibonacci} in his famous treatise \emph{Liber Abaci},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE>>=
+fibo_nacci <- function(len_gth) {
+  if (len_gth > 2) {
+    fib_seq <- fibo_nacci(len_gth-1)  # Recursion
+    c(fib_seq, sum(tail(fib_seq, 2)))  # Return this
+  } else {
+    c(0, 1)  # Initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(9), 2)
       @
   \end{columns}
 \end{block}
@@ -872,11 +560,256 @@ my_sqrt(NA)
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# show the function code
+# Show the function code
 plot.default
-# display function
+# Display function
 getAnywhere(plot.default)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Internal and Primitive Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} is a high-level language written in lower-level languages, mostly \texttt{C++} and some \texttt{Fortran},
+      \vskip1ex
+      \texttt{R} functions are either written in \texttt{R} code (\emph{interpreted} functions), or they directly call compiled \texttt{C++} or \texttt{Fortran} code (\emph{compiled} functions, also called \emph{internal} or \emph{primitive}),
+      \vskip1ex
+      \texttt{R} parses the code of \emph{interpreted} functions, and eventually calls compiled \texttt{C++} or \texttt{Fortran} code,
+      \vskip1ex
+      But this extra processing makes \emph{interpreted} functions much slower than \emph{compiled} functions,
+      \vskip1ex
+      Users can distinguish between \emph{interpreted} functions and \emph{compiled} functions by typing their names, and analyzing their source code,
+      \vskip1ex
+      The source code of \emph{interpreted} functions contains multiple lines of \texttt{R} code, or a call to function \texttt{UseMethod()} (which \emph{dispatches} \emph{methods} associated with \emph{generic} functions),
+      \vskip1ex
+      The source code of \emph{compiled} functions contains a single call to one of the functions that execute \emph{compiled} \texttt{C++} or \texttt{Fortran} code: \texttt{.Internal()}, \texttt{.Primitive()}, \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, or \texttt{.External()},
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE, eval=FALSE>>=
+# Sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+# Show all methods of mean()
+methods(generic.function=mean)
+# Show code for mean.default()
+mean.default
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exploring Internal and Primitive Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Several functions call compiled code: \texttt{.C()}, \texttt{.Call()}, \texttt{.Fortran()}, \texttt{.External()}, or \texttt{.Internal()} and \texttt{.Primitive()}
+      \vskip1ex
+      \texttt{R} \texttt{.Internal()} \texttt{.Primitive()}
+      \vskip1ex
+      The function \texttt{getAnywhere()} displays \texttt{R} objects, including functions,
+      \vskip1ex
+      If a function name is called alone then \texttt{R} displays the function code (but it must be on the search path),
+      \vskip1ex
+      the user can access symbols from a package that isn't attached using the double-colon operator \texttt{tools::file\_ext}
+
+      The function \texttt{getAnywhere()} also displays \texttt{R} objects that aren't on the search path,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Get all methods for generic function "plot"
+methods("plot")
+
+getAnywhere(plot)  # Display function
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lazy Evaluation of Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions delay evaluation of their arguments until they're needed by their \texttt{R} code,
+      \vskip1ex
+      This is called \emph{lazy} evaluation,
+      \vskip1ex
+      If the function body doesn't evaluate an argument, then the function won't produce an error, even if the argument is missing,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+lazy_func <- function(arg1, arg2) {  # Define function lazy_func
+  2*arg1  # just multiply first argument
+}  # end lazy_func
+lazy_func(3, 2)  # Bind arguments by position
+lazy_func(3)  # Second argument was never evaluated!
+lazy_func <- function(arg1, arg2) {  # Define function lazy_func
+  cat(arg1, '\n')  # Write to output
+  cat(arg2)  # Write to output
+}  # end lazy_func
+lazy_func(3, 2)  # Bind arguments by position
+lazy_func(3)  # First argument written to output
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Function Environments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      When a function is called, a new \emph{evaluation} environment is created,
+      \vskip1ex
+      The \emph{evaluation} environment contains the function arguments and locally defined variables,
+      \vskip1ex
+      \texttt{R} evaluates variables inside functions by searching first in the \emph{evaluation} environment, then the \emph{enclosure} environment, then the \texttt{R} search path,
+      \vskip1ex
+      The enclosure of the \emph{evaluation} environment is the environment where the function was defined,
+      \vskip1ex
+      The enclosure of functions defined in the workspace is the \emph{global} environment,
+      \vskip1ex
+      The enclosure of functions defined in packages is the package \emph{namespace},
+      \vskip1ex
+      Objects defined in the function enclosure can be referenced inside the function,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+glob_var <- 1  # Define a global variable
+ls(environment())  # Get all variables in environment
+func_env <- function() {  # Explore function environments
+  loc_var <- 1  # Define a local variable
+  cat('objects in evaluation environment:\t',
+      ls(environment()), '\n')
+  cat('objects in enclosing environment:\t',
+      ls(parent.env(environment())), '\n')
+  cat('this is the enclosing environment:')
+  parent.env(environment())  # Return enclosing environment
+}  # end func_env
+func_env()
+
+environment(func_env)
+environment(print)  # Package namespace is the enclosure
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Lexical Function Scope}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      A \emph{free} variable is a variable that's not included in the \emph{evaluation} environment,
+      \vskip1ex
+      Scoping rules determine how \emph{free} variables are evaluated,
+      \vskip1ex
+      By default \texttt{R} uses \emph{lexical} (\emph{static}) scoping, which means that variables are first evaluated in the \emph{evaluation} environment, then in the \emph{enclosing} environment in which the function was \emph{defined}, and so on,
+      \vskip1ex
+      \emph{Dynamic} scoping means that variables are evaluated in the environment from which the function was \emph{called},
+      \vskip1ex
+      The standard assignment operator \texttt{"<-"} modifies variables in the \emph{evaluation} environment,
+      \vskip1ex
+      The special assignment operator \texttt{"<<-"} modifies variables in the \emph{enclosing} environment,
+
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=(-1)>>=
+rm(list=ls())
+glob_var <- 1  # Define a global variable
+probe_scope <- function() {  # Explore function scope
+  loc_var <- 2*glob_var  # Define a local variable
+  new_globvar <<- 11  # Define a global variable
+  cat('objects in evaluation environment:\t',
+      ls(environment()), '\n')
+  cat('this is a local loc_var:\t', loc_var, '\n')
+  cat('objects in enclosing environment:\n',
+      ls(parent.env(environment())), '\n')
+  cat('this is glob_var:\t', glob_var, '\n')
+  glob_var <- 10  # Define local glob_var
+  cat('this is the local glob_var:\t', glob_var, '\n')
+}  # end probe_scope
+probe_scope()
+glob_var  # Global variable is unaffected
+new_globvar  # new_globvar is preserved
+loc_var  # Local variable is gone!
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Argument Passing in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In general, arguments can be passed into functions either by \emph{value} or by \emph{reference},
+      \vskip1ex
+      When an argument is passed by \emph{value}, then a copy of that argument is passed to the function,
+      \vskip1ex
+      That way if the function modifies that argument, then the original object isn't modified,
+      \vskip1ex
+      When an argument is passed by \emph{reference}, then a \emph{pointer} to the original object is passed to the function,
+      \vskip1ex
+      If the function modifies that argument, then the original object is modified as well,
+      \vskip1ex
+      \texttt{R} uses a hybrid method of argument passing called \emph{copy-on-modify semantics},
+      \vskip1ex
+      \texttt{R} passes arguments by reference, thus saving memory space and time for copying,
+      \vskip1ex
+      But if the argument is modified within the function, then \texttt{R} makes a copy of it, so that the original object is unchanged,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+a <- 1  # Define a variable
+# New variable "b" points to value of "a"
+b <- a  # Define a new variable
+# When "b" is modified, R makes a copy of it
+b <- b+1
+# Function doubles its argument and returns it
+double_it <- function(in_put) {
+  in_put <- 2*in_put
+  cat("input argument was doubled to:", in_put, "\n")
+  in_put
+}
+double_it(a)
+a  # variable "a" is unchanged
+      @
+      \emph{Copy-on-modify semantics} has important implications for performance and memory usage,
+      \vskip1ex
+      \url{http://stackoverflow.com/questions/15759117/what-exactly-is-copy-on-modify-semantics-in-r-and-where-is-the-canonical-source}
   \end{columns}
 \end{block}
 
@@ -905,24 +838,195 @@ getAnywhere(plot.default)
       \vspace{-1em}
         <<echo=(-(1:1))>>=
 setwd("C:/Develop/R/lecture_slides/data")
-rm(list=ls())  # remove all objects
-ls()  # list objects
-# load objects from file (side effect)
+rm(list=ls())  # Remove all objects
+ls()  # List objects
+# Load objects from file (side effect)
 load(file="my_data.RData")
-ls()  # list objects
-glob_var <- 1  # define a global variable
-# explore function scope and side effects
+ls()  # List objects
+glob_var <- 1  # Define a global variable
+# Explore function scope and side effects
 side_effect <- function() {
   cat("global glob_var:\t", glob_var, "\n")
-# define local "glob_var" variable
+# Define local "glob_var" variable
   glob_var <- 10
-# re-define the global "glob_var"
+# Re-define the global "glob_var"
   glob_var <<- 2
   cat("local glob_var:\t", glob_var, "\n")
 }  # end side_effect
 side_effect()
-# global variable was modified as side effect
+# Global variable was modified as side effect
 glob_var
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operators as Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most functions in \texttt{R} are \emph{prefix} operators (where the function name is followed by a list of arguments),
+      \vskip1ex
+      \emph{Infix} operators (where the the function name comes in between its arguments) can also be applied using \emph{prefix} syntax,
+      \vskip1ex
+      In \emph{prefix} syntax, the \emph{Infix} operator name must be surrounded by single \texttt{''} or double  \texttt{""} quotes,
+      \vskip1ex
+      The \texttt{"["} bracket operator can also be written as a \emph{prefix} function.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Standard infix operator call syntax
+2 + 3
+# Infix operator applied using prefix syntax
+"+"(2, 3)
+# Standard bracket operator
+vec_tor <- c(4, 3, 5, 6)
+vec_tor[2]
+# Bracket operator applied using prefix syntax
+"["(vec_tor, 2)
+
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Defining New Infix Operators}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      New \emph{infix} operators can be defined using the usual function definition syntax,
+      \vskip1ex
+      All user defined \emph{infix} operators names must be nested between \texttt{"\%"} characters,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Define infix operator that returns string
+'%+%' <- function(a, b) paste(a, b, sep=" + ")
+2 %+% 3
+2 %+% 3 %+% 4
+"hello" %+% 2 %+% 3 %+% "bye"
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Replacement Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} syntax allows assigning to the values returned by functions, but they must be defined as \emph{replacement} functions, 
+      \vskip1ex
+      \emph{replacement} function names include the assignment arrow: \texttt{"name<-"},
+      \vskip1ex
+      The first argument passed to the \emph{replacement} function is modified by the second argument, and then it's returned,
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+obj_string <- "hello"
+class(obj_string)
+# Assign to value returned by "class" function
+class(obj_string) <- "string"
+class(obj_string)
+# Define function last()
+last <- function(vec_tor) {
+  vec_tor[NROW(vec_tor)]
+}  # end last
+last(1:10)
+# Define replacement function last()
+'last<-' <- function(vec_tor, value) {
+  vec_tor[NROW(vec_tor)] <- value
+  vec_tor
+}  # end last
+x <- 1:5
+last(x) <- 11
+x
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Higher order Functions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions as First Class Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      Functions in \texttt{R} are \emph{first class objects}, which means they can be treated like any other \texttt{R} object:
+      \begin{itemize}
+        \item Functions can be passed as arguments to other functions,
+        \item Functions can be nested (defined inside other functions),
+        \item Functions can return functions as their return value,
+      \end{itemize}
+      \emph{Higher order} functions are \texttt{R} functions that either accept a function as their argument (input) or return a function as their value (output),
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Create functional that accepts a function as input argument
+func_tional <- function(func_name) {
+# Calculates statistic on random numbers
+  set.seed(1)
+  func_name(runif(1e4))  # Apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Functions That Return Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      \texttt{R} functions can also return a function as their value,
+      \vskip1ex
+      Functions returned by a function are called \emph{closures},
+      \vskip1ex
+      Functions that return closures can be used as \emph{function factories},
+    \column{0.6\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Define a power function factory
+make_func <- function(arg_param) {  # Wrapper function
+  function(in_put) {  # Anonymous closure
+    in_put^arg_param
+  }
+}  # end make_func
+
+square_func <- make_func(2)  # Define square function
+square_func(4)
+cube_func <- make_func(3)  # Define cube function
+cube_func(2)
+cube_root_func <- make_func(1/3)  # Define cube root function
+cube_root_func(8)
       @
   \end{columns}
 \end{block}
@@ -954,18 +1058,18 @@ glob_var
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# func_tional accepts function name and additional argument
+# Func_tional accepts function name and additional argument
 func_tional <- function(func_name, in_put) {
-# produce function name from argument
+# Produce function name from argument
   func_name <- match.fun(func_name)
-# execute function call
+# Execute function call
   func_name(in_put)
 }  # end func_tional
 func_tional(sqrt, 4)
-# string also works because match.fun() converts it to a function
+# String also works because match.fun() converts it to a function
 func_tional("sqrt", 4)
-str(sum)  # sum() accepts multiple arguments
-# func_tional can't accept indefinite number of arguments
+str(sum)  # Sum() accepts multiple arguments
+# Func_tional can't accept indefinite number of arguments
 func_tional(sum, 1, 2, 3)
       @
   \end{columns}
@@ -987,15 +1091,15 @@ func_tional(sum, 1, 2, 3)
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# func_tional accepts function name and dots '...' argument
+# Func_tional accepts function name and dots '...' argument
 func_tional <- function(func_name, ...) {
   func_name <- match.fun(func_name)
-  func_name(...)  # execute function call
+  func_name(...)  # Execute function call
 }  # end func_tional
 func_tional(sum, 1, 2, 3)
 func_tional(sum, 1, 2, NA, 4, 5)
 func_tional(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
-# function with three arguments and dots '...' arguments
+# Function with three arguments and dots '...' arguments
 my_func <- function(in_put, param1, param2, ...) {
   c(input=in_put, param1=param1, param2=param2,
         dots=c(...))
@@ -1025,7 +1129,7 @@ func_tional(my_func, 1, 2, 3, 4, 5)
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# simple anonymous function
+# Simple anonymous function
 (function(x) (x + 3)) (10)
       @
   \end{columns}
@@ -1047,19 +1151,19 @@ func_tional(my_func, 1, 2, 3, 4, 5)
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# anonymous function passed to func_tional
+# Anonymous function passed to func_tional
 func_tional(func_name=(function(x) (x + 3)), 5)
-# anonymous function is default value
+# Anonymous function is default value
 func_tional <-
   function(..., func_name=function(x, y, z) {x+y+z}) {
     func_name <- match.fun(func_name)
-    func_name(...)  # execute function call
+    func_name(...)  # Execute function call
 }  # end func_tional
-func_tional(2, 3, 4)  # use default func_name
+func_tional(2, 3, 4)  # Use default func_name
 func_tional(2, 3, 4, 5)
-# func_name bound by name
+# Func_name bound by name
 func_tional(func_name=sum, 2, 3, 4, 5)
-# pass anonymous function to func_name
+# Pass anonymous function to func_name
 func_tional(func_name=function(x, y, z) {x*y*z},
             2, 3, 4)
       @
@@ -1092,24 +1196,24 @@ func_tional(func_name=function(x, y, z) {x*y*z},
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-str(sum)  # sum() accepts multiple arguments
-# sum() can't accept list of arguments
+str(sum)  # Sum() accepts multiple arguments
+# Sum() can't accept list of arguments
 sum(list(1, 2, 3))
 str(do.call)  # "what" argument is a function
-# do.call passes list elements into "sum" individually
+# Do.call passes list elements into "sum" individually
 do.call(sum, list(1, 2, 3))
 do.call(sum, list(1, 2, NA, 3))
 do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
-# func_tional() accepts list with function name and arguments
+# Func_tional() accepts list with function name and arguments
 func_tional <- function(list_arg) {
-# produce function name from argument
+# Produce function name from argument
   func_name <- match.fun(list_arg[[1]])
-# execute function call uing do.call()
+# Execute function call uing do.call()
   do.call(func_name, list_arg[-1])
 }  # end func_tional
 arg_list <- list("sum", 1, 2, 3)
 func_tional(arg_list)
-# do_call() performs same operation as do.call()
+# Do_call() performs same operation as do.call()
 all.equal(
   do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
   rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
@@ -1140,11 +1244,11 @@ all.equal(
       \vspace{-1em}
         <<echo=(-1)>>=
 rm(list=ls())
-str(apply)  # get list of arguments
-# create a matrix
+str(apply)  # Get list of arguments
+# Create a matrix
 mat_rix <- matrix(6:1, nrow=2, ncol=3)
 mat_rix
-# sum the rows and columns
+# Sum the rows and columns
 row_sums <- apply(mat_rix, 1, sum)
 col_sums <- apply(mat_rix, 2, sum)
 mat_rix <- cbind(c(sum(row_sums), row_sums),
@@ -1170,19 +1274,19 @@ mat_rix
       \vskip1ex
       The additional arguments to \texttt{apply()} must be \emph{bound} by their full (complete) names,
       <<echo=TRUE,eval=FALSE>>=
-str(apply)  # get list of arguments
-mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # create a matrix
+str(apply)  # Get list of arguments
+mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
 mat_rix
-apply(mat_rix, 2, sort)  # sort matrix columns
-apply(mat_rix, 2, sort, decreasing=TRUE)  # sort decreasing order
+apply(mat_rix, 2, sort)  # Sort matrix columns
+apply(mat_rix, 2, sort, decreasing=TRUE)  # Sort decreasing order
       @
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
-mat_rix[2, 2] <- NA  # introduce NA value
+mat_rix[2, 2] <- NA  # Introduce NA value
 mat_rix
-# calculate median of columns
+# Calculate median of columns
 apply(mat_rix, 2, median)
-# calculate median of columns with na.rm=TRUE
+# Calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
       @
   \end{columns}
@@ -1209,20 +1313,20 @@ apply(mat_rix, 2, median, na.rm=TRUE)
 rm(list=ls())
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
-library(moments)  # load package moments
-str(moment)  # get list of arguments
-# apply moment function
+library(moments)  # Load package moments
+str(moment)  # Get list of arguments
+# Apply moment function
 moment(x=re_turns, order=3)
 # 4x1 matrix of moment orders
 moment_orders <- as.matrix(1:4)
-# anonymous function allows looping over function parameters
+# Anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
       FUN=function(moment_order) {
           moment(x=re_turns, order=moment_order)
         }  # end anonymous function
       )  # end apply
 
-# another way of passing parameters into moment() function
+# Another way of passing parameters into moment() function
 apply(X=moment_orders, MARGIN=1, FUN=moment,
       x=re_turns)
       @
@@ -1249,17 +1353,17 @@ apply(X=moment_orders, MARGIN=1, FUN=moment,
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE>>=
-# function with three arguments
+# Function with three arguments
 my_func <- function(arg1, arg2, arg3) {
   c(arg1=arg1, arg2=arg2, arg3=arg3)
 }  # end my_func
 my_func(1, 2, 3)
 da_ta <- as.matrix(1:4)
-# pass da_ta to arg1
+# Pass da_ta to arg1
 apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
-# pass da_ta to arg2
+# Pass da_ta to arg2
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
-# pass da_ta to arg3
+# Pass da_ta to arg3
 apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
       @
   \end{columns}
@@ -1286,11 +1390,11 @@ apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# vector of means of numeric columns
+# Vector of means of numeric columns
 sapply(iris[, -5], mean)
-# list of means of numeric columns
+# List of means of numeric columns
 lapply(iris[, -5], mean)
-# lapply using anonymous function
+# Lapply using anonymous function
 unlist(lapply(iris,
               function(col_umn) {
                 if (is.numeric(col_umn)) mean(col_umn)
@@ -1323,20 +1427,20 @@ unlist(sapply(iris, function(col_umn) {
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-sapply(6:10, sqrt)  # sapply on vector
-sapply(list(6, 7, 8, 9, 10), sqrt)  # sapply on list
+sapply(6:10, sqrt)  # Sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # Sapply on list
 
-# calculate means of iris data frame columns
-sapply(iris, mean)  # returns NA for Species
+# Calculate means of iris data frame columns
+sapply(iris, mean)  # Returns NA for Species
 
-# create a matrix
+# Create a matrix
 mat_rix <- matrix(sample(100), ncol=4)
-# calculate column means using apply
+# Calculate column means using apply
 apply(mat_rix, 2, mean)
 
-# calculate column means using sapply, with anonymous function
+# Calculate column means using sapply, with anonymous function
 sapply(1:NCOL(mat_rix),
-       function(col_index) {  # anonymous function
+       function(col_index) {  # Anonymous function
          mean(mat_rix[, col_index])
   }  # end anonymous function
 )  # end sapply
@@ -1368,9 +1472,9 @@ sapply(1:NCOL(mat_rix),
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# vectors form columns of matrix returned by sapply
+# Vectors form columns of matrix returned by sapply
 sapply(2:4, function(num) c(el1=num, el2=2*num))
-# vectors of different lengths returned as list
+# Vectors of different lengths returned as list
 sapply(2:4, function(num) 1:num)
 # vapply is similar to sapply
 vapply(2:4, function(num) c(el1=num, el2=2*num),
@@ -1379,702 +1483,6 @@ vapply(2:4, function(num) c(el1=num, el2=2*num),
 vapply(2:4, function(num) 1:num,
        FUN.VALUE=c(row1=0, row2=0))
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Plotting in \texttt{R}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting in \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-  \begin{columns}[T]
-    \column{0.45\textwidth}
-\begin{block}{Functions in package \emph{graphics} for creating static plots:}
-      \texttt{plot()} plots a line or scatter plot,\\
-      \texttt{lines()} adds lines to a plot,\\
-      \texttt{curve()} plots a function given by its name,\\
-      \texttt{title()} adds a title to a plot,\\
-      \texttt{legend()} adds a legend to a plot,\\
-      \texttt{x11()} opens a \emph{Windows} graphics device,\\
-      \texttt{par()} sets graphical plot parameters,
-\end{block}
-\begin{block}{Functions in package \emph{ggplot2} for creating static plots:}
-      \texttt{ggplot()} creates a new ggplot object,\\
-      \texttt{aes()} specifies \emph{aesthetics}, i.e. mappings between data elements (rows, columns) and plot elements (points, lines),\\
-      \texttt{geom\_point()} adds plot points,\\
-      \texttt{geom\_line()} adds plot lines,\\
-      \texttt{theme()} customizes plot objects,
-\end{block}
-    \column{0.45\textwidth}
-\begin{block}{Functions in package \emph{plotly} for creating dynamic plots:}
-      \texttt{plot\_ly()} creates a new plotly object,\\
-      \texttt{add\_trace()} adds elements to a \emph{plotly} plot,\\
-      \texttt{layout()} modifies the layout of a \emph{plotly} plot,\\
-\end{block}
-\begin{block}{Functions in package \emph{dygraphs} for creating dynamic time series plots:}
-      \texttt{dygraph()} creates an interactive time series plot,\\
-      \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot,\\
-      \texttt{dyRangeSelector()} adds a date range selector to the bottom of a \emph{dygraphs} plot,
-\end{block}
-  \end{columns}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{graphics} Help and Documentation}
-\begin{frame}[t]{\subsecname}
-
-\vspace{-1em}
-\begin{block}{General}
-    CRAN Graphics task view:  \url{http://cran.r-project.org/web/views/Graphics.html}
-\end{block}
-
-\begin{block}{Tutorials on Charts and Plotting}
-    \hskip1em\url{http://www.statmethods.net/graphs/index.html}\\
-    \hskip1em\url{http://www.statmethods.net/advgraphs/index.html}\\
-    \hskip1em\url{http://en.wikibooks.org/wiki/R_Programming/Graphics\#Standard_R_graphs}\\
-    \hskip1em\url{http://ww2.coastal.edu/kingw/statistics/R-tutorials/graphs.html}\\
-    \hskip1em\url{http://www.harding.edu/fmccown/r/}
-\end{block}
-
-\begin{block}{Graphical Parameters}
-    \hskip1em\url{http://www.statmethods.net/advgraphs/parameters.html}\\
-    \hskip1em\url{http://research.stowers-institute.org/efg/R/Graphics/Basics/mar-oma/index.htm}\\
-    \hskip1em\url{http://www.programmingr.com/content/controlling-margins-and-axes-oma-and-mgp/}
-\end{block}
-
-\begin{block}{Galleries of Charts}
-    Vistat reproducible gallery of statistical graphics:  \url{http://vis.supstat.com/}\\
-    Gallery of data charts:  \url{http://zoonek2.free.fr/UNIX/48_R/03.html}\\
-    Gallery of data charts and \texttt{R} code:  \url{http://rgm3.lab.nig.ac.jp/RGM/R_image_list}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Plotting Using the Base \protect\emph{graphics} Package}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Scatterplots With Labels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{graphics} is one of the base packages in \texttt{R}, and offers a number of plotting capabilities,
-      \vskip1ex
-      The function \texttt{plot()} by default plots a scatterplot, but can also plot lines using the argument \texttt{type="l"},
-      \vskip1ex
-      The function \texttt{text()} draws text strings on a plot, and can be used to draw plot labels,
-      <<eval=FALSE,echo=(-(1:1))>>=
-library(quantmod)
-some_cars <- mtcars[sample(NROW(mtcars), 10), ]
-# plot scatterplot horsepower vs miles per gallon
-plot(some_cars[, "hp"], some_cars[, "mpg"],
-     xlab="horsepower", ylab="miles per gallon",
-     main="miles per gallon vs horsepower")
-# add a solid red point (pch=16) for the last car
-points(x=some_cars[NROW(some_cars), "hp"],
-       y=some_cars[NROW(some_cars), "mpg"],
-       col="red", pch=16)
-# add labels with the car names
-text(x=some_cars[, "hp"], y=some_cars[, "mpg"],
-     labels=rownames(some_cars[, ]),
-     pos=1, cex=0.8)
-# or add labels using wordcloud, to prevent overlaps
-library(wordcloud)
-textplot(x=some_cars[, "hp"], y=some_cars[, "mpg"],
-         words=rownames(some_cars))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/scatter_plot}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Line Plots Using the Base \protect\emph{graphics} Package}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{plot()} accepts many different graphical parameters, including:
-      \begin{itemize}
-        \item \texttt{type}: type of plot,
-        \item \texttt{lwd}: line width,
-        \item \texttt{col}: plotting object color,
-        \item \texttt{xlab}, \texttt{ylab}: axis titles,
-        \item \texttt{xlim}, \texttt{ylim}: axis range,
-        \item \texttt{main}:  plot title,
-      \end{itemize}
-      \vspace{-1em}
-      <<line_plot,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
-# plot the tree Height
-plot(trees[, "Height"],
-     type="l",
-     lwd=2,
-     col="blue",
-     main="Tree heights and volumes",
-     xlab="tree number", ylab="",
-     ylim=c(min(trees[, c("Height", "Volume")]),
-            max(trees[, c("Height", "Volume")])))
-# plot the tree Volume
-lines(trees[, "Volume"], lwd=2, col="green")
-# add legend
-legend(x="left", legend=c("Height", "Volume"),
-       inset=0.1, cex=1.0, bg="white",
-       lwd=2, lty=c(1, 1), col=c("blue", "green"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/line_plot.png}\\
-      The function \texttt{lines()} adds lines to a plot,
-      \vskip1ex
-      The function \texttt{legend()} adds a legend to a plot,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Mathematical Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Plotting functions in package \emph{graphics}:
-      \vskip1ex
-      \texttt{x11()} opens a \emph{Windows} graphics device,
-      \vskip1ex
-      \texttt{plot()} creates a scatterplot or line plot,
-      \vskip1ex
-      \texttt{lines()} plots a line on an existing plot,
-      \vskip1ex
-      \texttt{title()} adds a title to a plot,
-      <<sincosplot,eval=FALSE,fig.show="hide">>=
-x_var <- seq(-2*pi, 2*pi, len=100)  # x values
-
-# open Windows graphics device
-x11(width=11, height=7, title="simple plot")
-
-# plot a sine function using basic line plot
-plot(x=x_var, y=sin(x_var), xlab="x-val",
-     ylab="y-val", type="l", lwd=2, col="red")
-# add a cosine function
-lines(x=x_var, y=cos(x_var), lwd=2, col="blue")
-# add title
-title(main="sine and cosine functions", line=0.1)
-# add legend
-legend(x="topright", legend=c("sine", "cosine"),
-       title="legend", inset=0.1, cex=1.0, bg="white",
-       lwd=2, lty=c(1, 1), col=c("red", "blue"))
-graphics.off()  # close all graphics devices
-      @
-    \column{0.5\textwidth}
-    \vspace{-3em}
-    \includegraphics[width=0.5\paperwidth]{figure/sincosplot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Mathematical Functions Using \texttt{curve()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} has dedicated functions for plotting mathematical functions,
-      \vskip1ex
-      The function \texttt{curve()} plots a function defined by its name,
-      <<funplot,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-3, 3),
-      xlab="", ylab="", lwd=2, col="blue")
-# add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-      type="l", lwd=2, col="red")
-
-# add title
-title(main="Normal probability distribution functions",
-      line=0.1)
-# add legend
-legend(x="topright", legend=c("Normal", "shifted"),
-       title="legend", inset=0.05, cex=0.8, bg="white",
-       lwd=2, lty=c(1, 1), col=c("blue", "red"))
-      @
-    \column{0.5\textwidth}
-    \includegraphics[width=0.5\paperwidth]{figure/funplot-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Graphical Parameters}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{par()} sets graphical parameters used for plotting, and invisibly returns existing parameters as a named list,
-      <<par_ams,eval=FALSE,fig.show="hide">>=
-graph_params <- par()  # get existing parameters
-par("mar")  # get plot margins
-par(mar=c(2, 1, 2, 1))  # set plot margins
-par(oma=c(1, 1, 1, 1))  # set outer margins
-par(mgp=c(2, 1, 0))  # set title and label margins
-par(cex.lab=0.8,  # set font scales
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(las=1)  # set axis labels to horizontal
-par(ask=TRUE)  # pause, ask before plotting
-par(mfrow=c(2, 2))  # plot on 2x2 grid by rows
-for (i in 1:4) {  # plot 4 panels
-  barplot(sample(1:6), main=paste("panel", i),
-          col=rainbow(6), border=NA, axes=FALSE)
-  box()
-}  # end for
-par(ask=FALSE)  # restore automatic plotting
-par(new=TRUE)  # allow new plot on same chart
-par(graph_params)  # restore original parameters
-      @
-    \column{0.5\textwidth}
-      \vspace{-3em}
-      \includegraphics[width=0.5\paperwidth]{figure/par_ams-1}
-      \vspace{-3em}
-      \begin{itemize}
-        \item \texttt{cex} set graphic scales,
-        \item \texttt{mar} \& \texttt{oma} set plot margins,
-        \item \texttt{mgp} set title and label margins,
-        \item \texttt{las} set orientation of axis labels,
-        \item \texttt{mfcol} \& \texttt{mfrow} set number of plot panels,
-      \end{itemize}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Plotting Probability Distributions}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Normal (Gaussian)} Probability Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Normal (Gaussian)} probability density function is given by:
-      \begin{displaymath}
-        N(x, \mu, \sigma) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
-      \end{displaymath}
-      The \emph{Standard Normal} distribution $N(0, 1)$ is a special case of the \emph{Normal} $N(\mu, \sigma)$ with $\mu=0$ and $\sigma=1$,
-      \vskip1ex
-      The function \texttt{dnorm()} calculates the \emph{Normal} probability density,
-      <<echo=TRUE,eval=FALSE>>=
-x_var <- seq(-5, 7, length=100)
-y_var <- dnorm(x_var, mean=1.0, sd=2.0)
-plot(x_var, y_var, type="l", lty="solid",
-     xlab="", ylab="")
-title(main="Normal Density Function", line=0.5)
-star_t <- 3; fin_ish <- 5  # set lower and upper bounds
-# set polygon base
-are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
-polygon(c(star_t, x_var[are_a], fin_ish),  # draw polygon
-        c(-1, y_var[are_a], -1), col="red")
-      @
-    \column{0.5\textwidth}
-    \includegraphics[width=0.5\paperwidth]{figure/norm_dist}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Normal (Gaussian)} Probability Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Plots of several \emph{Normal} distributions with different values of $\sigma$, using the function \texttt{curve()} for plotting functions given by their name,
-      <<norm_dist_mult_curves,eval=FALSE,echo=(-(1:1)),fig.show="hide">>=
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
-# create plot colors
-col_ors <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep="=")
-for (in_dex in 1:4) {  # plot four curves
-curve(expr=dnorm(x, sd=sig_mas[in_dex]),
-      type="l", xlim=c(-4, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
-}  # end for
-# add title
-title(main="Normal Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, title="Sigmas",
-       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_mult_curves-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Normal} Probability Distributions as Lines}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Plots of several \emph{Normal} distributions with different values of $\sigma$,
-      <<norm_dist_mult,eval=FALSE,echo=(-(1:2)),fig.show="hide">>=
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-x_var <- seq(-4, 4, length=100)
-sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
-# create plot colors
-col_ors <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("sigma", sig_mas, sep="=")
-# plot the first chart
-plot(x_var, dnorm(x_var, sd=sig_mas[1]),
-     type="n", xlab="", ylab="",
-     main="Normal Distributions")
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]),
-        lwd=2, col=col_ors[in_dex])
-}  # end for
-# add legend
-legend("topright", inset=0.05, title="Sigmas",
-       lab_els, cex=0.8, lwd=2, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_mult-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Chi-squared} Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables,
-      \vskip1ex
-      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with \texttt{k} degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
-      \begin{displaymath}
-        P(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
-      \end{displaymath}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # df values
-# create plot colors
-col_ors <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("df", deg_free, sep="=")
-for (in_dex in 1:4) {  # plot four curves
-curve(expr=dchisq(x, df=deg_free[in_dex]),
-      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chisq_dist_mult.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="Chi-squared Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05,
-       title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Chi-squared} Distribution as Line}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables,
-      \vskip1ex
-      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with \texttt{k} degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
-      \begin{displaymath}
-        P(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
-      \end{displaymath}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # df values
-# create plot colors
-col_ors <- c("red", "black", "blue", "green")
-# create legend labels
-lab_els <- paste("df", deg_free, sep="=")
-# plot an empty chart
-x_var <- seq(0, 20, length=100)
-plot(x_var, dchisq(x_var, df=deg_free[1]),
-     type="n", xlab="", ylab="", ylim=c(0, 0.3))
-# add lines to plot
-for (in_dex in 1:4) {
-  lines(x_var, dchisq(x_var, df=deg_free[in_dex]),
-        lwd=2, col=col_ors[in_dex])
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/chisq_dist_mult.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="Chi-squared Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05,
-       title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Student's \protect\emph{t-distribution}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
-      \vskip1ex
-      Then the random variable (\emph{t-ratio}):
-      \begin{displaymath}
-        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
-      \end{displaymath}
-      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        P(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + t^2/\nu)^{-(\nu+1)/2}
-      \end{displaymath}
-      \vspace{-1em}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 6, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", deg_free, sep="="))
-# plot a Normal probability distribution
-curve(expr=dnorm, type="l", xlim=c(-4, 4),
-      xlab="", ylab="", lwd=2)
-for (in_dex in 1:3) {  # plot three t-distributions
-curve(expr=dt(x, df=deg_free[in_dex]),
-      type="l", xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex+1], add=TRUE)
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/t_dist_mult.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="t-distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05,
-       title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Student's \protect\emph{t-distribution} as Line}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $z_{1},\ldots , z_{\nu}$ be independent standard normal random variables, with sample mean: $\bar{z}=\frac{1}{\nu} \sum_{i=1}^{\nu} z_i$ ($\mathbb{E}[\bar{z}]=\mu$) and sample variance: $\hat\sigma^2=\frac{1}{\nu-1} \sum_{i=1}^{\nu} (z_i-\bar{z})^2$
-      \vskip1ex
-      Then the random variable (\emph{t-ratio}):
-      \begin{displaymath}
-        t = \frac{\bar{z} - \mu}{\hat\sigma / \sqrt{\nu}}
-      \end{displaymath}
-      Follows the \emph{t-distribution} with $\nu$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        P(t) = \frac{\Gamma((\nu+1)/2)}{\sqrt{\pi \nu}\,\Gamma(\nu/2)}\, (1 + t^2/\nu)^{-(\nu+1)/2}
-      \end{displaymath}
-      \vspace{-1em}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-x_var <- seq(-4, 4, length=100)
-deg_free <- c(3, 6, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- c("normal", paste("df", deg_free, sep="="))
-# plot chart of normal distribution
-plot(x_var, dnorm(x_var), type="l",
-     lwd=2, xlab="", ylab="")
-for (in_dex in 1:3) {  # add lines for t-distributions
-  lines(x_var, dt(x_var, df=deg_free[in_dex]),
-        lwd=2, col=col_ors[in_dex+1])
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/t_dist_mult.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="t-distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05,
-       title="Degrees\n of freedom", lab_els,
-       cex=0.8, lwd=6, lty=c(1, 1, 1, 1),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fisher's \protect\emph{F-distribution}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $\chi_m^2$ and $\chi_n^2$ be independent random variables following \emph{Chi-squared} distributions with \texttt{m} and \texttt{n} degrees of freedom,
-      \vskip1ex
-      Then the random variable:
-      \begin{displaymath}
-        F = \frac{m \, \chi_n^2}{n \, \chi_m^2}
-      \end{displaymath}
-      Follows the \emph{F-distribution} with \texttt{m} and \texttt{n} degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{n/2-1}}{(m+nF)^{(m+n)/2}}
-      \end{displaymath}
-      \vspace{-1em}
-        <<eval=FALSE,echo=(-(1:2))>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 5, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- paste0("df1=", deg_free, ", df2=3")
-for (in_dex in 1:NROW(deg_free)) {  # plot four curves
-curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      type="l", xlim=c(0, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
-      \vspace{-1em}
-        <<eval=FALSE,echo=TRUE>>=
-# add title
-title(main="F-Distributions", line=0.5)
-# add legend
-legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1,
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Poisson Probability Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Poisson} distribution gives the probability of the number of events observed in an interval of space or time,
-      \vskip1ex
-      The \emph{Poisson} probability function is given by:
-      \begin{displaymath}
-        P(n; \lambda) = \frac{{\lambda^n}{\cdot}{e^{-\lambda}}}{n!}
-      \end{displaymath}
-      The \emph{Poisson} random variable \texttt{n} is the number of events observed in the interval,
-      \vskip1ex
-      The parameter $\lambda$ is the average number of events that are observed in the interval,
-      \vskip1ex
-      An example of a \emph{Poisson} distribution is the number of mail items received each day,
-      <<poiss_dist,eval=FALSE,echo=(-(1:2)),fig.show="hide">>=
-rm(list=ls())
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-poisson_events <- 0:11  # Poisson events
-poisson_freq <- dpois(poisson_events, lambda=4)
-names(poisson_freq) <- as.character(poisson_events)
-# Poisson function
-poisson_func <- function(x, lambda)
-                    {exp(-lambda)*lambda^x/factorial(x)}
-curve(expr=poisson_func(x, lambda=4), xlim=c(0, 11), main="Poisson distribution",
-      xlab="No. of events", ylab="Frequency of events", lwd=2, col="red")
-legend(x="topright", legend="Poisson density", title="",
-       inset=0.05, cex=0.8, bg="white", lwd=4, lty=1, col="red")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/poiss_dist-1}
   \end{columns}
 \end{block}
 
@@ -2113,21 +1521,21 @@ legend(x="topright", legend="Poisson density", title="",
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
+set.seed(1121)  # Reset random number generator
 runif(3)  # three numbers from uniform distribution
-runif(3)  # produce another three numbers
-set.seed(1121)  # reset random number generator
-runif(3)  # produce another three numbers
+runif(3)  # Produce another three numbers
+set.seed(1121)  # Reset random number generator
+runif(3)  # Produce another three numbers
 
-# produce random number from standard normal distribution
+# Produce random number from standard normal distribution
 rnorm(1)
-# produce five random numbers from standard normal distribution
+# Produce five random numbers from standard normal distribution
 rnorm(5)
-# produce five random numbers from the normal distribution
-rnorm(n=5, mean=1, sd=2)  # match arguments by name
-# calculate cumulative standard normal distribution
+# Produce five random numbers from the normal distribution
+rnorm(n=5, mean=1, sd=2)  # Match arguments by name
+# Calculate cumulative standard normal distribution
 c(pnorm(-2), pnorm(2))
-# calculate inverse cumulative standard normal distribution
+# Calculate inverse cumulative standard normal distribution
 c(qnorm(0.75), qnorm(0.25))
       @
   \end{columns}
@@ -2151,16 +1559,16 @@ c(qnorm(0.75), qnorm(0.25))
       \vskip1ex
       The function \texttt{curve()} plots a function defined by its name,
       <<echo=TRUE,eval=FALSE>>=
-# define logistic map function
+# Define logistic map function
 log_map <- function(x, r=4) r*x*(1-x)
 log_map(0.25, 4)
-# plot logistic map
+# Plot logistic map
 x11(width=6, height=5)
 curve(expr=log_map, type="l", xlim=c(0, 1),
       xlab="x[n-1]", ylab="x[n]", lwd=2, col="blue",
       main="logistic map")
-lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="blue")
-lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="blue")
+lines(x=c(0, 0.25), y=c(0.75, 0.75), lwd=2, col="orange")
+lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="orange")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/logistic_map.png}\\
@@ -2187,14 +1595,14 @@ lines(x=c(0.25, 0.25), y=c(0, 0.75), lwd=2, col="blue")
       \end{displaymath}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# calculate uniformly distributed pseudo-random
-# sequence using logistic map function
+# Calculate uniformly distributed pseudo-random
+# Sequence using logistic map function
 uni_form <- function(see_d, len_gth=10) {
-  # pre-allocate vector instead of "growing" it
+  # Pre-allocate vector instead of "growing" it
   out_put <- numeric(len_gth)
   # initialize
   out_put[1] <- see_d
-  # perform loop
+  # Perform loop
   for (i in 2:len_gth) {
     out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
   }  # end for
@@ -2232,7 +1640,7 @@ plot(
       \vskip1ex
       $p = 0.5$ corresponds to flipping an unbiased coin,
       \vskip1ex
-      The probability of obtaining \texttt{k} successes in \texttt{n} independent \emph{binomial} trials is equal to:
+      The probability of obtaining $k$ successes in $n$ independent \emph{binomial} trials is equal to:
       \begin{displaymath}
         {n \choose k} p^k (1-p)^{(n-k)}
       \end{displaymath}
@@ -2240,20 +1648,20 @@ plot(
     \column{0.6\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# flip unbiased coin once, 20 times
+set.seed(1121)  # Reset random number generator
+# Flip unbiased coin once, 20 times
 rbinom(n=20, size=1, 0.5)
-# number of heads after flipping twice, 20 times
+# Number of heads after flipping twice, 20 times
 rbinom(n=20, size=2, 0.5)
-# number of heads after flipping thrice, 20 times
+# Number of heads after flipping thrice, 20 times
 rbinom(n=20, size=3, 0.5)
-# number of heads after flipping biased coin thrice, 20 times
+# Number of heads after flipping biased coin thrice, 20 times
 rbinom(n=20, size=3, 0.8)
-# number of heads after flipping biased coin thrice, 20 times
+# Number of heads after flipping biased coin thrice, 20 times
 rbinom(n=20, size=3, 0.2)
-# flip unbiased coin once, 20 times
-sample(x=0:1, size=20, replace=TRUE)  # fast
-as.numeric(runif(20) < 0.5)  # slower
+# Flip unbiased coin once, 20 times
+sample(x=0:1, size=20, replace=TRUE)  # Fast
+as.numeric(runif(20) < 0.5)  # Slower
       @
   \end{columns}
 \end{block}
@@ -2277,25 +1685,29 @@ as.numeric(runif(20) < 0.5)  # slower
       So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta},
       \vskip1ex
       If \texttt{replace=TRUE}, then \texttt{sample()} produces samples with replacement,
+      \vskip1ex
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution,
+      \vskip1ex
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals,
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# permutation of five numbers
+# Permutation of five numbers
 sample(x=5)
-# permutation of four strings
+# Permutation of four strings
 sample(x=c("apple", "grape", "orange", "peach"))
-# sample of size three
+# Sample of size three
 sample(x=5, size=3)
-# sample with replacement
+# Sample with replacement
 sample(x=5, replace=TRUE)
-sample(  # sample of strings
+sample(  # Sample of strings
   x=c("apple", "grape", "orange", "peach"),
   size=12,
   replace=TRUE)
-# binomial sample: flip coin once, 20 times
+# Binomial sample: flip coin once, 20 times
 sample(x=0:1, size=20, replace=TRUE)
-# flip unbiased coin once, 20 times
-as.numeric(runif(20) > 0.5)  # slower
+# Flip unbiased coin once, 20 times
+as.numeric(runif(20) > 0.5)  # Slower
       @
   \end{columns}
 \end{block}
@@ -2314,7 +1726,7 @@ as.numeric(runif(20) > 0.5)  # slower
       \vskip1ex
       Let $\{x_1,\ldots ,x_n\}$ be a data \emph{sample} of a \emph{random variable} \texttt{x},
       \vskip1ex
-      Let \texttt{x} follow a probability distribution with population mean equal to $\mu$ and population standard deviation equal to $\sigma$,
+      Let \texttt{x} follow a probability distribution with population \emph{mean} equal to $\mu$ and population standard deviation equal to $\sigma$,
       \vskip1ex
       A \emph{statistic} is a function of a data \emph{sample}:  $f( x_1,\ldots ,x_n )$,
       \vskip1ex
@@ -2324,22 +1736,22 @@ as.numeric(runif(20) > 0.5)  # slower
       \vskip1ex
       For example:
       \begin{displaymath}
-        \bar{x}=\frac{1}{n}{\sum_{i=1}^n x_i}
+        \bar{x} = \frac{1}{n}{\sum_{i=1}^n x_i}
       \end{displaymath}
       Is an \emph{estimator} of the \emph{mean} of the \emph{distribution},
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2))>>=
 rm(list=ls())
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
 sam_ple <- rnorm(1000)
 
-mean(sam_ple)  # sample mean
+mean(sam_ple)  # Sample mean
 
-median(sam_ple)  # sample median
+median(sam_ple)  # Sample median
 
-sd(sam_ple)  # sample standard deviation
+sd(sam_ple)  # Sample standard deviation
       @
   \end{columns}
 \end{block}
@@ -2361,7 +1773,7 @@ sd(sam_ple)  # sample standard deviation
       Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
       \vskip1ex
       With their expected values equal to the population mean and standard deviation:\\
-      $\mathbb{E}[\bar{x}]=\mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma]=\sigma$
+      $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma\mathbb{E}[\hat\sigma] = \sigma$
       \vskip1ex
       The sample skewness (third moment) is equal to:
       \begin{displaymath}
@@ -2369,38 +1781,87 @@ sd(sam_ple)  # sample standard deviation
       \end{displaymath}
       The sample kurtosis (fourth moment) is equal to
       \begin{displaymath}
-        \hat{k}=\frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+        \hat{k}=\frac{n}{(n-1)^2} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
       \end{displaymath}
-      The normal distribution has zero skewness and kurtosis equal to 3,
+      The normal distribution has zero skewness and kurtosis equal to 3.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=(-(1:1)),eval=FALSE>>=
 rm(list=ls())
 # DAX returns
 re_turns <- diff(log(EuStockMarkets[, 1]))
-# number of observations
-len_gth <- NROW(re_turns)
-# mean of DAX returns
-mean_rets <- mean(re_turns)
-# standard deviation of DAX returns
-sd_rets <- sd(re_turns)
-# skew of DAX returns
-len_gth/((len_gth-1)*(len_gth-2))*
-  sum(((re_turns - mean_rets)/sd_rets)^3)
-# kurtosis of DAX returns
-len_gth*(len_gth+1)/((len_gth-1)^3)*
-  sum(((re_turns - mean_rets)/sd_rets)^4)
-# random normal returns
-re_turns <- rnorm(len_gth, sd=2)
-# mean and standard deviation of random normal returns
-mean_rets <- mean(re_turns)
-sd_rets <- sd(re_turns)
-# skew of random normal returns
-len_gth/((len_gth-1)*(len_gth-2))*
-  sum(((re_turns - mean_rets)/sd_rets)^3)
-# kurtosis of random normal returns
-len_gth*(len_gth+1)/((len_gth-1)^3)*
-  sum(((re_turns - mean_rets)/sd_rets)^4)
+# Number of observations
+n_rows <- NROW(re_turns)
+# Mean of DAX returns
+mea_n <- mean(re_turns)
+# Standard deviation of DAX returns
+s_d <- sd(re_turns)
+# Normalize returns
+re_turns <- (re_turns - mea_n)/s_d
+# Skew of DAX returns
+skew(re_turns)
+# Or
+n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
+# Kurtosis of DAX returns
+kurt(re_turns)
+# Or
+n_rows/(n_rows-1)^2*sum(re_turns^4)
+# Random normal returns
+re_turns <- rnorm(n_rows, sd=2)
+# Mean and standard deviation of random normal returns
+mean(re_turns); sd(re_turns)
+# Skew and kurtosis of random normal returns
+skew(re_turns); kurt(re_turns)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimators of Quantiles}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$,
+      \vskip1ex
+      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$,
+      \vskip1ex
+      The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow,
+      \vskip1ex
+      The function \texttt{sort()} returns a vector sorted into ascending order,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+len_gth <- 1000
+sam_ple <- rnorm(len_gth)
+# Sample mean - MC estimate
+mean(sam_ple)
+# Sample standard deviation - MC estimate
+sd(sam_ple)
+# Monte Carlo estimate of cumulative probability
+sam_ple <- sort(sam_ple)
+pnorm(1)
+sum(sam_ple<1)/len_gth
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+cut_off <- conf_level*len_gth
+sam_ple[cut_off]
+quantile(sam_ple, probs=conf_level)
+# Analyze the source code of quantile()
+stats:::quantile.default
+# microbenchmark quantile
+library(microbenchmark)
+summary(microbenchmark(
+  sam_ple=sam_ple[cut_off],
+  quan_tile=quantile(sam_ple, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -2421,7 +1882,7 @@ len_gth*(len_gth+1)/((len_gth-1)^3)*
       \vskip1ex
       For example, the \emph{standard error} of the estimator of the mean is equal to:
       \begin{displaymath}
-        \sigma_{\mu} = \frac{\sigma}{\sqrt{n}}
+        \sigma_\mu = \frac{\sigma}{\sqrt{n}}
       \end{displaymath}
       Where $\sigma$ is the \emph{population standard deviation} (which is usually unkown),
       \vskip1ex
@@ -2433,386 +1894,14 @@ len_gth*(len_gth+1)/((len_gth-1)^3)*
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
 len_gth <- 1000
 sam_ple <- rnorm(len_gth)
-# sample mean
+# Sample mean
 mean(sam_ple)
-# sample standard deviation
+# Sample standard deviation
 sd(sam_ple)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Hypothesis Testing}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Hypothesis Testing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Hypothesis Tests} are designed to test the validity of \emph{null hypotheses}, and they consist of:
-      \begin{itemize}
-        \item A \emph{null hypothesis},
-        \item A test \emph{statistic} derived from the data sample,
-        \item A \emph{p}-value: the conditional probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE},
-        \item A \emph{significance level} $\alpha$ corresponding to a \emph{critical value},       \end{itemize}
-      The \emph{p}-value is compared to the \emph{significance level} in order to decide whether to reject the \emph{null hypothesis} or not,
-      \vskip1ex
-      If the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected, 
-      \vskip1ex
-      It's possible for the \emph{null hypothesis} to be \texttt{TRUE}, but to obtain a very small \emph{p}-value purely by chance,
-      \vskip1ex
-      The \emph{p}-value is the probability of erroneously rejecting a \texttt{TRUE} \emph{null hypothesis}, due to the randomness of the data sample,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-### Perform two-tailed test that sample is
-### from Standard Normal Distribution (mean=0, SD=1)
-# generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1e4))
-# get p-values for all the samples
-test_frame$p_values <- sapply(test_frame$samples, 
-              function(x) 2*pnorm(-abs(x)))
-# significance level, two-tailed test, critical value=2*SD
-signif_level <- 2*(1-pnorm(2))
-# compare p_values to significance level
-test_frame$result <-
-  test_frame$p_values > signif_level
-# number of null rejections
-sum(!test_frame$result) / NROW(test_frame)
-# show null rejections
-head(test_frame[!test_frame$result, ])
-      @
-      \vspace{-1em}
-      The \emph{p}-value is a conditional probability, and is not equal to the un-conditional probability of the hypothesis being \texttt{TRUE},
-      \vskip1ex
-      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE} or not, but we can attempt to invalidate it, and conclude that it's unlikely to be \texttt{TRUE}, given the test statistic value and its \emph{p}-value,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Two-tailed Hypothesis Tests}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
-      \vskip1ex
-      Two-tailed hypothesis tests are applied for testing if the absolute value of a sample  exceeds the critical value, 
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# plot the Normal probability distribution
-curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
-      xlab="", ylab="", lwd=3, col="blue")
-title(main="Two-tailed Test", line=0.5)
-# plot tails of the distribution using polygons
-star_t <- 2; e_nd <- 4
-# plot right tail using polygon
-x_var <- seq(star_t, e_nd, length=100)
-y_var <- dnorm(x_var, sd=1)
-y_var[1] <- (-1)
-y_var[NROW(y_var)] <- (-1)
-polygon(x=x_var, y=y_var, col="red")
-# plot left tail using polygon
-y_var <- dnorm(-x_var, sd=1)
-y_var[1] <- (-1)
-y_var[NROW(y_var)] <- (-1)
-polygon(x=(-x_var), y=y_var, col="red")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/hyp_test_tow_tail.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Visualizing Hypothesis Testing Using Package \protect\emph{ggplot2}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
-      <<hyp_test_ggp2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
-rm(list=ls())
-par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(ggplot2)  # load ggplot2
-
-qplot(  # simple ggplot2
-    main="Standard Normal Distribution",
-    c(-4, 4),
-    stat="function",
-    fun=dnorm,
-    geom="line",
-    xlab=NULL, ylab=NULL
-    ) +  # end qplot
-
-theme(  # modify plot theme
-    plot.title=element_text(vjust=-1.0),
-    plot.background=element_blank()
-    ) +  # end theme
-
-geom_vline(  # add vertical line
-  aes(xintercept=c(-2.0, 2.0)),
-  colour="red",
-  linetype="dashed"
-  )  # end geom_vline
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hyp_test_ggp2-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Visualizing Hypothesis Testing Using \protect\emph{ggplot2} (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value, 
-      <<hyp_test_ggp2_2,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
-rm(list=ls())
-par(oma=c(1, 1, 1, 1), mgp=c(2, 0.5, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-### create ggplot2 with shaded area
-x_var <- -400:400/100
-norm_frame <- data.frame(x_var=x_var,
-                       d.norm=dnorm(x_var))
-norm_frame$shade <- ifelse(
-                  abs(norm_frame$x_var) >= 2,
-                  norm_frame$d.norm, NA)
-ggplot(  # main function
-  data=norm_frame,
-  mapping=aes(x=x_var, y=d.norm)
-  ) +  # end ggplot
-# plot line
-  geom_line() +
-# plot shaded area
-  geom_ribbon(aes(ymin=0, ymax=shade), fill="red") +
-# no axis labels
-  xlab("") + ylab("") +
-# add title
-  ggtitle("Standard Normal Distribution") +
-# modify plot theme
-  theme(
-        plot.title=element_text(vjust=-1.0),
-        plot.background=element_blank()
-  )  # end theme
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hyp_test_ggp2_2-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Student's \protect\emph{t-test} for the Distribution Mean}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Student's \emph{t-test} is designed to test the \emph{null hypothesis} that the \emph{population mean} of the normally distributed sample: $\{x_1,\ldots ,x_n\}$ is equal to $\mu$, 
-      \vskip1ex
-      The test statistic is equal to the \emph{t-ratio}:
-      \begin{displaymath}
-        t = \frac{\bar{x} - \mu}{\hat\sigma / \sqrt{n}}
-      \end{displaymath}
-      Where $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$ is the sample mean and $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample variance,
-      \vskip1ex
-      Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with \texttt{n} degrees of freedom, with the probability density function: 
-      \begin{displaymath}
-        P(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
-      \end{displaymath}
-      Student's \emph{t-test} can also be used to test if two different normally distributed samples have equal \emph{population means},
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# t-test for single sample
-t.test(rnorm(100))
-# t-test for two samples
-t.test(rnorm(100),
-       rnorm(100, mean=1))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Wilcoxon} Test for the Distribution Mean}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The one-sample \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots , x_n\}$ was obtained from a probability distribution with \emph{population mean} equal to zero,
-      \vskip1ex
-      The two-sample \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from two probability distributions with equal \emph{population means},
-      \vskip1ex
-      Unlike Student's \emph{t-test}, the \emph{Wilcoxon} test doesn't assume that the samples are normally distributed, 
-      \vskip1ex
-      The function \texttt{wilcox.test()} calculates the \emph{Wilcoxon} statistic and its \emph{p}-value,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=0.1))
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution,
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
-      \begin{displaymath}
-        D = \sup_i | P(x_i) - P(y_i) |
-      \end{displaymath}
-      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value,
-      \vskip1ex
-      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function,
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Shapiro-Wilk} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1,\ldots ,x_n\}$ is from a normally distributed population,
-      \vskip1ex
-      The test statistic is equal to:
-      \begin{displaymath}
-        W = \frac {(\sum_{i=1}^n a_i x_{(i)})^2} {\sum_{i=1}^n (x_i-\bar{x})^2}
-      \end{displaymath}
-      Where the: $\{a_1,\ldots ,a_n\}$ are proportional to the \emph{order statistics} of random variables from the normal distribution,
-      \vskip1ex
-      $x_{(k)}$ is the \emph{k}-th \emph{order statistic}, and is equal to the \emph{k}-th smallest value in the sample: $\{x_1,\ldots ,x_n\}$,
-      \vskip1ex
-      The \emph{Shapiro-Wilk} statistic follows its own distribution, and is less than or equal to one,
-      \vskip1ex
-      The \emph{Shapiro-Wilk} statistic is close to one for samples from normal distributions,
-      \vskip1ex
-      The \emph{p}-value for DAX returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the DAX returns are not from a normally distributed population,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-
-# Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(dax_rets)))
-
-# Shapiro-Wilk test for DAX returns
-shapiro.test(dax_rets)
-
-# Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(dax_rets)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Jarque-Bera} Test of Normality}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Jarque-Bera} test is designed to test the \emph{null hypothesis} that a sample: $\{x_1,\ldots ,x_n\}$ is from a normally distributed population,
-      \vskip1ex
-      The test statistic is equal to:
-      \begin{displaymath}
-        JB= \frac{n}{6} (\hat{s}^2 + \frac{1}{4} (\hat{k} - 3)^2)
-      \end{displaymath}
-      Where the skewness and kurtosis are defined as:
-      \begin{align*}
-        \hat{s} = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
-      &&
-        \hat{k} = \frac{1}{n} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
-      \end{align*}
-      The \emph{Jarque-Bera} statistic asymptotically follows the \emph{Chi-squared} distribution with two degrees of freedom,
-      \vskip1ex
-      The \emph{Jarque-Bera} statistic is small for samples from normal distributions,
-      \vskip1ex
-      The \emph{p}-value for DAX returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the DAX returns are not from a normally distributed population,
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1))>>=
-dax_rets <- diff(log(EuStockMarkets[, 1]))
-library(tseries)  # load package tseries
-
-# Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(dax_rets)))
-
-# Jarque-Bera test for DAX returns
-jarque.bera.test(dax_rets)
-
-# Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(dax_rets)))
       @
   \end{columns}
 \end{block}
@@ -2846,126 +1935,33 @@ jarque.bera.test(runif(NROW(dax_rets)))
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean - MC estimate
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+sam_ple <- rnorm(n_rows)
+# Sample mean - MC estimate
 mean(sam_ple)
-# sample standard deviation - MC estimate
+# Sample standard deviation - MC estimate
 sd(sam_ple)
 # Monte Carlo estimate of cumulative probability
 sam_ple <- sort(sam_ple)
 pnorm(1)
-sum(sam_ple<1)/len_gth
+sum(sam_ple<1)/n_rows
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
-sam_ple[conf_level*len_gth]
+cut_off <- conf_level*n_rows
+sam_ple[cut_off]
 quantile(sam_ple, probs=conf_level)
-# analyze the source code of quantile()
+# Analyze the source code of quantile()
 stats:::quantile.default
-# microbenchmark quantile
+# Microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
   sam_ple=sam_ple[cut_off],
   quan_tile=quantile(sam_ple, probs=conf_level),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance,
-      \vskip1ex
-      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level,
-      \vspace{-1em}
-        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-pa_th <- numeric(len_gth)  # allocate path vector
-pa_th[1] <- 0  # initialize path
-in_dex <- 2  # initialize simulation index
-while ((in_dex <= len_gth) &&
-         (pa_th[in_dex - 1] < bar_rier)) {
-# simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # advance in_dex
-}  # end while
-# fill remaining pa_th after it crosses bar_rier
-if (in_dex <= len_gth)
-  pa_th[in_dex:len_gth] <- pa_th[in_dex - 1]
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
-      line=0.5)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Brownian Motion Using Vectorized Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops,
-      \vspace{-1em}
-        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # reset random number generator
-bar_rier <- 20  # barrier level
-len_gth <- 1000  # number of simulation steps
-# simulate path of Brownian motion
-pa_th <- cumsum(rnorm(len_gth))
-# find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):len_gth] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-             start=c(2011, 1))
-# create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", 
-      line=0.5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up,
-      \vskip1ex
-      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
   \end{columns}
 \end{block}
 
@@ -2979,39 +1975,82 @@ title(main="Brownian motion crossing a barrier level",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation,
+      The standard errors of estimators can be calculated using a \emph{bootstrap} simulation.
       \vskip1ex
-      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set,
+      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values,
+      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
       \vskip1ex
-      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error,
-      \vskip1ex
-      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data,
+      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
+      <<echo=TRUE,eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000; sam_ple <- rnorm(n_rows)
+# Sample mean and standard deviation
+mean(sam_ple); sd(sam_ple)
+# Bootstrap of sample mean and median
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <- sam_ple[sample.int(n_rows,
+                                    replace=TRUE)]
+  c(mean=mean(boot_sample), median=median(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+      @
+      \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/boot_median.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+boot_strap[1:3, ]
+# Standard error from formula
+sd(sam_ple)/sqrt(n_rows)
+# Standard error of mean from bootstrap
+sd(boot_strap[, "mean"])
+# Standard error of median from bootstrap
+sd(boot_strap[, "median"])
+plot(density(boot_strap[, "median"]),
+     lwd=2, xlab="regression slopes",
+     main="Distribution of Bootstrapped Median")
+abline(v=mean(boot_strap[, "median"]),
+       lwd=2, col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping From Random Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
     \column{0.5\textwidth}
+      Bootstrapping is performed when it's not possible to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
+      \vskip1ex
+      But if the data consists of simulated random numbers then we can easily simulate another set of these random numbers, instead of sampling from the existing data.
+      \vskip1ex
+      The numbers won't be the same as before, but they will be statistically equivalent in the limit of many bootstrap simulations.
+      \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# sample mean
-mean(sam_ple)
-# sample standard deviation
-sd(sam_ple)
-# bootstrap of sample mean and median
+set.seed(1121)  # Reset random number generator
+n_rows <- 1000
+sam_ple <- rnorm(n_rows)
+# Bootstrap of sample mean and median
 boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth,
-                                    replace=TRUE)]
+  # Boot_sample from Standard Normal Distribution
+  boot_sample <- rnorm(n_rows)
   c(mean=mean(boot_sample),
     median=median(boot_sample))
 })  # end sapply
 boot_strap[, 1:3]
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-# standard error of mean from bootstrap
+# Standard error from formula
+sd(sam_ple)/sqrt(n_rows)
+# Standard error of mean from bootstrap
 sd(boot_strap["mean", ])
-# standard error of median from bootstrap
+# Standard error of median from bootstrap
 sd(boot_strap["median", ])
       @
   \end{columns}
@@ -3027,55 +2066,993 @@ sd(boot_strap["median", ])
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing,
+      The \emph{bootstrap} procedure performs a loop, which naturally lends itself to parallel computing.
       \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}),
+      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
       \vskip1ex
-      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows},
+      The function \texttt{makeCluster()} starts running \texttt{R} processes on several CPU cores under \emph{Windows}.
       \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores,
+      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores.
       \vskip1ex
-      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process,
+      The \texttt{R} processes started by \texttt{makeCluster()} don't inherit any data from the parent \texttt{R} process.
       \vskip1ex
-      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument,
+      Therefore the required data must be passed into \texttt{parLapply()} via the dots \texttt{"..."} argument.
       \vskip1ex
-      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux},
+      The function \texttt{mclapply()} performs apply loops using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
       \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores,
+      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-num_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(num_cores)  # initialize compute cluster under Windows
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
-len_gth <- 1000
-sam_ple <- rnorm(len_gth)
-# bootstrap mean and median under Windows
+library(parallel)  # Load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+sam_ple <- rnorm(n_rows)
+# Bootstrap mean and median under Windows
 boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, sam_ple, len_gth) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  function(x, sam_ple, n_rows) {
+  boot_sample <- sam_ple[sample.int(n_rows, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, sam_ple=sam_ple, len_gth=len_gth)  # end parLapply
-# bootstrap mean and median under Mac-OSX or Linux
+  }, sam_ple=sam_ple, n_rows=n_rows)  # end parLapply
+# Bootstrap mean and median under Mac-OSX or Linux
 boot_strap <- mclapply(1:10000,
   function(x) {
-  boot_sample <- sam_ple[sample.int(len_gth, replace=TRUE)]
+  boot_sample <- sam_ple[sample.int(n_rows, replace=TRUE)]
   c(mean=mean(boot_sample), median=median(boot_sample))
-  }, mc.cores=num_cores)  # end mclapply
+  }, mc.cores=n_cores)  # end mclapply
 boot_strap <- rutils::do_call(rbind, boot_strap)
-# means and standard errors from bootstrap
+# Means and standard errors from bootstrap
 apply(boot_strap, MARGIN=2,
-      function(x) c(mean=mean(x), sd=sd(x)))
-# standard error from formula
-sd(sam_ple)/sqrt(len_gth)
-stopCluster(clus_ter)  # stop R processes over cluster under Windows
+      function(x) c(mean=mean(x), std_error=sd(x)))
+# Standard error from formula
+sd(sam_ple)/sqrt(n_rows)
+stopCluster(clus_ter)  # Stop R processes over cluster under Windows
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Parallel Bootstrapping of the \protect\emph{Median Absolute Deviation}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Median Absolute Deviation} (\emph{MAD}) is a robust measure of dispersion (variability), defined using the median instead of the mean:
+      \begin{displaymath}
+        \operatorname{MAD} = \operatorname{median}(\operatorname{abs}(x_i - \operatorname{median}(\mathbf{x})))
+      \end{displaymath}
+      The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
+      \vskip1ex
+      The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
+      \vskip1ex
+      The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+n_rows <- 1000
+sam_ple <- rnorm(n_rows)
+sd(sam_ple)
+mad(sam_ple)
+median(abs(sam_ple - median(sam_ple)))
+median(abs(sam_ple - median(sam_ple)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_strap <- sapply(1:10000, function(x) {
+  boot_sample <-
+    sam_ple[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_strap <- t(boot_strap)
+# Analyze bootstrapped variance
+head(boot_strap)
+sum(is.na(boot_strap))
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # Load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
+boot_strap <- parLapply(clus_ter, 1:10000,
+  function(x, sam_ple) {
+    boot_sample <- sam_ple[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, sam_ple=sam_ple)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_strap <- mclapply(1:10000,
+  function(x) {
+    boot_sample <- sam_ple[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# Means and standard errors from bootstrap
+apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), std_error=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Bootstrapping From Empirical Datasets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Bootstrapping is usually performed by resampling from an observed (empirical) dataset.
+      \vskip1ex
+      Resampling consists of randomly selecting data from an existing dataset, with replacement.
+      \vskip1ex
+      Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
+      \vskip1ex
+      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
+      \vskip1ex
+      The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
+      \vskip1ex
+      Bootstrapping doesn't provide accurate estimates for estimators which are sensitive to the ordering and correlations in the data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Sample from time series of ETF returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Bootstrap sd and MAD under Windows
+library(parallel)  # Load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
+clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
+n_boot <- 1e4
+boot_strap <- parLapply(clus_ter, 1:n_boot,
+  function(x, re_turns, n_rows) {
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
+# Bootstrap sd and MAD under Mac-OSX or Linux
+boot_strap <- mclapply(1:n_boot,
+  function(x) {
+    boot_sample <- re_turns[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # Stop R processes over cluster under Windows
+boot_strap <- rutils::do_call(rbind, boot_strap)
+# Standard error assuming normal distribution of returns
+sd(re_turns)/sqrt(n_boot)
+# Means and standard errors from bootstrap
+std_errors <- apply(boot_strap, MARGIN=2,
+      function(x) c(mean=mean(x), std_error=sd(x)))
+std_errors
+# Relative standard errors
+std_errors[2, ]/std_errors[1, ]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Credit Portfolio Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Single-period Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a portfolio of credit assets (bonds or loans) over a single period of time,
+      \vskip1ex
+      At the end of the period, some of the assets default, while the rest don't,
+      \vskip1ex
+      The default probabilities are equal to $p_i$,
+      \vskip1ex
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$,
+      \vskip1ex
+      Default occurs if $u_i$ is less than the default probability $p_i$:
+      \begin{displaymath}
+        u_i < p_i
+      \end{displaymath}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop,
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{for()} loops,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random default probabilities
+n_assets <- 100
+def_probs <- runif(n_assets, max=0.2)
+mean(def_probs)
+# Calculate number of defaults
+uni_form <- runif(n_assets)
+sum(uni_form < def_probs)
+# Simulate average number of defaults
+n_simu <- 1000
+de_faults <- numeric(n_simu)
+# Simulate using for() loop (inefficient way)
+for (i in 1:n_simu) {  # Perform loop
+  uni_form <- runif(n_assets)
+  de_faults[i] <- sum(uni_form < def_probs)
+}  # end for
+# Calculate average number of defaults
+mean(de_faults)
+# Simulate using vectorized functions  (efficient way)
+uni_form <- matrix(runif(n_simu*n_assets),
+                   ncol=n_simu)
+sum(uni_form < def_probs)/n_simu
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Values and Default Thresholds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables,
+      \vskip1ex
+      These asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, but may be thought of as related to the balance of company assets minus its liabilities,
+      \vskip1ex
+      Default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{displaymath}
+        a_i < t_i
+      \end{displaymath}
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative standard normal distribution,
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_def_threshold.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Standard Normal distribution
+curve(expr=dnorm(x),
+      type="l", xlim=c(-4, 4),
+      xlab="asset value", ylab="", lwd=2,
+      col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+       labels="default threshold",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Asset Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$:
+      \begin{displaymath}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
+      \end{displaymath}
+      Where $\rho$ is the correlation between asset values,
+      \vskip1ex
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$,
+      \vskip1ex
+      The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor,
+      \vskip1ex
+      The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for credit risk:\\
+\hskip1em\url{http://bis2information.org/content/Vasicek_model}\\
+\hskip1em\url{https://www.bis.org/bcbs/basel3.htm}\\
+\hskip1em\url{https://www.bis.org/bcbs/irbriskweight.pdf}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+n_assets <- 5 ; n_simu <- 10000
+# Calculate vector of systematic factors
+system_atic <- rnorm(n_simu)
+# Simulate asset values using vectorized functions (efficient way)
+asset_s <- rho_sqrt*system_atic +
+  rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_s) <- c(n_simu, n_assets)
+# Calculate correlations between asset values
+cor(asset_s)
+# Simulate asset values using for() loop (inefficient way)
+# allocate matrix of assets
+asset_s <- matrix(nr=n_simu, nc=n_assets)
+# Simulate asset values using for() loop
+for (i in 1:n_simu) {  # Perform loop
+  asset_s[i, ] <-
+    rho_sqrt*system_atic[i] +
+    rho_sqrtm*rnorm(n_assets)
+}  # end for
+cor(asset_s)
+# benchmark the speed of the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  for_loop={for (i in 1:n_simu) {
+    rho_sqrt*system_atic[i] +
+    rho_sqrtm*rnorm(n_assets)}},
+  vector_ized={rho_sqrt*system_atic +
+              rho_sqrtm*rnorm(n_simu*n_assets)},
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} model, default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{align*}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i \\
+        a_i < t_i
+      \end{align*}
+      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession,
+      \vskip1ex
+      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults,
+      \vskip1ex
+      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults,
+      \vskip1ex
+      This way the \emph{Vasicek} model introduces a correlation among defaults,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random default probabilities
+n_assets <- 5
+def_probs <- runif(n_assets, max=0.2)
+mean(def_probs)
+# Calculate default thresholds
+def_thresh <- qnorm(def_probs)
+# Calculate number of defaults using vectorized functions (efficient way)
+# Calculate vector of number of defaults
+de_faults <-
+  colSums(t(t(asset_s) < def_thresh))
+de_faults / n_simu
+def_probs
+# Calculate number of defaults using for() loop (inefficient way)
+# allocate matrix of de_faults
+de_faults <- matrix(nr=n_simu, nc=n_assets)
+# Simulate asset values using for() loop
+for (i in 1:n_simu) {  # Perform loop
+  de_faults[i, ] <-
+    (asset_s[i, ] < def_thresh)
+}  # end for
+colSums(de_faults) / n_simu
+def_probs
+# Calculate correlations between defaults
+cor(de_faults)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlation and Default Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events.
+      \vskip1ex
+      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values}.
+      \vskip1ex
+      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well.
+      \vskip1ex
+      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk.
+      \vskip1ex
+      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions.
+      \vskip1ex
+      Default correlations are usually much lower than the corresponding asset correlations.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define default probabilities
+n_assets <- 2
+def_prob <- 0.2
+def_thresh <- qnorm(def_prob)
+# Define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+# Calculate vector of systematic factors
+n_simu <- 1000
+system_atic <- rnorm(n_simu)
+# Simulate asset values using vectorized functions
+asset_s <- rho_sqrt*system_atic +
+  rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_s) <- c(n_simu, n_assets)
+# Calculate number of defaults using vectorized functions
+de_faults <- t(t(asset_s) < def_thresh)
+# Calculate correlations between defaults
+cor(de_faults)
+# Calculate average number of defaults and compare to def_prob
+colSums(de_faults) / n_simu
+def_prob
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cumulative Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=\Phi^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
+      \begin{displaymath}
+        p(s) = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
+      \end{displaymath}
+      The cumulative probability $P(x)$ for the percentage \texttt{x} of portfolio defaults (the portfolio cumulative default distribution) is equal to:
+      \begin{displaymath}
+        P(x) = \Phi(\frac{{\sqrt{1-\rho}} \Phi^{-1}(x) - t}{\sqrt{\rho}})
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define cumulative default probability function
+def_cumdistr <- function(x, def_thresh=(-2), rh_o=0.2)
+  pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
+def_cumdistr(x=0.2, def_thresh=qnorm(def_prob), rh_o=rh_o)
+# Plot cumulative default probability function
+def_prob <- 0.4; def_thresh <- qnorm(def_prob)
+curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.05),
+      xlim=c(0, 0.999), lwd=3,
+      xlab="percent default", ylab="probability",
+      col="green", main="Cumulative Default Probabilities")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cum_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with higher correlation
+curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.2),
+      xlim=c(0, 0.999), add=TRUE, lwd=3,
+      col="blue", main="")
+# Add legend
+legend(x="topleft",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=def_prob, col="red", lwd=3)
+text(x=def_prob, y=0.0,
+       labels="default probability",
+       lwd=2, srt=90, pos=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability density $f(x)$ of portfolio defaults is equal to the derivative of the cumulative default distribution:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(x) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(x)^2)}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+# Define default probability density function
+def_distr <- function(x, def_thresh=(-2), rh_o=0.2)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
+  def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+# Define parameters
+rh_o <- 0.2 ; rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+def_prob <- 0.3; def_thresh <- qnorm(def_prob)
+def_distr(0.03, def_thresh=def_thresh, rh_o=rh_o)
+# Plot probability distribution of defaults
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
+      xlim=c(0, 1.0), lwd=3,
+      xlab="percentage of defaults", ylab="density",
+      col="green", main="Distribution of Defaults")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with higher correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.3),
+      xlab="default percentage", ylab="",
+      add=TRUE, lwd=3, col="blue", main="")
+# Add legend
+legend(x="topright",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=def_prob, col="red", lwd=3)
+text(x=def_prob, y=2,
+       labels="default probability",
+       lwd=2, srt=90, pos=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under Extreme Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlation $\rho$ is close to \emph{zero}, then the asset values $a_i$ are independent from each other, and defaults are also independent, so that the percentage of portfolio defaults is very close to the default probability $p$,
+      \vskip1ex
+      In that case, the probability density of portfolio defaults is very narrow and is centered on the default probability $p$,
+      \vskip1ex
+      If the correlation $\rho$ is close to \emph{one}, then the asset values $a_i$ are almost the same, and defaults occur at the same time, so that the percentage of portfolio defaults is either \emph{zero} or \emph{one},
+      \vskip1ex
+      In that case, the probability density of portfolio defaults becomes \emph{bimodal}, with two peaks around  \emph{zero} and \emph{one},
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with low correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.01),
+      xlab="default percentage", ylab="", lwd=2,
+      col="green", main="Distribution of Defaults")
+# Plot default distribution with high correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
+      xlab="percentage of defaults", ylab="density",
+      add=TRUE, lwd=2, n=10001, col="blue", main="")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_high_corr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add legend
+legend(x="top",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.1, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10, lwd=2, pos=4,
+       labels="default probability")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Numerical Integration of Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval.
+      \vskip1ex
+      Additional parameters can be passed to the integrated function through the dots \texttt{"..."} argument of the function \texttt{integrate()}.
+      \vskip1ex
+      The function \texttt{integrate()} accepts the integration limits \texttt{-Inf} and \texttt{Inf} equal to minus and plus infinity.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get help for integrate()
+?integrate
+# Calculate slowly converging integral
+func_tion <- function(x) {1/((x+1)*sqrt(x))}
+integrate(func_tion, lower=0, upper=10)
+integrate(func_tion, lower=0, upper=Inf)
+# Integrate function with parameter lamb_da
+func_tion <- function(x, lamb_da=1) {
+  exp(-x*lamb_da)
+}  # end func_tion
+integrate(func_tion, lower=0, upper=Inf)
+integrate(func_tion, lower=0, upper=Inf,
+          lamb_da=2)
+# Cumulative probability over normal distribution
+pnorm(-2)
+integrate(dnorm, low=2, up=Inf)
+str(dnorm)
+pnorm(-1)
+integrate(dnorm, low=2, up=Inf, mean=1)
+# Expected value over normal distribution
+integrate(function(x) x*dnorm(x),
+          low=2, up=Inf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Loss Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The expected loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity):
+      \begin{displaymath}
+        EL = \sum_{i=1}^{n} p_i LGD_i
+      \end{displaymath}
+      If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(\frac{x}{LGD}))^2}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+rh_o <- 0.1; l_gd <- 0.4
+# Define Vasicek loss distribution function
+loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(loss_distr, low=0, up=l_gd,
+  def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_loss_distr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot probability distribution of losses
+def_prob <- 0.05; def_thresh <- qnorm(def_prob)
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 0.06),
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Distribution of Losses")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$,
+      \vskip1ex
+      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution},
+      <<echo=TRUE,eval=FALSE>>=
+# Add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35,
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss",
+     lwd=2, pos=3)
+# Add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25,
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$:
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^{\alpha} {\mathrm{VaR}(p) \, \mathrm{d}p} = \frac{1}{\alpha} \int_{\mathrm{VaR}}^{LGD} {x \, f(x) \, \mathrm{d}x}
+      \end{displaymath}
+      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}),
+      <<echo=TRUE,eval=FALSE>>=
+va_r <- 0.04; var_max <- 4*l_gd*def_prob
+# Calculate CVaR
+c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
+  low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
+c_var <- c_var/integrate(loss_distr, low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
+# Plot probability distribution of losses
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 0.06),
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Conditional Value at Risk")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_cvar.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add lines for VaR
+abline(v=va_r, col="red", lwd=3)
+text(x=va_r-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+# Add shading for CVaR
+var_s <- seq(va_r, var_max, length=100)
+dens_ity <- sapply(var_s, loss_distr,
+  def_thresh=def_thresh, rh_o=rh_o)
+# Draw shaded polygon
+polygon(c(va_r, var_s, var_max), density=20,
+  c(-1, dens_ity, -1), col="red", border=NA)
+text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$,
+      \vskip1ex
+      The \emph{quantile} of the loss distribution (the \emph{VaR}), for a given a confidence level $\alpha$, is given by the inverse of the cumulative loss distribution:
+      \begin{displaymath}
+        VaR(\alpha) = LGD \cdot \Phi(\frac{{\sqrt{\rho}} \Phi^{-1}(\alpha) + t}{\sqrt{1-\rho}})
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# VaR (quantile of the loss distribution)
+var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+  l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
+var_func(x=0.99, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Plot VaR
+curve(expr=var_func(x, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
+      type="l", xlim=c(0, 0.999),
+      xlab="confidence level", ylab="VaR", lwd=3,
+      col="orange", main="VaR versus Confidence Level")
+# Add line for expected loss
+abline(h=l_gd*def_prob, col="red", lwd=3)
+text(x=0.2, y=l_gd*def_prob, labels="expected loss",
+     lwd=2, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk and Confidence Levels}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function,
+      <<echo=TRUE,eval=FALSE>>=
+# Integrate loss_distr() over full range
+integrate(loss_distr, low=0.0, up=l_gd,
+          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Calculate expected losses using loss_distr()
+integrate(function(x, ...) x*loss_distr(x, ...),
+          low=0.0, up=l_gd,
+          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Calculate confidence levels corresponding to VaR values
+var_s <- seq(0.07, 0.12, 0.001)
+level_s <- sapply(var_s, function(va_r, ...) {
+  integrate(loss_distr, low=va_r, up=l_gd, ...)
+}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
+level_s <- cbind(as.numeric(t(level_s)[, 1]), var_s)
+colnames(level_s) <- c("level_s", "VaRs")
+# Calculate 95% confidence level VaR value
+level_s[
+  match(TRUE, level_s[, "level_s"] < 0.05), "VaRs"]
+plot(x=1-level_s[, "level_s"],
+     y=level_s[, "VaRs"], lwd=2,
+     xlab="Confidence Levels", ylab="VaRs",
+     t="l", main="VaR Values and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_conf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function,
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate CVaR values
+cvar_s <- sapply(var_s, function(va_r, ...) {
+  integrate(function(x, ...) x*loss_distr(x, ...),
+            low=va_r, up=l_gd, ...)
+}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
+level_s <- cbind(level_s, as.numeric(t(cvar_s)[, 1]))
+colnames(level_s)[3] <- "CVaRs"
+# Divide CVaR by confidence level
+level_s[, "CVaRs"] <-
+  level_s[, "CVaRs"]/level_s[, "level_s"]
+# Calculate 95% confidence level CVaR value
+level_s[match(TRUE,
+  level_s[, "level_s"] < 0.05), "CVaRs"]
+# Plot CVaRs
+plot(x=1-level_s[, "level_s"],
+     y=level_s[, "CVaRs"],
+     t="l", col="red", lwd=2,
+     ylim=range(level_s[, c("VaRs", "CVaRs")]),
+     xlab="Confidence Levels", ylab="CVaRs",
+     main="CVaR Values and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_levels.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add VaRs
+lines(x=1-level_s[, "level_s"],
+      y=level_s[, "VaRs"], lwd=2)
+# Add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title="default probability = 5%
+correlation = 10%
+loss given default = 40%",
+       inset=0.1, cex=0.8, bg="white", bty="n",
+       lwd=6, lty=1, col=c("red", "black"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model.
+      \vskip1ex
+      In that case the portfolio losses and \emph{VaR} must be simulated.
+      <<echo=TRUE,eval=FALSE>>=
+# Define model parameters
+n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
+# Define correlation parameters
+rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
+# Calculate default probabilities and thresholds
+set.seed(1121)
+def_probs <- runif(n_assets, max=0.2)
+def_thresh <- qnorm(def_probs)
+# Calculate vector of systematic factors
+system_atic <- rnorm(n_simu)
+# Simulate losses under Vasicek model
+asset_s <-
+  matrix(rnorm(n_simu*n_assets), ncol=n_simu)
+asset_s <-
+  t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
+loss_es <-
+  l_gd*colSums(asset_s < def_thresh)/n_assets
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_simu.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VaRs
+level_s <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=level_s)
+plot(x=level_s, y=var_s, t="l", lwd=2,
+     xlab="Confidence Levels", ylab="VaRs",
+     main="Simulated VaR and Confidence Levels")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}.
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate CVaRs
+cvar_s <- sapply(var_s, function(va_r) {
+  mean(loss_es[loss_es >=va_r])
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# Alternative CVaR calculation using frequency table
+# first calculate frequency table of loss_es
+# ta_ble <- table(loss_es)/n_simu
+# Calculate CVaRs from frequency table
+# Cvar_s <- sapply(var_s, function(va_r) {
+#   tai_l <- ta_ble[names(ta_ble) > va_r]
+#   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+# })  # end sapply
+# Plot CVaRs
+plot(x=level_s, y=cvar_s[, "cvar_s"],
+     t="l", col="red", lwd=2,
+     ylim=range(cvar_s),
+     xlab="Confidence Levels", ylab="CVaRs",
+     main="Simulated CVaR and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add VaRs
+lines(x=level_s, y=cvar_s[, "var_s"], lwd=2)
+# Add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=1, col=c("red", "black"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Homework Assignment}
 
 
 %%%%%%%%%%%%%%%
