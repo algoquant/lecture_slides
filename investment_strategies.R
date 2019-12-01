@@ -105,13 +105,32 @@ library(PerformanceAnalytics)
 ts_rets <- rutils::etf_env$re_turns[, "VTI"]
 PerformanceAnalytics::KellyRatio(R=ts_rets, method="full")
 
+# open x11 for plotting
+x11(width=6, height=4)
+# set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+# Test if IEF can time VTI
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
+vt_i <- re_turns[, "VTI"]
+re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(re_turns)[3:4] <- c("merton", "treynor")
+# Merton-Henriksson test
+mod_el <- lm(IEF ~ VTI + merton, data=re_turns); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(IEF ~ VTI + treynor, data=re_turns); summary(mod_el)
+# Plot scatterplot
+with(re_turns, plot.default(x=VTI, y=IEF-mod_el$coefficients[2]*VTI, xlab="VTI", ylab="IEF"))
+title(main="Treynor-Mazuy market timing test\n for IEF vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+with(re_turns, points.default(x=VTI, y=mod_el$fitted.values-mod_el$coefficients[2]*VTI, pch=16, col="red"))
+
 library(xtable)
 binbet_table <- data.frame(win=c("p", "b"), lose=c("q = 1 - p", "a"))
 rownames(binbet_table) <- c("probability", "payout")
 # print(xtable(binbet_table), comment=FALSE, size="tiny")
 print(xtable(binbet_table), comment=FALSE)
 
-library(rutils)  # load package rutils
+library(rutils)  # Load package rutils
 # Calculate ETF returns
 re_turns <-
   rutils::etf_env$re_turns[, c("IEF", "VTI")]
@@ -170,51 +189,77 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_points], lwd=c(2, 2, 2),
 oh_lc <- rutils::etf_env$VTI
 op_en <- quantmod::Op(oh_lc)
 cl_ose <- quantmod::Cl(oh_lc)
-star_t <- as.numeric(cl_ose[1, ])
-prices_lag <- rutils::lag_it(cl_ose)
+star_t <- as.numeric(cl_ose[1])
 # Define aggregation interval and calculate VWAP
 look_back <- 150
-VTI_vwap <- HighFreq::roll_vwap(oh_lc,
+v_wap <- HighFreq::roll_vwap(oh_lc,
         look_back=look_back)
-# Calculate VWAP indicator
-in_dic <- sign(cl_ose - VTI_vwap)
-# Determine dates right after VWAP has crossed prices
-trade_dates <- (rutils::diff_it(in_dic) != 0)
-trade_dates <- which(trade_dates) + 1
 
 # Plot prices and VWAP
 chart_Series(x=cl_ose,
-  name="VTI prices", col="orange")
-add_TA(VTI_vwap, on=1, lwd=2, col="blue")
+  name="VTI prices and VWAP", col="orange")
+add_TA(v_wap, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "VWAP"),
   bg="white", lty=1, lwd=6,
   col=c("orange", "blue"), bty="n")
 
-# Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
-position_s[1] <- 0
-position_s[trade_dates] <- in_dic[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
-pos_lagged <- rutils::lag_it(position_s)
-# Calculate daily profits and losses
-pnl_s <- pos_lagged*(cl_ose - prices_lag)
-pnl_s[trade_dates] <- pos_lagged[trade_dates] *
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] *
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# Calculate percentage returns
-pnl_s <- pnl_s/cl_ose
-# Calculate annualized Sharpe ratio of strategy returns
+# Calculate VWAP indicator
+indica_tor <- sign(cl_ose - v_wap)
+# Calculate positions as lagged indicator
+posi_tion <- rutils::lag_it(indica_tor)
+# Calculate simple dollar VTI re_turns
+re_turns <- rutils::diff_it(cl_ose)
+# Calculate daily profits and losses of strategy
+pnl_s <- re_turns*posi_tion
+cum_pnls <- star_t + cumsum(pnl_s)
+# Annualized Sharpe ratio of VWAP strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Annualized Sharpe ratio of VTI
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
 
 # Plot prices and VWAP
-pnl_s <- xts(as.numeric(cl_ose[1])*exp(cumsum(pnl_s)), order.by=index(oh_lc))
-chart_Series(x=cl_ose, name="VTI prices", col="orange")
-add_TA(pnl_s, on=1, lwd=2, col="blue")
-add_TA(position_s > 0, on=-1,
+chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI", col="orange")
+add_TA(cum_pnls, on=1, lwd=2, col="blue")
+add_TA(posi_tion > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
+ col="lightgrey", border="lightgrey")
+legend("top", legend=c("VTI", "VWAP strategy"),
+ inset=0.1, bg="white", lty=1, lwd=6,
+ col=c("orange", "blue"), bty="n")
+
+# Determine dates right after VWAP has crossed prices
+trade_dates <- (rutils::diff_it(indica_tor) != 0)
+trade_dates <- which(trade_dates) + 1
+# Calculate positions, either: -1, 0, or 1
+posi_tion <- rep(NA_integer_, NROW(oh_lc))
+posi_tion[1] <- 0
+posi_tion[trade_dates] <- indica_tor[trade_dates-1]
+posi_tion <- na.locf(posi_tion)
+posi_tion <- xts(posi_tion, order.by=index(oh_lc))
+pos_lagged <- rutils::lag_it(posi_tion)
+# Calculate pnl for days without trade
+pnl_s <- re_turns*posi_tion
+# Calculate realized pnl for days with trade
+close_lag <- rutils::lag_it(cl_ose)
+pnl_s[trade_dates] <- pos_lagged[trade_dates] *
+  (op_en[trade_dates] - close_lag[trade_dates])
+# Calculate unrealized pnl for days with trade
+pnl_s[trade_dates] <- pnl_s[trade_dates] +
+  posi_tion[trade_dates] *
+  (cl_ose[trade_dates] - op_en[trade_dates])
+cum_pnls <- star_t + cumsum(pnl_s)
+# Annualized Sharpe ratio of VWAP strategy
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Annualized Sharpe ratio of VTI
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
+
+# Plot prices and VWAP
+chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
+add_TA(cum_pnls, on=1, lwd=2, col="blue")
+add_TA(posi_tion > 0, on=-1,
+ col="lightgreen", border="lightgreen")
+add_TA(posi_tion < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=c("VTI", "VWAP strategy"),
  inset=0.1, bg="white", lty=1, lwd=6,
@@ -240,24 +285,23 @@ legend("bottomleft", legend=colnames(ew_ma),
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
 
-# Determine dates right after EWMA has crossed prices
-in_dic <- sign(cl_ose - ew_ma[, 2])
-trade_dates <- (rutils::diff_it(in_dic) != 0)
+# Determine dates right after VWAP has crossed prices
+indica_tor <- sign(cl_ose - ew_ma[, 2])
+trade_dates <- (rutils::diff_it(indica_tor) != 0)
 trade_dates <- which(trade_dates) + 1
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(cl_ose))
-position_s[1] <- 0
-position_s[trade_dates] <-
-  rutils::lag_it(in_dic)[trade_dates]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
+posi_tion <- rep(NA_integer_, NROW(oh_lc))
+posi_tion[1] <- 0
+posi_tion[trade_dates] <- indica_tor[trade_dates-1]
+posi_tion <- na.locf(posi_tion)
+posi_tion <- xts(posi_tion, order.by=index(oh_lc))
 
 # Plot EWMA prices with position shading
 chart_Series(ew_ma["2007/2010"], theme=plot_theme,
        name="EWMA prices")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("bottomleft", legend=colnames(ew_ma),
  inset=0.1, bg="white", lty=1, lwd=6,
@@ -267,36 +311,38 @@ legend("bottomleft", legend=colnames(ew_ma),
 bid_offer <- 0.001
 # Calculate open and lagged prices
 op_en <- Op(oh_lc)
-prices_lag <- rutils::lag_it(cl_ose)
-pos_lagged <- rutils::lag_it(position_s)
+close_lag <- rutils::lag_it(cl_ose)
+pos_lagged <- rutils::lag_it(posi_tion)
 # Calculate the transaction cost for one share
-cost_s <- 0.0*position_s
+cost_s <- 0.0*posi_tion
 cost_s[trade_dates] <-
   0.5*bid_offer*abs(pos_lagged[trade_dates] -
-  position_s[trade_dates])*op_en[trade_dates]
+  posi_tion[trade_dates])*op_en[trade_dates]
 
 # Calculate daily profits and losses
-re_turns <- pos_lagged*(cl_ose - prices_lag)
-re_turns[trade_dates] <-
-  pos_lagged[trade_dates] *
-  (op_en[trade_dates] - prices_lag[trade_dates]) +
-  position_s[trade_dates] *
-  (cl_ose[trade_dates] - op_en[trade_dates]) -
-  cost_s
-# Calculate percentage returns
-re_turns <- re_turns/cl_ose
-# Calculate annualized Sharpe ratio of strategy returns
-sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(re_turns)
-pnl_s <- as.numeric(cl_ose[1])*exp(cumsum(re_turns))
+# Calculate pnl for days without trade
+pnl_s <- re_turns*posi_tion
+# Calculate realized pnl for days with trade
+close_lag <- rutils::lag_it(cl_ose)
+pnl_s[trade_dates] <- pos_lagged[trade_dates] *
+  (op_en[trade_dates] - close_lag[trade_dates])
+# Calculate unrealized pnl for days with trade
+pnl_s[trade_dates] <- pnl_s[trade_dates] +
+  posi_tion[trade_dates] *
+  (cl_ose[trade_dates] - op_en[trade_dates])
+# Annualized Sharpe ratio of EWMA strategy
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Cumulative pnls
+pnl_s <- star_t + cumsum(pnl_s)
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 
 # Plot EWMA PnL with position shading
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
  inset=0.05, bg="white", lty=1, lwd=6,
@@ -310,27 +356,28 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
   ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # Determine dates right after EWMA has crossed prices
-  in_dic <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
-  trade_dates <- (rutils::diff_it(in_dic) != 0)
+  indica_tor <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
+  indicator_lag <- rutils::lag_it(indica_tor)
+  trade_dates <- (rutils::diff_it(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
   # Calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(cl_ose))
-  position_s[1] <- 0
-  position_s[trade_dates] <- rutils::lag_it(in_dic)[trade_dates]
-  position_s <- xts::xts(na.locf(position_s), order.by=index(oh_lc))
+  posi_tion <- rep(NA_integer_, NROW(oh_lc))
+  posi_tion[1] <- 0
+  posi_tion[trade_dates] <- indicator_lag[trade_dates]
+  posi_tion <- na.locf(posi_tion)
+  posi_tion <- xts(posi_tion, order.by=index(oh_lc))
   op_en <- quantmod::Op(oh_lc)
-  prices_lag <- rutils::lag_it(cl_ose)
-  pos_lagged <- rutils::lag_it(position_s)
+  close_lag <- rutils::lag_it(cl_ose)
+  pos_lagged <- rutils::lag_it(posi_tion)
   # Calculate transaction costs
-  cost_s <- 0.0*position_s
-  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - position_s[trade_dates])*op_en[trade_dates]
+  cost_s <- 0.0*posi_tion
+  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - posi_tion[trade_dates])*op_en[trade_dates]
   # Calculate daily profits and losses
-  re_turns <- pos_lagged*(cl_ose - prices_lag)
-  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - prices_lag[trade_dates]) + position_s[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
-  # Calculate percentage returns
-  re_turns <- re_turns/cl_ose
-  out_put <- cbind(position_s, re_turns)
+  re_turns <- pos_lagged*(cl_ose - close_lag)
+  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - close_lag[trade_dates]) + posi_tion[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
+  # Calculate strategy returns
+  out_put <- cbind(posi_tion, re_turns)
   colnames(out_put) <- c("positions", "returns")
   out_put
 }  # end simu_ewma
@@ -340,8 +387,8 @@ lamb_das <- seq(0.0001, 0.05, 0.005)
 # Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(oh_lc=oh_lc,
-    lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc,
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end lapply
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -366,15 +413,15 @@ clusterExport(clus_ter,
 pnl_s <- parLapply(clus_ter, lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc,
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end parLapply
 # Perform parallel loop over lamb_das under Mac-OSX or Linux
 re_turns <- mclapply(lamb_das, function(lamb_da) {
   library(quantmod)
   # simulate EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th)[, "returns"]))
+  star_t + cumsum(simu_ewma(oh_lc=oh_lc,
+    lamb_da=lamb_da, wid_th=wid_th)[, "returns"])
 })  # end mclapply
 stopCluster(clus_ter)  # stop R processes over cluster under Windows
 pnl_s <- rutils::do_call(cbind, pnl_s)
@@ -395,17 +442,17 @@ trend_sharpe <- sharpe_ratios
 ewma_trend <- simu_ewma(oh_lc=oh_lc,
   lamb_da=lamb_das[which.max(sharpe_ratios)],
   wid_th=wid_th)
-position_s <- ewma_trend[, "positions"]
-pnl_s <- star_t*exp(cumsum(ewma_trend[, "returns"]))
+posi_tion <- ewma_trend[, "positions"]
+pnl_s <- star_t + cumsum(ewma_trend[, "returns"])
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL with position shading
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of Trend-following EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
   inset=0.05, bg="white", lty=1, lwd=6,
@@ -416,8 +463,8 @@ lamb_das <- seq(0.05, 1.0, 0.05)
 # Perform lapply() loop over lamb_das
 pnl_s <- lapply(lamb_das, function(lamb_da) {
   # backtest EWMA strategy and calculate re_turns
-  star_t*exp(cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "returns"]))
+  star_t + cumsum(simu_ewma(
+    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "returns"])
 })  # end lapply
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- paste0("lambda=", lamb_das)
@@ -448,8 +495,8 @@ revert_sharpe <- sharpe_ratios
 ewma_revert <- simu_ewma(oh_lc=oh_lc,
   lamb_da=lamb_das[which.max(sharpe_ratios)],
   wid_th=wid_th, tre_nd=(-1))
-position_s <- ewma_revert[, "positions"]
-pnl_s <- star_t*exp(cumsum(ewma_revert[, "returns"]))
+posi_tion <- ewma_revert[, "positions"]
+pnl_s <- star_t + cumsum(ewma_revert[, "returns"])
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 
@@ -457,9 +504,9 @@ colnames(pnl_s) <- c("VTI", "EWMA PnL")
 plot_theme$col$line.col <- c("orange", "blue")
 chart_Series(pnl_s, theme=plot_theme,
        name="Performance of Mean-reverting EWMA Strategy")
-add_TA(position_s > 0, on=-1,
+add_TA(posi_tion > 0, on=-1,
  col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
+add_TA(posi_tion < 0, on=-1,
  col="lightgrey", border="lightgrey")
 legend("top", legend=colnames(pnl_s),
   inset=0.05, bg="white", lty=1, lwd=6,
@@ -479,7 +526,7 @@ colnames(com_bined) <- "combined"
 re_turns <- cbind(close_rets, trend_ing, revert_ing, com_bined)
 sqrt(252)*sapply(re_turns, function(x_ts)
   sum(x_ts)/sd(x_ts))/NROW(com_bined)
-pnl_s <- lapply(re_turns, function(x_ts) star_t*exp(cumsum(x_ts)))
+pnl_s <- lapply(re_turns, function(x_ts) {star_t + cumsum(x_ts)})
 pnl_s <- rutils::do_call(cbind, pnl_s)
 colnames(pnl_s) <- c("VTI", "trending", "reverting", "EWMA combined PnL")
 
@@ -498,7 +545,7 @@ weight_s <- weight_s/sum(weight_s)
 re_turns <- cbind(trend_returns, revert_returns)
 avg_returns <- re_turns %*% weight_s
 avg_returns <- xts(avg_returns, order.by=index(re_turns))
-pnl_s <- star_t*exp(cumsum(avg_returns))
+pnl_s <- (star_t + cumsum(avg_returns))
 pnl_s <- cbind(cl_ose, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL without position shading
@@ -600,7 +647,7 @@ pnl_s <- xts(pnl_s, order.by=in_dex)
 colnames(pnl_s) <- "ewma momentum"
 close_rets <- rutils::diff_it(cl_ose[in_dex])
 cor(cbind(pnl_s, close_rets))
-pnl_s <- star_t*exp(cumsum(pnl_s))
+pnl_s <- star_t + cumsum(pnl_s)
 
 # Plot the backtest
 chart_Series(x=cl_ose[end_points[-n_rows]],
@@ -791,30 +838,23 @@ zoo::plot.zoo(cbind(beta_s, cl_ose),
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1),
   main="betas & VTI", xlab="")
 
-momentum_rets <- as.numeric(rutils::diff_it(pnl_s[, 1]))
-vti_rets <- as.numeric(rutils::diff_it(cl_ose)/100)
-# Merton-Henriksson test
-vti_b <- cbind(vti_rets, vti_rets+abs(vti_rets))
-colnames(vti_b) <- c("rets", "sign")
-mod_el <- lm(momentum_rets ~ vti_b)
-summary(mod_el)
-
 # open x11 for plotting
 x11(width=6, height=4)
 # set plot parameters to reduce whitespace around plot
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+momentum_rets <- as.numeric(rutils::diff_it(pnl_s[, 1]))
+vti_rets <- as.numeric(rutils::diff_it(cl_ose)/100)
+# Merton-Henriksson test
+vti_b <- cbind(VTI=vti_rets, skill=0.5*(vti_rets+abs(vti_rets)))
+mod_el <- lm(momentum_rets ~ vti_b); summary(mod_el)
 # Treynor-Mazuy test
-vti_b <- cbind(vti_rets, vti_rets^2)
-colnames(vti_b) <- c("rets", "squared")
-mod_el <- lm(momentum_rets ~ vti_b)
-summary(mod_el)
+vti_b <- cbind(VTI=vti_rets, skill=vti_rets^2)
+mod_el <- lm(momentum_rets ~ vti_b); summary(mod_el)
 # Plot scatterplot
-plot(x=vti_rets, y=momentum_rets,
-     xlab="VTI", ylab="momentum")
+plot(x=vti_rets, y=momentum_rets, xlab="VTI", ylab="momentum")
 title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
 # Plot fitted (predicted) response values
-points(x=vti_rets, y=mod_el$fitted.values,
- pch=16, col="red")
+points(x=vti_rets, y=mod_el$fitted.values, pch=16, col="red")
 
 # Normalize the returns
 momentum_rets <-
@@ -863,13 +903,13 @@ ex_cess <- re_turns - risk_free
 # Perform loop over end_points
 portf_rets <- lapply(2:NROW(end_points),
   function(i) {
-    # subset the ex_cess returns
+    # Subset the ex_cess returns
     ex_cess <- ex_cess[start_points[i-1]:end_points[i-1], ]
     in_verse <- solve(cov(ex_cess))
-    # Calculate the maximum Sharpe ratio portfolio weights.
+    # Calculate the maximum Sharpe ratio portfolio weights
     weight_s <- in_verse %*% colMeans(ex_cess)
     weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
-    # subset the re_turns
+    # Subset the re_turns
     re_turns <- re_turns[(end_points[i-1]+1):end_points[i], ]
     # Calculate the out-of-sample portfolio returns
     xts(re_turns %*% weight_s, index(re_turns))
@@ -878,11 +918,11 @@ portf_rets <- lapply(2:NROW(end_points),
 portf_rets <- rutils::do_call(rbind, portf_rets)
 colnames(portf_rets) <- "portf_rets"
 # Calculate compounded cumulative portfolio returns
-portf_rets <- exp(cumsum(portf_rets))
+portf_rets <- cumsum(portf_rets)
 quantmod::chart_Series(portf_rets,
   name="Cumulative Returns of Max Sharpe Portfolio Strategy")
 
-# load S&P500 constituent stock prices
+# Load S&P500 constituent stock prices
 load("C:/Develop/R/lecture_slides/data/sp500.RData")
 price_s <- eapply(env_sp500, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
@@ -1021,37 +1061,36 @@ legend("topleft", legend=colnames(pro_files),
   col=plot_theme$col$line.col, bty="n")
 
 load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
-n_cols <- NCOL(price_s) ; date_s <- index(price_s)
-in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
-colnames(in_dex) <- "index"
-# Define end_points
-end_points <- rutils::calc_endpoints(price_s, inter_val="months")
+n_cols <- NCOL(re_turns) ; date_s <- index(re_turns)
+# Calculate returns on equal weight portfolio
+in_dex <- xts(cumsum(re_turns %*% rep(1/n_cols, n_cols)), index(re_turns))
+# Define monthly end points
+end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
 end_points <- end_points[end_points > (n_cols+1)]
 n_rows <- NROW(end_points) ; look_back <- 12
 start_points <- c(rep_len(1, look_back-1), end_points[1:(n_rows-look_back+1)])
 # Perform backtest
 al_pha <- 0.01 ; max_eigen <- 3
 pnl_s <- HighFreq::back_test(ex_cess=re_turns,
-                        re_turns=re_turns,
-                        start_points=start_points-1,
-                        end_points=end_points-1,
-                        al_pha=al_pha,
-                        max_eigen=max_eigen)
+                       re_turns=re_turns,
+                       start_points=start_points-1,
+                       end_points=end_points-1,
+                       al_pha=al_pha,
+                       max_eigen=max_eigen)
 
 # Plot strategy in log scale
 pnl_s <- cumsum(pnl_s)
-log_index <- log(in_dex/as.numeric(in_dex[end_points[1], ]))
-pnl_s <- cbind(pnl_s, log_index, (pnl_s+log_index)/2)
+pnl_s <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
 col_names <- c("Strategy", "Index", "Average")
 colnames(pnl_s) <- col_names
-dygraphs::dygraph(pnl_s[end_points], main="Rolling Portfolio Optimization Strategy (log scale)") %>%
+dygraphs::dygraph(pnl_s[end_points], main="Rolling Portfolio Optimization Strategy") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%
   dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=1) %>%
   dySeries(name=col_names[3], axis="y2", col="green", strokeWidth=2)
 
-# library(rutils)  # load package rutils
+# library(rutils)  # Load package rutils
 # Define time interval for end points
 re_balance <- "weeks"
 # look-back interval is multiple of re_balance
@@ -1069,7 +1108,7 @@ look_backs <- lapply(2:n_rows,
 start_points[it_er]:end_points[it_er]
   })  # end lapply
 
-# library(rutils)  # load package rutils
+# library(rutils)  # Load package rutils
 # Create vector of symbols for model
 sym_bols <- c("VTI", "IEF", "DBC")
 

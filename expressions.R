@@ -9,7 +9,7 @@ rm(list=ls())
 TRUE | FALSE
 TRUE | NA
 vec_tor1 <- c(2, 4, 6)
-vec_tor1 < 5  # element-wise comparison
+vec_tor1 < 5  # Element-wise comparison
 (vec_tor1 < 5) & (vec_tor1 > 3)
 vec_tor1[(vec_tor1 < 5) & (vec_tor1 > 3)]
 vec_tor2 <- c(-10, 0, 10)
@@ -25,7 +25,7 @@ echo_false <- function() {cat("echo_false\t"); FALSE}
 echo_true() | echo_false()
 echo_true() || echo_false()  # echo_false() isn't evaluated at all!
 vec_tor <- c(2, 4, 6)
-# works (does nothing) using '&&'
+# Works (does nothing) using '&&'
 if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
@@ -35,9 +35,9 @@ if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
 }
 
 ?Arithmetic
-4.7 * 0.5  # multiplication
+4.7 * 0.5  # Multiplication
 4.7 / 0.5  # division
-# exponentiation
+# Exponentiation
 2**3
 2^3
 
@@ -60,47 +60,57 @@ all.equal(num_ber, 1.0)
 
 # info machine precision of computer R is running on
 # ?.Machine
-# machine precision
+# Machine precision
 .Machine$double.eps
 
-vec_tor <- sample(1:6, 21, replace=TRUE)
-mat_rix <- matrix(vec_tor, ncol=3)
-vec_tor
+vec_tor <- sample(1e3, 1e3)
+mat_rix <- matrix(vec_tor, ncol=4)
 which(vec_tor == 5)
-# equivalent but slower than above
+match(5, vec_tor)
+# Equivalent but slower than above
 (1:NROW(vec_tor))[vec_tor == 5]
-which(vec_tor > 5)
-# find indices of TRUE elements of Boolean matrix
+which(vec_tor < 5)
+# Find indices of TRUE elements of Boolean matrix
 which((mat_rix == 5)|(mat_rix == 6),
 arr.ind=TRUE)
-# equivalent but slower than above
+# Equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
    dim(mat_rix), dimnames(mat_rix))
+# Find index of largest element
 which.max(vec_tor)
-# equivalent but slower than above
 which(vec_tor == max(vec_tor))
+# Find index of smallest element
 which.min(vec_tor)
+# Benchmark match() versus which()
+all.equal(match(5, vec_tor),
+    min(which(vec_tor == 5)))
+library(microbenchmark)
+summary(microbenchmark(
+  match=match(5, vec_tor),
+  which=min(which(vec_tor == 5)),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-match(5, vec_tor)
-# more general but slower than above
-which(vec_tor == 5)
-match(-5, vec_tor)
+# Does 5 belong in vec_tor?
 5 %in% vec_tor
-# equivalent to above
 match(5, vec_tor, nomatch=0) > 0
--5 %in% vec_tor
+# Does (-5) belong in vec_tor?
+(-5) %in% vec_tor
 c(5, -5) %in% vec_tor
-# equivalent to "5 %in% vec_tor"
+match(-5, vec_tor)
+# Equivalent to "5 %in% vec_tor"
 any(vec_tor == 5)
-# equivalent to "-5 %in% vec_tor"
+# Equivalent to "(-5) %in% vec_tor"
 any(vec_tor == (-5))
-if (any(vec_tor < 0))
-  cat("vector contains negative values\n")
-# partial matching of strings
+# Any negative values in vec_tor?
+any(vec_tor < 0)
+# Example of use in if() statement
+if (any(vec_tor < 2))
+  cat("vector contains small values\n")
+# Partial matching of strings
 pmatch("med", c("mean", "median", "mode"))
 
 str(findInterval)
-# get index of the element of "vec" that matches 5
+# Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
 # no exact match
@@ -111,7 +121,7 @@ findInterval(x=1:8, vec=c(3, 5, 7))
 # return only indices of inside intervals
 findInterval(x=1:8, vec=c(3, 5, 7),
        all.inside=TRUE)
-# make rightmost interval inclusive
+# Make rightmost interval inclusive
 findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
 
@@ -120,7 +130,7 @@ num_var1
 num_var1 = 3
 num_var1
 2<-3  # "<" operator confused with "<-"
-2 < -3  # add space or brackets to avoid confusion
+2 < -3  # Add space or brackets to avoid confusion
 # "=" assignment within argument list
 median(x=1:10)
 x  # x doesn't exist outside the function
@@ -128,32 +138,32 @@ x  # x doesn't exist outside the function
 median(x <- 1:10)
 x  # x exists outside the function
 
-my_var <- 1  # create new object
-assign(x="my_var", value=2)  # assign value to existing object
+my_var <- 1  # Create new object
+assign(x="my_var", value=2)  # Assign value to existing object
 my_var
 rm(my_var)  # remove my_var
-assign(x="my_var", value=3)  # create new object from name
+assign(x="my_var", value=3)  # Create new object from name
 my_var
-# create new object in new environment
-new_env <- new.env()  # create new environment
-assign("my_var", 3, envir=new_env)  # assign value to name
+# Create new object in new environment
+new_env <- new.env()  # Create new environment
+assign("my_var", 3, envir=new_env)  # Assign value to name
 ls(new_env)  # list objects in "new_env"
 new_env$my_var
 rm(list=ls())  # delete all objects
 sym_bol <- "my_var"  # define symbol containing string "my_var"
-assign(sym_bol, 1)  # assign value to "my_var"
+assign(sym_bol, 1)  # Assign value to "my_var"
 ls()
 my_var
 assign("sym_bol", "new_var")
-assign(sym_bol, 1)  # assign value to "new_var"
+assign(sym_bol, 1)  # Assign value to "new_var"
 ls()
 sym_bol <- 10
-assign(sym_bol, 1)  # can't assign to non-string
+assign(sym_bol, 1)  # Can't assign to non-string
 
 rm(list=ls())  # delete all objects
-# create individual vectors from column names of EuStockMarkets
+# Create individual vectors from column names of EuStockMarkets
 for (col_name in colnames(EuStockMarkets)) {
-# assign column values to column names
+# Assign column values to column names
   assign(col_name, EuStockMarkets[, col_name])
 }  # end for
 ls()
@@ -161,11 +171,11 @@ head(DAX)
 head(EuStockMarkets[, "DAX"])
 identical(DAX, EuStockMarkets[, "DAX"])
 
-# create new environment
+# Create new environment
 test_env <- new.env()
-# pass string as name to create new object
+# Pass string as name to create new object
 assign("my_var1", 2, envir=test_env)
-# create new object using $ string referencing
+# Create new object using $ string referencing
 test_env$my_var2 <- 1
 # list objects in new environment
 ls(test_env)
@@ -199,8 +209,8 @@ ex_pression <- parse(text="ne_w <- sym_bol")
 ex_pression
 class(ex_pression)
 ls()
-eval(ex_pression)  # evaluate expression
-ls()  # expression evaluation created new object
+eval(ex_pression)  # Evaluate expression
+ls()  # Expression evaluation created new object
 ne_w
 
 # Create the expression "1+1"
@@ -217,13 +227,13 @@ ls()
 ne_w <- 2*sym_bol
 ex_pression <- quote(sym_bol + ne_w)
 ex_pression
-eval(ex_pression)  # evaluate expression
+eval(ex_pression)  # Evaluate expression
 # Substitute objects in an expression
 ex_pression <- substitute(sym_bol + ne_w,
               env=list(sym_bol=1, ne_w=2))
 ex_pression
-eval(ex_pression)  # evaluate expression
-# get_input() substitutes its formal argument with the actual argument
+eval(ex_pression)  # Evaluate expression
+# Get_input() substitutes its formal argument with the actual argument
 get_input <- function(in_put) {
   substitute(in_put)
 }  # end get_input
@@ -249,15 +259,15 @@ get_name <- function(in_put) {
 get_name(my_var)
 
 rm(list=ls())
-# expressions enclosed in parenthesis are less ambiguous
+# Expressions enclosed in parenthesis are less ambiguous
 -2:5
 (-2):5
 -(2:5)
-# expressions enclosed in parenthesis are less ambiguous
+# Expressions enclosed in parenthesis are less ambiguous
 -2*3+5
 -2*(3+5)
 
-# expressions can be separated by semicolons or by lines
+# Expressions can be separated by semicolons or by lines
 {1+2; 2*3; 1:5}
 # or
 {1+2
@@ -266,10 +276,10 @@ rm(list=ls())
 
 mat_rix <- matrix(nr=3, nc=4)
 mat_rix <- 0
-# subset whole matrix
+# Subset whole matrix
 mat_rix[] <- 0
 
-# parenthesis and braces require a little additional processing time
+# Parenthesis and braces require a little additional processing time
 library(microbenchmark)
 summary(microbenchmark(
   ba_se=sqrt(rnorm(10000)^2),
@@ -298,7 +308,7 @@ switch(3, a="aaahh", b="bee", c="see", d=2,
        "else this")
 switch("cc", a="aaahh", b="bee", c="see", d=2,
        "else this")
-# measure of central tendency
+# Measure of central tendency
 centra_lity <- function(in_put,
     meth_od=c("mean", "mean_narm", "median")) {
 # validate "meth_od" argument
@@ -326,115 +336,124 @@ for (in_dex in 1:3) {
   print(color_list[[in_dex]])
 }  # end for
 
-# while loops require initialization
+# While loops require initialization
 in_dex <- 1
-# while loop
+# While loop
 while (in_dex < 4) {
   print(color_list[[in_dex]])
   in_dex <- in_dex + 1
 }  # end while
 
-rm(list=ls())
-# loop over a vector and overwrite it
 vec_tor <- integer(7)
-for (i in 1:7) {
+# loop over a vector and overwrite it
+for (i in seq_along(vec_tor)) {
   cat("Changing element:", i, "\n")
   vec_tor[i] <- i^2
 }  # end for
-# equivalent way (without cat side effect)
-for (i in seq_along(vec_tor)) 
-  vec_tor[i] <- i^2
-
+# Modifying vec_tor inside sapply() has no effect
+vec_tor <- integer(7)
+vec_tor
+sapply(seq_along(vec_tor),
+ function(i) {
+   vec_tor[i] <- i^2
+ })  # end sapply
+vec_tor
+# Super-assignment operator "<<-" allows modifying vec_tor
+sapply(seq_along(vec_tor),
+ function(i) {
+   vec_tor[i] <<- i^2 # "<<-" !!!
+ })  # end sapply
+vec_tor
 # sapply() loop returns vector of values
-vec_tor <- sapply(seq_along(vec_tor), 
-          function(x) (x^2))
+vec_tor <- sapply(seq_along(vec_tor),
+            function(i) (i^2))
 
 rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
-# pre-allocate vector instead of "growing" it
+# Pre-allocate vector instead of "growing" it
 fib_seq <- numeric(10)
 fib_seq[1] <- 0  # initialize
 fib_seq[2] <- 1  # initialize
-for (i in 3:10) {  # perform recurrence loop
+for (i in 3:10) {  # Perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
 fib_seq
 
-# allocate character vector
+# Allocate character vector
 character()
 character(5)
 is.character(character(5))
-# allocate integer vector
+# Allocate integer vector
 integer()
 integer(5)
 is.integer(integer(5))
 is.numeric(integer(5))
-# allocate numeric vector
+# Allocate numeric vector
 numeric()
 numeric(5)
 is.integer(numeric(5))
 is.numeric(numeric(5))
-# allocate Boolean vector
+# Allocate Boolean vector
 vector()
 vector(length=5)
-# allocate numeric vector
+# Allocate numeric vector
 vector(length=5, mode="numeric")
 is.null(vector())
-# allocate Boolean matrix
+# Allocate Boolean matrix
 matrix()
 is.null(matrix())
-# allocate integer matrix
+# Allocate integer matrix
 matrix(NA_integer_, nrow=3, ncol=2)
 is.integer(matrix(NA_integer_, nrow=3, ncol=2))
-# allocate numeric matrix
+# Allocate numeric matrix
 matrix(NA_real_, nrow=3, ncol=2)
 is.numeric(matrix(NA_real_, nrow=3, ncol=2))
 
 vec_tor <- sample(1:9)
 vec_tor
-vec_tor < 5  # element-wise comparison
-vec_tor == 5  # element-wise comparison
+vec_tor < 5  # Element-wise comparison
+vec_tor == 5  # Element-wise comparison
 mat_rix <- matrix(vec_tor, ncol=3)
 mat_rix
-mat_rix < 5  # element-wise comparison
-mat_rix == 5  # element-wise comparison
+mat_rix < 5  # Element-wise comparison
+mat_rix == 5  # Element-wise comparison
 
-mat_rix <- 1:6  # create a vector
-class(mat_rix)  # get its class
+mat_rix <- 1:6  # Create a vector
+class(mat_rix)  # Get its class
 # is it vector or matrix?
 c(is.vector(mat_rix), is.matrix(mat_rix))
-structure(mat_rix, dim=c(2, 3))  # matrix object
-# adding dimension attribute coerces into matrix
+structure(mat_rix, dim=c(2, 3))  # Matrix object
+# Adding dimension attribute coerces into matrix
 dim(mat_rix) <- c(2, 3)
-class(mat_rix)  # get its class
+class(mat_rix)  # Get its class
 # is it vector or matrix?
 c(is.vector(mat_rix), is.matrix(mat_rix))
-# assign dimnames attribute
+# Assign dimnames attribute
 dimnames(mat_rix) <- list(rows=c("row1", "row2"),
             columns=c("col1", "col2", "col3"))
 mat_rix
 
-mat_rix <- matrix(1:10, 2, 5)  # create matrix
+mat_rix <- matrix(1:10, 2, 5)  # Create matrix
 mat_rix
 # as.numeric strips dim attribute from matrix
 as.numeric(mat_rix)
-# explicitly coerce to "character"
+# Explicitly coerce to "character"
 mat_rix <- as.character(mat_rix)
 c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
-# coercion converted matrix to vector
+# Coercion converted matrix to vector
 c(is.matrix(mat_rix), is.vector(mat_rix))
 
 vec_tor1 <- 1:3  # define vector
 vec_tor2 <- 6:4  # define vector
-# bind vectors into columns
+# Bind vectors into columns
 cbind(vec_tor1, vec_tor2)
-# bind vectors into rows
+# Bind vectors into rows
 rbind(vec_tor1, vec_tor2)
-# extend to four elements
+# Extend to four elements
 vec_tor2 <- c(vec_tor2, 7)
 # recycling rule applied
 cbind(vec_tor1, vec_tor2)
-# another example of recycling rule
+# Another example of recycling rule
 1:6 + c(10, 20)
 
 # replicate a single element
@@ -450,22 +469,22 @@ rep(c("a", "b"), length.out=5)
 # define vector and matrix
 vec_tor1 <- c(2, 4, 3)
 mat_rix <- matrix(sample(1:12), ncol=3)
-# multiply matrix by vector column-wise
+# Multiply matrix by vector column-wise
 vec_tor1 * mat_rix
 mat_rix * vec_tor1
-# multiply matrix by vector row-wise
+# Multiply matrix by vector row-wise
 t(vec_tor1 * t(mat_rix))
 
 vec_tor1
 vec_tor2 <- 6:4  # define vector
-# multiply two vectors element-by-element
+# Multiply two vectors element-by-element
 vec_tor1 * vec_tor2
-# calculate inner product
+# Calculate inner product
 vec_tor1 %*% vec_tor2
-# calculate inner product and drop dimensions
+# Calculate inner product and drop dimensions
 drop(vec_tor1 %*% vec_tor2)
-# multiply columns of matrix by vector
-mat_rix %*% vec_tor1  # single column matrix
+# Multiply columns of matrix by vector
+mat_rix %*% vec_tor1  # Single column matrix
 drop(mat_rix %*% vec_tor1)  # vector
 rowSums(t(vec_tor1 * t(mat_rix)))
 # using rowSums() and t() is 10 times slower than %*%
@@ -476,17 +495,17 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 library(microbenchmark)
-# multiply matrix by vector fails because dimensions aren't conformable
+# Multiply matrix by vector fails because dimensions aren't conformable
 vec_tor1 %*% mat_rix
-# works after transpose
+# Works after transpose
 drop(vec_tor1 %*% t(mat_rix))
-# calculate inner product
+# Calculate inner product
 crossprod(vec_tor1, vec_tor2)
-# create matrix and vector
+# Create matrix and vector
 mat_rix <- matrix(1:3000, ncol=3)
 tmat_rix <- t(mat_rix)
 vec_tor <- 1:3
-# crossprod is slightly faster than "%*%" operator
+# crossprod() is slightly faster than "%*%" operator
 summary(microbenchmark(
   cross_prod=crossprod(tmat_rix, vec_tor),
   inner_prod=mat_rix %*% vec_tor,
@@ -501,23 +520,23 @@ vec_tor2 <- sample(1:3)
 names(vec_tor2) <-
   paste0("col", 1:3, "=", vec_tor2)
 vec_tor2
-# calculate outer product of two vectors
+# Calculate outer product of two vectors
 mat_rix <- outer(vec_tor1, vec_tor2)
 mat_rix
-# calculate vectorized function spanned over two vectors
+# Calculate vectorized function spanned over two vectors
 mat_rix <- outer(vec_tor1, vec_tor2,
            FUN=function(x1, x2) x2*sin(x1))
 mat_rix
 
-# create list of vectors
+# Create list of vectors
 li_st <- lapply(1:3, function(x) sample(6))
-# bind list elements into matrix - doesn't work
+# Bind list elements into matrix - doesn't work
 rbind(li_st)
-# bind list elements into matrix - tedious
+# Bind list elements into matrix - tedious
 rbind(li_st[[1]], li_st[[2]], li_st[[3]])
-# bind list elements into matrix - works!
+# Bind list elements into matrix - works!
 do.call(rbind, li_st)
-# create numeric list
+# Create numeric list
 li_st <- list(1, 2, 3, 4)
 do.call(rbind, li_st)  # returns single column matrix
 do.call(cbind, li_st)  # returns single row matrix
@@ -536,7 +555,7 @@ do_call_rbind <- function(li_st) {
   while (NROW(li_st) > 1) {
 # index of odd list elements
     odd_index <- seq(from=1, to=NROW(li_st), by=2)
-# bind odd and even elements, and divide li_st by half
+# Bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
 if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
 rbind(li_st[[in_dex]], li_st[[in_dex+1]])
@@ -558,13 +577,13 @@ summary(microbenchmark(
 times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 unique(iris$Species)  # Species has three distinct values
-# split into separate data frames by hand
+# Split into separate data frames by hand
 set_osa <- iris[iris$Species=="setosa", ]
 versi_color <- iris[iris$Species=="versicolor", ]
 virgin_ica <- iris[iris$Species=="virginica", ]
 dim(set_osa)
 head(set_osa, 2)
-# split iris into list based on Species
+# Split iris into list based on Species
 split_iris <- split(iris, iris$Species)
 str(split_iris, max.level=1)
 names(split_iris)
@@ -572,17 +591,17 @@ dim(split_iris$setosa)
 head(split_iris$setosa, 2)
 
 unique(mtcars$cyl)  # cyl has three unique values
-# split mpg column based on number of cylinders
+# Split mpg column based on number of cylinders
 split(mtcars$mpg, mtcars$cyl)
-# split mtcars data frame based on number of cylinders
+# Split mtcars data frame based on number of cylinders
 split_cars <- split(mtcars, mtcars$cyl)
 str(split_cars, max.level=1)
 names(split_cars)
-# aggregate the mean mpg over split mtcars data frame
+# Aggregate the mean mpg over split mtcars data frame
 sapply(split_cars, function(x) mean(x$mpg))
 # Or: split mpg column and aggregate the mean
 sapply(split(mtcars$mpg, mtcars$cyl), mean)
-# same but using with()
+# Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
 aggregate(formula=(mpg ~ cyl), data=mtcars,
@@ -593,32 +612,32 @@ aggregate(x=mtcars$mpg,
 # Or: using name for mpg
 aggregate(x=list(mpg=mtcars$mpg),
   by=list(cyl=mtcars$cyl), FUN=mean)
-# aggregate() all columns
+# Aggregate() all columns
 aggregate(x=mtcars,
   by=list(cyl=mtcars$cyl), FUN=mean)
 
-# mean mpg for each cylinder group
+# Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
 with(mtcars,
      tapply(X=mpg, INDEX=cyl, FUN=mean))
-# function sapply() instead of tapply()
+# Function sapply() instead of tapply()
 with(mtcars,
      sapply(sort(unique(cyl)), function(x) {
  structure(mean(mpg[x==cyl]), names=x)
  }, USE.NAMES=TRUE))  # end with
 
-# function by() instead of tapply()
+# Function by() instead of tapply()
 with(mtcars,
      by(data=mpg, INDICES=cyl, FUN=mean))
 
-# get several mpg stats for each cylinder group
+# Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
         function(x) {
           c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
         }  # end anonymous function
         )  # end sapply
-data_cars  # sapply produces a matrix
+data_cars  # sapply() produces a matrix
 data_cars <- lapply(split_cars,  # now same using lapply
         function(x) {
           c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
@@ -632,7 +651,7 @@ do.call(cbind, data_cars)
 # Read the file using read.table() with header and sep arguments
 panel_data <- read.table(file="C:/Develop/R/lecture_slides/data/CRSPpanel.txt",
                    header=TRUE, sep="\t")
-# split panel_data based on Industry column
+# Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
 # number of companies in each Industry
 sapply(split_panel, NROW)
@@ -655,7 +674,7 @@ with(panel_data, sapply(levels(Industry),
     Sector[match(x, Industry)]
   }))  # end sapply
 
-# split panel_data based on Sector column
+# Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
 # number of companies in each Sector
 sapply(split_panel, NROW)
@@ -669,7 +688,7 @@ sec_ind2 <- aggregate(formula=(Industry ~ Sector),
 sec_ind2 <- with(panel_data,
   aggregate(x=Industry, by=list(Sector),
     FUN=function(x) as.vector(unique(x))))
-# coerce sec_ind2 into a jagged array
+# Coerce sec_ind2 into a jagged array
 name_s <- as.vector(sec_ind2[, 1])
 sec_ind2 <- sec_ind2[, 2]
 names(sec_ind2) <- name_s
@@ -677,22 +696,22 @@ all.equal(sec_ind2, sec_ind)
 # Or use tapply() (returns an array)
 sec_ind2 <- with(panel_data,
   tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
-# coerce sec_ind2 into a jagged array
+# Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
 
-# average ROE in each Industry
+# Average ROE in each Industry
 with(panel_data,
   sapply(split(ROE, Industry), mean))
-# average, min, and max ROE in each Industry
+# Average, min, and max ROE in each Industry
 t(with(panel_data,
   sapply(split(ROE, Industry),
     FUN=function(x)
 c(mean=mean(x), max=max(x), min=min(x)))))
-# split panel_data based on Industry column
+# Split panel_data based on Industry column
 split_panel <- split(panel_data,
   panel_data$Industry)
-# average ROE and EPS in each Industry
+# Average ROE and EPS in each Industry
 t(sapply(split_panel, FUN=function(x)
   c(mean_roe=mean(x$ROE),
     mean_eps=mean(x$EPS.EXCLUDE.EI))))
@@ -700,10 +719,10 @@ t(sapply(split_panel, FUN=function(x)
 split_panel <-
   split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   panel_data$Industry)
-# average ROE and EPS in each Industry
+# Average ROE and EPS in each Industry
 t(sapply(split_panel,
   FUN=function(x) sapply(x, mean)))
-# average ROE and EPS using aggregate()
+# Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   by=list(panel_data$Industry),
   FUN=mean)
@@ -728,7 +747,7 @@ deseas[i, j, ] <- resid(mod)
 }
 }
 
-# apply functions
+# Apply functions
 models <- apply(ozone, 1:2, deseasf)
 resids_list <- lapply(models, resid)
 resids <- unlist(resids_list)
@@ -740,27 +759,27 @@ dimnames(deseas) <- dimnames(ozone)
 # InsectSprays dataset
 head(InsectSprays)
 
-# split the count column by the spray column.
+# Split the count column by the spray column.
 count_by_spray <- with(InsectSprays, split(count, spray))
 
 # next apply the statistic to each element of the list. Lets use the mean here.
 mean_by_spray <- lapply(count_by_spray, mean)
 
-# finally combine the list as a vector
+# Finally combine the list as a vector
 unlist(mean_by_spray)
 
 # or in one line
 sapply(count_by_spray, mean)
 
-# can also use the functions tapply(), aggregate() and by():
+# Can also use the functions tapply(), aggregate() and by():
 with(InsectSprays, tapply(count, spray, mean))
 with(InsectSprays, by(count, spray, mean))
 aggregate(count ~ spray, InsectSprays, mean)
 
-# ?options  # get info on global options
-getOption("warn")  # global option for "warn"
-options("warn")  # global option for "warn"
-getOption("error")  # global option for "error"
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
 sqrt_safe <- function(in_put) {
 # returns its argument
   if (in_put<0) {
@@ -781,9 +800,9 @@ sqrt_safe()
 options(warn=3)
 sqrt_safe()
 
-# function vali_date validates its arguments
+# Function vali_date validates its arguments
 vali_date <- function(in_put=NULL) {
-# check if argument is valid and return double
+# Check if argument is valid and return double
   if (is.null(in_put)) {
     return("vali_date: in_put is missing")
   } else if (is.numeric(in_put)) {
@@ -795,7 +814,7 @@ vali_date("a")
 vali_date()
 # vali_date validates arguments using missing()
 vali_date <- function(in_put) {
-# check if argument is valid and return double
+# Check if argument is valid and return double
   if (missing(in_put)) {
     return("vali_date: in_put is missing")
   } else if (is.numeric(in_put)) {
@@ -808,7 +827,7 @@ vali_date()
 
 # vali_date() validates its arguments and assertions
 vali_date <- function(in_put) {
-# check if argument is valid and return double
+# Check if argument is valid and return double
   if (missing(in_put)) {
     stop("vali_date: in_put is missing")
   } else if (!is.numeric(in_put)) {
@@ -820,11 +839,11 @@ vali_date(3)
 vali_date("a")
 vali_date()
 
-# print the call stack
+# Print the call stack
 traceback()
 
 vali_date <- function(in_put) {
-# check argument using long form '&&' operator
+# Check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
         is.numeric(in_put))
   2*in_put
@@ -833,7 +852,7 @@ vali_date(3)
 vali_date()
 vali_date("a")
 vali_date <- function(in_put) {
-# check argument using logical '&' operator
+# Check argument using logical '&' operator
   stopifnot(!missing(in_put) & is.numeric(in_put))
   2*in_put
 }  # end vali_date
@@ -841,14 +860,14 @@ vali_date()
 vali_date("a")
 
 # sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # even more robust
-# check if at least one argument is not missing
+sum_two <- function(in_put1, in_put2) {  # Even more robust
+# Check if at least one argument is not missing
   stopifnot(!missing(in_put1) &&
         !missing(in_put2))
-# check if arguments are valid and return sum
+# Check if arguments are valid and return sum
   if (is.numeric(in_put1) &&
 is.numeric(in_put2)) {
-    in_put1 + in_put2  # both valid
+    in_put1 + in_put2  # Both valid
   } else if (is.numeric(in_put1)) {
     cat("in_put2 is not numeric\n")
     in_put1  # in_put1 is valid
@@ -865,44 +884,44 @@ sum_two('a', 5)
 sum_two('a', 'b')
 sum_two()
 
-# flag "vali_date" for debugging
+# Flag "vali_date" for debugging
 debug(vali_date)
-# calling "vali_date" starts debugger
+# Calling "vali_date" starts debugger
 vali_date(3)
 # unflag "vali_date" for debugging
 undebug(vali_date)
 
 vali_date <- function(in_put) {
-  browser()  # pause and invoke browser
-# check argument using long form '&&' operator
+  browser()  # Pause and invoke browser
+# Check argument using long form '&&' operator
   stopifnot(!missing(in_put) &&
         is.numeric(in_put))
   2*in_put
 }  # end vali_date
 vali_date()  # invokes debugger
-options("error")  # show default NULL "error" option
-options(error=recover)  # set "error" option to "recover"
-options(error=NULL)  # set back to default "error" option
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
 
-str(tryCatch)  # get arguments of tryCatch()
-tryCatch(  # without error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
   },
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 
-tryCatch(  # with error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
   },
-  # error handler captures error condition
+  # Error handler captures error condition
   error=function(error_cond) {
     print(paste("error handler: ", error_cond))
   },  # end error handler
-  # warning handler captures warning condition
+  # Warning handler captures warning condition
   warning=function(warning_cond) {
     print(paste("warning handler: ", warning_cond))
   },  # end warning handler
@@ -910,27 +929,27 @@ tryCatch(  # with error handler
 )  # end tryCatch
 
 rm(list=ls())
-# apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    stopifnot(num_var != 3)  # check for error
-    # broadcast message to console
+# Apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(num_var != 3)  # Check for error
+    # Broadcast message to console
     cat("(cat) num_var =", num_var, "\n")
     # return a value
     paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
 
-# apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    tryCatch(  # with error handler
-{  # body
-  stopifnot(num_var != 3)  # check for error
-  # broadcast message to console
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    tryCatch(  # With error handler
+{  # Body
+  stopifnot(num_var != 3)  # Check for error
+  # Broadcast message to console
   cat("(cat) num_var =", num_var, "\t")
   # return a value
   paste("(return) num_var =", num_var)
 },
-# error handler captures error condition
+# Error handler captures error condition
 error=function(error_cond)
   paste("handler: ", error_cond),
 finally=print(paste("(finally) num_var =", num_var))

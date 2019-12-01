@@ -14,21 +14,21 @@ getSymbols(sym_bols, env=rates_env, src="FRED")
 ls(rates_env)  # list files in rates_env
 # Get class of object in rates_env
 class(get(x=sym_bols[1], envir=rates_env))
-# another way
-class(rates_env$DGS10)
-colnames(rates_env$DGS10)
+# Another way
+class(rates_env$DGS20)
+colnames(rates_env$DGS20)
 save(rates_env, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 
 x11(width=6, height=4)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-head(rates_env$DGS10, 3)
+head(rates_env$DGS20, 3)
 # Get class of all objects in rates_env
-eapply(rates_env, class)
+sapply(rates_env, class)
 # Get class of all objects in R workspace
-lapply(ls(), function(ob_ject) class(get(ob_ject)))
-# Plot 10-year constant maturity Treasury rate
-chart_Series(rates_env$DGS10["1990/"],
-  name="10-year constant maturity Treasury rate")
+sapply(ls(), function(ob_ject) class(get(ob_ject)))
+# Plot 20-year constant maturity Treasury rate
+chart_Series(rates_env$DGS20["1990/"],
+  name="20-year constant maturity Treasury rate")
 
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
@@ -52,10 +52,10 @@ plot.zoo(rate_s, main="Yield curve since 2006", lwd=3, xaxt="n",
 # Add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # Add legend
-legend("bottomright", legend=colnames(rate_s),
+legend("topleft", legend=colnames(rate_s),
  col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
 
-# alternative plot using matplot()
+# Alternative plot using matplot()
 matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
   type="l", xlab="maturity", ylab="yield", col=col_ors)
 # Add x-axis
@@ -69,7 +69,7 @@ par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
 # Load constant maturity Treasury rates
 load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
 # Symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS20")
 # Calculate daily rates changes
 rate_s <- xts:::na.locf.xts(rutils::do_call(cbind,
     as.list(rates_env)[sym_bols]))
@@ -222,6 +222,8 @@ for (or_der in 1:NCOL(pc_a$rotation)) {
   col.main="red")
 }  # end for
 
+# Calculate products of principal component time series
+round(t(pc_a$x) %*% pc_a$x, 2)
 # Calculate principal component time series
 pca_ts <- xts(re_turns %*% pc_a$rotation,
           order.by=index(re_turns))
@@ -382,18 +384,18 @@ legend("topleft", legend=colnames(vol_ume), col=col_ors,
 
 # Find date when ESU8 volume exceeds ESM8
 exceed_s <- (vol_ume[, "ESU8"] > vol_ume[, "ESM8"])
-in_deks <- min(which(exceed_s))
-# In_deks <- match(TRUE, exceed_s)
+in_dex <- match(TRUE, exceed_s)
+# in_dex <- min(which(exceed_s))
 # Scale the ES_M8 prices
-in_deks <- index(exceed_s[in_deks])
-fac_tor <- as.numeric(Cl(ES_U8[in_deks])/Cl(ES_M8[in_deks]))
+in_dex <- index(exceed_s[in_dex])
+fac_tor <- as.numeric(Cl(ES_U8[in_dex])/Cl(ES_M8[in_dex]))
 ES_M8[, 1:4] <- fac_tor*ES_M8[, 1:4]
 # Calculate continuous contract prices
-chain_ed <- rbind(ES_M8[index(ES_M8) < in_deks],
-            ES_U8[index(ES_U8) >= in_deks])
+chain_ed <- rbind(ES_M8[index(ES_M8) < in_dex],
+            ES_U8[index(ES_U8) >= in_dex])
 # Or
-# Chain_ed <- rbind(ES_M8[paste0("/", in_deks-1)],
-#                   ES_U8[paste0(in_deks, "/")])
+# Chain_ed <- rbind(ES_M8[paste0("/", in_dex-1)],
+#                   ES_U8[paste0(in_dex, "/")])
 # Plot continuous contract prices
 chart_Series(x=chain_ed["2018"], TA="add_Vo()",
   name="S&P500 chained futures")
@@ -427,12 +429,14 @@ date_s <- as.Date(date_s[, 1])
 year_s <- format(date_s, format="%Y")
 year_s <- substring(year_s, 4)
 # Monthly futures contract codes
-month_codes <- c("F", "G", "H", "J", "K", "M", "N", "Q", "U", "V", "X", "Z")
+month_codes <-
+  c("F", "G", "H", "J", "K", "M",
+    "N", "Q", "U", "V", "X", "Z")
 sym_bols <- paste0("VX", month_codes, year_s)
 date_s <- as.data.frame(date_s)
 colnames(date_s) <- "exp_dates"
 rownames(date_s) <- sym_bols
-# write dates to CSV file, with row names
+# Write dates to CSV file, with row names
 write.csv(date_s, row.names=TRUE,
   file="C:/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
@@ -471,34 +475,29 @@ legend(x="topright", legend=colnames(curve_s),
  inset=0.05, cex=1.0, bty="n",
  col=c("blue", "red"), lwd=6, lty=1)
 
+# Load VIX futures data from binary file
+load(file="C:/Develop/data/vix_data/vix_cboe.RData")
 # Read CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
   stringsAsFactors=FALSE, row.names=1)
 sym_bols <- rownames(date_s)
 date_s <- as.Date(date_s[, 1])
 to_day <- as.Date("2018-05-07")
-maturi_ty <- to_day + 30
+maturi_ty <- (to_day + 30)
 # Find neighboring futures contracts
-in_deks <- match(TRUE, date_s > maturi_ty)
-# In_deks <- min(which(date_s > to_day))
-date_s[in_deks-1]
-date_s[in_deks]
-front_symbol <- sym_bols[in_deks-1]
-back_symbol <- sym_bols[in_deks]
-front_date <- date_s[in_deks-1]
-back_date <- date_s[in_deks]
-# Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+in_dex <- match(TRUE, date_s > maturi_ty)
+front_date <- date_s[in_dex-1]
+back_date <- date_s[in_dex]
+front_symbol <- sym_bols[in_dex-1]
+back_symbol <- sym_bols[in_dex]
 front_price <- get(x=front_symbol, envir=vix_env)
-# front_price <- vix_env$front_symbol
 front_price <- as.numeric(Cl(front_price[to_day]))
 back_price <- get(x=back_symbol, envir=vix_env)
 back_price <- as.numeric(Cl(back_price[to_day]))
 # Calculate the constant maturity 30-day futures price
-fra_c <- as.numeric(maturi_ty - front_date) /
+ra_tio <- as.numeric(maturi_ty - front_date) /
   as.numeric(back_date - front_date)
-pric_e <- (fra_c*back_price +
-  (1-fra_c)*front_price)
+pric_e <- (ra_tio*back_price + (1-ra_tio)*front_price)
 
 library(HighFreq)
 x11(width=5, height=3)  # Open x11 for plotting
@@ -712,7 +711,9 @@ ib_connect <- IBrokers::twsConnect(port=7497)
 # Or connect to IB Gateway
 # Ib_connect <- ibgConnect(port=4002)
 # Download account information from IB
-ib_account <- IBrokers::reqAccountUpdates(conn=ib_connect, acctCode="DI1207807")
+ac_count <- "DU1215081"
+ib_account <- IBrokers::reqAccountUpdates(conn=ib_connect,
+                                    acctCode=ac_count)
 # Extract account balances
 balance_s <- ib_account[[1]]
 balance_s$AvailableFunds
@@ -722,7 +723,7 @@ IBrokers::twsPortfolioValue(ib_account)
 IBrokers::twsDisconnect(ib_connect)
 
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
+con_tract <- IBrokers::twsEquity("AAPL", primary="SMART")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
 # Define S&P Emini future June 2019 contract
@@ -790,7 +791,8 @@ IBrokers::twsDisconnect(ib_connect)
 
 # Define IB contract objects for stock symbols
 sym_bols <- c("AAPL", "F", "MSFT")
-con_tracts <- lapply(sym_bols, IBrokers::twsEquity, primary="ISLAND")
+con_tracts <- lapply(sym_bols, IBrokers::twsEquity, primary="SMART")
+names(con_tracts) <- sym_bols
 # Open file connections for data download
 dir_name <- "C:/Develop/data/ib_data"
 file_names <- file.path(dir_name, paste0(sym_bols, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
@@ -986,19 +988,19 @@ IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 # Request trade order ID
 order_id <- IBrokers::reqIds(ib_connect)
 # Create buy market order object
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="BUY", totalQuantity=1)
+ib_order <- IBrokers::twsOrder(order_id,
+  orderType="MKT", action="BUY", totalQuantity=1)
 # Place trade order
 IBrokers::placeOrder(ib_connect, con_tract, ib_order)
 # Execute sell market order
 order_id <- IBrokers::reqIds(ib_connect)
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="SELL", totalQuantity=1)
+ib_order <- IBrokers::twsOrder(order_id,
+  orderType="MKT", action="SELL", totalQuantity=1)
 IBrokers::placeOrder(ib_connect, con_tract, ib_order)
 # Execute buy market order
 order_id <- IBrokers::reqIds(ib_connect)
-ib_order <- IBrokers::twsOrder(order_id, orderType="MKT",
-  action="BUY", totalQuantity=1)
+ib_order <- IBrokers::twsOrder(order_id,
+  orderType="MKT", action="BUY", totalQuantity=1)
 IBrokers::placeOrder(ib_connect, con_tract, ib_order)
 
 # Request trade order ID
@@ -1030,9 +1032,9 @@ eWrapper_realtimebars <- function(n = 1) {
     data <- eW$get.Data("data")
     attr(data[[id]], "index") <- as.numeric(msg[3])
     nr.data <- NROW(data[[id]])
-    # write to file
+    # Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
-    # write to console
+    # Write to console
     # eW$count_er <- eW$count_er + 1
     eW$assign.Data("count_er", eW$get.Data("count_er")+1)
     cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
@@ -1074,9 +1076,9 @@ eWrapper_realtimebars <- function(n = 1) {
     data <- eW$get.Data("data")
     attr(data[[id]], "index") <- as.numeric(msg[3])
     nr.data <- NROW(data[[id]])
-    # write to file
+    # Write to file
     cat(paste(msg[3], msg[4], msg[5], msg[6], msg[7], msg[8], msg[9], msg[10], sep = ","), "\n", file = file, append = TRUE)
-    # write to console
+    # Write to console
     # eW$count_er <- eW$count_er + 1
     eW$assign.Data("count_er", eW$get.Data("count_er")+1)
     cat(paste0("count_er=", eW$get.Data("count_er"), "\tOpen=", msg[4], "\tHigh=", msg[5], "\tLow=", msg[6], "\tClose=", msg[7], "\tVolume=", msg[8]), "\n")
@@ -1187,7 +1189,7 @@ IBrokers::twsDisconnect(raw_connect)
 
 
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
+con_tract <- IBrokers::twsEquity("AAPL", primary="SMART")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
 # Define S&P Emini future June 2019 contract
@@ -1214,7 +1216,7 @@ con_tract <- twsInstrument::getContract("317631411")
 IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
 
 # Define AAPL stock contract (object)
-con_tract <- IBrokers::twsEquity("AAPL", primary="ISLAND")
+con_tract <- IBrokers::twsEquity("AAPL", primary="SMART")
 # Define CHF currency contract
 con_tract <- IBrokers::twsCurrency("CHF", currency="USD")
 # Define S&P Emini future June 2019 contract

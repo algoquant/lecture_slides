@@ -6,7 +6,7 @@ thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
 library(PortfolioAnalytics)
-# use ETF returns from package HighFreq
+# Use ETF returns from package HighFreq
 library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
@@ -32,16 +32,16 @@ portf_maxSR <- add.constraint(
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="return",  # maximize mean return
+  type="return",  # Maximize mean return
   name="mean")
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="risk",  # minimize StdDev
+  type="risk",  # Minimize StdDev
   name="StdDev")
 
 library(PortfolioAnalytics)
-# use ETF returns from package HighFreq
+# Use ETF returns from package HighFreq
 library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
@@ -67,12 +67,12 @@ portf_maxSR <- add.constraint(
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="return",  # maximize mean return
+  type="return",  # Maximize mean return
   name="mean")
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="risk",  # minimize StdDev
+  type="risk",  # Minimize StdDev
   name="StdDev")
 
 # Linear constraint
@@ -85,7 +85,7 @@ weight_s[weight_s < 0] <- 0
 
 library(quantmod)
 library(Rglpk)
-# vector of symbol names
+# Vector of symbol names
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # Calculate mean returns
@@ -103,7 +103,7 @@ rh_s <- c(1, 0)
 bound_s <-
   list(lower=list(ind=1:n_weights, val=rep(-1, n_weights)),
  upper=list(ind=1:n_weights, val=rep(1, n_weights)))
-# perform optimization
+# Perform optimization
 op_tim <- Rglpk::Rglpk_solve_LP(
   obj=mean_rets,
   mat=constraint_s,
@@ -117,11 +117,11 @@ unlist(op_tim[1:2])
 cov_mat <- cov(re_turns)
 cov_inv <- solve(a=cov_mat)
 u_nit <- rep(1, NCOL(cov_mat))
-# minimum variance weights with constraint
+# Minimum variance weights with constraint
 # weight_s <- solve(a=cov_mat, b=u_nit)
 weight_s <- cov_inv %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
-# minimum variance
+# Minimum variance
 t(weight_s) %*% cov_mat %*% weight_s
 1/(t(u_nit) %*% cov_inv %*% u_nit)
 
@@ -129,7 +129,7 @@ t(weight_s) %*% cov_mat %*% weight_s
 mean_rets <- colMeans(re_turns)
 # Specify the target return
 tar_get <- 1.5*mean(re_turns)
-# products of inverse with mean returns and unit vector
+# Products of inverse with mean returns and unit vector
 f_mat <- matrix(c(
   t(u_nit) %*% cov_inv %*% u_nit,
   t(u_nit) %*% cov_inv %*% mean_rets,
@@ -217,7 +217,7 @@ u_nit <- rep(1, NCOL(cov_mat))
 cov_inv <- solve(a=cov_mat)
 # Calculate mean excess returns
 ex_cess <- sapply(ex_cess, mean)
-# weights of maximum Sharpe portfolio
+# Weights of maximum Sharpe portfolio
 # weight_s <- solve(a=cov_mat, b=re_turns)
 weight_s <- cov_inv %*% ex_cess
 weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
@@ -244,7 +244,8 @@ plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "green")
 x11(width=6, height=5)
 chart_Series(optim_rets, theme=plot_theme,
-       name="Maximum Sharpe and \nMinimum Variance portfolios")
+  name="Maximum Sharpe and
+  Minimum Variance portfolios")
 legend("top", legend=colnames(optim_rets), cex=0.8,
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
@@ -253,7 +254,7 @@ x11(wid_th <- 6, hei_ght <- 6)
 # Calculate minimum variance weights
 weight_s <- cov_inv %*% u_nit
 weight_s <- weight_s / drop(t(u_nit) %*% weight_s)
-# minimum standard deviation and return
+# Minimum standard deviation and return
 std_dev <- sqrt(252*drop(weight_s %*% cov_mat %*% weight_s))
 min_ret <- 252*sum(weight_s * mean_rets)
 # Calculate maximum Sharpe portfolios
@@ -261,7 +262,7 @@ risk_free <- (min_ret * seq(-10, 10, by=0.1)^3)/252
 eff_front <- sapply(risk_free, function(risk_free) {
   weight_s <- cov_inv %*% (mean_rets - risk_free)
   weight_s <- weight_s/drop(t(u_nit) %*% weight_s)
-  # portfolio return and standard deviation
+  # Portfolio return and standard deviation
   c(return=252*sum(weight_s * mean_rets),
     stddev=sqrt(252*drop(weight_s %*% cov_mat %*% weight_s)))
 })  # end sapply
@@ -311,7 +312,7 @@ n_portf <- 1000
 ret_sd <- sapply(1:n_portf, function(in_dex) {
   weight_s <- runif(n_weights-1, min=-0.25, max=1.0)
   weight_s <- c(weight_s, 1-sum(weight_s))
-  # portfolio return and standard deviation
+  # Portfolio return and standard deviation
   c(return=252*sum(weight_s * mean_rets),
     stddev=sqrt(252*drop(weight_s %*% cov_mat %*% weight_s)))
 })  # end sapply
@@ -345,7 +346,7 @@ text(x=sqrt(252*diag(cov_mat)), y=252*mean_rets,
      labels=names(mean_rets),
      col="blue", pos=1, cex=0.8)
 
-# vector of symbol names
+# Vector of symbol names
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # Calculate random portfolios
@@ -419,9 +420,9 @@ text(portf_sd[in_dex]/2, (portf_rets[in_dex]+risk_free)/2,
 # Plot portfolios in x11() window
 x11(wid_th <- 6, hei_ght <- 5)
 par(oma=c(0, 0, 0, 0), mar=c(3,3,2,1)+0.1, mgp=c(2, 1, 0), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
-# vector of symbol names
+# Vector of symbol names
 sym_bols <- c("VTI", "IEF")
-# matrix of portfolio weights
+# Matrix of portfolio weights
 weight_s <- seq(from=-1, to=2, length.out=31)
 weight_s <- cbind(weight_s, 1-weight_s)
 # Calculate portfolio returns and volatilities
@@ -490,7 +491,7 @@ re_turns <- rutils::diff_it(log(Ad(rutils::etf_env$VTI)))
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
-# or
+# Or
 sort_ed <- sort(as.numeric(re_turns))
 in_dex <- round(conf_level*NROW(re_turns))
 va_r <- sort_ed[in_dex]
@@ -518,7 +519,7 @@ text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
 
 library(HighFreq)
 library(Rglpk)
-# vector of symbol names and returns
+# Vector of symbol names and returns
 sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 re_turns <- rutils::etf_env$re_turns[((NROW(re_turns)-6):NROW(re_turns)), sym_bols]
@@ -541,7 +542,7 @@ direction_s <- c("==", ">=", rep(">=", n_rows))
 bound_s <- list(
   lower=list(ind=1:n_cols, val=rep(w_min, n_cols)),
   upper=list(ind=1:n_cols, val=rep(w_max, n_cols)))
-# perform optimization
+# Perform optimization
 op_tim <- Rglpk_solve_LP(obj=obj_vector, mat=constraint_s, dir=direction_s, rhs=rh_s, types=rep("C", NROW(obj_vector)), max=T, bounds=bound_s)
 op_tim$solution
 constraint_s %*% op_tim$solution
@@ -554,7 +555,7 @@ re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # Create initial vector of portfolio weights
 weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
-# objective equal to minus Sharpe ratio
+# Objective equal to minus Sharpe ratio
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   if (sd(portf_rets) == 0)
@@ -562,17 +563,17 @@ object_ive <- function(weight_s, re_turns) {
   else
     return(-mean(portf_rets)/sd(portf_rets))
 }  # end object_ive
-# objective for equal weight portfolio
+# Objective for equal weight portfolio
 object_ive(weight_s, re_turns=re_turns)
 op_tim <- unlist(optimize(
   f=function(weight)
     object_ive(c(1, 1, weight), re_turns=re_turns),
   interval=c(-4, 1)))
-# vectorize objective function with respect to third weight
+# Vectorize objective function with respect to third weight
 vec_object <- function(weights) sapply(weights,
   function(weight) object_ive(c(1, 1, weight),
     re_turns=re_turns))
-# or
+# Or
 vec_object <- Vectorize(FUN=function(weight)
     object_ive(c(1, 1, weight), re_turns=re_turns),
   vectorize.args="weight")  # end Vectorize
@@ -603,7 +604,7 @@ points(x=op_tim[1], y=op_tim[2], col="green", lwd=6)
 text(x=op_tim[1], y=op_tim[2],
      labels="minimum objective", pos=4, cex=0.8)
 
-# vectorize function with respect to all weights
+# Vectorize function with respect to all weights
 vec_object <- Vectorize(
   FUN=function(w1, w2, w3)
     object_ive(c(w1, w2, w3)),
@@ -614,7 +615,7 @@ w3 <- seq(-5, 5, length=50)
 grid_object <- outer(w2, w3, FUN=vec_object, w1=1)
 rownames(grid_object) <- round(w2, 2)
 colnames(grid_object) <- round(w3, 2)
-# perspective plot of objective function
+# Perspective plot of objective function
 persp(w2, w3, -grid_object,
 theta=45, phi=30, shade=0.5,
 col=rainbow(50), border="green",
@@ -630,18 +631,18 @@ rgl::persp3d(
   xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
 
-# vector of initial portfolio weights equal to 1
+# Vector of initial portfolio weights equal to 1
 weight_s <- rep(1, n_weights)
 names(weight_s) <- sym_bols
-# objective function equal to standard deviation of returns
+# Objective function equal to standard deviation of returns
 object_ive <- function(weight_s) {
   portf_rets <- re_turns %*% weight_s
   sd(portf_rets)/sum(weight_s)
 }  # end object_ive
-# object_ive() for equal weight portfolio
+# Object_ive() for equal weight portfolio
 object_ive(weight_s)
 object_ive(2*weight_s)
-# perform portfolio optimization
+# Perform portfolio optimization
 op_tim <- optim(par=weight_s,
           fn=object_ive,
           method="L-BFGS-B",
@@ -649,7 +650,7 @@ op_tim <- optim(par=weight_s,
           lower=rep(-10, n_weights))
 # Rescale the optimal weights
 weight_s <- op_tim$par/sum(op_tim$par)
-# minimum variance portfolio returns
+# Minimum variance portfolio returns
 optim_rets <- xts(x=re_turns %*% weight_s,
             order.by=index(re_turns))
 chart_Series(x=exp(cumsum(optim_rets)), name="minvar portfolio")
@@ -660,19 +661,19 @@ points(x=optim_sd, y=optim_ret, col="green", lwd=6)
 text(x=optim_sd, y=optim_ret, labels="minvar", pos=2, cex=0.8)
 
 
-# objective function equal to minus Sharpe ratio
+# Objective function equal to minus Sharpe ratio
 risk_free <- 0.03
 object_ive <- function(weight_s) {
   portf_rets <- 100*etf_env$re_turns[, names(weight_s)] %*% weight_s / sum(weight_s)
   -mean(portf_rets-risk_free)/sd(portf_rets)
 }  # end object_ive
-# perform portfolio optimization
+# Perform portfolio optimization
 op_tim <- optim(par=weight_s,
              fn=object_ive,
              method="L-BFGS-B",
              upper=rep(10, n_weights),
              lower=rep(-10, n_weights))
-# maximum Sharpe ratio portfolio returns
+# Maximum Sharpe ratio portfolio returns
 weight_s <- op_tim$par/sum(op_tim$par)
 optim_rets <- xts(x=re_turns %*% weight_s,
             order.by=index(re_turns))
@@ -700,16 +701,16 @@ text(optim_sd/3, (optim_ret+risk_free)/2.5,
              (range_s[4]-range_s[3])*
              hei_ght/wid_th)/(0.25*pi))
 
-# optimization to find weights with maximum Sharpe ratio
+# Optimization to find weights with maximum Sharpe ratio
 op_tim <- optim(par=weight_s,
              fn=object_ive,
              method="L-BFGS-B",
              upper=c(1.1, 10, 10),
              lower=c(0.9, -10, -10))
-# optimal parameters
+# Optimal parameters
 op_tim$par
 op_tim$par <- op_tim$par/sum(op_tim$par)
-# optimal Sharpe ratio
+# Optimal Sharpe ratio
 -object_ive(op_tim$par)
 
 x11(width=6, height=5)
@@ -737,7 +738,7 @@ chart_Series(optim_rets, theme=plot_theme,
 legend("top", legend=colnames(optim_rets), cex=0.8,
  inset=0.1, bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
-# or plot non-compounded (simple) cumulative returns
+# Or plot non-compounded (simple) cumulative returns
 PerformanceAnalytics::chart.CumReturns(
   cbind(re_turns %*% op_tim$par, re_turns),
   lwd=2, ylab="", legend.loc="topleft", main="")
@@ -749,20 +750,20 @@ cor_rel <- 0.6
 cov_mat <- matrix(c(1, cor_rel, cor_rel, 1), nc=2)
 cov_mat <- t(t(std_devs*cov_mat)*std_devs)
 library(quadprog)
-# minimum variance weights without constraints
+# Minimum variance weights without constraints
 op_tim <- solve.QP(Dmat=2*cov_mat,
             dvec=rep(0, 2),
             Amat=matrix(0, nr=2, nc=1),
             bvec=0)
-# minimum variance weights sum equal to 1
+# Minimum variance weights sum equal to 1
 op_tim <- solve.QP(Dmat=2*cov_mat,
             dvec=rep(0, 2),
             Amat=matrix(1, nr=2, nc=1),
             bvec=1)
-# optimal value of objective function
+# Optimal value of objective function
 t(op_tim$solution) %*% cov_mat %*% op_tim$solution
-perform simple optimization for reference
-# objective function for simple optimization
+Perform simple optimization for reference
+# Objective function for simple optimization
 object_ive <- function(x) {
   x <- c(x, 1-x)
   t(x) %*% cov_mat %*% x
@@ -774,17 +775,17 @@ sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # Calculate the covariance matrix
 cov_mat <- cov(re_turns)
-# minimum variance weights, with sum equal to 1
+# Minimum variance weights, with sum equal to 1
 op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             dvec=numeric(3),
             Amat=matrix(1, nr=3, nc=1),
             bvec=1)
-# minimum variance, maximum returns
+# Minimum variance, maximum returns
 op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             dvec=apply(0.1*re_turns, 2, mean),
             Amat=matrix(1, nr=3, nc=1),
             bvec=1)
-# minimum variance positive weights, sum equal to 1
+# Minimum variance positive weights, sum equal to 1
 a_mat <- cbind(matrix(1, nr=3, nc=1),
        diag(3), -diag(3))
 b_vec <- c(1, rep(0, 3), rep(-1, 3))
@@ -796,7 +797,7 @@ op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
 
 # Calculate daily percentage re_turns
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-# objective equal to minus Sharpe ratio
+# Objective equal to minus Sharpe ratio
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   if (sd(portf_rets) == 0)
@@ -804,7 +805,7 @@ object_ive <- function(weight_s, re_turns) {
   else
     return(-mean(portf_rets)/sd(portf_rets))
 }  # end object_ive
-# perform optimization using DEoptim
+# Perform optimization using DEoptim
 op_tim <- DEoptim::DEoptim(fn=object_ive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
@@ -813,7 +814,7 @@ op_tim <- DEoptim::DEoptim(fn=object_ive,
 weight_s <- op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
 names(weight_s) <- colnames(re_turns)
 
-# objective with shrinkage penalty
+# Objective with shrinkage penalty
 object_ive <- function(weight_s, re_turns, lamb_da, al_pha) {
   portf_rets <- re_turns %*% weight_s
   if (sd(portf_rets) == 0)
@@ -824,13 +825,13 @@ al_pha*sum(abs(weight_s)))
     return(-mean(portf_rets)/sd(portf_rets) + penal_ty)
   }
 }  # end object_ive
-# objective for equal weight portfolio
+# Objective for equal weight portfolio
 weight_s <- rep(1, NROW(sym_bols))
 names(weight_s) <- sym_bols
 lamb_da <- 0.5 ; al_pha <- 0.5
 object_ive(weight_s, re_turns=re_turns,
   lamb_da=lamb_da, al_pha=al_pha)
-# perform optimization using DEoptim
+# Perform optimization using DEoptim
 op_tim <- DEoptim::DEoptim(fn=object_ive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
@@ -864,7 +865,7 @@ ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
 
 library(PortfolioAnalytics)
-# use ETF returns from package HighFreq
+# Use ETF returns from package HighFreq
 library(HighFreq)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
@@ -890,22 +891,22 @@ portf_maxSR <- add.constraint(
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="return",  # maximize mean return
+  type="return",  # Maximize mean return
   name="mean")
 # Add objectives
 portf_maxSR <- add.objective(
   portfolio=portf_maxSR,
-  type="risk",  # minimize StdDev
+  type="risk",  # Minimize StdDev
   name="StdDev")
 
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
-# perform optimization of weights
+# Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
   R=etf_env$re_turns[, portf_names],  # Specify returns
   portfolio=portf_maxSR,  # Specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
+  optimize_method="DEoptim", # Use DEoptim
+  maxSR=TRUE,  # Maximize Sharpe
   trace=TRUE, traceDE=0)
 # Plot optimization
 chart.RiskReward(maxSR_DEOpt,
@@ -928,13 +929,13 @@ chart.RiskReward(maxSR_DEOpt,
 # Plot risk/ret points in portfolio scatterplot
 risk_ret_points <- function(rets=etf_env$re_turns,
   risk=c("sd", "ETL"), sym_bols=c("VTI", "IEF")) {
-  risk <- match.arg(risk)  # match to arg list
+  risk <- match.arg(risk)  # Match to arg list
   if (risk=="ETL") {
     stopifnot(
 "package:PerformanceAnalytics" %in% search() ||
 require("PerformanceAnalytics", quietly=TRUE))
   }  # end if
-  risk <- match.fun(risk)  # match to function
+  risk <- match.fun(risk)  # Match to function
   risk_ret <- t(sapply(rets[, sym_bols],
      function(x_ts)
  c(ret=mean(x_ts), risk=abs(risk(x_ts)))))
@@ -991,22 +992,22 @@ portf_maxSRN <- add.constraint(
 # Add objectives
 portf_maxSRN <- add.objective(
   portfolio=portf_maxSRN,
-  type="return",  # maximize mean return
+  type="return",  # Maximize mean return
   name="mean")
 # Add objectives
 portf_maxSRN <- add.objective(
   portfolio=portf_maxSRN,
-  type="risk",  # minimize StdDev
+  type="risk",  # Minimize StdDev
   name="StdDev")
 
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
-# perform optimization of weights
+# Perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
   R=etf_env$re_turns[, portf_names],  # Specify returns
   portfolio=portf_maxSRN,  # Specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
+  optimize_method="DEoptim", # Use DEoptim
+  maxSR=TRUE,  # Maximize Sharpe
   trace=TRUE, traceDE=0)
 # Plot optimization
 chart.RiskReward(maxSRN_DEOpt,
@@ -1064,22 +1065,22 @@ portf_maxSTARR <- add.constraint(
 # Add objectives
 portf_maxSTARR <- add.objective(
   portfolio=portf_maxSTARR,
-  type="return",  # maximize mean return
+  type="return",  # Maximize mean return
   name="mean")
 # Add objectives
 portf_maxSTARR <- add.objective(
   portfolio=portf_maxSTARR,
-  type="risk",  # minimize Expected Shortfall
+  type="risk",  # Minimize Expected Shortfall
   name="ES")
 
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
-# perform optimization of weights
+# Perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
   R=etf_env$re_turns[, portf_names],  # Specify returns
   portfolio=portf_maxSTARR,  # Specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSTARR=TRUE,  # maximize STARR
+  optimize_method="DEoptim", # Use DEoptim
+  maxSTARR=TRUE,  # Maximize STARR
   trace=TRUE, traceDE=0)
 
 # Plot optimization
@@ -1142,16 +1143,16 @@ portf_minES <- add.constraint(
 # Add objectives
 portf_minES <- add.objective(
   portfolio=portf_minES,
-  type="risk",  # minimize ES
+  type="risk",  # Minimize ES
   name="ES")
 
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
-# perform optimization of weights
+# Perform optimization of weights
 minES_ROI <- optimize.portfolio(
   R=etf_env$re_turns[, portf_names],  # Specify returns
   portfolio=portf_minES,  # Specify portfolio
-  optimize_method="ROI", # use ROI
+  optimize_method="ROI", # Use ROI
   trace=TRUE, traceDE=0)
 
 # Plot optimization
@@ -1197,12 +1198,12 @@ minES_ROI$objective_measures$ES[[1]])
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 options(width=50)
-# perform optimization of weights
+# Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
   R=etf_env$re_turns["/2011", portf_names],
   portfolio=portf_maxSR,  # Specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
+  optimize_method="DEoptim", # Use DEoptim
+  maxSR=TRUE,  # Maximize Sharpe
   trace=TRUE, traceDE=0)
 weights_1h <- maxSR_DEOpt$weights
 
@@ -1213,12 +1214,12 @@ maxSR_DEOpt_xts <-
 load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 options(width=50)
-# perform optimization of weights
+# Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
   R=etf_env$re_turns["2011/", portf_names],
   portfolio=portf_maxSR,  # Specify portfolio
-  optimize_method="DEoptim", # use DEoptim
-  maxSR=TRUE,  # maximize Sharpe
+  optimize_method="DEoptim", # Use DEoptim
+  maxSR=TRUE,  # Maximize Sharpe
   trace=TRUE, traceDE=0)
 weights_2h <- maxSR_DEOpt$weights
 
@@ -1253,7 +1254,7 @@ sum(uni_form < def_probs)
 n_simu <- 1000
 de_faults <- numeric(n_simu)
 # Simulate using for() loop (inefficient way)
-for (i in 1:n_simu) {  # perform loop
+for (i in 1:n_simu) {  # Perform loop
   uni_form <- runif(n_assets)
   de_faults[i] <- sum(uni_form < def_probs)
 }  # end for
@@ -1290,7 +1291,7 @@ cor(asset_s)
 # allocate matrix of assets
 asset_s <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
-for (i in 1:n_simu) {  # perform loop
+for (i in 1:n_simu) {  # Perform loop
   asset_s[i, ] <-
     rho_sqrt*system_atic[i] +
     rho_sqrtm*rnorm(n_assets)
@@ -1322,7 +1323,7 @@ def_probs
 # allocate matrix of de_faults
 de_faults <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
-for (i in 1:n_simu) {  # perform loop
+for (i in 1:n_simu) {  # Perform loop
   de_faults[i, ] <-
     (asset_s[i, ] < def_thresh)
 }  # end for
@@ -1664,16 +1665,16 @@ def_thresh <- qnorm(def_probs)
 n_boot <- 500
 # Perform bootstrap of calc_var
 set.seed(1121)
-boot_strap <- sapply(rep(l_gd, n_boot),
+boot_data <- sapply(rep(l_gd, n_boot),
   calc_var,
   def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end sapply
-boot_strap <- t(boot_strap)
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+boot_data <- t(boot_data)
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
@@ -1696,21 +1697,21 @@ n_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 # Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(clus_ter, 1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, n_boot),
+boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
   fun=calc_var, def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, n_boot),
+boot_data <- mclapply(rep(l_gd, n_boot),
   FUN=calc_var, def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
+boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
@@ -1756,21 +1757,21 @@ n_cores <- detectCores() - 1  # number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 # Perform bootstrap of calc_var for Windows
 clusterSetRNGStream(clus_ter, 1121)
-boot_strap <- parLapply(clus_ter, rep(l_gd, n_boot),
+boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
   fun=calc_var, def_probs=def_probs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end parLapply
 # Bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(rep(l_gd, n_boot),
+boot_data <- mclapply(rep(l_gd, n_boot),
   FUN=calc_var, def_probs=def_probs,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_strap <- rutils::do_call(rbind, boot_strap)
+boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 
 # Plot the standard errors of VaRs and CVaRs
@@ -1868,16 +1869,16 @@ def_thresh <- qnorm(def_probs)
 n_boot <- 500
 # Perform bootstrap of calc_var
 set.seed(1121)
-boot_strap <- sapply(rep(l_gd, n_boot),
+boot_data <- sapply(rep(l_gd, n_boot),
   calc_var,
   def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end sapply
-boot_strap <- t(boot_strap)
-# Calculate vectors of standard errors of VaR and CVaR from boot_strap data
-std_error_var <- apply(boot_strap[, 1:7], MARGIN=2,
+boot_data <- t(boot_data)
+# Calculate vectors of standard errors of VaR and CVaR from boot_data data
+std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_strap[, 8:14], MARGIN=2,
+std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]

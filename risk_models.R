@@ -87,7 +87,7 @@ start_points <- c(1, end_points[1:(NROW(end_points)-1)]+1)
 price_s <- quantmod::Cl(rutils::etf_env$VTI)
 end_points <- seq_along(price_s)  # Define end points
 n_rows <- NROW(end_points)
-look_back <- 22  # number of data points per look-back interval
+look_back <- 22  # Number of data points per look-back interval
 # start_points are multi-period lag of end_points
 start_points <- c(rep_len(1, look_back-1),
     end_points[1:(n_rows-look_back+1)])
@@ -357,10 +357,10 @@ detach("package:caTools")  # remove caTools from search path
 look_back <- 2
 price_s <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 med_ian <- runmed(x=price_s, k=look_back)
-# vector of rolling volatility
-vol_at <- runsd(x=price_s, k=look_back,
+# Vector of rolling volatility
+sigma_r <- runsd(x=price_s, k=look_back,
           endrule="constant", align="center")
-# vector of rolling quantiles
+# Vector of rolling quantiles
 quan_tiles <- runquantile(x=price_s,
             k=look_back, probs=0.9,
             endrule="constant",
@@ -625,52 +625,52 @@ mad(r_norm)
 median(abs(r_norm - median(r_norm)))
 median(abs(r_norm - median(r_norm)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
-boot_strap <- sapply(1:10000, function(x) {
+boot_data <- sapply(1:10000, function(x) {
   boot_sample <-
     r_norm[sample.int(n_rows, replace=TRUE)]
   c(sd=sd(boot_sample), mad=mad(boot_sample))
 })  # end sapply
-boot_strap <- t(boot_strap)
+boot_data <- t(boot_data)
 # Analyze bootstrapped variance
-head(boot_strap)
-sum(is.na(boot_strap))
+head(boot_data)
+sum(is.na(boot_data))
 # Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
+apply(boot_data, MARGIN=2,
 function(x) c(mean=mean(x), std_error=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # number of cores
+n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_strap <- parLapply(clus_ter, 1:10000,
+boot_data <- parLapply(clus_ter, 1:10000,
   function(x, r_norm) {
     boot_sample <-
 r_norm[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, r_norm=r_norm)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
+boot_data <- mclapply(1:10000,
   function(x) {
     boot_sample <-
 r_norm[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
-boot_strap <- rutils::do_call(rbind, boot_strap)
+boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
+apply(boot_data, MARGIN=2,
 function(x) c(mean=mean(x), std_error=sd(x)))
 
 price_s <- rutils::etf_env$VTI[, 4]
 # Define look-back window and a half window
 win_dow <- 11
 # Calculate time series of medians
-media_n <- TTR::runMedian(price_s, n=win_dow)
+medi_an <- TTR::runMedian(price_s, n=win_dow)
 # Plot prices and medians
-dygraphs::dygraph(cbind(price_s, media_n), main="VTI median") %>%
+dygraphs::dygraph(cbind(price_s, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Calculate time series of z-scores
 ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
+z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 tail(z_scores, win_dow)
 range(z_scores)
@@ -685,17 +685,17 @@ lines(density(z_scores, adjust=1.5),
 lwd=3, col="blue")
 
 # Calculate one-sided Hampel z-scores
-media_n <- TTR::runMedian(price_s, n=win_dow)
+medi_an <- TTR::runMedian(price_s, n=win_dow)
 ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
+z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 tail(z_scores, win_dow)
 range(z_scores)
 # Calculate two-sided Hampel z-scores
 half_window <- win_dow %/% 2
-media_n <- rutils::lag_it(media_n, lagg=-half_window)
+medi_an <- rutils::lag_it(medi_an, lagg=-half_window)
 ma_d <- rutils::lag_it(ma_d, lagg=-half_window)
-z_scores <- (price_s - media_n)/ma_d
+z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 tail(z_scores, win_dow)
 range(z_scores)
@@ -713,12 +713,12 @@ jump_s[sample(x=NROW(jump_s), size=n_bad)] <- TRUE
 price_s[jump_s] <- price_s[jump_s]*
   sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
 # Plot prices and medians
-dygraphs::dygraph(cbind(price_s, media_n), main="VTI median") %>%
+dygraphs::dygraph(cbind(price_s, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Calculate time series of z-scores
-media_n <- TTR::runMedian(price_s, n=win_dow)
+medi_an <- TTR::runMedian(price_s, n=win_dow)
 ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
+z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 # Calculate number of prices classified as bad data
 ba_d <- (abs(z_scores) > thresh_old)
@@ -746,11 +746,12 @@ error_rates <- sapply(threshold_s, con_fuse,
   res_ponse=jump_s,
   z_scores=z_scores)  # end sapply
 error_rates <- t(error_rates)
+error_rates <- rbind(c(0, 1), error_rates)
+error_rates <- rbind(error_rates, c(1, 0))
 # Calculate area under ROC curve (AUC)
-true_pos <- (1 - c(0, error_rates[, "typeII"]))
+true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
-false_pos <- c(1, error_rates[, "typeI"])
-false_pos <- rutils::diff_it(false_pos)
+false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
 # Plot ROC Curve for Defaults
@@ -795,7 +796,7 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
 
 # VTI percentage returns
 re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# number of observations
+# Number of observations
 n_rows <- NROW(re_turns)
 # mean of VTI returns
 mean_rets <- mean(re_turns)
@@ -822,11 +823,11 @@ n_rows*(n_rows+1)/((n_rows-1)^3)*
 set.seed(1121)  # reset random number generator
 # sample from Standard Normal Distribution
 n_rows <- 1000
-sam_ple <- rnorm(n_rows)
+da_ta <- rnorm(n_rows)
 # sample mean
-mean(sam_ple)
+mean(da_ta)
 # sample standard deviation
-sd(sam_ple)
+sd(da_ta)
 
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)
@@ -905,22 +906,22 @@ legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
   col=c("red", "blue", "green"))
 
 # Objective function is log-likelihood
-object_ive <- function(pa_r, free_dom, sam_ple) {
+likeli_hood <- function(pa_r, free_dom, da_ta) {
   sum(
     -log(gamma((free_dom+1)/2) /
       (sqrt(pi*free_dom) * gamma(free_dom/2))) +
     log(pa_r[2]) +
-    (free_dom+1)/2 * log(1 + ((sam_ple - pa_r[1])/
+    (free_dom+1)/2 * log(1 + ((da_ta - pa_r[1])/
                     pa_r[2])^2/free_dom))
-}  # end object_ive
+}  # end likeli_hood
 # Demonstrate equivalence with log(dt())
-object_ive(c(1, 0.5), 2, 2:5)
+likeli_hood(c(1, 0.5), 2, 2:5)
 -sum(log(dt(x=(2:5-1)/0.5, df=2)/0.5))
 # Simpler objective function
-object_ive <- function(pa_r, free_dom, sam_ple) {
-  -sum(log(dt(x=(sam_ple-pa_r[1])/pa_r[2],
+likeli_hood <- function(pa_r, free_dom, da_ta) {
+  -sum(log(dt(x=(da_ta-pa_r[1])/pa_r[2],
       df=free_dom)/pa_r[2]))
-}  # end object_ive
+}  # end likeli_hood
 
 # VTI percentage returns
 re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
@@ -928,8 +929,8 @@ re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
 par_init <- c(mean=0, scale=0.01)
 # fit distribution using optim()
 optim_fit <- optim(par=par_init,
-  fn=object_ive, # log-likelihood function
-  sam_ple=re_turns,
+  fn=likeli_hood, # log-likelihood function
+  da_ta=re_turns,
   free_dom=2, # Degrees of freedom
   method="L-BFGS-B", # quasi-Newton method
   upper=c(1, 0.1), # upper constraint
@@ -968,22 +969,21 @@ legend("topright", inset=0.05, bty="n",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # Df values
-# Create plot colors
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
 col_ors <- c("red", "black", "blue", "green")
-# Create legend labels
-lab_els <- paste("df", deg_free, sep="=")
-for (in_dex in 1:4) {  # Plot four curves
+for (in_dex in 1:4) {
 curve(expr=dchisq(x, df=deg_free[in_dex]),
-      type="l", xlim=c(0, 20), ylim=c(0, 0.3),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
+xlim=c(0, 20), ylim=c(0, 0.3),
+xlab="", ylab="", col=col_ors[in_dex],
+lwd=2, add=as.logical(in_dex-1))
 }  # end for
 
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
+lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1,
@@ -1003,8 +1003,8 @@ optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
 # Perform Kolmogorov-Smirnov test on VTI returns
-sam_ple <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), sam_ple)
+da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
+ks.test(as.numeric(re_turns), da_ta)
 
 # Observed frequencies from random normal data
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
@@ -1112,7 +1112,7 @@ vari_ance <-
   roll::roll_var(re_turns, width=look_back)
 vari_ance[1:(look_back-1)] <- 0
 colnames(vari_ance) <- "VTI.variance"
-# number of look_backs that fit over re_turns
+# Number of look_backs that fit over re_turns
 n_rows <- NROW(re_turns)
 n_agg <- n_rows %/% look_back
 end_points <- # Define end_points with beginning stub
@@ -1275,7 +1275,7 @@ re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(re_turns)
 # Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) / 
+re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) /
   rutils::diff_it(.index(SPY["2012-02-13"]))
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
@@ -1284,18 +1284,18 @@ re_turns <- rutils::diff_it(log(SPY[, 4]))
 # Minutely SPY volatility (unit per minute)
 sd(re_turns)
 # Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) / 
+re_turns <- rutils::diff_it(log(SPY[, 4])) /
   rutils::diff_it(.index(SPY))
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
 # Table of time intervals - 60 second is most frequent
 interval_s <- rutils::diff_it(.index(SPY))
 table(interval_s)
-hist(interval_s)
+# hist(interval_s)
 
 library(HighFreq)  # load HighFreq
 # Daily OHLC SPY prices
-SPY_daily <- 
+SPY_daily <-
   rutils::to_period(oh_lc=SPY, period="days")
 # Daily SPY returns and volatility
 sd(rutils::diff_it(log(SPY_daily[, 4])))
@@ -1304,13 +1304,13 @@ re_turns <- rutils::diff_it(log(SPY[, 4]))
 # Minutely SPY volatility scaled to daily interval
 sqrt(6.5*60)*sd(re_turns)
 # Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) / 
+re_turns <- rutils::diff_it(log(SPY[, 4])) /
   rutils::diff_it(.index(SPY))
 # Minutely SPY volatility scaled to daily aggregation interval
 60*sqrt(6.5*60)*sd(re_turns)
 # Daily SPY volatility
 # including extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) / 
+24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) /
     rutils::diff_it(.index(SPY_daily)))
 table(rutils::diff_it(.index(SPY_daily)))
 
@@ -1458,7 +1458,7 @@ chart_Series(re_turns^2,
        name="VTI log of range squared")
 
 # standard errors of variance estimators using bootstrap
-boot_strap <- sapply(1:1e2, function(x) {
+boot_data <- sapply(1:1e2, function(x) {
   # Create random OHLC
   oh_lc <- HighFreq::random_ohlc()
   # Calculate variance estimate
@@ -1467,11 +1467,11 @@ boot_strap <- sapply(1:1e2, function(x) {
 oh_lc, calc_method="yang_zhang", scal_e=FALSE))
 })  # end sapply
 # Analyze bootstrapped variance
-boot_strap <- t(boot_strap)
-head(boot_strap)
-colMeans(boot_strap)
-apply(boot_strap, MARGIN=2, sd) /
-  colMeans(boot_strap)
+boot_data <- t(boot_data)
+head(boot_data)
+colMeans(boot_data)
+apply(boot_data, MARGIN=2, sd) /
+  colMeans(boot_data)
 
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 par(mfrow=c(2,1))  # set plot panels
@@ -1498,7 +1498,7 @@ ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
 detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
 
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
-perf_data <- 
+perf_data <-
   unclass(data(
     package="PerformanceAnalytics"))$results[, -(1:2)]
 apply(perf_data, 1, paste, collapse=" - ")

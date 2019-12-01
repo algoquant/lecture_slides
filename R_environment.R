@@ -5,11 +5,31 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
+# Calculate cumulative sum of a vector
+vec_tor <- runif(1e5)
+# Use compiled function
+cum_sum <- cumsum(vec_tor)
+# Use for loop
+cum_sum2 <- vec_tor
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+# Compare the two methods
+all.equal(cum_sum, cum_sum2)
+# Microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  cumsum=cumsum(vec_tor),
+  loop=for (i in 2:NROW(vec_tor))
+    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  times=10))[, c(1, 4, 5)]
+
 # Display documentation on function "getwd"
 help(getwd)
-?getwd  # equivalent to "help(getwd)"
+# Equivalent to "help(getwd)"
+?getwd
 
-help.start()  # Open the hypertext documentation
+# Open the hypertext documentation
+help.start()
 
 # "<-" and "=" are valid assignment operators
 my_var <- 3
@@ -25,13 +45,13 @@ my_var
 
 my_var  # text after hash is treated as comment
 
-getwd()  # get cwd
+getwd()  # Get cwd
 setwd("C:/Develop/R")  # Set cwd
-getwd()  # get cwd
+getwd()  # Get cwd
 
-Sys.time()  # get date and time
+Sys.time()  # Get date and time
 
-Sys.Date()  # get date only
+Sys.Date()  # Get date only
 
 rm(list=ls())
 setwd("C:/Develop/R/lecture_slides/data")
@@ -61,21 +81,21 @@ history(5)  # Display last 5 commands
 savehistory(file="myfile")  # Default is ".Rhistory"
 loadhistory(file="myfile")  # Default is ".Rhistory"
 
-sessionInfo()  # get R version and other session info
+sessionInfo()  # Get R version and other session info
 
 Sys.getenv()[5:7]  # List some environment variables
 
-Sys.getenv("HOME")  # get R user HOME directory
+Sys.getenv("HOME")  # Get R user HOME directory
 
 Sys.setenv(Home="C:/Develop/data")  # Set HOME directory
 
-Sys.getenv("HOME")  # get user HOME directory
+Sys.getenv("HOME")  # Get user HOME directory
 
-Sys.getenv("R_HOME")  # get R_HOME directory
+Sys.getenv("R_HOME")  # Get R_HOME directory
 
-R.home()  # get R_HOME directory
+R.home()  # Get R_HOME directory
 
-R.home("etc")  # get "etc" sub-directory of R_HOME
+R.home("etc")  # Get "etc" sub-directory of R_HOME
 
 # ?options  # Long list of global options
 # Interpret strings as characters, not factors
@@ -84,8 +104,8 @@ options("stringsAsFactors")  # Display option
 options(stringsAsFactors=FALSE)  # Set option
 # number of digits printed for numeric values
 options(digits=3)
-# control exponential scientific notation of print method
-# positive "scipen" values bias towards fixed notation
+# Control exponential scientific notation of print method
+# Positive "scipen" values bias towards fixed notation
 # negative "scipen" values bias towards scientific notation
 options(scipen=100)
 # maximum number of items printed to console
@@ -107,9 +127,9 @@ options(op_tions)
 # R startup (site) directory
 paste(R.home(), "etc", sep="/")
 
-file.path(R.home(), "etc")  # better way
+file.path(R.home(), "etc")  # Better way
 
-# perform tilde-expansions and convert to readable format
+# Perform tilde-expansions and convert to readable format
 normalizePath(file.path(R.home(), "etc"), winslash="/")
 
 normalizePath(R.home("etc"), winslash="/")
@@ -119,7 +139,7 @@ normalizePath("~", winslash="/")  # Windows user HOME directory
 Sys.getenv("HOME")  # R user HOME directory
 
 setwd("C:/Develop/R")
-getwd()  # current working directory
+getwd()  # Current working directory
 
 # R startup (site) directory
 normalizePath(file.path(R.home(), "etc"), winslash="/")
@@ -130,7 +150,7 @@ normalizePath(file.path(R.home(), "bin/x64"), winslash="/")
 # R documentation directory
 normalizePath(file.path(R.home(), "doc/manual"), winslash="/")
 
-sample(dir(), 5)  # get 5 file names - dir() lists all files
+sample(dir(), 5)  # Get 5 file names - dir() lists all files
 sample(dir(pattern="csv"), 5)  # List files containing "csv"
 sample(list.files(R.home()), 5)  # All files in R_HOME directory
 sample(list.files(R.home("etc")), 5)  # All files in "etc" sub-directory of R_HOME directory
@@ -139,12 +159,12 @@ list.dirs(R.home("etc"))  # Directories in "etc" sub-directory
 sample(Sys.glob("*.csv"), 5)
 Sys.glob(R.home("etc"))
 
-getwd()  # get cwd
+getwd()  # Get cwd
 
 setwd("C:/Develop/R")
 # help(Startup)  # Description of R session startup mechanism
 
-# files in R startup directory directory
+# Files in R startup directory directory
 dir(normalizePath(file.path(R.home(), "etc"), winslash="/"))
 
 # *.R* files in cwd directory
@@ -165,53 +185,53 @@ cat("sourcing .Rprofile file\n")
 
 
 rm(list=ls())
-# get base environment
+# Get base environment
 baseenv()
-# get global environment
+# Get global environment
 globalenv()
-# get current environment
+# Get current environment
 environment()
-# get environment class
+# Get environment class
 class(environment())
 # Define variable in current environment
 glob_var <- 1
-# get objects in current environment
+# Get objects in current environment
 ls(environment())
-# create new environment
+# Create new environment
 new_env <- new.env()
-# get calling environment of new environment
+# Get calling environment of new environment
 parent.env(new_env)
 # Assign Value to Name
 assign("new_var1", 3, envir=new_env)
-# create object in new environment
+# Create object in new environment
 new_env$new_var2 <- 11
-# get objects in new environment
+# Get objects in new environment
 ls(new_env)
-# get objects in current environment
+# Get objects in current environment
 ls(environment())
-# environments are subset like lists
+# Environments are subset like lists
 new_env$new_var1
-# environments are subset like lists
+# Environments are subset like lists
 new_env[["new_var1"]]
 
-search()  # get search path for R objects
-my_list <- 
-  list(flowers=c("rose", "daisy", "tulip"), 
+search()  # Get search path for R objects
+my_list <-
+  list(flowers=c("rose", "daisy", "tulip"),
        trees=c("pine", "oak", "maple"))
 my_list$trees
 attach(my_list)
 trees
-search()  # get search path for R objects
+search()  # Get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
 
 library(HighFreq)  # Load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# extract and merge all data, subset by sym_bols
+# Extract and merge all data, subset by sym_bols
 price_s <- rutils::do_call(cbind, # Do.call(merge
   as.list(rutils::etf_env)[sym_bols])
-# extract and merge adjusted prices, subset by sym_bols
+# Extract and merge adjusted prices, subset by sym_bols
 price_s <- rutils::do_call(cbind,
   lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
 # Same, but works only for OHLC series
@@ -229,7 +249,7 @@ unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
      file="etf_series.csv", sep=",")
-# copy price_s into etf_env and save to .RData file
+# Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file="etf_data.RData")
 
@@ -238,18 +258,18 @@ head(trees, 3)
 colnames(trees)
 mean(Girth)
 mean(trees$Girth)
-with(trees, 
+with(trees,
      c(mean(Girth), mean(Height), mean(Volume)))
 
 script_dir <- "C:/Develop/R/scripts"
-# execute script file and print the commands
+# Execute script file and print the commands
 source(file.path(script_dir, "script.R"),
  echo=TRUE)
 
 ####################################
 #Script.R file contains R script to demonstrate sourcing from script files
 
-# print information about this process
+# Print information about this process
 print(paste0("print: This test script was run at: ", format(Sys.time())))
 cat("cat: This test script was run at:", format(Sys.time()), "\n")
 
@@ -262,34 +282,34 @@ fun_c <- function(x) x+1
 # Read a line from console
 readline("Press Return to continue")
 
-# plot sine function in x11 window
+# Plot sine function in x11 window
 x11()
 curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
 xlab="", ylab="", lwd=2, col="orange",
 main="Sine function")
 
-# get help about running R scripts and batch processes
+# Get help about running R scripts and batch processes
 ?BATCH
 ?Rscript
 
 #Script_args.R contains R script that accepts arguments
-# print information about this process
+# Print information about this process
 cat("cat: This script was run at:", format(Sys.time()), "\n")
 # Read arguments supplied on the command line
 arg_s <- commandArgs(TRUE)
-# print the arguments
+# Print the arguments
 cat(paste0("arguments supplied on command line: ", paste(arg_s, collapse=", "), "\n"))
 # Return sum of arguments
 sum(as.numeric(arg_s))
 
-#plot_to_file.R
+#Plot_to_file.R
 #R script to demonstrate plotting to file
 
 # Redirect graphics output to png file
 plot_dir <- "C:/Develop/data"
 png(file.path(plot_dir, "r_plot.png"))
 
-# plot sine function
+# Plot sine function
 curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
 xlab="", ylab="", lwd=2, col="orange",
 main="Sine function")
@@ -297,10 +317,10 @@ main="Sine function")
 # turn png output off
 dev.off()
 
-#plot_interactive.R
+#Plot_interactive.R
 #R script to demonstrate interactive plotting
 
-# plot sine function in x11 window
+# Plot sine function in x11 window
 x11()
 curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
 xlab="", ylab="", lwd=2, col="orange",

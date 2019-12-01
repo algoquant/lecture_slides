@@ -1,8 +1,15 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 cat("Enter\ttab")  # Cat() interprets backslash escape sequences
 print("Enter\ttab")
 
 my_text <- print("hello")
-my_text  # print() returns its argument
+my_text  # Print() returns its argument
 
 # Create string
 my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
@@ -178,7 +185,7 @@ write.zoo(zoo_series, file="zoo_series.txt")
 zoo_read <- read.zoo("zoo_series.txt")  # Read it back
 all.equal(zoo_read, zoo_series)
 # Perform the same using write.table() and read.table()
-# first coerce zoo_series into data frame
+# First coerce zoo_series into data frame
 data_frame <- as.data.frame(zoo_series)
 data_frame <- cbind(in_dex, data_frame)
 # Write zoo_series to text file using write.table
@@ -789,7 +796,7 @@ zoo_eurusd <- suppressWarnings(
     end=Sys.Date(),
     origin="1970-01-01")
 )  # end suppressWarnings
-# bind and scrub data
+# Bind and scrub data
 zoo_stxeur <- cbind(zoo_eurusd,
                zoo_stx[, "AdjClose"])
 colnames(zoo_stxeur) <- c("EURUSD", "MSFT")
@@ -846,7 +853,7 @@ zoo_series <- suppressWarnings(
    end=Sys.Date(),
    origin="1970-01-01")  # end lapply
 )  # end suppressWarnings
-# flatten list of zoo objects into a single zoo object
+# Flatten list of zoo objects into a single zoo object
 zoo_series <- rutils::do_call(cbind, zoo_series)
 # Or
 # zoo_series <- do.call(cbind, zoo_series)
@@ -901,13 +908,13 @@ for (sym_bol in ls(etf_env)) {
 }  # end for
 
 library(HighFreq)  # Load package HighFreq
-# extract and cbind all data, subset by symbols
+# Extract and cbind all data, subset by symbols
 price_s <- rutils::do_call(cbind,
   as.list(etf_env)[sym_bols])
 # Or
 # price_s <- do.call(cbind,
 #   as.list(etf_env)[sym_bols])
-# extract and cbind adjusted prices, subset by symbols
+# Extract and cbind adjusted prices, subset by symbols
 price_s <- rutils::do_call(cbind,
   lapply(as.list(etf_env)[sym_bols], Ad))
 # Same, but works only for OHLC series
@@ -929,7 +936,7 @@ write.zoo(price_s,
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file="etf_data.RData")
 
-# extract VTI prices
+# Extract VTI prices
 vt_i <- etf_env$price_s[ ,"VTI"]
 vt_i <- na.omit(vt_i)
 # Calculate percentage returns "by hand"
@@ -950,7 +957,7 @@ re_turns <- lapply(etf_env$price_s, function(x_ts) {
 # "re_turns" is a list of xts
 class(re_turns)
 class(re_turns[[1]])
-# flatten list of xts into a single xts
+# Flatten list of xts into a single xts
 re_turns <- rutils::do_call(cbind, re_turns)
 class(re_turns)
 dim(re_turns)
@@ -967,7 +974,7 @@ new_env <- as.environment(eapply(etf_env, "[",
 new_env <- as.environment(
   lapply(as.list(etf_env)[sym_bols], "[",
    paste(start_date, end_date, sep="/")))
-# extract and cbind adjusted prices and return to environment
+# Extract and cbind adjusted prices and return to environment
 assign("price_s", rutils::do_call(cbind,
          lapply(ls(etf_env), function(sym_bol) {
            x_ts <- Ad(get(sym_bol, etf_env))
@@ -976,7 +983,7 @@ assign("price_s", rutils::do_call(cbind,
          })), envir=new_env)
 # get sizes of OHLC xts series in etf_env
 sapply(mget(sym_bols, envir=etf_env), object.size)
-# extract and cbind adjusted prices and return to environment
+# Extract and cbind adjusted prices and return to environment
 col_name <- function(x_ts)
   strsplit(colnames(x_ts), split="[.]")[[1]][1]
 assign("price_s", rutils::do_call(cbind,
@@ -1024,7 +1031,7 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
     tryCatch(  # With error handler
 getSymbols(sym_bol, src="tiingo", adjust=TRUE,
            from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
-# error handler captures error condition
+# Error handler captures error condition
 error=function(error_cond) {
   print(paste("error handler: ", error_cond))
 },  # end error handler
@@ -1061,6 +1068,39 @@ colnames(env_sp500$"BF-B") <- paste("BF_B",
 names(colnames(env_sp500$"BF-B")) <- NULL
 env_sp500$BF_B <- env_sp500$"BF-B"
 rm("BF-B", envir=env_sp500)
+
+class(env_sp500$AAPL)
+# The date-time index is class POSIXct not Date
+class(index(env_sp500$AAPL))
+# Coerce time indices from class POSIXct to class Date
+for (sym_bol in ls(env_sp500)) {
+  x_ts <- get(sym_bol, envir=env_sp500)
+  index(x_ts) <- as.Date(index(x_ts))
+  assign(sym_bol, x_ts, envir=env_sp500)
+}  # end for
+class(index(env_sp500$AAPL))
+# Save the environment to compressed .RData file
+dir_name <- "C:/Develop/R/lecture_slides/data/"
+save(env_sp500, file=paste0(dir_name, "sp500.RData"))
+# Save the ETF prices into CSV files
+dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+for (sym_bol in ls(env_sp500)) {
+  zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
+}  # end for
+# Or using lapply()
+file_names <- lapply(ls(env_sp500), function(sym_bol) {
+  x_ts <- get(sym_bol, envir=env_sp500)
+  zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
+  sym_bol
+})  # end lapply
+unlist(file_names)
+# Or using eapply() and data.table::fwrite()
+file_names <- eapply(env_sp500 , function(x_ts) {
+  file_name <- rutils::get_name(colnames(x_ts)[1])
+  data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
+  file_name
+})  # end eapply
+unlist(file_names)
 
 class(env_sp500$AAPL)
 # The date-time index is class POSIXct not Date
@@ -1199,13 +1239,13 @@ library(XML)  # Load package XML
 # Download text data from URL
 sp_500 <- getURL(
   "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-# extract tables from the text data
+# Extract tables from the text data
 sp_500 <- readHTMLTable(sp_500,
               stringsAsFactors=FALSE)
 str(sp_500)
-# extract colnames of data frames
+# Extract colnames of data frames
 lapply(sp_500, colnames)
-# extract S&P500 constituents
+# Extract S&P500 constituents
 sp_500 <- sp_500[[1]]
 head(sp_500)
 # Create valid R names from symbols containing "-" or "."characters
@@ -1248,7 +1288,7 @@ library(quantmod)
 unemp_rate <- getSymbols("UNRATE",
             auto.assign=FALSE,
             src="FRED")
-# plot U.S. unemployment rate data
+# Plot U.S. unemployment rate data
 chart_Series(unemp_rate["1990/"],
       name="U.S. unemployment rate")
 
@@ -1341,12 +1381,12 @@ price_s <- Quandl(code="CHRIS/CME_ES1",
   type="xts", start_date="1990-01-01")
 price_s <- price_s[, c("Open", "High", "Low", "Last", "Volume")]
 colnames(price_s)[4] <- "Close"
-# plot the prices
+# Plot the prices
 x11(width=5, height=4)  # Open x11 for plotting
 chart_Series(x=price_s["2008-06/2009-06"],
        TA="add_Vo()",
        name="S&P500 Futures")
-# plot dygraph
+# Plot dygraph
 dygraphs::dygraph(price_s["2008-06/2009-06", -5],
   main="S&P500 Futures") %>%
   dyCandlestick()
@@ -1370,7 +1410,7 @@ for (it in seq_along(url_s)) {
 warning=function(warning_cond) {
   cat(paste("warning handler: ", warning_cond, "\n"), file=log_file, append=TRUE)
 },  # end warning handler
-# error handler captures error condition
+# Error handler captures error condition
 error=function(error_cond) {
   cat(paste("error handler: ", error_cond, "\n"), append=TRUE)
 },  # end error handler
@@ -1456,7 +1496,7 @@ sapply(sheet_s, function(x_ts) sum(is.na(x_ts)))
 sheet_s <- lapply(sheet_s, zoo::na.locf)
 sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
 
-#perform calculations in R,
+#Perform calculations in R,
 #And export to CSV files
 setwd("C:/Develop/R/lecture_slides/data")
 # Read data frame, with row names from first column
@@ -1468,7 +1508,7 @@ data_read <-
 # Write data frame to CSV file, with row names
 write.csv(data_read, file="daisies.csv")
 
-#perform calculations in R,
+#Perform calculations in R,
 #And export to CSV files
 setwd("C:/Develop/R/lecture_slides/data")
 # Read data frame, with row names from first column

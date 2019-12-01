@@ -238,25 +238,25 @@ legend("topright", inset=0.05, title="Sigmas",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # df values
-# Create plot colors
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
 col_ors <- c("red", "black", "blue", "green")
-# Create legend labels
-lab_els <- paste("df", deg_free, sep="=")
-for (in_dex in 1:4) {  # Plot four curves
+for (in_dex in 1:4) {
 curve(expr=dchisq(x, df=deg_free[in_dex]),
-      xlim=c(0, 20), ylim=c(0, 0.3),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
+xlim=c(0, 20), ylim=c(0, 0.3),
+xlab="", ylab="", col=col_ors[in_dex],
+lwd=2, add=as.logical(in_dex-1))
 }  # end for
 
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-legend("topright", inset=0.05,
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=1, bty="n", col=col_ors)
+       cex=0.8, lwd=6, lty=1,
+       col=col_ors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -337,23 +337,22 @@ legend("topright", inset=0.05, bty="n",
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 5, 9)  # df values
+# Plot three curves in loop
+deg_free <- c(3, 5, 9)  # Degrees of freedom
 col_ors <- c("black", "red", "blue", "green")
-lab_els <- paste0("df1=", deg_free, ", df2=3")
-for (in_dex in 1:NROW(deg_free)) {  # Plot four curves
+for (in_dex in 1:NROW(deg_free)) {
 curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      xlim=c(0, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
+xlim=c(0, 4), xlab="", ylab="", lwd=2,
+col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
 
 # Add title
 title(main="F-Distributions", line=0.5)
 # Add legend
-legend("topright", inset=0.05, bty="n",
-       title="degrees of freedom", lab_els,
-       cex=0.8, lwd=2, lty=1, col=col_ors)
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
 
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -439,7 +438,7 @@ ex_pr <- quote({
   deg_free <- 2:20
   rang_e <- (1:NROW(deg_free))
   # Set image refesh interval
-  animation::ani.options(interval=0.25)
+  animation::ani.options(interval=0.5)
   # Create multiple plots with curves
   for (in_dex in rang_e) {
     curve(expr=dchisq(x, df=deg_free[in_dex]),

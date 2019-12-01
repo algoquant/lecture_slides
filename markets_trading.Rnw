@@ -1735,6 +1735,737 @@ head(SPY)
 \end{frame}
 
 
+%%%%%%%%%%%%%%%
+\subsection{draft: Package \texttt{HighFreq} for Managing High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Package \texttt{HighFreq} contains functions for managing high frequency \emph{TAQ} and \emph{OHLC} market data:
+      \begin{itemize}
+        \item reading and writing data from files,
+        \item managing time zones and alligning indices,
+        \item chaining and joining time series,
+        \item scrubbing bad data points,
+        \item converting \emph{TAQ} data to \emph{OHLC} format,
+        \item aggregating data to lower frequency,
+      \end{itemize}
+      \texttt{HighFreq} is inspired by the package \texttt{highfrequency}, and follows many of its conventions,
+      \vskip1ex
+      \texttt{HighFreq} depends on packages \texttt{xts}, \texttt{quantmod}, \texttt{lubridate}, and \texttt{caTools},
+      \vskip1ex
+      The function \texttt{scrub\_agg()} scrubs a single day of \emph{TAQ} data, aggregates it, and converts it to \emph{OHLC} format,
+      \vskip1ex
+      The function \texttt{save\_scrub\_agg()} loads, scrubs, aggregates, and binds multiple days of \emph{TAQ} data for a single symbol, and saves the \emph{OHLC} time series to a single \texttt{*.RData} file,
+    \column{0.5\textwidth}
+      <<echo=TRUE,eval=FALSE>>=
+# install package "HighFreq" from github
+install.packages("devtools")
+library(devtools)
+install_github(repo="algoquant/HighFreq")
+# load package "HighFreq"
+library(HighFreq)
+# set data directories
+data_dir <- "C:/Develop/data/hfreq/src/"
+output_dir <- "C:/Develop/data/hfreq/scrub/"
+# define sym_bol
+sym_bol <- "SPY"
+# load a single day of TAQ data
+sym_bol <- load(
+  file.path(data_dir,
+            paste0(sym_bol, "/2014.05.02.",
+                   sym_bol, ".RData")))
+# scrub, aggregate single day of TAQ data to OHLC
+ohlc_data <- scrub_agg(taq_data=get(sym_bol))
+# aggregate TAQ data for symbol, save to file
+save_scrub_agg(sym_bol,
+               data_dir=data_dir,
+               output_dir=output_dir,
+               period="minutes")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The Bid-ask Bounce in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
+      \vskip1ex
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in fact the mid price is constant.
+      \vskip1ex
+      The \emph{bid-ask bounce} produces very high realized volatility and the appearance of mean reversion, that isn't tradeable.
+      \vskip1ex
+      The \emph{bid-ask bounce} is prominent at very high frequency time scales or in periods of low volatility.
+      <<echo=TRUE,eval=FALSE>>=
+price_s <- read.zoo(file="C:/Develop/R/lecture_slides/data/bid_ask_bounce.csv",
+  header=TRUE, sep=",")
+price_s <- as.xts(price_s)
+x11(width=6, height=4)
+par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
+chart_Series(x=price_s, name="S&P500 Futures Bid-Ask Bounce")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures_bounce.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: High Frequency \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Aggregating high frequency \emph{TAQ} data into \emph{OHLC} format with lower periodicity allows for data compression while maintaining some information about volatility,
+      <<earl_ohlc_chart,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# load package "HighFreq"
+library(HighFreq)
+# define sym_bol
+sym_bol <- "SPY"
+# load OHLC data
+output_dir <- "C:/Develop/data/hfreq/scrub/"
+sym_bol <- load(
+  file.path(output_dir,
+            paste0(sym_bol, ".RData")))
+inter_val <-
+  "2013-11-11 09:30:00/2013-11-11 10:30:00"
+chart_Series(SPY[inter_val],
+            name=sym_bol)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_ohlc_chart-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Estimating Volatility From \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Package \texttt{TTR} contains statistical estimators and technical indicators implemented in fast \texttt{C} code,
+      \vskip1ex
+      The function \texttt{volatility()} from package \texttt{TTR} estimates the volatility from \protect\emph{OHLC} data,
+      \vskip1ex
+      \texttt{volatility()} includes the \emph{Garman-Klass} estimator:\\
+\vspace{-2em}
+      \begin{displaymath}
+        {\sigma}^2=\frac{1}{n} \sum_{i=1}^{n} (0.5(H_{i}-L_{i})^2 - (2\log2-1)(C_{i}-O_{i})^2)
+      \end{displaymath}
+\vspace{-1em}
+      \vskip1ex
+      and the \emph{Rogers-Satchell} estimator:\\
+\vspace{-2em}
+      \begin{displaymath}
+        {\sigma}^2=\frac{1}{n} \sum_{i=1}^{n} ((H_{i}-O_{i})(H_{i}-C_{i}) + (L_{i}-O_{i})(L_{i}-C_{i}))
+      \end{displaymath}
+      \vspace{-1em}
+      <<earl_ttr_runvol,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(quantmod)
+library(TTR)
+inter_val <- "2013-11-11/2013-11-15"
+var_iance <- volatility(OHLC=SPY,
+                     calc="yang.zhang", n=20)
+chart_Series(var_iance[inter_val],
+            name=paste(sym_bol, "vol w/ ON spikes"))
+var_iance <- volatility(OHLC=SPY,
+                     calc="rogers.satchell", n=20)
+chart_Series(var_iance[inter_val],
+            name=paste(sym_bol, "vol w/o ON spikes"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_ttr_runvol-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Volume and Volatility From \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Trading volumes typically rise in sympathy with market price volatility,
+      \vskip1ex
+      The function \texttt{vol\_ohlc()} from package \texttt{HighFreq} calculates volatility estimators over an \texttt{OHLC} time series,
+      \vskip1ex
+      The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \texttt{OHLC} time series,
+      <<daily_volume_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily variance and volume
+daily_var <- apply.daily(x=SPY, FUN=agg_ohlc,
+                        agg_fun="vol_ohlc")
+colnames(daily_var) <- paste0(sym_bol, ".var")
+daily_volume <- apply.daily(x=Vo(SPY), FUN=sum)
+chart_Series(daily_var,
+             name=paste(sym_bol, "variance"))
+chart_Series(daily_volume,
+             name=paste(sym_bol, "volume"))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/daily_volume_volat.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Measuring Market Liquidity Using High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Market illiquidity is defined as the market price impact resulting from supply-demand imbalance,
+      \vskip1ex
+      Market illiquidity is proportional to the price volatility divided by the square root of the trading volume:
+      \begin{displaymath}
+        \mathcal{L}^{-1} \sim \frac{\sigma}{\sqrt{v}}
+      \end{displaymath}
+      Recent research suggests that market crashes are conditioned by declining market liquidity:\\
+      Donier et al., \href{http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2583743}{\emph{Why Do Markets Crash?  Bitcoin Data Offers Unprecedented Insights}}
+      <<earl_crash,echo=(-(1:2)),fig.width=7,fig.height=9,fig.show='hide'>>=
+par(mfrow=c(3,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily volume
+daily_volu <- apply.daily(x=SPY,
+              FUN=function(da_ta) sum(Vo(da_ta)))
+colnames(daily_volu) <- paste0(sym_bol, ".volume")
+inter_val <- "2010"
+chart_Series(sqrt(daily_var[inter_val]),
+             name=paste(sym_bol, "std dev"))
+chart_Series(daily_volu[inter_val],
+             name=paste(sym_bol, "volume"))
+chart_Series(
+  sqrt(daily_var[inter_val]/daily_volu[inter_val]),
+  name=paste(sym_bol, "illiquidity"))
+@
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_crash-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Estimating Hurst Exponent From \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hurst exponent is a measure of long-term memory of a time series, and is related to its autocorrelation:
+      \begin{displaymath}
+        {\mathbb{E}}[\frac{(max(p)-min(p))}{\hat\sigma}]=t^H
+      \end{displaymath}
+      $H=0.5$ for Brownian motion (no autocorrelations), \\
+      $H>0.5$ for positive autocorrelations, \\
+      $H<0.5$ for negative autocorrelations,
+      \vskip1ex
+      The function \texttt{hurst\_ohlc()} from package \texttt{HighFreq} calculates a Hurst-like indicator:
+      \begin{displaymath}
+        H=\frac{1}{n} \sum_{i=1}^{n} log(\frac{H_{i}-L_{i}}{abs(C_{i}-O_{i})})
+      \end{displaymath}
+      The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \texttt{OHLC} time series,
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/daily_hurst.png}\\
+      \vspace{-1em}
+      <<daily_hurst,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+library(HighFreq)  # load package "HighFreq"
+# daily Hurst exponents
+daily_hurst <- apply.daily(x=SPY,
+                           FUN=agg_ohlc,
+                           agg_fun="hurst_ohlc")
+colnames(daily_hurst) <-
+  paste(col_name(get(sym_bol)), ".Hurst")
+chart_Series(roll_sum(daily_hurst, 10)[-(1:10)]/10,
+             name=paste(sym_bol, "Hurst"))
+abline(h=0.5, col="blue", lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Volatility and Hurst Exponent}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility,
+      <<daily_volat_hurst,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+chart_Series(roll_sum(daily_var, 10)[-(1:10)]/10,
+             name=paste(sym_bol, "variance"))
+chart_Series(roll_sum(daily_hurst, 10)[-(1:10)]/10,
+             name=paste(sym_bol, "Hurst"))
+abline(h=0.5, col="blue", lwd=2)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/daily_volat_hurst.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Seasonality of Volume and Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Market price volatility and trading volumes are typically higher at the beginning and end of the trading sessions,
+      \vskip1ex
+      The function \texttt{season\_ality()} calculates the seasonality aggregations of a statistical estimator over an \texttt{OHLC} time series,
+      <<daily_season_volume_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily seasonality of volume
+season_volume <- season_ality(Vo(SPY))
+season_volume <- season_volume[-(nrow(season_volume))]
+colnames(season_volume) <-
+  paste0(col_name(get(sym_bol)), ".season_volume")
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%H:%M"
+ch_ob <- chart_Series(x=season_volume,
+  name=paste(colnames(season_volume),
+  "daily seasonality"), theme=plot_theme,
+  plot=FALSE)
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(c(y_lim[[2]][1],
+              y_lim[[2]][2]/2), fixed=TRUE)
+ch_ob$set_ylim(y_lim)
+plot(ch_ob)
+# daily seasonality of volatility
+season_var <- season_ality(vol_ohlc(ohlc=SPY))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/intraday_season_volume_volat.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Seasonality of Liquidity and Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Market illiquidity rises in sympathy with market price volatility,
+      \vskip1ex
+      Market liquidity is typically the highest at the end of the trading session, and the lowest at the beginning,
+      <<daily_season_illiquid_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily seasonality of liquidity
+season_illiquid <- season_ality(
+  sqrt(HighFreq::run_variance(oh_lc=SPY)/Vo(SPY)))
+season_illiquid[!is.finite(season_illiquid)] <- NA
+season_illiquid <- na.locf(season_illiquid)
+season_illiquid[1] <- coredata(season_illiquid[2])
+colnames(season_illiquid) <-
+  paste0(sym_bol, ".season_illiquid")
+chart_Series(x=season_illiquid,
+  name=paste(colnames(season_illiquid), "daily seasonality"))
+# daily seasonality of volatility
+season_var <- season_ality(vol_ohlc(ohlc=SPY))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/intraday_season_illiquid_volat.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Seasonality of Hurst Exponent and Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility,
+      <<daily_season_hurst_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily seasonality of Hurst exponent
+season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[inter_val, 1:4]))
+season_hurst <- season_hurst[-(nrow(season_hurst))]
+colnames(season_hurst) <- paste0(col_name(get(sym_bol)), ".season_hurst")
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%H:%M"
+ch_ob <- chart_Series(x=season_hurst,
+  name=paste(colnames(season_hurst),
+  "daily seasonality"), theme=plot_theme,
+  plot=FALSE)
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(c(y_lim[[2]][1],
+              y_lim[[2]][2]), fixed=TRUE)
+ch_ob$set_ylim(y_lim)
+plot(ch_ob)
+abline(h=0.5, col="blue", lwd=2)
+# daily seasonality of volatility
+season_var <- season_ality(vol_ohlc(ohlc=SPY))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/intraday_season_hurst_volat.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Estimating Skew From \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{skew\_ohlc()} from package \texttt{HighFreq} calculates a skew-like indicator:\\
+\vspace{-2em}
+      \begin{multline*}
+        \hskip-1em {s}^3=\frac{1}{n} \sum_{i=1}^{n} ((H_{i}-O_{i})(H_{i}-C_{i})(H_{i}-0.5(O_{i}+C_{i})) +\\ (L_{i}-O_{i})(L_{i}-C_{i})(L_{i}-0.5(O_{i}+C_{i}))
+      \end{multline*}
+      The function \texttt{roll\_agg\_ohlc()} aggregates rolling, volume weighted moment estimators,
+      <<earl_highfreq_runskew,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# rolling variance
+var_iance <-
+  roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
+# rolling skew
+sk_ew <-
+  roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
+sk_ew <- sk_ew/(var_iance)^(1.5)
+sk_ew[1, ] <- 0
+sk_ew <- na.locf(sk_ew)
+inter_val <- "2013-11-11/2013-11-15"
+chart_Series(var_iance[inter_val],
+            name=paste(sym_bol, "variance"))
+chart_Series(sk_ew[inter_val],
+            name=paste(sym_bol, "Skew"),
+            ylim=c(-1, 1))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_highfreq_runskew-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Daily Volatility and Skew From \protect\emph{OHLC} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \texttt{OHLC} time series,
+      <<earl_dailyskew,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # load package "HighFreq"
+# daily variance and skew
+daily_var <- apply.daily(x=SPY, FUN=agg_ohlc,
+                        agg_fun="vol_ohlc")
+colnames(daily_var) <- paste0(sym_bol, ".var")
+daily_skew <- apply.daily(x=SPY, FUN=agg_ohlc,
+                        agg_fun="skew_ohlc")
+daily_skew <- daily_skew/(daily_var)^(1.5)
+colnames(daily_skew) <- paste0(sym_bol, ".skew")
+inter_val <- "2013-06-01/"
+chart_Series(daily_var[inter_val],
+             name=paste(sym_bol, "variance"))
+chart_Series(daily_skew[inter_val],
+             name=paste(sym_bol, "skew"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_dailyskew-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Regression of Skews Versus Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A regression of lagged skews versus returns appears to be statistically significant, especially in periods of high volatility during the financial crisis of 2008-09,
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+# skew scatterplot
+re_turns <- calc_rets(xts_data=SPY)
+sk_ew <- skew_ohlc(log_ohlc=log(SPY[, -5]))
+colnames(sk_ew) <- paste0(sym_bol, ".skew")
+lag_skew <- lag(sk_ew)
+lag_skew[1, ] <- 0
+da_ta <- cbind(re_turns[, 1], sign(lag_skew))
+for_mula <- as.formula(paste(colnames(da_ta)[1],
+          paste(paste(colnames(da_ta)[-1],
+            collapse=" + "), "- 1"), sep="~"))
+for_mula
+l_m <- lm(for_mula, data=da_ta)
+summary(l_m)$coef
+summary(lm(for_mula, data=da_ta["/2011-01-01"]))$coef
+summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_skew_scatter-1}
+      <<earl_skew_scatter,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+inter_val <- "2013-12-01/"
+plot(for_mula, data=da_ta[inter_val],
+     xlim=c(-2e-09, 2e-09),
+     cex=0.6, xlab="skew", ylab="rets")
+abline(l_m, col="blue", lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Contrarian Strategy Using Skew Oscillator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The contrarian skew trading strategy involves long or short positions in a single unit of stock, that is opposite to the sign of the skew,
+      \vskip1ex
+      Skew is calculated over one-minute bars, and trades are executed in the following period,
+      \vskip1ex
+      The contrarian strategy shows good hypothetical performance before transaction costs, and since it's a liquidity providing strategy, should have very low transaction costs,
+      \vskip1ex
+      The contrarian strategy is hyperactive, trading almost 46\% of the time in each period,
+      <<echo=(-(1:1))>>=
+# contrarian skew trading strategy
+# lag the skew to get positions
+position_s <- -sign(lag_skew)
+position_s[1, ] <- 0
+# cumulative PnL
+cumu_pnl <- cumsum(position_s*re_turns[, 1])
+# calculate frequency of trades
+50*sum(abs(sign(sk_ew)-sign(lag_skew)))/nrow(sk_ew)
+# calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+bid_offer*sum(abs(sign(sk_ew)-sign(lag_skew)))
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_skew_strat-1}
+      \vspace{-1em}
+      <<earl_skew_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+chart_Series(
+  cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
+  name=paste(sym_bol, "contrarian skew strategy pnl"))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Volume-Weighted Average Price Indicator}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The Volume-Weighted Average Price (\emph{VWAP}) is an indicator used for momentum strategies,
+      \vskip1ex
+      The momentum reverses when the fast-moving \emph{VWAP} crosses the slow-moving one,
+      \vspace{-1em}
+      <<earl_vwap_plot,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+# vwap plot
+vwap_short <-
+  v_wap(x_ts=SPY, win_dow=70)
+vwap_long <-
+  v_wap(x_ts=SPY, win_dow=225)
+vwap_diff <- vwap_short - vwap_long
+colnames(vwap_diff) <- paste0(sym_bol, ".vwap")
+inter_val <- "2010-05-05/2010-05-07"
+invisible(
+  chart_Series(x=Cl(SPY[inter_val]),
+               name=paste(sym_bol, "plus VWAP")))
+invisible(
+  add_TA(vwap_short[inter_val],
+         on=1, col="red", lwd=2))
+invisible(
+  add_TA(vwap_long[inter_val],
+         on=1, col="blue", lwd=2))
+invisible(
+  add_TA(vwap_diff[inter_val] > 0, on=-1,
+         col="lightgreen", border="lightgreen"))
+add_TA(vwap_diff[inter_val] < 0, on=-1,
+       col="lightgrey", border="lightgrey")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Regression of \protect\emph{VWAP} Versus Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A regression of the \emph{VWAP} indicator versus returns appears to be statistically significant,
+      \vspace{-1em}
+      <<echo=(-(1:6))>>=
+# vwap scatterplot
+# re_turns <- calc_rets(xts_data=SPY)
+vwap_short <- v_wap(x_ts=SPY, win_dow=70)
+vwap_long <- v_wap(x_ts=SPY, win_dow=225)
+vwap_diff <- vwap_short - vwap_long
+colnames(vwap_diff) <- paste0(sym_bol, ".vwap")
+lag_vwap <- lag(vwap_diff)
+lag_vwap[1, ] <- 0
+da_ta <- cbind(re_turns[, 1], sign(lag_vwap))
+for_mula <- as.formula(paste(colnames(da_ta)[1],
+          paste(paste(colnames(da_ta)[-1],
+            collapse=" + "), "- 1"), sep="~"))
+for_mula
+l_m <- lm(for_mula, data=da_ta)
+summary(l_m)$coef
+summary(lm(for_mula, data=da_ta["/2011-01-01"]))$coef
+summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_scatter-1}
+      <<earl_vwap_scatter,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+inter_val <- "2013-12-01/"
+plot(for_mula, data=cbind(re_turns[, 1], lag_vwap)[inter_val],
+     cex=0.6, xlab="skew", ylab="rets")
+abline(l_m, col="blue", lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Momentum Strategy Using \protect\emph{VWAP}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The momentum trading strategy involves long or short positions in a single unit of stock, that is equal to the sign of the \emph{VWAP} indicator,
+      \vskip1ex
+      The \emph{VWAP} indicator is calculated over one-minute bars, and trades are executed in the following period,
+      \vskip1ex
+      The momentum strategy shows good hypothetical performance before transaction costs,
+      \vskip1ex
+      The momentum strategy is infrequent, trading only 0.56\% of the time in each period,
+      <<echo=(-(1:1))>>=
+# momentum trading strategy
+# cumulative PnL
+cumu_pnl <- cumsum(sign(lag_vwap)*re_turns[, 1])
+# calculate frequency of trades
+50*sum(abs(sign(vwap_diff)-sign(lag_vwap)))/nrow(vwap_diff)
+# calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+bid_offer*sum(abs(sign(vwap_diff)-sign(lag_vwap)))
+@
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_strat-1}
+      \vspace{-1em}
+      <<earl_vwap_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
+chart_Series(
+  cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
+  name=paste(sym_bol, "VWAP momentum strategy pnl"))
+@
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Conclusion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      Open questions:
+      \begin{itemize}
+        \item is there an interaction between volatility, volume and skew?
+        \item does kurtosis also have predictive value for market direction?
+        \item how can higher moments (skew, kurtosis) help predict market crashes?
+        \item what is the persistence of market anomalies over time?
+        \item what is relationship between returns and cross-section of skew?
+        \item This presentation is available on GitHub: \url{https://github.com/algoquant/presentations}
+      \end{itemize}
+      \vskip1ex
+      Acknowledgements:
+      \begin{itemize}
+        \item \emph{Snowfall Systems} offers the \emph{PortfolioEffect} system for:
+        \includegraphics[scale=0.1]{figure/portfolioeffect-logo-full-200-950.png}
+        \begin{itemize}
+          \item real-time high frequency market data aggregations and risk metrics,
+          \item real-time portfolio analytics and optimization,
+          \item portfolio hosting,
+          \item \url{https://www.portfolioeffect.com/}
+        \end{itemize}
+        \item Brian Peterson for Thomson Reuters tick data,
+        \item Brian Peterson, Joshua Ulrich, and Jeffrey Ryan for packages \texttt{xts}, \texttt{quantmod}, \texttt{PerformanceAnalytics}, and \texttt{TTR},
+      \end{itemize}
+\end{block}
+
+\end{frame}
+
+
 
 %%%%%%%%%%%%%%%
 \section{Package \protect\emph{IBrokers} for Using Interactive Brokers}
