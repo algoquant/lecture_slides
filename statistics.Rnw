@@ -918,96 +918,47 @@ jarque.bera.test(runif(NROW(dax_rets)))
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Wilcoxon} Test for the Distribution Mean}
+\subsection{Sorting and Ranking Data}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from two probability distributions with equal \emph{population means}.
+      The function \texttt{sort()} returns a vector sorted into ascending order, from smallest to largest.
       \vskip1ex
-      The function \texttt{wilcox.test()} calculates the \emph{Wilcoxon} statistic and its \emph{p}-value.
+      A permutation is a re-ordering of the elements of a vector.
       \vskip1ex
-      If a single sample is passed into \texttt{wilcox.test()} then it tests if the data was produced by a probability distribution with zero mean.
+      The permutation index specifies how the elements are re-ordered in a permutation.
       \vskip1ex
-      For many distributions, the \emph{Wilcoxon} test has greater \emph{sensitivity} than the \emph{Student's t-test}.
+      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order.
       \vskip1ex
-      The \emph{sensitivity} of a statistical test is the ability to correctly identify \emph{true positive} cases (when the null hypothesis is \texttt{FALSE}).
+      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the permutation index to sort the vector from ascending order into its original unsorted order.
       \vskip1ex
-      The \emph{specificity} of a statistical test is the ability to correctly identify \emph{true negative} cases (when the null hypothesis is \texttt{TRUE}).
+      The permutation index produced by: \texttt{order(order())} is the reverse of the permutation index produced by: \texttt{order()}.
       \vskip1ex
-      The \emph{Wilcoxon} test is also more \emph{robust} with respect to data outliers, i.e. it reports fewer \emph{false positive} cases when there are outliers in the data.
+      The function \texttt{rank()} calculates the ranks of the elements, according to their magnitude, from smallest to largest.
+      \vskip1ex
+      The ranks of the elements are equal to the reverse permutation index.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
-# Wilcoxon test for two normal distributions
-sample1 <- rnorm(100)
-sample2 <- rnorm(100, mean=0.1)
-wilcox.test(sample1, sample2)$p.value
-t.test(sample1, sample2)$p.value
-# Wilcoxon test with data outliers
-sample2 <- sample1
-sample2[1:11] <- sample2[1:11] + 5
-wilcox.test(sample1, sample2)$p.value
-t.test(sample1, sample2)$p.value
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100)-0.5, rnorm(100))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
+      <<echo=TRUE,eval=TRUE>>=
+# Sort a vector into ascending order
+da_ta <- round(runif(7), 2)
+sort_ed <- sort(da_ta)
+da_ta  # original data
+sort_ed  # sorted data
+# Calculate index to sort into ascending order
+in_dex <- order(da_ta)
+in_dex  # permutation index to sort
+all.equal(sort_ed, da_ta[in_dex])
+# Sort the ordered vector back to its original unsorted order
+in_dex <- order(order(da_ta))
+in_dex  # permutation index to unsort
+all.equal(da_ta, sort_ed[in_dex])
+# Calculate ranks of the vector elements
+rank(da_ta)
+all.equal(rank(da_ta), in_dex)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{W} Statistic of the \protect\emph{Wilcoxon} Test}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Wilcoxon} test statistic \emph{W} is equal to the sum of the ranks $r_i = \operatorname{rank}(|x_i - y_i|)$ of the absolute differences weighted by their signs:
-      \begin{displaymath}
-        W = \sum_{i=1}^n \operatorname{sgn}(x_i - y_i) r_i
-      \end{displaymath}
-      The statistic \emph{W} follows a distribution without a simple formula, which converges to the normal distribution for large sample size $n$, with an expected value equal to $0$ and a variance equal to $\frac{n(n+1)(2n+1)}{6}$.
-      \vskip1ex
-      The \emph{Wilcoxon} test is \emph{nonparametric} because it doesn't assume any type of sample distribution, unlike the \emph{Student's t-test} which assumes that the sample is taken from the \emph{normal} distribution.
-      \vskip1ex
-      The \emph{Wilcoxon} test is more \emph{robust} with respect to data outliers because it only depends on the ranks of the sample differences $(x_i - y_i)$, not the differences themselves.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for random data around 0
-n_rows <- 1e3
-da_ta <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(da_ta)
-# Calculate V statistic of Wilcoxon test
-wil_cox$statistic
-sum(rank(abs(da_ta))[da_ta>0])
-# Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
-# Calculate distributon of Wilcoxon W statistic
-wilcox_w <- sapply(1:1e3, function(x) {
-  da_ta <- (runif(n_rows) - 0.5)
-  sum(sign(da_ta)*rank(abs(da_ta)))
-})  # end sapply
-wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
-var(wilcox_w)
-hist(wilcox_w)
-      @
-      \vspace{-1em}
-      The function \texttt{wilcox.test()} returns the \emph{V} statistic, not the the \emph{W} statistic:       \begin{displaymath}
-        V = \sum_{i=1}^n \operatorname{H}(x_i - y_i) r_i
-      \end{displaymath}
-      Where $\operatorname{H}(x) = 1$ if $x > 0$, and $0$ otherwise.
   \end{columns}
 \end{block}
 
@@ -1315,6 +1266,103 @@ mean(da_ta)
 # Sample standard deviation
 sd(da_ta)
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Wilcoxon} Test for the Distribution Mean}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Wilcoxon} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from two probability distributions with equal \emph{population means}.
+      \vskip1ex
+      The function \texttt{wilcox.test()} calculates the \emph{Wilcoxon} statistic and its \emph{p}-value.
+      \vskip1ex
+      If a single sample is passed into \texttt{wilcox.test()} then it tests if the data was produced by a probability distribution with zero mean.
+      \vskip1ex
+      For many distributions, the \emph{Wilcoxon} test has greater \emph{sensitivity} than the \emph{Student's t-test}.
+      \vskip1ex
+      The \emph{sensitivity} of a statistical test is the ability to correctly identify \emph{true positive} cases (when the null hypothesis is \texttt{FALSE}).
+      \vskip1ex
+      The \emph{specificity} of a statistical test is the ability to correctly identify \emph{true negative} cases (when the null hypothesis is \texttt{TRUE}).
+      \vskip1ex
+      The \emph{Wilcoxon} test is also more \emph{robust} with respect to data outliers, i.e. it reports fewer \emph{false positive} cases when there are outliers in the data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wilcoxon test for normal distribution
+wilcox.test(rnorm(100))
+# Wilcoxon test for two normal distributions
+sample1 <- rnorm(100)
+sample2 <- rnorm(100, mean=0.1)
+wilcox.test(sample1, sample2)$p.value
+t.test(sample1, sample2)$p.value
+# Wilcoxon test with data outliers
+sample2 <- sample1
+sample2[1:11] <- sample2[1:11] + 5
+wilcox.test(sample1, sample2)$p.value
+t.test(sample1, sample2)$p.value
+# Wilcoxon test for two normal distributions
+wilcox.test(rnorm(100), rnorm(100, mean=1.0))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100)-0.5, rnorm(100))
+# Wilcoxon test for a uniform versus normal distribution
+wilcox.test(runif(100), rnorm(100))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{W} Statistic of the \protect\emph{Wilcoxon} Test}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Wilcoxon} test statistic \emph{W} is equal to the sum of the ranks $r_i = \operatorname{rank}(|x_i - y_i|)$ of the absolute differences weighted by their signs:
+      \begin{displaymath}
+        W = \sum_{i=1}^n \operatorname{sgn}(x_i - y_i) r_i
+      \end{displaymath}
+      The statistic \emph{W} follows a distribution without a simple formula, which converges to the normal distribution for large sample size $n$, with an expected value equal to $0$ and a variance equal to $\frac{n(n+1)(2n+1)}{6}$.
+      \vskip1ex
+      The \emph{Wilcoxon} test is \emph{nonparametric} because it doesn't assume any type of sample distribution, unlike the \emph{Student's t-test} which assumes that the sample is taken from the \emph{normal} distribution.
+      \vskip1ex
+      The \emph{Wilcoxon} test is more \emph{robust} with respect to data outliers because it only depends on the ranks of the sample differences $(x_i - y_i)$, not the differences themselves.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wilcoxon test for random data around 0
+n_rows <- 1e3
+da_ta <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(da_ta)
+# Calculate V statistic of Wilcoxon test
+wil_cox$statistic
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+# Calculate distributon of Wilcoxon W statistic
+wilcox_w <- sapply(1:1e3, function(x) {
+  da_ta <- (runif(n_rows) - 0.5)
+  sum(sign(da_ta)*rank(abs(da_ta)))
+})  # end sapply
+wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
+var(wilcox_w)
+hist(wilcox_w)
+      @
+      \vspace{-1em}
+      The function \texttt{wilcox.test()} returns the \emph{V} statistic, not the the \emph{W} statistic:       \begin{displaymath}
+        V = \sum_{i=1}^n \operatorname{H}(x_i - y_i) r_i
+      \end{displaymath}
+      Where $\operatorname{H}(x) = 1$ if $x > 0$, and $0$ otherwise.
   \end{columns}
 \end{block}
 
