@@ -84,7 +84,7 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Probability and Statistics}
+\section{Random Numbers and Estimators}
 
 
 %%%%%%%%%%%%%%%
@@ -319,7 +319,7 @@ as.numeric(runif(20) > 0.5)  # Slower
       \vskip1ex
       Let $\{x_1,\ldots ,x_n\}$ be a data \emph{sample} of a \emph{random variable} \texttt{x},
       \vskip1ex
-      Let \texttt{x} follow a probability distribution with population \emph{mean} equal to $\mu$ and population standard deviation equal to $\sigma$,
+      Let \texttt{x} follow a probability distribution with population \emph{mean} equal to $\mu$ and population \emph{standard deviation} equal to $\sigma$,
       \vskip1ex
       A \emph{statistic} is a function of a data \emph{sample}:  $f( x_1,\ldots ,x_n )$,
       \vskip1ex
@@ -391,7 +391,7 @@ mea_n <- mean(re_turns)
 s_d <- sd(re_turns)
 # Normalize returns
 re_turns <- (re_turns - mea_n)/s_d
-# Skew of DAX returns
+# Skewness of DAX returns
 skew(re_turns)
 # Or
 n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
@@ -403,7 +403,7 @@ n_rows/(n_rows-1)^2*sum(re_turns^4)
 re_turns <- rnorm(n_rows, sd=2)
 # Mean and standard deviation of random normal returns
 mean(re_turns); sd(re_turns)
-# Skew and kurtosis of random normal returns
+# Skewness and kurtosis of random normal returns
 skew(re_turns); kurt(re_turns)
       @
   \end{columns}
@@ -484,6 +484,452 @@ summary(microbenchmark(
         SE_{\mu} = \frac{\hat\sigma}{\sqrt{n}}
       \end{displaymath}
       where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation),
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Sample mean
+mean(da_ta)
+# Sample standard deviation
+sd(da_ta)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Probability Distributions}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Characteristic Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{characteristic function} $\hat{f}(t)$ is equal to the \emph{Fourier transform} of the \emph{probability density function} $f(x)$:
+      \begin{displaymath}
+        \hat{f}(t) = \mathbb{E}[e^{i t x}] = \int_{-\infty}^{\infty} {f(x) \, e^{i t x} \, \mathrm{d}x}
+      \end{displaymath}
+      The \emph{normal} probability density function:
+      \begin{displaymath}
+        \phi(x) = \frac{e^{-(x-\mu)^2/2\sigma^2}}{\sigma\sqrt{2 \pi}}
+      \end{displaymath}
+      Has the \emph{characteristic function} $\hat\phi(t)$ equal to:
+      \begin{displaymath}
+        \hat\phi(t) = e^{i \mu t} e^{-(\sigma t)^2/2}
+      \end{displaymath}
+      The \emph{probability function} $f(x)$ is equal to the \emph{inverse Fourier transform} of the \emph{characteristic function} $\hat{f}(t)$:
+      \begin{displaymath}
+        f(x) = \frac{1}{2 \pi} \int_{-\infty}^{\infty} {\hat{f}(t) \, e^{- i t x} \, \mathrm{d}t}
+      \end{displaymath}
+      
+    \column{0.5\textwidth}
+      The \emph{characteristic function} of the first derivative of $f(x)$ is equal to $(-i t) \hat{f}(t)$, the \emph{characteristic function} multiplied by $(-i t)$:
+      \begin{displaymath}
+        \frac{d f(x)}{d x} = \frac{1}{2 \pi} \int_{-\infty}^{\infty} { -i t \, \hat{f}(t) \, e^{- i t x} \, \mathrm{d}t}
+      \end{displaymath}
+      The \emph{characteristic function} of the \emph{n}-th derivative of $f(x)$ is equal to $(-i t)^n \hat{f}(t)$, the \emph{characteristic function} multiplied by $(-i t)^n$:
+      \begin{displaymath}
+        \frac{d^n f(x)}{d x^n} = \frac{1}{2 \pi} \int_{-\infty}^{\infty} { (-i t)^n \, \hat{f}(t) \, e^{- i t x} \, \mathrm{d}t}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Moment Generating Function}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{moment generating function} $M_X(t)$ of a random variable \texttt{x} with the probability density function $f(x)$ is equal to:
+      \begin{displaymath}
+        M_X(t) = \mathbb{E}[e^{t x}] = \int_{-\infty}^{\infty} {f(x) \, e^{t x} \, \mathrm{d}x}
+      \end{displaymath}
+      The \emph{n}-th derivative of $M_X(t)$ with respect to \texttt{t}, at $t = 0$ is equal to the \emph{n}-th \emph{moment} $\mu_n$:
+      \begin{align*}
+        \mu_n &= \frac{d^n M_X(t)}{d t^n} |_{t = 0} = \frac{d^n \mathbb{E}[e^{t x}]}{d t^n} |_{t = 0} &\\
+        &= \mathbb{E}[x^n e^{t x}] |_{t = 0} = \mathbb{E}[x^n] &
+      \end{align*}
+      The \emph{moments} $\mu_n$ are related to the \emph{central moments} $\mathbb{E}[(x - \mu)^n]$ but they are not equal to them.
+    \column{0.5\textwidth}
+      The \emph{moment generating function} can be expressed as a series of its \emph{moments}:
+      \begin{displaymath}
+        M_X(t) = \sum_{n=0}^{\infty} {\frac{\mu_n t^n}{n!}}
+      \end{displaymath}
+      The moment generating function for the \emph{normal} distribution is equal to:
+      \begin{displaymath}
+        M_X(t) = \exp(\mu t + \frac{1}{2} {\sigma^2 t^2})
+      \end{displaymath}
+      The \emph{characteristic function} $\hat{f}(t)$ is equal to the \emph{moment generating function} with a purely \emph{imaginary} argument:
+      \begin{displaymath}
+        \hat{f}(t) = \mathbb{E}[e^{i t x}] = M_X(it)
+        \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cumulants of Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{cumulant generating function} $K_X(t)$ is equal to the logarithm of the \emph{moment generating function}: 
+      \begin{displaymath}
+        K_X(t) = \log{M_X(t)}
+      \end{displaymath}
+      The \emph{n}-th derivative of $K_X(t)$ with respect to \texttt{t}, at $t = 0$ is equal to the \emph{n}-th \emph{cumulant} $\kappa_n$:
+      \begin{displaymath}
+        \kappa_n = \frac{d^n K_X(t)}{d t^n} |_{t = 0}
+      \end{displaymath}
+      The \emph{cumulants} are related to the \emph{moments} of a distribution:
+      with the first three cumulants being equal to the \emph{central moments} (mean, variance, and skewness), while the higher order \emph{cumulants} are polynomials of the \emph{moments}.
+      \vskip1ex
+      The \emph{cumulant generating function} $K_X(t)$ can be expanded into a power series of the \emph{cumulants}: 
+      \begin{align*}
+        K_X(t) = \sum_{n=1}^{\infty} {\frac{\kappa_n t^n}{n!}} = \mu t + \sigma^2 \frac{t^2}{2} + \sigma^3 s^3 \frac{t^3}{6} + \dots
+      \end{align*}
+      
+    \column{0.5\textwidth}
+      The cumulant generating function for the \emph{normal} distribution is equal to:
+      \begin{displaymath}
+        K_X(t) = \mu t + \frac{1}{2} {\sigma^2 t^2}
+      \end{displaymath}
+      So that its first two \emph{cumulants} are equal to the \emph{mean} $\mu$ and the \emph{variance} $\sigma^2$, and the \emph{cumulants} of order \texttt{3} and higher are all equal to zero.
+      \vskip1ex
+      The advantage of \emph{cumulants} over the \emph{moments} is that the \emph{cumulants} of the sum of independent random variables are equal to the sum of their \emph{cumulants}:
+      \begin{flalign*}
+        K_{(X+Y)}(t) = \log{\mathbb{E}[e^{t (X+Y)}]} = \log{(\mathbb{E}[e^{t X}] \mathbb{E}[e^{t Y}])} \\
+        = \log{\mathbb{E}[e^{t X}]} \log{\mathbb{E}[e^{t Y}]} = K_X(t) + K_Y(t)
+      \end{flalign*}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Hermite Polynomials}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{n}-th derivative of the \emph{standard normal} distribution $\phi(x)$ is given by Rodrigues' formula:
+      \begin{displaymath}
+          \frac{d^n \phi(x)}{d x^n} = \frac{d^n}{d x^n} \frac{e^{-x^2/2}}{\sqrt{2 \pi}} = (-1)^n H_n(x) \phi(x)
+      \end{displaymath}
+      Where $H_n$ are the \emph{Hermite polynomials}.
+      \vskip1ex
+      The first four \emph{Hermite polynomials} are equal to:
+      \begin{align*}
+        H_0(x) &= 1 ; H_1(x) = x \\
+        H_2(x) &= x^2 - 1 ; H_3(x) = x^3 - 3x
+      \end{align*}
+      The even order polynomials are \emph{symmetric} $H_{2n}(-x) = H_{2n}(x)$ while the odd order are \emph{antisymmetric} $H_{2n-1}(-x) = -H_{2n-1}(x)$.
+      <<echo=TRUE,eval=FALSE>>=
+# Define Hermite polynomials
+her_mite <- function(x, n) {
+    switch(n+1, 1, x, (x^2 - 1), (x^3 - 3*x), 0)
+}  # end her_mite
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth]{figure/hermite_poly.png}
+      \vspace{-2em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, in_dex),
+        xlim=c(-3, 3), ylim=c(-2.5, 2.5),
+        xlab="", ylab="", lwd=4, col=col_ors[in_dex],
+        add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Polynomials", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("top", inset=0.0, bty="n",
+       title=NULL, lab_els, cex=0.8, lwd=6, lty=1, 
+       col=col_ors)
+      @
+    
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Hermite Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Hermite functions} $\psi_n(x)$ are equal to:
+      \begin{displaymath}
+        \psi_n(x) = \frac{1}{\sqrt{n! \sqrt{2 \pi}}} e^{-x^2/4} H_n(x)
+      \end{displaymath}
+      The \emph{Hermite functions} form an orthonormal set:
+      \begin{displaymath}
+        \int_{-\infty}^{\infty} {\psi_n(x) \, \psi_m(x) \, \mathrm{d}x} =
+        \begin{cases}
+          1 & \text{if } n = m\\
+          0 & \text{if } n \neq m
+        \end{cases}
+      \end{displaymath}
+      The \emph{Hermite functions} of increasing order oscillate more frequently, with the function of order $n$ crossing zero $n$ times.
+      <<echo=TRUE,eval=FALSE>>=
+# Define Hermite functions
+hermite_fun <- function(x, n) 
+  exp(-x^2/4)*her_mite(x, n)/(2*pi)^(0.25)/sqrt(factorial(n))
+# Integrate Hermite functions
+integrate(function(x, n, m) 
+  hermite_fun(x, n)*hermite_fun(x, m),
+  lower=(-Inf), upper=Inf, n=2, m=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth]{figure/hermite_func.png}
+      \vspace{-2em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=hermite_fun(x, in_dex),
+        xlim=c(-6, 6), ylim=c(-0.6, 0.6),
+        xlab="", ylab="", lwd=4, col=col_ors[in_dex],
+        add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Functions", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("topright", inset=0.0, bty="n",
+       title=NULL, lab_els, cex=0.8, lwd=6, lty=1, 
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The Hermite Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+% wippp
+      To-do: expand a probability distribution into a series of \emph{Hermite functions}.
+      \vskip1ex
+      The \emph{Hermite functions} $\psi_i(x)$ form an orthonormal basis that can be used to expand a given probability distribution $f(x)$ into a series:
+      \begin{displaymath}
+        f(x) = \sum_{i=0}^n {f_i \, \psi_i(x)}
+      \end{displaymath}
+      The coefficients $f_i$ are equal to:
+      \begin{displaymath}
+        f_i = \int_{-\infty}^{\infty} {f(x) \, \psi_i(x) \, \mathrm{d}x}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+    \includegraphics[width=0.5\paperwidth]{figure/hermite_poly.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Integrate Hermite functions
+integrate(her_mite, lower=(-Inf), upper=Inf, n=2)
+integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m), 
+          lower=(-Inf), upper=Inf, n=2, m=3)
+integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m), 
+          lower=(-Inf), upper=Inf, n=2, m=2)
+      @
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, in_dex),
+        xlim=c(-4, 4), ylim=c(-0.6, 0.6),
+        xlab="", ylab="", lwd=3, col=col_ors,
+        add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Functions", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("topright", inset=0.05, bty="n",
+       title=NULL, lab_els, cex=0.8, lwd=6, lty=1, 
+       col=col_ors)
+      @
+    
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bell polynomials}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Bell polynomials} $B_n$ are the coefficients in the expansion of the exponent of a series:
+      \begin{displaymath}
+        \exp( \sum_{n=1}^{\infty} { \kappa_n \frac{t^n}{n!} } ) = \sum_{n=0}^{\infty} { B_n(\kappa_1, \ldots, \kappa_n) \frac{t^n}{n!} }
+      \end{displaymath}
+      The first four \emph{Bell polynomials} are equal to:
+      \begin{align*}
+        B_0 &= 1 \\
+        B_1(\kappa_1) &= \kappa_1 \\
+        B_2(\kappa_1, \kappa_2) &= \kappa_1^2 + \kappa_2 \\
+        B_3(\kappa_1, \kappa_2, \kappa_3) &= \kappa_1^3 + 3 \kappa_1 \kappa_2 + \kappa_3 \\
+      \end{align*}
+
+    \column{0.5\textwidth}
+
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Gram-Charlier Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Gram-Charlier series} expresses the \emph{density function} $f(x)$ in terms of its \emph{cumulants} and a \emph{basis function} $\phi(x)$, with \emph{characteristic} $\hat{\phi}(t)$.
+      \vskip1ex
+      The \emph{characteristic functions} $\hat{f}(t)$ and $\hat{\phi}(t)$ can be expressed in terms of their \emph{cumulants} as:
+      \begin{align*}
+        \hat{f}(t) &= e^{K_X(i t)} = \exp(\sum_{n=1}^{\infty} {\kappa_n \frac{(i t)^n}{n!}}) \\
+        \hat{\phi}(t) &= \exp(\sum_{n=1}^{\infty} {\phi_n \frac{(i t)^n}{n!}})
+      \end{align*}
+      Then $\hat{f}(t)$ can be expressed in terms of $\hat{\phi}(t)$ as:
+      \begin{displaymath}
+        \hat{f}(t) = \exp[\sum_{n=1}^{\infty} {(\kappa_n - \phi_n) \frac{(i t)^n}{n!}}] \, \hat{\phi}(t)
+      \end{displaymath}
+      The \emph{basis function} $\phi(x)$ can be chosen to be a \emph{normal distribution}, with \emph{mean} and \emph{standard deviation} equal to that of $f(x)$, and with all its \emph{normal cumulants} $\phi_n$ of order \texttt{3} and higher equal to zero.
+      
+    \column{0.5\textwidth}
+      Then we get a series starting at \texttt{n=3}:
+      \begin{displaymath}
+        \hat{f}(t) = \exp[\sum_{n=3}^{\infty} {\kappa_n \frac{(i t)^n}{n!}}] \, \hat{\phi}(t)
+      \end{displaymath}
+      We can expand the exponent and collect terms with the same power of $t$ using the \emph{Bell polynomials} $B_n$:
+      \begin{displaymath}
+        \hat{f}(t) = \sum_{n=0}^{\infty} { B_n(0, 0, \kappa_3, \ldots, \kappa_n) \, \frac{(i t)^n}{n!} \, \hat{\phi}(t) }
+      \end{displaymath}
+      The \emph{inverse Fourier transform} of the above equation gives the \emph{probability function} $f(x)$:
+      \begin{displaymath}
+        f(x) = \sum_{n=0}^{\infty} { B_n(0, 0, \kappa_3, \ldots, \kappa_n) \frac{(-1)^n}{n!} \frac{d^n \phi(x)}{d x^n} }
+      \end{displaymath}
+      The derivatives of the \emph{normal} distribution $\phi(x)$ can be expressed using the \emph{Hermite polynomials} $H_n$ so that the \emph{Gram-Charlier series} becomes:
+      \begin{displaymath}
+        f(x) = \phi(x) \sum_{n=0}^{\infty} { \frac{B_n(0, 0, \kappa_3, \ldots, \kappa_n)}{n! \sigma^n} H_n(\frac{x-\mu}{\sigma}) }
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The Edgeworth Expansion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+% wippp
+      The \emph{Edgeworth expansion} expresses the \emph{probability density function} $f(x)$ as a series of its \emph{cumulants} and a \emph{basis function} $\phi(x)$ (with \emph{characteristic function} $\hat{\phi}(t)$).
+      \vskip1ex
+      The \emph{characteristic functions} $\hat{f}(t)$ and $\hat{\phi}(t)$ can be expressed in terms of their corresponding \emph{cumulants} as:
+      \begin{align*}
+        \hat{f}(t) &= e^{K_X(i t)} = \exp(\sum_{n=1}^{\infty} {\kappa_n \frac{(i t)^n}{n!}}) \\
+        \hat{\phi}(t) &= \exp(\sum_{n=1}^{\infty} {\phi_n \frac{(i t)^n}{n!}})
+      \end{align*}
+      Then $\hat{f}(t)$ can be expressed in terms of $\hat{\phi}(t)$ as:
+      \begin{displaymath}
+        \hat{f}(t) = \exp[\sum_{n=1}^{\infty} {(\kappa_n - \phi_n) \frac{(i t)^n}{n!}}] \, \hat{\phi}(t)
+      \end{displaymath}
+      
+    \column{0.5\textwidth}
+      If the \emph{basis function} $\phi(x)$ is chosen to be the \emph{normal distribution}, with \emph{mean} and \emph{standard deviation} equal to that of $f(x)$, and since the \emph{normal cumulants} of order \texttt{3} and higher are all equal to zero, then we get:
+      \begin{displaymath}
+        \hat{f}(t) = \exp[\sum_{n=3}^{\infty} {\kappa_n (-1)^n \frac{(i t)^n}{n!}}] \, \hat{\phi}(t)
+      \end{displaymath}
+      The \emph{inverse Fourier transform} of the above equation gives the \emph{probability function} $f(x)$:
+      \begin{displaymath}
+        f(x) = \exp[\sum_{n=3}^{\infty} {\kappa_n (-1)^n \frac{d^n}{d x^n}}] \, \phi(x)
+      \end{displaymath}
+      Now expand the exponent in a series and collect terms with the same order of the derivative to obtain:
+      \begin{displaymath}
+        f(x) = \sum_{n=0}^{\infty} { {B_n(0, 0, \kappa_3, \ldots, \kappa_n) (-1)^n \frac{d^n \phi(x)}{d x^n}} }
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+% wippp
+%%%%%%%%%%%%%%%
+\subsection{draft: The Cornish-Fisher Expansion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Cornish-Fisher expansion} expresses the quantiles of a distribution as a series of its \emph{moments}.
+      \vskip1ex
+      The Edgeworth Expansion
+      The \emph{cumulant generating function} $K_X(t)$ is equal to the logarithm of the \emph{moment generating function}: 
+      \begin{displaymath}
+        K_X(t) = \log{M_X(t)}
+      \end{displaymath}
+      The \emph{n}-th derivative of $K_X(t)$ with respect to \texttt{t}, at $t = 0$ is equal to the \emph{n}-th \emph{cumulant} $\kappa_n$:
+      \begin{displaymath}
+        \kappa_n = \frac{d^n K_X(t)}{d t^n} |_{t = 0}
+      \end{displaymath}
+      The \emph{cumulants} are related to the \emph{moments} of the distribution:
+      the first three cumulants are equal to the \emph{central moments} (mean, variance, and skewness), while the higher order \emph{cumulants} can be expressed as polynomials of the \emph{central moments}.
+      \vskip1ex
+      The \emph{cumulant generating function} $K_X(t)$ can be expanded into a power series of the \emph{cumulants}: 
+      \begin{displaymath}
+        K_X(t) = \sum_{n=1}^n {\frac{\kappa_n t^n}{n!}} = \mu t + \sigma^2 t^2 / 2 + 
+      \end{displaymath}
+
+      The \emph{n}-th \emph{moment} $\mu_n$ is not equal to the \emph{central moment} $\mathbb{E}[(x - \mu)^n]$.
+      
+      The \emph{moment generating function} $M_X(t)$ of a random variable \texttt{x} with the probability function $f(x)$ is equal to:
+      \begin{displaymath}
+        M_X(t) = \mathbb{E}[e^{t x}] = \int_{-\infty}^{\infty} {f(x) \, e^{t x} \, \mathrm{d}x}
+      \end{displaymath}
+      
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -698,7 +1144,7 @@ ggplot(  # Main function
       \vskip1ex
       Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with $n$ degrees of freedom, with the probability density function:
       \begin{displaymath}
-        P(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
+        f(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
       \end{displaymath}
       \emph{Student's t-test} can also be used to test if two different normally distributed samples have equal \emph{population means}.
       \vskip1ex
@@ -758,7 +1204,7 @@ legend("topright", inset=0.05, bty="n",
       \vskip1ex
       Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with $n$ degrees of freedom, with the probability density function:
       \begin{displaymath}
-        P(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
+        f(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
       \end{displaymath}
       \emph{Student's t-test} can also be used to test if two different normally distributed samples have equal \emph{population means},
       \vskip1ex

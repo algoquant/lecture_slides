@@ -135,7 +135,7 @@ detach("package:tseries")  # Remove tseries from search path
       The function \texttt{plotOHLC()} from package \emph{tseries} plots \emph{OHLC} time series.
       <<tseries_OHLC,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Get start and end dates
 in_dex <- time(ts_stx_adj)
 e_nd <- in_dex[NROW(in_dex)]
@@ -1139,7 +1139,7 @@ title(main="Brownian motion crossing a barrier level",
       \begin{displaymath}
         \mathrm{d} P_t = \mu P_t \mathrm{d}t + \sigma P_t \mathrm{d} W_t
       \end{displaymath}
-      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian motion}, with $\mathrm{d} W_t$ following the standard normal distribution $N(0, \sqrt{\mathrm{d}t})$,
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$,
       \vskip1ex
       The solution of \emph{Geometric Brownian motion} is equal to:
       \begin{displaymath}
@@ -1211,9 +1211,9 @@ dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If \texttt{x} follows the \emph{Normal} distribution $N(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution:
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
       \begin{displaymath}
-        logN(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \sqrt{2 \pi}}
       \end{displaymath}
       With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
       <<echo=TRUE,eval=FALSE>>=
@@ -1409,7 +1409,7 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
       Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 stock prices
-load("C:/Develop/R/lecture_slides/data/sp500.RData")
+load("C:/Develop/lecture_slides/data/sp500.RData")
 ls(env_sp500)
 # Extract closing prices
 price_s <- eapply(env_sp500, quantmod::Cl)
@@ -1506,7 +1506,7 @@ plot.zoo(per_centage[-(1:2),],
 
 
 %%%%%%%%%%%%%%%
-\subsection{Autocorrelation Function}
+\subsection{Autocorrelation Function of Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1549,46 +1549,47 @@ title(main="acf of DAX returns", line=-1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Ljung-Box Test of Autocorrelation}
+\subsection{Ljung-Box Test for Autocorrelations of Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Ljung-Box} test \emph{null hypothesis} is that autocorrelations are equal to zero,
+      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
       \vskip1ex
       The test statistic is:
       \begin{displaymath}
         Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
       \end{displaymath}
-      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations,
+      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
       \vskip1ex
-      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom,
+      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
       \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that are \emph{not} autocorrelated,
+      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
       \vskip1ex
-      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated,
-      \vskip1ex
-      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated,
+      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
 library(Ecdat)  # Load Ecdat
 macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macro_zoo) <- c("unemprate", "3mTbill")
 macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(re_turns, lag=10, type="Ljung")
-
 # Changes in 3 month T-bill rate are autocorrelated
 Box.test(macro_diff[, "3mTbill"],
          lag=10, type="Ljung")
-
 # Changes in unemployment rate are autocorrelated
 Box.test(macro_diff[, "unemprate"],
          lag=10, type="Ljung")
       @
+      The \emph{p}-value for DAX returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that DAX returns are \emph{not} autocorrelated.
+      \vskip1ex
+      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
   \end{columns}
 \end{block}
 
@@ -1602,7 +1603,7 @@ Box.test(macro_diff[, "unemprate"],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation,
+      Inspection of the data returned by \texttt{acf()} shows how to omit the lag-zero autocorrelation.
       <<echo=(-(1:1)),eval=FALSE>>=
 library(zoo)  # Load package zoo
 dax_acf <- acf(re_turns, plot=FALSE)
@@ -1613,7 +1614,7 @@ dim(dax_acf$lag)
 head(dax_acf$acf)
       @
     \column{0.5\textwidth}
-      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation,
+      The below wrapper function for \texttt{acf()} omits the lag-zero autocorrelation.
       <<echo=TRUE,eval=FALSE>>=
 acf_plus <- function(ts_data, plo_t=TRUE,
                       xlab="Lag", ylab="",
