@@ -47,7 +47,7 @@ Sys.time()  # get date and time
 Sys.Date()  # get date only
 
 rm(list=ls())
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 var1 <- 3  # Define new object
 ls()  # List all objects in workspace
 # List objects starting with "v"
@@ -61,10 +61,10 @@ load(".RData")
 ls()  # List objects
 var2 <- 5  # Define another object
 save(var1, var2,  # Save selected objects
-     file="C:/Develop/R/lecture_slides/data/my_data.RData")
+     file="C:/Develop/lecture_slides/data/my_data.RData")
 rm(list=ls())  # Remove all objects
 ls()  # List objects
-load_ed <- load(file="C:/Develop/R/lecture_slides/data/my_data.RData")
+load_ed <- load(file="C:/Develop/lecture_slides/data/my_data.RData")
 load_ed
 ls()  # List objects
 
@@ -1241,7 +1241,7 @@ legend(x="topright", legend=c("Normal", "shifted"),
 
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 library(zoo)  # Load zoo
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 zoo_series <- window(zoo_stx[, "AdjClose"],
    start=as.Date("2013-01-01"),
    end=as.Date("2013-12-31"))
@@ -1270,7 +1270,7 @@ axis(side=1, at=a_t,
 abline(v=a_t, col="grey", lwd=0.5)
 
 library(zoo)  # Load zoo
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
 in_dex <- index(zoo_stx)
 # Coerce index to monthly dates
@@ -1286,7 +1286,7 @@ t_apply=
 times=10)
   )[, c(1, 4, 5)]
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Set plot margines
 par(mar=c(3, 3, 3, 3), oma=c(0, 0, 0, 0))
 par(las=1)  # Set text printing to horizontal
@@ -1398,27 +1398,46 @@ legend("topright", inset=0.05, title="Sigmas",
  lab_els, cex=0.8, lwd=2, lty=1, bty="n",
  col=col_ors)
 
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+  type="l", xlim=c(0, 3), lwd=2,
+  xlab="", ylab="", col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+ paste("sigma", sig_mas, sep="="),
+ cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+ col=col_ors)
+
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(2, 5, 8, 11)  # df values
-# Create plot colors
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
 col_ors <- c("red", "black", "blue", "green")
-# Create legend labels
-lab_els <- paste("df", deg_free, sep="=")
-for (in_dex in 1:4) {  # Plot four curves
+for (in_dex in 1:4) {
 curve(expr=dchisq(x, df=deg_free[in_dex]),
-      xlim=c(0, 20), ylim=c(0, 0.3),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
+xlim=c(0, 20), ylim=c(0, 0.3),
+xlab="", ylab="", col=col_ors[in_dex],
+lwd=2, add=as.logical(in_dex-1))
 }  # end for
 
 # Add title
 title(main="Chi-squared Distributions", line=0.5)
 # Add legend
-legend("topright", inset=0.05,
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=1, bty="n", col=col_ors)
+       cex=0.8, lwd=6, lty=1,
+       col=col_ors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -1443,6 +1462,25 @@ title(main="Chi-squared Distributions", line=0.5)
 legend("topright", inset=0.05,
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, bty="n", col=col_ors)
+
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot three curves in loop
+deg_free <- c(3, 5, 9)  # Degrees of freedom
+col_ors <- c("black", "red", "blue", "green")
+for (in_dex in 1:NROW(deg_free)) {
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+xlim=c(0, 4), xlab="", ylab="", lwd=2,
+col=col_ors[in_dex], add=as.logical(in_dex-1))
+}  # end for
+
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1,
+       col=col_ors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -1497,25 +1535,25 @@ legend("topright", inset=0.05, bty="n",
        title=NULL,leg=c("Normal", "Cauchy"),
        cex=0.8, lwd=6, lty=1, col=c("black", "blue"))
 
-x11(width=6, height=5)
+x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-deg_free <- c(3, 5, 9)  # df values
-col_ors <- c("black", "red", "blue", "green")
-lab_els <- paste0("df1=", deg_free, ", df2=3")
-for (in_dex in 1:NROW(deg_free)) {  # Plot four curves
-curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      xlim=c(0, 4),
-      xlab="", ylab="", lwd=2,
-      col=col_ors[in_dex],
-      add=as.logical(in_dex-1))
+# Define Pareto function
+pare_to <- function(x, al_pha)
+  al_pha*x^(-al_pha-1)
+col_ors <- c("red", "blue", "green")
+alpha_s <- c(1.0, 2.0, 3.0)
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=pare_to(x, alpha_s[in_dex]),
+  xlim=c(1, 2), ylim=c(0.0, 3.5),
+  xlab="", ylab="", lwd=3, col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
 }  # end for
-
-# Add title
-title(main="F-Distributions", line=0.5)
-# Add legend
-legend("topright", inset=0.05, bty="n",
-       title="degrees of freedom", lab_els,
-       cex=0.8, lwd=2, lty=1, col=col_ors)
+# Add title and legend
+title(main="Pareto Distributions", line=0.5)
+lab_els <- paste("alpha", 1:3, sep=" = ")
+legend("topright", inset=0.2, bty="n",
+ title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
+ col=col_ors)
 
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)

@@ -1,253 +1,89 @@
-n_rows <- 1000
-r_norm <- rnorm(n_rows)
-sd(r_norm)
-mad(r_norm)
-median(abs(r_norm - median(r_norm)))
-median(abs(r_norm - median(r_norm)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-boot_strap <- sapply(1:10000, function(x) {
-  boot_sample <-
-    r_norm[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
-})  # end sapply
-boot_strap <- t(boot_strap)
-# Analyze bootstrapped variance
-head(boot_strap)
-sum(is.na(boot_strap))
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_strap <- parLapply(clus_ter, 1:10000,
-  function(x, r_norm) {
-    boot_sample <-
-r_norm[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, r_norm=r_norm)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_strap <- mclapply(1:10000,
-  function(x) {
-    boot_sample <-
-r_norm[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_strap <- rutils::do_call(rbind, boot_strap)
-# Means and standard errors from bootstrap
-apply(boot_strap, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+library(HighFreq)  # Load package HighFreq
+# Calculate ETF returns
+re_turns <- na.omit(
+  rutils::etf_env$re_turns[, c("VTI", "IEF")])
+re_turns <- cbind(re_turns,
+  0.6*re_turns[, "IEF"]+0.4*re_turns[, "VTI"])
+colnames(re_turns)[3] <- "combined"
+# Calculate prices from returns
+price_s <- lapply(re_turns,
+  function(x) cumprod(1 + x))
+price_s <- do.call(cbind, price_s)
+# Plot prices
+dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
+  dyOptions(colors=c("green","blue","green")) %>%
+  dySeries("combined", color="red", strokeWidth=2) %>%
+  dyLegend(show="always")
 
-price_s <- rutils::etf_env$VTI[, 4]
-# Define look-back window and a half window
-win_dow <- 11
-# Calculate time series of medians
-media_n <- TTR::runMedian(price_s, n=win_dow)
-# Plot prices and medians
-dygraphs::dygraph(cbind(price_s, media_n), main="VTI median") %>%
-  dyOptions(colors=c("black", "red"))
-# Calculate time series of z-scores
-ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
-z_scores[1:win_dow, ] <- 0
-tail(z_scores, win_dow)
-range(z_scores)
+# Calculate correlations
+cor(re_turns)
+# Calculate Sharpe ratios
+sqrt(252)*sapply(re_turns, function(x) mean(x)/sd(x))
+# Calculate standard deviations
+sapply(re_turns, sd)
+# Calculate standardized returns
+re_turns <- lapply(re_turns, function(x) {
+  x <- (x - mean(x))
+  x/sd(x)})
+re_turns <- do.call(cbind, re_turns)
+sapply(re_turns, sd)
+# Calculate skewness and kurtosis
+t(sapply(re_turns, function(x) {
+  c(skew=mean(x^3), kurt=mean(x^4))
+}))
+# Or
+sapply(c(skew=3, kurt=4), function(x)
+  moments::moment(re_turns, order=x, central=TRUE))
 
-# Plot histogram of z-scores
-x11(width=6, height=5)
-histo_gram <- hist(z_scores, col="lightgrey",
-  xlab="z-scores", breaks=50, xlim=c(-4, 4),
-  ylab="frequency", freq=FALSE,
-  main="Z-scores histogram")
-lines(density(z_scores, adjust=1.5),
-lwd=3, col="blue")
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
+# Logarithmic utility of stock and bond portfolio
+utili_ty <- function(w_s, w_b) {
+  -sum(log(1 + w_s*re_turns[, "VTI"] + w_b*re_turns[, "IEF"]))
+}  # end utili_ty
+# Draw 3d surface plot of utility
+library(rgl)  # Load rgl
+w_s <- seq(from=3, to=8, by=0.2)
+w_b <- seq(from=10, to=20, by=0.2)
+utility_mat <- sapply(w_b, function(y) sapply(w_s,
+  function(x) utili_ty(x, y)))
+rgl::persp3d(w_s, w_b, utility_mat, col="green",
+  xlab="stocks", ylab="bonds", zlab="utility")
+rgl::rgl.snapshot("utility_surface.png")
 
-# Calculate one-sided Hampel z-scores
-media_n <- TTR::runMedian(price_s, n=win_dow)
-ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
-z_scores[1:win_dow, ] <- 0
-tail(z_scores, win_dow)
-range(z_scores)
-# Calculate two-sided Hampel z-scores
-half_window <- win_dow %/% 2
-media_n <- rutils::lag_it(media_n, lagg=-half_window)
-ma_d <- rutils::lag_it(ma_d, lagg=-half_window)
-z_scores <- (price_s - media_n)/ma_d
-z_scores[1:win_dow, ] <- 0
-tail(z_scores, win_dow)
-range(z_scores)
+# Kelly optimal leverage for stocks
+unlist(optimize(f=function(x) utili_ty(x, w_b=0), interval=c(1, 4)))
+# Approximate Kelly leverage
+mean(re_turns[, "VTI"])/var(re_turns[, "VTI"])
+# Kelly optimal leverage for bonds
+unlist(optimize(f=function(x) utili_ty(x, w_s=0), interval=c(1, 14)))
+# Approximate Kelly leverage
+mean(re_turns[, "IEF"])/var(re_turns[, "IEF"])
+# Vectorized utility of stock and bond portfolio
+utility_vec <- function(weight_s) {
+  utili_ty(weight_s[1], weight_s[2])
+}  # end utility_vec
+# Optimize with respect to vector argument
+op_tim <- optim(fn=utility_vec, par=c(3, 10),
+          method="L-BFGS-B",
+          upper=c(8, 20),
+          lower=c(2, 5))
+# Kelly sub-optimal weights
+weight_s <- op_tim$par/4
 
-# Define threshold value
-thresh_old <- 3
-# Calculate number of prices classified as bad data
-ba_d <- (abs(z_scores) > thresh_old)
-sum(ba_d)
-# Add 200 random price jumps into price_s
-set.seed(1121)
-n_bad <- 200
-jump_s <- logical(NROW(price_s))
-jump_s[sample(x=NROW(jump_s), size=n_bad)] <- TRUE
-price_s[jump_s] <- price_s[jump_s]*
-  sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
-# Plot prices and medians
-dygraphs::dygraph(cbind(price_s, media_n), main="VTI median") %>%
-  dyOptions(colors=c("black", "red"))
-# Calculate time series of z-scores
-media_n <- TTR::runMedian(price_s, n=win_dow)
-ma_d <- TTR::runMAD(price_s, n=win_dow)
-z_scores <- (price_s - media_n)/ma_d
-z_scores[1:win_dow, ] <- 0
-# Calculate number of prices classified as bad data
-ba_d <- (abs(z_scores) > thresh_old)
-sum(ba_d)
-
-# Calculate confusion matrix
-table(jump_s, ba_d)
-sum(ba_d)
-# FALSE positive (type I error)
-sum(jump_s & !ba_d)
-# FALSE negative (type II error)
-sum(!jump_s & ba_d)
-
-# Confusion matrix as function of thresh_old
-con_fuse <- function(res_ponse, z_scores, thresh_old) {
-    confu_sion <- table(res_ponse, (abs(z_scores) > thresh_old))
-    confu_sion <- confu_sion / rowSums(confu_sion)
-    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
-  }  # end con_fuse
-con_fuse(jump_s, z_scores, thresh_old=thresh_old)
-# Define vector of thresholds
-threshold_s <- seq(from=0.2, to=5.0, by=0.2)
-# Calculate error rates
-error_rates <- sapply(threshold_s, con_fuse,
-  res_ponse=jump_s,
-  z_scores=z_scores)  # end sapply
-error_rates <- t(error_rates)
-# Calculate area under ROC curve (AUC)
-true_pos <- (1 - c(0, error_rates[, "typeII"]))
-true_pos <- (true_pos + rutils::lag_it(true_pos))/2
-false_pos <- c(1, error_rates[, "typeI"])
-false_pos <- rutils::diff_it(false_pos)
-abs(sum(true_pos*false_pos))
-
-# Plot ROC Curve for Defaults
-plot(x=error_rates[, "typeI"],
-     y=1-error_rates[, "typeII"],
-     xlab="FALSE positive rate",
-     ylab="TRUE positive rate",
-     xlim=c(0, 1), ylim=c(0, 1),
-     main="ROC Curve for Hampel Classifier",
-     type="l", lwd=3, col="blue")
-abline(a=0.0, b=1.0, lwd=3, col="orange")
-
-# Get documentation for package tseries
-packageDescription("tseries")  # Get short description
-
-help(package="tseries")  # Load help page
-
-library(tseries)  # Load package tseries
-
-data(package="tseries")  # List all datasets in "tseries"
-
-ls("package:tseries")  # List all objects in "tseries"
-
-detach("package:tseries")  # Remove tseries from search path
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
-# Get start and end dates
-in_dex <- time(ts_stx_adj)
-e_nd <- in_dex[NROW(in_dex)]
-st_art <- round((4*e_nd + in_dex[1])/5)
-# Plot using plotOHLC
-plotOHLC(window(ts_stx_adj,
-          start=st_art,
-          end=e_nd)[, 1:4],
-   xlab="", ylab="")
-title(main="MSFT OHLC Prices")
-
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-library(lubridate)  # Load lubridate
-# Get start and end dates of zoo_series
-start_date <- decimal_date(start(zoo_stx))
-end_date <- decimal_date(end(zoo_stx))
-# Calculate frequency of zoo_stx
-fre_quency <-
-  NROW(zoo_stx)/(end_date-start_date)
-# Extract data from zoo_stx
-da_ta <- zoo::coredata(
-  window(zoo_stx, start=as.Date("2015-01-01"),
-   end=end(zoo_stx)))
-# Create ts object using ts()
-ts_stx <- ts(data=da_ta,
-  start=decimal_date(as.Date("2015-01-01")),
-  frequency=fre_quency)
-seqplot.ts(x=ts_stx[, 1], y=ts_stx[, 4], xlab="", ylab="")
-title(main="MSFT Open and Close Prices", line=-1)
-
-library(tseries)  # Load package tseries
-# Calculate maximum drawdown
-maxdrawdown(zoo_stx_adj[, "AdjClose"])
-max_drawd <- maxdrawdown(zoo_stx_adj[, "AdjClose"])
-index(zoo_stx_adj)[max_drawd$from]
-index(zoo_stx_adj)[max_drawd$to]
-# Calculate Sharpe ratio
-sharpe(zoo_stx_adj[, "AdjClose"])
-# Calculate Sterling ratio
-sterling(as.numeric(zoo_stx_adj[, "AdjClose"]))
-
-zoo_stx <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# Calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# Add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-
-library(tseries)  # Load package tseries
-zoo_stx <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# Calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# Add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
-
-library(tseries)  # Load package tseries
-zoo_stx <- suppressWarnings(  # Load MSFT data
-  get.hist.quote(instrument="MSFT",
-           start=Sys.Date()-365,
-           end=Sys.Date(),
-           origin="1970-01-01")
-)  # end suppressWarnings
-class(zoo_stx)
-dim(zoo_stx)
-tail(zoo_stx, 4)
-
-# Calculate Sharpe ratio
-sharpe(zoo_stx[, "Close"], r=0.01)
-# Add title
-plot(zoo_stx[, "Close"], xlab="", ylab="")
-title(main="MSFT Close Prices", line=-1)
+# Plot Kelly optimal portfolio
+re_turns <- cbind(re_turns,
+  weight_s[1]*re_turns[, "VTI"] +
+    weight_s[2]*re_turns[, "IEF"])
+colnames(re_turns)[3] <- "Kelly_sub_optimal"
+# Calculate prices from returns
+price_s <- lapply(re_turns,
+  function(x) cumprod(1 + x))
+price_s <- do.call(cbind, price_s)
+# Plot prices
+dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
+  dyOptions(colors=c("green","blue","green")) %>%
+  dySeries("Kelly_sub_optimal", color="red", strokeWidth=2) %>%
+  dyLegend(show="always")
 
 # Load package quantmod
 library(quantmod)
@@ -304,64 +140,64 @@ library(TTR)
 oh_lc <- rutils::etf_env$VTI["2009-02/2009-03"]
 VTI_adj <- Ad(oh_lc); VTI_vol <- Vo(oh_lc)
 # Calculate volume-weighted average price
-VTI_vwap <- TTR::VWAP(price=VTI_adj,
+v_wap <- TTR::VWAP(price=VTI_adj,
 volume=VTI_vol, n=10)
 # Plot OHLC candlechart with volume
 chartSeries(oh_lc, name="VTI plus VWAP",
       theme=chartTheme("white"))
 # Add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
+addTA(ta=v_wap, on=1, col='red')
 # Add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
+addTA(ta=(VTI_adj-v_wap), col='red')
 
 library(quantmod)
 library(TTR)
 oh_lc <- rutils::etf_env$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+v_wap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
 VTI_adj <- VTI_adj["2009-02/2009-03"]
 oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+v_wap <- v_wap["2009-02/2009-03"]
 # Plot OHLC candlechart with volume
 chartSeries(oh_lc, name="VTI plus VWAP shaded",
       theme=chartTheme("white"))
 # Add VWAP to main plot
-addTA(ta=VTI_vwap, on=1, col='red')
+addTA(ta=v_wap, on=1, col='red')
 # Add price minus VWAP in extra panel
-addTA(ta=(VTI_adj-VTI_vwap), col='red')
+addTA(ta=(VTI_adj-v_wap), col='red')
 # Add background shading of areas
-addTA((VTI_adj-VTI_vwap) > 0, on=-1,
+addTA((VTI_adj-v_wap) > 0, on=-1,
 col="lightgreen", border="lightgreen")
-addTA((VTI_adj-VTI_vwap) < 0, on=-1,
+addTA((VTI_adj-v_wap) < 0, on=-1,
 col="lightgrey", border="lightgrey")
-# Add vertical and horizontal lines at VTI_vwap minimum
-addLines(v=which.min(VTI_vwap), col='red')
-addLines(h=min(VTI_vwap), col='red')
+# Add vertical and horizontal lines at v_wap minimum
+addLines(v=which.min(v_wap), col='red')
+addLines(h=min(v_wap), col='red')
 
 library(quantmod)
 library(TTR)
 oh_lc <- rutils::etf_env$VTI
 VTI_adj <- Ad(oh_lc)
 VTI_vol <- Vo(oh_lc)
-VTI_vwap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
+v_wap <- TTR::VWAP(price=VTI_adj, volume=VTI_vol, n=10)
 VTI_adj <- VTI_adj["2009-02/2009-03"]
 oh_lc <- oh_lc["2009-02/2009-03"]
-VTI_vwap <- VTI_vwap["2009-02/2009-03"]
+v_wap <- v_wap["2009-02/2009-03"]
 # OHLC candlechart VWAP in main plot,
 chart_Series(x=oh_lc, # volume in extra panel
-       TA="add_Vo(); add_TA(VTI_vwap, on=1)",
+       TA="add_Vo(); add_TA(v_wap, on=1)",
        name="VTI plus VWAP shaded")
 # Add price minus VWAP in extra panel
-add_TA(VTI_adj-VTI_vwap, col='red')
+add_TA(VTI_adj-v_wap, col='red')
 # Add background shading of areas
-add_TA((VTI_adj-VTI_vwap) > 0, on=-1,
+add_TA((VTI_adj-v_wap) > 0, on=-1,
 col="lightgreen", border="lightgreen")
-add_TA((VTI_adj-VTI_vwap) < 0, on=-1,
+add_TA((VTI_adj-v_wap) < 0, on=-1,
 col="lightgrey", border="lightgrey")
 # Add vertical and horizontal lines
-abline(v=which.min(VTI_vwap), col='red')
-abline(h=min(VTI_vwap), col='red')
+abline(v=which.min(v_wap), col='red')
+abline(h=min(v_wap), col='red')
 
 library(quantmod)
 oh_lc <- rutils::etf_env$VTI["2009-02/2009-03"]
@@ -397,7 +233,7 @@ plot(ch_ob)
 
 library(HighFreq)
 # Calculate VTI and XLF volume-weighted average price
-VTI_vwap <-
+v_wap <-
   TTR::VWAP(price=Ad(rutils::etf_env$VTI),
       volume=Vo(rutils::etf_env$VTI), n=10)
 XLF_vwap <-
@@ -409,7 +245,7 @@ x11(); par(mfrow=c(2, 1))
 ch_ob <- chart_Series(  # Plot in top panel
   x=etf_env$VTI["2009-02/2009-04"],
   name="VTI", plot=FALSE)
-add_TA(VTI_vwap["2009-02/2009-04"],
+add_TA(v_wap["2009-02/2009-04"],
  lwd=2, on=1, col='blue')
 ch_ob <- chart_Series(  # Plot in bottom panel
   x=etf_env$XLF["2009-02/2009-04"],
@@ -420,11 +256,11 @@ add_TA(XLF_vwap["2009-02/2009-04"],
 library(dygraphs)
 # Calculate volume-weighted average price
 oh_lc <- rutils::etf_env$VTI
-VTI_vwap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
+v_wap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
     volume=quantmod::Vo(oh_lc), n=20)
 # Add VWAP to OHLC  data
 oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-         VTI_vwap)["2009-02/2009-04"]
+         v_wap)["2009-02/2009-04"]
 # Create dygraphs object
 dy_graph <- dygraphs::dygraph(oh_lc)
 # Convert dygraphs object to candlestick plot
@@ -472,1080 +308,787 @@ library(dygraphs)
 dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
   dyAxis(name="y", label="VTI", independentTicks=TRUE) %>%
   dyAxis(name="y2", label="IEF", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", col="red") %>%
-  dySeries(name="IEF", axis="y2", col="blue")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name="IEF", axis="y2", strokeWidth=2, col="blue")
 
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-sam_ple <- rnorm(n_rows)
-# Sample mean - MC estimate
-mean(sam_ple)
-# Sample standard deviation - MC estimate
-sd(sam_ple)
-# Monte Carlo estimate of cumulative probability
-sam_ple <- sort(sam_ple)
-pnorm(1)
-sum(sam_ple<1)/n_rows
-# Monte Carlo estimate of quantile
-conf_level <- 0.99
-qnorm(conf_level)
-cut_off <- conf_level*n_rows
-sam_ple[cut_off]
-quantile(sam_ple, probs=conf_level)
-# Analyze the source code of quantile()
-stats:::quantile.default
-# Microbenchmark quantile
+# Open plot window and set plot margins
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
+# Plot first time series without x-axis
+zoo::plot.zoo(price_s[, 1], lwd=2, col="orange",
+        xlab=NA, ylab=NA, xaxt="n")
+# Create X-axis date labels and add X-axis
+in_dex <- pretty(index(price_s))
+axis(side=1, at=in_dex, labels=format(in_dex, "%b-%d-%y"))
+# Plot second time series without y-axis
+par(new=TRUE)  # Allow new line on same plot
+zoo::plot.zoo(price_s[, 2], xlab=NA, ylab=NA,
+        lwd=2, yaxt="n", col="blue", xaxt="n")
+# Plot second y-axis on right
+axis(side=4, lwd=2, col="blue")
+# Add axis labels
+mtext(col_names[1], cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-5), col="orange")
+mtext(col_names[2], cex=1.2, lwd=3, side=4, las=2, adj=1.5, padj=(-5), col="blue")
+# Add title and legend
+title(main=paste(col_names, collapse=" and "), line=0.5)
+legend("top", legend=col_names, cex=1.0, bg="white",
+ lty=1, lwd=6, col=c("orange", "blue"), bty="n")
+
+oh_lc <- rutils::etf_env$VTI
+# Number of data points
+n_rows <- NROW(oh_lc["2018-06/"])
+# Define end_points at each point in time
+end_points <- 1:n_rows
+# Number of data points in look_back interval
+look_back <- 22
+# start_points are end_points lagged by look_back
+start_points <- c(rep_len(1, look_back-1),
+    end_points[1:(n_rows-look_back+1)])
+# Or
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0,
+  start_points, 1)
+
+# Number of data points
+price_s <- quantmod::Cl(oh_lc["2018/"])
+n_rows <- NROW(price_s)
+# Number of periods between endpoints
+n_points <- 22
+# Number of n_points that fit over n_rows
+n_agg <- n_rows %/% n_points
+# if n_rows==n_points*n_agg then whole number
+end_points <- (1:n_agg)*n_points
+# else stub interval at beginning
+end_points <-
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+# else stub interval at end
+end_points <- c((1:n_agg)*n_points, n_rows)
+# Or use xts::endpoints()
+end_points <- xts::endpoints(price_s, on="months")
+
+# Plot data and endpoints as vertical lines
+plot.xts(price_s, col="blue", lwd=2, xlab="", ylab="",
+   main="Prices with Endpoints as Vertical Lines")
+addEventLines(xts(rep("endpoint", NROW(end_points)), index(price_s)[end_points]),
+        col="red", lwd=2, pos=4)
+# Or
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- "blue"
+chart_Series(price_s, theme=plot_theme,
+  name="prices with endpoints as vertical lines")
+abline(v=end_points, col="red", lwd=2)
+
+# Number of data points
+n_rows <- NROW(rutils::etf_env$VTI["2017/"])
+# Number of n_points that fit over n_rows
+n_points <- 22
+n_agg <- n_rows %/% n_points
+# end_points with stub interval at beginning
+end_points <-
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+
+# look_back defined as number of data points
+look_back <- 252
+# start_points are end_points lagged by look_back
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0,
+  start_points, 1)
+cbind(start_points, end_points)
+# look_back defined as number of end_points
+look_back <- 12
+start_points <- c(rep_len(1, look_back-1),
+    end_points[1:(NROW(end_points)-look_back+1)])
+
+# Number of data points
+n_rows <- NROW(rutils::etf_env$VTI["2017/"])
+# Number of data points per interval
+look_back <- 22
+# Number of look_backs that fit over n_rows
+n_agg <- n_rows %/% look_back
+# Define end_points with beginning stub
+end_points <-
+  n_rows-look_back*n_agg + (0:n_agg)*look_back
+# Define contiguous start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)])
+# Define exclusive start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)]+1)
+
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
+end_points <- seq_along(price_s)  # Define end points
+n_rows <- NROW(end_points)
+look_back <- 22  # Number of data points per look-back interval
+# start_points are multi-period lag of end_points
+start_points <- c(rep_len(1, look_back-1),
+    end_points[1:(n_rows-look_back+1)])
+# Define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# Define aggregation function
+agg_regate <- function(x_ts) c(max=max(x_ts), min=min(x_ts))
+# Perform aggregations over look_backs list
+agg_regations <- sapply(look_backs,
+    function(look_back) agg_regate(price_s[look_back])
+)  # end sapply
+# Coerce agg_regations into matrix and transpose it
+if (is.vector(agg_regations))
+  agg_regations <- t(agg_regations)
+agg_regations <- t(agg_regations)
+# Coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+               order.by=index(price_s[end_points]))
+
+library(HighFreq)  # load package HighFreq
+# Perform aggregations over look_backs list
+agg_regations <- lapply(look_backs,
+    function(look_back) agg_regate(price_s[look_back])
+)  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+# Convert into xts
+agg_regations <- xts::xts(agg_regations,
+    order.by=index(price_s))
+agg_regations <- cbind(agg_regations, price_s)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green")
+x11(width=6, height=5)
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+
+# library(HighFreq)  # load package HighFreq
+# Define functional for rolling aggregations
+roll_agg <- function(x_ts, look_back, FUN, ...) {
+# Define end points at every period
+  end_points <- seq_along(x_ts)
+  n_rows <- NROW(end_points)
+# Define starting points as lag of end_points
+  start_points <- c(rep_len(1, look_back-1),
+    end_points[1:(n_rows-look_back+1)])
+# Define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# Perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs,
+    function(look_back) FUN(x_ts[look_back], ...)
+  )  # end lapply
+# rbind list into single xts or matrix
+  agg_regations <- rutils::do_call_rbind(agg_regations)
+# Coerce agg_regations into xts series
+  if (!is.xts(agg_regations))
+    agg_regations <- xts(agg_regations, order.by=index(x_ts))
+  agg_regations
+}  # end roll_agg
+# Define aggregation function
+agg_regate <- function(x_ts)
+  c(max=max(x_ts), min=min(x_ts))
+# Perform aggregations over rolling interval
+agg_regations <- roll_agg(price_s, look_back=look_back,
+              FUN=agg_regate)
+class(agg_regations)
+dim(agg_regations)
+
+# library(HighFreq)  # load package HighFreq
+# Define aggregation function that returns a vector
+agg_vector <- function(x_ts)
+  c(max=max(x_ts), min=min(x_ts))
+# Define aggregation function that returns an xts
+agg_xts <- function(x_ts)
+  xts(t(c(max=max(x_ts), min=min(x_ts))),
+order.by=end(x_ts))
+# Benchmark the speed of aggregation functions
 library(microbenchmark)
 summary(microbenchmark(
-  sam_ple=sam_ple[cut_off],
-  quan_tile=quantile(sam_ple, probs=conf_level),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+  agg_vector=roll_agg(price_s, look_back=look_back,
+              FUN=agg_vector),
+  agg_xts=roll_agg(price_s, look_back=look_back,
+              FUN=agg_xts),
+  times=10))[, c(1, 4, 5)]
 
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-pa_th <- numeric(n_rows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) &&
- (pa_th[in_dex - 1] < bar_rier)) {
-# Simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # Advance in_dex
-}  # end while
-# Fill remaining pa_th after it crosses bar_rier
-if (in_dex <= n_rows)
-  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+# library(HighFreq)  # load package HighFreq
+# Define aggregation function that returns a single value
+agg_regate <- function(x_ts)  max(x_ts)
+# Perform aggregations over a rolling interval
+agg_regations <- xts:::rollapply.xts(price_s, width=look_back,
+              FUN=agg_regate, align="right")
+# Perform aggregations over a rolling interval
+library(PerformanceAnalytics)  # load package PerformanceAnalytics
+agg_regations <- apply.rolling(price_s,
+              width=look_back, FUN=agg_regate)
+# Benchmark the speed of the functionals
+library(microbenchmark)
+summary(microbenchmark(
+  roll_agg=roll_agg(price_s, look_back=look_back,
+              FUN=max),
+  roll_xts=xts:::rollapply.xts(price_s, width=look_back,
+                 FUN=max, align="right"),
+  apply_rolling=apply.rolling(price_s,
+                        width=look_back, FUN=max),
+  times=10))[, c(1, 4, 5)]
 
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-# Simulate path of Brownian motion
-pa_th <- cumsum(rnorm(n_rows))
-# Find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# Fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):n_rows] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
-# Create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+# library(HighFreq)  # load package HighFreq
+# rolling sum using cumsum()
+roll_sum <- function(x_ts, look_back) {
+  cum_sum <- cumsum(na.omit(x_ts))
+  out_put <- cum_sum - lag(x=cum_sum, k=look_back)
+  out_put[1:look_back, ] <- cum_sum[1:look_back, ]
+  colnames(out_put) <- paste0(colnames(x_ts), "_stdev")
+  out_put
+}  # end roll_sum
+agg_regations <- roll_sum(price_s, look_back=look_back)
+# Define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# Perform rolling aggregations using apply loop
+agg_regations <- sapply(look_backs,
+    function(look_back) sum(price_s[look_back])
+)  # end sapply
+head(agg_regations)
+tail(agg_regations)
+# Benchmark the speed of both methods
+library(microbenchmark)
+summary(microbenchmark(
+  roll_sum=roll_sum(price_s, look_back=look_back),
+  s_apply=sapply(look_backs,
+    function(look_back) sum(price_s[look_back])),
+  times=10))[, c(1, 4, 5)]
 
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# Simulate geometric Brownian motion
-re_turns <- sigma_r*rnorm(len_gth) +
-  dri_ft - sigma_r^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
-
-# Simulate geometric Brownian motion
-sigma_r <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 1e4
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-  length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(sigma_r*rnorm(len_gth) + dri_ft - sigma_r^2/2)),
-  order.by=in_dex)
-price_s <- cbind(price_s,
-  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# Aggregate to daily OHLC data
-oh_lc <- xts::to.daily(price_s)
-quantmod::chart_Series(oh_lc, name="random prices")
-# dygraphs candlestick plot using pipes syntax
-library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>%
-  dyCandlestick()
-# dygraphs candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
-
-# Standard deviations of log-normal distribution
-sig_mas <- c(0.5, 1, 1.5)
-# Create plot colors
-col_ors <- c("black", "red", "blue")
-# Plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-  type="l", xlim=c(0, 3), lwd=2,
-  xlab="", ylab="", col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
-}  # end for
-
-# Add title and legend
-title(main="Log-normal Distributions", line=0.5)
-legend("topright", inset=0.05, title="Sigmas",
- paste("sigma", sig_mas, sep="="),
- cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
- col=col_ors)
-
-x11(width=6, height=5)
-par(mar=c(4, 4, 3, 1))
-# Return volatility of VTI ETF
-sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
-sigmar_2 <- sigma_r^2
-n_rows <- NROW(rutils::etf_env$VTI)
-# Standard deviation of log-normal prices
-sqrt(n_rows)*sigma_r
-
-# Skewness of log-normal prices
-skew_ness <- function(t) {
-  ex_p <- exp(t*sigmar_2)
-  (ex_p + 2)*sqrt(ex_p - 1)
-}  # end skew_ness
-curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
-xlab="Number of days", ylab="Skewness", col="blue",
-main="Skewness of Log-normal Prices
-as a Function of Time")
-
-# Probability that random log-normal price will be lower than the mean price
-curve(expr=pnorm(sigma_r*sqrt(x)/2),
-xlim=c(1, n_rows), lwd=3,
-xlab="Number of days", ylab="Probability", col="blue",
-main="Probability That Random Log-normal Price
-Will be Lower Than the Mean Price")
-
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 5000
-path_s <- 10
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Create xts time series
-price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
-# Plot xts time series
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 10000
-path_s <- 100
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Calculate percentage of paths below the expected value
-per_centage <- rowSums(price_s < 1.0) / path_s
-# Create xts time series of percentage of paths below the expected value
-per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
-# Plot xts time series of percentage of paths below the expected value
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(per_centage, main="Percentage of GBM paths below mean",
-   xlab=NA, ylab=NA, col="blue")
-
-# Load S&P500 stock prices
-load("C:/Develop/R/lecture_slides/data/sp500.RData")
-ls(env_sp500)
-# Extract closing prices
-price_s <- eapply(env_sp500, quantmod::Cl)
-# Flatten price_s into a single xts series
-price_s <- rutils::do_call(cbind, price_s)
-# Carry forward and backward non-NA prices
-price_s <- xts:::na.locf.xts(price_s)
-price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
-sum(is.na(price_s))
-# Rename and normalize columns
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
-         order.by=index(price_s))
-# Calculate permution index for sorting the lowest to highest final price_s
-or_der <- order(price_s[NROW(price_s), ])
-# Select a few symbols
-sym_bols <- colnames(price_s)[or_der]
-sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
-
-# Plot xts time series of price_s
-col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-legend(x="topleft", inset=0.05, cex=0.8,
- legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
-
-# Calculate average of valid stock prices
-val_id <- (price_s != 1)  # valid stocks
-n_stocks <- rowSums(val_id)
-n_stocks[1] <- NCOL(price_s)
-in_dex <- rowSums(price_s * val_id) / n_stocks
-# Calculate percentage of stock prices below the average price
-per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
-# Create xts time series of average stock prices
-in_dex <- xts(in_dex, order.by=index(price_s))
-
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-# Plot xts time series of average stock prices
-plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
-   xlab=NA, ylab=NA, col="blue")
-# Create xts time series of percentage of stock prices below the average price
-per_centage <- xts(per_centage, order.by=index(price_s))
-# Plot percentage of stock prices below the average price
-plot.zoo(per_centage[-(1:2),],
-   main="Percentage of S&P500 stock prices below the average price",
-   xlab=NA, ylab=NA, col="blue")
-
-x11(width=6, height=4)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
-library(zoo)
-re_turns <-
-  diff(log(as.numeric(EuStockMarkets[, 1])))
-# acf() autocorrelation from package stats
-acf(re_turns, lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-
-library(Ecdat)  # Load Ecdat
-macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(re_turns, lag=10, type="Ljung")
-
-# Changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"],
-   lag=10, type="Ljung")
-
-# Changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"],
-   lag=10, type="Ljung")
-
-library(zoo)  # Load package zoo
-dax_acf <- acf(re_turns, plot=FALSE)
-summary(dax_acf)  # Get the structure of the "acf" object
-# Print(dax_acf)  # Print acf data
-dim(dax_acf$acf)
-dim(dax_acf$lag)
-head(dax_acf$acf)
-
-acf_plus <- function(ts_data, plo_t=TRUE,
-                xlab="Lag", ylab="",
-                main="", ...) {
-  acf_data <- acf(x=ts_data, plot=FALSE, ...)
-# Remove first element of acf data
-  acf_data$acf <-  array(data=acf_data$acf[-1],
-    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <-  array(data=acf_data$lag[-1],
-    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  if (plo_t) {
-    ci <- qnorm((1+0.95)/2)*sqrt(1/NROW(ts_data))
-    ylim <- c(min(-ci, range(acf_data$acf[-1])),
-        max(ci, range(acf_data$acf[-1])))
-    plot(acf_data, xlab=xlab, ylab=ylab,
-   ylim=ylim, main="", ci=0)
-    title(main=main, line=0.5)
-    abline(h=c(-ci, ci), col="blue", lty=2)
-  }
-  invisible(acf_data)  # Return invisibly
-}  # end acf_plus
-
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-library(zoo)  # Load package zoo
-# improved autocorrelation function
-acf_plus(re_turns, lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-# Ljung-Box test for DAX returns
-Box.test(re_turns, lag=10, type="Ljung")
-
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-# Autocorrelation of squared DAX returns
-acf_plus(re_turns^2, lag=10, main="")
-title(main="acf of squared DAX returns",
-line=-1)
-# Autocorrelation of squared random returns
-acf_plus(rnorm(NROW(re_turns))^2,
-   lag=10, main="")
-title(main="acf of squared random returns",
-line=-1)
-# Ljung-Box test for squared DAX returns
-Box.test(re_turns^2, lag=10, type="Ljung")
-
-library(zoo)  # Load package zoo
-library(Ecdat)  # Load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # Coerce to "zoo"
-    Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # Generic ggplot2 for "zoo"
-  object=macro_zoo, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-macro_diff <- na.omit(diff(macro_zoo))
-acf_plus(coredata(macro_diff[, "unemprate"]),
-  lag=10, main="quarterly unemployment rate")
-acf_plus(coredata(macro_diff[, "3mTbill"]),
-  lag=10, main="3 month T-bill EOQ")
-
-# Extract DAX time series
-se_ries <- EuStockMarkets[, 1]
-# Filter only over past values (sides=1)
-co_eff <- c(0.1, 0.39, 0.5)
-filter_ed <- filter(se_ries, filter=co_eff,
-             method="convolution", sides=1)
-# filter() returns a time series of class "ts"
+# Extract time series of VTI prices
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
+# Calculate EWMA prices using filter()
+look_back <- 21
+weight_s <- exp(-0.1*1:look_back)
+weight_s <- weight_s/sum(weight_s)
+filter_ed <- stats::filter(price_s, filter=weight_s,
+                   method="convolution", sides=1)
+# filter() returns time series of class "ts"
 class(filter_ed)
 # Filter using compiled C++ function directly
 getAnywhere(C_cfilter)
 str(stats:::C_cfilter)
-filter_fast <- .Call(stats:::C_cfilter, se_ries, filter=co_eff, sides=1, circular=FALSE)
+filter_fast <- .Call(stats:::C_cfilter, price_s, filter=weight_s, sides=1, circular=FALSE)
 all.equal(as.numeric(filter_ed), filter_fast, check.attributes=FALSE)
-# Benchmark speed of the two methods
+# Calculate EWMA prices using roll::roll_sum()
+weights_rev <- rev(weight_s)
+roll_ed <- roll::roll_sum(price_s, width=look_back, weights=weights_rev)
+all.equal(filter_ed[-(1:look_back)],
+    as.numeric(roll_ed)[-(1:look_back)],
+    check.attributes=FALSE)
+# Benchmark speed of rolling calculations
 library(microbenchmark)
 summary(microbenchmark(
-  filter=filter(se_ries, filter=co_eff, method="convolution", sides=1),
-  filter_fast=.Call(stats:::C_cfilter, se_ries, filter=co_eff, sides=1, circular=FALSE)
+  filter=filter(price_s, filter=weight_s, method="convolution", sides=1),
+  filter_fast=.Call(stats:::C_cfilter, price_s, filter=weight_s, sides=1, circular=FALSE),
+  cum_sum=cumsum(price_s),
+  roll=roll::roll_sum(price_s, width=look_back, weights=weights_rev)
   ), times=10)[, c(1, 4, 5)]
-# Simulate ARIMA using filter()
-in_nov <- rnorm(NROW(EuStockMarkets))
-filter_ed <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
 
-library(zoo)  # Load zoo
-library(ggplot2)  # Load ggplot2
-library(gridExtra)  # Load gridExtra
-# Coerce to zoo and merge the time series
-filter_ed <- cbind(as.zoo(se_ries),
-            as.zoo(filter_ed))
-colnames(filter_ed) <- c("DAX", "DAX filtered")
-filter_ed <- window(filter_ed,
-             start=1997, end=1998)
-autoplot(  # Plot ggplot2
-    filter_ed, main="Filtered DAX",
-    facets=NULL) +  # end autoplot
-xlab("") + ylab("") +
-theme(  # modify plot theme
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-    plot.background=element_blank(),
-    axis.text.y=element_blank()
-    )  # end theme
-# end ggplot2
-
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-re_turns <- na.omit(diff(log(filter_ed)))
-par(mfrow=c(2,1))  # Set plot panels
-
-acf_plus(coredata(re_turns[, 1]), lag=10,
-   xlab="")
-title(main="DAX", line=-1)
-
-acf_plus(coredata(re_turns[, 2]), lag=10,
-   xlab="")
-title(main="DAX filtered", line=-1)
-
-# Simulate AR processes
-set.seed(1121)  # Reset random numbers
-in_dex <- Sys.Date() + 0:728  # two year daily series
-ari_ma <- xts(  # AR time series of returns
-  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
-  order.by=in_dex)
-ari_ma <- cbind(ari_ma, cumsum(ari_ma))
-colnames(ari_ma) <- c("AR returns", "AR prices")
-
-library(ggplot2)  # Load ggplot2
-library(gridExtra)  # Load gridExtra
-autoplot(object=ari_ma, # ggplot AR process
- facets="Series ~ .",
- main="Autoregressive process (phi=0.2)") +
-  facet_grid("Series ~ .", scales="free_y") +
-  xlab("") + ylab("") +
-theme(legend.position=c(0.1, 0.5),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-
-ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
-# Create three AR time series
-ari_ma <- sapply(ar_coeff, function(phi) {
-  set.seed(1121)  # Reset random numbers
-  arima.sim(n=NROW(in_dex), model=list(ar=phi))
-})  # end sapply
-colnames(ari_ma) <- paste("autocorr", ar_coeff)
-plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
-# Or plot using ggplot
-ari_ma <- xts(x=ari_ma, order.by=in_dex)
-library(ggplot)
-autoplot(ari_ma, main="AR(1) prices",
-   facets=Series ~ .) +
-    facet_grid(Series ~ ., scales="free_y") +
-xlab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-
-library(zoo)  # Load zoo
-library(ggplot2)  # Load ggplot2
-set.seed(1121)  # initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-            order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <-
-  paste("rand_walk", 1:3, sep="_")
-plot.zoo(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# Add legend
-legend(x="topleft",
- legend=colnames(rand_walk),
- col=c("black", "red", "blue"), lty=1)
-
-# Define AR(3) coefficients and innovations
-co_eff <- c(0.1, 0.39, 0.5)
-len_gth <- 1e2
-set.seed(1121); in_nov <- rnorm(len_gth)
-# Simulate AR process using recursive loop in R
-ari_ma <- numeric(NROW(in_nov))
-ari_ma[1] <- in_nov[1]
-ari_ma[2] <- co_eff[1]*ari_ma[1] + in_nov[2]
-ari_ma[3] <- co_eff[1]*ari_ma[2] +
-  co_eff[2]*ari_ma[1] + in_nov[3]
-for (it in 4:NROW(ari_ma)) {
-  ari_ma[it] <-
-    ari_ma[(it-1):(it-3)] %*% co_eff + in_nov[it]
-}  # End for
-# Simulate AR process using filter()
-filter_ed <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-class(filter_ed)
-all.equal(ari_ma, as.numeric(filter_ed))
-
-# Calculate modulus of roots of characteristic equation
-root_s <- Mod(polyroot(c(1, -co_eff)))
-# Calculate warmup period
-warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
-set.seed(1121)
-len_gth <- 1e4
-in_nov <- rnorm(len_gth + warm_up)
-# Simulate ARIMA using arima.sim()
-ari_ma <- arima.sim(n=len_gth,
-  model=list(ar=co_eff),
-  start.innov=in_nov[1:warm_up],
-  innov=in_nov[(warm_up+1):NROW(in_nov)])
-# Simulate AR process using filter()
-# Simulate ARIMA using filter()
-filter_ed <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-all.equal(filter_ed[-(1:warm_up)],
-  as.numeric(ari_ma))
-# Benchmark the speed of the three methods of simulating ARIMA
+# Calculate the rolling maximum and minimum over a vector of data
+roll_maxminr <- function(vec_tor, look_back) {
+  n_rows <- NROW(vec_tor)
+  max_min <- matrix(numeric(2*n_rows), nc=2)
+  # loop over periods
+  for (it in 1:n_rows) {
+    sub_vec <- vec_tor[max(1, it-look_back+1):it]
+    max_min[it, 1] <- max(sub_vec)
+    max_min[it, 2] <- min(sub_vec)
+  }  # end for
+  return(max_min)
+}  # end roll_maxminr
+max_minr <- roll_maxminr(price_s, look_back)
+max_minr <- xts::xts(max_minr, index(price_s))
+library(TTR)  # load package TTR
+max_min <- cbind(TTR::runMax(x=price_s, n=look_back),
+           TTR::runMin(x=price_s, n=look_back))
+all.equal(max_min[-(1:look_back), ], max_minr[-(1:look_back), ], check.attributes=FALSE)
+# Benchmark the speed of TTR::runMax
 library(microbenchmark)
 summary(microbenchmark(
-  filter_ed=filter(x=in_nov, filter=co_eff, method="recursive"),
-  arima_sim=arima.sim(n=len_gth,
-                  model=list(ar=co_eff),
-                  start.innov=in_nov[1:warm_up],
-                  innov=in_nov[(warm_up+1):NROW(in_nov)]),
-  arima_loop={for (it in 4:NROW(ari_ma)) {
-  ari_ma[it] <- ari_ma[(it-1):(it-3)] %*% co_eff + in_nov[it]}}
-  ), times=10)[, c(1, 4, 5)]
+  pure_r=roll_maxminr(price_s, look_back),
+  ttr=TTR::runMax(price_s, n=look_back),
+  times=10))[, c(1, 4, 5)]
+# Benchmark the speed of TTR::runSum
+summary(microbenchmark(
+  vector_r=cumsum(coredata(price_s)),
+  rutils=rutils::roll_sum(price_s, look_back=look_back),
+  ttr=TTR::runSum(price_s, n=look_back),
+  times=10))[, c(1, 4, 5)]
 
-# Simulate random walks using apply() loops
-set.seed(1121)  # initialize random number generator
-rand_walks <- matrix(rnorm(1000*100), ncol=1000)
-rand_walks <- apply(rand_walks, 2, cumsum)
-vari_ance <- apply(rand_walks, 1, var)
-# Simulate random walks using vectorized functions
-set.seed(1121)  # initialize random number generator
-rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
-vari_ance <- matrixStats::rowVars(rand_walks)
-par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot(vari_ance, xlab="time steps", ylab="",
-     t="l", col="blue", lwd=2,
-     main="Variance of Random Walk")
+library(rutils)
+# Calculate rolling VTI variance using package roll
+library(roll)  # load roll
+re_turns <- na.omit(rutils::etf_env$re_turns[, "VTI"])
+look_back <- 22
+# Calculate rolling sum using RcppRoll
+sum_roll <- roll::roll_sum(re_turns, width=look_back)
+# Calculate rolling sum using rutils
+sum_rutils <- rutils::roll_sum(re_turns, look_back=look_back)
+all.equal(sum_roll[-(1:look_back), ], sum_rutils[-(1:look_back), ], check.attributes=FALSE)
+# Benchmark speed of rolling calculations
+library(microbenchmark)
+summary(microbenchmark(
+  cum_sum=cumsum(re_turns),
+  roll=roll::roll_sum(re_turns, width=look_back),
+  RcppRoll=RcppRoll::roll_sum(re_turns, n=look_back),
+  rutils=rutils::roll_sum(re_turns, look_back=look_back),
+  times=10))[, c(1, 4, 5)]
 
-len_gth <- 1e4
-# Simulate arima with small AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=len_gth, model=list(ar=0.01))
-tseries::adf.test(ari_ma)
-# Simulate arima with large AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
-tseries::adf.test(ari_ma)
-# Simulate arima with different AR coefficients
-coeff_s <- seq(0.99, 1.0, 0.001) - 0.001
-set.seed(1121)
-in_nov <- rnorm(len_gth)
-adf_test <- sapply(coeff_s, function(co_eff) {
-  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
-  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
-  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
-})  # end sapply
-plot(x=coeff_s, y=adf_test["pval", ], main="ADF Pval versus AR coefficient",
-     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
-plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat versus AR coefficient",
-     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
+library(RcppRoll)  # load package RcppRoll
+# Calculate rolling sum using RcppRoll
+sum_roll <- RcppRoll::roll_sum(re_turns, align="right", n=look_back)
+# Calculate rolling sum using rutils
+sum_rutils <- rutils::roll_sum(re_turns, look_back=look_back)
+all.equal(sum_roll, coredata(sum_rutils[-(1:(look_back-1))]), check.attributes=FALSE)
+# Benchmark speed of rolling calculations
+library(microbenchmark)
+summary(microbenchmark(
+  cum_sum=cumsum(re_turns),
+  RcppRoll=RcppRoll::roll_sum(re_turns, n=look_back),
+  rutils=rutils::roll_sum(re_turns, look_back=look_back),
+  times=10))[, c(1, 4, 5)]
+# Calculate EWMA prices using RcppRoll
+price_s <- na.omit(rutils::etf_env$VTI[, 4])
+weight_s <- exp(0.1*1:look_back)
+prices_ewma <- RcppRoll::roll_mean(price_s,
+align="right", n=look_back, weights=weight_s)
+prices_ewma <- cbind(price_s,
+  rbind(coredata(price_s[1:(look_back-1), ]), prices_ewma))
+colnames(prices_ewma) <- c("VTI", "VTI EWMA")
+# Plot an interactive dygraph plot
+dygraphs::dygraph(prices_ewma)
+# Or static plot of EWMA prices with custom line colors
+x11(width=6, height=5)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red")
+chart_Series(prices_ewma, theme=plot_theme,
+       name="EWMA prices")
+legend("top", legend=colnames(prices_ewma),
+ bg="white", lty=1, lwd=6,
+ col=plot_theme$col$line.col, bty="n")
 
-# Simulate arima with large AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=len_gth, model=list(ar=0.99))
-tseries::adf.test(ari_ma)
-# integrated series has unit root
-tseries::adf.test(cumsum(ari_ma))
-# Simulate arima with negative AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=len_gth, model=list(ar=-0.99))
-tseries::adf.test(ari_ma)
-# integrated series has unit root
-tseries::adf.test(cumsum(ari_ma))
+# library(HighFreq)  # load package HighFreq
+library(caTools)  # load package "caTools"
+# get documentation for package "caTools"
+packageDescription("caTools")  # get short description
+help(package="caTools")  # load help page
+data(package="caTools")  # list all datasets in "caTools"
+ls("package:caTools")  # list all objects in "caTools"
+detach("package:caTools")  # remove caTools from search path
+# median filter
+look_back <- 2
+price_s <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
+med_ian <- runmed(x=price_s, k=look_back)
+# Vector of rolling volatility
+sigma_r <- runsd(x=price_s, k=look_back,
+          endrule="constant", align="center")
+# Vector of rolling quantiles
+quan_tiles <- runquantile(x=price_s,
+            k=look_back, probs=0.9,
+            endrule="constant",
+            align="center")
 
-x11(width=5, height=3.5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-# Simulate AR(1) process
-ari_ma <- arima.sim(n=729, model=list(ar=0.8))
-# ACF of AR(1) process
-ac_f <- acf_plus(ari_ma, lag=10,
-  xlab="", ylab="",
-  main="Autocorrelations of AR(1) process")
-ac_f$acf[1:5]
+# Compile Rcpp functions
+Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/roll_maxmin.cpp")
+max_minarma <- roll_maxmin(price_s, look_back)
+max_minarma <- xts::xts(max_minr, index(price_s))
+max_min <- cbind(TTR::runMax(x=price_s, n=look_back),
+           TTR::runMin(x=price_s, n=look_back))
+all.equal(max_min[-(1:look_back), ], max_minarma[-(1:look_back), ], check.attributes=FALSE)
+# Benchmark the speed of TTR::runMax
+library(microbenchmark)
+summary(microbenchmark(
+  arma=roll_maxmin(price_s, look_back),
+  ttr=TTR::runMax(price_s, n=look_back),
+  times=10))[, c(1, 4, 5)]
+# Dygraphs plot with max_min lines
+da_ta <- cbind(price_s, max_minarma)
+colnames(da_ta)[2:3] <- c("max", "min")
+col_ors <- c("blue", "red", "green")
+dygraphs::dygraph(da_ta, main=paste(colnames(price_s), "max and min lines")) %>%
+  dyOptions(colors=col_ors)
+# standard plot with max_min lines
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+quantmod::chart_Series(da_ta["2008/2009"], theme=plot_theme,
+  name=paste(colnames(price_s), "max and min lines"))
+legend(x="topright", title=NULL, legend=colnames(da_ta),
+ inset=0.1, cex=0.9, bg="white", bty="n",
+ lwd=6, lty=1, col=col_ors)
 
-# PACF of AR(1) process
-pac_f <- pacf(ari_ma, lag=10,
-  xlab="", ylab="", main="")
-title("Partial autocorrelations of AR(1) process",
-  line=1)
-pac_f <- drop(pac_f$acf)
-pac_f[1:5]
+library(HighFreq)  # load package HighFreq
+# indices of last observations in each hour
+end_points <- xts::endpoints(price_s, on="hours")
+head(end_points)
+# extract the last observations in each hour
+head(price_s[end_points, ])
 
-# Compute pacf recursively from acf
-ac_f <- acf_plus(ari_ma, lag=10, plo_t=FALSE)
-ac_f <- drop(ac_f$acf)
-pac_f <- numeric(3)
-pac_f[1] <- ac_f[1]
-pac_f[2] <- ac_f[2] - ac_f[1]^2
-pac_f[3] <- ac_f[3] -
-  pac_f[2]*ac_f[1] - ac_f[2]*pac_f[1]
-# Compute pacf recursively in a loop
-pac_f <- numeric(NROW(ac_f))
-pac_f[1] <- ac_f[1]
-for (it in 2:NROW(pac_f)) {
-  pac_f[it] <- ac_f[it] -
-    pac_f[1:(it-1)] %*% ac_f[(it-1):1]
-}  # end for
-
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-# Simulate AR process of returns
-ari_ma <- arima.sim(n=729,
-  model=list(ar=c(0.1, 0.5, 0.1)))
-# ACF of AR(3) process
-acf_plus(ari_ma, lag=10, xlab="", ylab="",
-   main="ACF of AR(3) process")
-# PACF of AR(3) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(3) process")
-
-# Calibrate ARIMA model using arima()
-arima_fit <- arima(ari_ma,
-  order=c(3,0,0), include.mean=FALSE)
-arima_fit$coef
-# Calibrate ARIMA model using auto.arima()
-# library(forecast)  # Load forecast
-forecast::auto.arima(ari_ma, max.p=3, max.q=0, max.d=0)
-# Calibrate ARIMA model using regression
-ari_ma <- as.numeric(ari_ma)
-# Define design matrix
-de_sign <- sapply(1:3, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-# Generalized inverse of design matrix
-design_inv <- MASS::ginv(de_sign)
-# Regression coefficients with response equal to ari_ma
-co_eff <- drop(design_inv %*% ari_ma)
-all.equal(arima_fit$coef, co_eff, check.attributes=FALSE)
-
-# Compute autocorrelation coefficients
-ac_f <- acf_plus(ari_ma, lag=10, plo_t=FALSE)
-ac_f <- drop(ac_f$acf)
-# Define Yule-Walker matrix
-acf_1 <- c(1, ac_f[-10])
-yule_walker <- sapply(1:9, function(lagg) {
-  col_umn <- rutils::lag_it(acf_1, lagg=lagg)
-  col_umn[1:lagg] <- acf_1[(lagg+1):2]
-  col_umn
-})  # end sapply
-yule_walker <- cbind(acf_1, yule_walker)
-# Generalized inverse of Yule-Walker matrix
-yule_walker_inv <- MASS::ginv(yule_walker)
-# Solve Yule-Walker equations
-co_eff <- drop(yule_walker_inv %*% ac_f)
-
-len_gth <- 1e2
-# Simulate AR process using filter()
-co_eff <- c(0.1, 0.39, 0.5)
-set.seed(1121); in_nov <- rnorm(len_gth)
-ari_ma <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-ari_ma <- as.numeric(ari_ma)
-
-# Forecast AR(3) process using loop in R
-forecast_s <- numeric(NROW(ari_ma))
-forecast_s[1] <- 0
-forecast_s[2] <- co_eff[1]*ari_ma[1]
-forecast_s[3] <- co_eff[1]*ari_ma[2] +
-  co_eff[2]*ari_ma[1]
-for (it in 4:NROW(forecast_s)) {
-  forecast_s[it] <- ari_ma[(it-1):(it-3)] %*% co_eff
-}  # end for
-
-# Plot with legend
-plot(ari_ma,
-  main="Forecasting Using AR(3) Model",
-  xlab="", ylab="", type="l")
-lines(forecast_s, col="orange", lwd=3)
-legend(x="topright", legend=c("series","forecasts"),
- col=c("black", "orange"), lty=1, lwd=6,
- cex=0.9, bg="white", bty="n")
-
-# Forecast using filter()
-forecasts_filter <- filter(x=ari_ma, sides=1,
-  filter=co_eff, method="convolution")
-forecasts_filter <- as.numeric(forecasts_filter)
-# Compare with loop in R
-all.equal(forecast_s[-(1:3)],
-  forecasts_filter[-c(1:2, NROW(forecasts_filter))],
-  check.attributes=FALSE)
-
-# Calibrate ARIMA model using arima()
-arima_fit <- arima(ari_ma, order=c(3,0,0),
-             include.mean=FALSE)
-# One-step-ahead forecast using predict.Arima()
-pre_dict <- predict(arima_fit, n.ahead=1)
-# Or directly call predict.Arima()
-# pre_dict <- predict.Arima(arima_fit, n.ahead=1)
-# Inspect the prediction object
-class(pre_dict)
-names(pre_dict)
-class(pre_dict$pred)
-unlist(pre_dict)
-# One-step-ahead forecast using matrix algebra
-fore_cast <- drop(
-  ari_ma[len_gth:(len_gth-2)] %*% arima_fit$coef)
-# Compare one-step-ahead forecasts
-all.equal(pre_dict$pred[[1]], fore_cast)
-# Get information about predict.Arima()
-?stats:::predict.Arima
-
-# Compare residuals with innovations
-residual_s <- (ari_ma - forecast_s)
-all.equal(in_nov, residual_s,
-    check.attributes=FALSE)
-plot(residual_s, t="l", lwd=3, main="ARIMA Forecast Errors")
-# Calibrate ARIMA model using arima()
-arima_fit <- arima(ari_ma, order=c(3,0,0),
-             include.mean=FALSE)
-coef_fit <- arima_fit$coef
-# Forecast using from fitted coefficients
-forecast_s <- numeric(NROW(ari_ma))
-forecast_s[1] <- 0
-forecast_s[2] <- coef_fit[1]*ari_ma[1]
-forecast_s[3] <- coef_fit[1]*ari_ma[2] +
-  coef_fit[2]*ari_ma[1]
-for (it in 4:NROW(forecast_s)) {
-  forecast_s[it] <-
-    ari_ma[(it-1):(it-3)] %*% coef_fit
-}  # end for
-# Calculate the forecasting residuals
-residual_s <- (ari_ma - forecast_s)
-all.equal(in_nov, residual_s,
-    check.attributes=FALSE)
-tail(cbind(in_nov, residual_s))
-
-# Simulate AR process using filter()
-co_eff <- c(0.1, 0.39, 0.5)
-n_coeff <- NROW(co_eff)
-set.seed(1121)
-len_gth <- 1e3
-ari_ma <- as.numeric(filter(x=rnorm(len_gth),
-  filter=co_eff, method="recursive"))
-# Define design matrix
-de_sign <- sapply(1:n_coeff, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(ari_ma, de_sign)
-look_back <- 100  # Length of look-back interval
-# Perform rolling forecasting
-forecast_s <- sapply(n_coeff:len_gth,
-  function(it) {
-    # Subset de_sign
-    start_point <- max(1, it-look_back+1)
-    de_sign <- de_sign[start_point:it, ]
-    # Calculate AR(3) coefficients
-    design_inv <- MASS::ginv(de_sign[, -1])
-    co_eff <- drop(design_inv %*% de_sign[, 1])
-    # Calculate forecast
-    de_sign[NROW(de_sign):(NROW(de_sign)-n_coeff+1), 1] %*% co_eff
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
+# Number of data points
+n_rows <- NROW(price_s)
+# Number of data points per interval
+look_back <- 22
+# Number of look_backs that fit over n_rows
+n_agg <- n_rows %/% look_back
+# Define end_points with beginning stub
+end_points <-
+  n_rows-look_back*n_agg + (0:n_agg)*look_back
+# Define contiguous start_points
+start_points <- c(1, end_points[1:(NROW(end_points)-1)])
+# Define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+look_backs[[1]]
+look_backs[[2]]
+# Perform sapply() loop over look_backs list
+agg_regations <- sapply(look_backs,
+    function(look_back) {
+x_ts <- price_s[look_back]
+c(max=max(x_ts), min=min(x_ts))
   })  # end sapply
-forecast_s <- c(rep(forecast_s[1], n_coeff-1), forecast_s)
-# Lag the forecasts to push them out-of-sample
-forecast_s <- rutils::lag_it(forecast_s)
+# Coerce agg_regations into matrix and transpose it
+if (is.vector(agg_regations))
+  agg_regations <- t(agg_regations)
+agg_regations <- t(agg_regations)
+# Coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+    order.by=index(price_s[end_points]))
+head(agg_regations)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
 
-# Mean squared error
-mean((ari_ma - forecast_s)^2)
-# Correlation
-sum(forecast_s*ari_ma)
-# Plot forecasting series with legend
-plot(ari_ma, xlab="", ylab="", type="l",
-  main="Rolling Forecasting Using AR(3) Model")
-lines(forecast_s, col="orange", lwd=1)
-legend(x="topright", legend=c("series","forecasts"),
- col=c("black", "orange"), lty=1, lwd=6,
- cex=0.9, bg="white", bty="n")
+# library(HighFreq)  # load package HighFreq
+# Perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs,
+    function(look_back) {
+x_ts <- price_s[look_back]
+c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+# Coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+    order.by=index(price_s[end_points]))
+head(agg_regations)
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
 
-# Define Ornstein-Uhlenbeck parameters
-eq_price <- 1.0; sigma_r <- 0.02
-the_ta <- 0.01; len_gth <- 1000
-drif_t <- the_ta*eq_price
-theta_1 <- 1-the_ta
-# Simulate Ornstein-Uhlenbeck process
-in_nov <- sigma_r*rnorm(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- in_nov[1]
-for (i in 2:len_gth) {
-  price_s[i] <- theta_1*price_s[i-1] +
-    in_nov[i] + drif_t
-}  # end for
-
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
- title=paste(c(paste0("sigma_r = ", sigma_r),
-               paste0("eq_price = ", eq_price),
-               paste0("the_ta = ", the_ta)),
-             collapse="\n"),
- legend="", cex=0.8,
- inset=0.1, bg="white", bty="n")
-abline(h=eq_price, col='red', lwd=2)
-
-re_turns <- rutils::diff_it(price_s)
-lag_price <- rutils::lag_it(price_s)
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# Plot regression
-plot(for_mula, main="OU Returns Versus Lagged Prices")
-abline(l_m, lwd=2, col="red")
-
-# volatility parameter
-c(sigma_r, sd(re_turns))
-# Extract OU parameters from regression
-co_eff <- summary(l_m)$coefficients
-# theta strength of mean reversion
-round(co_eff[2, ], 3)
-# Equilibrium price
-co_eff[1, 1]/co_eff[2, 1]
-# Parameter and t-values
-co_eff <- cbind(c(the_ta*eq_price, the_ta),
-  co_eff[, 1:2])
-rownames(co_eff) <- c("drift", "theta")
-round(co_eff, 3)
-
-# Simulate Schwartz process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- eq_price
-set.seed(1121)  # Reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    sigma_r*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
-}  # end for
-
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Log-normal Ornstein-Uhlenbeck process")
-legend("topright",
- title=paste(c(paste0("sigma_r = ", sigma_r),
-               paste0("eq_price = ", eq_price),
-               paste0("the_ta = ", the_ta)),
-             collapse="\n"),
- legend="", cex=0.8,
- inset=0.12, bg="white", bty="n")
-abline(h=eq_price, col='red', lwd=2)
-
-# Verify that rtools are working properly:
-devtools::find_rtools()
-devtools::has_devel()
-
-# Load package Rcpp
-library(Rcpp)
-# Get documentation for package Rcpp
-# Get short description
-packageDescription("Rcpp")
-# Load help page
-help(package="Rcpp")
-# list all datasets in "Rcpp"
-data(package="Rcpp")
-# list all objects in "Rcpp"
-ls("package:Rcpp")
-# Remove Rcpp from search path
-detach("package:Rcpp")
-
-# Define Rcpp function
-Rcpp::cppFunction("
-  int times_two(int x)
-    { return 2 * x;}
-  ")  # end cppFunction
-# Run Rcpp function
-times_two(3)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
-# Multiply two numbers
-mult_rcpp(2, 3)
-mult_rcpp(1:3, 6:4)
-# Multiply two vectors
-mult_vec_rcpp(2, 3)
-mult_vec_rcpp(1:3, 6:4)
-
-# Define Rcpp function with loop
-Rcpp::cppFunction("
-double inner_mult(NumericVector x, NumericVector y) {
-int x_size = x.size();
-int y_size = y.size();
-if (x_size != y_size) {
-    return 0;
-  } else {
-    double total = 0;
-    for(int i = 0; i < x_size; ++i) {
-total += x[i] * y[i];
-  }
-  return total;
-  }
-}")  # end cppFunction
-# Run Rcpp function
-inner_mult(1:3, 6:4)
-inner_mult(1:3, 6:3)
-# Define Rcpp Sugar function with loop
-Rcpp::cppFunction("
-double inner_mult_sugar(NumericVector x, NumericVector y) {
-  return sum(x * y);
-}")  # end cppFunction
-# Run Rcpp Sugar function
-inner_mult_sugar(1:3, 6:4)
-inner_mult_sugar(1:3, 6:3)
-
-# Define R function with loop
-inner_mult_r <- function(x, y) {
-    to_tal <- 0
-    for(i in 1:NROW(x)) {
-to_tal <- to_tal + x[i] * y[i]
-    }
-    to_tal
-}  # end inner_mult_r
-# Run R function
-inner_mult_r(1:3, 6:4)
-inner_mult_r(1:3, 6:3)
-# Compare speed of Rcpp and R
-library(microbenchmark)
+# library(HighFreq)  # load package HighFreq
+# Define functional for rolling aggregations over end_points
+roll_agg <- function(x_ts, end_points, FUN, ...) {
+  n_rows <- NROW(end_points)
+# start_points are single-period lag of end_points
+  start_points <- c(1, end_points[1:(n_rows-1)])
+# Perform aggregations over look_backs list
+  agg_regations <- lapply(look_backs,
+    function(look_back) FUN(x_ts[look_back], ...))  # end lapply
+# rbind list into single xts or matrix
+  agg_regations <- rutils::do_call_rbind(agg_regations)
+  if (!is.xts(agg_regations))
+    agg_regations <-  # Coerce agg_regations into xts series
+    xts(agg_regations, order.by=index(x_ts[end_points]))
+  agg_regations
+}  # end roll_agg
+# Apply sum() over end_points
+agg_regations <-
+  roll_agg(price_s, end_points=end_points, FUN=sum)
+agg_regations <-
+  period.apply(price_s, INDEX=end_points, FUN=sum)
+# Benchmark the speed of aggregation functions
 summary(microbenchmark(
-  pure_r=inner_mult_r(1:10000, 1:10000),
-  inner_r=1:10000 %*% 1:10000,
-  r_cpp=inner_mult(1:10000, 1:10000),
-  r_cpp_sugar=inner_mult_sugar(1:10000, 1:10000),
+  roll_agg=roll_agg(price_s, end_points=end_points, FUN=sum),
+  period_apply=period.apply(price_s, INDEX=end_points, FUN=sum),
   times=10))[, c(1, 4, 5)]
+agg_regations <- period.sum(price_s, INDEX=end_points)
+head(agg_regations)
 
-# Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(len_gth=1000, eq_price=5.0,
-              vol_at=0.01, the_ta=0.01) {
-  re_turns <- numeric(len_gth)
-  price_s <- numeric(len_gth)
-  price_s[1] <- eq_price
-  for (i in 2:len_gth) {
-    re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
-  }  # end for
-  price_s
-}  # end sim_ou
-# Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigma_r <- 0.01
-the_ta <- 0.01; len_gth <- 1000
-set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta)
+# library(HighFreq)  # load package HighFreq
+# load package HighFreq
+library(HighFreq)
+# extract closing minutely prices
+price_s <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
+# Apply "mean" over daily periods
+agg_regations <- apply.daily(price_s, FUN=sum)
+head(agg_regations)
 
-# Define Ornstein-Uhlenbeck function in Rcpp
-Rcpp::cppFunction("
-NumericVector sim_ou_rcpp(double eq_price,
-                double vol_at,
-                double the_ta,
-                NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
-  price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
-    re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
-    price_s[it] = price_s[it-1] * exp(re_turns[it]);
-  }  // end for
-  return price_s;
-}")  # end cppFunction
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sigma_r,
-  the_ta=the_ta,
-  in_nov=rnorm(len_gth))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta, in_nov=rnorm(len_gth)),
-  times=10))[, c(1, 4, 5)]
+# Number of n_points that fit over n_rows
+n_points <- 22
+n_agg <- n_rows %/% n_points
+# end_points with stub interval at beginning
+end_points <- # Define end_points with beginning stub
+  n_rows-n_points*n_agg + (0:n_agg)*n_points
+# Number of data points in look_back interval
+look_back <- 252
+# start_points are end_points lagged by look_back
+start_points <- (end_points-look_back+1)
+start_points <- ifelse(start_points > 0,
+  start_points, 1)
+# Define list of look-back intervals for aggregations over past
+look_backs <- lapply(seq_along(end_points),
+  function(in_dex) {
+    start_points[in_dex]:end_points[in_dex]
+})  # end lapply
+# Perform lapply() loop over look_backs list
+agg_regations <- lapply(look_backs,
+    function(look_back) {
+x_ts <- price_s[look_back]
+c(max=max(x_ts), min=min(x_ts))
+    })  # end lapply
+# rbind list into single xts or matrix
+agg_regations <- rutils::do_call_rbind(agg_regations)
+# Coerce agg_regations into xts series
+agg_regations <- xts(agg_regations,
+    order.by=index(price_s[end_points]))
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
 
-# Source Rcpp function for Ornstein-Uhlenbeck process from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_ou.cpp")
-# Simulate Ornstein-Uhlenbeck process in Rcpp
-set.seed(1121)  # Reset random numbers
-ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sigma_r,
-  the_ta=the_ta,
-  in_nov=rnorm(len_gth))
-all.equal(ou_sim, ou_sim_rcpp)
-# Compare speed of Rcpp and R
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta, in_nov=rnorm(len_gth)),
-  times=10))[, c(1, 4, 5)]
+library(HighFreq)  # load package HighFreq
+agg_regations <- cbind(price_s, agg_regations)
+tail(agg_regations, 22)
+agg_regations <- na.omit(xts:::na.locf.xts(agg_regations))
+# Plot aggregations with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "red", "green")
+chart_Series(agg_regations, theme=plot_theme,
+       name="price aggregations")
+legend("top", legend=colnames(agg_regations),
+  bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
 
-# Calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
-  out_put[1] <- see_d
-  for (i in 2:len_gth) {
-    out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
-  }  # end for
-  acos(1-2*out_put)/pi
-}  # end uni_form
+set.seed(1121)  # reset random number generator
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # load package zoo
+# Create zoo time series of random returns
+in_dex <- Sys.Date() + 0:365
+zoo_series <-
+  zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+# Create monthly dates
+dates_agg <- as.Date(as.yearmon(index(zoo_series)))
+# Perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg,
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- cbind(zoo_series, zoo_agg)
+# replace NA's using locf
+zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
+# extract aggregated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
 
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
-# Microbenchmark Rcpp code
-library(microbenchmark)
-summary(microbenchmark(
-  pure_r=runif(1e5),
-  r_loop=uni_form(0.3, 1e5),
-  r_cpp=uniform_rcpp(0.3, 1e5),
-  times=10))[, c(1, 4, 5)]
+# library(HighFreq)  # load package HighFreq
+# Plot original and aggregated cumulative returns
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, bty="n",
+ title="Aggregated Prices",
+ leg=c("orig prices", "agg prices"),
+ lwd=2, bg="white", col=c("black", "red"))
 
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
-vec1 <- runif(1e5)
-vec2 <- runif(1e5)
-vec_in(vec1, vec2)
-vec1 %*% vec2
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Perform monthly mean aggregation
+zoo_agg <- aggregate(zoo_series, by=dates_agg,
+               FUN=mean)
+# merge with original zoo - union of dates
+zoo_agg <- cbind(zoo_series, zoo_agg)
+# replace NA's using linear interpolation
+zoo_agg <- na.approx(zoo_agg)
+# extract interpolated zoo
+zoo_agg <- zoo_agg[index(zoo_series), 2]
+# Plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_agg), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title="Interpolated Prices",
+ leg=c("orig prices", "interpol prices"), lwd=2, bg="white",
+ col=c("black", "red"), bty="n")
 
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  vec_in=vec_in(vec1, vec2),
-  r_code=(vec1 %*% vec2),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# vec_in() is several times faster than %*%, especially for longer vectors.
-#     expr     mean   median
-# 1 vec_in 110.7067 110.4530
-# 2 r_code 585.5127 591.3575
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# "mean" aggregation over interval with width=11
+zoo_mean <- rollapply(zoo_series, width=11,
+                FUN=mean, align="right")
+# merge with original zoo - union of dates
+zoo_mean <- cbind(zoo_series, zoo_mean)
+# replace NA's using na.locf
+zoo_mean <- na.locf(zoo_mean, na.rm=FALSE, fromLast=TRUE)
+# extract mean zoo
+zoo_mean <- zoo_mean[index(zoo_series), 2]
+# Plot original and interpolated zoo
+plot(cumsum(zoo_series), xlab="", ylab="")
+lines(cumsum(zoo_mean), lwd=2, col="red")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
+ leg=c("orig prices", "mean prices"), lwd=2, bg="white",
+ col=c("black", "red"), bty="n")
 
-library(RcppArmadillo)
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
-mat_rix <- matrix(runif(1e5), nc=1e3)
-# De-mean using apply()
-new_mat <- apply(mat_rix, 2,
-  function(x) (x-mean(x)))
-# De-mean using demean_mat()
-demean_mat(mat_rix)
-all.equal(new_mat, mat_rix)
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  demean_mat=demean_mat(mat_rix),
-  apply=(apply(mat_rix, 2, mean)),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# Demean_mat() is over 70 times faster than apply()
-#         expr       mean   median
-# 1 demean_mat   127.7539  125.604
-# 2      apply 10781.7534 9291.674
+n_rows <- 1000
+r_norm <- rnorm(n_rows)
+sd(r_norm)
+mad(r_norm)
+median(abs(r_norm - median(r_norm)))
+median(abs(r_norm - median(r_norm)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:10000, function(x) {
+  boot_sample <-
+    r_norm[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_data <- t(boot_data)
+# Analyze bootstrapped variance
+head(boot_data)
+sum(is.na(boot_data))
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_data <- parLapply(clus_ter, 1:10000,
+  function(x, r_norm) {
+    boot_sample <-
+r_norm[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, r_norm=r_norm)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:10000,
+  function(x) {
+    boot_sample <-
+r_norm[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+boot_data <- rutils::do_call(rbind, boot_data)
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
 
-# Perform matrix inversion
-# Create random positive semi-definite matrix
-mat_rix <- matrix(runif(25), nc=5)
-mat_rix <- t(mat_rix) %*% mat_rix
-# Invert the matrix
-matrix_inv <- solve(mat_rix)
-inv_mat(mat_rix)
-all.equal(inv_mat, mat_rix)
-# Microbenchmark RcppArmadillo code
-library(microbenchmark)
-summary(microbenchmark(
-  inv_mat=inv_mat(mat_rix),
-  solve=solve(mat_rix),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-# Microbenchmark shows:
-# inv_mat() is over 10 times faster than solve()
-#      expr     mean median
-# 1 inv_mat  3.42669  2.933
-# 2 solve   32.00254 31.280
+price_s <- rutils::etf_env$VTI[, 4]
+# Define look-back window and a half window
+win_dow <- 11
+# Calculate time series of medians
+medi_an <- TTR::runMedian(price_s, n=win_dow)
+# Plot prices and medians
+dygraphs::dygraph(cbind(price_s, medi_an), main="VTI median") %>%
+  dyOptions(colors=c("black", "red"))
+# Calculate time series of z-scores
+ma_d <- TTR::runMAD(price_s, n=win_dow)
+z_scores <- (price_s - medi_an)/ma_d
+z_scores[1:win_dow, ] <- 0
+tail(z_scores, win_dow)
+range(z_scores)
 
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
-# Define AR(2) coefficients
-co_eff <- c(0.9, 0.09)
-n_rows <- 1e4
+# Plot histogram of z-scores
+x11(width=6, height=5)
+histo_gram <- hist(z_scores, col="lightgrey",
+  xlab="z-scores", breaks=50, xlim=c(-4, 4),
+  ylab="frequency", freq=FALSE,
+  main="Z-scores histogram")
+lines(density(z_scores, adjust=1.5),
+lwd=3, col="blue")
+
+# Calculate one-sided Hampel z-scores
+medi_an <- TTR::runMedian(price_s, n=win_dow)
+ma_d <- TTR::runMAD(price_s, n=win_dow)
+z_scores <- (price_s - medi_an)/ma_d
+z_scores[1:win_dow, ] <- 0
+tail(z_scores, win_dow)
+range(z_scores)
+# Calculate two-sided Hampel z-scores
+half_window <- win_dow %/% 2
+medi_an <- rutils::lag_it(medi_an, lagg=-half_window)
+ma_d <- rutils::lag_it(ma_d, lagg=-half_window)
+z_scores <- (price_s - medi_an)/ma_d
+z_scores[1:win_dow, ] <- 0
+tail(z_scores, win_dow)
+range(z_scores)
+
+# Define threshold value
+thresh_old <- 3
+# Calculate number of prices classified as bad data
+ba_d <- (abs(z_scores) > thresh_old)
+sum(ba_d)
+# Add 200 random price jumps into price_s
 set.seed(1121)
-in_nov <- rnorm(n_rows)
-# Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-# Simulate ARIMA using sim_arima()
-ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma),
-  as.numeric(arima_filter))
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  sim_arima=sim_arima(in_nov, rev(co_eff)),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+n_bad <- 200
+jump_s <- logical(NROW(price_s))
+jump_s[sample(x=NROW(jump_s), size=n_bad)] <- TRUE
+price_s[jump_s] <- price_s[jump_s]*
+  sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
+# Plot prices and medians
+dygraphs::dygraph(cbind(price_s, medi_an), main="VTI median") %>%
+  dyOptions(colors=c("black", "red"))
+# Calculate time series of z-scores
+medi_an <- TTR::runMedian(price_s, n=win_dow)
+ma_d <- TTR::runMAD(price_s, n=win_dow)
+z_scores <- (price_s - medi_an)/ma_d
+z_scores[1:win_dow, ] <- 0
+# Calculate number of prices classified as bad data
+ba_d <- (abs(z_scores) > thresh_old)
+sum(ba_d)
+
+# Calculate confusion matrix
+table(jump_s, ba_d)
+sum(ba_d)
+# FALSE positive (type I error)
+sum(jump_s & !ba_d)
+# FALSE negative (type II error)
+sum(!jump_s & ba_d)
+
+# Confusion matrix as function of thresh_old
+con_fuse <- function(res_ponse, z_scores, thresh_old) {
+    confu_sion <- table(res_ponse, (abs(z_scores) > thresh_old))
+    confu_sion <- confu_sion / rowSums(confu_sion)
+    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+  }  # end con_fuse
+con_fuse(jump_s, z_scores, thresh_old=thresh_old)
+# Define vector of thresholds
+threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+# Calculate error rates
+error_rates <- sapply(threshold_s, con_fuse,
+  res_ponse=jump_s,
+  z_scores=z_scores)  # end sapply
+error_rates <- t(error_rates)
+error_rates <- rbind(c(0, 1), error_rates)
+error_rates <- rbind(error_rates, c(1, 0))
+# Calculate area under ROC curve (AUC)
+true_pos <- (1 - error_rates[, "typeII"])
+true_pos <- (true_pos + rutils::lag_it(true_pos))/2
+false_pos <- rutils::diff_it(error_rates[, "typeI"])
+abs(sum(true_pos*false_pos))
+
+# Plot ROC Curve for Defaults
+plot(x=error_rates[, "typeI"],
+     y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate",
+     ylab="TRUE positive rate",
+     xlim=c(0, 1), ylim=c(0, 1),
+     main="ROC Curve for Hampel Classifier",
+     type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")

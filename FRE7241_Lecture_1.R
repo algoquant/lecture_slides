@@ -764,7 +764,7 @@ attributes(x_ts)
 # get the time zone of an xts object
 indexTZ(x_ts)
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() coerces zoo series into xts series
 st_ox <- as.xts(zoo_stx)
@@ -975,7 +975,7 @@ colnames(xts_yearly) <- sapply(
 head(xts_yearly)
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() coerces zoo series into xts series
 st_ox <- as.xts(zoo_prices)
@@ -986,7 +986,7 @@ stox_sub <- st_ox["2014-11", 1:4]
 xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])
@@ -1555,3 +1555,146 @@ lines(cumsum(zoo_mean), lwd=2, col="red")
 legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
  leg=c("orig prices", "mean prices"), lwd=2, bg="white",
  col=c("black", "red"))
+
+library(xtable)
+gambl_e <- data.frame(win=c("p", "a", "1 + a"), lose=c("q = 1 - p", "-b", "1 - b"))
+rownames(gambl_e) <- c("probability", "payout", "terminal wealth")
+# print(xtable(gambl_e), comment=FALSE, size="tiny")
+print(xtable(gambl_e), comment=FALSE)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Wealth of multiperiod binary betting
+wealth <- function(f, a=0.8, b=0.1, n=1e3, i=150) {
+  (1+f*a)^i * (1-f*b)^(n-i)
+}  # end wealth
+curve(expr=wealth, xlim=c(0, 1),
+xlab="betting fraction",
+ylab="wealth", main="", lwd=2)
+title(main="Wealth of Multiperiod Betting", line=0.1)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Define logarithmic utility
+utili_ty <- function(frac, p=0.3, a=20, b=1) {
+  p*log(1+frac*a) + (1-p)*log(1-frac*b)
+}  # end utili_ty
+# Plot utility
+curve(expr=utili_ty, xlim=c(0, 1),
+ylim=c(-0.5, 0.4), xlab="betting fraction",
+ylab="utility", main="", lwd=2)
+title(main="Logarithmic Utility", line=0.5)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Define and plot Kelly fraction
+kelly <- function(a, p=0.5, b=1) {
+  p/b - (1-p)/a
+}  # end kelly
+curve(expr=kelly, xlim=c(0, 5),
+ylim=c(-2, 1), xlab="betting odds",
+ylab="kelly fraction", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="max Kelly fraction=0.5")
+title(main="Kelly fraction", line=-0.8)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Plot several Kelly curves
+curve(expr=kelly(x, b=1), xlim=c(0, 5),
+ylim=c(-1, 1.5), xlab="betting odds",
+ylab="kelly fraction", main="", lwd=2)
+abline(h=0.5, lwd=2, col="red")
+text(x=1.5, y=0.5, pos=3, cex=0.8, labels="b=1.0; max fraction=0.5")
+curve(expr=kelly(x, b=0.5), add=TRUE, main="", lwd=2)
+abline(h=1.0, lwd=2, col="red")
+text(x=1.5, y=1.0, pos=3, cex=0.8, labels="b=0.5; max fraction=1.0")
+title(main="Kelly fraction", line=-0.8)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Simulated log-normal wealth paths
+calc_wealth <- function(x) exp(cumsum(rnorm(1e3, sd=0.01)))
+wealth_paths <- sapply(1:3, calc_wealth)
+plot(wealth_paths[, 1], type="l", lwd=3,
+     main="Log-normal Wealth Paths",
+     ylim=range(wealth_paths),
+     lty="solid", xlab="time", ylab="wealth")
+lines(wealth_paths[, 2], col="blue", lwd=3)
+lines(wealth_paths[, 3], col="orange", lwd=3)
+abline(h=0.5, col="red", lwd=3)
+text(x=200, y=0.5, pos=3, labels="liquidation threshold")
+
+library(rutils)
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+c(mean=mean(re_turns), std=sd(re_turns))
+range(re_turns)
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Define vectorized logarithmic utility function
+utili_ty <- function(lamb_da, re_turns) {
+  sapply(lamb_da, function(x)
+    sum(log(1 + x*re_turns)))
+}  # end utili_ty
+# Plot the logarithmic utility
+curve(expr=utili_ty(x, re_turns=re_turns),
+xlim=c(0.1, 5), xlab="leverage", ylab="utility",
+main="Utility of Asset Returns", lwd=2)
+
+# Approximate Kelly leverage
+mean(re_turns)/var(re_turns)
+PerformanceAnalytics::KellyRatio(R=re_turns, method="full")
+# Kelly leverage
+unlist(optimize(
+  f=function(x) -utili_ty(x, re_turns),
+  interval=c(1, 4)))
+
+# Calculate wealth paths
+kelly_ratio <- drop(mean(re_turns)/var(re_turns))
+kelly_wealth <- cumprod(1 + kelly_ratio*re_turns)
+hyper_kelly <- cumprod(1 + (kelly_ratio+2)*re_turns)
+sub_kelly <- cumprod(1 + (kelly_ratio-2)*re_turns)
+kelly_paths <- cbind(kelly_wealth, hyper_kelly, sub_kelly)
+colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
+
+# Plot wealth paths
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("black", "orange", "blue")
+chart_Series(kelly_paths, theme=plot_theme,
+       name="Wealth Paths")
+legend("topleft", legend=colnames(kelly_paths),
+ inset=0.1, bg="white", lty=1, lwd=6,
+ col=plot_theme$col$line.col, bty="n")
+
+# Open x11 for plotting
+x11(width=5, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+# Define CRRA utility
+cr_ra <- function(w, ra) {
+  (w^(1-ra) - 1)/(1-ra)
+}  # end cr_ra
+# Plot utility functions
+curve(expr=cr_ra(x, ra=0.7), xlim=c(0.5, 5), lwd=3,
+xlab="wealth", ylab="utility", main="", col="blue")
+curve(expr=log, add=TRUE, lwd=3)
+curve(expr=cr_ra(x, ra=1.3), add=TRUE, lwd=3, col="red")
+# Add title and legend
+title(main="CRRA Utility", line=0.5)
+legend(x="topleft", legend=c("risk seeking", "logarithmic", "risk averse"),
+ title="Risk Aversion", inset=0.05, cex=0.8, bg="white",
+ lwd=6, lty=1, bty="n", col=c("blue", "black", "red"))
