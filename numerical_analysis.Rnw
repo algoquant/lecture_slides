@@ -507,15 +507,25 @@ cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
 for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
   cumsum=cumsum(vec_tor),
-  loop=for (i in 2:NROW(vec_tor))
-    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  loop_alloc={
+    cum_sum2 <- vec_tor
+    for (i in 2:NROW(vec_tor))
+      cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+  },
+  loop_nalloc={
+    # Doesn't allocate memory to cum_sum3
+    cum_sum3 <- vec_tor[1]
+    for (i in 2:NROW(vec_tor))
+      # This command adds an extra element to cum_sum3
+      cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
+  },
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -674,7 +684,7 @@ summary(microbenchmark(
     \column{0.4\textwidth}
       All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest.
       \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops.
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so it's preferred over \texttt{for()} loops.
       \vskip1ex
       Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions.
     \column{0.6\textwidth}
@@ -1433,9 +1443,9 @@ legend(x="bottomright", legend=colnames(vec_tor4),
       \vskip1ex
       The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
       \vskip1ex
-      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} \texttt{p}.
+      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$.
       \vskip1ex
-      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} \texttt{p}.
+      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
       \vskip1ex
       The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow.
       \vskip1ex
@@ -1611,7 +1621,7 @@ sd(boot_data[, "mean"])
 # Standard error of median from bootstrap
 sd(boot_data[, "median"])
 plot(density(boot_data[, "median"]),
-     lwd=2, xlab="regression slopes",
+     lwd=2, xlab="estimate of median",
      main="Distribution of Bootstrapped Median")
 abline(v=mean(boot_data[, "median"]),
        lwd=2, col="red")
@@ -1996,6 +2006,10 @@ sum(boot_data)/n_boot
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      \emph{Variance reduction} are techniques for increasing the precision of Monte Carlo simulations.
+      \vskip1ex
+      \emph{Naive Monte Carlo} refers to \emph{Monte Carlo} simulation without using any \emph{variance reduction} technique.
+      \vskip1ex
       \emph{Antithetic Sampling} is a \emph{variance reduction} technique in which a new random sample is computed from an existing sample, without generating new random numbers.
       \vskip1ex
       In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$.
@@ -2985,23 +2999,23 @@ rastri_gin(op_tim$par, pa_ram=1)
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Sample of normal variables
-r_norm <- rnorm(1000, mean=4, sd=2)
+da_ta <- rnorm(1000, mean=4, sd=2)
 # Objective function is log-likelihood
-object_ive <- function(pa_r, r_norm) {
+object_ive <- function(pa_r, da_ta) {
   sum(2*log(pa_r[2]) +
-    ((r_norm - pa_r[1])/pa_r[2])^2)
+    ((da_ta - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
 # Vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, r_norm)
-    object_ive(c(mean, sd), r_norm),
+  FUN=function(mean, sd, da_ta)
+    object_ive(c(mean, sd), da_ta),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
 objective_grid <- outer(par_mean, par_sd,
-        vec_objective, r_norm=r_norm)
+        vec_objective, da_ta=da_ta)
 objective_min <- which(  # grid search
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
@@ -3072,21 +3086,21 @@ par_init <- c(mean=0, sd=1)
 # Perform optimization using optim()
 optim_fit <- optim(par=par_init,
   fn=object_ive, # log-likelihood function
-  r_norm=r_norm,
+  da_ta=da_ta,
   method="L-BFGS-B", # quasi-Newton method
   upper=c(10, 10), # upper constraint
   lower=c(-10, 0.1)) # lower constraint
 # Optimal parameters
 optim_fit$par
 # Perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(r_norm, densfun="normal")
+optim_fit <- MASS::fitdistr(da_ta, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
       @
 \vspace{-2em}
       <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # Plot histogram
-histo_gram <- hist(r_norm, plot=FALSE)
+histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_fit$par["mean"],
@@ -3115,27 +3129,27 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
 \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Sample from mixture of normal distributions
-r_norm <- c(rnorm(100, sd=1.0),
+da_ta <- c(rnorm(100, sd=1.0),
             rnorm(100, mean=4, sd=1.0))
 # Objective function is log-likelihood
-object_ive <- function(pa_r, r_norm) {
+object_ive <- function(pa_r, da_ta) {
   likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((r_norm-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((r_norm-pa_r[4])/pa_r[5])
+  dnorm((da_ta-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((da_ta-pa_r[4])/pa_r[5])
   if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # Vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, r_norm)
-    object_ive(c(w, m1, s1, mean, sd), r_norm),
+  FUN=function(mean, sd, w, m1, s1, da_ta)
+    object_ive(c(w, m1, s1, mean, sd), da_ta),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
 objective_grid <- outer(par_mean, par_sd,
-          vec_objective, r_norm=r_norm,
+          vec_objective, da_ta=da_ta,
           w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
 colnames(objective_grid) <- round(par_sd, 2)
@@ -3179,7 +3193,7 @@ par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # Perform optimization
 optim_fit <- optim(par=par_init,
             fn=object_ive,
-            r_norm=r_norm,
+            da_ta=da_ta,
             method="L-BFGS-B",
             upper=c(1,10,10,10,10),
             lower=c(0,-10,0.2,-10,0.2))
@@ -3188,7 +3202,7 @@ optim_fit$par
 \vspace{-2em}
       <<optim_mixture,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # Plot histogram
-histo_gram <- hist(r_norm, plot=FALSE)
+histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {

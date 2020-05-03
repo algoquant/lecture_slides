@@ -1856,93 +1856,6 @@ head(zoo_eurusd, 4)
 
 
 %%%%%%%%%%%%%%%
-\subsection{ETF Portfolio for Investment Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      We will define a portfolio of \emph{ETFs} for illustrating various investment strategies.
-      \vskip1ex
-      The portfolio contains \emph{ETFs} representing different \emph{investment styles} (value, growth, size), and \emph{industry sectors} (energy, financial, etc.)
-      \vskip1ex
-      The \emph{ETFs} with names \emph{X*} represent industry \emph{sector funds}.
-      \vskip1ex
-      The \emph{ETFs} with names \emph{I*} represent \emph{style funds} (value, growth, size).
-      \vskip1ex
-      \emph{IWB} is the Russell 1000 small-cap fund.
-      \vskip1ex
-      The portfolio also contains the \emph{VXX} and \emph{SVXY} \emph{VIX} volatility funds.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(xtable)
-# Define ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
-  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
-  "IWB", "IWD", "IWF", "VXX", "SVXY")
-# Read etf database into data frame
-etf_list <- read.csv(
-  file="C:/Develop/lecture_slides/data/etf_list.csv",
-               stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# Select from etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# Shorten names
-etf_names <- sapply(etf_list$Name,
-                    function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -NROW(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list["SVXY", "Name"] <- "Short VIX Futures"
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{ETF and ETN Mechanics}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{ETNs} are similar to \emph{ETFs}, with the main difference that \emph{ETFs} are equity shares in a fund which owns the underlying assets, while \emph{ETNs} are notes from issuers which promise payouts according to a formula tied to the underlying asset.
-      \vskip1ex
-      \emph{ETNs} don't own the underlying assets and have additional counterparty credit risk to the \emph{ETN} issuer.
-      \vskip1ex
-      \emph{DBC} is a commodity \emph{ETF}, providing the return on an index of 14 commodity futures.
-      \vskip1ex
-      There are several exchange-traded funds (\emph{ETFs}) and exchange traded notes (\emph{ETNs}) which are linked to \emph{VIX} futures, providing an easy way to invest in \emph{VIX} futures.
-      \vskip1ex
-      \emph{VXX} is an \emph{ETN} providing the total return of a \emph{long VIX} futures contract (specifically the \emph{S\&P} VIX Short-Term Futures Index).
-      \vskip1ex
-      \emph{SVXY} is an \emph{ETF} providing the total return of a \emph{short VIX} futures contract.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
-      @
-      Standard and Poor's provides a document explaining the calculation of the total return on \emph{VIX} futures indices:\\
-      \hskip1em\href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Downloading Stock Prices Using \protect\emph{tseries}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2180,7 +2093,7 @@ head(cbind(daily_returns, vti_returns))
 all.equal(daily_returns, vti_returns, check.attributes=FALSE)
 # Calculate returns for all prices in etf_env$price_s
 re_turns <- lapply(etf_env$price_s, function(x_ts) {
-  daily_returns <- quantmod::dailyReturn(x_ts)
+  daily_returns <- quantmod::dailyReturn(na.omit(x_ts))
   colnames(daily_returns) <- names(x_ts)
   daily_returns
 })  # end lapply
@@ -2277,8 +2190,8 @@ colnames(sp_500)
 sym_bols <- sp_500$co_tic
 # Get duplicate tickers
 ta_ble <- table(sym_bols)
-ta_ble[ta_ble>1]
-dupli_cate <- names(ta_ble[ta_ble>1])
+dupli_cate <- ta_ble[ta_ble>1]
+dupli_cate <- names(dupli_cate)
 # Get duplicate records (rows) of sp_500
 sp_500[sym_bols %in% dupli_cate, ]
 # Get unique tickers
@@ -2329,8 +2242,8 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-      getSymbols(sym_bol, src="tiingo", adjust=TRUE,
-                 from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+      getSymbols(sym_bol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
+                 from="1990-01-01", env=env_sp500, api.key="d84fc2a9c5bde2d68e33034f65a838092c6b9f10"),
       # Error handler captures error condition
       error=function(error_cond) {
         print(paste("error handler: ", error_cond))
@@ -2399,7 +2312,7 @@ rm("BF-B", envir=env_sp500)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Scrubbing Bad Data Time Series To Files}
+\subsection{draft: Scrubbing Bad Data Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2436,6 +2349,7 @@ dir_name <- "C:/Develop/lecture_slides/data/"
 save(env_sp500, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
 dir_name <- "C:/Develop/lecture_slides/data/SP500/"
+dir.create(dir_name)
 for (sym_bol in ls(env_sp500)) {
   zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
@@ -2602,7 +2516,7 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-      getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500,
+      getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=env_sp500,
                  output.size="full", api.key="T7JPW54ES8G75310"),
       # error handler captures error condition
       error=function(error_cond) {
@@ -2659,7 +2573,7 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
 getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
              TA="add_Vo()",
              name="S&P500 index")
@@ -2699,7 +2613,7 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download DJIA prices into etf_env
 getSymbols("DJIA", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$DJIA["2016/"],
              TA="add_Vo()",
              name="DJIA index")
@@ -2744,7 +2658,7 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
 getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
              TA="add_Vo()",
              name="S&P500 index")
@@ -3203,7 +3117,7 @@ vix_env <- new.env()
 # Download VIX data for the months 6, 7, and 8 in 2018
 library(qmao)
 quantmod::getSymbols("VX", Months=1:12,
-  Years=2018, src="cfe", env=vix_env)
+  Years=2018, src="cfe", auto.assign=TRUE, env=vix_env)
 # Or
 qmao::getSymbols.cfe(Symbols="VX",
   Months=6:8, Years=2018, env=vix_env,

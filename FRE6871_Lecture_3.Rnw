@@ -66,7 +66,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{March 23, 2020}
+\date{April 20, 2020}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -80,46 +80,8 @@ knit_theme$set(thm)
 \maketitle
 
 
-
 %%%%%%%%%%%%%%%
 \section{Optimizing \texttt{R} Code for Speed and Memory Usage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      How to write fast \texttt{R} code:
-      \begin{itemize}
-        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets,
-        \item Use \emph{compiled} \texttt{C++} \texttt{R} functions instead of using interpreted \texttt{R} code for the same task,
-        \item Write functions in \texttt{C++} and compile them using \emph{Rcpp} and \emph{RcppArmadillo},
-        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler},
-        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them),
-        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function),
-        \item Use \emph{function methods} directly instead of using \emph{generic functions},
-        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
-      \end{itemize}
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate the square root of a vector
-vec_tor <- runif(1e6)
-all.equal(sqrt(vec_tor), vec_tor^0.5)
-# Microbenchmark the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  sqrt(vec_tor),
-  vec_tor^0.5,
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -149,6 +111,186 @@ microbenchmark(sqrt(va_r), va_r^0.5, times=10)
       The "\texttt{times}" parameter is the number of times the expression is evaluated.
       \vskip1ex
       The choice of the "\texttt{times}" parameter is a tradeoff between the time it takes to run \texttt{microbenchmark()}, and the desired accuracy,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      How to write fast \texttt{R} code:
+      \begin{itemize}
+        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets.
+        \item Use \texttt{R} functions which are \emph{compiled} \texttt{C++} code, instead of using interpreted \texttt{R} code.
+        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function).
+        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them).
+        \item Write \texttt{C++} functions in \emph{Rcpp} and \emph{RcppArmadillo}.
+        \item Use \emph{function methods} directly instead of using \emph{generic functions}.
+        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
+        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler}.
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate cumulative sum of a vector
+vec_tor <- runif(1e5)
+# Use compiled function
+cum_sum <- cumsum(vec_tor)
+# Use for loop
+cum_sum2 <- vec_tor
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+# Compare the two methods
+all.equal(cum_sum, cum_sum2)
+# Microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  cumsum=cumsum(vec_tor),
+  loop=for (i in 2:NROW(vec_tor))
+    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} \texttt{C++} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Compiled} \texttt{C++} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}.
+      \vskip1ex
+      This makes \emph{compiled} \texttt{C++} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R}.
+      \vskip1ex
+      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function.
+      \vskip1ex
+      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function.
+      \vskip1ex
+      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
+      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+va_r <- runif(1e6)
+# sum() is much faster than mean()
+summary(
+  microbenchmark(sum(va_r), mean(va_r), times=10)
+  )[, c(1, 4, 5)]
+# any() is a compiled primitive function
+any
+# any() is much faster than %in% wrapper for match()
+summary(
+  microbenchmark(any(va_r == 1), {1 %in% va_r}, times=10)
+  )[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch.
+      \vskip1ex
+      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames.
+      \vskip1ex
+      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames.
+      \vskip1ex
+      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch.
+      \vskip1ex
+      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data.
+      \vskip1ex
+      Such specialized functions are faster but less flexible, so they may fail with different types of data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(microbenchmark)
+mat_rix <- matrix(1:9, ncol=3, # Create matrix
+  dimnames=list(paste0("row", 1:3),
+                paste0("col", 1:3)))
+# Create specialized function
+matrix_to_dframe <- function(mat_rix) {
+  n_cols <- ncol(mat_rix)
+  dframe <- vector("list", n_cols)  # empty vector
+  for (in_dex in 1:n_cols)  # Populate vector
+    dframe <- mat_rix[, in_dex]
+  attr(dframe, "row.names") <-  # Add attributes
+    .set_row_names(NROW(mat_rix))
+  attr(dframe, "class") <- "data.frame"
+  dframe  # Return data frame
+}  # end matrix_to_dframe
+# Compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(mat_rix),
+  as.data.frame.matrix(mat_rix),
+  as.data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest.
+      \vskip1ex
+      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops.
+      \vskip1ex
+      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Matrix with 5,000 rows
+mat_rix <- matrix(rnorm(10000), ncol=2)
+# Allocate memory for row sums
+row_sums <- numeric(NROW(mat_rix))
+summary(microbenchmark(
+  row_sums=rowSums(mat_rix),  # end row_sums
+  ap_ply=apply(mat_rix, 1, sum),  # end apply
+  l_apply=lapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ]),
+    FUN.VALUE=c(sum=0)),  # end vapply
+  s_apply=sapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end sapply
+  for_loop=for (i in 1:NROW(mat_rix)) {
+    row_sums[i] <- sum(mat_rix[i,])
+  },  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
   \end{columns}
 \end{block}
 
@@ -209,303 +351,69 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} \texttt{C++} Functions}
+\subsection{\protect\emph{Byte Compilation} of \texttt{R} Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Compiled} \texttt{C++} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}.
+      The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted much faster by a \emph{byte code interpreter}.
       \vskip1ex
-      This makes \emph{compiled} \texttt{C++} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R}.
+      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about $2$ to \texttt{5} times.
       \vskip1ex
-      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function.
+      The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation}.
       \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function.
+      The function \texttt{compiler::cmpfun()} performs \emph{byte-compilation} of a function.
       \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0}.
+      When a function is passed into some functionals (like \texttt{microbenchmark()}) it is automatically \emph{byte-compiled} \emph{just-in-time} (JIT), so that when it's run the second time it runs faster.
+      \vskip1ex
+      The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation}.
+      \vskip1ex
+      \emph{JIT} is disabled if the \texttt{level} argument is equal to $0$, with greater \texttt{level} values forcing more extensive compilation.
+      \vskip1ex
+      The default \emph{JIT} \texttt{level} is $3$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-va_r <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(va_r), mean(va_r), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(va_r == 1), {1 %in% va_r}, times=10)
-  )[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Vector Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Vectorized} functions accept \texttt{vectors} as their arguments, and return a vector of the same length as their value.
-      \vskip1ex
-      Many \emph{vectorized} functions are also \emph{compiled} (they pass their data to compiled \texttt{C++} code), which makes them very fast.
-      \vskip1ex
-      The following \emph{vectorized compiled} functions calculate cumulative values over large vectors:
-      \begin{itemize}
-        \item \texttt{cummax()}
-        \item \texttt{cummin()}
-        \item \texttt{cumsum()}
-        \item \texttt{cumprod()}
-      \end{itemize}
-      Standard arithmetic operations (\texttt{"+", "-"}, etc.) can be applied to \texttt{vectors}, and are implemented as \emph{vectorized compiled} functions.
-      \vskip1ex
-      \texttt{ifelse()} and \texttt{which()} are \emph{vectorized compiled} functions for logical operations.
-      \vskip1ex
-      But many \emph{vectorized} functions perform their calculations in \texttt{R} code, and are therefore slow, but convenient to use.
-    \column{0.5\textwidth}
-        <<eval=FALSE>>=
-vec_tor1 <- rnorm(1000000)
-vec_tor2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-# Sum two vectors in two different ways
+        <<echo=TRUE,eval=FALSE>>=
+# Disable JIT
+jit_level <- compiler::enableJIT(0)
+# Create inefficient function
+my_mean <- function(x) {
+  out_put <- 0; n_elem <- NROW(x)
+  for(it in 1:n_elem)
+    out_put <- out_put + x[it]/n_elem
+  out_put
+}  # end my_mean
+# Byte-compile function and inspect it
+mymean_comp <- compiler::cmpfun(my_mean)
+mymean_comp
+# Test function
+vec_tor <- runif(1e3)
+all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
+# microbenchmark byte-compile function
 summary(microbenchmark(
-  # Sum vectors using "for" loop
-  r_loop=(for (i in 1:NROW(vec_tor1)) {
-    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }),
-  # Sum vectors using vectorized "+"
-  vec_torized=(vec_tor1 + vec_tor2),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Allocate memory for cumulative sum
-cum_sum <- numeric(NROW(big_vector))
-cum_sum[1] <- big_vector[1]
-# Calculate cumulative sum in two different ways
-summary(microbenchmark(
-# Cumulative sum using "for" loop
-  r_loop=(for (i in 2:NROW(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }),
-# Cumulative sum using "cumsum"
-  vec_torized=cumsum(big_vector),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vectorized Functions for Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{apply()} loops are very inefficient for calculating statistics over rows and columns of very large matrices.
-      \vskip1ex
-      \texttt{R} has very fast \emph{vectorized compiled} functions for calculating sums and means of rows and columns:
-      \begin{itemize}
-        \item \texttt{rowSums()}
-        \item \texttt{colSums()}
-        \item \texttt{rowMeans()}
-        \item \texttt{colMeans()}
-      \end{itemize}
-      These \emph{vectorized} functions are also \emph{compiled} functions, so they're very fast because they pass their data to compiled \texttt{C++} code, which performs the loop calculations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-# Matrix with 5,000 rows
-mat_rix <- matrix(rnorm(10000), ncol=2)
-# Calculate row sums two different ways
-all.equal(rowSums(mat_rix),
-  apply(mat_rix, 1, sum))
-summary(microbenchmark(
-  row_sums=rowSums(mat_rix),
-  ap_ply=apply(mat_rix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fast \texttt{R} Code for Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{pmax()} and \texttt{pmin()} calculate the "parallel" maxima (minima) of multiple vector arguments.
-      \vskip1ex
-      \texttt{pmax()} and \texttt{pmin()} return a vector, whose \emph{n}-th element is equal to the maximum (minimum) of the \emph{n}-th elements of the arguments, with shorter vectors recycled if necessary.
-      \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are methods of generic functions \texttt{pmax()} and \texttt{pmin()}, designed for atomic vectors.
-      \vskip1ex
-      \texttt{pmax()} can be used to quickly calculate the maximum values of rows of a matrix, by first converting the matrix columns into a list, and then passing them to \texttt{pmax()}.
-      \vskip1ex
-      \texttt{pmax.int()} and \texttt{pmin.int()} are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-str(pmax)
-# Calculate row maximums two different ways
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
-      lapply(seq_along(mat_rix[1, ]),
-        function(in_dex) mat_rix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(mat_rix[, 1]),
-        function(in_dex) max(mat_rix[in_dex, ]))),
+  mean(vec_tor),
+  mymean_comp(vec_tor),
+  my_mean(vec_tor),
   times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{matrixStats} for Fast Matrix Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/matrixStats}{\color{blue}{\emph{matrixStats}}}
-      contains functions for calculating aggregations over matrix columns and rows, and other matrix computations, such as:
-      \begin{itemize}
-        \item estimating location and scale: \texttt{rowRanges()}, \texttt{colRanges()}, and \texttt{rowMaxs()}, \texttt{rowMins()}, etc.,
-        \item testing and counting values: \texttt{colAnyMissings()}, \texttt{colAnys()}, etc.,
-        \item cumulative functions: \texttt{colCumsums()}, \texttt{colCummins()}, etc.,
-        \item binning and differencing: \texttt{binCounts()}, \texttt{colDiffs()}, etc.,
-      \end{itemize}
-      A summary of \texttt{matrixStats} functions can be found under:\\
-      \url{https://cran.r-project.org/web/packages/matrixStats/vignettes/matrixStats-methods.html}
-      \vskip1ex
-      The \texttt{matrixStats} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-install.packages("matrixStats")  # Install package matrixStats
-library(matrixStats)  # load package matrixStats
-# Calculate row min values three different ways
+# Create another inefficient function
+sapply2 <- function(x, FUN, ...) {
+  out_put <- vector(length=NROW(x))
+  for (it in seq_along(x))
+    out_put[it] <- FUN(x[it], ...)
+  out_put
+}  # end sapply2
+sapply2_comp <- compiler::cmpfun(sapply2)
+all.equal(sqrt(vec_tor),
+          sapply2(vec_tor, sqrt),
+          sapply2_comp(vec_tor, sqrt))
 summary(microbenchmark(
-  row_mins=rowMins(mat_rix),
-  p_min=
-    do.call(pmin.int,
-            lapply(seq_along(mat_rix[1, ]),
-                   function(in_dex)
-                     mat_rix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int,
-            as.data.frame.matrix(mat_rix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \texttt{Rfast} for Fast Matrix and Numerical Computations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/Rfast}{\color{blue}{\emph{Rfast}}}
-      contains functions for fast matrix and numerical computations, such as:
-      \begin{itemize}
-        \item \texttt{colMedians()} and \texttt{rowMedians()} for matrix column and row medians,
-        \item \texttt{colCumSums()}, \texttt{colCumMins()} for cumulative sums and min/max,
-        \item \texttt{eigen.sym()} for performing eigenvalue matrix decomposition,
-      \end{itemize}
-      The \texttt{Rfast} functions are very fast because they are \emph{compiled} functions (compiled from \texttt{C++} code).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<eval=FALSE>>=
-install.packages("Rfast")  # Install package Rfast
-library(Rfast)  # load package Rfast
-# Benchmark speed of calculating ranks
-va_r <- 1e3
-all.equal(rank(va_r), Rfast::Rank(va_r))
-summary(microbenchmark(
-  r=rank(va_r),
-  fast=Rank(va_r),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Benchmark speed of calculating column medians
-va_r <- matrix(1e4, nc=10)
-all.equal(matrixStats::colMedians(va_r), Rfast::colMedians(va_r))
-summary(microbenchmark(
-  r=matrixStats::colMedians(va_r),
-  fast=Rfast::colMedians(va_r),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using Vectorized Operations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R}-style code is code that relies on \emph{vectorized compiled} functions, instead of \texttt{for()} loops.
-      \vskip1ex
-      \texttt{for()} loops in \texttt{R} are slow because they call functions multiple times, and individual function calls are compute-intensive and slow.
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{vectorized compiled} function, and is therefore very fast.
-      \vskip1ex
-      Vectorized assignments using brackets \texttt{"[]"} and \texttt{Boolean} or \texttt{integer} vectors to subset vectors or matrices are therefore preferable to \texttt{for()} loops.
-      \vskip1ex
-      \texttt{R} code that uses \emph{vectorized compiled} functions can be as fast as \texttt{C++} code.
-      \vskip1ex
-      \texttt{R}-style code is also very \emph{expressive}, i.e. it allows performing complex operations with very few lines of code.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<eval=FALSE>>=
-summary(microbenchmark(  # Assign values to vector three different ways
-# Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2},
-# Slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # Assign values to vector two different ways
-# Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)},
-# Slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  sqrt(vec_tor),
+  sapply2_comp(vec_tor, sqrt),
+  sapply2(vec_tor, sqrt),
+  times=10))[, c(1, 4, 5)]
+# enable JIT
+compiler::enableJIT(jit_level)
       @
   \end{columns}
 \end{block}
@@ -561,11 +469,11 @@ summary(microbenchmark(  # Assign values to vector two different ways
       Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<eval=FALSE>>=
-library(parallel)  # load package parallel
+      <<echo=TRUE,eval=FALSE>>=
+library(parallel)  # Load package parallel
 # Get short description
 packageDescription("parallel")
-# load help page
+# Load help page
 help(package="parallel")
 # list all objects in "parallel"
 ls("package:parallel")
@@ -599,7 +507,7 @@ ls("package:parallel")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Define function that pauses execution
@@ -615,7 +523,7 @@ clus_ter <- makeCluster(n_cores)
 # Perform parallel loop under Windows
 paw_s <- parLapply(clus_ter, 1:10, paws,
                  sleep_time=0.01)
-library(microbenchmark)  # load package microbenchmark
+library(microbenchmark)  # Load package microbenchmark
 # Compare speed of lapply versus parallel computing
 summary(microbenchmark(
   l_apply=lapply(1:10, paws, sleep_time=0.01),
@@ -643,7 +551,7 @@ stopCluster(clus_ter)
       \vskip1ex
       Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks.
       <<echo=(-(1:10)),eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -674,7 +582,7 @@ rownames(compute_times) <- iter_ations
       \includegraphics[width=0.5\paperwidth]{figure/parallel_plot.png}\\
       \vspace{-1em}
       <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 plot(x=rownames(compute_times),
      y=compute_times[, "lapply"],
      type="l", lwd=2, col="blue",
@@ -706,7 +614,7 @@ legend(x="topleft", legend=colnames(compute_times),
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -754,7 +662,7 @@ stopCluster(clus_ter)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -813,7 +721,7 @@ stopCluster(clus_ter)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -828,182 +736,6 @@ sum(unlist(out_put))
 stopCluster(clus_ter)
 # Perform parallel loop under Mac-OSX or Linux
 out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Simulation}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Variance Reduction Using Antithetic Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Antithetic Sampling} is a \emph{variance reduction} technique in which a new random sample is computed from an existing sample, without generating new random numbers.
-      \vskip1ex
-      In the case of a \emph{Normal} random sample $\phi$, the new \emph{antithetic} sample is equal to minus the existing sample: $\phi_{new} = -\phi$.
-      \vskip1ex
-      In the case of a \emph{Uniform} random sample $\phi$, the new \emph{antithetic} sample is equal to $1$ minus the existing sample: $\phi_{new} = 1-\phi$.
-      \vskip1ex
-      \emph{Antithetic Sampling} doubles the number of independent samples, so it reduces the standard error by $\sqrt{2}$.
-      \vskip1ex
-      \emph{Antithetic Sampling} doesn't change any other parameters of the simulation.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Estimate the 95% quantile
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(n_rows,
-                                    replace=TRUE)]
-  quantile(boot_sample, 0.95)
-})  # end sapply
-sd(boot_data)
-# Estimate the 95% quantile using antithetic sampling
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(n_rows,
-                                    replace=TRUE)]
-  quantile(c(boot_sample, -boot_sample), 0.95)
-})  # end sapply
-# Standard error of quantile from bootstrap
-sd(boot_data)
-sqrt(2)*sd(boot_data)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Rare Events Using Probability Tilting}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Rare events can be simulated more accurately by \emph{tilting} (deforming) their probability distribution, so that rare events occur more frequently.
-      \vskip1ex
-      A popular probability \emph{tilting} method is exponential (Esscher) tilting:
-      \begin{displaymath}
-        p(x, \lambda) = \frac{\exp(\lambda x) p(x)}{\int _{-\infty}^{\infty} {\exp(\lambda x) p(x)} dx}
-      \end{displaymath}
-      Where $p(x)$ is the probability density, $p(x, \lambda)$ is the tilted density, and $\lambda$ is the tilting coefficient.
-      \vskip1ex
-      For the \emph{normal} distribution $N(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}$, exponential tilting is equivalent to shifting the distribution by $\lambda$:
-      \begin{align*}
-        N(x, \lambda) = \frac{\exp(\lambda x) \exp(-x^2/2)}{\int _{-\infty}^{\infty} {\exp(\lambda x) \exp(-x^2/2)} dx} = \\
-        \frac{\exp(-(x - \lambda)^2/2)}{\sqrt{2\pi}} = \\
-        \exp(x \lambda - \lambda^2/2) \cdot N(x, \lambda = 0)
-      \end{align*}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/norm_dist_shifted.png}\\
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-3, 4),
-      main="Shifted Normal distribution function",
-      xlab="", ylab="", lwd=3, col="blue")
-# Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-      lwd=3, col="red")
-# Add vertical dashed lines
-abline(v=0, lwd=3, col="blue", lty="dashed")
-abline(v=1, lwd=3, col="red", lty="dashed")
-arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
-       code=2, angle=20,
-       length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda),
-     pos=3, cex=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Variance Reduction Using Importance Sampling}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Importance sampling} is a \emph{variance reduction} technique used for simulating rare events more accurately.
-      \vskip1ex
-      The \emph{variance} of an estimate produced by simulation decreases with the number of events which contribute to the estimate: $\sigma^2 \propto \frac{1}{n}$.
-      \vskip1ex
-      \emph{Importance sampling} simulates rare events more frequently by \emph{tilting} the probability distribution, so that more events contribute to the simulation estimate.
-      \vskip1ex
-      The simulation outputs are then weighted (multiplied) to compensate for the tilting of the probability.
-      \vskip1ex
-      The weights are equal to the ratio of the base probability distribution divided by the tilted distribution.
-      \vskip1ex
-      For the \emph{normal} distribution the weights are equal to:
-      \begin{displaymath}
-        w_x = \exp(-x \lambda + \lambda^2/2)
-      \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121) # reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-da_ta <- sort(da_ta)
-# Monte Carlo cumulative probability
-pnorm(-2)
-integrate(dnorm, low=2, up=Inf)
-sum(da_ta > 2)/n_rows
-# Generate importance sample
-lamb_da <- 1.5
-data_is <- da_ta + lamb_da
-# Importance cumulative probability
-sum(data_is > 2)/n_rows
-weight_s <- exp(-lamb_da*data_is + lamb_da^2/2)
-sum((data_is > 2)*weight_s)/n_rows
-# Bootstrap of standard errors of cumulative probability
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  m_c <- sum(da_ta > 2)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  i_s <- sum((da_ta > 2)*weight_s)/n_rows
-  c(MC=m_c,Importance=i_s)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-      function(x) c(mean=mean(x), sd=sd(x)))
-# Monte Carlo expected value
-integrate(function(x) x*dnorm(x), low=2, up=Inf)
-sum((da_ta > 2)*da_ta)/n_rows
-# Importance expected value
-sum((data_is > 2)*data_is)/n_rows
-sum((data_is > 2)*data_is*weight_s)/n_rows
-# Bootstrap of standard errors of expected value
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  m_c <- sum((da_ta > 2)*da_ta)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  i_s <- sum((da_ta > 2)*da_ta*weight_s)/n_rows
-  c(MC=m_c,Importance=i_s)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-      function(x) c(mean=mean(x), sd=sd(x)))
       @
   \end{columns}
 \end{block}
@@ -1119,7 +851,7 @@ text(x=qnorm(0.025)-0.1, y=0.15,
       \end{displaymath}
       Where $\rho$ is the correlation between asset values.
       \vskip1ex
-      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $N(0, 1)$.
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $\phi(0, 1)$.
       \vskip1ex
       The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor.
       \vskip1ex
@@ -1816,395 +1548,6 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
 \end{frame}
 
 
-%%%%%%%%%%%%%%%
-\subsection{Function for Simulating \protect\emph{VaR} Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.7\textwidth}
-      The function \texttt{calc\_var()} simulates default losses under the \emph{Vasicek} model, for a vector of confidence levels, and calculates a vector of \emph{VaR} and \emph{CVaR} values.
-      <<echo=TRUE,eval=FALSE>>=
-calc_var <- function(def_thresh, # Default thresholds
-                     l_gd=0.6, # loss given default
-                     rho_sqrt, rho_sqrtm, # asset correlation
-                     n_simu=1000, # number of simulations
-                     level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) {
-  # Define model parameters
-  n_assets <- NROW(def_thresh)
-  # Simulate losses under Vasicek model
-  system_atic <- rnorm(n_simu)
-  asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-  asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-  loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
-  # Calculate VaRs and CVaRs
-  var_s <- quantile(loss_es, probs=level_s)
-  cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es >= va_r])
-  })  # end sapply
-  names(var_s) <- level_s
-  names(cvar_s) <- level_s
-  c(var_s, cvar_s)
-}  # end calc_var
-      @
-    \column{0.3\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of \protect\emph{VaR} Using Bootstrap Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The values of \emph{VaR} and \emph{CVaR} produced by the function \texttt{calc\_var()} are subject to uncertainty because they're calculated from a simulation.
-      \vskip1ex
-      We can calculate the standard errors of \emph{VaR} and \emph{CVaR} by running the function \texttt{calc\_var()} many times and repeating the simulation in a loop.
-      \vskip1ex
-      This bootstrap will only capture the uncertainty due to the finite number of trials in the simulation, but not due to the uncertainty of model parameters.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define model parameters
-n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
-rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
-# Calculate default probabilities and thresholds
-set.seed(1121)
-def_probs <- runif(n_assets, max=0.2)
-def_thresh <- qnorm(def_probs)
-# Define number of bootstrap simulations
-n_boot <- 500
-# Perform bootstrap of calc_var
-set.seed(1121)
-boot_data <- sapply(rep(l_gd, n_boot),
-  calc_var,
-  def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end sapply
-boot_data <- t(boot_data)
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of \protect\emph{VaR} at High Confidence Levels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard errors of \emph{VaR} and \emph{CVaR} are inversely proportional to square root of the number of loss events in the simulation that exceed the \emph{VaR}.
-      \vskip1ex
-      So the greater the number of loss events, the smaller the standard errors, and vice versa.
-      \vskip1ex
-      But as the confidence level increases, the \emph{VaR} also increases, and the number of loss events decreases, causing larger standard errors.
-      \vskip1ex
-      So the as the confidence level increases, the standard errors of \emph{VaR} and \emph{CVaR} also increase.
-      \vskip1ex
-      The \emph{scaled} (relative) standard errors of \emph{VaR} and \emph{CVaR} also increase with the confidence level, making them much less reliable at very high confidence levels.
-      \vskip1ex
-      The standard error of \emph{CVaR} is even greater than that of \emph{VaR}.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_stderror.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
-      @
-      <<echo=TRUE,eval=FALSE>>=
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors of \protect\emph{VaR} Using Parallel Bootstrap}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{scaled} standard errors of \emph{VaR} and \emph{CVaR} increase with the confidence level, making them much less reliable at very high confidence levels.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-# Perform bootstrap of calc_var for Windows
-clusterSetRNGStream(clus_ter, 1121)
-boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
-  fun=calc_var, def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end parLapply
-# Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(l_gd, n_boot),
-  FUN=calc_var, def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
-stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_stderror_parallel.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vasicek Model With Uncertain Default Probabilities}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.7\textwidth}
-      The previous bootstrap only captured the uncertainty due to the finite simulation trials, but not due to the uncertainty of model parameters, such as the default probabilities and correlations.
-      \vskip1ex
-      The below function \texttt{calc\_var()} can simulate the \emph{Vasicek} model with uncertain default probabilities.
-      <<echo=TRUE,eval=FALSE>>=
-calc_var <- function(def_probs, # Default probabilities
-                     l_gd=0.6, # loss given default
-                     rho_sqrt, rho_sqrtm, # asset correlation
-                     n_simu=1000, # number of simulations
-                     level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-                     ) {
-  # Calculate random default thresholds
-  def_thresh <- qnorm(runif(1, min=0.5, max=1.5)*def_probs)
-  # Simulate losses under Vasicek model
-  n_assets <- NROW(def_probs)
-  system_atic <- rnorm(n_simu)
-  asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-  asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-  loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
-  # Calculate VaRs and CVaRs
-  var_s <- quantile(loss_es, probs=level_s)
-  cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es >=va_r])
-  })  # end sapply
-  names(var_s) <- level_s
-  names(cvar_s) <- level_s
-  c(var_s, cvar_s)
-}  # end calc_var
-      @
-    \column{0.3\textwidth}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Standard Errors Due to Uncertain Default Probabilities}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The greatest contribution to the standard errors of \emph{VaR} and \emph{CVaR} is due to the uncertainty of model parameters, such as the default probabilities and correlations.
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-# Perform bootstrap of calc_var for Windows
-clusterSetRNGStream(clus_ter, 1121)
-boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
-  fun=calc_var, def_probs=def_probs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end parLapply
-# Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(l_gd, n_boot),
-  FUN=calc_var, def_probs=def_probs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
-stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_stderror_default_uncertainty.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="Confidence Levels", ylab="Standard errors",
-  main="Standard Errors of CVaR and VaR
-  with Uncertain Default Probabilities")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=1.0, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Collateralized Debt Obligations (\protect\emph{CDOs})}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Collateralized Debt Obligations (cash \emph{CDOs}) are securities (bonds) collateralized by other debt assets.
-      \vskip1ex
-      The \emph{CDO} assets can be debt instruments like bonds, loans, and mortgages.
-      \vskip1ex
-      The \emph{CDO} liabilities are \emph{CDO} tranches, which receive cashflows from the \emph{CDO} assets, and are exposed to their defaults.
-      \vskip1ex
-      \emph{CDO} tranches have an attachment point (subordination, i.e. the percentage of asset default losses at which the tranche starts absorbing those losses), and a detachment point when the tranche is wiped out (suffers \texttt{100\%} losses).
-      \vskip1ex
-      The \emph{equity tranche} is the most junior tranche, and is the first to absorb default losses.
-      \vskip1ex
-      The \emph{mezzanine tranches} are senior to the \emph{equity tranche} and absorb losses ony after the \emph{equity tranche} is wiped out.
-      \vskip1ex
-      The \emph{senior tranche} is the most senior tranche, and is the last to absorb losses.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/CDO2.jpg}
-      \vskip1ex
-      \vskip1ex
-      \includegraphics[width=0.5\paperwidth]{figure/CDO.jpg}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{CDO} Tranche Losses}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Single-tranche (synthetic) \emph{CDOs} are credit default swaps which reference credit portfolios.
-      \vskip1ex
-      The expected loss \emph{EL} on a \emph{CDO} tranche is:
-      \begin{displaymath}
-        EL = \frac{1}{d - a} \int_{a}^{d} {(x-a) \, f(x) \, \mathrm{d}x} + \int_{d}^{LGD} {f(x) \, \mathrm{d}x}
-      \end{displaymath}
-      Where $f(x)$ is the density of portfolio losses, and \emph{a} and \emph{d} are the tranche attachment (subordination) and detachment points.
-      \vskip1ex
-      The difference $(d-a)$ is the tranche \emph{thickness}, so that $EL$ is the expected loss as a percentage of the tranche notional.
-      \vskip1ex
-      A single-tranche \emph{CDO} can be thought of as a short option spread on the asset defaults, struck at the attachment and detachment points.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define cumulative default probability function
-cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
-  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
-# Define Vasicek loss distribution function
-# (vectorized version with error handling for x)
-loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
-  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
-}  # end loss_distr
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/cdo_tranche.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-def_prob <- 0.2; def_thresh <- qnorm(def_prob)
-rh_o <- 0.1; l_gd <- 0.4
-at_tach <- 0.15; de_tach <- 0.2
-# Expected tranche loss is sum of two terms
-tranche_loss <-
-  # Loss between at_tach and de_tach
-  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
-      def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-      low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
-  # Loss in excess of de_tach
-        (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
-# Plot probability distribution of losses
-curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 3*l_gd*def_prob),
-      xlab="loss percentage", ylab="density", lwd=3,
-      col="orange", main="CDO Tranche Losses")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
-       lwd=2, srt=90, pos=3)
-# Add lines for attach and detach
-abline(v=at_tach, col="blue", lwd=3)
-text(x=at_tach-0.001, y=4, labels="attach",
-       lwd=2, srt=90, pos=3)
-abline(v=de_tach, col="green", lwd=3)
-text(x=de_tach-0.001, y=4, labels="detach",
-       lwd=2, srt=90, pos=3)
-# Add shading for CDO tranche
-var_s <- seq(at_tach, de_tach, length=100)
-dens_ity <- sapply(var_s, loss_distr,
-  def_thresh=def_thresh, rh_o=rh_o)
-# Draw shaded polygon
-polygon(c(at_tach, var_s, de_tach), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
-text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
 
 %%%%%%%%%%%%%%%
 \section{Publishing Interactive Documents}
@@ -2217,16 +1560,16 @@ text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{markdown} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
+      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
       \vskip1ex
-      \emph{R Markdown} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
+      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
       \vskip1ex
-      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing:
+      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
       \begin{itemize}
         \item A \emph{YAML} header,
         \item Text in \emph{R Markdown} code format,
         \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code),
+        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
       \end{itemize}
       The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
     \column{0.5\textwidth}
@@ -2366,7 +1709,7 @@ ex_pr <- quote({
   deg_free <- 2:20
   rang_e <- (1:NROW(deg_free))
   # Set image refesh interval
-  animation::ani.options(interval=0.25)
+  animation::ani.options(interval=0.5)
   # Create multiple plots with curves
   for (in_dex in rang_e) {
     curve(expr=dchisq(x, df=deg_free[in_dex]),
@@ -2390,7 +1733,8 @@ ex_pr <- quote({
       % \vspace{-1em}
       % Must include package animate in header:
       % \usepackage{animate}
-      \animategraphics[width=0.4\paperwidth, height=0.3\paperwidth]{2}{figure/png/chi_squared}{1}{19}
+      \includegraphics[width=0.4\paperwidth, height=0.3\paperwidth]{figure/png/chi_squared4.png}\\
+      % \animategraphics[width=0.4\paperwidth, height=0.3\paperwidth]{2}{figure/png/chi_squared}{1}{19}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Create plot by evaluating the plotting expression

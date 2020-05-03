@@ -9,38 +9,40 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
   weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
   cl_ose <- quantmod::Cl(oh_lc)
-  ew_ma <- stats::filter(as.numeric(cl_ose), filter=weight_s, sides=1)
+  ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1, method="convolution")
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # Determine dates right after EWMA has crossed prices
-  indica_tor <- tre_nd*xts::xts(sign(as.numeric(cl_ose) - ew_ma), order.by=index(oh_lc))
-  indicator_lag <- rutils::lag_it(indica_tor)
+  indica_tor <- tre_nd*sign(cl_ose - as.numeric(ew_ma))
   trade_dates <- (rutils::diff_it(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates<NROW(oh_lc)]
+  trade_dates <- trade_dates[trade_dates < NROW(oh_lc)]
   # Calculate positions, either: -1, 0, or 1
-  posi_tion <- rep(NA_integer_, NROW(oh_lc))
-  posi_tion[1] <- 0
-  posi_tion[trade_dates] <- indicator_lag[trade_dates]
-  posi_tion <- na.locf(posi_tion)
-  posi_tion <- xts(posi_tion, order.by=index(oh_lc))
+  position_s <- rep(NA_integer_, NROW(oh_lc))
+  position_s[1] <- 0
+  position_s[trade_dates] <- indica_tor[trade_dates-1]
+  position_s <- na.locf(position_s)
   op_en <- quantmod::Op(oh_lc)
   close_lag <- rutils::lag_it(cl_ose)
-  pos_lagged <- rutils::lag_it(posi_tion)
-  # Calculate transaction costs
-  cost_s <- 0.0*posi_tion
-  cost_s[trade_dates] <- 0.5*bid_offer*abs(pos_lagged[trade_dates] - posi_tion[trade_dates])*op_en[trade_dates]
+  pos_lagged <- rutils::lag_it(position_s)
   # Calculate daily profits and losses
-  re_turns <- pos_lagged*(cl_ose - close_lag)
-  re_turns[trade_dates] <- pos_lagged[trade_dates] * (op_en[trade_dates] - close_lag[trade_dates]) + posi_tion[trade_dates] * (cl_ose[trade_dates] - op_en[trade_dates]) - cost_s
+  pnl_s <- rutils::diff_it(cl_ose)*position_s
+  pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
+    (op_en[trade_dates] - close_lag[trade_dates])
+  pnl_s[trade_dates] <- pnl_s[trade_dates] + 
+    position_s[trade_dates] * 
+    (cl_ose[trade_dates] - op_en[trade_dates])
+  # Calculate transaction costs
+  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
+  pnl_s <- (pnl_s - cost_s)
   # Calculate strategy returns
-  out_put <- cbind(posi_tion, re_turns)
-  colnames(out_put) <- c("positions", "returns")
-  out_put
+  pnl_s <- cbind(position_s, pnl_s)
+  colnames(pnl_s) <- c("positions", "pnls")
+  pnl_s
 }  # end simu_ewma
 
 
-
-# simulate two EWMA model using historical oh_lc data
+# Needs update to reflect changes in simu_ewma()
+# Simulate two EWMA model using historical oh_lc data
 simu_ewma2 <- function(oh_lc, lambda_1=0.25, lambda_2=0.05, wid_th=51) {
   # calculate EWMA prices
   weights_1 <- exp(-lambda_1*1:wid_th)

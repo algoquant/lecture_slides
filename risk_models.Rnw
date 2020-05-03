@@ -1420,7 +1420,7 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Robust Estimators of Dispersion}
+\subsection{The Median Absolute Deviation Estimator of Dispersion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1432,26 +1432,25 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
       \end{displaymath}
       The advantage of \emph{MAD} is that it's always well defined, even for data that has infinite variance.
       \vskip1ex
-      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
-      \vskip1ex
-      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
-      \vskip1ex
       The \emph{MAD} for normally distributed data is equal to $\Phi^{-1}(0.75) \cdot \hat\sigma = 0.6745 \cdot \hat\sigma$.
       \vskip1ex
       The function \texttt{mad()} calculates the \emph{MAD} and divides it by $\Phi^{-1}(0.75)$ to make it comparable to the standard deviation.
+      \vskip1ex
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Simulate normally distributed data
 n_rows <- 1000
-r_norm <- rnorm(n_rows)
-sd(r_norm)
-mad(r_norm)
-median(abs(r_norm - median(r_norm)))
-median(abs(r_norm - median(r_norm)))/qnorm(0.75)
+da_ta <- rnorm(n_rows)
+sd(da_ta)
+mad(da_ta)
+median(abs(da_ta - median(da_ta)))
+median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:10000, function(x) {
   boot_sample <-
-    r_norm[sample.int(n_rows, replace=TRUE)]
+    da_ta[sample.int(n_rows, replace=TRUE)]
   c(sd=sd(boot_sample), mad=mad(boot_sample))
 })  # end sapply
 boot_data <- t(boot_data)
@@ -1466,16 +1465,74 @@ library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # initialize compute cluster
 boot_data <- parLapply(clus_ter, 1:10000,
-  function(x, r_norm) {
+  function(x, da_ta) {
     boot_sample <-
-      r_norm[sample.int(n_rows, replace=TRUE)]
+      da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, r_norm=r_norm)  # end parLapply
+  }, da_ta=da_ta)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:10000,
   function(x) {
     boot_sample <-
-      r_norm[sample.int(n_rows, replace=TRUE)]
+      da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+boot_data <- rutils::do_call(rbind, boot_data)
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2,
+      function(x) c(mean=mean(x), std_error=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Median Absolute Deviation of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For normally distributed data the \emph{MAD} has a larger standard error than the standard deviation.
+      \vskip1ex
+      But for distributions with fat tails (like asset returns), the standard deviation has a larger standard error than the \emph{MAD}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# VTI returns
+da_ta <- rutils::etf_env$re_turns$VTI
+da_ta <- na.omit(da_ta)
+n_rows <- NROW(da_ta)
+sd(da_ta)
+mad(da_ta)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:10000, function(x) {
+  boot_sample <-
+    da_ta[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_data <- t(boot_data)
+# Means and standard errors from bootstrap
+100*apply(boot_data, MARGIN=2,
+      function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_data <- parLapply(clus_ter, 1:10000,
+  function(x, da_ta) {
+    boot_sample <-
+      da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, da_ta=da_ta)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:10000,
+  function(x) {
+    boot_sample <-
+      da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
@@ -1728,7 +1785,7 @@ abs(sum(true_pos*false_pos))
       \includegraphics[width=0.5\paperwidth]{figure/hampel_roc.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot ROC Curve for Defaults
+# Plot ROC curve for Hampel classifier
 plot(x=error_rates[, "typeI"],
      y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate",
@@ -2515,10 +2572,10 @@ chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time.
       \vskip1ex
       The rolling realized variance of a \emph{time series} is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
-      \end{align*}
+      \begin{flalign*}
+        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
+        \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
+      \end{flalign*}
       Where \texttt{k} is the \emph{look-back interval} for performing aggregations over the past.
       \vskip1ex
       It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop.
@@ -2655,10 +2712,10 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
   \begin{columns}[T]
     \column{0.5\textwidth}
       If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
-      \end{align*}
+      \begin{flalign*}
+        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2} \\
+        \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
+      \end{flalign*}
       Where $w_j$ is the vector of weights:
       \begin{displaymath}
         w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
@@ -2735,10 +2792,10 @@ title(main="pacf of variance", line=-1)
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
-      \begin{align*}
-        r_i = \mu + \sigma_{i-1} \xi_i \\
-        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
-      \end{align*}
+      \begin{flalign*}
+        r_i &= \mu + \sigma_{i-1} \xi_i \\
+        \sigma_i^2 &= \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
+      \end{flalign*}
       Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$.
       \vskip1ex
       The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$.
@@ -3020,7 +3077,7 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Estimating Volatility of Intraday Time Series}
+\subsection{depr: old stuff about Estimating Volatility of Intraday Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3045,30 +3102,78 @@ add_TA(var_ewma["2010-01/2010-10"], col="black")
       For example, the volatility estimated from per minute returns is \texttt{60} times the volatility estimated from per second returns.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
+        <<echo=TRUE,eval=FALSE>>=
 library(HighFreq)  # load HighFreq
 # Minutely SPY returns (unit per minute) single day
 re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) /
-  rutils::diff_it(.index(SPY["2012-02-13"]))
+# Divide minutely SPY returns by time intervals (unit per second)
+re_turns <- re_turns / rutils::diff_it(.index(SPY["2012-02-13"]))
+re_turns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
-# Minutely SPY returns multiple days no overnight scaling
+# SPY returns multiple days
 re_turns <- rutils::diff_it(log(SPY[, 4]))
-# Minutely SPY volatility (unit per minute)
+# Minutely SPY volatility (includes overnight jumps)
 sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
+# Table of intervals - 60 second is most frequent
+in_dex <- rutils::diff_it(.index(SPY))
+table(in_dex)
+# hist(in_dex)
+# SPY returns with overnight scaling (unit per second)
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating Volatility From Intraday Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard \emph{close-to-close} volatility $\sigma$ depends on the \emph{Close} prices $C_i$ from \emph{OHLC} data:
+      \begin{flalign*}
+        \sigma^2 &= \frac{1}{n-1} \sum_{i=1}^{n} (r_i - \bar{r})^2 \\
+        \bar{r} &= \frac{1}{n}{\sum_{i=0}^{n} r_i} \quad r_i = \log(\frac{C_i}{C_{i-1}})
+      \end{flalign*}
+      \vskip1ex
+      But intraday time series of prices (for example \texttt{HighFreq::SPY} prices), can have large overnight jumps which inflate the volatility estimates.
+      \vskip1ex
+      So the overnight returns must be divided by the overnight time interval (in seconds), which produces per second returns.
+      \vskip1ex
+      The per second returns can be multiplied by \texttt{60} to scale them back up to per minute returns.
+      \vskip1ex
+      The function \texttt{zoo::index()} extracts the time index of a time series.
+      \vskip1ex
+      The function \texttt{zoo::.index()} extracts the time index expressed in the number of seconds.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+library(HighFreq)  # load HighFreq
+# Minutely SPY returns (unit per minute) single day
+# Minutely SPY volatility (unit per minute)
+re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
+sd(re_turns)
+# SPY returns multiple days (includes overnight jumps)
+re_turns <- rutils::diff_it(log(SPY[, 4]))
+sd(re_turns)
 # Table of time intervals - 60 second is most frequent
-interval_s <- rutils::diff_it(.index(SPY))
-table(interval_s)
-# hist(interval_s)
+in_dex <- rutils::diff_it(.index(SPY))
+table(in_dex)
+# SPY returns divided by the overnight time intervals (unit per second)
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
+# Minutely SPY volatility scaled to unit per minute
+60*sd(re_turns)
       @
   \end{columns}
 \end{block}
@@ -3083,42 +3188,95 @@ table(interval_s)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The estimated volatility depends on the length of the aggregation time interval approximately as the \emph{square root} of the interval:
+      The estimated volatility $\sigma$ scales as the \emph{power} of the length of the aggregation time interval $\Delta t$:
       \begin{displaymath}
-        \hat\sigma \propto {\Delta t} ^ H
+        \sigma \propto {\Delta t} ^ H
       \end{displaymath}
-      Where $\Delta t$ is the length of the aggregation interval, and \texttt{H} is the \emph{Hurst} exponent.
+      Where \texttt{H} is the \emph{Hurst} exponent.
       \vskip1ex
       If returns follow \emph{Brownian motion} then the volatility scales as the \emph{square root} of the length of the aggregation interval (\texttt{H = 0.5}).
       \vskip1ex
-      If returns are \emph{mean reverting} then the volatility grows slower than the \emph{square root} (\texttt{H < 0.5}).
+      If returns are \emph{mean reverting} then the volatility scales slower than the \emph{square root} (\texttt{H < 0.5}).
       \vskip1ex
-      If returns are \emph{trending} then the volatility grows faster than the \emph{square root} (\texttt{H > 0.5}).
+      If returns are \emph{trending} then the volatility scales faster than the \emph{square root} (\texttt{H > 0.5}).
       \vskip1ex
-      The length of the daily time interval is often approximated to be equal to \texttt{390=6.5*60} minutes, since the trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by that of the trading session.
+      The length of the daily time interval is often approximated to be equal to \texttt{390 = 6.5*60} minutes, since the exchange trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by the trading session.
     \column{0.5\textwidth}
       \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
+        <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # load HighFreq
 # Daily OHLC SPY prices
 SPY_daily <-
-  rutils::to_period(oh_lc=SPY, period="days")
-# Daily SPY returns and volatility
+  rutils::to_period(oh_lc=HighFreq::SPY, period="days")
+# Daily SPY volatility from daily returns
 sd(rutils::diff_it(log(SPY_daily[, 4])))
 # Minutely SPY returns (unit per minute)
 re_turns <- rutils::diff_it(log(SPY[, 4]))
 # Minutely SPY volatility scaled to daily interval
 sqrt(6.5*60)*sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
-# Minutely SPY volatility scaled to daily aggregation interval
-60*sqrt(6.5*60)*sd(re_turns)
+# Minutely SPY returns with overnight scaling (unit per second)
+re_turns <- rutils::diff_it(log(SPY[, 4]))
+in_dex <- rutils::diff_it(.index(SPY))
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
+# Daily SPY volatility from minutely returns
+sqrt(6.5*60)*60*sd(re_turns)
 # Daily SPY volatility
 # including extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) /
-            rutils::diff_it(.index(SPY_daily)))
-table(rutils::diff_it(.index(SPY_daily)))
+24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4]))[-1] /
+            rutils::diff_it(.index(SPY_daily))[-1])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Hurst Exponent From Volatility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Hurst exponent} $H$ can be calculated by regressing the volatility against the aggregation intervals.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate SPY prices adjusted for overnight jumps
+price_s <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
+re_turns <- rutils::diff_it(price_s) /
+  rutils::diff_it(.index(HighFreq::SPY))
+re_turns[1] <- 0
+price_s <- cumsum(re_turns)
+# Calculate volatilities for vector of aggregation intervals
+interval_s <- round(seq.int(from=3, to=30, length.out=9)^2)
+vol_s <- sapply(interval_s, function(inter_val) {
+  end_points <- rutils::calc_endpoints(price_s, 
+    inter_val=inter_val)
+  sd(rutils::diff_it(price_s[end_points]))
+})  # end sapply
+vol_log <- log(vol_s)
+vol_log <- vol_log - mean(vol_log)
+inter_log <- log(interval_s)
+inter_log <- inter_log - mean(inter_log)
+mod_el <- lm(vol_log ~ inter_log)
+hurs_t <- summary(mod_el)$coeff[2, 1]
+# Or directly from formula
+hurst_form <- sum(vol_log*inter_log)/sum(inter_log^2)
+all.equal(hurst_form, hurs_t)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/hurst_vol.png}
+      \vspace{-1em}
+        <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
+plot(vol_log ~ inter_log, lwd=6, col="red",
+     xlab="aggregation intervals (log)",
+     ylab="volatility (log)",
+     main="Hurst Exponent for SPY From Volatilities")
+abline(mod_el, lwd=3, col="blue")
+text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
       @
   \end{columns}
 \end{block}
@@ -3133,37 +3291,31 @@ table(rutils::diff_it(.index(SPY_daily)))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Rescaled range} (R/S) analysis consists of calculating the range of a time series of prices as a function of the aggregation interval length (time horizon).
-      \vskip1ex
-      The range $R_t$ of prices $p_t$ over an aggregation interval $\left\{0 \ldots t\right\}$, is the difference between the highest attained price minus the lowest:
+      The range $R_{\Delta t}$ of prices $p_t$ over an interval $\Delta t$, is the difference between the highest attained price minus the lowest:
       \begin{displaymath}
-        R_t = \max_{0 \ldots t}{[p_{\tau}]} - \min_{0 \ldots t}{[p_{\tau}]}
+        R_t = \max_{\Delta t}{[p_{\tau}]} - \min_{\Delta t}{[p_{\tau}]}
       \end{displaymath}
-      The \emph{rescaled} range $RS_t$ is equal to the range divided by the standard deviation of the price differences: $RS_t = R_t / \sigma_t$.
+      The \emph{Rescaled Range} $RS_{\Delta t}$ is equal to the range $R_{\Delta t}$ divided by the standard deviation of the price differences $\sigma_t$: $RS_{\Delta t} = R_t / \sigma_t$.
       \vskip1ex
-      The minutely \emph{SPY} prices have large overnight returns, which can be handled by dividing the overnight returns by the overnight time interval.
+      The \emph{Rescaled Range} $RS_{\Delta t}$ for a time series of prices is calculated by: 
+      \begin{itemize}
+        \item Dividing the time series into non-overlapping intervals of length $\Delta t$,
+        \item Calculating the \emph{rescaled range} $RS_{\Delta t}$ for each interval,
+        \item Calculating the average of the \emph{rescaled ranges} $RS_{\Delta t}$ for all the intervals.
+      \end{itemize}
+      \emph{Rescaled Range Analysis} (R/S) consists of calculating the average \emph{rescaled range} $RS_{\Delta t}$ as a function of the length of the aggregation interval $\Delta t$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# Scaled minutely SPY returns
-re_turns <- rutils::diff_it(as.numeric(Cl(SPY)))[-1] /
-  rutils::diff_it(.index(SPY))[-1]
-range(re_turns)
-hist(re_turns, breaks=100,
-     xlim=c(-0.005, 0.005))
-# SPY prices
-price_s <- cumsum(re_turns)
-plot(price_s, t="l")
-# Perform rescaled range analysis
-look_back <- 100
-end_points <- rutils::calc_endpoints(re_turns,
-  inter_val=look_back)
+# Calculate the rescaled range
+inter_val <- 500
+end_points <- rutils::calc_endpoints(price_s,
+  inter_val=inter_val)
 r_s <- sapply(seq_along(end_points)[-1],
-              function(it) {
-  indeks <- end_points[it-1]:end_points[it]
-  price_s <- price_s[indeks]
-  (max(price_s) - min(price_s)) /
-    sd(re_turns[indeks])
+              function(ep) {
+  in_dex <- end_points[ep-1]:end_points[ep]
+  diff(range(price_s[in_dex])) /
+    sd(re_turns[in_dex])
 })  # end sapply
 mean(r_s)
       @
@@ -3174,37 +3326,38 @@ mean(r_s)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Hurst Exponent}
+\subsection{Hurst Exponent From Rescaled Range}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Hurst} power law states that the \emph{rescaled} range $RS_t$ is proportional to the length of the aggregation interval $t$ raised to the power of the \emph{Hurst exponent} $H$:
+      The \emph{Rescaled Range} $RS_{\Delta t}$ is proportional to the length of the aggregation interval $\Delta t$ raised to the power of the \emph{Hurst exponent} $H$:
       \begin{displaymath}
-        RS_t \propto t^H
+        RS_{\Delta t} \propto {\Delta t}^H
       \end{displaymath}
-      \vspace{-2em}
+      The \emph{Hurst exponents} calculated from the \emph{rescaled range} and the \emph{volatility} are similar because they both measure the dependence of returns over time, but they're not equal because they use different methods to estimate price dispersion.
+      \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# Perform rescaled range analysis over many look-backs
-look_backs <- seq.int(1e2, 1e3, 1e2)
-r_s <- sapply(look_backs, function(look_back) {
-  end_points <- rutils::calc_endpoints(re_turns, inter_val=look_back)
-  r_s <- sapply(seq_along(end_points)[-1], function(it) {
-    indeks <- end_points[it-1]:end_points[it]
-    (max(price_s[indeks]) - min(price_s[indeks]))/sd(re_turns[indeks])
+# Calculate rescaled range for vector of aggregation intervals
+r_s <- sapply(interval_s, function(inter_val) {
+  end_points <- rutils::calc_endpoints(price_s, 
+    inter_val=inter_val)
+  r_s <- sapply(seq_along(end_points)[-1], function(ep) {
+    in_dex <- end_points[ep-1]:end_points[ep]
+    diff(range(price_s[in_dex]))/sd(re_turns[in_dex])
   })  # end sapply
-  mean(r_s)
+  mean(na.omit(r_s))
 })  # end sapply
-names(r_s) <- paste0("agg_", look_backs)
 rs_log <- log(r_s)
-look_log <- log(look_backs)
-mod_el <- lm(rs_log ~ look_log)
-hurst_lm <- summary(mod_el)$coeff[2, 1]
-look_log <- look_log - mean(look_log)
 rs_log <- rs_log - mean(rs_log)
-hurst_mat <- sum(rs_log*look_log)/sum(look_log^2)
-all.equal(hurst_lm, hurst_mat)
+inter_log <- log(interval_s)
+inter_log <- inter_log - mean(inter_log)
+mod_el <- lm(rs_log ~ inter_log)
+hurs_t <- summary(mod_el)$coeff[2, 1]
+# Or directly from formula
+hurst_form <- sum(rs_log*inter_log)/sum(inter_log^2)
+all.equal(hurst_form, hurs_t)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3213,13 +3366,12 @@ all.equal(hurst_lm, hurst_mat)
         <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-plot(rs_log ~ look_log, lwd=6, col="red",
+plot(rs_log ~ inter_log, lwd=6, col="red",
      xlab="aggregation intervals (log)",
      ylab="rescaled range (log)",
      main="Rescaled Range Analysis for SPY")
 abline(mod_el, lwd=3, col="blue")
-text(-1.2, 0.2, paste0("Hurst = ",
-  round(hurs_t, 4)))
+text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
       @
   \end{columns}
 \end{block}
@@ -3228,7 +3380,7 @@ text(-1.2, 0.2, paste0("Hurst = ",
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Range} Volatility Estimators of \texttt{OHLC} Time Series}
+\subsection{\protect\emph{Range} Volatility Estimators of \protect\emph{OHLC} Time Series}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -3238,12 +3390,12 @@ text(-1.2, 0.2, paste0("Hurst = ",
       \vskip1ex
       The \emph{Garman-Klass} estimator uses the \emph{low-to-high} price range, but it underestimates volatility because it doesn't account for \emph{close-to-open} price jumps:
       \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)\log(\frac{C_i}{O_i})^2)
+        \sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)\log(\frac{C_i}{O_i})^2)
       \end{displaymath}
       The \emph{Yang-Zhang} estimator is the most efficient (has the lowest standard error) among unbiased estimators, and also accounts for \emph{close-to-open} price jumps:
       \vspace{-1em}
       \begin{multline*}
-        \hspace{-1em}\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
+        \hspace{-1em}\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
         0.134(\log(\frac{C_i}{O_i})-\bar{r}_{oc})^2 + \\
         \frac{0.866}{n} \sum_{i=1}^{n} (\log(\frac{H_i}{O_i})\log(\frac{H_i}{C_i}) + \log(\frac{L_i}{O_i})\log(\frac{L_i}{C_i}))
       \end{multline*}
@@ -3254,10 +3406,10 @@ library(HighFreq)  # load HighFreq
 # Daily SPY volatility from minutely prices using package TTR
 library(TTR)
 sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(SPY, N=1,
+  TTR::volatility(HighFreq::SPY, N=1,
                   calc="yang.zhang"))^2))
 # SPY volatility using package HighFreq
-60*sqrt((6.5*60)*agg_regate(oh_lc=SPY,
+60*sqrt((6.5*60)*agg_regate(oh_lc=HighFreq::SPY,
             weight_ed=FALSE, mo_ment="run_variance",
             calc_method="yang_zhang"))
       @
@@ -3273,7 +3425,7 @@ sqrt((6.5*60)*mean(na.omit(
       The \emph{Garman-Klass-Yang-Zhang} estimator is another very efficient and unbiased estimator, and also accounts for \emph{close-to-open} price jumps:
       \vspace{-1em}
       \begin{multline*}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
+        \sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
         0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)(\log(\frac{C_i}{O_i})^2))
       \end{multline*}
   \end{columns}

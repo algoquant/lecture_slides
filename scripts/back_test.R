@@ -1,44 +1,40 @@
 # Functions for back-testing momentum strategies
 
-# Function backtest_ep() performs a back-test over end-points
-backtest_ep <- function(re_turns, price_s, agg_fun=sum, 
-    look_back=12, re_balance="months", bid_offer=0.001,
-    end_points=rutils::calc_endpoints(re_turns, inter_val=re_balance), 
-    with_weights=FALSE, ...) {
-  stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
+# Function back_test_momentum() performs a back-test of a momentum strategy over the end-points
+back_test_momentum <- function(re_turns, 
+                               perform_ance=function(re_turns) (sum(re_turns)/sd(re_turns)), 
+                               look_back=12, re_balance="months", bid_offer=0.001,
+                               end_points=rutils::calc_endpoints(re_turns, inter_val=re_balance), 
+                               with_weights=FALSE, ...) {
+  stopifnot("package:rutils" %in% search() || require("rutils", quietly=TRUE))
   # Define look-back and look-forward intervals
-  n_col <- NCOL(re_turns)
-  len_gth <- NROW(end_points)
-  start_points <- c(rep_len(1, look_back-1), end_points[1:(len_gth-look_back+1)])
-  fwd_points <- end_points[c(2:len_gth, len_gth)]
-  # Perform loop over end-points and calculate aggregations
-  agg_s <- sapply(1:(len_gth-1), function(it_er) {
-    c(back_aggs=sapply(re_turns[start_points[it_er]:end_points[it_er]], agg_fun, ...),  # end sapply
-    fwd_rets=sapply(re_turns[(end_points[it_er]+1):fwd_points[it_er]], sum))  # end sapply
-  })  # end sapply
-  agg_s <- t(agg_s)
-  # Select look-back and look-forward aggregations
-  back_aggs <- agg_s[, 1:n_col]
-  fwd_rets <- agg_s[, n_col+1:n_col]
-  # Calculate portfolio weights equal to number of shares
-  end_prices <- price_s[end_points[-len_gth]]
-  weight_s <- back_aggs/rowSums(abs(back_aggs))/end_prices
-  weight_s[is.na(weight_s)] <- 0
-  colnames(weight_s) <- colnames(re_turns)
-  # Calculate profits and losses
-  pnl_s <- rowSums(weight_s*fwd_rets)
-  pnl_s <- xts(pnl_s, index(end_prices))
-  colnames(pnl_s) <- "pnls"
+  n_rows <- NROW(end_points)
+  start_points <- c(rep_len(1, look_back-1), end_points[1:(n_rows-look_back+1)])
+  # Calculate look-back intervals
+  look_backs <- cbind(start_points, end_points)
+  # Calculate look-forward intervals
+  look_fwds <- cbind(end_points + 1, rutils::lag_it(end_points, -1))
+  look_fwds[n_rows, 1] <- end_points[n_rows]
+  # Calculate past performance over look-back intervals
+  pas_t <- t(apply(look_backs, 1, function(ep) sapply(re_turns[ep[1]:ep[2]], perform_ance)))
+  pas_t[is.na(pas_t)] <- 0
+  # Calculate future performance
+  fu_ture <- t(apply(look_fwds, 1, function(ep) sapply(re_turns[ep[1]:ep[2]], sum)))
+  fu_ture[is.na(fu_ture)] <- 0
+  # Scale weight_s so sum of squares is equal to 1
+  weight_s <- pas_t
+  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+  weight_s[is.na(weight_s)] <- 0  # Set NA values to zero
+  # Calculate momentum profits and losses
+  pnl_s <- rowSums(weight_s*fu_ture)
   # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*end_prices*abs(rutils::diff_it(weight_s))
-  cost_s <- rowSums(cost_s)
+  cost_s <- 0.5*bid_offer*cumprod(1 + pnl_s)*rowSums(abs(rutils::diff_it(weight_s)))
   pnl_s <- (pnl_s - cost_s)
-  pnl_s <- cumsum(pnl_s)
   if (with_weights)
-    cbind(pnl_s, weight_s)
+    rutils::lag_it(cbind(pnl_s, weight_s))
   else
-    pnl_s
-}  # end backtest_ep
+    rutils::lag_it(pnl_s)
+}  # end back_test_momentum
 
 
 # Function backtest_rolling() performs a back-test over rolling points

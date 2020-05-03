@@ -481,7 +481,7 @@ all.equal(mp_inverse, in_verse)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A}^{-1} \mathbb{A} = \mathbb{A} \mathbb{A}^{-1} = \mathbbm{1}$
+      \emph{Singular} matrices have some \emph{singular values} equal to zero, so they don't have an inverse matrix which satisfies the equation: $\mathbb{A} \mathbb{A}^{-1} \mathbb{A} = \mathbbm{A}$
       \vskip1ex
       But if the \emph{singular values} that are equal to zero are removed, then a \emph{regularized inverse} for \emph{singular} matrices can be specified by:
       \begin{displaymath}
@@ -490,29 +490,35 @@ all.equal(mp_inverse, in_verse)
       Where $\mathbb{U}_n$, $\mathbb{V}_n$ and $\Sigma_n$ are the \emph{SVD} matrices with rows and columns corresponding to zero \emph{singular values} removed.
       <<echo=TRUE,eval=FALSE>>=
 # Create random singular matrix
+# more columns than rows: n_right > n_left
 n_left <- 4 ; n_right <- 6
 mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
 mat_rix <- t(mat_rix) %*% mat_rix
-# Calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
+# Perform singular value decomposition
+s_vd <- svd(mat_rix)
+# Incorrect inverse from SVD because of zero singular values
+svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
 # Verify inverse property of mat_rix
 all.equal(mat_rix,
-  mat_rix %*% in_verse %*% mat_rix)
+  mat_rix %*% svd_inverse %*% mat_rix)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Perform singular value decomposition
-s_vd <- svd(mat_rix)
 # Set tolerance for determining zero singular values
 to_l <- sqrt(.Machine$double.eps)
 # Check for zero singular values
-s_vd$d
+round(s_vd$d, 12)
 not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
 # Calculate generalized inverse from SVD
 svd_inverse <-
   s_vd$v[, not_zero] %*%
   (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+# Verify inverse property of mat_rix
+all.equal(mat_rix,
+  mat_rix %*% svd_inverse %*% mat_rix)
+# Calculate generalized inverse using MASS::ginv()
+in_verse <- MASS::ginv(mat_rix)
 all.equal(svd_inverse, in_verse)
 # Calculate Moore-Penrose pseudo-inverse
 mp_inverse <-
@@ -4427,7 +4433,7 @@ class(de_sign)
 sapply(de_sign, class)
 # Coerce factor to numerical
 de_sign[, 1] <- as.numeric(de_sign[, 1])
-# Normalize the design data
+# Standardize the design data
 de_sign <- sapply(de_sign, scale)
 head(de_sign)
 class(de_sign)

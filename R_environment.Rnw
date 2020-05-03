@@ -161,15 +161,25 @@ cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
 for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
   cumsum=cumsum(vec_tor),
-  loop=for (i in 2:NROW(vec_tor))
-    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  loop_alloc={
+    cum_sum2 <- vec_tor
+    for (i in 2:NROW(vec_tor))
+      cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+  },
+  loop_nalloc={
+    # Doesn't allocate memory to cum_sum3
+    cum_sum3 <- vec_tor[1]
+    for (i in 2:NROW(vec_tor))
+      # This command adds an extra element to cum_sum3
+      cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
+  },
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}

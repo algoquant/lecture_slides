@@ -1,17 +1,83 @@
-# Calculate the square root of a vector
-vec_tor <- runif(1e6)
-all.equal(sqrt(vec_tor), vec_tor^0.5)
-# Microbenchmark the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  sqrt(vec_tor),
-  vec_tor^0.5,
-  times=10))[, c(1, 4, 5)]
-
 library(microbenchmark)
 va_r <- runif(1e6)
 system.time(va_r^0.5)
 microbenchmark(sqrt(va_r), va_r^0.5, times=10)
+
+# Calculate cumulative sum of a vector
+vec_tor <- runif(1e5)
+# Use compiled function
+cum_sum <- cumsum(vec_tor)
+# Use for loop
+cum_sum2 <- vec_tor
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+# Compare the two methods
+all.equal(cum_sum, cum_sum2)
+# Microbenchmark the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  cumsum=cumsum(vec_tor),
+  loop=for (i in 2:NROW(vec_tor))
+    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  times=10))[, c(1, 4, 5)]
+
+library(microbenchmark)
+# sum() is a compiled primitive function
+sum
+# mean() is a generic function
+mean
+va_r <- runif(1e6)
+# sum() is much faster than mean()
+summary(
+  microbenchmark(sum(va_r), mean(va_r), times=10)
+  )[, c(1, 4, 5)]
+# any() is a compiled primitive function
+any
+# any() is much faster than %in% wrapper for match()
+summary(
+  microbenchmark(any(va_r == 1), {1 %in% va_r}, times=10)
+  )[, c(1, 4, 5)]
+
+library(microbenchmark)
+mat_rix <- matrix(1:9, ncol=3, # Create matrix
+  dimnames=list(paste0("row", 1:3),
+          paste0("col", 1:3)))
+# Create specialized function
+matrix_to_dframe <- function(mat_rix) {
+  n_cols <- ncol(mat_rix)
+  dframe <- vector("list", n_cols)  # empty vector
+  for (in_dex in 1:n_cols)  # Populate vector
+    dframe <- mat_rix[, in_dex]
+  attr(dframe, "row.names") <-  # Add attributes
+    .set_row_names(NROW(mat_rix))
+  attr(dframe, "class") <- "data.frame"
+  dframe  # Return data frame
+}  # end matrix_to_dframe
+# Compare speed of three methods
+summary(microbenchmark(
+  matrix_to_dframe(mat_rix),
+  as.data.frame.matrix(mat_rix),
+  as.data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]
+
+# Matrix with 5,000 rows
+mat_rix <- matrix(rnorm(10000), ncol=2)
+# Allocate memory for row sums
+row_sums <- numeric(NROW(mat_rix))
+summary(microbenchmark(
+  row_sums=rowSums(mat_rix),  # end row_sums
+  ap_ply=apply(mat_rix, 1, sum),  # end apply
+  l_apply=lapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end lapply
+  v_apply=vapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ]),
+    FUN.VALUE=c(sum=0)),  # end vapply
+  s_apply=sapply(1:NROW(mat_rix), function(in_dex)
+    sum(mat_rix[in_dex, ])),  # end sapply
+  for_loop=for (i in 1:NROW(mat_rix)) {
+    row_sums[i] <- sum(mat_rix[i,])
+  },  # end for
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 big_vector <- rnorm(5000)
 summary(microbenchmark(
@@ -37,131 +103,55 @@ summary(microbenchmark(
     }},  # end for
   times=10))[, c(1, 4, 5)]
 
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-va_r <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(va_r), mean(va_r), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(va_r == 1), {1 %in% va_r}, times=10)
-  )[, c(1, 4, 5)]
-
-vec_tor1 <- rnorm(1000000)
-vec_tor2 <- rnorm(1000000)
-big_vector <- numeric(1000000)
-# Sum two vectors in two different ways
+# Disable JIT
+jit_level <- compiler::enableJIT(0)
+# Create inefficient function
+my_mean <- function(x) {
+  out_put <- 0; n_elem <- NROW(x)
+  for(it in 1:n_elem)
+    out_put <- out_put + x[it]/n_elem
+  out_put
+}  # end my_mean
+# Byte-compile function and inspect it
+mymean_comp <- compiler::cmpfun(my_mean)
+mymean_comp
+# Test function
+vec_tor <- runif(1e3)
+all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
+# microbenchmark byte-compile function
 summary(microbenchmark(
-  # Sum vectors using "for" loop
-  r_loop=(for (i in 1:NROW(vec_tor1)) {
-    big_vector[i] <- vec_tor1[i] + vec_tor2[i]
-  }),
-  # Sum vectors using vectorized "+"
-  vec_torized=(vec_tor1 + vec_tor2),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Allocate memory for cumulative sum
-cum_sum <- numeric(NROW(big_vector))
-cum_sum[1] <- big_vector[1]
-# Calculate cumulative sum in two different ways
-summary(microbenchmark(
-# Cumulative sum using "for" loop
-  r_loop=(for (i in 2:NROW(big_vector)) {
-    cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-  }),
-# Cumulative sum using "cumsum"
-  vec_torized=cumsum(big_vector),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-# Matrix with 5,000 rows
-mat_rix <- matrix(rnorm(10000), ncol=2)
-# Calculate row sums two different ways
-all.equal(rowSums(mat_rix),
-  apply(mat_rix, 1, sum))
-summary(microbenchmark(
-  row_sums=rowSums(mat_rix),
-  ap_ply=apply(mat_rix, 1, sum),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-library(microbenchmark)
-str(pmax)
-# Calculate row maximums two different ways
-summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
-lapply(seq_along(mat_rix[1, ]),
-  function(in_dex) mat_rix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(mat_rix[, 1]),
-  function(in_dex) max(mat_rix[in_dex, ]))),
+  mean(vec_tor),
+  mymean_comp(vec_tor),
+  my_mean(vec_tor),
   times=10))[, c(1, 4, 5)]
-
-install.packages("matrixStats")  # Install package matrixStats
-library(matrixStats)  # load package matrixStats
-# Calculate row min values three different ways
+# Create another inefficient function
+sapply2 <- function(x, FUN, ...) {
+  out_put <- vector(length=NROW(x))
+  for (it in seq_along(x))
+    out_put[it] <- FUN(x[it], ...)
+  out_put
+}  # end sapply2
+sapply2_comp <- compiler::cmpfun(sapply2)
+all.equal(sqrt(vec_tor),
+  sapply2(vec_tor, sqrt),
+  sapply2_comp(vec_tor, sqrt))
 summary(microbenchmark(
-  row_mins=rowMins(mat_rix),
-  p_min=
-    do.call(pmin.int,
-      lapply(seq_along(mat_rix[1, ]),
-             function(in_dex)
-               mat_rix[, in_dex])),
-  as_data_frame=
-    do.call(pmin.int,
-      as.data.frame.matrix(mat_rix)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  sqrt(vec_tor),
+  sapply2_comp(vec_tor, sqrt),
+  sapply2(vec_tor, sqrt),
+  times=10))[, c(1, 4, 5)]
+# enable JIT
+compiler::enableJIT(jit_level)
 
-install.packages("Rfast")  # Install package Rfast
-library(Rfast)  # load package Rfast
-# Benchmark speed of calculating ranks
-va_r <- 1e3
-all.equal(rank(va_r), Rfast::Rank(va_r))
-summary(microbenchmark(
-  r=rank(va_r),
-  fast=Rank(va_r),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Benchmark speed of calculating column medians
-va_r <- matrix(1e4, nc=10)
-all.equal(matrixStats::colMedians(va_r), Rfast::colMedians(va_r))
-summary(microbenchmark(
-  r=matrixStats::colMedians(va_r),
-  fast=Rfast::colMedians(va_r),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-summary(microbenchmark(  # Assign values to vector three different ways
-# Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[] <- 2},
-# Slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in seq_along(vec_tor))
-      vec_tor[in_dex] <- 2},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-summary(microbenchmark(  # Assign values to vector two different ways
-# Fast vectorized assignment loop performed in C using brackets "[]"
-  brack_ets={vec_tor <- numeric(10)
-    vec_tor[4:7] <- rnorm(4)},
-# Slow because loop is performed in R
-  for_loop={vec_tor <- numeric(10)
-    for (in_dex in 4:7)
-      vec_tor[in_dex] <- rnorm(1)},
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Get short description
 packageDescription("parallel")
-# load help page
+# Load help page
 help(package="parallel")
 # list all objects in "parallel"
 ls("package:parallel")
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Define function that pauses execution
@@ -177,7 +167,7 @@ clus_ter <- makeCluster(n_cores)
 # Perform parallel loop under Windows
 paw_s <- parLapply(clus_ter, 1:10, paws,
            sleep_time=0.01)
-library(microbenchmark)  # load package microbenchmark
+library(microbenchmark)  # Load package microbenchmark
 # Compare speed of lapply versus parallel computing
 summary(microbenchmark(
   l_apply=lapply(1:10, paws, sleep_time=0.01),
@@ -188,7 +178,7 @@ summary(microbenchmark(
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -214,7 +204,7 @@ times=10))[, c(1, 4)]
 compute_times <- t(compute_times)
 rownames(compute_times) <- iter_ations
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 plot(x=rownames(compute_times),
      y=compute_times[, "lapply"],
      type="l", lwd=2, col="blue",
@@ -227,7 +217,7 @@ legend(x="topleft", legend=colnames(compute_times),
  inset=0.1, cex=1.0, bg="white",
  lwd=2, lty=1, col=c("blue", "green"))
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -254,7 +244,7 @@ summary(microbenchmark(
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -288,7 +278,7 @@ parSapply(clus_ter, c("VTI", "IEF", "DBC"),
 # Stop R processes over cluster under Windows
 stopCluster(clus_ter)
 
-library(parallel)  # load package parallel
+library(parallel)  # Load package parallel
 # Calculate number of available cores
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
@@ -303,90 +293,6 @@ sum(unlist(out_put))
 stopCluster(clus_ter)
 # Perform parallel loop under Mac-OSX or Linux
 out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
-
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Estimate the 95% quantile
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(n_rows,
-                              replace=TRUE)]
-  quantile(boot_sample, 0.95)
-})  # end sapply
-sd(boot_data)
-# Estimate the 95% quantile using antithetic sampling
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(n_rows,
-                              replace=TRUE)]
-  quantile(c(boot_sample, -boot_sample), 0.95)
-})  # end sapply
-# Standard error of quantile from bootstrap
-sd(boot_data)
-sqrt(2)*sd(boot_data)
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-3, 4),
-main="Shifted Normal distribution function",
-xlab="", ylab="", lwd=3, col="blue")
-# Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-lwd=3, col="red")
-# Add vertical dashed lines
-abline(v=0, lwd=3, col="blue", lty="dashed")
-abline(v=1, lwd=3, col="red", lty="dashed")
-arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
- code=2, angle=20,
- length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda),
-     pos=3, cex=2)
-
-set.seed(1121) # reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-da_ta <- sort(da_ta)
-# Monte Carlo cumulative probability
-pnorm(-2)
-integrate(dnorm, low=2, up=Inf)
-sum(da_ta > 2)/n_rows
-# Generate importance sample
-lamb_da <- 1.5
-data_is <- da_ta + lamb_da
-# Importance cumulative probability
-sum(data_is > 2)/n_rows
-weight_s <- exp(-lamb_da*data_is + lamb_da^2/2)
-sum((data_is > 2)*weight_s)/n_rows
-# Bootstrap of standard errors of cumulative probability
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  m_c <- sum(da_ta > 2)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  i_s <- sum((da_ta > 2)*weight_s)/n_rows
-  c(MC=m_c,Importance=i_s)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
-# Monte Carlo expected value
-integrate(function(x) x*dnorm(x), low=2, up=Inf)
-sum((da_ta > 2)*da_ta)/n_rows
-# Importance expected value
-sum((data_is > 2)*data_is)/n_rows
-sum((data_is > 2)*data_is*weight_s)/n_rows
-# Bootstrap of standard errors of expected value
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  m_c <- sum((da_ta > 2)*da_ta)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  i_s <- sum((da_ta > 2)*da_ta*weight_s)/n_rows
-  c(MC=m_c,Importance=i_s)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
 
 # Calculate random default probabilities
 n_assets <- 100
@@ -776,207 +682,6 @@ legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
 
-calc_var <- function(def_thresh, # Default thresholds
-               l_gd=0.6, # loss given default
-               rho_sqrt, rho_sqrtm, # asset correlation
-               n_simu=1000, # number of simulations
-               level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-               ) {
-  # Define model parameters
-  n_assets <- NROW(def_thresh)
-  # Simulate losses under Vasicek model
-  system_atic <- rnorm(n_simu)
-  asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-  asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-  loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
-  # Calculate VaRs and CVaRs
-  var_s <- quantile(loss_es, probs=level_s)
-  cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es >= va_r])
-  })  # end sapply
-  names(var_s) <- level_s
-  names(cvar_s) <- level_s
-  c(var_s, cvar_s)
-}  # end calc_var
-
-# Define model parameters
-n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
-rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
-# Calculate default probabilities and thresholds
-set.seed(1121)
-def_probs <- runif(n_assets, max=0.2)
-def_thresh <- qnorm(def_probs)
-# Define number of bootstrap simulations
-n_boot <- 500
-# Perform bootstrap of calc_var
-set.seed(1121)
-boot_data <- sapply(rep(l_gd, n_boot),
-  calc_var,
-  def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end sapply
-boot_data <- t(boot_data)
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=1, col=c("red", "black"))
-NA
-
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-# Perform bootstrap of calc_var for Windows
-clusterSetRNGStream(clus_ter, 1121)
-boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
-  fun=calc_var, def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end parLapply
-# Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(l_gd, n_boot),
-  FUN=calc_var, def_thresh=def_thresh,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
-stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-# Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
-  main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
- title=NULL, inset=0.05, cex=0.8, bg="white",
- lwd=6, lty=1, col=c("red", "black"))
-
-calc_var <- function(def_probs, # Default probabilities
-               l_gd=0.6, # loss given default
-               rho_sqrt, rho_sqrtm, # asset correlation
-               n_simu=1000, # number of simulations
-               level_s=seq(0.93, 0.99, 0.01) # Confidence levels
-               ) {
-  # Calculate random default thresholds
-  def_thresh <- qnorm(runif(1, min=0.5, max=1.5)*def_probs)
-  # Simulate losses under Vasicek model
-  n_assets <- NROW(def_probs)
-  system_atic <- rnorm(n_simu)
-  asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-  asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-  loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
-  # Calculate VaRs and CVaRs
-  var_s <- quantile(loss_es, probs=level_s)
-  cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es >=va_r])
-  })  # end sapply
-  names(var_s) <- level_s
-  names(cvar_s) <- level_s
-  c(var_s, cvar_s)
-}  # end calc_var
-
-library(parallel)  # load package parallel
-n_cores <- detectCores() - 1  # number of cores
-clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-# Perform bootstrap of calc_var for Windows
-clusterSetRNGStream(clus_ter, 1121)
-boot_data <- parLapply(clus_ter, rep(l_gd, n_boot),
-  fun=calc_var, def_probs=def_probs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end parLapply
-# Bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(rep(l_gd, n_boot),
-  FUN=calc_var, def_probs=def_probs,
-  rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
-  n_simu=n_simu, level_s=level_s)  # end mclapply
-boot_data <- rutils::do_call(rbind, boot_data)
-stopCluster(clus_ter)  # Stop R processes over cluster
-# Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
-    function(x) c(mean=mean(x), sd=sd(x)))
-
-# Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="Confidence Levels", ylab="Standard errors",
-  main="Standard Errors of CVaR and VaR
-  with Uncertain Default Probabilities")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
- title=NULL, inset=0.05, cex=1.0, bg="white",
- lwd=6, lty=1, col=c("red", "black"))
-
-# Define cumulative default probability function
-cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
-  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
-# Define Vasicek loss distribution function
-# (vectorized version with error handling for x)
-loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
-  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
-}  # end loss_distr
-
-def_prob <- 0.2; def_thresh <- qnorm(def_prob)
-rh_o <- 0.1; l_gd <- 0.4
-at_tach <- 0.15; de_tach <- 0.2
-# Expected tranche loss is sum of two terms
-tranche_loss <-
-  # Loss between at_tach and de_tach
-  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
-def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
-  # Loss in excess of de_tach
-  (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
-# Plot probability distribution of losses
-curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-type="l", xlim=c(0, 3*l_gd*def_prob),
-xlab="loss percentage", ylab="density", lwd=3,
-col="orange", main="CDO Tranche Losses")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
- lwd=2, srt=90, pos=3)
-# Add lines for attach and detach
-abline(v=at_tach, col="blue", lwd=3)
-text(x=at_tach-0.001, y=4, labels="attach",
- lwd=2, srt=90, pos=3)
-abline(v=de_tach, col="green", lwd=3)
-text(x=de_tach-0.001, y=4, labels="detach",
- lwd=2, srt=90, pos=3)
-# Add shading for CDO tranche
-var_s <- seq(at_tach, de_tach, length=100)
-dens_ity <- sapply(var_s, loss_distr,
-  def_thresh=def_thresh, rh_o=rh_o)
-# Draw shaded polygon
-polygon(c(at_tach, var_s, de_tach), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
-text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
-
 # Create a plotting expression
 ex_pr <- quote({
   par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -1013,7 +718,7 @@ ex_pr <- quote({
   deg_free <- 2:20
   rang_e <- (1:NROW(deg_free))
   # Set image refesh interval
-  animation::ani.options(interval=0.25)
+  animation::ani.options(interval=0.5)
   # Create multiple plots with curves
   for (in_dex in rang_e) {
     curve(expr=dchisq(x, df=deg_free[in_dex]),
