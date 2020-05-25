@@ -11,13 +11,13 @@ library(quantmod)  # Load package quantmod
 rates_env <- new.env()  # new environment for data
 # Download data for sym_bols into rates_env
 getSymbols(sym_bols, env=rates_env, src="FRED")
-ls(rates_env)  # list files in rates_env
+ls(rates_env)  # List files in rates_env
 # Get class of object in rates_env
 class(get(x=sym_bols[1], envir=rates_env))
 # Another way
 class(rates_env$DGS20)
 colnames(rates_env$DGS20)
-save(rates_env, file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
 
 x11(width=6, height=4)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
@@ -32,7 +32,7 @@ chart_Series(rates_env$DGS20["1990/"],
 
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
-load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+load(file="C:/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
 date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
 date_s <- zoo::index(rates_env$DGS1["2006/"])[date_s]
@@ -67,7 +67,7 @@ legend("bottomright", legend=colnames(rate_s),
 x11(width=6, height=4)
 par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
 # Load constant maturity Treasury rates
-load(file="C:/Develop/R/lecture_slides/data/rates_data.RData")
+load(file="C:/Develop/lecture_slides/data/rates_data.RData")
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS20")
 # Calculate daily rates changes
@@ -76,7 +76,7 @@ rate_s <- xts:::na.locf.xts(rutils::do_call(cbind,
 rate_s <- xts:::na.locf.xts(rate_s)
 rate_s <- xts:::na.locf.xts(rate_s, fromLast=TRUE)
 re_turns <- rutils::diff_it(rate_s)
-date_s <- index(re_turns)
+date_s <- zoo::index(re_turns)
 # De-mean (center) and scale the returns
 re_turns <- t(t(re_turns) - colMeans(re_turns))
 re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
@@ -186,7 +186,7 @@ cov_mat <- cov(re_turns)
 ei_gen <- eigen(cov_mat)
 # Perform PCA without scaling
 pc_a <- prcomp(re_turns, scale=FALSE)
-# compare outputs
+# Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
     check.attributes=FALSE)
@@ -195,7 +195,7 @@ cor_mat <- cor(re_turns)
 ei_gen <- eigen(cor_mat)
 # Perform PCA with scaling
 pc_a <- prcomp(re_turns, scale=TRUE)
-# compare outputs
+# Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
     check.attributes=FALSE)
@@ -321,24 +321,21 @@ colnames(future_s) <- c("Futures contract", "Standard", "E-mini")
 print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushleft")
 
 # Load data for S&P Emini futures June 2019 contract
-sym_bol <- "ES"
 dir_name <- "C:/Develop/data/ib_data"
-file_name <- file.path(dir_name, paste0(sym_bol, ".csv"))
+file_name <- file.path(dir_name, "ES_ohlc.csv")
 # Read a data table from CSV file
 price_s <- data.table::fread(file_name)
-# Coerce price_s into data frame
-data.table::setDF(price_s)
-# Or
-# price_s <- data.table:::as.data.frame.data.table(
-#   data.table::fread(file_name))
-# first column of price_s is a numeric date-time
+class(price_s)
+# Coerce first column from string to date-time
+unlist(sapply(price_s, class))
 tail(price_s)
+price_s$Index <- as.POSIXct(price_s$Index,
+  tz="America/New_York", origin="1970-01-01")
 # Coerce price_s into xts series
-price_s <- xts::xts(price_s[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(price_s[, 1],
-    tz="America/New_York",
-    origin="1970-01-01")))
-colnames(price_s) <- c("Open", "High", "Low", "Close", "Volume")
+price_s <- data.table::as.xts.data.table(price_s)
+class(price_s)
+tail(price_s)
+colnames(price_s)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
 tail(price_s)
 
 # Plot OHLC data in x11 window
@@ -354,24 +351,24 @@ dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
 dir_name <- "C:/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ESU8.csv")
 ES_U8 <- data.table::fread(file_name)
-data.table::setDF(ES_U8)
-ES_U8 <- xts::xts(ES_U8[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(ES_U8[, 1],
-    tz="America/New_York", origin="1970-01-01")))
-colnames(ES_U8) <- c("Open", "High", "Low", "Close", "Volume")
+# Coerce ES_U8 into xts series
+ES_U8$V1 <- as.Date(as.POSIXct.numeric(ES_U8$V1,
+    tz="America/New_York", origin="1970-01-01"))
+ES_U8 <- data.table::as.xts.data.table(ES_U8)
+colnames(ES_U8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
 # Load ESM8 data
 file_name <- file.path(dir_name, "ESM8.csv")
 ES_M8 <- data.table::fread(file_name)
-data.table::setDF(ES_M8)
-ES_M8 <- xts::xts(ES_M8[, 2:6],
-  order.by=as.Date(as.POSIXct.numeric(ES_M8[, 1],
-    tz="America/New_York", origin="1970-01-01")))
-colnames(ES_M8) <- c("Open", "High", "Low", "Close", "Volume")
+# Coerce ES_M8 into xts series
+ES_M8$V1 <- as.Date(as.POSIXct.numeric(ES_M8$V1,
+    tz="America/New_York", origin="1970-01-01"))
+ES_M8 <- data.table::as.xts.data.table(ES_M8)
+colnames(ES_M8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
 
 x11(width=6, height=5)  # Open x11 for plotting
 # Plot last month of ESU8 and ESM8 volume data
 en_d <- end(ES_M8)
-star_t <- (en_d - 30*24*60^2)
+star_t <- (en_d - 30)
 vol_ume <- cbind(Vo(ES_U8),
   Vo(ES_M8))[paste0(star_t, "/", en_d)]
 colnames(vol_ume) <- c("ESU8", "ESM8")
@@ -519,7 +516,7 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv",
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
                stringsAsFactors=FALSE)
 
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
@@ -527,7 +524,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/R/lecture_slides/data/fundamental_stock_data.csv",
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
                stringsAsFactors=FALSE)
 
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
@@ -622,7 +619,7 @@ for (tick_er in tick_ers[!down_loaded]) {
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
   assign(tick_er, da_ta, envir=env_sp500)
 }  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
 
@@ -636,6 +633,7 @@ tail(fac_tors)
 chart_Series(cumsum(fac_tors["2001/", 1]/100),
   name="Fama-French factors")
 
+options(width=200)
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
@@ -648,29 +646,66 @@ tail(SPY)
 library(HighFreq)
 head(SPY)
 
+# Load package HighFreq
+library(HighFreq)
+# Define sym_bol
+sym_bol <- "SPY"
+# Load OHLC data
+output_dir <- "C:/Develop/data/hfreq/scrub/"
+sym_bol <- load(
+  file.path(output_dir,
+      paste0(sym_bol, ".RData")))
+inter_val <-
+  "2013-11-11 09:30:00/2013-11-11 10:30:00"
+chart_Series(SPY[inter_val], name=sym_bol)
+
 # Install package HighFreq from github
 devtools::install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
 library(HighFreq)
 # Get documentation for package HighFreq
 # Get short description
-packageDescription("HighFreq")
+packageDescription(HighFreq)
 # Load help page
-help(package="HighFreq")
-# List all datasets in "HighFreq"
-data(package="HighFreq")
-# List all objects in "HighFreq"
+help(package=HighFreq)
+# List all datasets in HighFreq
+data(package=HighFreq)
+# List all objects in HighFreq
 ls("package:HighFreq")
 # Remove HighFreq from search path
 detach("package:HighFreq")
 
+# install package HighFreq from github
+install.packages("devtools")
+library(devtools)
+install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
 library(HighFreq)
-# you can see SPY when listing objects in HighFreq
+# set data directories
+data_dir <- "C:/Develop/data/hfreq/src/"
+output_dir <- "C:/Develop/data/hfreq/scrub/"
+# Define sym_bol
+sym_bol <- "SPY"
+# Load a single day of TAQ data
+sym_bol <- load(
+  file.path(data_dir,
+      paste0(sym_bol, "/2014.05.02.",
+             sym_bol, ".RData")))
+# scrub, aggregate single day of TAQ data to OHLC
+ohlc_data <- scrub_agg(taq_data=get(sym_bol))
+# Aggregate TAQ data for symbol, save to file
+save_scrub_agg(sym_bol,
+         data_dir=data_dir,
+         output_dir=output_dir,
+         period="minutes")
+
+# Load package HighFreq
+library(HighFreq)
+# You can see SPY when listing objects in HighFreq
 ls("package:HighFreq")
-# you can see SPY when listing datasets in HighFreq
-data(package="HighFreq")
-# but the SPY dataset isn't listed in the workspace
+# You can see SPY when listing datasets in HighFreq
+data(package=HighFreq)
+# But the SPY dataset isn't listed in the workspace
 ls()
 # HighFreq datasets are lazy loaded and available when needed
 head(SPY)
@@ -678,6 +713,448 @@ head(SPY)
 data(hf_data)
 # HighFreq datasets are now loaded and in the workspace
 head(SPY)
+
+library(HighFreq)  # Load package HighFreq
+# SPY percentage returns
+oh_lc <- HighFreq::SPY
+clo_se <- quantmod::Cl(oh_lc)
+re_turns <- rutils::diff_it(clo_se)/rutils::lag_it(clo_se)
+colnames(re_turns) <- "SPY"
+# Standardize raw returns to make later comparisons
+ret_std <- re_turns/sd(re_turns)
+# Calculate moments and perform normality test
+sapply(c(sd=2, skew=3, kurt=4),
+  function(x) sum(ret_std^x)/NROW(ret_std))
+tseries::jarque.bera.test(re_turns)
+# Fit SPY returns using MASS::fitdistr()
+optim_fit <- MASS::fitdistr(ret_std, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot histogram of SPY returns
+histo_gram <- hist(ret_std, col="lightgrey", mgp=c(2, 1, 0),
+  xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
+  breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
+# lines(density(ret_std, bw=0.2), lwd=3, col="blue")
+# Plot t-distribution function
+curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
+type="l", lwd=3, col="red", add=TRUE)
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(ret_std),
+  sd=sd(ret_std)), add=TRUE, lwd=3, col="blue")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("t-distr", "normal"),
+  lwd=6, lty=1, col=c("red", "blue"))
+
+# Hourly SPY percentage returns
+price_s <- Cl(xts::to.period(x=oh_lc, period="hours"))
+returns_hourly <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
+returns_hourly <- returns_hourly/sd(returns_hourly)
+# Daily SPY percentage returns
+price_s <- Cl(xts::to.period(x=oh_lc, period="days"))
+returns_daily <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
+returns_daily <- returns_daily/sd(returns_daily)
+# Calculate moments
+sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
+ function(rets) {
+   sapply(c(sd=2, skew=3, kurt=4),
+          function(x) sum(rets^x)/NROW(rets))
+})  # end sapply
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+plot(density(ret_std, bw=0.4), xlim=c(-3, 3),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of High Frequency SPY Returns")
+lines(density(returns_hourly, bw=0.4), lwd=3, col="green")
+lines(density(returns_daily, bw=0.4), lwd=3, col="red")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("minutely", "hourly", "daily"),
+  lwd=6, lty=1, col=c("blue", "green", "red"))
+
+# Calculate rolling volatility of SPY returns
+ret_2013 <- re_turns["2013-11-11/2013-11-15"]
+# Calculate rolling volatility
+look_back <- 10
+end_p <- seq_along(ret_2013)
+start_p <- c(rep_len(1, look_back-1),
+  end_p[1:(NROW(end_p)-look_back+1)])
+vol_rolling <- sapply(seq_along(end_p),
+  function(it) sd(ret_2013[start_p[it]:end_p[it]]))
+vol_rolling <- xts::xts(vol_rolling, index(ret_2013))
+# Extract time intervals of SPY returns
+interval_s <- c(60, diff(xts::.index(re_turns)))
+head(interval_s)
+table(interval_s)
+# Scale SPY returns by time intervals
+re_turns <- 60*re_turns/interval_s
+ret_2013 <- re_turns["2013-11-11/2013-11-15"]
+# Calculate scaled rolling volatility
+vol_scaled <- sapply(seq_along(end_p),
+  function(it) sd(ret_2013[start_p[it]:end_p[it]]))
+vol_rolling <- cbind(vol_rolling, vol_scaled)
+vol_rolling <- na.omit(vol_rolling)
+
+# Plot rolling volatility
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue", "red")
+chart_Series(vol_rolling, theme=plot_theme,
+     name="Rolling Volatility with Overnight Spikes")
+legend("topright", legend=colnames(vol_rolling),
+  inset=0.1, bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+
+price_s <- read.zoo(file="C:/Develop/lecture_slides/data/bid_ask_bounce.csv",
+  header=TRUE, sep=",")
+price_s <- as.xts(price_s)
+x11(width=6, height=4)
+par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
+chart_Series(x=price_s, name="S&P500 Futures Bid-Ask Bounce")
+
+# Volatility of SPY
+sqrt(HighFreq::calc_var_ohlc(oh_lc))
+# Daily SPY volatility and volume
+vol_daily <- sqrt(xts::apply.daily(oh_lc, FUN=calc_var_ohlc))
+colnames(vol_daily) <- ("SPY_volatility")
+vol_ume <- quantmod::Vo(oh_lc)
+volume_daily <- xts::apply.daily(vol_ume, FUN=sum)
+colnames(volume_daily) <- ("SPY_volume")
+# Plot SPY volatility and volume
+da_ta <- cbind(vol_daily, volume_daily)["2008/2009"]
+col_names <- colnames(da_ta)
+dygraphs::dygraph(da_ta,
+  main="SPY Daily Volatility and Trading Volume") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="red", strokeWidth=3) %>%
+  dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=3)
+
+# Regress log of daily volume vs volatility
+da_ta <- log(cbind(volume_daily, vol_daily))
+col_names <- colnames(da_ta)
+data_frame <- as.data.frame(da_ta)
+for_mula <- as.formula(paste(col_names, collapse="~"))
+mod_el <- lm(for_mula, data=data_frame)
+# Durbin-Watson test for autocorrelation of residuals
+lmtest::dwtest(mod_el)
+# Regress diff log of daily volume vs volatility
+data_frame <- as.data.frame(rutils::diff_it(da_ta))
+mod_el <- lm(for_mula, data=data_frame)
+lmtest::dwtest(mod_el)
+summary(mod_el)
+plot(for_mula, data=data_frame, main="SPY Daily Trading Volume vs Volatility (log scale)")
+abline(mod_el, lwd=3, col="red")
+mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+
+# 60 minutes of data in look_back interval
+look_back <- 60
+vol_2013 <- vol_ume["2013"]
+ret_2013 <- re_turns["2013"]
+# Define end_points with beginning stub
+n_rows <- NROW(ret_2013)
+n_agg <- n_rows %/% look_back
+end_p <- n_rows-look_back*n_agg + (0:n_agg)*look_back
+start_p <- c(1, end_p[1:(NROW(end_p)-1)])
+# Calculate SPY volatility and volume
+da_ta <- sapply(seq_along(end_p), function(it) {
+  point_s <- start_p[it]:end_p[it]
+  c(volume=sum(vol_2013[point_s]),
+    volatility=sd(ret_2013[point_s]))
+})  # end sapply
+da_ta <- t(da_ta)
+da_ta <- rutils::diff_it(log(da_ta))
+data_frame <- as.data.frame(da_ta)
+
+for_mula <- as.formula(paste(colnames(da_ta), collapse="~"))
+mod_el <- lm(for_mula, data=data_frame)
+lmtest::dwtest(mod_el)
+summary(mod_el)
+plot(for_mula, data=data_frame,
+     main="SPY Hourly Trading Volume vs Volatility (log scale)")
+abline(mod_el, lwd=3, col="red")
+mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
+
+# Scale returns using volume (volume clock)
+ret_scaled <- ifelse(vol_ume>0,
+  re_turns/vol_ume^0.5, 0)
+# Calculate moments
+sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),
+  function(rets) {
+    sapply(c(skew=3, kurt=4),
+     function(x) sum((rets/sd(rets))^x)/NROW(rets))
+})  # end sapply
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+plot(density(ret_std), xlim=c(-3, 3),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of Volume-scaled High Frequency SPY Returns")
+lines(density(ret_scaled/sd(ret_scaled), bw=0.4), lwd=3, col="red")
+curve(expr=dnorm, add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("minutely", "scaled", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+# Plot the partial autocorrelations
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
+pacf(ret_scaled, lag=10, mgp=c(2, 1, 0),
+  xlab="lag", ylab="partial autocorrelation", main="")
+title("Partial Autocorrelations of Volume-scaled High Frequency SPY Returns", line=1)
+
+# Ljung-Box test for minutely SPY returns
+Box.test(re_turns, lag=10, type="Ljung")
+# Ljung-Box test for daily SPY returns
+Box.test(returns_daily, lag=10, type="Ljung")
+# Ljung-Box test statistics for scaled SPY returns
+sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),
+  function(rets) {
+    Box.test(rets, lag=10, type="Ljung")$statistic
+})  # end sapply
+# Ljung-Box test statistics for aggregated SPY returns
+sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
+  function(rets) {
+    Box.test(rets, lag=10, type="Ljung")$statistic
+})  # end sapply
+
+# Set plot parameters
+x11(width=6, height=8)
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
+# Plot the partial autocorrelations of minutely SPY returns
+pacf(as.numeric(re_turns), lag=10,
+     xlab="lag", ylab="partial autocorrelation", main="")
+title("Partial Autocorrelations of Minutely SPY Returns", line=1)
+# Plot the partial autocorrelations of scaled SPY returns
+pacf(as.numeric(ret_scaled), lag=10,
+     xlab="lag", ylab="partial autocorrelation", main="")
+title("Partial Autocorrelations of Scaled SPY Returns", line=1)
+
+# Calculate market illiquidity
+liquidi_ty <- sqrt(volume_daily)/vol_daily
+# Plot market illiquidity
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue")
+chart_Series(liquidi_ty["2010"], theme=plot_theme,
+  name="SPY Liquidity in 2010", plot=FALSE)
+plot_theme$col$line.col <- c("red")
+chart_Series(vol_daily["2010"],
+  theme=plot_theme, name="SPY Volatility in 2010")
+
+# Calculate intraday time index with hours and minutes
+in_dex <- format(zoo::index(re_turns), "%H:%M")
+# Aggregate the mean volume
+volume_agg <- tapply(X=vol_ume, INDEX=in_dex, FUN=mean)
+volume_agg <- drop(volume_agg)
+# Aggregate the mean volatility
+vol_agg <- tapply(X=re_turns^2, INDEX=in_dex, FUN=mean)
+vol_agg <- sqrt(drop(vol_agg))
+# Coerce to xts
+intra_day <- as.POSIXct(paste(Sys.Date(), names(volume_agg)))
+volume_agg <- xts::xts(volume_agg, intra_day)
+vol_agg <- xts::xts(vol_agg, intra_day)
+# Plot seasonality of volume and volatility
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue")
+chart_Series(volume_agg[c(-1, -NROW(volume_agg))], theme=plot_theme,
+  name="Daily Seasonality of SPY Volume", plot=FALSE)
+plot_theme$col$line.col <- c("red")
+chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
+  name="Daily Seasonality of SPY Volatility")
+
+# Calculate market liquidity
+liquidi_ty <- sqrt(volume_agg)/vol_agg
+# Plot daily seasonality of market liquidity
+x11(width=6, height=7) ; par(mfrow=c(2, 1))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue")
+chart_Series(liquidi_ty[c(-1, -NROW(liquidi_ty))], theme=plot_theme,
+  name="Daily Seasonality of SPY Liquidity", plot=FALSE)
+plot_theme$col$line.col <- c("red")
+chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
+  name="Daily Seasonality of SPY Volatility")
+
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # Load package HighFreq
+chart_Series(roll_sum(vol_daily, 10)[-(1:10)]/10,
+       name=paste(sym_bol, "variance"))
+chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
+       name=paste(sym_bol, "Hurst"))
+abline(h=0.5, col="blue", lwd=2)
+
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # Load package HighFreq
+# Daily seasonality of Hurst exponent
+inter_val <- "2013"
+season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[inter_val, 1:4]))
+season_hurst <- season_hurst[-(nrow(season_hurst))]
+colnames(season_hurst) <- paste0(col_name(get(sym_bol)), ".season_hurst")
+plot_theme <- chart_theme()
+plot_theme$format.labels <- "%H:%M"
+ch_ob <- chart_Series(x=season_hurst,
+  name=paste(colnames(season_hurst),
+  "daily seasonality"), theme=plot_theme,
+  plot=FALSE)
+y_lim <- ch_ob$get_ylim()
+y_lim[[2]] <- structure(c(y_lim[[2]][1],
+        y_lim[[2]][2]), fixed=TRUE)
+ch_ob$set_ylim(y_lim)
+plot(ch_ob)
+abline(h=0.5, col="blue", lwd=2)
+# Daily seasonality of volatility
+season_var <- season_ality(vol_ohlc(ohlc=SPY))
+
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # Load package HighFreq
+# rolling variance
+var_iance <-
+  roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
+# rolling skew
+sk_ew <-
+  roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
+sk_ew <- sk_ew/(var_iance)^(1.5)
+sk_ew[1, ] <- 0
+sk_ew <- na.locf(sk_ew)
+inter_val <- "2013-11-11/2013-11-15"
+chart_Series(var_iance[inter_val],
+      name=paste(sym_bol, "variance"))
+chart_Series(sk_ew[inter_val],
+      name=paste(sym_bol, "Skew"),
+      ylim=c(-1, 1))
+
+par(mfrow=c(2,1))  # set plot panels
+library(HighFreq)  # Load package HighFreq
+# Daily variance and skew
+vol_daily <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
+                  agg_fun="vol_ohlc")
+colnames(vol_daily) <- paste0(sym_bol, ".var")
+daily_skew <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
+                  agg_fun="skew_ohlc")
+daily_skew <- daily_skew/(vol_daily)^(1.5)
+colnames(daily_skew) <- paste0(sym_bol, ".skew")
+inter_val <- "2013-06-01/"
+chart_Series(vol_daily[inter_val],
+       name=paste(sym_bol, "variance"))
+chart_Series(daily_skew[inter_val],
+       name=paste(sym_bol, "skew"))
+
+# skew scatterplot
+re_turns <- calc_rets(xts_data=SPY)
+sk_ew <- skew_ohlc(log_ohlc=log(SPY[, -5]))
+colnames(sk_ew) <- paste0(sym_bol, ".skew")
+lag_skew <- lag(sk_ew)
+lag_skew[1, ] <- 0
+da_ta <- cbind(re_turns[, 1], sign(lag_skew))
+for_mula <- as.formula(paste(colnames(da_ta)[1],
+    paste(paste(colnames(da_ta)[-1],
+      collapse=" + "), "- 1"), sep="~"))
+for_mula
+mod_el <- lm(for_mula, data=da_ta)
+summary(mod_el)$coef
+summary(lm(for_mula, data=da_ta["/2011-01-01"]))$coef
+summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
+
+inter_val <- "2013-12-01/"
+plot(for_mula, data=da_ta[inter_val],
+     xlim=c(-2e-09, 2e-09),
+     cex=0.6, xlab="skew", ylab="rets")
+abline(mod_el, col="blue", lwd=2)
+
+# Contrarian skew trading strategy
+# Lag the skew to get positions
+position_s <- -sign(lag_skew)
+position_s[1, ] <- 0
+# Cumulative PnL
+cumu_pnl <- cumsum(position_s*re_turns[, 1])
+# Calculate frequency of trades
+50*sum(abs(sign(sk_ew)-sign(lag_skew)))/nrow(sk_ew)
+# Calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+bid_offer*sum(abs(sign(sk_ew)-sign(lag_skew)))
+
+chart_Series(
+  cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
+  name=paste(sym_bol, "contrarian skew strategy pnl"))
+
+# vwap plot
+vwap_short <-
+  v_wap(x_ts=SPY, win_dow=70)
+vwap_long <-
+  v_wap(x_ts=SPY, win_dow=225)
+vwap_diff <- vwap_short - vwap_long
+colnames(vwap_diff) <- paste0(sym_bol, ".vwap")
+inter_val <- "2010-05-05/2010-05-07"
+invisible(
+  chart_Series(x=Cl(SPY[inter_val]),
+         name=paste(sym_bol, "plus VWAP")))
+invisible(
+  add_TA(vwap_short[inter_val],
+   on=1, col="red", lwd=2))
+invisible(
+  add_TA(vwap_long[inter_val],
+   on=1, col="blue", lwd=2))
+invisible(
+  add_TA(vwap_diff[inter_val] > 0, on=-1,
+   col="lightgreen", border="lightgreen"))
+add_TA(vwap_diff[inter_val] < 0, on=-1,
+ col="lightgrey", border="lightgrey")
+
+# vwap scatterplot
+# re_turns <- calc_rets(xts_data=SPY)
+vwap_short <- v_wap(x_ts=SPY, win_dow=70)
+vwap_long <- v_wap(x_ts=SPY, win_dow=225)
+vwap_diff <- vwap_short - vwap_long
+colnames(vwap_diff) <- paste0(sym_bol, ".vwap")
+lag_vwap <- lag(vwap_diff)
+lag_vwap[1, ] <- 0
+da_ta <- cbind(re_turns[, 1], sign(lag_vwap))
+for_mula <- as.formula(paste(colnames(da_ta)[1],
+    paste(paste(colnames(da_ta)[-1],
+      collapse=" + "), "- 1"), sep="~"))
+for_mula
+mod_el <- lm(for_mula, data=da_ta)
+summary(mod_el)$coef
+summary(lm(for_mula, data=da_ta["/2011-01-01"]))$coef
+summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
+
+inter_val <- "2013-12-01/"
+plot(for_mula, data=cbind(re_turns[, 1], lag_vwap)[inter_val],
+     cex=0.6, xlab="skew", ylab="rets")
+abline(mod_el, col="blue", lwd=2)
+
+# momentum trading strategy
+# Cumulative PnL
+cumu_pnl <- cumsum(sign(lag_vwap)*re_turns[, 1])
+# Calculate frequency of trades
+50*sum(abs(sign(vwap_diff)-sign(lag_vwap)))/nrow(vwap_diff)
+# Calculate transaction costs
+bid_offer <- 0.001  # 10 bps for liquid ETFs
+bid_offer*sum(abs(sign(vwap_diff)-sign(lag_vwap)))
+
+chart_Series(
+  cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
+  name=paste(sym_bol, "VWAP momentum strategy pnl"))
+
+library(HighFreq)  # Load package HighFreq
+# Daily Hurst exponents
+hurst_daily <- xts::apply.daily(x=HighFreq::SPY,
+                     FUN=agg_ohlc,
+                     agg_fun="hurst_ohlc")
+colnames(hurst_daily) <-
+  paste(col_name(get(sym_bol)), ".Hurst")
+chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
+       name=paste(sym_bol, "Hurst"))
+abline(h=0.5, col="blue", lwd=2)
 
 # Install package IBrokers
 install.packages("IBrokers")

@@ -501,8 +501,8 @@ histo_gram <- hist(re_turns, col="lightgrey",
   xlab="returns", breaks=100, xlim=c(-0.05, 0.01),
   ylab="frequency", freq=FALSE,
   main="VTI returns histogram")
-dens_ity <- density(re_turns, adjust=1.5)
-lines(dens_ity, lwd=3, col="blue")
+densi_ty <- density(re_turns, adjust=1.5)
+lines(densi_ty, lwd=3, col="blue")
 
 # Add line for VaR
 abline(v=va_r, col="red", lwd=3)
@@ -510,10 +510,10 @@ text(x=va_r, y=20, labels="VaR",
      lwd=2, srt=90, pos=2)
 # Add shading for CVaR
 var_max <- -0.06
-rang_e <- (dens_ity$x < va_r) & (dens_ity$x > var_max)
+rang_e <- (densi_ty$x < va_r) & (densi_ty$x > var_max)
 polygon(
-  c(var_max, dens_ity$x[rang_e], va_r),
-  c(0, dens_ity$y[rang_e], 0),
+  c(var_max, densi_ty$x[rang_e], va_r),
+  c(0, densi_ty$y[rang_e], 0),
   col=rgb(1, 0, 0,0.5), border=NA)
 text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
 
@@ -704,6 +704,7 @@ text(optim_sd/3, (optim_ret+risk_free)/2.5,
 # Optimization to find weights with maximum Sharpe ratio
 op_tim <- optim(par=weight_s,
              fn=object_ive,
+             re_turns=re_turns,
              method="L-BFGS-B",
              upper=c(1.1, 10, 10),
              lower=c(0.9, -10, -10))
@@ -795,6 +796,23 @@ op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
             bvec=b_vec,
             meq=1)
 
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+library(DEoptim)
+Optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
+
 # Calculate daily percentage re_turns
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
 # Objective equal to minus Sharpe ratio
@@ -843,7 +861,7 @@ weight_s <-
   op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
 names(weight_s) <- colnames(re_turns)
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])
@@ -899,7 +917,7 @@ portf_maxSR <- add.objective(
   type="risk",  # Minimize StdDev
   name="StdDev")
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSR_DEOpt <- optimize.portfolio(
@@ -915,7 +933,7 @@ chart.RiskReward(maxSR_DEOpt,
 
 options(width=50)
 library(PortfolioAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 maxSR_DEOpt$weights
 maxSR_DEOpt$objective_measures$mean[1]
 maxSR_DEOpt$objective_measures$StdDev[[1]]
@@ -1000,7 +1018,7 @@ portf_maxSRN <- add.objective(
   type="risk",  # Minimize StdDev
   name="StdDev")
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSRN_DEOpt <- optimize.portfolio(
@@ -1027,7 +1045,7 @@ chart.RiskReward(maxSRN_DEOpt,
 risk_ret_points()
 
 library(PortfolioAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 maxSRN_DEOpt$weights
 maxSRN_DEOpt$objective_measures$mean[1]
 maxSRN_DEOpt$objective_measures$StdDev[[1]]
@@ -1037,7 +1055,7 @@ maxSRN_DEOpt_xts <-
   plot_portf(portfolio=maxSRN_DEOpt)
 
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 chart.CumReturns(
   cbind(maxSR_DEOpt_xts, maxSRN_DEOpt_xts),
   lwd=2, ylab="",
@@ -1045,7 +1063,7 @@ chart.CumReturns(
 
 options(width=50)
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSRN_DEOpt$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSRN_DEOpt$objective_measures$mean)
@@ -1073,7 +1091,7 @@ portf_maxSTARR <- add.objective(
   type="risk",  # Minimize Expected Shortfall
   name="ES")
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 maxSTARR_DEOpt <- optimize.portfolio(
@@ -1092,7 +1110,7 @@ risk_ret_points(risk="ETL")
 
 options(width=50)
 library(PortfolioAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 maxSTARR_DEOpt$weights
 maxSTARR_DEOpt$objective_measures$mean[1]
 maxSTARR_DEOpt$objective_measures$ES[[1]]
@@ -1102,7 +1120,7 @@ maxSTARR_DEOpt_xts <-
   plot_portf(portfolio=maxSTARR_DEOpt)
 
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 chart.CumReturns(
   cbind(maxSR_DEOpt_xts, maxSTARR_DEOpt_xts),
   lwd=2, ylab="",
@@ -1110,7 +1128,7 @@ chart.CumReturns(
 
 options(width=50)
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, maxSTARR_DEOpt$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 maxSTARR_DEOpt$objective_measures$mean)
@@ -1146,7 +1164,7 @@ portf_minES <- add.objective(
   type="risk",  # Minimize ES
   name="ES")
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 # Perform optimization of weights
 minES_ROI <- optimize.portfolio(
@@ -1171,7 +1189,7 @@ risk_ret_points(risk="ETL")
 
 options(width=50)
 library(PortfolioAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 minES_ROI$weights
 minES_ROI$objective_measures$ES[[1]]
 
@@ -1180,7 +1198,7 @@ minES_ROI_xts <-
   plot_portf(portfolio=minES_ROI)
 
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 chart.CumReturns(
   cbind(maxSR_DEOpt_xts, minES_ROI_xts),
   lwd=2, ylab="",
@@ -1188,14 +1206,14 @@ chart.CumReturns(
 
 options(width=50)
 library(PerformanceAnalytics)
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 rbind(maxSR_DEOpt$weights, minES_ROI$weights)
 c(maxSR_DEOpt$objective_measures$mean,
 minES_ROI$objective_measures$mean)
 c(maxSR_DEOpt$objective_measures$StdDev[[1]],
 minES_ROI$objective_measures$ES[[1]])
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
@@ -1211,7 +1229,7 @@ weights_1h <- maxSR_DEOpt$weights
 maxSR_DEOpt_xts <-
   plot_portf(portfolio=maxSR_DEOpt)
 
-load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 library(PortfolioAnalytics)
 options(width=50)
 # Perform optimization of weights
@@ -1315,9 +1333,7 @@ mean(def_probs)
 def_thresh <- qnorm(def_probs)
 # Calculate number of defaults using vectorized functions (efficient way)
 # Calculate vector of number of defaults
-de_faults <-
-  colSums(t(t(asset_s) < def_thresh))
-de_faults / n_simu
+rowMeans(t(asset_s) < def_thresh)
 def_probs
 # Calculate number of defaults using for() loop (inefficient way)
 # allocate matrix of de_faults
@@ -1504,11 +1520,11 @@ text(x=va_r-0.001, y=10, labels="VaR",
  lwd=2, srt=90, pos=3)
 # Add shading for CVaR
 var_s <- seq(va_r, var_max, length=100)
-dens_ity <- sapply(var_s, loss_distr,
+densi_ty <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
 polygon(c(va_r, var_s, var_max), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
+  c(-1, densi_ty, -1), col="red", border=NA)
 text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
 
 # VaR (quantile of the loss distribution)
@@ -1923,9 +1939,9 @@ text(x=de_tach-0.001, y=4, labels="detach",
  lwd=2, srt=90, pos=3)
 # Add shading for CDO tranche
 var_s <- seq(at_tach, de_tach, length=100)
-dens_ity <- sapply(var_s, loss_distr,
+densi_ty <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
 polygon(c(at_tach, var_s, de_tach), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
+  c(-1, densi_ty, -1), col="red", border=NA)
 text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)

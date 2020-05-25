@@ -137,26 +137,32 @@ mp_inverse <-
 all.equal(mp_inverse, in_verse)
 
 # Create random singular matrix
+# more columns than rows: n_right > n_left
 n_left <- 4 ; n_right <- 6
 mat_rix <- matrix(runif(n_left*n_right), nc=n_right)
 mat_rix <- t(mat_rix) %*% mat_rix
-# Calculate generalized inverse of mat_rix
-in_verse <- MASS::ginv(mat_rix)
-# Verify inverse property of mat_rix
-all.equal(mat_rix,
-  mat_rix %*% in_verse %*% mat_rix)
-
 # Perform singular value decomposition
 s_vd <- svd(mat_rix)
+# Incorrect inverse from SVD because of zero singular values
+svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
+# Verify inverse property of mat_rix
+all.equal(mat_rix,
+  mat_rix %*% svd_inverse %*% mat_rix)
+
 # Set tolerance for determining zero singular values
 to_l <- sqrt(.Machine$double.eps)
 # Check for zero singular values
-s_vd$d
+round(s_vd$d, 12)
 not_zero <- (s_vd$d > (to_l * s_vd$d[1]))
 # Calculate generalized inverse from SVD
 svd_inverse <-
   s_vd$v[, not_zero] %*%
   (t(s_vd$u[, not_zero]) / s_vd$d[not_zero])
+# Verify inverse property of mat_rix
+all.equal(mat_rix,
+  mat_rix %*% svd_inverse %*% mat_rix)
+# Calculate generalized inverse using MASS::ginv()
+in_verse <- MASS::ginv(mat_rix)
 all.equal(svd_inverse, in_verse)
 # Calculate Moore-Penrose pseudo-inverse
 mp_inverse <-
@@ -924,6 +930,33 @@ plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
 
+# Load time series of ETF percentage returns
+re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+head(re_turns)
+# Define regression formula
+for_mula <- paste(colnames(re_turns)[1],
+  paste(colnames(re_turns)[-1], collapse="+"),
+  sep=" ~ ")
+# Standard regression
+mod_el <- lm(for_mula, data=re_turns)
+model_sum <- summary(mod_el)
+# Bootstrap of regression
+set.seed(1121)  # initialize random number generator
+boot_data <- sapply(1:100, function(x) {
+  boot_sample <- sample.int(n_rows, replace=TRUE)
+  mod_el <- lm(for_mula,
+         data=re_turns[boot_sample, ])
+  mod_el$coefficients
+})  # end sapply
+# Means and standard errors from regression
+model_sum$coefficients
+# Means and standard errors from bootstrap
+dim(boot_data)
+t(apply(boot_data, MARGIN=1,
+function(x) c(mean=mean(x), std_error=sd(x))))
+
 # New data predictor is a data frame or row vector
 set.seed(1121)
 new_data <- data.frame(matrix(c(1, rnorm(5)), nr=1))
@@ -1679,7 +1712,7 @@ class(de_sign)
 sapply(de_sign, class)
 # Coerce factor to numerical
 de_sign[, 1] <- as.numeric(de_sign[, 1])
-# Normalize the design data
+# Standardize the design data
 de_sign <- sapply(de_sign, scale)
 head(de_sign)
 class(de_sign)

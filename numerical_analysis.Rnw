@@ -245,10 +245,10 @@ all.equal(num_ber, 1.0)
 4.7 %/% 0.5  # Modulo division
 4.7 %% 0.5  # Remainder of modulo division
 # Reversing modulo division usually
-# Returns the original number
+# returns the original number
 (4.7 %% 0.5) + 0.5 * (4.7 %/% 0.5)
 # Modulo division of non-integer numbers can
-# Produce incorrect results
+# produce incorrect results
 0.6 %/% 0.2  # Produces 2 instead of 3
 6 %/% 2  # use integers to get correct result
 # 0.2 stored as binary number
@@ -4004,6 +4004,72 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{ARIMA} Processes Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ARIMA} processes can be simulated using \protect\emph{RcppArmadillo} even faster than by using the function \texttt{filter()}.
+      <<echo=TRUE,eval=FALSE>>=
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_arima.cpp")
+# Define AR(2) coefficients
+co_eff <- c(0.9, 0.09)
+len_gth <- 1e4
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+# Simulate ARIMA using filter()
+arima_filter <- filter(x=in_nov,
+  filter=co_eff, method="recursive")
+# Simulate ARIMA using sim_arima()
+ari_ma <- sim_arima(in_nov, rev(co_eff))
+all.equal(drop(ari_ma),
+  as.numeric(arima_filter))
+# Microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
+  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    \column{0.5\textwidth}
+      % \vspace{-2em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+#include <RcppArmadillo.h> // include C++ header file from Armadillo library
+using namespace arma; // use C++ namespace from Armadillo library
+// declare dependency on RcppArmadillo
+// [[Rcpp::depends(RcppArmadillo)]]
+
+//' @export
+// [[Rcpp::export]]
+arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
+  uword len_gth = in_nov.n_elem;
+  uword look_back = co_eff.n_elem;
+  arma::vec ari_ma(len_gth);
+
+  // startup period
+  ari_ma(0) = in_nov(0);
+  ari_ma(1) = in_nov(1) + co_eff(look_back-1) * ari_ma(0);
+  for (uword it = 2; it < look_back-1; it++) {
+    ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
+  }  // end for
+
+  // remaining periods
+  for (uword it = look_back; it < len_gth; it++) {
+    ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
+  }  // end for
+
+  return ari_ma;
+}  // end sim_arima
+    \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Fast Matrix Algebra Using \protect\emph{RcppArmadillo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -4098,66 +4164,216 @@ double inv_mat(arma::mat& mat_rix){
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{ARIMA} Processes Using \protect\emph{RcppArmadillo}}
+\subsection{Fast Covariance Matrix Inverse Using \protect\emph{RcppArmadillo}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{ARIMA} processes can be simulated using \protect\emph{RcppArmadillo} even faster than by using the function \texttt{filter()}.
-      <<echo=TRUE,eval=FALSE>>=
-# Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_arima.cpp")
-# Define AR(2) coefficients
-co_eff <- c(0.9, 0.09)
-len_gth <- 1e4
-set.seed(1121)
-in_nov <- rnorm(len_gth)
-# Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-# Simulate ARIMA using sim_arima()
-ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma),
-  as.numeric(arima_filter))
-# Microbenchmark RcppArmadillo code
-summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  sim_arima=sim_arima(in_nov, rev(co_eff)),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-    \column{0.5\textwidth}
-      % \vspace{-2em}
+  % \begin{columns}[T]
+    % \column{0.4\textwidth}
+      \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
-#include <RcppArmadillo.h> // include C++ header file from Armadillo library
-using namespace arma; // use C++ namespace from Armadillo library
-// declare dependency on RcppArmadillo
 // [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
 
 //' @export
 // [[Rcpp::export]]
-arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
-  uword len_gth = in_nov.n_elem;
-  uword look_back = co_eff.n_elem;
-  arma::vec ari_ma(len_gth);
+arma::mat calc_inv(const arma::mat& mat_rix, const arma::uword& max_eigen) {
+  arma::mat eigen_vec;
+  arma::vec eigen_val;
+  
+  arma::eig_sym(eigen_val, eigen_vec, cov(mat_rix));
+  eigen_vec = eigen_vec.cols(eigen_vec.n_cols-max_eigen, eigen_vec.n_cols-1);
+  eigen_val = 1/eigen_val.subvec(eigen_val.n_elem-max_eigen, eigen_val.n_elem-1);
 
-  // startup period
-  ari_ma(0) = in_nov(0);
-  ari_ma(1) = in_nov(1) + co_eff(look_back-1) * ari_ma(0);
-  for (uword it = 2; it < look_back-1; it++) {
-    ari_ma(it) = in_nov(it) + arma::dot(co_eff.subvec(look_back-it, look_back-1), ari_ma.subvec(0, it-1));
-  }  // end for
-
-  // remaining periods
-  for (uword it = look_back; it < len_gth; it++) {
-    ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
-  }  // end for
-
-  return ari_ma;
-}  // end sim_arima
+  return eigen_vec*diagmat(eigen_val)*eigen_vec.t();
+  
+}  // end calc_inv
     \end{lstlisting}
-  \end{columns}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(RcppArmadillo)
+# Source Rcpp functions from file
+Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
+# Create random matrix of returns
+mat_rix <- matrix(rnorm(300), nc=5)
+# Regularized inverse of covariance matrix
+max_eigen <- 4
+ei_gen <- eigen(cov(mat_rix))
+cov_inv <- ei_gen$vectors[, 1:max_eigen] %*% 
+  (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+# Regularized inverse using RcppArmadillo
+cov_inv_arma <- calc_inv(mat_rix, max_eigen)
+all.equal(cov_inv, cov_inv_arma)
+# Microbenchmark RcppArmadillo code
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r={
+    ei_gen <- eigen(cov(mat_rix))
+    ei_gen$vectors[, 1:max_eigen] %*% 
+      (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+  },
+  r_cpp=calc_inv(mat_rix, max_eigen),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    % \column{0.6\textwidth}
+  % \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  % \begin{columns}[T]
+    % \column{0.5\textwidth}
+      Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Fast portfolio optimization using matrix algebra and RcppArmadillo
+// Rcpp header with information for C++ compiler
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
+
+//' @export
+// [[Rcpp::export]]
+arma::vec calc_weights(const arma::mat& re_turns, 
+                       const std::string& typ_e = "max_sharpe",
+                       int max_eigen = 1,
+                       const double& pro_b = 0.1,
+                       const double& al_pha = 0.0,
+                       const bool scal_e = true) {
+  // Initialize
+  arma::vec weight_s(re_turns.n_cols);
+  if (max_eigen == 1)  max_eigen = re_turns.n_cols;
+  
+  // Calculate weights depending on typ_e
+  if (typ_e == "max_sharpe") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
+    // Shrink mean_cols to the mean of re_turns
+    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::mean(mean_cols));
+    // Apply regularized inverse
+    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
+  } else if (typ_e == "max_sharpe_median") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
+    // Shrink mean_cols to the mean of re_turns
+    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::median(mean_cols));
+    // Apply regularized inverse
+    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
+  } else if (typ_e == "min_var") {
+    // Apply regularized inverse to unit vector
+    weight_s = calc_inv(re_turns, max_eigen)*arma::ones(re_turns.n_cols);
+  } else if (typ_e == "min_varpca") {
+    // Calculate highest order principal component
+    arma::vec eigen_val;
+    arma::mat eigen_vec;
+    arma::eig_sym(eigen_val, eigen_vec, cov(re_turns));
+    weight_s = eigen_vec.col(0);
+  } else if (typ_e == "rank") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
+    // Standard deviation by columns
+    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    sd_cols.replace(0, 1);
+    mean_cols = mean_cols/sd_cols;
+    // Weights equal to ranks of Sharpe
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else if (typ_e == "rankrob") {
+    // Median returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
+    // Standard deviation by columns
+    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    sd_cols.replace(0, 1);
+    mean_cols = mean_cols/sd_cols;
+    // Apply regularized inverse
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else if (typ_e == "quan_tile") {
+    // Sum of quantiles for columns
+    arma::vec prob_s = {pro_b, 1-pro_b};
+    weight_s = conv_to< vec >::from(arma::sum(arma::quantile(re_turns, prob_s, 0), 0));
+    // Weights equal to ranks
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(weight_s)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else {
+    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
+    return arma::ones(re_turns.n_cols);
+  }  // end if
+
+  if (scal_e == TRUE) {
+    return weight_s*arma::stddev(arma::mean(re_turns, 1))/arma::stddev(re_turns*weight_s);
+  }  // end if
+  
+  return weight_s;
+}  // end calc_weights
+    \end{lstlisting}
+    % \column{0.5\textwidth}
+      % \vspace{-1em}
+  % \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Strategy Backtesting Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  % \begin{columns}[T]
+    % \column{0.5\textwidth}
+      Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
+
+arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
+                    const arma::mat& re_turns, // Portfolio returns
+                    const arma::uvec& start_points, 
+                    const arma::uvec& end_points, 
+                    const std::string& typ_e = "max_sharpe",
+                    const arma::uword& max_eigen = 1,
+                    const double& pro_b = 0.1,
+                    const double& al_pha = 0,
+                    const bool& scal_e = true,
+                    const double& co_eff = 1.0,
+                    const double& bid_offer = 0.0) {
+  arma::vec pnl_s = zeros(re_turns.n_rows);
+  arma::vec weights_past = zeros(re_turns.n_cols);
+  arma::vec weight_s(re_turns.n_cols);
+  
+  // Perform loop over the end_points
+  for (arma::uword it=1; it < end_points.size(); it++) {
+    // cout << "it: " << it << endl;
+    // Calculate portfolio weights
+    weight_s = co_eff*calc_weights(ex_cess.rows(start_points(it-1), end_points(it-1)), typ_e, max_eigen, pro_b, al_pha, scal_e);
+    // Calculate out-of-sample returns
+    pnl_s.subvec(end_points(it-1)+1, end_points(it)) = re_turns.rows(end_points(it-1)+1, end_points(it))*weight_s;
+    // Add transaction costs
+    pnl_s.row(end_points(it-1)+1) -= bid_offer*sum(abs(weight_s - weights_past))/2;
+    weights_past = weight_s;
+  }  // end for
+  // Return the strategy returns
+  return pnl_s;
+}  // end back_test
+    \end{lstlisting}
+    % \column{0.5\textwidth}
+      % \vspace{-1em}
+  % \end{columns}
 \end{block}
 
 \end{frame}

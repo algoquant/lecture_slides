@@ -7,20 +7,17 @@ knit_theme$set(thm)
 
 set.seed(1121)  # Reset random number generator
 runif(3)  # three numbers from uniform distribution
-runif(3)  # Produce another three numbers
+runif(3)  # Simulate another three numbers
 set.seed(1121)  # Reset random number generator
-runif(3)  # Produce another three numbers
-
-# Produce random number from standard normal distribution
+runif(3)  # Simulate another three numbers
+# Simulate random number from standard normal distribution
 rnorm(1)
-# Produce five random numbers from standard normal distribution
+# Simulate five standard normal random numbers
 rnorm(5)
-# Produce five random numbers from the normal distribution
+# Simulate five non-standard normal random numbers
 rnorm(n=5, mean=1, sd=2)  # Match arguments by name
-# Calculate cumulative standard normal distribution
-c(pnorm(-2), pnorm(2))
-# Calculate inverse cumulative standard normal distribution
-c(qnorm(0.75), qnorm(0.25))
+# Simulate t-distribution with 2 degrees of freedom
+rt(n=5, df=2)
 
 # Define logistic map function
 log_map <- function(x, r=4) r*x*(1-x)
@@ -105,23 +102,24 @@ n_rows <- NROW(re_turns)
 mea_n <- mean(re_turns)
 # Standard deviation of DAX returns
 s_d <- sd(re_turns)
-# Normalize returns
+# Standardize returns
 re_turns <- (re_turns - mea_n)/s_d
-# Skew of DAX returns
-skew(re_turns)
-# Or
+# Skewness of DAX returns
 n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
 # Kurtosis of DAX returns
-kurt(re_turns)
-# Or
 n_rows/(n_rows-1)^2*sum(re_turns^4)
 # Random normal returns
-re_turns <- rnorm(n_rows, sd=2)
+re_turns <- rnorm(n_rows)
 # Mean and standard deviation of random normal returns
 mean(re_turns); sd(re_turns)
-# Skew and kurtosis of random normal returns
-skew(re_turns); kurt(re_turns)
+# Skewness and kurtosis of random normal returns
+n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
+n_rows/(n_rows-1)^2*sum(re_turns^4)
 
+# Calculate cumulative standard normal distribution
+c(pnorm(-2), pnorm(2))
+# Calculate inverse cumulative standard normal distribution
+c(qnorm(0.75), qnorm(0.25))
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
@@ -132,15 +130,13 @@ mean(da_ta)
 sd(da_ta)
 # Monte Carlo estimate of cumulative probability
 da_ta <- sort(da_ta)
-pnorm(1)
-sum(da_ta<1)/n_rows
+c(pnorm(1), sum(da_ta<1)/n_rows)
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
 cut_off <- conf_level*n_rows
-da_ta[cut_off]
-quantile(da_ta, probs=conf_level)
-# Analyze the source code of quantile()
+c(da_ta[cut_off], quantile(da_ta, probs=conf_level))
+# Read the source code of quantile()
 stats:::quantile.default
 # microbenchmark quantile
 library(microbenchmark)
@@ -148,6 +144,83 @@ summary(microbenchmark(
   monte_carlo=da_ta[cut_off],
   quan_tile=quantile(da_ta, probs=conf_level),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Sample mean
+mean(da_ta)
+# Sample standard deviation
+sd(da_ta)
+
+# Define Hermite polynomials
+her_mite <- function(x, n) {
+    switch(n+1, 1, x, (x^2 - 1), (x^3 - 3*x), 0)
+}  # end her_mite
+
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, in_dex),
+  xlim=c(-3, 3), ylim=c(-2.5, 2.5),
+  xlab="", ylab="", lwd=4, col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Polynomials", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("top", inset=0.0, bty="n",
+ title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
+ col=col_ors)
+
+# Define Hermite functions
+hermite_fun <- function(x, n)
+  exp(-x^2/4)*her_mite(x, n)/(2*pi)^(0.25)/sqrt(factorial(n))
+# Integrate Hermite functions
+integrate(function(x, n, m)
+  hermite_fun(x, n)*hermite_fun(x, m),
+  lower=(-Inf), upper=Inf, n=2, m=3)
+
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=hermite_fun(x, in_dex),
+  xlim=c(-6, 6), ylim=c(-0.6, 0.6),
+  xlab="", ylab="", lwd=4, col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Functions", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("topright", inset=0.0, bty="n",
+ title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
+ col=col_ors)
+
+# Integrate Hermite functions
+integrate(her_mite, lower=(-Inf), upper=Inf, n=2)
+integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
+    lower=(-Inf), upper=Inf, n=2, m=3)
+integrate(function(x, n, m) her_mite(x, n)*her_mite(x, m),
+    lower=(-Inf), upper=Inf, n=2, m=2)
+
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+col_ors <- c("red", "blue", "green")
+for (in_dex in 1:3) {  # Plot three curves
+  curve(expr=her_mite(x, in_dex),
+  xlim=c(-4, 4), ylim=c(-0.6, 0.6),
+  xlab="", ylab="", lwd=3, col=col_ors,
+  add=as.logical(in_dex-1))
+}  # end for
+# Add title and legend
+title(main="Hermite Functions", line=0.5)
+lab_els <- paste("Order", 1:3, sep=" = ")
+legend("topright", inset=0.05, bty="n",
+ title=NULL, lab_els, cex=0.8, lwd=6, lty=1,
+ col=col_ors)
 
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
@@ -314,24 +387,339 @@ jarque.bera.test(dax_rets)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(dax_rets)))
 
+# Sort a vector into ascending order
+da_ta <- round(runif(7), 3)
+sort_ed <- sort(da_ta)
+da_ta  # original data
+sort_ed  # sorted data
+# Calculate index to sort into ascending order
+in_dex <- order(da_ta)
+in_dex  # permutation index to sort
+all.equal(sort_ed, da_ta[in_dex])
+# Sort the ordered vector back to its original unsorted order
+in_dex <- order(order(da_ta))
+in_dex  # permutation index to unsort
+all.equal(da_ta, sort_ed[in_dex])
+# Calculate ranks of the vector elements
+rank(da_ta)
+all.equal(rank(da_ta), in_dex)
+
+# VTI returns
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
+n_rows <- NROW(re_turns)
+re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
+# Simulate normal random data
+n_data <- rnorm(n_rows, sd=100)
+# Bootstrap the mean and median estimators
+boot_data <- sapply(1:1e3, function(x) {
+  # Simulate data
+  n_data <- rnorm(n_rows, sd=100)
+  re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
+  c(n_mean=mean(n_data),
+    n_median=median(n_data),
+    vti_mean=mean(re_turns),
+    vti_median=median(re_turns))
+})  # end sapply
+boot_data <- t(boot_data)
+# Analyze bootstrapped data
+head(boot_data)
+sum(is.na(boot_data))
+# Means and medians from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # Load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_data <- parLapply(clus_ter, 1:1e4,
+  function(x, n_rows, re_turns) {
+    # Simulate data
+    n_data <- rnorm(n_rows, sd=100)
+    re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
+    c(n_mean=mean(n_data),
+n_median=median(n_data),
+vti_mean=mean(re_turns),
+vti_median=median(re_turns))
+  }, n_rows, re_turns)  # end parLapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:1e4, function(x) {
+  # Simulate data
+  n_data <- rnorm(n_rows)
+  t_data <- rt(n_rows, df=2)
+  c(n_mean=mean(n_data),
+    n_median=median(n_data),
+    vti_mean=mean(t_data),
+    vti_median=median(t_data))
+}, mc.cores=n_cores)  # end mclapply
+# Means and medians from bootstrap
+boot_data <- rutils::do_call(rbind, boot_data)
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), std_error=sd(x)))
+
+# Bias and variance from bootstrap
+bias_var <- apply(boot_data, MARGIN=2, function(x)
+  c(bias=mean(x), variance=var(x)))
+# MSE of mean
+bias_var[1, 3]^2 + bias_var[2, 3]
+# MSE of median
+bias_var[1, 4]^2 + bias_var[2, 4]
+
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns[, "VTI"]))
+n_rows <- NROW(re_turns)
+re_turns <- 100*(re_turns-mean(re_turns))/sd(re_turns)
+# Simulate normal random data
+n_data <- rnorm(n_rows, sd=100)
+
+# Hodges-Lehmann estimator
+
+
+# Bootstrap the mean and median estimators
+boot_data <- sapply(1:1e3, function(x) {
+  # Simulate data
+  n_data <- rnorm(n_rows, sd=100)
+  re_turns <- re_turns[sample.int(n_rows, replace=TRUE)]
+  c(n_mean=mean(n_data),
+    n_median=median(n_data),
+    vti_mean=mean(re_turns),
+    vti_median=median(re_turns))
+})  # end sapply
+boot_data <- t(boot_data)
+# Analyze bootstrapped data
+head(boot_data)
+sum(is.na(boot_data))
+# Means and medians from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+
+n_rows <- 1e3
+da_ta <- rnorm(n_rows)
+sd(da_ta)
+mad(da_ta)
+median(abs(da_ta - median(da_ta)))
+median(abs(da_ta - median(da_ta)))/qnorm(0.75)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:1e4, function(x) {
+  boot_sample <-
+    da_ta[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_data <- t(boot_data)
+# Analyze bootstrapped variance
+head(boot_data)
+sum(is.na(boot_data))
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # Load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+boot_data <- parLapply(clus_ter, 1:1e4,
+  function(x, da_ta) {
+    boot_sample <-
+da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, da_ta=da_ta)  # end parLapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:1e4,
+  function(x) {
+    boot_sample <-
+da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+# Means and standard errors from bootstrap
+boot_data <- rutils::do_call(rbind, boot_data)
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1e3
+da_ta <- rnorm(n_rows)
+# Sample mean
+mean(da_ta)
+# Sample standard deviation
+sd(da_ta)
+
+# VTI returns
+re_turns <- as.numeric(na.omit(
+  rutils::etf_env$re_turns[, "VTI"]))
 # Wilcoxon test for normal distribution
-wilcox.test(rnorm(100))
+da_ta <- rnorm(NROW(re_turns), sd=100)
+wilcox.test(da_ta)
+# Skewed distribution with mean=0
+mean(re_turns); median(re_turns)
+wilcox.test(re_turns-mean(re_turns))
+# Same as
+wilcox.test(re_turns-mean(re_turns),
+  rep(0, NROW(re_turns)), paired=TRUE)
+# Skewed distribution with median=0
+wilcox.test(re_turns-median(re_turns))
+# Normal samples with different standard deviations
+n_rows <- 1e3
+sample1 <- rnorm(n_rows, sd=1)
+sample2 <- rnorm(n_rows, sd=10)
+wilcox.test(sample1, sample2,
+      paired=TRUE)
+
+# Wilcoxon test for random data around 0
+da_ta <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(da_ta)
+# Calculate V statistic of Wilcoxon test
+wil_cox$statistic
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+# Two sets of normal data
+sample1 <- rnorm(n_rows)
+sample2 <- rnorm(n_rows, mean=0.1)
+# Wilcoxon test
+wil_cox <- wilcox.test(sample1, sample2,
+                 paired=TRUE)
+wil_cox$statistic
+# Calculate V statistic of Wilcoxon test
+da_ta <- (sample1 - sample2)
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+
+# Calculate distributon of Wilcoxon W statistic
+wilcox_w <- sapply(1:1e3, function(x) {
+  da_ta <- (runif(n_rows) - 0.5)
+  sum(sign(da_ta)*rank(abs(da_ta)))
+})  # end sapply
+wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
+var(wilcox_w)
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+hist(wilcox_w, col="lightgrey",
+     xlab="returns", breaks=50, xlim=c(-3, 3),
+     ylab="frequency", freq=FALSE,
+     main="Wilcoxon W Statistic Histogram")
+lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
+curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+ leg=c("W density", "Normal"),
+ lwd=6, lty=1, col=c("red", "blue"))
+
 # Wilcoxon test for two normal distributions
-sample1 <- rnorm(100)
-sample2 <- rnorm(100, mean=0.1)
-wilcox.test(sample1, sample2)$p.value
+sample1 <- rnorm(1e2)
+sample2 <- rnorm(1e2, mean=0.1)
+wilcox.test(sample1, sample2,
+      paired=TRUE)$p.value
 t.test(sample1, sample2)$p.value
 # Wilcoxon test with data outliers
-sample2 <- sample1
-sample2[1:11] <- sample2[1:11] + 5
-wilcox.test(sample1, sample2)$p.value
+sample2 <- rnorm(1e2)
+sample2[1:3] <- sample2[1:3] + 1e3
+wilcox.test(sample1, sample2,
+      paired=TRUE)$p.value
 t.test(sample1, sample2)$p.value
-# Wilcoxon test for two normal distributions
-wilcox.test(rnorm(100), rnorm(100, mean=1.0))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100)-0.5, rnorm(100))
-# Wilcoxon test for a uniform versus normal distribution
-wilcox.test(runif(100), rnorm(100))
+
+# Data samples
+da_ta <- sort(rnorm(38))
+in_dex <- c(1:9, 20:29)
+
+# Or
+da_ta <- sort(rnorm(398))
+in_dex <- c(1:99, 200:299)
+sample1 <- da_ta[in_dex]
+sample2 <- da_ta[-in_dex]
+
+# Or
+in_dex <- sample(1:NROW(re_turns), size=NROW(re_turns)/2)
+sample1 <- re_turns[in_dex]
+sample2 <- (-re_turns[-in_dex])
+
+sample1 <- (sample1- median(sample1))
+sample2 <- (sample2- median(sample2))
+moments::moment(sample1, order=3)
+moments::moment(sample2, order=3)
+
+# Mann-Whitney test for normal distribution
+wilcox.test(sample1, sample2, paired=FALSE)
+wilcox.test(sample1, sample2, paired=TRUE)
+blue <- rgb(0, 0, 1, alpha=0.5)
+red <- rgb(1, 0, 0, alpha=0.5)
+barplot(sample2, col=red)
+barplot(sample1, col=blue, add=TRUE)
+hist(sample1)
+
+
+# Mann-Whitney test for normal distribution
+da_ta <- rnorm(NROW(re_turns), sd=100)
+wilcox.test(da_ta, paired=FALSE)
+# Skewed distribution with mean=0
+mean(re_turns); median(re_turns)
+wilcox.test(re_turns-mean(re_turns),
+      paired=FALSE)
+# Skewed distribution with median=0
+wilcox.test(re_turns-median(re_turns),
+      paired=FALSE)
+# Skewed distribution with median=0
+wilcox.test(re_turns-median(re_turns),
+      da_ta, paired=FALSE)
+
+
+sample1 <- sample(re_turns, size=NROW(re_turns))
+sample2 <- (-sample1)
+sample1 <- (sample1-median(sample1))
+sample2 <- (sample2-median(sample2))
+# Mann-Whitney-Wilcoxon rank sum test
+wilcox.test(sample1, sample2,
+      paired=FALSE)$p.value
+
+
+da_ta <- (-re_turns)
+da_ta <- (da_ta-median(da_ta))
+wilcox.test(re_turns-median(re_turns),
+      da_ta, paired=FALSE)
+wilcox.test(re_turns-median(re_turns),
+      da_ta, paired=TRUE)
+
+da_ta <- (-re_turns)
+da_ta <- (da_ta-mean(da_ta))
+wilcox.test(re_turns-mean(re_turns),
+      da_ta, paired=FALSE)
+wilcox.test(re_turns-mean(re_turns),
+      da_ta, paired=TRUE)
+
+foo <- sapply(1:100, function(x) {
+  # Data samples
+  sample1 <- sample(re_turns, size=NROW(re_turns)/2)
+  sample2 <- sample(-re_turns, size=NROW(re_turns)/2)
+  sample1 <- (sample1-median(sample1))
+  sample2 <- (sample2-median(sample2))
+  # Mann-Whitney-Wilcoxon rank sum test
+  wilcox.test(sample1, sample2, paired=FALSE)$p.value
+})
+hist(foo)
+
+# Skewed distribution with mean=0
+mean(re_turns); median(re_turns)
+wilcox.test(re_turns-mean(re_turns))
+# Same as
+wilcox.test(re_turns-mean(re_turns),
+      rep(0, NROW(re_turns)),
+      paired=TRUE)
+# Skewed distribution with median=0
+wilcox.test(re_turns-median(re_turns))
+
+
+# Data samples
+sample1 <- rnorm(200)
+sample2 <- rnorm(100, mean=0.1)
+# Mann-Whitney-Wilcoxon rank sum test
+wil_cox <- wilcox.test(sample1, sample2,
+                 paired=FALSE)
+wil_cox$statistic
+# Calculate U statistics of Mann-Whitney-Wilcoxon test
+da_ta <- c(sample1, sample2)
+rank_s <- rank(da_ta)
+sum(rank_s[1:200]) - 100*201
+sum(rank_s[201:300]) - 50*101
 
 # Wilcoxon test for random data around 0
 n_rows <- 1e3
@@ -350,181 +738,6 @@ wilcox_w <- sapply(1:1e3, function(x) {
 wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
 var(wilcox_w)
 hist(wilcox_w)
-
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-mean(da_ta)
-median(da_ta)
-
-# wipp
-# Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <-
-    da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
-})  # end sapply
-boot_data <- t(boot_data)
-# Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
-  function(x, da_ta) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, da_ta=da_ta)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
-  function(x) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <-
-    da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
-})  # end sapply
-boot_data <- t(boot_data)
-# Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
-  function(x, da_ta) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, da_ta=da_ta)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
-  function(x) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-
-bar <- wilcox.test(foo, conf.int=TRUE)
-bar$estimate
-
-
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
-median(abs(da_ta - median(da_ta)))
-median(abs(da_ta - median(da_ta)))/qnorm(0.75)
-# Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  boot_sample <-
-    da_ta[sample.int(n_rows, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
-})  # end sapply
-boot_data <- t(boot_data)
-# Analyze bootstrapped variance
-head(boot_data)
-sum(is.na(boot_data))
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-# Parallel bootstrap under Windows
-library(parallel)  # Load package parallel
-n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
-  function(x, da_ta) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, da_ta=da_ta)  # end parLapply
-# Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
-  function(x) {
-    boot_sample <-
-da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
-# Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
-
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-# Sample mean
-mean(da_ta)
-# Sample standard deviation
-sd(da_ta)
-
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1e3
-da_ta <- rnorm(n_rows)
-# Sample mean
-mean(da_ta)
-# Sample standard deviation
-sd(da_ta)
-
-# Load time series of ETF percentage returns
-re_turns <- rutils::etf_env$re_turns[, c("XLF", "XLE")]
-re_turns <- na.omit(re_turns)
-n_rows <- NROW(re_turns)
-head(re_turns)
-# Define regression formula
-for_mula <- paste(colnames(re_turns)[1],
-  paste(colnames(re_turns)[-1], collapse="+"),
-  sep=" ~ ")
-# Standard regression
-mod_el <- lm(for_mula, data=re_turns)
-model_sum <- summary(mod_el)
-# Bootstrap of regression
-set.seed(1121)  # initialize random number generator
-boot_data <- sapply(1:100, function(x) {
-  boot_sample <- sample.int(n_rows, replace=TRUE)
-  mod_el <- lm(for_mula,
-         data=re_turns[boot_sample, ])
-  mod_el$coefficients
-})  # end sapply
-# Means and standard errors from regression
-model_sum$coefficients
-# Means and standard errors from bootstrap
-dim(boot_data)
-t(apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), std_error=sd(x))))
 
 # iris data frame
 aggregate(Sepal.Length ~ Species, data=iris,
@@ -582,7 +795,7 @@ mad(da_ta)
 median(abs(da_ta - median(da_ta)))
 median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
+boot_data <- sapply(1:1e4, function(x) {
   boot_sample <-
     da_ta[sample.int(n_rows, replace=TRUE)]
   c(sd=sd(boot_sample), mad=mad(boot_sample))
@@ -598,22 +811,22 @@ function(x) c(mean=mean(x), std_error=sd(x)))
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
+boot_data <- parLapply(clus_ter, 1:1e4,
   function(x, da_ta) {
     boot_sample <-
 da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, da_ta=da_ta)  # end parLapply
+stopCluster(clus_ter)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
+boot_data <- mclapply(1:1e4,
   function(x) {
     boot_sample <-
 da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
+boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2,
 function(x) c(mean=mean(x), std_error=sd(x)))
 
@@ -624,7 +837,7 @@ mad(da_ta)
 median(abs(da_ta - median(da_ta)))
 median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
+boot_data <- sapply(1:1e4, function(x) {
   boot_sample <-
     da_ta[sample.int(n_rows, replace=TRUE)]
   c(sd=sd(boot_sample), mad=mad(boot_sample))
@@ -640,22 +853,22 @@ function(x) c(mean=mean(x), std_error=sd(x)))
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
+boot_data <- parLapply(clus_ter, 1:1e4,
   function(x, da_ta) {
     boot_sample <-
 da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, da_ta=da_ta)  # end parLapply
+stopCluster(clus_ter)  # Stop R processes over cluster
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
+boot_data <- mclapply(1:1e4,
   function(x) {
     boot_sample <-
 da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, mc.cores=n_cores)  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster
-boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
+boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2,
 function(x) c(mean=mean(x), std_error=sd(x)))
 

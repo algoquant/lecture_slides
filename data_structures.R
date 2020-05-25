@@ -38,16 +38,16 @@ c(typeof(my_var), mode(my_var), class(my_var))
 my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-# a simple vector has no attributes
+# A simple vector has no attributes
 attributes(5:10)
 my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# named vector has "names" attribute
+# Named vector has "names" attribute
 attributes(my_var)
 my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
+is.vector(my_var)  # Is the object a vector?
 attributes(my_var) <- list(my_attr="foo")
 my_var
-is.vector(my_var)  # is the object a vector?
+is.vector(my_var)  # Is the object a vector?
 my_var <- 0
 attributes(my_var) <- list(class="Date")
 my_var  # "Date" object
@@ -63,17 +63,17 @@ class(my_var) <- "my_class"
 class(my_var)  # Has explicit "class"
 # Has explicit "class" attribute
 attributes(my_var)
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
+is.matrix(my_var)  # Is the object a matrix?
+is.vector(my_var)  # Is the object a vector?
 attributes(unclass(my_var))
 
-# integer implicit class derived from type
+# Integer implicit class derived from type
 my_var <- vector(mode="integer", length=10)
 c(typeof(my_var), mode(my_var), class(my_var))
-# numeric implicit class derived from mode
+# Numeric implicit class derived from mode
 my_var <- vector(mode="numeric", length=10)
 c(typeof(my_var), mode(my_var), class(my_var))
-# adding dim attribute changes implicit class to matrix
+# Adding dim attribute changes implicit class to matrix
 dim(my_var) <- c(5, 2)
 c(typeof(my_var), mode(my_var), class(my_var))
 # Data frames have implicit dim attribute
@@ -98,7 +98,7 @@ c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 c(is.matrix(mat_rix), is.vector(mat_rix))
 as.logical(0:3)  # Explicit coercion to "logical"
 as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, 'a')  # implicit coercion to "character"
+c(1:3, 'a')  # Implicit coercion to "character"
 # Explicit coercion to "numeric"
 as.numeric(c(1:3, 'a'))
 
@@ -168,10 +168,10 @@ c('a', letters[5:10])  # Combine two vectors of letters
 
 0:10  # Vector of integers from 0 to 10
 vector()  # Create empty vector
-vector(mode="numeric", length=10)  # numeric vector of zeros
+vector(mode="numeric", length=10)  # Numeric vector of zeros
 seq(10)  # Sequence from 1 to 10
-seq(along=(-5:5))  # instead of 1:NROW(obj)
-seq_along(c("a", "b", "c"))  # instead of 1:NROW(obj)
+seq(along=(-5:5))  # Instead of 1:NROW(obj)
+seq_along(c("a", "b", "c"))  # Instead of 1:NROW(obj)
 seq(from=0, to=1, len=11)  # Decimals from 0 to 1.0
 seq(from=0, to=1, by=0.1)  # Decimals from 0 to 1.0
 seq(-2,2, len=11)  # 10 numbers from -2 to 2
@@ -193,7 +193,7 @@ vec_tor > 6
 2*vec_tor  # Multiply all elements by 2
 vec_tor^2  # Square all elements
 c(11, 5:10)  # Combine two vectors
-c(vec_tor, 2.0)  # append number to vector
+c(vec_tor, 2.0)  # Append number to vector
 
 vec_tor <- # Create named vector
   c(pi_const=pi, euler=exp(1), gamma=-digamma(1))
@@ -208,7 +208,7 @@ c('a', letters[5:10])  # Combine two vectors of letters
 # Create named vector
 structure(sample(1:5), names=paste0("el", 1:5))
 
-vec_tor  # named vector
+vec_tor  # Named vector
 # Extract second element
 vec_tor[2]
 # Extract all elements, except the second element
@@ -234,8 +234,8 @@ vec_tor[vec_tor == vec_tor[2]]
 vec_tor < 1  # Boolean vector of elements less than one
 # Extract all elements greater than one
 vec_tor[vec_tor > 1]
-vec_tor[vec_tor > 0.5]  # filter elements > 0.5
-which(vec_tor > 0.5)  # index of elements > 0.5
+vec_tor[vec_tor > 0.5]  # Filter elements > 0.5
+which(vec_tor > 0.5)  # Index of elements > 0.5
 
 # Create factor vector
 fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
@@ -265,10 +265,10 @@ str(findInterval)
 # Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
-# no exact match
+# No exact match
 findInterval(x=6, vec=c(3, 5, 7))
 match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
+# Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
 # Return only indices of inside intervals
 findInterval(x=1:8, vec=c(3, 5, 7),
@@ -277,7 +277,7 @@ findInterval(x=1:8, vec=c(3, 5, 7),
 findInterval(x=1:8, vec=c(3, 5, 7),
        rightmost.closed=TRUE)
 
-# named numeric vector of breakpoints
+# Named numeric vector of breakpoints
 brea_ks <- c(freezing=0, very_cold=30,
        cold=50, pleasant=60,
        warm=80, hot=90)
@@ -317,12 +317,12 @@ histo_gram <- hist(dax_rets, breaks=30,
 
 # Draw kernel density of histogram
 lines(density(dax_rets), col='red', lwd=2)
-# add density of normal distribution
+# Add density of normal distribution
 curve(expr=dnorm(x, mean=mean(dax_rets),
   sd=sd(dax_rets)), add=TRUE, type="l",
   lwd=2, col="blue")
 title(main="DAX return distribution", line=0)
-# add legend
+# Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
   leg=c(colnames(EuStockMarkets)[1], "Normal"),
   lwd=6, bg="white", col=c("red", "blue"))
@@ -463,16 +463,17 @@ sort_ed[order(order(stu_dents))]
 stu_dents
 # Create a data frame of stu_dents and their ranks
 ra_nks <- c("first", "second", "third", "fourth", "fifth")
-data.frame(students=stu_dents, rank=ra_nks[order(order(stu_dents))])
-# permute data_frame of flowers on price column
+data.frame(students=stu_dents,
+  rank=ra_nks[order(order(stu_dents))])
+# Permute data_frame of flowers on price column
 order(data_frame$price)
 # Sort data_frame on price
 data_frame[order(data_frame$price), ]
 # Sort data_frame on color
 data_frame[order(data_frame$color), ]
+# Read the Examples for sort()
 order(c(2, 1:4))  # there's a tie
 order(c(2, 1:4), 1:5)  # there's a tie
-# Read the Examples for sort()
 
 as.matrix(data_frame)
 vec_tor <- sample(9)
@@ -485,9 +486,9 @@ colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
 library(microbenchmark)
 # Call method instead of generic function
 as.data.frame.matrix(mat_rix)
-# a few methods for generic function as.data.frame()
+# A few methods for generic function as.data.frame()
 sample(methods(as.data.frame), size=4)
-# function method is faster than generic function
+# Function method is faster than generic function
 summary(microbenchmark(
   as_data_frame_matrix=
     as.data.frame.matrix(mat_rix),
@@ -556,7 +557,7 @@ da_ta[!is.na(da_ta)]  # Delete the NA values
 sum(!is.na(da_ta))  # Count non-NA values
 
 rm(list=ls())
-# airquality data has some NAs
+# Airquality data has some NAs
 head(airquality)
 dim(airquality)
 # Number of NA elements
@@ -586,7 +587,7 @@ se_ries <- rutils::etf_env$price_s[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
+series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
 library(microbenchmark)

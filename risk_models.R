@@ -27,12 +27,12 @@ n_rows <- NROW(price_s)
 n_points <- 22
 # Number of n_points that fit over n_rows
 n_agg <- n_rows %/% n_points
-# if n_rows==n_points*n_agg then whole number
+# If n_rows==n_points*n_agg then whole number
 end_points <- (1:n_agg)*n_points
-# else stub interval at beginning
+# Else stub interval at beginning
 end_points <-
   n_rows-n_points*n_agg + (0:n_agg)*n_points
-# else stub interval at end
+# Else stub interval at end
 end_points <- c((1:n_agg)*n_points, n_rows)
 # Or use xts::endpoints()
 end_points <- xts::endpoints(price_s, on="months")
@@ -204,7 +204,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # library(HighFreq)  # load package HighFreq
-# rolling sum using cumsum()
+# Rolling sum using cumsum()
 roll_sum <- function(x_ts, look_back) {
   cum_sum <- cumsum(na.omit(x_ts))
   out_put <- cum_sum - lag(x=cum_sum, k=look_back)
@@ -352,8 +352,8 @@ packageDescription("caTools")  # get short description
 help(package="caTools")  # load help page
 data(package="caTools")  # list all datasets in "caTools"
 ls("package:caTools")  # list all objects in "caTools"
-detach("package:caTools")  # remove caTools from search path
-# median filter
+detach("package:caTools")  # Remove caTools from search path
+# Median filter
 look_back <- 2
 price_s <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 med_ian <- runmed(x=price_s, k=look_back)
@@ -385,7 +385,7 @@ colnames(da_ta)[2:3] <- c("max", "min")
 col_ors <- c("blue", "red", "green")
 dygraphs::dygraph(da_ta, main=paste(colnames(price_s), "max and min lines")) %>%
   dyOptions(colors=col_ors)
-# standard plot with max_min lines
+# Standard plot with max_min lines
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- col_ors
 quantmod::chart_Series(da_ta["2008/2009"], theme=plot_theme,
@@ -395,7 +395,7 @@ legend(x="topright", title=NULL, legend=colnames(da_ta),
  lwd=6, lty=1, col=col_ors)
 
 library(HighFreq)  # load package HighFreq
-# indices of last observations in each hour
+# Indices of last observations in each hour
 end_points <- xts::endpoints(price_s, on="hours")
 head(end_points)
 # extract the last observations in each hour
@@ -497,7 +497,7 @@ head(agg_regations)
 # library(HighFreq)  # load package HighFreq
 # load package HighFreq
 library(HighFreq)
-# extract closing minutely prices
+# Extract closing minutely prices
 price_s <- quantmod::Cl(HighFreq::SPY["2012-02-01/2012-04-01"])
 # Apply "mean" over daily periods
 agg_regations <- apply.daily(price_s, FUN=sum)
@@ -553,7 +553,7 @@ legend("top", legend=colnames(agg_regations),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
-set.seed(1121)  # reset random number generator
+set.seed(1121)  # Reset random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # load package zoo
 # Create zoo time series of random returns
@@ -565,11 +565,11 @@ dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 # Perform monthly mean aggregation
 zoo_agg <- aggregate(zoo_series, by=dates_agg,
                FUN=mean)
-# merge with original zoo - union of dates
+# Merge with original zoo - union of dates
 zoo_agg <- cbind(zoo_series, zoo_agg)
-# replace NA's using locf
+# Replace NA's using locf
 zoo_agg <- na.locf(zoo_agg, na.rm=FALSE)
-# extract aggregated zoo
+# Extract aggregated zoo
 zoo_agg <- zoo_agg[index(zoo_series), 2]
 
 # library(HighFreq)  # load package HighFreq
@@ -586,11 +586,11 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 # Perform monthly mean aggregation
 zoo_agg <- aggregate(zoo_series, by=dates_agg,
                FUN=mean)
-# merge with original zoo - union of dates
+# Merge with original zoo - union of dates
 zoo_agg <- cbind(zoo_series, zoo_agg)
-# replace NA's using linear interpolation
+# Replace NA's using linear interpolation
 zoo_agg <- na.approx(zoo_agg)
-# extract interpolated zoo
+# Extract interpolated zoo
 zoo_agg <- zoo_agg[index(zoo_series), 2]
 # Plot original and interpolated zoo
 plot(cumsum(zoo_series), xlab="", ylab="")
@@ -604,11 +604,11 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 # "mean" aggregation over interval with width=11
 zoo_mean <- rollapply(zoo_series, width=11,
                 FUN=mean, align="right")
-# merge with original zoo - union of dates
+# Merge with original zoo - union of dates
 zoo_mean <- cbind(zoo_series, zoo_mean)
-# replace NA's using na.locf
+# Replace NA's using na.locf
 zoo_mean <- na.locf(zoo_mean, na.rm=FALSE, fromLast=TRUE)
-# extract mean zoo
+# Extract mean zoo
 zoo_mean <- zoo_mean[index(zoo_series), 2]
 # Plot original and interpolated zoo
 plot(cumsum(zoo_series), xlab="", ylab="")
@@ -618,16 +618,17 @@ legend("topright", inset=0.05, cex=0.8, title="Mean Prices",
  leg=c("orig prices", "mean prices"), lwd=2, bg="white",
  col=c("black", "red"), bty="n")
 
+# Simulate normally distributed data
 n_rows <- 1000
-r_norm <- rnorm(n_rows)
-sd(r_norm)
-mad(r_norm)
-median(abs(r_norm - median(r_norm)))
-median(abs(r_norm - median(r_norm)))/qnorm(0.75)
+da_ta <- rnorm(n_rows)
+sd(da_ta)
+mad(da_ta)
+median(abs(da_ta - median(da_ta)))
+median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:10000, function(x) {
   boot_sample <-
-    r_norm[sample.int(n_rows, replace=TRUE)]
+    da_ta[sample.int(n_rows, replace=TRUE)]
   c(sd=sd(boot_sample), mad=mad(boot_sample))
 })  # end sapply
 boot_data <- t(boot_data)
@@ -640,18 +641,57 @@ function(x) c(mean=mean(x), std_error=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # Number of cores
-clus_ter <- makeCluster(n_cores)  # initialize compute cluster
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 boot_data <- parLapply(clus_ter, 1:10000,
-  function(x, r_norm) {
+  function(x, da_ta) {
     boot_sample <-
-r_norm[sample.int(n_rows, replace=TRUE)]
+da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
-  }, r_norm=r_norm)  # end parLapply
+  }, da_ta=da_ta)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:10000,
   function(x) {
     boot_sample <-
-r_norm[sample.int(n_rows, replace=TRUE)]
+da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, mc.cores=n_cores)  # end mclapply
+stopCluster(clus_ter)  # Stop R processes over cluster
+boot_data <- rutils::do_call(rbind, boot_data)
+# Means and standard errors from bootstrap
+apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+
+# VTI returns
+da_ta <- rutils::etf_env$re_turns$VTI
+da_ta <- na.omit(da_ta)
+n_rows <- NROW(da_ta)
+sd(da_ta)
+mad(da_ta)
+# Bootstrap of sd and mad estimators
+boot_data <- sapply(1:10000, function(x) {
+  boot_sample <-
+    da_ta[sample.int(n_rows, replace=TRUE)]
+  c(sd=sd(boot_sample), mad=mad(boot_sample))
+})  # end sapply
+boot_data <- t(boot_data)
+# Means and standard errors from bootstrap
+100*apply(boot_data, MARGIN=2,
+function(x) c(mean=mean(x), std_error=sd(x)))
+# Parallel bootstrap under Windows
+library(parallel)  # load package parallel
+n_cores <- detectCores() - 1  # Number of cores
+clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
+boot_data <- parLapply(clus_ter, 1:10000,
+  function(x, da_ta) {
+    boot_sample <-
+da_ta[sample.int(n_rows, replace=TRUE)]
+    c(sd=sd(boot_sample), mad=mad(boot_sample))
+  }, da_ta=da_ta)  # end parLapply
+# Parallel bootstrap under Mac-OSX or Linux
+boot_data <- mclapply(1:10000,
+  function(x) {
+    boot_sample <-
+da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(boot_sample), mad=mad(boot_sample))
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
@@ -754,7 +794,7 @@ true_pos <- (true_pos + rutils::lag_it(true_pos))/2
 false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
-# Plot ROC Curve for Defaults
+# Plot ROC curve for Hampel classifier
 plot(x=error_rates[, "typeI"],
      y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate",
@@ -795,38 +835,39 @@ chart_Series(x_ts,
 dygraphs::dygraph(x_ts, main="EWMA standard deviation")
 
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
+re_turns <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
 # Number of observations
 n_rows <- NROW(re_turns)
-# mean of VTI returns
+# Mean of VTI returns
 mean_rets <- mean(re_turns)
-# standard deviation of VTI returns
+# Standard deviation of VTI returns
 sd_rets <- sd(re_turns)
-# skew of VTI returns
+# Skewness of VTI returns
 n_rows/((n_rows-1)*(n_rows-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
-# kurtosis of VTI returns
+# Kurtosis of VTI returns
 n_rows*(n_rows+1)/((n_rows-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
-# random normal returns
+# Random normal returns
 re_turns <- rnorm(n_rows, sd=sd_rets)
-# mean and standard deviation of random normal returns
+# Mean and standard deviation of random normal returns
 mean_rets <- mean(re_turns)
 sd_rets <- sd(re_turns)
-# skew of random normal returns
+# Skewness of random normal returns
 n_rows/((n_rows-1)*(n_rows-2))*
   sum(((re_turns - mean_rets)/sd_rets)^3)
-# kurtosis of random normal returns
+# Kurtosis of random normal returns
 n_rows*(n_rows+1)/((n_rows-1)^3)*
   sum(((re_turns - mean_rets)/sd_rets)^4)
 
-set.seed(1121)  # reset random number generator
-# sample from Standard Normal Distribution
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
 n_rows <- 1000
 da_ta <- rnorm(n_rows)
-# sample mean
+# Sample mean
 mean(da_ta)
-# sample standard deviation
+# Sample standard deviation
 sd(da_ta)
 
 x_var <- seq(-5, 7, length=100)
@@ -834,14 +875,14 @@ y_var <- dnorm(x_var, mean=1.0, sd=2.0)
 plot(x_var, y_var, type="l", lty="solid",
      xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
-star_t <- 3; fin_ish <- 5  # set lower and upper bounds
-# set polygon base
+star_t <- 3; fin_ish <- 5  # Set lower and upper bounds
+# Set polygon base
 are_a <- ((x_var >= star_t) & (x_var <= fin_ish))
 polygon(c(star_t, x_var[are_a], fin_ish),  # Draw polygon
   c(-1, y_var[are_a], -1), col="red")
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-sig_mas <- c(0.5, 1, 1.5, 2)  # sigma values
+sig_mas <- c(0.5, 1, 1.5, 2)  # Sigma values
 # Create plot colors
 col_ors <- c("red", "black", "blue", "green")
 # Create legend labels
@@ -925,9 +966,9 @@ likeli_hood <- function(pa_r, free_dom, da_ta) {
 
 # VTI percentage returns
 re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# initial parameters
+# Initial parameters
 par_init <- c(mean=0, scale=0.01)
-# fit distribution using optim()
+# Fit distribution using optim()
 optim_fit <- optim(par=par_init,
   fn=likeli_hood, # log-likelihood function
   da_ta=re_turns,
@@ -948,11 +989,12 @@ scal_e <- optim_fit$estimate[2]
 summary(optim_fit)
 
 x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of VTI returns
 histo_gram <- hist(re_turns, col="lightgrey",
   xlab="returns", breaks=100, xlim=c(-0.05, 0.05),
   ylab="frequency", freq=FALSE,
-  main="VTI returns histogram")
+  main="VTI Returns Histogram")
 lines(density(re_turns, adjust=1.5),
 lwd=3, col="blue")
 # Plot the Normal probability distribution
@@ -964,8 +1006,30 @@ type="l", lwd=3, col="red", add=TRUE)
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
-  lwd=6, lty=c(1, 1, 1),
+  lwd=6, lty=1,
   col=c("blue", "red", "green"))
+
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot histogram of VTI returns
+histo_gram <- hist(re_turns, breaks=100, plot=FALSE)
+plot(histo_gram, col="lightgrey",
+  xlab="returns", ylab="frequency", freq=FALSE,
+  xlim=c(min(re_turns), -0.02),
+  ylim=c(0.0, histo_gram$density[findInterval(-0.02, histo_gram$breaks)]),
+  main="VTI Left Tail Returns Histogram")
+lines(density(re_turns, adjust=1.5),
+lwd=4, col="blue")
+# Plot t-distribution function
+curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
+type="l", lwd=4, col="red", add=TRUE)
+# Plot the Normal probability distribution
+curve(expr=dnorm(x, mean=mean(re_turns),
+  sd=sd(re_turns)), add=TRUE, lwd=4, col="green")
+# Add legend
+legend("topleft", inset=0.05, bty="n",
+  leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -986,8 +1050,7 @@ title(main="Chi-squared Distributions", line=0.5)
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
-       cex=0.8, lwd=6, lty=1,
-       col=col_ors)
+       cex=0.8, lwd=6, lty=1, col=col_ors)
 
 # KS test for normal distribution
 ks.test(rnorm(100), pnorm)
@@ -1013,7 +1076,7 @@ freq_o <- histo_gram$counts
 freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
 # Perform Chi-squared test for normal data
 chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
-# return p-value
+# Return p-value
 chisq_test <- chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 chisq_test$p.value
 # Observed frequencies from shifted normal data
@@ -1118,9 +1181,9 @@ n_agg <- n_rows %/% look_back
 end_points <- # Define end_points with beginning stub
   n_rows-look_back*n_agg + (0:n_agg)*look_back
 n_rows <- NROW(end_points)
-# subset vari_ance to end_points
+# Subset vari_ance to end_points
 vari_ance <- vari_ance[end_points]
-# improved autocorrelation function
+# Improved autocorrelation function
 acf_plus(coredata(vari_ance), lag=10, main="")
 title(main="acf of variance", line=-1)
 # Partial autocorrelation
@@ -1134,8 +1197,8 @@ re_turns <- numeric(n_rows)
 vari_ance <- numeric(n_rows)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
 re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
+# Simulate GARCH model
+set.seed(1121)  # Reset random numbers
 for (i in 2:n_rows) {
   re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
@@ -1168,8 +1231,8 @@ re_turns <- numeric(n_rows)
 vari_ance <- numeric(n_rows)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
 re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
+# Simulate GARCH model
+set.seed(1121)  # Reset random numbers
 for (i in 2:n_rows) {
   re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
@@ -1197,15 +1260,14 @@ curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
   col="red", add=TRUE)
 legend("topright", inset=0.05, bty="n",
  leg=c("density", "t-distr w/ 2 dof"),
- lwd=6, lty=1,
- col=c("blue", "red"))
+ lwd=6, lty=1, col=c("blue", "red"))
 
 # use fixed notation instead of exponential notation
 options(scipen=999)
 library(fGarch)
-# fit returns into GARCH
+# Fit returns into GARCH
 garch_fit <- fGarch::garchFit(data=re_turns)
-# fitted GARCH parameters
+# Fitted GARCH parameters
 round(garch_fit@fit$coef, 5)
 # Actual GARCH parameters
 round(c(mu=mean(re_turns), omega=om_ega,
@@ -1216,10 +1278,10 @@ plot(sqrt(garch_fit@fit$series$h), t="l",
   col="blue", xlab="", ylab="",
   main="GARCH fitted standard deviation")
 
-# specify GARCH model
+# Specify GARCH model
 garch_spec <- fGarch::garchSpec(
   model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
-# simulate GARCH model
+# Simulate GARCH model
 garch_sim <-
   fGarch::garchSim(spec=garch_spec, n=n_rows)
 re_turns <- as.numeric(garch_sim)
@@ -1236,7 +1298,7 @@ histo_gram <- hist(re_turns, col="lightgrey",
 lines(density(re_turns, adjust=1.5),
 lwd=3, col="blue")
 
-# fit t-distribution into GARCH returns
+# Fit t-distribution into GARCH returns
 optim_fit <- MASS::fitdistr(re_turns,
   densfun="t", df=2, lower=c(-1, 1e-7))
 lo_cation <- optim_fit$estimate[1]
@@ -1246,8 +1308,7 @@ curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
   col="red", add=TRUE)
 legend("topright", inset=0.05, bty="n",
  leg=c("density", "t-distr w/ 2 dof"),
- lwd=6, lty=1,
- col=c("blue", "red"))
+ lwd=6, lty=1, col=c("blue", "red"))
 
 library(HighFreq)  # load HighFreq
 # Calculate variance for each period
@@ -1274,106 +1335,145 @@ library(HighFreq)  # load HighFreq
 re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
 # Minutely SPY volatility (unit per minute)
 sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) /
-  rutils::diff_it(.index(SPY["2012-02-13"]))
+# Divide minutely SPY returns by time intervals (unit per second)
+re_turns <- re_turns / rutils::diff_it(.index(SPY["2012-02-13"]))
+re_turns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
-# Minutely SPY returns multiple days no overnight scaling
+# SPY returns multiple days
 re_turns <- rutils::diff_it(log(SPY[, 4]))
-# Minutely SPY volatility (unit per minute)
+# Minutely SPY volatility (includes overnight jumps)
 sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
+# Table of intervals - 60 second is most frequent
+in_dex <- rutils::diff_it(.index(SPY))
+table(in_dex)
+# hist(in_dex)
+# SPY returns with overnight scaling (unit per second)
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
 # Minutely SPY volatility scaled to unit per minute
 60*sd(re_turns)
+
+library(HighFreq)  # load HighFreq
+# Minutely SPY returns (unit per minute) single day
+# Minutely SPY volatility (unit per minute)
+re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
+sd(re_turns)
+# SPY returns multiple days (includes overnight jumps)
+re_turns <- rutils::diff_it(log(SPY[, 4]))
+sd(re_turns)
 # Table of time intervals - 60 second is most frequent
-interval_s <- rutils::diff_it(.index(SPY))
-table(interval_s)
-# hist(interval_s)
+in_dex <- rutils::diff_it(.index(SPY))
+table(in_dex)
+# SPY returns divided by the overnight time intervals (unit per second)
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
+# Minutely SPY volatility scaled to unit per minute
+60*sd(re_turns)
 
 library(HighFreq)  # load HighFreq
 # Daily OHLC SPY prices
 SPY_daily <-
-  rutils::to_period(oh_lc=SPY, period="days")
-# Daily SPY returns and volatility
+  rutils::to_period(oh_lc=HighFreq::SPY, period="days")
+# Daily SPY volatility from daily returns
 sd(rutils::diff_it(log(SPY_daily[, 4])))
 # Minutely SPY returns (unit per minute)
 re_turns <- rutils::diff_it(log(SPY[, 4]))
 # Minutely SPY volatility scaled to daily interval
 sqrt(6.5*60)*sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
-# Minutely SPY volatility scaled to daily aggregation interval
-60*sqrt(6.5*60)*sd(re_turns)
+# Minutely SPY returns with overnight scaling (unit per second)
+re_turns <- rutils::diff_it(log(SPY[, 4]))
+in_dex <- rutils::diff_it(.index(SPY))
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
+# Daily SPY volatility from minutely returns
+sqrt(6.5*60)*60*sd(re_turns)
 # Daily SPY volatility
-# including extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) /
-    rutils::diff_it(.index(SPY_daily)))
-table(rutils::diff_it(.index(SPY_daily)))
+# Including extra time over weekends and holidays
+24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4]))[-1] /
+    rutils::diff_it(.index(SPY_daily))[-1])
 
-# Scaled minutely SPY returns
-re_turns <- rutils::diff_it(as.numeric(Cl(SPY)))[-1] /
-  rutils::diff_it(.index(SPY))[-1]
-range(re_turns)
-hist(re_turns, breaks=100,
-     xlim=c(-0.005, 0.005))
-# SPY prices
+# Calculate SPY prices adjusted for overnight jumps
+price_s <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
+re_turns <- rutils::diff_it(price_s) /
+  rutils::diff_it(.index(HighFreq::SPY))
+re_turns[1] <- 0
 price_s <- cumsum(re_turns)
-plot(price_s, t="l")
-# Perform rescaled range analysis
-look_back <- 100
-end_points <- rutils::calc_endpoints(re_turns,
-  inter_val=look_back)
-r_s <- sapply(seq_along(end_points)[-1],
-      function(it) {
-  indeks <- end_points[it-1]:end_points[it]
-  price_s <- price_s[indeks]
-  (max(price_s) - min(price_s)) /
-    sd(re_turns[indeks])
+# Calculate volatilities for vector of aggregation intervals
+interval_s <- round(seq.int(from=3, to=30, length.out=9)^2)
+vol_s <- sapply(interval_s, function(inter_val) {
+  end_points <- rutils::calc_endpoints(price_s,
+    inter_val=inter_val)
+  sd(rutils::diff_it(price_s[end_points]))
 })  # end sapply
-mean(r_s)
-
-# Perform rescaled range analysis over many look-backs
-look_backs <- seq.int(1e2, 1e3, 1e2)
-r_s <- sapply(look_backs, function(look_back) {
-  end_points <- rutils::calc_endpoints(re_turns, inter_val=look_back)
-  r_s <- sapply(seq_along(end_points)[-1], function(it) {
-    indeks <- end_points[it-1]:end_points[it]
-    (max(price_s[indeks]) - min(price_s[indeks]))/sd(re_turns[indeks])
-  })  # end sapply
-  mean(r_s)
-})  # end sapply
-names(r_s) <- paste0("agg_", look_backs)
-rs_log <- log(r_s)
-look_log <- log(look_backs)
-mod_el <- lm(rs_log ~ look_log)
-hurst_lm <- summary(mod_el)$coeff[2, 1]
-look_log <- look_log - mean(look_log)
-rs_log <- rs_log - mean(rs_log)
-hurst_mat <- sum(rs_log*look_log)/sum(look_log^2)
-all.equal(hurst_lm, hurst_mat)
+vol_log <- log(vol_s)
+vol_log <- vol_log - mean(vol_log)
+inter_log <- log(interval_s)
+inter_log <- inter_log - mean(inter_log)
+mod_el <- lm(vol_log ~ inter_log)
+hurs_t <- summary(mod_el)$coeff[2, 1]
+# Or directly from formula
+hurst_form <- sum(vol_log*inter_log)/sum(inter_log^2)
+all.equal(hurst_form, hurs_t)
 
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-plot(rs_log ~ look_log, lwd=6, col="red",
+plot(vol_log ~ inter_log, lwd=6, col="red",
+     xlab="aggregation intervals (log)",
+     ylab="volatility (log)",
+     main="Hurst Exponent for SPY From Volatilities")
+abline(mod_el, lwd=3, col="blue")
+text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
+
+# Calculate the rescaled range
+inter_val <- 500
+end_points <- rutils::calc_endpoints(price_s,
+  inter_val=inter_val)
+r_s <- sapply(seq_along(end_points)[-1],
+      function(ep) {
+  in_dex <- end_points[ep-1]:end_points[ep]
+  diff(range(price_s[in_dex])) /
+    sd(re_turns[in_dex])
+})  # end sapply
+mean(r_s)
+
+# Calculate rescaled range for vector of aggregation intervals
+r_s <- sapply(interval_s, function(inter_val) {
+  end_points <- rutils::calc_endpoints(price_s,
+    inter_val=inter_val)
+  r_s <- sapply(seq_along(end_points)[-1], function(ep) {
+    in_dex <- end_points[ep-1]:end_points[ep]
+    diff(range(price_s[in_dex]))/sd(re_turns[in_dex])
+  })  # end sapply
+  mean(na.omit(r_s))
+})  # end sapply
+rs_log <- log(r_s)
+rs_log <- rs_log - mean(rs_log)
+inter_log <- log(interval_s)
+inter_log <- inter_log - mean(inter_log)
+mod_el <- lm(rs_log ~ inter_log)
+hurs_t <- summary(mod_el)$coeff[2, 1]
+# Or directly from formula
+hurst_form <- sum(rs_log*inter_log)/sum(inter_log^2)
+all.equal(hurst_form, hurs_t)
+
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
+plot(rs_log ~ inter_log, lwd=6, col="red",
      xlab="aggregation intervals (log)",
      ylab="rescaled range (log)",
      main="Rescaled Range Analysis for SPY")
 abline(mod_el, lwd=3, col="blue")
-text(-1.2, 0.2, paste0("Hurst = ",
-  round(hurs_t, 4)))
+text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
 
 library(HighFreq)  # load HighFreq
 # Daily SPY volatility from minutely prices using package TTR
 library(TTR)
 sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(SPY, N=1,
+  TTR::volatility(HighFreq::SPY, N=1,
           calc="yang.zhang"))^2))
 # SPY volatility using package HighFreq
-60*sqrt((6.5*60)*agg_regate(oh_lc=SPY,
+60*sqrt((6.5*60)*agg_regate(oh_lc=HighFreq::SPY,
     weight_ed=FALSE, mo_ment="run_variance",
     calc_method="yang_zhang"))
 
@@ -1457,7 +1557,7 @@ pacf(re_turns^2, lag=10, xlab=NA, ylab=NA,
 chart_Series(re_turns^2,
        name="VTI log of range squared")
 
-# standard errors of variance estimators using bootstrap
+# Standard errors of variance estimators using bootstrap
 boot_data <- sapply(1:1e2, function(x) {
   # Create random OHLC
   oh_lc <- HighFreq::random_ohlc()
@@ -1474,7 +1574,7 @@ apply(boot_data, MARGIN=2, sd) /
   colMeans(boot_data)
 
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 1, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # set plot panels
+par(mfrow=c(2,1))  # Set plot panels
 # Close variance estimator partial autocorrelations
 pacf(var_close, lag=10, xlab=NA, ylab=NA)
 title(main="VTI close variance partial autocorrelations")
@@ -1495,7 +1595,7 @@ packageDescription("PerformanceAnalytics")  # get short description
 help(package="PerformanceAnalytics")  # load help page
 data(package="PerformanceAnalytics")  # list all datasets in "PerformanceAnalytics"
 ls("package:PerformanceAnalytics")  # list all objects in "PerformanceAnalytics"
-detach("package:PerformanceAnalytics")  # remove PerformanceAnalytics from search path
+detach("package:PerformanceAnalytics")  # Remove PerformanceAnalytics from search path
 
 library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
 perf_data <-
@@ -1571,7 +1671,7 @@ text(x=risk_return$Skewness, y=risk_return$Kurtosis,
 # Add skew_kurt column
 risk_return$skew_kurt <-
   risk_return$Skewness/risk_return$Kurtosis
-# sort on skew_kurt
+# Sort on skew_kurt
 risk_return <- risk_return[
   order(risk_return$skew_kurt,
   decreasing=TRUE), ]

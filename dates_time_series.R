@@ -563,7 +563,7 @@ attributes(x_ts)
 # get the time zone of an xts object
 indexTZ(x_ts)
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() coerces zoo series into xts series
 st_ox <- as.xts(zoo_stx)
@@ -747,7 +747,7 @@ rbind(base=dim(price_s), lag=dim(lag(price_s)))
 head(lag(zoo_prices, -1), 4)
 head(lag(price_s), 4)
 
-# library(HighFreq)  # load package HighFreq
+# library(rutils)  # load package rutils
 # indices of last observations in each hour
 end_points <- endpoints(price_s, on="hours")
 head(end_points)
@@ -774,7 +774,7 @@ colnames(xts_yearly) <- sapply(
 head(xts_yearly)
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 library(xts)  # load package xts
 # as.xts() coerces zoo series into xts series
 st_ox <- as.xts(zoo_prices)
@@ -785,7 +785,7 @@ stox_sub <- st_ox["2014-11", 1:4]
 xts::plot.xts(stox_sub, type="candles", main="")
 title(main="MSFT Prices")  # add title
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 ts_stx <- as.ts(zoo_stx)
 class(ts_stx)
 tail(ts_stx[, 1:4])

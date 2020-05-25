@@ -1,3 +1,10 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 # Define a function with two arguments
 test_func <- function(first_arg, second_arg) {  # Body
   first_arg + second_arg  # Returns last evaluated statement
@@ -13,7 +20,7 @@ test_func <- function(first_arg, second_arg) {
 
 test_func(3, 2)  # error - glob_var doesn't exist yet!
 glob_var <- 10  # Create glob_var
-test_func(3, 2)  # now works
+test_func(3, 2)  # Now works
 
 # Define function that returns NULL for non-numeric argument
 test_func <- function(in_put) {
@@ -51,8 +58,8 @@ test_func(first_arg=3, second_arg=2)  # Bind by name
 test_func(first=3, second=2)  # Partial name binding
 test_func(3, 2)  # Bind by position
 test_func(second_arg=2, 3)  # mixed binding
-test_func(3, 2, 1)  # too many arguments
-test_func(2)  # not enough arguments
+test_func(3, 2, 1)  # Too many arguments
+test_func(2)  # Not enough arguments
 
 # Function "paste" has two arguments with default values
 str(paste)
@@ -73,12 +80,12 @@ test_func("some_val")  # Invalid string
 
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
-# Calc_skew() calculates skew of time series of returns
+# calc_skew() calculates skew of time series of returns
 # Default is normal time series
 calc_skew <- function(se_ries=rnorm(1000)) {
-  # number of observations
+  # Number of observations
   len_gth <- NROW(se_ries)
-  # normalize se_ries
+  # Standardize se_ries
   se_ries <-
     (se_ries - mean(se_ries))/sd(se_ries)
   # Calculate skew - last statement automatically returned
@@ -100,7 +107,7 @@ bind_dots <- function(in_put, ...) {
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
 bind_dots(2, in_put=1, 3)  # "in_put" bound by name
-bind_dots(1, 2, 3, foo=10)  # named argument bound to dots
+bind_dots(1, 2, 3, foo=10)  # Named argument bound to dots
 bind_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
 }  # end bind_dots
@@ -390,7 +397,7 @@ make_random(10)  #  calculate vector of 10 pseudo-random numbers
 ls(environment(make_random))  # List objects in scope of make_random
 
 rm(list=ls())
-# the super-assignment operator '<<-' adjusts the balance
+# The super-assignment operator '<<-' adjusts the balance
 # 'balance' exists in open_account evaluation environment
 # Bank account example (from Venables) demonstrates mutable states
 # 'balance' is persistent between function calls
@@ -660,7 +667,7 @@ char1 + char2  # Add two "character" objects - doesn't work
 attributes(char1)  # Doesn't have explicit "character" class - only implicit
 char1 <- structure("a", class="character")
 char2 <- structure("b", class="character")
-attributes(char1)  # now has explicit "character" class
+attributes(char1)  # Now has explicit "character" class
 # Add two "character" objects
 char1 + char2
 
@@ -741,7 +748,7 @@ last.zoo_xtra(new_zoo)  # Works
 last <- function(a, b, ...) {
   UseMethod("last")
 }  # end last
-last(new_zoo)  # now works
+last(new_zoo)  # Now works
 
 # Define generic "string" class converter
 as.string <- function(str_ing, ...)
@@ -749,7 +756,7 @@ as.string <- function(str_ing, ...)
 # Default "string" class converter
 as.string.default <- function(str_ing, ...)
   structure(str_ing, class="string", ...)
-# numeric "string" class converter
+# Numeric "string" class converter
 as.string.numeric <- function(str_ing, ...)
   structure(as.character(str_ing), class="string", ...)
 # "string" class checker

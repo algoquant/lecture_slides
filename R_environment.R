@@ -12,15 +12,25 @@ cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
 for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
   cumsum=cumsum(vec_tor),
-  loop=for (i in 2:NROW(vec_tor))
-    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  loop_alloc={
+    cum_sum2 <- vec_tor
+    for (i in 2:NROW(vec_tor))
+cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+  },
+  loop_nalloc={
+    # Doesn't allocate memory to cum_sum3
+    cum_sum3 <- vec_tor[1]
+    for (i in 2:NROW(vec_tor))
+# This command adds an extra element to cum_sum3
+cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
+  },
   times=10))[, c(1, 4, 5)]
 
 # Display documentation on function "getwd"
@@ -54,7 +64,7 @@ Sys.time()  # Get date and time
 Sys.Date()  # Get date only
 
 rm(list=ls())
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 var1 <- 3  # Define new object
 ls()  # List all objects in workspace
 # List objects starting with "v"
@@ -68,10 +78,10 @@ load(".RData")
 ls()  # List objects
 var2 <- 5  # Define another object
 save(var1, var2,  # Save selected objects
-     file="C:/Develop/R/lecture_slides/data/my_data.RData")
+     file="C:/Develop/lecture_slides/data/my_data.RData")
 rm(list=ls())  # Remove all objects
 ls()  # List objects
-load_ed <- load(file="C:/Develop/R/lecture_slides/data/my_data.RData")
+load_ed <- load(file="C:/Develop/lecture_slides/data/my_data.RData")
 load_ed
 ls()  # List objects
 
@@ -229,26 +239,26 @@ library(HighFreq)  # Load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind, # Do.call(merge
-  as.list(rutils::etf_env)[sym_bols])
+price_s <- rutils::do_call(cbind,
+  lapply(sym_bols, function(sym_bol) {
+    quantmod::Ad(get(sym_bol, envir=rutils::etf_env))
+}))
 # Extract and merge adjusted prices, subset by sym_bols
 price_s <- rutils::do_call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
+  lapply(as.list(rutils::etf_env)[sym_bols],
+   quantmod::Ad))
 # Same, but works only for OHLC series
 price_s <- rutils::do_call(cbind,
   eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
 # Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
+colnames(price_s) <- sapply(colnames(price_s),
     function(col_name)
 strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(price_s[, 1:2], 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
-
 # Save xts to csv file
-write.zoo(price_s,
-     file="etf_series.csv", sep=",")
+write.zoo(price_s, file="etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file="etf_data.RData")

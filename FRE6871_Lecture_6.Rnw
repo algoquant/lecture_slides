@@ -73,7 +73,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{April 15, 2020}
+\date{May 11, 2020}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -85,6 +85,959 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
+
+
+%%%%%%%%%%%%%%%
+\section{Manipulating Lists and Data Frames}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Flattening a List of Vectors to a Matrix Using \texttt{do.call()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+      If the list contains vectors of different lengths, then \texttt{R} applies the recycling rule.
+      \vskip1ex
+      If the list contains a \texttt{NULL} element, that element is skipped.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create list of vectors
+li_st <- lapply(1:3, function(x) sample(6))
+# Bind list elements into matrix - doesn't work
+rbind(li_st)
+# Bind list elements into matrix - tedious
+rbind(li_st[[1]], li_st[[2]], li_st[[3]])
+# Bind list elements into matrix - works!
+do.call(rbind, li_st)
+# Create numeric list
+li_st <- list(1, 2, 3, 4)
+do.call(rbind, li_st)  # returns single column matrix
+do.call(cbind, li_st)  # returns single row matrix
+# recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Efficient Binding of Lists Into Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+      But for large vectors this procedure can be very slow, and often causes an out of memory error.
+      \vskip1ex
+      The function \texttt{do\_call\_rbind()} efficiently combines a list of vectors into a matrix.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} produces the same result as \texttt{do.call(rbind, list\_var)}, but using recursion.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} calls lapply in a loop, each time binding neighboring list elements and dividing the length of the list by half.
+      \vskip1ex
+      \texttt{do\_call\_rbind()} is the same function as \texttt{do.call.rbind()} from package \emph{qmao}:\\
+\hskip1em\url{https://r-forge.r-project.org/R/?group_id=1113}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(li_st) {
+  while (NROW(li_st) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=NROW(li_st), by=2)
+# Bind odd and even elements, and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+      if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
+      rbind(li_st[[in_dex]], li_st[[in_dex+1]])
+    })  # end lapply
+  }  # end while
+# li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Filtering Data Frames Using \texttt{subset()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Filtering} means extracting rows from a \emph{data frame} that satisfy a logical condition.
+      \vskip1ex
+      \emph{Data frames} can be filtered using Boolean vectors and brackets \texttt{"[]"} operators.
+      \vskip1ex
+      The function \texttt{subset()} filters \emph{data frames}, by applying logical conditions to its columns, using the column names.
+      \vskip1ex
+      \texttt{subset()} provides a succinct notation and discards \texttt{NA} values, but it's slightly slower than using \texttt{Boolean} vectors and brackets \texttt{"[]"} operators.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)), eval=FALSE>>=
+library(microbenchmark)
+airquality[(airquality$Solar.R>320 &
+              !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R>320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R>320)),
+    brackets=airquality[(airquality$Solar.R>320 &
+                  !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Splitting Data Frames Using \texttt{factor} Categorical Variables}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
+      \vskip1ex
+      The list's \texttt{names} attribute is equal to the \texttt{factor} levels.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+unique(iris$Species)  # Species has three distinct values
+# Split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# Split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{split-apply-combine} Procedure}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{split-apply-combine} procedure consists of:
+      \begin{itemize}
+        \item dividing an object into a list, according to a factor (attribute).
+        \item applying a function to each list element.
+        \item combining the results.
+      \end{itemize}
+      The \emph{split-apply-combine} procedure is also called the \emph{map-reduce} procedure, or simply \emph{data pivoting}, and it's similar to \emph{pivot tables} in \emph{Excel}.
+      \vskip1ex
+      \emph{Data pivoting} can be performed \emph{data frames}, by aggregating its columns based on categorical data stored in one of its columns.
+      \vskip1ex
+      You can read more about the \emph{split-apply-combine} procedure in Hadley Wickham's paper:\\
+      \url{http://www.jstatsoft.org/v40/i01/paper}
+      \vskip1ex
+    \column{0.5\textwidth}
+      \hskip1em\includegraphics[width=0.45\paperwidth]{figure/split_apply_combine_procedure.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Example}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data pivoting} can be performed through successive applications of functions \texttt{split()}, \texttt{apply()}, and \texttt{unlist()}.
+      \vskip1ex
+      A \emph{data frame} can be \emph{pivoted} either by first splitting it into a list of \emph{data frames} and then aggregating, or by splitting just a single column and aggregating it.
+      \vskip1ex
+      The function \texttt{split()} divides an object into a list of objects, according to a \texttt{factor} (categorical variable).
+      \vskip1ex
+      The list's \texttt{names} attribute is equal to the \texttt{factor} levels.
+      \vskip1ex
+      The functional \texttt{aggregate()} \emph{pivots} the columns of a \emph{data frame}.
+      \vskip1ex
+      \texttt{aggregate()} can accept a \texttt{"formula"} argument with the column names, or it can accept \texttt{"x"} and \texttt{"by"} arguments with the columns.
+      \vskip1ex
+      \texttt{aggregate()} returns a \emph{data frame} containing the names of the groups (\texttt{factor} levels).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+unique(mtcars$cyl)  # cyl has three unique values
+# Split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
+# Split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# Aggregate the mean mpg over split mtcars data frame
+sapply(split_cars, function(x) mean(x$mpg))
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# Same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(formula=(mpg ~ cyl), data=mtcars, 
+          FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg), 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate() all columns
+aggregate(x=mtcars, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{tapply()} Functional}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functional \texttt{tapply()} is a specialized version of the \texttt{apply()} functional, that applies a function to elements of a \emph{jagged array}.
+      \vskip1ex
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
+      \vskip1ex
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
+      \vskip1ex
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
+      \vskip1ex
+      The \texttt{by()} function is a wrapper for \texttt{tapply()}.
+      \vskip1ex
+      The \texttt{with()} function evaluates an expression in an environment constructed from the data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars,
+     tapply(X=mpg, INDEX=cyl, FUN=mean))
+# Function sapply() instead of tapply()
+with(mtcars,
+     sapply(sort(unique(cyl)), function(x) {
+       structure(mean(mpg[x==cyl]), names=x)
+       }, USE.NAMES=TRUE))  # end with
+
+# Function by() instead of tapply()
+with(mtcars,
+     by(data=mpg, INDICES=cyl, FUN=mean))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Returning a Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Sometimes \emph{data pivoting} returns a list of vectors.
+      \vskip1ex
+      A list of vectors can be flattened into a matrix using the functions \texttt{do.call()} and either \texttt{rbind()} or \texttt{cbind()}.
+      \vskip1ex
+     The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
+      \vskip1ex
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument:\\
+      \texttt{do.call(fun, list)=
+      fun(list[[1]], list[[2]], \ldots)}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+data_cars  # sapply() produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+              function(x) {
+                c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+              }  # end anonymous function
+              )  # end sapply
+is.list(data_cars)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} of Panel Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{data frame} \texttt{panel\_data} contains fundamental financial data for \emph{S\&P500} stocks.
+      \vskip1ex
+      The \texttt{Industry} column has \texttt{22} unique elements, while the \texttt{Sector} column has \texttt{10} unique elements.
+      \vskip1ex
+      Each \texttt{Industry} belongs to a single \texttt{Sector}, but each \texttt{Sector} may have several \texttt{Industries} that belong to it.
+      \vskip1ex
+      The functional \texttt{aggregate()} allows aggregating over the \texttt{Industry} column, by perforing \emph{data pivoting}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Download CRSPpanel.txt from NYU Classes
+# Read the file using read.table() with header and sep arguments
+panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt", 
+                         header=TRUE, sep="\t")
+# Split panel_data based on Industry column
+split_panel <- split(panel_data, panel_data$Industry)
+# number of companies in each Industry
+sapply(split_panel, NROW)
+# number of Sectors that each Industry belongs to
+sapply(split_panel, function(x) {
+  NROW(unique(x$Sector))
+})  # end sapply
+# Or
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=unique)
+# Or
+with(panel_data, aggregate(x=Sector, 
+  by=list(Industry), FUN=unique))
+# Or
+with(panel_data, sapply(levels(Industry), 
+  function(x) {
+    Sector[match(x, Industry)]
+  }))  # end sapply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Returning a \protect\emph{Jagged Array}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{jagged array} is a list consisting of vectors or matrices of different lengths.
+      \vskip1ex
+      The functional \texttt{aggregate()} returns a \emph{data frame}, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
+      \vskip1ex
+      The functional \texttt{tapply()} returns an array, so it's output must be coerced if the \emph{data pivoting} attempts to return a \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} accepts a vector of values \texttt{"X"}, a factor \texttt{"INDEX"}, and a function \texttt{"FUN"}.
+      \vskip1ex
+      \texttt{tapply()} first groups the elements of \texttt{"X"} according to the factor \texttt{"INDEX"}, transforming it into a \emph{jagged array}, and then applies \texttt{"FUN"} to each element of the \emph{jagged array}.
+      \vskip1ex
+      \texttt{tapply()} applies a function to sub-vectors aggregated using a factor, and performs \emph{data pivoting} in a single function call.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Split panel_data based on Sector column
+split_panel <- split(panel_data, panel_data$Sector)
+# number of companies in each Sector
+sapply(split_panel, NROW)
+# Industries belonging to each Sector (jagged array)
+sec_ind <- sapply(split_panel, 
+  function(x) unique(as.vector(x$Industry)))
+# Or use aggregate() (returns a data frame)
+sec_ind2 <- aggregate(formula=(Industry ~ Sector), 
+  data=panel_data, FUN=function(x) unique(as.vector(x)))
+# Or use aggregate() with "by" argument
+sec_ind2 <- with(panel_data, 
+  aggregate(x=Industry, by=list(Sector), 
+    FUN=function(x) as.vector(unique(x))))
+# Coerce sec_ind2 into a jagged array
+name_s <- as.vector(sec_ind2[, 1])
+sec_ind2 <- sec_ind2[, 2]
+names(sec_ind2) <- name_s
+all.equal(sec_ind2, sec_ind)
+# Or use tapply() (returns an array)
+sec_ind2 <- with(panel_data, 
+  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
+# Coerce sec_ind2 into a jagged array
+sec_ind2 <- drop(as.matrix(sec_ind2))
+all.equal(sec_ind2, sec_ind)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Data Pivoting} Over Multiple Columns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Data pivoting} over multiple columns can be performed by splitting the \emph{data frame} and then performing an sapply() loop using an anonymous function.
+      \vskip1ex
+      Splitting the \emph{data frame} allows aggregations over multiple columns.
+      \vskip1ex
+      An anonymous function allows applying different aggregations on the same column.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Average ROE in each Industry
+with(panel_data, 
+  sapply(split(ROE, Industry), mean))
+# Average, min, and max ROE in each Industry
+t(with(panel_data, 
+  sapply(split(ROE, Industry), 
+    FUN=function(x) 
+      c(mean=mean(x), max=max(x), min=min(x)))))
+# Split panel_data based on Industry column
+split_panel <- split(panel_data, 
+  panel_data$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(split_panel, FUN=function(x) 
+  c(mean_roe=mean(x$ROE), 
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split panel_data based on Industry column
+split_panel <- 
+  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  panel_data$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(split_panel, 
+  FUN=function(x) sapply(x, mean)))
+# Average ROE and EPS using aggregate()
+aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  by=list(panel_data$Industry), 
+  FUN=mean)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Debugging and Exception Handling}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Conditions: Errors and Warnings}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
+      \vskip1ex
+      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
+      \vskip1ex
+      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
+      \vskip1ex
+      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
+      \begin{itemize}
+        \item \emph{negative} then warnings are ignored,
+        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
+        \item \emph{one} - warnings are printed as they occur,
+        \item \emph{two} or larger - warnings are turned into errors,
+      \end{itemize}
+      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+sqrt_safe <- function(in_put) {
+# returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
+      \vskip1ex
+      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
+      \vskip1ex
+      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
+      \vskip1ex
+      Missing arguments can be detected by:\\
+      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
+      - calling the function \texttt{missing()} on the arguments.
+      \vskip1ex
+      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
+      \vskip1ex
+      The function \texttt{return()} returns its argument and terminates futher function execution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# Check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Inside Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
+      \vskip1ex
+      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
+      \vskip1ex
+      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
+      \vskip1ex
+      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
+      \vskip1ex
+      \texttt{cat()} statements inside the function body provide information about the state of its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+            <<echo=TRUE,eval=FALSE>>=
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put=", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+      @
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Print the call stack
+traceback()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
+      \vskip1ex
+      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
+      \vskip1ex
+      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
+      \vskip1ex
+      \texttt{stopifnot()} is often used to check the validity of function arguments.
+      \vskip1ex
+      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+vali_date <- function(in_put) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+              is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Validating Function Arguments and Assertions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
+      \vskip1ex
+      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
+      \vskip1ex
+      \texttt{cat()} statements can provide information about the state of variables inside a function.
+      \vskip1ex
+      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+              !missing(in_put2))
+# Check if arguments are valid and return sum
+  if (is.numeric(in_put1) &&
+      is.numeric(in_put2)) {
+    in_put1 + in_put2  # Both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{R} Debugger Facility}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
+      \vskip1ex
+      After a function is flagged for debugging with the call \texttt{"debug(my\_func)"}, then the function call \texttt{"my\_func()"} automatically invokes the debugger (browser).
+      \vskip1ex
+      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
+      \vskip1ex
+      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
+      \vskip1ex
+      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
+      \vskip1ex
+      The command \texttt{"c"} executes the remainder of the function code without pausing.
+      \vskip1ex
+      The command \texttt{"Q"} exits the debugger (browser).
+      \vskip1ex
+      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Flag "vali_date" for debugging
+debug(vali_date)
+# Calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Debugging Using \texttt{browser()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
+      \vskip1ex
+      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
+      \vskip1ex
+      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
+      \vskip1ex
+      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
+      \vskip1ex
+      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
+      \vskip1ex
+      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+vali_date <- function(in_put) {
+  browser()  # Pause and invoke browser
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+              is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Using the Debugger in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
+      \begin{itemize}
+        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
+        \item stepping into functions,
+        \item environment pane with environment stack, instead of calling \texttt{ls()},
+        \item traceback pane, instead of calling \texttt{traceback()},
+      \end{itemize}
+      \emph{RStudio} provides an online debugging tutorial:
+      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Handling Exception Conditions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
+      \vskip1ex
+      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
+      \vskip1ex
+      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
+      \vskip1ex
+      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
+      \vskip1ex
+      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
+      \vskip1ex
+      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Error Conditions in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
+      \vskip1ex
+      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
+      \vskip1ex
+      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
+      \vskip1ex
+      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+rm(list=ls())
+# Apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(num_var != 3)  # Check for error
+    # Broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # return a value
+    paste("(return) num_var =", num_var)
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Exception Handling in Loops}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
+      \vskip1ex
+      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
+      \vskip1ex
+      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE>>=
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    tryCatch(  # With error handler
+      {  # Body
+        stopifnot(num_var != 3)  # Check for error
+        # Broadcast message to console
+        cat("(cat) num_var =", num_var, "\t")
+        # return a value
+        paste("(return) num_var =", num_var)
+      },
+      # Error handler captures error condition
+      error=function(error_cond)
+        paste("handler: ", error_cond),
+      finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -187,9 +1140,9 @@ detach(my_list)
 head(trees)  # "trees" is in datasets base package
       @
       \begin{block}{\color{red}{Rule of Thumb}}
-        Be very careful with using \texttt{attach()},
+        Be very careful with using \texttt{attach()}.
         \vskip1ex
-        Make sure to \texttt{detach()} objects once they're not needed,
+        Make sure to \texttt{detach()} objects once they're not needed.
       \end{block}
   \end{columns}
 \end{block}
@@ -212,7 +1165,7 @@ head(trees)  # "trees" is in datasets base package
       \vskip1ex
       \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument.
       \vskip1ex
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data.
+      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., from package \emph{quantmod}, extract columns from \emph{OHLC} data.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
     \column{0.6\textwidth}
@@ -222,26 +1175,26 @@ library(HighFreq)  # Load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind, # Do.call(merge
-  as.list(rutils::etf_env)[sym_bols])
+price_s <- rutils::do_call(cbind,
+  lapply(sym_bols, function(sym_bol) {
+    quantmod::Ad(get(sym_bol, envir=rutils::etf_env))
+}))
 # Extract and merge adjusted prices, subset by sym_bols
 price_s <- rutils::do_call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
+  lapply(as.list(rutils::etf_env)[sym_bols], 
+         quantmod::Ad))
 # Same, but works only for OHLC series
 price_s <- rutils::do_call(cbind,
   eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
 # Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
+colnames(price_s) <- sapply(colnames(price_s),
     function(col_name)
       strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(price_s[, 1:2], 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
-
 # Save xts to csv file
-write.zoo(price_s,
-     file="etf_series.csv", sep=",")
+write.zoo(price_s, file="etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file="etf_data.RData")
@@ -283,928 +1236,57 @@ with(trees,
 
 
 %%%%%%%%%%%%%%%
-\section{Running \texttt{R} Scripts and Batch Processes}
+\section{Time Series of Asset Prices}
+
 
 
 %%%%%%%%%%%%%%%
-\subsection{Sourcing \texttt{R} Script Files in an \texttt{R} Session}
+\subsection{Monte Carlo Simulation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} commands can be saved into a file, and then executed from an interactive \texttt{R} session using the function \texttt{source()}.
+      \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
       \vskip1ex
-      The function \texttt{source()} executes \texttt{R} commands contained in a file, or in a \emph{URL}.
+      The \emph{Monte Carlo} data samples can then used to calculate different parameters of the probability distribution (moments, quantiles, etc.), and its functionals.
       \vskip1ex
-      The function \texttt{file.path()} is similar to \texttt{paste()}, but it also automatically uses the correct file separator for the computer platform.
+      The \emph{quantile} of a probability distribution is the value of the \emph{random variable} \texttt{x}, such that the probability of values less than \texttt{x} is equal to the given \emph{probability} $p$.
       \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string.
+      The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
+      \vskip1ex
+      The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow.
+      \vskip1ex
+      The function \texttt{sort()} returns a vector sorted into ascending order.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-script_dir <- "C:/Develop/R/scripts"
-# Execute script file and print the commands
-source(file.path(script_dir, "script.R"),
-       echo=TRUE)
-
-####################################
-### Script.R file contains R script to demonstrate sourcing from script files
-
-# Print information about this process
-print(paste0("print: This test script was run at: ", format(Sys.time())))
-cat("cat: This test script was run at:", format(Sys.time()), "\n")
-
-# Display first 6 rows of cars data frame
-head(cars)
-
-# Define a function
-fun_c <- function(x) x+1
-
-# Read a line from console
-readline("Press Return to continue")
-
-# Plot sine function in x11 window
-x11()
-curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
-      xlab="", ylab="", lwd=2, col="orange",
-      main="Sine function")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Processes From the Command Window}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An interactive \texttt{R} process can be run from the command window, by simply typing the commands \texttt{R} or \texttt{Rterm} (provided that your \emph{PATH} variable contains the directory of the \texttt{R} executable file).
-      \vskip1ex
-      The command \texttt{R} combined with the option \texttt{-e} can also execute \texttt{R} commands supplied on the command line.
-      \vskip1ex
-      For example the command:
-        \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-R --vanilla -e head(cars) > out.txt
-        \end{lstlisting}
-      executes a single \texttt{R} command, and saves the output to a file.
-      \vskip1ex
-      The option \texttt{vanilla} instructs \texttt{R} to produce minimal output.
-      \vskip1ex
-      The manual \emph{Introduction to R} provides more information about running \texttt{R} processes from the command window:\\
-      \hskip1em\url{https://cran.r-project.org/doc/manuals/R-intro.html#Invoking-R-from-the-command-line}
-    \column{0.5\textwidth}
-      \begin{lstlisting}[language=sh,basicstyle=\scriptsize\ttfamily\color{yellow},backgroundcolor=\color{cmd_background},showstringspaces=FALSE]
-# Start an interactive R process
-> R
-
-# Get help about running R process
-> R --help
-
-# Execute single R command and save output to file
-# vanilla option to produce minimal output
-> R --vanilla -e head(cars) > out.txt
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Combining \texttt{R} with \texttt{Excel}}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Data From \texttt{Excel} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
-      \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
-      \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
-      \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
-      \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
-      \vskip1ex
-      \emph{tibble} objects are also used by the package 
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-      \vskip1ex
-      DataCamp offers a 
-      \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Install and load package readxl
-install.packages("readxl")
-library(readxl)
-dir_name <- "C:/Develop/lecture_slides/data"
-fil_e <- file.path(dir_name, "multi_tabs.xlsx")
-# Read a time series from first sheet of xlsx file
-tib_ble <- readxl::read_xlsx(fil_e)
-class(tib_ble)
-# Coerce POSIXct dates into Date class
-class(tib_ble$Dates)
-tib_ble$Dates <- as.Date(tib_ble$Dates)
-# Some columns are character strings
-sapply(tib_ble, class)
-sapply(tib_ble, is.character)
-# Coerce columns with strings to numeric
-lis_t <- lapply(tib_ble, function(x) {
-  if (is.character(x))
-    as.numeric(x)
-  else
-    x
-})  # end lapply
-# Coerce list into xts time series
-x_ts <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
-class(x_ts); dim(x_ts)
-# Replace NA values with the most recent non-NA values
-sum(is.na(x_ts))
-x_ts <- zoo::na.locf(x_ts)
-x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Multiple Sheets From \texttt{Excel} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
-      \vskip1ex
-      The package 
-      \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
-      \vskip1ex
-      The function \texttt{read\_excel()} reads a single sheet (tab) from an \texttt{Excel} file.
-      \vskip1ex
-      The function \texttt{read\_xlsx()} reads a single sheet (tab) from an \texttt{Excel} file in \texttt{.xlsx} format.
-      \vskip1ex
-      The functions from package \emph{readxl} return a type of \emph{data frame} called a \emph{tibble} object.
-      \vskip1ex
-      The \emph{tibble} classes \texttt{tbl} and \texttt{tbl\_df} are derived from the \emph{data frame} class \texttt{data.frame}.
-      \vskip1ex
-      \emph{tibble} objects are also used by the package 
-      \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Read names of all the sheets in an Excel spreadsheet
-name_s <- readxl::excel_sheets(fil_e)
-# Read all the sheets from an Excel spreadsheet
-sheet_s <- lapply(name_s, read_xlsx, path=fil_e)
-names(sheet_s) <- name_s
-# sheet_s is a list of tibbles
-sapply(sheet_s, class)
-# Create function to coerce tibble to xts
-to_xts <- function(tib_ble) {
-  tib_ble$Dates <- as.Date(tib_ble$Dates)
-  # Coerce columns with strings to numeric
-  lis_t <- lapply(tib_ble, function(x) {
-    if (is.character(x))
-      as.numeric(x)
-    else
-      x
-  })  # end lapply
-  # Coerce list into xts series
-  xts::xts(do.call(cbind, lis_t)[, -1], lis_t$Dates)
-}  # end to_xts
-# Coerce list of tibbles to list of xts
-class(sheet_s)
-sheet_s <- lapply(sheet_s, to_xts)
-sapply(sheet_s, class)
-# Replace NA values with the most recent non-NA values
-sapply(sheet_s, function(x_ts) sum(is.na(x_ts)))
-sheet_s <- lapply(sheet_s, zoo::na.locf)
-sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Calculations in \texttt{Excel} Using \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{Excel} can run \texttt{R} using either \texttt{VBA} scripts, or through a \emph{COM} interface (available on \emph{Windows} only).
-      \vskip1ex
-      \texttt{R} can perform calculations and export its output to \texttt{Excel} files, or it can modify \texttt{Excel} files (requires packages using \texttt{Java} or \texttt{Perl} code).
-      \vskip1ex
-      Calculations in \texttt{R} and \texttt{Excel} can be combined in several different ways: 
-      \begin{itemize}
-        \item Data from \texttt{Excel} can be exchanged with \texttt{R} via \texttt{.csv} files (simplest and best method), 
-        \item \texttt{Excel} can execute \texttt{R} commands using \texttt{VBA} scripts, and then import the \texttt{R} output from \texttt{.csv} files,
-        \item An \texttt{Excel} add-in can execute \texttt{R} commands as \texttt{Excel} functions (relies on \emph{COM} protocol, so works only for \emph{Windows}): add-ins 
-        \emph{\href{http://bert-toolkit.com/}{BERT}}, 
-        \emph{\href{http://sunsite.univie.ac.at/rcom/}{RExcel}}, 
-        \item \texttt{R} can modify \texttt{Excel} files and run \texttt{Excel} functions (requires packages using \texttt{Java} or \texttt{Perl} code): packages 
-        \emph{\href{https://cran.r-project.org/web/packages/xlsx/index.html}{xlsx}}, 
-        \emph{\href{https://cran.r-project.org/web/packages/XLConnect/index.html}{XLConnect}}, 
-        \emph{\href{https://cran.r-project.org/web/packages/excel.link/index.html}{excel.link}}, 
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### Perform calculations in R, 
-### And export to CSV files
-setwd("C:/Develop/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", 
-                      row.names=1)
-# Subset data frame
-data_read <- 
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code from \texttt{Excel}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of performing calculations in \texttt{R} and exporting the outputs to \texttt{Excel}:
-      \begin{itemize}
-        \item Export data from \texttt{Excel} via \texttt{.csv} files to \texttt{R}, perform the calculations in \texttt{R}, and import the outputs back to \texttt{Excel} via \texttt{.csv} files (simplest and best method),
-        \item Run \texttt{R} from \texttt{Excel} using \texttt{VBA} scripts, and exchange data via \texttt{.csv} files, 
-        \item Run \texttt{R} from \texttt{Excel} using an \texttt{Excel} add-in, and execute \texttt{R} commands as \texttt{Excel} functions (relies on the \emph{COM} protocol, so works only for \emph{Windows}),
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-### Perform calculations in R, 
-### And export to CSV files
-setwd("C:/Develop/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", 
-                      row.names=1)
-# Subset data frame
-data_read <- 
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Running \texttt{R} Code Using \protect\texttt{VBA} Scripts}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro).
-      \vskip1ex
-      The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}).
-      \vskip1ex
-      A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process.
-      \vskip1ex
-      The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel}.
-    \column{0.6\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run R process
-Sub run_r()
- Call shell("R", vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run interactive R process
-Sub run_rinteractive()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_interactive.R"
- Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' VBA macro to run batch R process
-Sub run_rbatch()
- Dim script_dir As String: script_dir = "C:\Develop\R\scripts\"
- Dim script_file As String: script_file = "plot_to_file.R"
- Dim log_file As String: log_file = "C:\Develop\R\scripts\log.txt"
- Call shell("R --vanilla < " & script_dir & script_file & ">" & log_file, vbNormalFocus)
-End Sub
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{BERT} Excel Add-in for Running \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{BERT} is an \texttt{Excel} add-in which allows executing \texttt{R} commands as \texttt{Excel} functions:\\
-      \hskip1em\url{http://bert-toolkit.com/}\\
-      \hskip1em\url{http://bert-toolkit.com/bert-quick-start}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit/wiki}\\
-      \hskip1em\url{https://github.com/sdllc/Basic-Excel-R-Toolkit}
-      \vskip1ex
-      \emph{BERT} launches its own \texttt{R} process from \texttt{Excel}.
-      \vskip1ex
-      \emph{BERT} can create its own menu in the \texttt{Excel} add-ins tab:\\
-      After installing \emph{BERT}, click on upper-left \emph{Office Button}, click \texttt{Excel} options, on the bottom of the window choose (Manage: \emph{COM} Add-ins) Go, add the \emph{COM} add-in BERTRibbon2x86.dll.
-      \vskip1ex
-      \emph{BERT} relies on the \emph{COM} protocol, so it works only for \emph{Windows}.
-    \column{0.5\textwidth}
-      \renewcommand{\ttdefault}{pcr}
-      \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
-' calculate sum of Excel cells using R
-R.Add(B1:D1)
-
-' remove NAs over Excel cell range using R function
-R.na_omit(F2:H4)
-
-' calculate eigenValues of Excel matrix using R function
-R.EigenValues(A1:H8)
-      \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{googlesheets} for Interacting with \protect\emph{Google Sheets}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/googlesheets/index.html}{\emph{googlesheets}} 
-      allows interacting with \emph{Google Sheets} using \texttt{R} commands.
-      \vskip1ex
-      If you already have a \emph{Google} account, then your personal \emph{Google Sheets} can be found at:\\
-      \hskip1em\url{https://docs.google.com/spreadsheets/}
-      \vskip1ex
-      The function \texttt{gs\_ls()} lists the files in \emph{Google Sheets}.
-      \vskip1ex
-      The function \texttt{gs\_title()} registers a \emph{Google} sheet, and returns a \texttt{googlesheet} object.
-      \vskip1ex
-      A \texttt{googlesheet} object contains information (metadata) about a \emph{Google} sheet, such as its name and key, but not the sheet data itself.
-      \vskip1ex
-      The function \texttt{gs\_browse()} opens a \emph{Google} sheet in an internet browser.
-      \vskip1ex
-      You can find online a document about 
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/basic-usage.html}{using \emph{googlesheets}}.
-      \vskip1ex
-      You can find online a document about 
-      \href{https://cran.r-project.org/web/packages/googlesheets/vignettes/managing-auth-tokens.html}{managing authentication tokens}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install latest version of googlesheets
-devtools::install_github("jennybc/googlesheets")
-# Load package googlesheets
-library(googlesheets)
-library(dplyr)
-# Authenticate authorize R to view and manage your files
-gs_auth(new_user=TRUE)
-# List the files in Google Sheets
-googlesheets::gs_ls()
-# Register a sheet
-google_sheet <- gs_title("my_data")
-# view sheet summary
-google_sheet
-# List tab names in sheet
-tab_s <- gs_ws_ls(google_sheet)
-# Set curl options
-library(httr)
-httr::set_config(config(ssl_verifypeer=0L))
-# Read data from sheet
-gs_read(google_sheet)
-# Read data from single tab of sheet
-gs_read(google_sheet, ws=tab_s[1])
-gs_read_csv(google_sheet, ws=tab_s[1])
-# Or using dplyr pipes
-google_sheet %>% gs_read(ws=tab_s[1])
-# Download data from sheet into file
-gs_download(google_sheet, ws=tab_s[1], 
-            to="C:/Develop/lecture_slides/data/google_sheet.csv")
-# Open sheet in internet browser
-gs_browse(google_sheet)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Publishing Interactive Documents}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
-      \vskip1ex
-      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
-      \vskip1ex
-      An \texttt{R} document is an \emph{R Markdown} file (with extension \texttt{.Rmd}) containing:
-      \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
-      \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here:
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2
-  \leq
-  \left( \sum_{k=1}^n a_k^2 \right)
-  \left( \sum_{k=1}^n b_k^2 \right)
-$$
-
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Online \protect\emph{markdown} Tutorials}
-\begin{frame}[fragile,t]{\subsecname}
-
-\begin{block}{Datacamp Interactive Courses}
-  Datacamp introduction to \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/courses/introduction-to-r/}
-  \vskip1ex
-  Datacamp list of free courses:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses}
-  \vskip1ex
-  Datacamp basic statistics in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/basic-statistics}
-  \vskip1ex
-  Datacamp computational finance in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/computational-finance-and-financial-econometrics-with-r}
-  \vskip1ex
-  Datacamp machine learning in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/kaggle-r-tutorial-on-machine-learning}
-\end{block}
-
-\begin{block}{Try \texttt{R}}
-  Interactive \texttt{R} tutorial, but rather basic:
-  \hskip1em\url{http://tryr.codeschool.com/}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Writing and Reading Data from Files}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Text Strings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{cat()} concatenates strings and writes them to standard output or to files.
-      \vskip1ex
-      \texttt{cat()} interprets its argument character string and its escape sequences (\texttt{"\textbackslash{}"}), but doesn't return a value.
-      \vskip1ex
-      The function \texttt{print()} doesn't interpret its argument, and simply prints it to standard output and invisibly returns it.
-      \vskip1ex
-      Typing the name of an object in \texttt{R} implicitly calls \texttt{print()} on that object.
-      \vskip1ex
-      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-cat("Enter\ttab")  # Cat() interprets backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # Print() returns its argument
-
-# Create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # Write to text file
-
-cat("Title: My Text",  # Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.RData")  # Write to binary file
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Displaying Numeric Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{print()} displays numeric data objects, with the number of digits given by the global option \texttt{"digits"}.
-      \vskip1ex
-      The function \texttt{sprintf()} returns strings formatted from text strings and numeric data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=TRUE>>=
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "months"
-sprintf("There are %i %s in the year", foo, bar)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reading Text from Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{scan()} reads text or data from a file and returns it as a vector or a list.
-      \vskip1ex
-      The function \texttt{readLines()} reads lines of text from a connection (file or console), and returns them as a vector of \texttt{character} strings.
-      \vskip1ex
-      The function \texttt{readline()} reads a single line from the console, and returns it as a \texttt{character} string.
-      \vskip1ex
-      The function \texttt{file.show()} reads text or data from a file and displays in editor.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
-# Coerce to numeric
-in_put <- as.numeric(in_put)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} from \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.table()} and \texttt{read.table()} write and read \emph{data frames} from text files.
-      \vskip1ex
-      \texttt{write.table()} coerces objects to \emph{data frames} before it writes them.
-      \vskip1ex
-      \texttt{read.table()} returns a \emph{data frame}, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set).
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} can be used to write and read matrices from text files, but they have to be coerced back to matrices.
-      \vskip1ex
-      \texttt{write.table()} and \texttt{read.table()} are inefficient for very large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-setwd("C:/Develop/lecture_slides/data")
-data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
-# Write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # A data frame
-
-# Write matrix to text file, and then read it back
-write.table(mat_rix, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# Coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Copying \protect\emph{Data Frames} Between the \protect\emph{clipboard} and \texttt{R}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data frames} stored in the \emph{clipboard} can be copied into \texttt{R} using the function \texttt{read.table()}.
-      \vskip1ex
-      \emph{Data frames} in \texttt{R} can be copied into the \emph{clipboard} using the function \texttt{write.table()}.
-      \vskip1ex
-      This allows convenient copying of \emph{data frames} between \texttt{R} and \texttt{Excel}.
-      \vskip1ex
-      \emph{Data frames} can also be manipulated directly in the \texttt{R} spreadsheet-style data editor.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:3)),eval=FALSE>>=
-setwd("C:/Develop/lecture_slides/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t",
-                      header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE,
-                       col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-              row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# Launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      The functions \texttt{write.csv()} and \texttt{read.csv()} write and read \emph{data frames} from \texttt{.csv} format files.
-      \vskip1ex
-      These functions are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      \texttt{read.csv()} coerces non-numeric values to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is set.
-      \vskip1ex
-      \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used.
-      \vskip1ex
-      The argument \texttt{"row.names"} accepts either the number or the name of the column containing the row names.
-      \vskip1ex
-      The \texttt{*.csv()} functions are very inefficient for large data sets.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv",
-                       stringsAsFactors=FALSE)
-data_read  # the row names are read in as extra column
-# Restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # Remove extra column
-data_read
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading \protect\emph{Data Frames} From \texttt{.csv} Files (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read \emph{data frames} from \texttt{.csv} format files \emph{without using row names}.
-      \vskip1ex
-      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # A data frame without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices From \texttt{.csv} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read matrices from \texttt{.csv} format files.
-      \vskip1ex
-      If row names can be omitted in the output file, then \texttt{write.csv()} can be called with argument \texttt{row.names=FALSE}.
-      \vskip1ex
-      If the input file doesn't contain row names, then \texttt{read.csv()} can be called without the \texttt{"row.names"} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Write matrix to csv file, and then read it back
-write.csv(mat_rix, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", row.names=1)
-mat_read  # Read.csv() reads matrix as data frame
-class(mat_read)
-mat_read <- as.matrix(mat_read)  # Coerce to matrix
-identical(mat_rix, mat_read)
-write.csv(mat_rix, row.names=FALSE,
-          file="matrix_ex_rows.csv")
-mat_read <- read.csv(file="matrix_ex_rows.csv")
-mat_read <- as.matrix(mat_read)
-mat_read  # A matrix without row names
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Matrices (cont.)}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      There are several ways of writing and reading matrices from \texttt{.csv} files, with tradeoffs between simplicity, data size, and speed.
-      \vskip1ex
-      The function \texttt{write.matrix()} writes a matrix to a text file, without its row names.
-      \vskip1ex
-      \texttt{write.matrix()} is part of package \emph{MASS}.
-      \vskip1ex
-      The advantage of function \texttt{scan()} is its speed, but it doesn't handle row names easily.
-      \vskip1ex
-      Removing row names simplifies the writing and reading of matrices.
-      \vskip1ex
-      The function \texttt{readLines} reads whole lines and returns them as single strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-setwd("C:/Develop/lecture_slides/data")
-library(MASS)  # Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(mat_rix,
-  file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-mat_read <- scan(file="matrix.csv",
-  sep=",", skip=1, what=numeric())
-# Read colnames
-col_names <- readLines(con="matrix.csv", n=1)
-col_names  # this is a string!
-# Convert to char vector
-col_names <- strsplit(col_names,
-  s=",")[[1]]
-mat_read  # mat_read is a vector, not matrix!
-# Coerce by row to matrix
-mat_read <- matrix(mat_read,
-  ncol=NROW(col_names), byrow=TRUE)
-# Restore colnames
-colnames(mat_read) <- col_names
-mat_read
-# Scan() is a little faster than read.csv()
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Sample mean - MC estimate
+mean(da_ta)
+# Sample standard deviation - MC estimate
+sd(da_ta)
+# Monte Carlo estimate of cumulative probability
+da_ta <- sort(da_ta)
+pnorm(1)
+sum(da_ta<1)/n_rows
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+cut_off <- conf_level*n_rows
+da_ta[cut_off]
+quantile(da_ta, probs=conf_level)
+# Analyze the source code of quantile()
+stats:::quantile.default
+# Microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  monte_carlo=da_ta[cut_off],
+  quan_tile=quantile(da_ta, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
   \end{columns}
 \end{block}
@@ -1213,95 +1295,45 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Matrices Containing Bad Data}
+\subsection{Simulating Brownian Motion Using \texttt{while()} Loops}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Very often data that is read from external sources contains elements with bad data.
+      \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance.
       \vskip1ex
-      An example of bad data are \texttt{character} strings within sets of \texttt{numeric} data.
-      \vskip1ex
-      Columns of numeric data that contain strings are coerced to \texttt{character} or \texttt{factor}, when they're read by \texttt{read.csv()}.
-      \vskip1ex
-      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
-      \vskip1ex
-      \texttt{as.numeric()} coerces strings that don't represent numbers into \texttt{NA} values.
-    \column{0.5\textwidth}
+      Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv",
-  row.names=1, stringsAsFactors=FALSE)
-mat_rix
-class(mat_rix)
-# Columns with bad data are character or factor
-sapply(mat_rix, class)
-# Copy row names
-row_names <- row.names(mat_rix)
-# sapply loop over columns and coerce to numeric
-mat_rix <- sapply(mat_rix, as.numeric)
-# Restore row names
-row.names(mat_rix) <- row_names
-# Replace NAs with zero
-mat_rix[is.na(mat_rix)] <- 0
-# matrix without NAs
-mat_rix
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \protect\emph{Text} Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
-      \vskip1ex
-      The functions \texttt{write.zoo()} and \texttt{read.zoo()} are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
-      \vskip1ex
-      The function \texttt{write.zoo()} writes the \emph{zoo} series index as a character string in quotations \texttt{""}, to make it easier to read (parse) by \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-setwd("C:/Develop/lecture_slides/data")
-rm(list=ls())
+        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # Reset random number generator
-library(zoo)  # Load package zoo
-# Create zoo with Date index
-in_dex <- seq(from=as.Date("2013-06-15"),
-              by="day", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_read <- read.zoo("zoo_series.txt")  # Read it back
-all.equal(zoo_read, zoo_series)
-# Perform the same using write.table() and read.table()
-# First coerce zoo_series into data frame
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(in_dex, data_frame)
-# Write zoo_series to text file using write.table
-write.table(data_frame, file="zoo_series.txt",
-            row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-zoo_read <- read.table(file="zoo_series.txt",
-                       stringsAsFactors=FALSE)
-sapply(zoo_read, class)  # A data frame
-# Coerce data frame into zoo_series
-zoo_read <- zoo::zoo(
-  drop(as.matrix(zoo_read[, -1])),
-  order.by=as.Date(zoo_read[, 1]))
-all.equal(zoo_read, zoo_series)
+bar_rier <- 20  # Barrier level
+n_rows <- 1000  # Number of simulation steps
+pa_th <- numeric(n_rows)  # Allocate path vector
+pa_th[1] <- 0  # Initialize path
+in_dex <- 2  # Initialize simulation index
+while ((in_dex <= n_rows) &&
+         (pa_th[in_dex - 1] < bar_rier)) {
+# Simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # Advance in_dex
+}  # end while
+# Fill remaining pa_th after it crosses bar_rier
+if (in_dex <= n_rows)
+  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
+# Create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
       @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
   \end{columns}
 \end{block}
 
@@ -1309,91 +1341,47 @@ all.equal(zoo_read, zoo_series)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series From \texttt{.csv} Files}
+\subsection{Simulating Brownian Motion Using Vectorized Functions}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      By default the functions \texttt{zoo::write.zoo()} and \texttt{zoo::read.zoo()} write data in \emph{space}-delimited text format, but they can also write to \emph{comma}-delimited \texttt{.csv} files by passing the parameter \texttt{sep=","}.
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
       \vskip1ex
-      Single column \emph{zoo} time series usually don't have a dimension attribute, and they don't have a column name, unlike multi-column \emph{zoo} time series, and this can cause hard to detect bugs.
-      \vskip1ex
-      It's best to always pass the argument \texttt{"col.names=TRUE"} to the function \texttt{write.zoo()}, to make sure it writes a column name for a single column \emph{zoo} time series.
-      \vskip1ex
-      Reading a \texttt{.csv} file containing a single column of data using the function \texttt{read.zoo()} produces a \emph{zoo} time series with a \texttt{NULL} dimension, unless the argument \texttt{"drop=FALSE"} is passed to \texttt{read.zoo()}.
-      \vskip1ex
-      Users may also directly use \texttt{write.table()} and \texttt{read.table()}, instead of \texttt{write.zoo()} and \texttt{read.zoo()}.
-    \column{0.5\textwidth}
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops.
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(zoo)  # Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-          sep=",", col.names=TRUE)
-zoo_read <- read.zoo(file="zoo_series.csv", 
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(zoo_series, drop(zoo_read))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Time Series With \protect\emph{Date-time} Index}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{read.csv.zoo()} reads \emph{zoo} time series from \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{xts::as.xts()} coerces \emph{zoo} time series into \emph{xts} series.
-      \vskip1ex
-      If the index of a \emph{zoo} time series is a \emph{date-time}, then \texttt{write.zoo()} writes the date and time fields as character strings separated by a \emph{space} between them, inside quotations \texttt{""}.
-      \vskip1ex
-      Very often \texttt{.csv} files contain custom \emph{date-time} formats, which need to be passed as parameters into \texttt{read.zoo()} for proper formatting.
-      \vskip1ex
-      The \texttt{"FUN"} argument of \texttt{read.zoo()} accepts a function for coercing the date and time columns of the input data into a \emph{date-time} object suitable for the \emph{zoo} index.
-      \vskip1ex
-      The function \texttt{as.POSIXct()} coerces \texttt{character} strings into \texttt{POSIXct} \emph{date-time} objects.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
+        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # Reset random number generator
-# Create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"),
-              by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-          sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv")
-all.equal(zoo_series, zoo_read)
-# Coerce to xts series
-x_ts <- xts::as.xts(zoo_read)
-class(x_ts); head(x_ts, 3)
-# Coerce zoo series into data frame with custom date format
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
-head(data_frame, 3)
-# Write zoo series to csv file using write.table
-write.table(data_frame, file="zoo_series.csv",
-            sep=",", row.names=FALSE, col.names=FALSE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=FALSE, sep=",", FUN=as.POSIXct, 
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-# Or using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv", 
-  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(zoo_read, 3)
-all.equal(zoo_series, zoo_read)
+bar_rier <- 20  # Barrier level
+n_rows <- 1000  # Number of simulation steps
+# Simulate path of Brownian motion
+pa_th <- cumsum(rnorm(n_rows))
+# Find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# Fill remaining pa_th after it crosses bar_rier
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):n_rows] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# Create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+             start=c(2011, 1))
+# Create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
+      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
+      \vskip1ex
+      But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
   \end{columns}
 \end{block}
 
@@ -1401,326 +1389,41 @@ all.equal(zoo_series, zoo_read)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Time Series With \texttt{Numeric} \protect\emph{Date-time} Index}
+\subsection{Geometric Brownian Motion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the index of a time series is \texttt{numeric} (representing the \emph{moment of time}, either as the number of days or seconds), then it must be coerced to a proper \emph{date-time} class.
+      If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{P_t}$ follow \emph{Brownian motion}:
+      \begin{displaymath}
+        r_t \mathrm{d} t = \mathrm{d} \log{P_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+      \end{displaymath}
+      Then asset prices $P_t$ follow \emph{Geometric Brownian motion} (GBM):
+      \begin{displaymath}
+        \mathrm{d} P_t = \mu P_t \mathrm{d}t + \sigma \, P_t \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
       \vskip1ex
-      A convenient way of reading time series with a numeric index is by using \texttt{read.table()}, and then coercing the \emph{data frame} into a time series.
-      \vskip1ex
-      The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
+      The solution of \emph{Geometric Brownian motion} is equal to:
+      \begin{displaymath}
+        P_t = P_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+      \end{displaymath}
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma).
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read time series from CSV file, with numeric date-time
-zoo_read <- read.table(file="C:/Develop/lecture_slides/data/es_ohlc.csv", 
-  header=TRUE, sep=",")
-# A data frame
-class(zoo_read)
-sapply(zoo_read, class)
-# Coerce data frame into xts series
-zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
-  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
-# An xts series
-class(zoo_read)
-head(zoo_read, 3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Passing Arguments to the \texttt{save()} Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{save()} writes objects to a binary file.
-      \vskip1ex
-      Object names can be passed into \texttt{save()} either through the \texttt{"..."} argument, or the \texttt{"list"} argument.
-      \vskip1ex
-      Objects passed through the \texttt{"..."} argument are not evaluated, so they must be either object names or character strings.
-      \vskip1ex
-      Object names aren't surrounded by quotes \texttt{""}, while character strings that represent object names are surrounded by quotes \texttt{""}.
-      \vskip1ex
-      Objects passed through the \texttt{"list"} argument are evaluated, so they may be variables containing character strings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1)>>=
-rm(list=ls())  # Remove all objects
-var1 <- 1; var2 <- 2
-ls()  # List all objects
-ls()[1]  # List first object
-args(save)  # List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# Ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Lists of Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
-      \vskip1ex
-      The vector of names can be used to manipulate the objects in loops, or to pass them to functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-rm(list=ls())  # Remove all objects
-# Load objects from file
-load_ed <- load(file="my_data.RData")
-load_ed  # vector of loaded objects
-ls()  # List objects
-# Assign new values to objects in  global environment
-sapply(load_ed, function(sym_bol) {
-  assign(sym_bol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # List objects
-# Assign new values to objects using for loop
-for (sym_bol in load_ed) {
-  assign(sym_bol, runif(1))
-}  # end for
-ls()  # List objects
-# Save vector of objects
-save(list=load_ed, file="my_data.RData")
-# Remove only loaded objects
-rm(list=load_ed)
-# Remove the object "load_ed"
-rm(load_ed)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Saving Output of \texttt{R} to a File}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{sink()} diverts \texttt{R} \emph{text} output (excluding graphics) to a file, or ends the diversion.
-      \vskip1ex
-      Remember to call \texttt{sink()} to end the diversion!
-      \vskip1ex
-      The function \texttt{pdf()} diverts graphics output to a \emph{pdf} file (text output isn't diverted), in vector graphics format.
-      \vskip1ex
-      The functions \texttt{png()}, \texttt{jpeg()}, \texttt{bmp()}, and \texttt{tiff()} divert graphics output to graphics files (text output isn't diverted).
-      \vskip1ex
-      The function \texttt{dev.off()} ends the diversion.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-sink("sinkdata.txt")# Redirect text output to file
-
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
-
-sink()  # turn redirect off
-
-pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
-
-cat("Redirect data from R into pdf file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn pdf output off
-
-png("r_plot.png")  # Redirect graphics output to png file
-
-cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
-
-dev.off()  # turn png output off
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Debugging and Exception Handling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Exception Conditions: Errors and Warnings}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Exception conditions} are \texttt{R} objects containing information about \emph{errors} or \emph{warnings} produced while evaluating expressions.
-      \vskip1ex
-      The function \texttt{warning()} produces a \emph{warning} condition, but doesn't halt function execution, and returns its message to the warning handler.
-      \vskip1ex
-      The function \texttt{stop()} produces an \emph{error} condition, halts function execution, and returns its message to the error handler.
-      \vskip1ex
-      The handling of \emph{warning} conditions depends on the value of \texttt{options("warn")}:
-      \begin{itemize}
-        \item \emph{negative} then warnings are ignored,
-        \item \emph{zero} then warnings are stored and printed after the top-level function has completed,
-        \item \emph{one} - warnings are printed as they occur,
-        \item \emph{two} or larger - warnings are turned into errors,
-      \end{itemize}
-      The function \texttt{suppressWarnings()} evaluates its expressions and ignores all warnings.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# ?options  # get info on global options
-getOption("warn")  # global option for "warn"
-options("warn")  # global option for "warn"
-getOption("error")  # global option for "error"
-sqrt_safe <- function(in_put) {
-# returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
-  } else {
-    sqrt(in_put)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Argument validation consists of first determining if any arguments are \emph{missing}, and then determining if the arguments are of the correct \emph{type}.
-      \vskip1ex
-      An argument is \emph{missing} when the formal argument is not bound to an actual value in the function call.
-      \vskip1ex
-      The function \texttt{missing()} returns \texttt{TRUE} if an argument is missing, and \texttt{FALSE} otherwise.
-      \vskip1ex
-      Missing arguments can be detected by:\\
-      - assigning a \texttt{NULL} default value to formal arguments and then calling  \texttt{is.null()} on them,\\
-      - calling the function \texttt{missing()} on the arguments.
-      \vskip1ex
-      The argument \emph{type} can be validated using functions such as \texttt{is.numeric()}, \texttt{is.character()}, etc.
-      \vskip1ex
-      The function \texttt{return()} returns its argument and terminates futher function execution.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
-# check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Validating Assertions Inside Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If assertions about variables inside a function are \texttt{FALSE}, then \texttt{stop()} can be called to halt its execution.
-      \vskip1ex
-      Calling \texttt{stop()} is preferable to calling \texttt{return()}, or inserting \texttt{cat()} statements into the code.
-      \vskip1ex
-      Using \texttt{stop()} inside a function allows calling the function \texttt{traceback()}, if an error was produced.
-      \vskip1ex
-      The function \texttt{traceback()} prints the call stack, showing the function that produced the \emph{error} condition.
-      \vskip1ex
-      \texttt{cat()} statements inside the function body provide information about the state of its variables.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-            <<echo=TRUE,eval=FALSE>>=
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put=", in_put)
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-      @
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom.png}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# print the call stack
-traceback()
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# Simulate geometric Brownian motion
+re_turns <- sigma_r*rnorm(len_gth) +
+  dri_ft - sigma_r^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="geometric Brownian motion")
       @
   \end{columns}
 \end{block}
@@ -1729,41 +1432,36 @@ traceback()
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Assertions Using \texttt{stopifnot()}}
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \texttt{R} provides robust validation and debugging tools through \emph{type} validation functions, and functions \texttt{missing()}, \texttt{stop()}, and \texttt{stopifnot()}.
-      \vskip1ex
-      If the argument to function \texttt{stopifnot()} is \texttt{FALSE}, then it produces an \emph{error} condition, and halts function execution.
-      \vskip1ex
-      \texttt{stopifnot()} is a convenience wrapper for \texttt{stop()}, and eliminates the need to use \texttt{if ()} statements.
-      \vskip1ex
-      \texttt{stopifnot()} is often used to check the validity of function arguments.
-      \vskip1ex
-      \texttt{stopifnot()} can be inserted anywhere in the function body in order to check assertions about its variables.
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      Random \emph{OHLC} prices are useful for testing financial models.
       <<echo=TRUE,eval=FALSE>>=
-vali_date <- function(in_put) {
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-              is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
-# check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
+# Simulate geometric Brownian motion
+sigma_r <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 1e4
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(sigma_r*rnorm(len_gth) + dri_ft - sigma_r^2/2)),
+  order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# Aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>%
+  dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
       @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/random_ohlc.png}
   \end{columns}
 \end{block}
 
@@ -1771,84 +1469,41 @@ vali_date("a")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Validating Function Arguments and Assertions}
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functions \texttt{stop()} and \texttt{stopifnot()} halt function execution and produce \emph{error} conditions if certain assertions are \texttt{FALSE}.
-      \vskip1ex
-      The \emph{type} validation functions, such as \texttt{is.numeric()}, \texttt{is.na()}, etc., and \texttt{missing()}, allow for validation of arguments and variables inside functions.
-      \vskip1ex
-      \texttt{cat()} statements can provide information about the state of variables inside a function.
-      \vskip1ex
-      \texttt{cat()} statements don't return values, so they provide information even when a function produces an \texttt{error}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
+      \begin{displaymath}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
       <<echo=TRUE,eval=FALSE>>=
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # even more robust
-# check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-              !missing(in_put2))
-# check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-      is.numeric(in_put2)) {
-    in_put1 + in_put2  # both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+        type="l", xlim=c(0, 3), lwd=2,
+        xlab="", ylab="", col=col_ors[in_dex],
+        add=as.logical(in_dex-1))
+}  # end for
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{R} Debugger Facility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{debug()} flags a function for future debugging, but doesn't invoke the debugger.
-      \vskip1ex
-      After a function is flagged for debugging with the call \texttt{"debug(my\_func)"}, then the function call \texttt{"my\_func()"} automatically invokes the debugger (browser).
-      \vskip1ex
-      When the debugger is first invoked, it prints the function code to the console, and produces a \emph{browser} prompt: \texttt{"Browse[2]>"}.
-      \vskip1ex
-      Once inside the debugger, the user can execute the function code one command at a time by pressing the \emph{Enter} key.
-      \vskip1ex
-      The user can examine the function arguments and variables with standard \texttt{R} commands, and can also change the values of objects or create new ones.
-      \vskip1ex
-      The command \texttt{"c"} executes the remainder of the function code without pausing.
-      \vskip1ex
-      The command \texttt{"Q"} exits the debugger (browser).
-      \vskip1ex
-      The call \texttt{"undebug(my\_func)"} at the \texttt{R} prompt unflags the function for debugging.
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
+      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# flag "vali_date" for debugging
-debug(vali_date)
-# calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sig_mas, sep="="),
+       cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+       col=col_ors)
       @
   \end{columns}
 \end{block}
@@ -1857,37 +1512,44 @@ undebug(vali_date)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Debugging Using \texttt{browser()}}
+\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      As an alternative to flagging a function for debugging, the user can insert the function \texttt{browser()} into the function body.
       \vskip1ex
-      \texttt{browser()} pauses the execution of a function and invokes the debugger (browser) at the point where \texttt{browser()} was called.
+      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
       \vskip1ex
-      Once inside the debugger, the user can execute all the same browser commands as when using \texttt{debug()}.
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
       \vskip1ex
-      \texttt{browser()} is usually inserted just before the command that is suspected of producing an \emph{error} condition.
+      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\gamma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
       \vskip1ex
-      Another alternative to flagging a function for debugging, or inserting \texttt{browser()} calls, is setting the \texttt{"error"} option equal to \texttt{"recover"}.
-      \vskip1ex
-      Setting the \texttt{"error"} option equal to \texttt{"recover"} automatically invokes the debugger when an \emph{error} condition is produced.
+      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI ETF
+sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmar_2 <- sigma_r^2
+n_rows <- NROW(rutils::etf_env$VTI)
+# Standard deviation of log-normal prices
+sqrt(n_rows)*sigma_r
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_skew.png}
+      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-vali_date <- function(in_put) {
-  browser()  # pause and invoke browser
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-              is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # invokes debugger
-options("error")  # show default NULL "error" option
-options(error=recover)  # set "error" option to "recover"
-options(error=NULL)  # set back to default "error" option
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigmar_2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Skewness", col="blue",
+      main="Skewness of Log-normal Prices
+      as a Function of Time")
       @
   \end{columns}
 \end{block}
@@ -1896,75 +1558,34 @@ options(error=NULL)  # set back to default "error" option
 
 
 %%%%%%%%%%%%%%%
-\subsection{Using the Debugger in \protect\emph{RStudio}}
+\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{RStudio} has several built-in debugging facilities that complement those already installed in \texttt{R}:
-      \begin{itemize}
-        \item toggling breakpoints, instead of inserting \texttt{browser()} commands,
-        \item stepping into functions,
-        \item environment pane with environment stack, instead of calling \texttt{ls()},
-        \item traceback pane, instead of calling \texttt{traceback()},
-      \end{itemize}
-      \emph{RStudio} provides an online debugging tutorial:
-      \hskip1em\url{https://support.rstudio.com/hc/en-us/articles/205612627-Debugging-with-RStudio}
+      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
+      \vskip1ex
+      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
+      \vskip1ex
+      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
+      \vskip1ex
+      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{image/rstudio_debug.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Handling Exception Conditions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{tryCatch()} executes functions and expressions, and handles any \emph{exception conditions} produced when they are evaluated.
-      \vskip1ex
-      \texttt{tryCatch()} first evaluates its \texttt{"expression"} argument.
-      \vskip1ex
-      If no error or warning \texttt{condition} is produced then \texttt{tryCatch()} just returns the value of the expression.
-      \vskip1ex
-      If an \texttt{exception condition} is produced then \texttt{tryCatch()} invokes error and warning \emph{handlers} and executes other expressions to provide information about the \texttt{exception condition}.
-      \vskip1ex
-      If a \emph{handler} is provided to \texttt{tryCatch()} then the error is captured by the \emph{handler}, instead of being broadcast to the console.
-      \vskip1ex
-      At the end, \texttt{tryCatch()} evaluates the expression provided to the \texttt{finally} argument.
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_prob.png}
+      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-str(tryCatch)  # get arguments of tryCatch()
-tryCatch(  # without error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-tryCatch(  # with error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  # error handler captures error condition
-  error=function(error_cond) {
-    print(paste("error handler: ", error_cond))
-  },  # end error handler
-  # warning handler captures warning condition
-  warning=function(warning_cond) {
-    print(paste("warning handler: ", warning_cond))
-  },  # end warning handler
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigma_r*sqrt(x)/2),
+      xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Probability", col="blue",
+      main="Probability That Random Log-normal Price
+      Will be Lower Than the Mean Price")
       @
   \end{columns}
 \end{block}
@@ -1973,32 +1594,119 @@ tryCatch(  # with error handler
 
 
 %%%%%%%%%%%%%%%
-\subsection{Error Conditions in Loops}
+\subsection{Paths of Geometric Brownian Motion}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If an \emph{error} occurs in an \texttt{apply()} loop, then the loop exits without returning any result.
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
       \vskip1ex
-      \texttt{apply()} collects the values returned by the function supplied to its \texttt{FUN} argument, and returns them only after the loop is finished.
-      \vskip1ex
-      If one of the function calls produces an error, then the loop is interrupted and \texttt{apply()} exits without returning any result.
-      \vskip1ex
-      The function \texttt{tryCatch()} captures errors, allowing loops to continue after the error \texttt{condition}.
+      For large standard deviation, the skewness $\gamma$ increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+path_s <- 10
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Create xts time series
+price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# Plot xts time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+      @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:1))>>=
-rm(list=ls())
-# apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    stopifnot(num_var != 3)  # check for error
-    # broadcast message to console
-    cat("(cat) num_var =", num_var, "\n")
-    # return a value
-    paste("(return) num_var =", num_var)
-  }  # end anonymous function
-)  # end apply
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_paths.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
+      \vskip1ex
+      For large standard deviation, the skewness $\gamma$ increases exponentially with the standard deviation and with time: $\gamma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+path_s <- 100
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# Create xts time series of percentage of paths below the expected value
+per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_percent.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Evolution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("C:/Develop/lecture_slides/data/sp500.RData")
+ls(env_sp500)
+# Extract closing prices
+price_s <- eapply(env_sp500, quantmod::Cl)
+# Flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# Carry forward and backward non-NA prices
+price_s <- xts:::na.locf.xts(price_s)
+price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# Rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
+               order.by=index(price_s))
+# Calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# Select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stock_index_paths.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+       legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
       @
   \end{columns}
 \end{block}
@@ -2007,39 +1715,48 @@ apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
 
 
 %%%%%%%%%%%%%%%
-\subsection{Exception Handling in Loops}
+\subsection{Distribution of Stock Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the body of the function supplied to the \texttt{FUN} argument is wrapped in \texttt{tryCatch()}, then the loop can finish without interruption and return its results.
+      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
       \vskip1ex
-      The messages produced by \emph{errors} and \emph{warnings} can be caught by \emph{handlers} (functions) that are supplied to \texttt{tryCatch()}.
+      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
       \vskip1ex
-      The \emph{error} and \emph{warning} messages are bound (passed) to the formal arguments of the \emph{handler} functions that are supplied to \texttt{tryCatch()}.
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
       \vskip1ex
-      \texttt{tryCatch()} always evaluates the expression provided to the \texttt{finally} argument, even after an \emph{error} occurs.
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate average of valid stock prices
+val_id <- (price_s != 1)  # valid stocks
+n_stocks <- rowSums(val_id)
+n_stocks[1] <- NCOL(price_s)
+in_dex <- rowSums(price_s * val_id) / n_stocks
+# Calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
+# Create xts time series of average stock prices
+in_dex <- xts(in_dex, order.by=index(price_s))
+      @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE>>=
-# apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    tryCatch(  # with error handler
-      {  # body
-        stopifnot(num_var != 3)  # check for error
-        # broadcast message to console
-        cat("(cat) num_var =", num_var, "\t")
-        # return a value
-        paste("(return) num_var =", num_var)
-      },
-      # error handler captures error condition
-      error=function(error_cond)
-        paste("handler: ", error_cond),
-      finally=print(paste("(finally) num_var =", num_var))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
+    \vspace{-1em}
+    %   \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices.png}
+    % \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+# Plot xts time series of average stock prices
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
+         xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# Plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+         main="Percentage of S&P500 stock prices below the average price",
+         xlab=NA, ylab=NA, col="blue")
       @
   \end{columns}
 \end{block}

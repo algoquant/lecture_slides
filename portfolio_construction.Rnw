@@ -889,6 +889,50 @@ weights_maxsharpe <- weight_s
 
 
 %%%%%%%%%%%%%%%
+\subsection{draft: Portfolio Optimization Using Principal Components}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      First apply Principal Component Analysis and then perform portfolio optimization using the principal components.
+      \vskip1ex
+      If the correlations of returns are equal to zero, then the covariance matrix is diagonal:
+      \begin{displaymath}
+        \mathbb{C} = \begin{pmatrix}
+          \sigma^2_1 & 0 & \cdots & 0 \\
+          0 & \sigma^2_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma^2_n
+        \end{pmatrix}
+      \end{displaymath}
+      Where $\sigma^2_i$ is the variance of returns of asset \texttt{i}.
+      \vskip1ex
+      The inverse of $\mathbb{C}$ is then simply:
+      \begin{displaymath}
+        \mathbb{C}^{-1} = \begin{pmatrix}
+          \sigma^{-2}_1 & 0 & \cdots & 0 \\
+          0 & \sigma^{-2}_2 & \cdots & 0 \\
+          \vdots  & \vdots  & \ddots & \vdots  \\
+          0 & 0 & \cdots & \sigma^{-2}_n
+        \end{pmatrix}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      The \emph{minimum variance} portfolio weights are proportional to the inverse of the individual variances:
+      \begin{displaymath}
+        w_i = \frac{1}{\sigma^2_i \sum_{i=1}^n \sigma^{-2}_i}
+      \end{displaymath}
+      The maximum \emph{Sharpe} portfolio weights are proportional to the ratio of excess returns divided by the individual variances:
+      \begin{displaymath}
+        w_i = \frac{\mu_i}{\sigma^2_i \sum_{i=1}^n \mu_i \sigma^{-2}_i}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Maximum \protect\emph{Sharpe} and \protect\emph{Minimum Variance} Performance}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1738,6 +1782,7 @@ text(optim_sd/3, (optim_ret+risk_free)/2.5,
 # Optimization to find weights with maximum Sharpe ratio
 op_tim <- optim(par=weight_s,
                    fn=object_ive,
+                   re_turns=re_turns,
                    method="L-BFGS-B",
                    upper=c(1.1, 10, 10),
                    lower=c(0.9, -10, -10))
@@ -1975,6 +2020,51 @@ op_tim <- quadprog::solve.QP(Dmat=2*cov_mat,
                     Amat=a_mat,
                     bvec=b_vec,
                     meq=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{DEoptim} for Global Optimization}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{DEoptim()} from package \emph{DEoptim} performs \emph{global} optimization using the \emph{Differential Evolution} algorithm.
+      \vskip1ex
+      \emph{Differential Evolution} is a genetic algorithm which evolves a population of solutions over several generations,\\
+      \hskip1em\url{http://www1.icsi.berkeley.edu/~storn/code.html}
+      \vskip1ex
+      The first generation of solutions is selected randomly.
+      \vskip1ex
+      Each new generation is obtained by combining solutions from the previous generation,       \vskip1ex
+      The best solutions are selected for creating the next generation.
+      \vskip1ex
+      The \emph{Differential Evolution} algorithm is well suited for very large multi-dimensional optimization problems, such as portfolio optimization.
+      \vskip1ex
+      \emph{Gradient} optimization methods are more efficient than \emph{Differential Evolution} for smooth objective functions with no local minima.
+    \column{0.5\textwidth}
+        <<echo=TRUE,eval=FALSE>>=
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+library(DEoptim)
+## Optimize rastri_gin using DEoptim
+op_tim <-  DEoptim(rastri_gin,
+  upper=c(6, 6), lower=c(-6, -6),
+  DEoptim.control(trace=FALSE, itermax=50))
+# Optimal parameters and value
+op_tim$optim$bestmem
+rastri_gin(op_tim$optim$bestmem)
+summary(op_tim)
+plot(op_tim)
       @
   \end{columns}
 \end{block}

@@ -1,3 +1,383 @@
+# Create list of vectors
+li_st <- lapply(1:3, function(x) sample(6))
+# Bind list elements into matrix - doesn't work
+rbind(li_st)
+# Bind list elements into matrix - tedious
+rbind(li_st[[1]], li_st[[2]], li_st[[3]])
+# Bind list elements into matrix - works!
+do.call(rbind, li_st)
+# Create numeric list
+li_st <- list(1, 2, 3, 4)
+do.call(rbind, li_st)  # returns single column matrix
+do.call(cbind, li_st)  # returns single row matrix
+# recycling rule applied
+do.call(cbind, list(1:2, 3:5))
+# NULL element is skipped
+do.call(cbind, list(1, NULL, 3, 4))
+# NA element isn't skipped
+do.call(cbind, list(1, NA, 3, 4))
+
+library(microbenchmark)
+list_vectors <- lapply(1:5, rnorm, n=10)
+mat_rix <- do.call(rbind, list_vectors)
+dim(mat_rix)
+do_call_rbind <- function(li_st) {
+  while (NROW(li_st) > 1) {
+# index of odd list elements
+    odd_index <- seq(from=1, to=NROW(li_st), by=2)
+# Bind odd and even elements, and divide li_st by half
+    li_st <- lapply(odd_index, function(in_dex) {
+if (in_dex==NROW(li_st)) return(li_st[[in_dex]])
+rbind(li_st[[in_dex]], li_st[[in_dex+1]])
+    })  # end lapply
+  }  # end while
+# li_st has only one element - return it
+  li_st[[1]]
+}  # end do_call_rbind
+identical(mat_rix, do_call_rbind(list_vectors))
+
+library(microbenchmark)
+airquality[(airquality$Solar.R>320 &
+        !is.na(airquality$Solar.R)), ]
+subset(x=airquality, subset=(Solar.R>320))
+summary(microbenchmark(
+    subset=subset(x=airquality, subset=(Solar.R>320)),
+    brackets=airquality[(airquality$Solar.R>320 &
+            !is.na(airquality$Solar.R)), ],
+times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+unique(iris$Species)  # Species has three distinct values
+# Split into separate data frames by hand
+set_osa <- iris[iris$Species=="setosa", ]
+versi_color <- iris[iris$Species=="versicolor", ]
+virgin_ica <- iris[iris$Species=="virginica", ]
+dim(set_osa)
+head(set_osa, 2)
+# Split iris into list based on Species
+split_iris <- split(iris, iris$Species)
+str(split_iris, max.level=1)
+names(split_iris)
+dim(split_iris$setosa)
+head(split_iris$setosa, 2)
+
+unique(mtcars$cyl)  # cyl has three unique values
+# Split mpg column based on number of cylinders
+split(mtcars$mpg, mtcars$cyl)
+# Split mtcars data frame based on number of cylinders
+split_cars <- split(mtcars, mtcars$cyl)
+str(split_cars, max.level=1)
+names(split_cars)
+# Aggregate the mean mpg over split mtcars data frame
+sapply(split_cars, function(x) mean(x$mpg))
+# Or: split mpg column and aggregate the mean
+sapply(split(mtcars$mpg, mtcars$cyl), mean)
+# Same but using with()
+with(mtcars, sapply(split(mpg, cyl), mean))
+# Or: aggregate() using formula syntax
+aggregate(formula=(mpg ~ cyl), data=mtcars, 
+    FUN=mean)
+# Or: aggregate() using data frame syntax
+aggregate(x=mtcars$mpg, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Or: using name for mpg
+aggregate(x=list(mpg=mtcars$mpg), 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+# Aggregate() all columns
+aggregate(x=mtcars, 
+  by=list(cyl=mtcars$cyl), FUN=mean)
+
+# Mean mpg for each cylinder group
+tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
+# using with() environment
+with(mtcars,
+     tapply(X=mpg, INDEX=cyl, FUN=mean))
+# Function sapply() instead of tapply()
+with(mtcars,
+     sapply(sort(unique(cyl)), function(x) {
+ structure(mean(mpg[x==cyl]), names=x)
+ }, USE.NAMES=TRUE))  # end with
+
+# Function by() instead of tapply()
+with(mtcars,
+     by(data=mpg, INDICES=cyl, FUN=mean))
+
+# Get several mpg stats for each cylinder group
+data_cars <- sapply(split_cars,
+        function(x) {
+          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+        }  # end anonymous function
+        )  # end sapply
+data_cars  # sapply() produces a matrix
+data_cars <- lapply(split_cars,  # now same using lapply
+        function(x) {
+          c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
+        }  # end anonymous function
+        )  # end sapply
+is.list(data_cars)  # lapply produces a list
+# do.call flattens list into a matrix
+do.call(cbind, data_cars)
+
+# Download CRSPpanel.txt from NYU Classes
+# Read the file using read.table() with header and sep arguments
+panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt", 
+                   header=TRUE, sep="\t")
+# Split panel_data based on Industry column
+split_panel <- split(panel_data, panel_data$Industry)
+# number of companies in each Industry
+sapply(split_panel, NROW)
+# number of Sectors that each Industry belongs to
+sapply(split_panel, function(x) {
+  NROW(unique(x$Sector))
+})  # end sapply
+# Or
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=function(x) NROW(unique(x)))
+# Industries and the Sector to which they belong
+aggregate(formula=(Sector ~ Industry), 
+  data=panel_data, FUN=unique)
+# Or
+with(panel_data, aggregate(x=Sector, 
+  by=list(Industry), FUN=unique))
+# Or
+with(panel_data, sapply(levels(Industry), 
+  function(x) {
+    Sector[match(x, Industry)]
+  }))  # end sapply
+
+# Split panel_data based on Sector column
+split_panel <- split(panel_data, panel_data$Sector)
+# number of companies in each Sector
+sapply(split_panel, NROW)
+# Industries belonging to each Sector (jagged array)
+sec_ind <- sapply(split_panel, 
+  function(x) unique(as.vector(x$Industry)))
+# Or use aggregate() (returns a data frame)
+sec_ind2 <- aggregate(formula=(Industry ~ Sector), 
+  data=panel_data, FUN=function(x) unique(as.vector(x)))
+# Or use aggregate() with "by" argument
+sec_ind2 <- with(panel_data, 
+  aggregate(x=Industry, by=list(Sector), 
+    FUN=function(x) as.vector(unique(x))))
+# Coerce sec_ind2 into a jagged array
+name_s <- as.vector(sec_ind2[, 1])
+sec_ind2 <- sec_ind2[, 2]
+names(sec_ind2) <- name_s
+all.equal(sec_ind2, sec_ind)
+# Or use tapply() (returns an array)
+sec_ind2 <- with(panel_data, 
+  tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
+# Coerce sec_ind2 into a jagged array
+sec_ind2 <- drop(as.matrix(sec_ind2))
+all.equal(sec_ind2, sec_ind)
+
+# Average ROE in each Industry
+with(panel_data, 
+  sapply(split(ROE, Industry), mean))
+# Average, min, and max ROE in each Industry
+t(with(panel_data, 
+  sapply(split(ROE, Industry), 
+    FUN=function(x) 
+c(mean=mean(x), max=max(x), min=min(x)))))
+# Split panel_data based on Industry column
+split_panel <- split(panel_data, 
+  panel_data$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(split_panel, FUN=function(x) 
+  c(mean_roe=mean(x$ROE), 
+    mean_eps=mean(x$EPS.EXCLUDE.EI))))
+# Or: split panel_data based on Industry column
+split_panel <- 
+  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  panel_data$Industry)
+# Average ROE and EPS in each Industry
+t(sapply(split_panel, 
+  FUN=function(x) sapply(x, mean)))
+# Average ROE and EPS using aggregate()
+aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+  by=list(panel_data$Industry), 
+  FUN=mean)
+
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+sqrt_safe <- function(in_put) {
+# returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
+
+# Function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# Check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put=", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+
+# Print the call stack
+traceback()
+
+vali_date <- function(in_put) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+        is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+        !missing(in_put2))
+# Check if arguments are valid and return sum
+  if (is.numeric(in_put1) &&
+is.numeric(in_put2)) {
+    in_put1 + in_put2  # Both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+
+# Flag "vali_date" for debugging
+debug(vali_date)
+# Calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
+
+vali_date <- function(in_put) {
+  browser()  # Pause and invoke browser
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) &&
+        is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+rm(list=ls())
+# Apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(num_var != 3)  # Check for error
+    # Broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # return a value
+    paste("(return) num_var =", num_var)
+  }  # end anonymous function
+)  # end apply
+
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    tryCatch(  # With error handler
+{  # Body
+  stopifnot(num_var != 3)  # Check for error
+  # Broadcast message to console
+  cat("(cat) num_var =", num_var, "\t")
+  # return a value
+  paste("(return) num_var =", num_var)
+},
+# Error handler captures error condition
+error=function(error_cond)
+  paste("handler: ", error_cond),
+finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+
 rm(list=ls())
 # Get base environment
 baseenv()
@@ -43,26 +423,26 @@ library(HighFreq)  # Load package HighFreq
 # ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
 # Extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind, # Do.call(merge
-  as.list(rutils::etf_env)[sym_bols])
+price_s <- rutils::do_call(cbind,
+  lapply(sym_bols, function(sym_bol) {
+    quantmod::Ad(get(sym_bol, envir=rutils::etf_env))
+}))
 # Extract and merge adjusted prices, subset by sym_bols
 price_s <- rutils::do_call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], quantmod::Ad))
+  lapply(as.list(rutils::etf_env)[sym_bols], 
+   quantmod::Ad))
 # Same, but works only for OHLC series
 price_s <- rutils::do_call(cbind,
   eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
 # Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
+colnames(price_s) <- sapply(colnames(price_s),
     function(col_name)
 strsplit(col_name, split="[.]")[[1]])[1, ]
 tail(price_s[, 1:2], 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
-
 # Save xts to csv file
-write.zoo(price_s,
-     file="etf_series.csv", sep=",")
+write.zoo(price_s, file="etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
 assign("price_s", price_s, envir=etf_env)
 save(etf_env, file="etf_data.RData")
@@ -75,640 +455,239 @@ mean(trees$Girth)
 with(trees,
      c(mean(Girth), mean(Height), mean(Volume)))
 
-script_dir <- "C:/Develop/R/scripts"
-# Execute script file and print the commands
-source(file.path(script_dir, "script.R"),
- echo=TRUE)
-
-####################################
-#Script.R file contains R script to demonstrate sourcing from script files
-
-# Print information about this process
-print(paste0("print: This test script was run at: ", format(Sys.time())))
-cat("cat: This test script was run at:", format(Sys.time()), "\n")
-
-# Display first 6 rows of cars data frame
-head(cars)
-
-# Define a function
-fun_c <- function(x) x+1
-
-# Read a line from console
-readline("Press Return to continue")
-
-# Plot sine function in x11 window
-x11()
-curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
-xlab="", ylab="", lwd=2, col="orange",
-main="Sine function")
-
-# Install and load package readxl
-install.packages("readxl")
-library(readxl)
-dir_name <- "C:/Develop/R/lecture_slides/data"
-fil_e <- file.path(dir_name, "multi_tabs.xlsx")
-# Read a time series from first sheet of xlsx file
-tib_ble <- readxl::read_xlsx(fil_e)
-class(tib_ble)
-# Coerce POSIXct dates into Date class
-class(tib_ble$Dates)
-tib_ble$Dates <- as.Date(tib_ble$Dates)
-# Some columns are character strings
-sapply(tib_ble, class)
-sapply(tib_ble, is.character)
-# Coerce columns with strings to numeric
-lis_t <- lapply(tib_ble, function(x) {
-  if (is.character(x))
-    as.numeric(x)
-  else
-    x
-})  # end lapply
-# Coerce list into xts time series
-x_ts <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
-class(x_ts); dim(x_ts)
-# Replace NA values with the most recent non-NA values
-sum(is.na(x_ts))
-x_ts <- zoo::na.locf(x_ts)
-x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
-
-# Read names of all the sheets in an Excel spreadsheet
-name_s <- readxl::excel_sheets(fil_e)
-# Read all the sheets from an Excel spreadsheet
-sheet_s <- lapply(name_s, read_xlsx, path=fil_e)
-names(sheet_s) <- name_s
-# sheet_s is a list of tibbles
-sapply(sheet_s, class)
-# Create function to coerce tibble to xts
-to_xts <- function(tib_ble) {
-  tib_ble$Dates <- as.Date(tib_ble$Dates)
-  # Coerce columns with strings to numeric
-  lis_t <- lapply(tib_ble, function(x) {
-    if (is.character(x))
-      as.numeric(x)
-    else
-      x
-  })  # end lapply
-  # Coerce list into xts series
-  xts::xts(do.call(cbind, lis_t)[, -1], lis_t$Dates)
-}  # end to_xts
-# Coerce list of tibbles to list of xts
-class(sheet_s)
-sheet_s <- lapply(sheet_s, to_xts)
-sapply(sheet_s, class)
-# Replace NA values with the most recent non-NA values
-sapply(sheet_s, function(x_ts) sum(is.na(x_ts)))
-sheet_s <- lapply(sheet_s, zoo::na.locf)
-sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
-
-#Perform calculations in R,
-#And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv",
-              row.names=1)
-# Subset data frame
-data_read <-
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-
-#Perform calculations in R,
-#And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv",
-              row.names=1)
-# Subset data frame
-data_read <-
-  data_read[data_read[, "type"]=="daisy", ]
-# Write data frame to CSV file, with row names
-write.csv(data_read, file="daisies.csv")
-
-# Install latest version of googlesheets
-devtools::install_github("jennybc/googlesheets")
-# Load package googlesheets
-library(googlesheets)
-library(dplyr)
-# Authenticate authorize R to view and manage your files
-gs_auth(new_user=TRUE)
-# List the files in Google Sheets
-googlesheets::gs_ls()
-# Register a sheet
-google_sheet <- gs_title("my_data")
-# view sheet summary
-google_sheet
-# List tab names in sheet
-tab_s <- gs_ws_ls(google_sheet)
-# Set curl options
-library(httr)
-httr::set_config(config(ssl_verifypeer=0L))
-# Read data from sheet
-gs_read(google_sheet)
-# Read data from single tab of sheet
-gs_read(google_sheet, ws=tab_s[1])
-gs_read_csv(google_sheet, ws=tab_s[1])
-# Or using dplyr pipes
-google_sheet %>% gs_read(ws=tab_s[1])
-# Download data from sheet into file
-gs_download(google_sheet, ws=tab_s[1],
-      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
-# Open sheet in internet browser
-gs_browse(google_sheet)
-
-cat("Enter\ttab")  # Cat() interprets backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # Print() returns its argument
-
-# Create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # Write to text file
-
-cat("Title: My Text",  # Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.RData")  # Write to binary file
-
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "months"
-sprintf("There are %i %s in the year", foo, bar)
-
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
-# Coerce to numeric
-in_put <- as.numeric(in_put)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-
-setwd("C:/Develop/R/lecture_slides/data")
-data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
-# Write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # A data frame
-
-# Write matrix to text file, and then read it back
-write.table(mat_rix, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# Coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-
-setwd("C:/Develop/R/lecture_slides/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t",
-              header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE,
-               col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-      row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# Launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-
-# Write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv",
-                 stringsAsFactors=FALSE)
-data_read  # the row names are read in as extra column
-# Restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # Remove extra column
-data_read
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-
-# Write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # A data frame without row names
-
-# Write matrix to csv file, and then read it back
-write.csv(mat_rix, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", row.names=1)
-mat_read  # Read.csv() reads matrix as data frame
-class(mat_read)
-mat_read <- as.matrix(mat_read)  # Coerce to matrix
-identical(mat_rix, mat_read)
-write.csv(mat_rix, row.names=FALSE,
-    file="matrix_ex_rows.csv")
-mat_read <- read.csv(file="matrix_ex_rows.csv")
-mat_read <- as.matrix(mat_read)
-mat_read  # A matrix without row names
-
-setwd("C:/Develop/R/lecture_slides/data")
-library(MASS)  # Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(mat_rix,
-  file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-mat_read <- scan(file="matrix.csv",
-  sep=",", skip=1, what=numeric())
-# Read colnames
-col_names <- readLines(con="matrix.csv", n=1)
-col_names  # this is a string!
-# Convert to char vector
-col_names <- strsplit(col_names,
-  s=",")[[1]]
-mat_read  # mat_read is a vector, not matrix!
-# Coerce by row to matrix
-mat_read <- matrix(mat_read,
-  ncol=NROW(col_names), byrow=TRUE)
-# Restore colnames
-colnames(mat_read) <- col_names
-mat_read
-# Scan() is a little faster than read.csv()
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Sample mean - MC estimate
+mean(da_ta)
+# Sample standard deviation - MC estimate
+sd(da_ta)
+# Monte Carlo estimate of cumulative probability
+da_ta <- sort(da_ta)
+pnorm(1)
+sum(da_ta<1)/n_rows
+# Monte Carlo estimate of quantile
+conf_level <- 0.99
+qnorm(conf_level)
+cut_off <- conf_level*n_rows
+da_ta[cut_off]
+quantile(da_ta, probs=conf_level)
+# Analyze the source code of quantile()
+stats:::quantile.default
+# Microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+  monte_carlo=da_ta[cut_off],
+  quan_tile=quantile(da_ta, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
-# Read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv",
-  row.names=1, stringsAsFactors=FALSE)
-mat_rix
-class(mat_rix)
-# Columns with bad data are character or factor
-sapply(mat_rix, class)
-# Copy row names
-row_names <- row.names(mat_rix)
-# sapply loop over columns and coerce to numeric
-mat_rix <- sapply(mat_rix, as.numeric)
-# Restore row names
-row.names(mat_rix) <- row_names
-# Replace NAs with zero
-mat_rix[is.na(mat_rix)] <- 0
-# matrix without NAs
-mat_rix
-
-setwd("C:/Develop/R/lecture_slides/data")
-rm(list=ls())
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # Reset random number generator
-library(zoo)  # Load package zoo
-# Create zoo with Date index
-in_dex <- seq(from=as.Date("2013-06-15"),
-        by="day", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_read <- read.zoo("zoo_series.txt")  # Read it back
-all.equal(zoo_read, zoo_series)
-# Perform the same using write.table() and read.table()
-# First coerce zoo_series into data frame
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(in_dex, data_frame)
-# Write zoo_series to text file using write.table
-write.table(data_frame, file="zoo_series.txt",
-      row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-zoo_read <- read.table(file="zoo_series.txt",
-                 stringsAsFactors=FALSE)
-sapply(zoo_read, class)  # A data frame
-# Coerce data frame into zoo_series
-zoo_read <- zoo::zoo(
-  drop(as.matrix(zoo_read[, -1])),
-  order.by=as.Date(zoo_read[, 1]))
-all.equal(zoo_read, zoo_series)
+bar_rier <- 20  # Barrier level
+n_rows <- 1000  # Number of simulation steps
+pa_th <- numeric(n_rows)  # Allocate path vector
+pa_th[1] <- 0  # Initialize path
+in_dex <- 2  # Initialize simulation index
+while ((in_dex <= n_rows) &&
+ (pa_th[in_dex - 1] < bar_rier)) {
+# Simulate next step
+  pa_th[in_dex] <-
+    pa_th[in_dex - 1] + rnorm(1)
+  in_dex <- in_dex + 1  # Advance in_dex
+}  # end while
+# Fill remaining pa_th after it crosses bar_rier
+if (in_dex <= n_rows)
+  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
+# Create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
 
-library(zoo)  # Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-    sep=",", col.names=TRUE)
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(zoo_series, drop(zoo_read))
-
+x11(width=6, height=5)
+par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # Reset random number generator
-# Create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"),
-        by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-    sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv")
-all.equal(zoo_series, zoo_read)
-# Coerce to xts series
-x_ts <- xts::as.xts(zoo_read)
-class(x_ts); head(x_ts, 3)
-# Coerce zoo series into data frame with custom date format
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
-head(data_frame, 3)
-# Write zoo series to csv file using write.table
-write.table(data_frame, file="zoo_series.csv",
-      sep=",", row.names=FALSE, col.names=FALSE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=FALSE, sep=",", FUN=as.POSIXct,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-# Or using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv",
-  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(zoo_read, 3)
-all.equal(zoo_series, zoo_read)
+bar_rier <- 20  # Barrier level
+n_rows <- 1000  # Number of simulation steps
+# Simulate path of Brownian motion
+pa_th <- cumsum(rnorm(n_rows))
+# Find index when pa_th crosses bar_rier
+cro_ss <- which(pa_th > bar_rier)
+# Fill remaining pa_th after it crosses bar_rier
+if (NROW(cro_ss)>0) {
+  pa_th[(cro_ss[1]+1):n_rows] <-
+    pa_th[cro_ss[1]]
+}  # end if
+# Create daily time series starting 2011
+ts_path <- ts(data=pa_th, frequency=365,
+     start=c(2011, 1))
+# Create plot with horizontal line
+plot(ts_path, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=2, col="red")
+title(main="Brownian motion crossing a barrier level",
+      line=0.5)
 
-# Read time series from CSV file, with numeric date-time
-zoo_read <- read.table(file="C:/Develop/R/lecture_slides/data/es_ohlc.csv",
-  header=TRUE, sep=",")
-# A data frame
-class(zoo_read)
-sapply(zoo_read, class)
-# Coerce data frame into xts series
-zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
-  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
-# An xts series
-class(zoo_read)
-head(zoo_read, 3)
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 1000
+# Simulate geometric Brownian motion
+re_turns <- sigma_r*rnorm(len_gth) +
+  dri_ft - sigma_r^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l",
+     xlab="periods", ylab="prices",
+     main="geometric Brownian motion")
 
-rm(list=ls())  # Remove all objects
-var1 <- 1; var2 <- 2
-ls()  # List all objects
-ls()[1]  # List first object
-args(save)  # List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# Ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
+# Simulate geometric Brownian motion
+sigma_r <- 0.01/sqrt(48)
+dri_ft <- 0.0
+len_gth <- 1e4
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=len_gth, by="30 min")
+price_s <- xts(exp(cumsum(sigma_r*rnorm(len_gth) + dri_ft - sigma_r^2/2)),
+  order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
+# Aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>%
+  dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
 
-rm(list=ls())  # Remove all objects
-# Load objects from file
-load_ed <- load(file="my_data.RData")
-load_ed  # vector of loaded objects
-ls()  # List objects
-# Assign new values to objects in  global environment
-sapply(load_ed, function(sym_bol) {
-  assign(sym_bol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # List objects
-# Assign new values to objects using for loop
-for (sym_bol in load_ed) {
-  assign(sym_bol, runif(1))
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+  type="l", xlim=c(0, 3), lwd=2,
+  xlab="", ylab="", col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
 }  # end for
-ls()  # List objects
-# Save vector of objects
-save(list=load_ed, file="my_data.RData")
-# Remove only loaded objects
-rm(list=load_ed)
-# Remove the object "load_ed"
-rm(load_ed)
 
-sink("sinkdata.txt")# Redirect text output to file
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+ paste("sigma", sig_mas, sep="="),
+ cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+ col=col_ors)
 
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI ETF
+sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmar_2 <- sigma_r^2
+n_rows <- NROW(rutils::etf_env$VTI)
+# Standard deviation of log-normal prices
+sqrt(n_rows)*sigma_r
 
-sink()  # turn redirect off
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigmar_2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
+xlab="Number of days", ylab="Skewness", col="blue",
+main="Skewness of Log-normal Prices
+as a Function of Time")
 
-pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigma_r*sqrt(x)/2),
+xlim=c(1, n_rows), lwd=3,
+xlab="Number of days", ylab="Probability", col="blue",
+main="Probability That Random Log-normal Price
+Will be Lower Than the Mean Price")
 
-cat("Redirect data from R into pdf file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 5000
+path_s <- 10
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Create xts time series
+price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# Plot xts time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
 
-dev.off()  # turn pdf output off
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 10000
+path_s <- 100
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# Create xts time series of percentage of paths below the expected value
+per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+   xlab=NA, ylab=NA, col="blue")
 
-png("r_plot.png")  # Redirect graphics output to png file
+# Load S&P500 stock prices
+load("C:/Develop/lecture_slides/data/sp500.RData")
+ls(env_sp500)
+# Extract closing prices
+price_s <- eapply(env_sp500, quantmod::Cl)
+# Flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# Carry forward and backward non-NA prices
+price_s <- xts:::na.locf.xts(price_s)
+price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# Rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
+         order.by=index(price_s))
+# Calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# Select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
 
-cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+# Plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+ legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
 
-dev.off()  # turn png output off
+# Calculate average of valid stock prices
+val_id <- (price_s != 1)  # valid stocks
+n_stocks <- rowSums(val_id)
+n_stocks[1] <- NCOL(price_s)
+in_dex <- rowSums(price_s * val_id) / n_stocks
+# Calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
+# Create xts time series of average stock prices
+in_dex <- xts(in_dex, order.by=index(price_s))
 
-# ?options  # get info on global options
-getOption("warn")  # global option for "warn"
-options("warn")  # global option for "warn"
-getOption("error")  # global option for "error"
-sqrt_safe <- function(in_put) {
-# returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
-  } else {
-    sqrt(in_put)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
-
-# function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
-# check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
-# check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put=", in_put)
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-
-# print the call stack
-traceback()
-
-vali_date <- function(in_put) {
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-        is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
-# check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
-
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # even more robust
-# check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-        !missing(in_put2))
-# check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-is.numeric(in_put2)) {
-    in_put1 + in_put2  # both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
-
-# flag "vali_date" for debugging
-debug(vali_date)
-# calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
-
-vali_date <- function(in_put) {
-  browser()  # pause and invoke browser
-# check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-        is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # invokes debugger
-options("error")  # show default NULL "error" option
-options(error=recover)  # set "error" option to "recover"
-options(error=NULL)  # set back to default "error" option
-
-str(tryCatch)  # get arguments of tryCatch()
-tryCatch(  # without error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-tryCatch(  # with error handler
-  {  # evaluate expressions
-    num_var <- 101  # assign
-    stop('my error')  # produce error
-  },
-  # error handler captures error condition
-  error=function(error_cond) {
-    print(paste("error handler: ", error_cond))
-  },  # end error handler
-  # warning handler captures warning condition
-  warning=function(warning_cond) {
-    print(paste("warning handler: ", warning_cond))
-  },  # end warning handler
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-rm(list=ls())
-# apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    stopifnot(num_var != 3)  # check for error
-    # broadcast message to console
-    cat("(cat) num_var =", num_var, "\n")
-    # return a value
-    paste("(return) num_var =", num_var)
-  }  # end anonymous function
-)  # end apply
-
-# apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # anonymous function
-    tryCatch(  # with error handler
-{  # body
-  stopifnot(num_var != 3)  # check for error
-  # broadcast message to console
-  cat("(cat) num_var =", num_var, "\t")
-  # return a value
-  paste("(return) num_var =", num_var)
-},
-# error handler captures error condition
-error=function(error_cond)
-  paste("handler: ", error_cond),
-finally=print(paste("(finally) num_var =", num_var))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+# Plot xts time series of average stock prices
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
+   xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# Plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+   main="Percentage of S&P500 stock prices below the average price",
+   xlab=NA, ylab=NA, col="blue")

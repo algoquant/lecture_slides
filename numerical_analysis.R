@@ -1,3 +1,10 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+options(digits=3)
+options(width=60, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 va_r <- 0.3/3
 va_r  # Printed as "0.1"
 va_r - 0.1  # va_r is not equal to "0.1"
@@ -55,10 +62,10 @@ all.equal(num_ber, 1.0)
 4.7 %/% 0.5  # Modulo division
 4.7 %% 0.5  # Remainder of modulo division
 # Reversing modulo division usually
-# Returns the original number
+# returns the original number
 (4.7 %% 0.5) + 0.5 * (4.7 %/% 0.5)
 # Modulo division of non-integer numbers can
-# Produce incorrect results
+# produce incorrect results
 0.6 %/% 0.2  # Produces 2 instead of 3
 6 %/% 2  # use integers to get correct result
 # 0.2 stored as binary number
@@ -149,15 +156,25 @@ cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
 for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
 library(microbenchmark)
 summary(microbenchmark(
   cumsum=cumsum(vec_tor),
-  loop=for (i in 2:NROW(vec_tor))
-    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
+  loop_alloc={
+    cum_sum2 <- vec_tor
+    for (i in 2:NROW(vec_tor))
+cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+  },
+  loop_nalloc={
+    # Doesn't allocate memory to cum_sum3
+    cum_sum3 <- vec_tor[1]
+    for (i in 2:NROW(vec_tor))
+# This command adds an extra element to cum_sum3
+cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
+  },
   times=10))[, c(1, 4, 5)]
 
 library(microbenchmark)
@@ -617,7 +634,7 @@ sd(boot_data[, "mean"])
 # Standard error of median from bootstrap
 sd(boot_data[, "median"])
 plot(density(boot_data[, "median"]),
-     lwd=2, xlab="regression slopes",
+     lwd=2, xlab="estimate of median",
      main="Distribution of Bootstrapped Median")
 abline(v=mean(boot_data[, "median"]),
  lwd=2, col="red")
@@ -1293,23 +1310,23 @@ op_tim$value
 rastri_gin(op_tim$par, pa_ram=1)
 
 # Sample of normal variables
-r_norm <- rnorm(1000, mean=4, sd=2)
+da_ta <- rnorm(1000, mean=4, sd=2)
 # Objective function is log-likelihood
-object_ive <- function(pa_r, r_norm) {
+object_ive <- function(pa_r, da_ta) {
   sum(2*log(pa_r[2]) +
-    ((r_norm - pa_r[1])/pa_r[2])^2)
+    ((da_ta - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
 # Vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, r_norm)
-    object_ive(c(mean, sd), r_norm),
+  FUN=function(mean, sd, da_ta)
+    object_ive(c(mean, sd), da_ta),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
 objective_grid <- outer(par_mean, par_sd,
-vec_objective, r_norm=r_norm)
+vec_objective, da_ta=da_ta)
 objective_min <- which(  # grid search
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
@@ -1337,19 +1354,19 @@ par_init <- c(mean=0, sd=1)
 # Perform optimization using optim()
 optim_fit <- optim(par=par_init,
   fn=object_ive, # log-likelihood function
-  r_norm=r_norm,
+  da_ta=da_ta,
   method="L-BFGS-B", # quasi-Newton method
   upper=c(10, 10), # upper constraint
   lower=c(-10, 0.1)) # lower constraint
 # Optimal parameters
 optim_fit$par
 # Perform optimization using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(r_norm, densfun="normal")
+optim_fit <- MASS::fitdistr(da_ta, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
 
 # Plot histogram
-histo_gram <- hist(r_norm, plot=FALSE)
+histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 curve(expr=dnorm(x, mean=optim_fit$par["mean"],
@@ -1360,27 +1377,27 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
  lwd=2, bg="white", col="red")
 
 # Sample from mixture of normal distributions
-r_norm <- c(rnorm(100, sd=1.0),
+da_ta <- c(rnorm(100, sd=1.0),
       rnorm(100, mean=4, sd=1.0))
 # Objective function is log-likelihood
-object_ive <- function(pa_r, r_norm) {
+object_ive <- function(pa_r, da_ta) {
   likelihood <- pa_r[1]/pa_r[3] *
-  dnorm((r_norm-pa_r[2])/pa_r[3]) +
-  (1-pa_r[1])/pa_r[5]*dnorm((r_norm-pa_r[4])/pa_r[5])
+  dnorm((da_ta-pa_r[2])/pa_r[3]) +
+  (1-pa_r[1])/pa_r[5]*dnorm((da_ta-pa_r[4])/pa_r[5])
   if (any(likelihood <= 0)) Inf else
     -sum(log(likelihood))
 }  # end object_ive
 # Vectorize objective function
 vec_objective <- Vectorize(
-  FUN=function(mean, sd, w, m1, s1, r_norm)
-    object_ive(c(w, m1, s1, mean, sd), r_norm),
+  FUN=function(mean, sd, w, m1, s1, da_ta)
+    object_ive(c(w, m1, s1, mean, sd), da_ta),
   vectorize.args=c("mean", "sd")
 )  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(3, 5, length=50)
 par_sd <- seq(0.5, 1.5, length=50)
 objective_grid <- outer(par_mean, par_sd,
-    vec_objective, r_norm=r_norm,
+    vec_objective, da_ta=da_ta,
     w=0.5, m1=2.0, s1=2.0)
 rownames(objective_grid) <- round(par_mean, 2)
 colnames(objective_grid) <- round(par_sd, 2)
@@ -1404,14 +1421,14 @@ par_init <- c(weight=0.5, m1=0, s1=1, m2=2, s2=1)
 # Perform optimization
 optim_fit <- optim(par=par_init,
       fn=object_ive,
-      r_norm=r_norm,
+      da_ta=da_ta,
       method="L-BFGS-B",
       upper=c(1,10,10,10,10),
       lower=c(0,-10,0.2,-10,0.2))
 optim_fit$par
 
 # Plot histogram
-histo_gram <- hist(r_norm, plot=FALSE)
+histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {
@@ -1486,7 +1503,7 @@ Rcpp::cppFunction("
 # Run Rcpp function
 times_two(3)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/mult_rcpp.cpp")
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/mult_rcpp.cpp")
 # Multiply two numbers
 mult_rcpp(2, 3)
 mult_rcpp(1:3, 6:4)
@@ -1620,7 +1637,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # Source Rcpp function for Ornstein-Uhlenbeck process from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_ou.cpp")
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
@@ -1646,7 +1663,7 @@ uni_form <- function(see_d, len_gth=10) {
 }  # end uni_form
 
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/uni_form.cpp")
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/uni_form.cpp")
 # Microbenchmark Rcpp code
 library(microbenchmark)
 summary(microbenchmark(
@@ -1717,7 +1734,7 @@ ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_
 
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/armadillo_functions.cpp")
 vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 vec_in(vec1, vec2)
@@ -1734,9 +1751,29 @@ summary(microbenchmark(
 # 1 vec_in 110.7067 110.4530
 # 2 r_code 585.5127 591.3575
 
+# Source Rcpp functions from file
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_arima.cpp")
+# Define AR(2) coefficients
+co_eff <- c(0.9, 0.09)
+len_gth <- 1e4
+set.seed(1121)
+in_nov <- rnorm(len_gth)
+# Simulate ARIMA using filter()
+arima_filter <- filter(x=in_nov,
+  filter=co_eff, method="recursive")
+# Simulate ARIMA using sim_arima()
+ari_ma <- sim_arima(in_nov, rev(co_eff))
+all.equal(drop(ari_ma),
+  as.numeric(arima_filter))
+# Microbenchmark RcppArmadillo code
+summary(microbenchmark(
+  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
+  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/armadillo_functions.cpp")
 mat_rix <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
 new_mat <- apply(mat_rix, 2,
@@ -1775,24 +1812,28 @@ summary(microbenchmark(
 # 1 inv_mat  3.42669  2.933
 # 2 solve   32.00254 31.280
 
+library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/R/lecture_slides/scripts/sim_arima.cpp")
-# Define AR(2) coefficients
-co_eff <- c(0.9, 0.09)
-len_gth <- 1e4
-set.seed(1121)
-in_nov <- rnorm(len_gth)
-# Simulate ARIMA using filter()
-arima_filter <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-# Simulate ARIMA using sim_arima()
-ari_ma <- sim_arima(in_nov, rev(co_eff))
-all.equal(drop(ari_ma),
-  as.numeric(arima_filter))
+Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
+# Create random matrix of returns
+mat_rix <- matrix(rnorm(300), nc=5)
+# Regularized inverse of covariance matrix
+max_eigen <- 4
+ei_gen <- eigen(cov(mat_rix))
+cov_inv <- ei_gen$vectors[, 1:max_eigen] %*%
+  (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+# Regularized inverse using RcppArmadillo
+cov_inv_arma <- calc_inv(mat_rix, max_eigen)
+all.equal(cov_inv, cov_inv_arma)
 # Microbenchmark RcppArmadillo code
+library(microbenchmark)
 summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  pure_r={
+    ei_gen <- eigen(cov(mat_rix))
+    ei_gen$vectors[, 1:max_eigen] %*%
+(t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+  },
+  r_cpp=calc_inv(mat_rix, max_eigen),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # wipp

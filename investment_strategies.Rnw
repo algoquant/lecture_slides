@@ -76,6 +76,198 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
+\section{Evaluating Manager Skill}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Tests for Market Timing Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
+      \vskip1ex
+      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
+      \vskip1ex
+      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
+      \end{displaymath}
+      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free returns.
+      \vskip1ex
+      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
+      \vskip1ex
+      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
+      \vskip1ex
+      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
+      \end{displaymath}
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/market_timing_ief_vti.png}
+    \vspace{-2em}
+      <<echo=(-(1:4)),eval=FALSE>>=
+# Open x11 for plotting
+x11(width=6, height=4)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+# Test if IEF can time VTI
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
+vt_i <- re_turns$VTI
+re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(re_turns)[3:4] <- c("merton", "treynor")
+# Merton-Henriksson test
+mod_el <- lm(IEF ~ VTI + merton, data=re_turns); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(IEF ~ VTI + treynor, data=re_turns); summary(mod_el)
+# Plot residual scatterplot
+residual_s <- (re_turns$IEF - mod_el$coefficients[2]*re_turns$VTI)
+plot.default(x=re_turns$VTI, y=residual_s, xlab="VTI", ylab="IEF")
+title(main="Treynor-Mazuy market timing test\n for IEF vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*re_turns$VTI)
+points.default(x=re_turns$VTI, y=fit_ted, pch=16, col="red")
+text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Calendar Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Sell in May} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate positions
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+position_s <- rep(NA_integer_, NROW(re_turns))
+in_dex <- index(re_turns)
+in_dex <- format(in_dex, "%m-%d")
+position_s[in_dex == "05-01"] <- 0
+position_s[in_dex == "05-03"] <- 0
+position_s[in_dex == "11-01"] <- 1
+position_s[in_dex == "11-03"] <- 1
+# Carry forward and backward non-NA position_s
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
+position_s <- zoo::na.locf(position_s, fromLast=TRUE)
+# Calculate strategy returns
+sell_inmay <- position_s*re_turns
+weal_th <- cbind(cumprod(1 + re_turns),
+                 cumprod(1 + sell_inmay))
+colnames(weal_th) <- c("vti", "sell_in_may")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sell_inmay_strategy.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Sell in May strategy
+dygraphs::dygraph(weal_th, main="Sell in May Strategy") %>% 
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always")
+# OR: Open x11 for plotting
+x11(width=6, height=4)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue", "red")
+chart_Series(weal_th, theme=plot_theme, 
+             name="Sell in May Strategy")
+legend("topleft", legend=colnames(weal_th), 
+  inset=0.1, bg="white", lty=1, lwd=6, 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Strategy Market Timing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
+      <<echo=TRUE,eval=FALSE>>=
+# Test if Sell in May strategy can time VTI
+vt_i <- re_turns$VTI
+re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(re_turns)[2:3] <- c("merton", "treynor")
+# Merton-Henriksson test
+mod_el <- lm(sell_inmay ~ VTI + merton, data=re_turns); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(sell_inmay ~ VTI + treynor, data=re_turns); summary(mod_el)
+# Plot residual scatterplot
+residual_s <- (sell_inmay - mod_el$coefficients[2]*vt_i)
+plot.default(x=vt_i, y=residual_s, xlab="VTI", ylab="sell_inmay")
+title(main="Treynor-Mazuy market timing test\n for Sell in May vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*vt_i)
+points.default(x=vt_i, y=fit_ted, pch=16, col="red")
+text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/market_timing_sell_inmay.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Identifying Managers With Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Adapt from RFinance\_2017.Rmd and from scratch.R.
+      \vskip1ex
+      \vskip1ex
+      Consider a binary investment (gamble) with the probability of winning equal to $p$, the winning amount (gain) equal to $a$, and the loss equal to $b$.
+      \vskip1ex
+      The investor makes no up-front payments, and either wins an amount $a$, or loses an amount $b$.
+      \vskip1ex
+      Assuming that an investor makes decisions exclusively on the basis of the expected value of future wealth, then they would choose to invest all their wealth on the gamble if its expected value is positive, and choose not to invest at all if its expected value is negative.
+    \column{0.5\textwidth}
+      <<results='asis',echo=FALSE,eval=TRUE>>=
+library(xtable)
+gambl_e <- data.frame(win=c("p", "a"), lose=c("q = 1 - p", "-b"))
+rownames(gambl_e) <- c("probability", "payout")
+# print(xtable(gambl_e), comment=FALSE, size="tiny")
+print(xtable(gambl_e), comment=FALSE)
+      @
+      The expected value of the gamble is equal to: $m = p \, a - q \, b$.
+      \vskip1ex
+      The variance of the gamble is equal to: $var=p \, q \, (a + b)^2$.
+      \vskip1ex
+      Without loss of generality we can assume that $p=q = \frac{1}{2}$,\\
+      $m = 0.5 \, (b - a)$,\\
+      $var=0.25 \, (a + b)^2$.
+      \vskip1ex
+      The \emph{Sharpe ratio} of the gamble is then equal to:
+      \begin{displaymath}
+        S_r = \frac{m}{sqrt(var)} = \frac{(b - a)}{(a + b)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
 \section{Market Databases}
 
 
@@ -91,9 +283,9 @@ knit_theme$set(thm)
 # Load S&P500 constituent stock prices
 load("C:/Develop/lecture_slides/data/sp500.RData")
 price_s <- eapply(env_sp500, quantmod::Cl)
-price_s <- do.call(cbind, price_s)
+price_s <- rutils::do_call(cbind, price_s)
 # Carry forward and backward non-NA prices
-price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 colnames(price_s) <- unname(sapply(colnames(price_s),
   function(col_name) strsplit(col_name, split="[.]")[[1]][1]))
@@ -101,7 +293,8 @@ colnames(price_s) <- unname(sapply(colnames(price_s),
 # re_turns <- rutils::diff_it(log(price_s))
 re_turns <- lapply(price_s, function(x)
   rutils::diff_it(x)/rutils::lag_it(x))
-re_turns <- do.call(cbind, re_turns)
+re_turns <- rutils::do_call(cbind, re_turns)
+set.seed(1121)
 sam_ple <- sample(NCOL(re_turns), s=100, replace=FALSE)
 returns_100 <- re_turns[, sam_ple]
 save(price_s, re_turns, returns_100, 
@@ -294,13 +487,13 @@ print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 library(rutils)
 # Extract ETF prices from rutils::etf_env$price_s
 price_s <- rutils::etf_env$price_s
-price_s <- zoo::na.locf(price_s)
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 # Calculate simple dollar returns
 sim_ple <- rutils::diff_it(price_s)
 # Or 
 sim_ple <- lapply(price_s, rutils::diff_it)
-sim_ple <- do.call(cbind, sim_ple)
+sim_ple <- rutils::do_call(cbind, sim_ple)
 # Calculate percentage returns
 per_cent <- sim_ple/rutils::lag_it(price_s, lagg=1)
 # Calculate log returns
@@ -313,7 +506,7 @@ all.equal(new_prices, price_s)
 new_prices <- cumprod(1 + per_cent)
 new_prices <- lapply(1:NCOL(new_prices), function (i)
   as.numeric(price_s[1, i])*new_prices[, i])
-new_prices <- do.call(cbind, new_prices)
+new_prices <- rutils::do_call(cbind, new_prices)
 all.equal(new_prices, price_s)
       @
   \end{columns}
@@ -430,6 +623,8 @@ cost_s <- bid_offer*rowSums(abs(ex_tra))/2
       Adding \emph{standardized simple returns} is equivalent to buying amounts such that their dollar volatilities are all the same.
       \vskip1ex
       Adding \emph{standardized percentage returns} is equivalent to buying amounts such that their percentage volatilities are all the same.
+      \vskip1ex
+      If the asset volatilities change over time then the portfolio allocations must be rebalanced to ensure that the volatilities remain proportional to the target weights.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -550,8 +745,8 @@ sapply(c(skew=3, kurt=4), function(x)
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- na.omit(rutils::etf_env$re_turns[, sym_bols])
 # Calculate all-weather portfolio wealth
-weight_s <- c(0.30, 0.55, 0.15)
-re_turns <- cbind(re_turns, re_turns %*% weight_s)
+weights_aw <- c(0.30, 0.55, 0.15)
+re_turns <- cbind(re_turns, re_turns %*% weights_aw)
 colnames(re_turns)[4] <- "all_weather"
       @
     \column{0.5\textwidth}
@@ -611,11 +806,11 @@ print(xtable(gambl_e), comment=FALSE)
       The expected value of the gamble (called the \emph{edge}) is equal to: $\mu = p \, a - q \, b$, \\
       and its variance to: $\sigma^2 = p \, q \, (a + b)^2$.
     \column{0.5\textwidth}
-      If the investor chooses to risk only a fraction $\kappa$ of wealth, then the wealth after the gamble is either $1 + \kappa a$ (with probability $p$), or $1 - \kappa b$ (with probability $q = 1-p$).
+      If the investor chooses to risk only a fraction $k_f$ of wealth, then the wealth after the gamble is either $1 + k_f a$ (with probability $p$), or $1 - k_f b$ (with probability $q = 1-p$).
       \vskip1ex
-      And the expected value of the wealth after the gamble is equal to: $p \, (1 + \kappa a) + q \, (1 - \kappa b) = 1 + \kappa \, \mu$.
+      And the expected value of the wealth after the gamble is equal to: $p \, (1 + k_f a) + q \, (1 - k_f b) = 1 + k_f \, \mu$.
       \vskip1ex
-      The fraction $\kappa$ can be greater than $1$ (leveraged investing), or it can be negative (shorting).
+      The fraction $k_f$ can be greater than $1$ (leveraged investing), or it can be negative (shorting).
       \vskip1ex
       If an investor makes decisions exclusively based on the expected value of wealth, then they would invest all their wealth on the single period gamble, if its expected value $\mu$ is positive, and choose not to invest at all if its expected value is negative.
   \end{columns}
@@ -631,34 +826,34 @@ print(xtable(gambl_e), comment=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.9\textwidth}
-      The terminal wealth after $n$ repeated gambles with $k$ wins is equal to: $(1 + \kappa a)^k (1 - \kappa b)^{n-k}$.
+      The terminal wealth after $n$ repeated gambles with $k$ wins is equal to: $(1 + k_f a)^k (1 - k_f b)^{n-k}$.
       \vskip1ex
       And the expected value of the wealth is equal to: 
       \begin{displaymath}
-        w(\kappa) = \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} {(1 + \kappa a)^k (1 - \kappa b)^{n-k}}}
+        w(k_f) = \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} {(1 + k_f a)^k (1 - k_f b)^{n-k}}}
       \end{displaymath}
-      We can then find the fraction $\kappa$ which maximizes the expected wealth $w(\kappa)$:
+      We can then find the fraction $k_f$ which maximizes the expected wealth $w(k_f)$:
       \begin{flalign*}
-        \frac{\mathrm{d} w(\kappa)}{\mathrm{d} \kappa} = \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {(1 + \kappa a)^k (1 - \kappa b)^{n-k}} (\frac{a k}{1 + \kappa a} - \frac{b (n-k)}{1 - \kappa b}) = \\
-        \frac{a}{1 + \kappa a} \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {k} - \\
-        \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {(1 + \kappa a)^k (1 - \kappa b)^{n-k}} (\frac{a k}{1 + \kappa a} - \frac{b (n-k)}{1 - \kappa b}) \\
+        \frac{\mathrm{d} w(k_f)}{\mathrm{d} k_f} = \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {(1 + k_f a)^k (1 - k_f b)^{n-k}} (\frac{a k}{1 + k_f a} - \frac{b (n-k)}{1 - k_f b}) = \\
+        \frac{a}{1 + k_f a} \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {k} - \\
+        \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} {(1 + k_f a)^k (1 - k_f b)^{n-k}} (\frac{a k}{1 + k_f a} - \frac{b (n-k)}{1 - k_f b}) \\
       \end{flalign*}
-      If the investor chooses to risk only a fraction $\kappa$ of wealth, then the wealth after the gamble is either $1 + \kappa a$ (with probability $p$), or $1 - \kappa b$ (with probability $q = 1-p$).
+      If the investor chooses to risk only a fraction $k_f$ of wealth, then the wealth after the gamble is either $1 + k_f a$ (with probability $p$), or $1 - k_f b$ (with probability $q = 1-p$).
       \vskip1ex
       (with probability $p$), or $1 - b$ (with probability $q = 1-p$).
       initial wealth is equal to $1$, and the 
       The \emph{Kelly fraction} for multiperiod betting can be found by maximizing the expected \emph{utility} of the final wealth distribution:
       \begin{flalign*}
-        u(\kappa) &= \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} \log((1 + \kappa a)^k (1 - \kappa b)^{n-k}) &\\
-        &= \log(1 + \kappa a) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} k} + &\\
-        & \log(1 - \kappa b) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} (n-k)} &\\
-        &= n \, p \, \log(1 + \kappa a) + n \, q \, \log(1 - \kappa b)
+        u(k_f) &= \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} \log((1 + k_f a)^k (1 - k_f b)^{n-k}) &\\
+        &= \log(1 + k_f a) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} k} + &\\
+        & \log(1 - k_f b) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} (n-k)} &\\
+        &= n \, p \, \log(1 + k_f a) + n \, q \, \log(1 - k_f b)
       \end{flalign*}
       The above is just the single period \emph{utility} multiplied by the number of rounds of betting $n$.
       \vskip1ex
-      The \emph{Kelly fraction} $\kappa$ for multiperiod betting is the same as for single period betting:
+      The \emph{Kelly fraction} $k_f$ for multiperiod betting is the same as for single period betting:
       \begin{displaymath}
-        \kappa = \frac{p}{b}-\frac{q}{a}
+        k_f = \frac{p}{b}-\frac{q}{a}
       \end{displaymath}
     \column{0.1\textwidth}
   \end{columns}
@@ -674,13 +869,13 @@ print(xtable(gambl_e), comment=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In multiperiod betting the investor participates in $n$ rounds of gambles, and in each round they risk a fixed fraction $\kappa$ of their current outstanding wealth.
+      In multiperiod betting the investor participates in $n$ rounds of gambles, and in each round they risk a fixed fraction $k_f$ of their current outstanding wealth.
       \vskip1ex
-      In each round the wealth is multiplied by either $(1 + \kappa a)$ (win) or $(1 - \kappa b)$ (loss), so that the current outstanding wealth changes over time.
+      In each round the wealth is multiplied by either $(1 + k_f a)$ (win) or $(1 - k_f b)$ (loss), so that the current outstanding wealth changes over time.
       \vskip1ex
-      The terminal wealth after $n$ rounds with $k$ wins is equal to: $w(\kappa) = (1 + \kappa a)^k (1 - \kappa b)^{n-k}$.
+      The terminal wealth after $n$ rounds with $k$ wins is equal to: $w(k_f) = (1 + k_f a)^k (1 - k_f b)^{n-k}$.
       \vskip1ex
-      If the number of rounds $n$ is very large, then the number of wins is almost always equal to $k = n \, p$, and the terminal wealth is equal to: $w(\kappa) = (1 + \kappa a)^{np} (1 - \kappa b)^{nq}$.
+      If the number of rounds $n$ is very large, then the number of wins is almost always equal to $k = n \, p$, and the terminal wealth is equal to: $w(k_f) = (1 + k_f a)^{np} (1 - k_f b)^{nq}$.
     \column{0.5\textwidth}
       Without loss of generality we can assume that $p = q = \frac{1}{2}$.
       \vskip1ex
@@ -703,18 +898,18 @@ print(xtable(gambl_e), comment=FALSE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The betting fraction $\kappa$ that maximizes the terminal wealth is found by setting the derivative of $w(\kappa)$ to zero:
+      The betting fraction $k_f$ that maximizes the terminal wealth is found by setting the derivative of $w(k_f)$ to zero:
       \begin{flalign*}
-        & \frac{\mathrm{d} w(\kappa)}{\mathrm{d} \kappa} = n p a (1 + \kappa a)^{np-1} (1 - \kappa b)^{nq} & \\
-        & - n q b (1 + \kappa a)^{np} (1 - \kappa b)^{nq-1} & \\
-        & = (\frac{n p a}{1 + \kappa a} - \frac{n q b}{1 - \kappa b}) (1 + \kappa a)^{np} (1 - \kappa b)^{nq} = 0 &
+        & \frac{\mathrm{d} w(k_f)}{\mathrm{d} k_f} = n p a (1 + k_f a)^{np-1} (1 - k_f b)^{nq} & \\
+        & - n q b (1 + k_f a)^{np} (1 - k_f b)^{nq-1} & \\
+        & = (\frac{n p a}{1 + k_f a} - \frac{n q b}{1 - k_f b}) (1 + k_f a)^{np} (1 - k_f b)^{nq} = 0 &
       \end{flalign*}
-      We can then solve for the optimal betting fraction $\kappa$:
+      We can then solve for the optimal betting fraction $k_f$:
       \begin{flalign*}
-        \frac{p a}{1 + \kappa a} - \frac{q b}{1 - \kappa b} = 0 \\
-        p a (1 - \kappa b) - q b (1 + \kappa a) = 0 \\
-        p a - q b - \kappa a b = 0 \\
-        \kappa = \frac{p a - q b}{a b} = \frac{p}{b} - \frac{q}{a}
+        \frac{p a}{1 + k_f a} - \frac{q b}{1 - k_f b} = 0 \\
+        p a (1 - k_f b) - q b (1 + k_f a) = 0 \\
+        p a - q b - k_f a b = 0 \\
+        k_f = \frac{p a - q b}{a b} = \frac{p}{b} - \frac{q}{a}
       \end{flalign*}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -755,9 +950,9 @@ title(main="Wealth of Multiperiod Betting", line=0.1)
       \vskip1ex
       Under \emph{logarithmic utility} investor preferences depend on the percentage change of wealth, instead of the absolute change of wealth: $\mathrm{d} u(w) = \frac{\mathrm{d}w}{w}$.
       \vskip1ex
-      An investor with \emph{logarithmic utility} invests only a fraction $\kappa$ of their wealth in a gamble, depending on the risk-return of the gamble.
+      An investor with \emph{logarithmic utility} invests only a fraction $k_f$ of their wealth in a gamble, depending on the risk-return of the gamble.
       \vskip1ex
-      If the initial wealth is equal to $1$, then the expected value of \emph{logarithmic utility} for the binary gamble is equal to: $u(\kappa) = p \, \log(1 + \kappa a) + q \, \log(1 - \kappa b)$.
+      If the initial wealth is equal to $1$, then the expected value of \emph{logarithmic utility} for the binary gamble is equal to: $u(k_f) = p \, \log(1 + k_f a) + q \, \log(1 - k_f b)$.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_log.png}
@@ -792,16 +987,16 @@ title(main="Logarithmic Utility", line=0.5)
     \column{0.5\textwidth}
       The betting fraction that maximizes the \emph{utility} can be found by equating the derivative of \emph{utility} to zero:
       \begin{displaymath}
-        \frac{\mathrm{d} u(\kappa)}{\mathrm{d} \kappa} = \frac{p \, a}{1 + \kappa a} - \frac{q \, b}{1 - \kappa b} = 0
+        \frac{\mathrm{d} u(k_f)}{\mathrm{d} k_f} = \frac{p \, a}{1 + k_f a} - \frac{q \, b}{1 - k_f b} = 0
       \end{displaymath}
       \begin{displaymath}
-        \kappa = \frac{p}{b}-\frac{q}{a} = \frac{p \, a - q \, b}{b \, a} = \frac{\mu}{b \, a}
+        k_f = \frac{p}{b}-\frac{q}{a} = \frac{p \, a - q \, b}{b \, a} = \frac{\mu}{b \, a}
       \end{displaymath}
-      The optimal $\kappa$ is called the \emph{Kelly fraction}, and it depends on the parameters of the gamble.
+      The optimal $k_f$ is called the \emph{Kelly fraction}, and it depends on the parameters of the gamble.
       \vskip1ex
       The \emph{Kelly fraction} can be greater than $1$ (leveraged investing), or it can be negative (shorting).
       \vskip1ex
-      If we assume that $b=1$, then the betting odds are equal to $a$ and the \emph{Kelly fraction} is: $\kappa = \frac{p (a + 1) - 1}{a}$
+      If we assume that $b=1$, then the betting odds are equal to $a$ and the \emph{Kelly fraction} is: $k_f = \frac{p (a + 1) - 1}{a}$
       \vskip1ex
       The \emph{Kelly fraction} is then equal to the expected payout divided by the betting odds.
       \vskip1ex
@@ -847,11 +1042,11 @@ title(main="Kelly fraction", line=-0.8)
       \vskip1ex
       The loss amount $b$ determines the risk of ruin, with larger values of $b$ increasing the risk of ruin.
       \vskip1ex
-      Therefore investors will choose a smaller betting fraction $\kappa$ for larger values of $b$.
+      Therefore investors will choose a smaller betting fraction $k_f$ for larger values of $b$.
       \vskip1ex
       This means that even for huge odds in their favor, investors may not choose to invest all their capital, because of the risk of ruin.
       \vskip1ex
-      For example, if the betting odds are very large $a \to \infty$, then the \emph{Kelly fraction}: $\kappa = \frac{p}{b}$.
+      For example, if the betting odds are very large $a \to \infty$, then the \emph{Kelly fraction}: $k_f = \frac{p}{b}$.
     \column{0.5\textwidth}
     \vspace{-1em}
     \includegraphics[width=0.5\paperwidth]{figure/kelly_fraction_max.png}
@@ -887,16 +1082,16 @@ title(main="Kelly fraction", line=-0.8)
     \column{0.7\textwidth}
       The \emph{Kelly fraction} for multiperiod betting can be found by maximizing the expected \emph{utility} of the final wealth distribution:
       \begin{flalign*}
-        u(\kappa) &= \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} \log((1 + \kappa a)^k (1 - \kappa b)^{n-k}) &\\
-        &= \log(1 + \kappa a) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} k} + &\\
-        & \log(1 - \kappa b) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} (n-k)} &\\
-        &= n \, p \, \log(1 + \kappa a) + n \, q \, \log(1 - \kappa b)
+        u(k_f) &= \sum_{k=0}^n \binom{n}{k} p^k q^{n-k} \log((1 + k_f a)^k (1 - k_f b)^{n-k}) &\\
+        &= \log(1 + k_f a) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} k} + &\\
+        & \log(1 - k_f b) \sum_{k=0}^n {\binom{n}{k} p^k q^{n-k} (n-k)} &\\
+        &= n \, p \, \log(1 + k_f a) + n \, q \, \log(1 - k_f b)
       \end{flalign*}
       The above is just the single period \emph{utility} multiplied by the number of rounds of betting $n$.
       \vskip1ex
-      The \emph{Kelly fraction} $\kappa$ for multiperiod betting is the same as for single period betting:
+      The \emph{Kelly fraction} $k_f$ for multiperiod betting is the same as for single period betting:
       \begin{displaymath}
-        \kappa = \frac{p}{b}-\frac{q}{a}
+        k_f = \frac{p}{b}-\frac{q}{a}
       \end{displaymath}
     \column{0.3\textwidth}
   \end{columns}
@@ -922,7 +1117,7 @@ title(main="Kelly fraction", line=-0.8)
       \begin{displaymath}
         w_t = 1 + m \, \frac{p_t - p_0}{p_0}
       \end{displaymath}
-      The \emph{leverage} $\kappa$ is equal to the \emph{margin debt} $m$ divided by the total wealth $w_t$: $\kappa = m / w_t$.
+      The \emph{leverage} $k_f$ is equal to the \emph{margin debt} $m$ divided by the total wealth $w_t$: $k_f = m / w_t$.
       \vskip1ex
       If the asset price drops then the \emph{leverage} increases, because the \emph{margin debt} is fixed while the wealth drops.
       \vskip1ex
@@ -963,18 +1158,18 @@ text(x=200, y=0.5, pos=3, labels="liquidation threshold")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In order to avoid ruin, the investor may choose to maintain a fixed \emph{leverage ratio} equal to $\kappa$, so that the amount invested in the \emph{risky asset} is proportional to the \emph{wealth}: $\kappa \, w_t$.
+      In order to avoid ruin, the investor may choose to maintain a fixed \emph{leverage ratio} equal to $k_f$, so that the amount invested in the \emph{risky asset} is proportional to the \emph{wealth}: $k_f \, w_t$.
       \vskip1ex
       This requires buying the \emph{risky asset} when its price increases, and selling it when it drops.
       \vskip1ex
-      The return on the \emph{risky asset} in a single period is equal to: $\kappa \, w_t \, r_t$, so the \emph{terminal wealth} at time $t$ is equal to the compounded returns: 
+      The return on the \emph{risky asset} in a single period is equal to: $k_f \, w_t \, r_t$, so the \emph{terminal wealth} at time $t$ is equal to the compounded returns: 
       \begin{displaymath}
-        w_t = (1 + \kappa \, r_1) \ldots (1 + \kappa \, r_t) = \prod_{i=1}^t {(1 + \kappa \, r_i)}
+        w_t = (1 + k_f \, r_1) \ldots (1 + k_f \, r_t) = \prod_{i=1}^t {(1 + k_f \, r_i)}
       \end{displaymath}
       The utility of the \emph{terminal wealth} is equal to the sum of the utilities of single periods: 
       \begin{flalign*}
-        & \mathbbm{E}[\log{w_t}] = \mathbbm{E}[\log((1 + \kappa \, r_1) \ldots (1 + \kappa \, r_t))] &\\
-        & = \sum_{i=1}^t {\mathbbm{E}[\log{(1 + \kappa \, r_i)}]} = t \, \mathbbm{E}[\log{(1 + \kappa \, r)}]
+        & \mathbbm{E}[\log{w_t}] = \mathbbm{E}[\log((1 + k_f \, r_1) \ldots (1 + k_f \, r_t))] &\\
+        & = \sum_{i=1}^t {\mathbbm{E}[\log{(1 + k_f \, r_i)}]} = t \, \mathbbm{E}[\log{(1 + k_f \, r)}]
       \end{flalign*}
       The last equality holds because all the utilities of single periods are the same.
     \column{0.5\textwidth}
@@ -1004,13 +1199,13 @@ text(x=200, y=0.5, pos=3, labels="liquidation threshold")
     \column{0.5\textwidth}
       So the utility of the \emph{terminal wealth} $u_t$ is equal to the utility of a single period times the number of periods:
       \begin{displaymath}
-        u_t = \mathbbm{E}[\log{w_t}] = t \, \mathbbm{E}[\log{(1 + \kappa \, r)}] = t \, u_r
+        u_t = \mathbbm{E}[\log{w_t}] = t \, \mathbbm{E}[\log{(1 + k_f \, r)}] = t \, u_r
       \end{displaymath}
       The utility of the asset returns $u_r$ is equal to:
       \begin{displaymath}
-        u_r = \mathbbm{E}[\log{(1 + \kappa \, r)}] = \int {\log(1 + \kappa \, r) \, p(r) \, \mathrm{d}r}
+        u_r = \mathbbm{E}[\log{(1 + k_f \, r)}] = \int {\log(1 + k_f \, r) \, p(r) \, \mathrm{d}r}
       \end{displaymath}
-      The leverage $\kappa$ is limited so that $(1 + \kappa \, r) > 0$ for all return values $r$.
+      The leverage $k_f$ is limited so that $(1 + k_f \, r) > 0$ for all return values $r$.
       \vskip1ex
       If the mean returns are positive, then at first the utility increases with leverage, but only up to a point.
       \vskip1ex
@@ -1060,20 +1255,20 @@ curve(expr=utili_ty(x, re_turns=re_turns),
     \column{0.5\textwidth}
       The \emph{logarithmic utility}  $u_r$ can be expanded in the moments of the return distribution:
       \begin{flalign*}
-        & u_r = \mathbbm{E}[\log{(1 + \kappa \, r)}] = \int {\log(1 + \kappa \, r) \, p(r) \, \mathrm{d}r} & \\
-        & = \int {(\kappa \, r - \frac{(\kappa \, r)^2}{2} + \frac{(\kappa \, r)^3}{3} - \frac{(\kappa \, r)^4}{4}) \, p(r) \, \mathrm{d}r} & \\
-        & = \kappa \bar{r} - \frac{\kappa^2 \sigma^2}{2} + \frac{\kappa^3 \sigma^3 \hat{s}}{3} - \frac{\kappa^4 \sigma^4 \hat{k}}{4}
+        & u_r = \mathbbm{E}[\log{(1 + k_f \, r)}] = \int {\log(1 + k_f \, r) \, p(r) \, \mathrm{d}r} & \\
+        & = \int {(k_f \, r - \frac{(k_f \, r)^2}{2} + \frac{(k_f \, r)^3}{3} - \frac{(k_f \, r)^4}{4}) \, p(r) \, \mathrm{d}r} & \\
+        & = k_f \bar{r} - \frac{k_f^2 \sigma^2}{2} + \frac{k_f^3 \sigma^3 \varsigma}{3} - \frac{k_f^4 \sigma^4 \kappa}{4}
       \end{flalign*}
-      Where $\hat{s} = \frac{1}{\sigma^3} \int {r^3 \, p(r) \, \mathrm{d}r}$ is the \emph{skewness}, and $\hat{k} = \frac{1}{\sigma^4} \int {r^4 \, p(r) \, \mathrm{d}r}$ is the \emph{kurtosis}.
+      Where $\varsigma = \frac{1}{\sigma^3} \int {r^3 \, p(r) \, \mathrm{d}r}$ is the \emph{skewness}, and $\kappa = \frac{1}{\sigma^4} \int {r^4 \, p(r) \, \mathrm{d}r}$ is the \emph{kurtosis}.
       \vskip1ex
       The \emph{Kelly leverage} which maximizes the \emph{utility} is found by equating the derivative of \emph{utility} to zero:
       \begin{displaymath}
-        \frac{\mathrm{d} u_r}{\mathrm{d}\kappa} = \bar{r} - \kappa \sigma^2 + \kappa^2 \sigma^3 \hat{s} - \kappa^3 \sigma^4 \hat{k} = 0
+        \frac{\mathrm{d} u_r}{\mathrm{d}k_f} = \bar{r} - k_f \sigma^2 + k_f^2 \sigma^3 \varsigma - k_f^3 \sigma^4 \kappa = 0
       \end{displaymath}
     \column{0.5\textwidth}
-      Assuming that the third and fourth moments $\sigma^4 \hat{s}$ and $\sigma^4 \hat{k}$ are small and can be neglected, we get:
+      Assuming that the third and fourth moments $\sigma^4 \varsigma$ and $\sigma^4 \kappa$ are small and can be neglected, we get:
       \begin{displaymath}
-        \kappa = \frac{\bar{r}}{\sigma^2} = \frac{S_r}{\sigma} \; ; \quad u_r = \frac{1}{2} \frac{{\bar{r}}^2}{\sigma^2} = \frac{1}{2} S_r^2
+        k_f = \frac{\bar{r}}{\sigma^2} = \frac{S_r}{\sigma} \; ; \quad u_r = \frac{1}{2} \frac{{\bar{r}}^2}{\sigma^2} = \frac{1}{2} S_r^2
       \end{displaymath}
       The \emph{Kelly leverage} is \emph{approximately} equal to the \emph{Sharpe ratio} divided by the \emph{standard deviation}.
       \vskip1ex
@@ -1105,11 +1300,11 @@ unlist(optimize(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The wealth of a Kelly Strategy with a fixed leverage ratio $\kappa$ is equal to:
+      The wealth of a Kelly Strategy with a fixed leverage ratio $k_f$ is equal to:
       \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + \kappa \, r_i)}
+        w_t = \prod_{i=1}^t {(1 + k_f \, r_i)}
       \end{displaymath}
-      The \emph{Kelly ratio} $\kappa$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
+      The \emph{Kelly fraction} $k_f$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
       \vskip1ex
       If the mean asset returns are positive, then a higher leverage ratio provides higher returns.
       \vskip1ex
@@ -1157,20 +1352,20 @@ legend("topleft", legend=colnames(kelly_paths),
       \vskip1ex
       The wealth $w_t$ at time $t$ is equal to the initial wealth $w_0 = 1$ plus the value of the \emph{risky asset} $a_t$, minus the \emph{margin debt} $m_t$: $w_t = 1 + a_t - m_t$.
       \vskip1ex
-      The value of the \emph{risky asset} $a_t$ is equal to the wealth $w_t$ times the \emph{leverage} $\kappa$: $a_t = \kappa w_t$.
+      The value of the \emph{risky asset} $a_t$ is equal to the wealth $w_t$ times the \emph{leverage} $k_f$: $a_t = k_f w_t$.
       \vskip1ex
-      So the \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (\kappa - 1) w_t + 1$.
+      So the \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (k_f - 1) w_t + 1$.
       \vskip1ex
-      The wealth changes from $w_{t-1}$ to: $w_t = w_{t-1} (1 + \kappa \, r_t)$, while the value of the \emph{risky asset} changes from $a_{t-1} = \kappa w_{t-1}$ to: $a_t = \kappa w_{t-1} (1 + r_t)$, so that the leverage changes from $\kappa$ to:
+      The wealth changes from $w_{t-1}$ to: $w_t = w_{t-1} (1 + k_f \, r_t)$, while the value of the \emph{risky asset} changes from $a_{t-1} = k_f w_{t-1}$ to: $a_t = k_f w_{t-1} (1 + r_t)$, so that the leverage changes from $k_f$ to:
       \begin{displaymath}
-        \frac{\kappa w_{t-1} (1 + r_t)}{w_{t-1} (1 + \kappa \, r_t)} = \frac{\kappa (1 + r_t)}{1 + \kappa \, r_t}
+        \frac{k_f w_{t-1} (1 + r_t)}{w_{t-1} (1 + k_f \, r_t)} = \frac{k_f (1 + r_t)}{1 + k_f \, r_t}
       \end{displaymath}
     \column{0.5\textwidth}
-      In order to maintain a fixed \emph{leverage ratio} equal to $\kappa$, the investor must actively trade the \emph{risky asset}, and the \emph{margin debt} $m_t$ changes over time.
+      In order to maintain a fixed \emph{leverage ratio} equal to $k_f$, the investor must actively trade the \emph{risky asset}, and the \emph{margin debt} $m_t$ changes over time.
       \vskip1ex
       The change in margin in a single time period is equal to: 
       \begin{displaymath}
-        \Delta m_t = (\kappa - 1) \Delta w_t = \kappa (\kappa - 1) w_{t-1} r_t
+        \Delta m_t = (k_f - 1) \Delta w_t = k_f (k_f - 1) w_{t-1} r_t
       \end{displaymath}
       The dollar amount of the \emph{risky asset} traded is equal to the change in \emph{margin}.
       \vskip1ex
@@ -1198,12 +1393,12 @@ legend("topleft", legend=colnames(kelly_paths),
       \end{displaymath}
       If the transaction costs are much less than the change in wealth $c_t \ll \left| \Delta w_t \right|$, then we can write approximately:
       \begin{displaymath}
-        c_t = \frac{\delta}{2} \kappa (\kappa - 1) w_{t-1} \left| r_t \right|
+        c_t = \frac{\delta}{2} k_f (k_f - 1) w_{t-1} \left| r_t \right|
       \end{displaymath}
     \column{0.5\textwidth}
       The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
       \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + \kappa \, r_i - \frac{\delta}{2} \kappa (\kappa - 1) \left| r_i \right|)}
+        w_t = \prod_{i=1}^t {(1 + k_f \, r_i - \frac{\delta}{2} k_f (k_f - 1) \left| r_i \right|)}
       \end{displaymath}
       The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
       <<echo=TRUE,eval=FALSE>>=
@@ -1236,7 +1431,7 @@ dygraphs::dygraph(weal_th, main="Kelly Strategy With Transaction Costs") %>%
     \column{0.5\textwidth}
       In reality investors don't know the probability of winning or the odds of the gamble, so they can't accurately calculate the optimal \emph{Kelly fraction}.
       \vskip1ex
-      The \emph{Kelly fraction}: $\kappa = \frac{\bar{r}}{\sigma^2}$ is especially sensitive to the uncertainty of the expected returns $\bar{r}$.
+      The \emph{Kelly fraction}: $k_f = \frac{\bar{r}}{\sigma^2}$ is especially sensitive to the uncertainty of the expected returns $\bar{r}$.
       \vskip1ex
       If the expected returns are over-estimated, then it can produce an inflated value of the \emph{Kelly fraction}, leading to ruin.
       \vskip1ex
@@ -1415,11 +1610,11 @@ legend(x="topleft", legend=c("risk seeking", "logarithmic", "risk averse"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The wealth of a Kelly Strategy with a fixed leverage ratio $\kappa$ is equal to:
+      The wealth of a Kelly Strategy with a fixed leverage ratio $k_f$ is equal to:
       \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + \kappa \, r_i)}
+        w_t = \prod_{i=1}^t {(1 + k_f \, r_i)}
       \end{displaymath}
-      The \emph{Kelly ratio} $\kappa$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
+      The \emph{Kelly fraction} $k_f$ provides the optimal leverage to maximize the utility of wealth, by balancing the benefit of leveraging higher positive returns, with the risk of ruin due to excessive leverage.
       \vskip1ex
       If the mean asset returns are positive, then a higher leverage ratio provides higher returns.
       \vskip1ex
@@ -1467,7 +1662,7 @@ legend("topleft", legend=colnames(kelly_paths),
       \vskip1ex
       The expected payout $\mu = p \, a - q \, b$ of most lottery tickets is negative.
       \vskip1ex
-      So under \emph{logarithmic utility}, the Kelly fraction $\kappa$ for most lottery tickets is also negative, meaning that investors should not be expected to buy these lottery tickets.
+      So under \emph{logarithmic utility}, the Kelly fraction $k_f$ for most lottery tickets is also negative, meaning that investors should not be expected to buy these lottery tickets.
       \vskip1ex
       But in reality many people do buy lottery tickets with negative expected payouts, which means that their utility functions are not logarithmic.
       \vskip1ex
@@ -1483,7 +1678,7 @@ legend("topleft", legend=colnames(kelly_paths),
       The variance is equal to: $\sigma^2 = p \, q \, (a + 1)^2 = a$.
       \vskip1ex
       And the \emph{skewness} is equal to: 
-      $\hat{s} = \frac{1}{\sigma^3} (\frac{a^3}{a + 1} - \frac{a}{a + 1}) = \frac{a - 1}{\sqrt{a}}$.
+      $\varsigma = \frac{1}{\sigma^3} (\frac{a^3}{a + 1} - \frac{a}{a + 1}) = \frac{a - 1}{\sqrt{a}}$.
       \vskip1ex
       So the positive \emph{skewness} of a lottery ticket increases as the square root of the \emph{betting odds} $a$, and it can become very large for large \emph{betting odds}.
   \end{columns}
@@ -1518,7 +1713,7 @@ legend("topleft", legend=colnames(kelly_paths),
         \mathbb{E}[\Delta u(w)] &= u'(w) \mathbb{E}[\Delta w] + \frac{u''(w)}{2} \sigma^2 &\\
         & + \frac{u'''(w)}{3!} \mu_3 + \frac{u''''(w)}{4!} \mu_3
       \end{flalign*}
-      Where $\mathbb{E}[\Delta w]$ is the expected change of wealth, $\sigma^2 = \int {{\Delta w}^2 \, p(w) \, \mathrm{d}w}$ is the \emph{variance} of The change in wealth, and $\mu_3 = \int {{\Delta w}^3 \, p(w) \, \mathrm{d}w} = \sigma^3 \hat{s}$ and $\mu_4 = \int {{\Delta w}^4 \, p(w) \, \mathrm{d}w} = \sigma^4 \hat{k}$ are the third and fourth moments, proportional to the \emph{skewness} $\hat{s}$ and the \emph{kurtosis} $\hat{k}$.
+      Where $\mathbb{E}[\Delta w]$ is the expected change of wealth, $\sigma^2 = \int {{\Delta w}^2 \, p(w) \, \mathrm{d}w}$ is the \emph{variance} of The change in wealth, and $\mu_3 = \int {{\Delta w}^3 \, p(w) \, \mathrm{d}w} = \sigma^3 \varsigma$ and $\mu_4 = \int {{\Delta w}^4 \, p(w) \, \mathrm{d}w} = \sigma^4 \kappa$ are the third and fourth moments, proportional to the \emph{skewness} $\varsigma$ and the \emph{kurtosis} $\kappa$.
   \end{columns}
 \end{block}
 
@@ -1562,107 +1757,6 @@ c(mean=sum(re_turns),
   mom3=sum(re_turns^3),
   mom4=sum(re_turns^4))/NROW(re_turns)
       @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\section{Evaluating Manager Skill}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Tests for Market Timing Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
-      \vskip1ex
-      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
-      \vskip1ex
-      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
-      \end{displaymath}
-      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free returns.
-      \vskip1ex
-      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
-      \vskip1ex
-      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
-      \vskip1ex
-      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
-      \end{displaymath}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/market_timing_ief_vti.png}
-    \vspace{-2em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=6, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-# Test if IEF can time VTI
-re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
-vt_i <- re_turns$VTI
-re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
-colnames(re_turns)[3:4] <- c("merton", "treynor")
-# Merton-Henriksson test
-mod_el <- lm(IEF ~ VTI + merton, data=re_turns); summary(mod_el)
-# Treynor-Mazuy test
-mod_el <- lm(IEF ~ VTI + treynor, data=re_turns); summary(mod_el)
-# Plot scatterplot
-with(re_turns, plot.default(x=VTI, y=IEF-mod_el$coefficients[2]*VTI, xlab="VTI", ylab="IEF"))
-title(main="Treynor-Mazuy market timing test\n for IEF vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-with(re_turns, points.default(x=VTI, y=mod_el$fitted.values-mod_el$coefficients[2]*VTI, pch=16, col="red"))
-text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Identifying Managers With Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Adapt from RFinance\_2017.Rmd and from scratch.R.
-      \vskip1ex
-      \vskip1ex
-      Consider a binary investment (gamble) with the probability of winning equal to $p$, the winning amount (gain) equal to $a$, and the loss equal to $b$.
-      \vskip1ex
-      The investor makes no up-front payments, and either wins an amount $a$, or loses an amount $b$.
-      \vskip1ex
-      Assuming that an investor makes decisions exclusively on the basis of the expected value of future wealth, then they would choose to invest all their wealth on the gamble if its expected value is positive, and choose not to invest at all if its expected value is negative.
-    \column{0.5\textwidth}
-      <<results='asis',echo=FALSE,eval=TRUE>>=
-library(xtable)
-gambl_e <- data.frame(win=c("p", "a"), lose=c("q = 1 - p", "-b"))
-rownames(gambl_e) <- c("probability", "payout")
-# print(xtable(gambl_e), comment=FALSE, size="tiny")
-print(xtable(gambl_e), comment=FALSE)
-      @
-      The expected value of the gamble is equal to: $m = p \, a - q \, b$.
-      \vskip1ex
-      The variance of the gamble is equal to: $var=p \, q \, (a + b)^2$.
-      \vskip1ex
-      Without loss of generality we can assume that $p=q = \frac{1}{2}$,\\
-      $m = 0.5 \, (b - a)$,\\
-      $var=0.25 \, (a + b)^2$.
-      \vskip1ex
-      The \emph{Sharpe ratio} of the gamble is then equal to:
-      \begin{displaymath}
-        S_r = \frac{m}{sqrt(var)} = \frac{(b - a)}{(a + b)}
-      \end{displaymath}
   \end{columns}
 \end{block}
 
@@ -1799,9 +1893,9 @@ dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Kelly weights $\kappa_t$ are calculated daily over a rolling look-back interval:
+      The Kelly weights $k_f$ are calculated daily over a rolling look-back interval:
       \begin{displaymath}
-        \kappa_t = \frac{\bar{r_t}}{\sigma_t^2}
+        k_f = \frac{\bar{r_t}}{\sigma_t^2}
       \end{displaymath}
       \vskip1ex
       The distribution of the Kelly weights depends on the rolling returns $\bar{r_t}$ and variance $\sigma_t^2$.
@@ -1847,7 +1941,7 @@ legend("topright", legend=c("VTI", "IEF"),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the rolling Kelly strategy, the leverage of the risky asset $\kappa_t$ changes over time.
+      In the rolling Kelly strategy, the leverage of the risky asset $k_f$ changes over time.
       \vskip1ex
       The leverage is equal to the updated weight from the previous period.
       <<echo=TRUE,eval=FALSE>>=
@@ -1914,9 +2008,9 @@ dygraphs::dygraph(weal_th, main="VTI Strategy Using Rolling Kelly Weight") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (\kappa_t - 1) w_t + 1$.
+      The \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (k_f - 1) w_t + 1$.
       \vskip1ex
-      The dollar amount of the \emph{risky asset} traded is equal to the change in \emph{margin}, equal to: $\Delta m_t = \Delta [(\kappa_t - 1) w_t]$.
+      The dollar amount of the \emph{risky asset} traded is equal to the change in \emph{margin}, equal to: $\Delta m_t = \Delta [(k_f - 1) w_t]$.
       \vskip1ex
       If the transaction costs are large, then they will reduce the wealth and reduce the dollar amount of the \emph{risky asset} held by the investor.
       \vskip1ex
@@ -1933,7 +2027,7 @@ dygraphs::dygraph(weal_th, main="VTI Strategy Using Rolling Kelly Weight") %>%
       \vskip1ex
       The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
       \begin{displaymath}
-        w_t = \prod_{i=1}^t {(1 + \kappa \, r_i - \frac{\delta}{2} \frac{\left| \Delta m_i^{nc} \right|}{w_i^{nc}})}
+        w_t = \prod_{i=1}^t {(1 + k_f \, r_i - \frac{\delta}{2} \frac{\left| \Delta m_i^{nc} \right|}{w_i^{nc}})}
       \end{displaymath}
       The effect of the \emph{bid-offer spread} is to reduce the effective asset returns by an amount proportional to the \emph{bid-offer spread}.
       <<echo=TRUE,eval=FALSE>>=
@@ -1972,7 +2066,7 @@ dygraphs::dygraph(weal_th, main="Kelly Strategy With Transaction Costs") %>%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the rolling Kelly strategy, the leverage of the risky asset $\kappa_t$ changes over time.
+      In the rolling Kelly strategy, the leverage of the risky asset $k_f$ changes over time.
       \vskip1ex
       The leverage is equal to the updated weight from the previous period.
       <<echo=TRUE,eval=FALSE>>=
@@ -2278,7 +2372,7 @@ trade_dates <- which(trade_dates) + 1
 position_s <- rep(NA_integer_, NROW(oh_lc))
 position_s[1] <- 0
 position_s[trade_dates] <- indica_tor[trade_dates-1]
-position_s <- na.locf(position_s)
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
 position_s <- xts(position_s, order.by=index(oh_lc))
 pos_lagged <- rutils::lag_it(position_s)
 # Calculate pnl for days without trade
@@ -2394,7 +2488,7 @@ trade_dates <- which(trade_dates) + 1
 position_s <- rep(NA_integer_, NROW(oh_lc))
 position_s[1] <- 0
 position_s[trade_dates] <- indica_tor[trade_dates-1]
-position_s <- na.locf(position_s)
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
 position_s <- xts(position_s, order.by=index(oh_lc))
       @
     \column{0.5\textwidth}
@@ -2542,7 +2636,7 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
   position_s <- rep(NA_integer_, NROW(oh_lc))
   position_s[1] <- 0
   position_s[trade_dates] <- indica_tor[trade_dates-1]
-  position_s <- na.locf(position_s)
+  position_s <- zoo::na.locf(position_s, na.rm=FALSE)
   op_en <- quantmod::Op(oh_lc)
   close_lag <- rutils::lag_it(cl_ose)
   pos_lagged <- rutils::lag_it(position_s)
@@ -2963,15 +3057,11 @@ legend("top", legend=colnames(pnl_s),
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-# Calculate the positions of the first non-NA values
-in_dex <- sapply(re_turns, function(x_ts) {
-  match(TRUE, !is.na(x_ts))
-})  # end sapply
-# Remove rows with missing IEF data
-re_turns <- re_turns[-(1:in_dex["IEF"]), ]
+# Select rows with IEF data
+re_turns <- re_turns[index(rutils::etf_env$IEF)]
 # Copy over NA values
-re_turns <- zoo::na.locf(re_turns)
-re_turns <- zoo::na.locf(re_turns, fromLast=TRUE)
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
       @
   \end{columns}
 \end{block}
@@ -3159,11 +3249,11 @@ weal_th <- xts::xts(weal_th, in_dex)
       <<echo=TRUE,eval=FALSE>>=
 # Define all-weather benchmark
 weights_aw <- c(0.30, 0.55, 0.15)
-all_weather <- re_turns %*% weights_aw
-all_weather <- cumprod(1 + all_weather)
-all_weather <- xts::xts(all_weather[end_points], in_dex)
+ret_aw <- re_turns %*% weights_aw
+wealth_aw <- cumprod(1 + ret_aw)
+wealth_aw <- xts::xts(wealth_aw[end_points], in_dex)
 # Plot the Momentum strategy and benchmark
-da_ta <- cbind(weal_th, all_weather)
+da_ta <- cbind(weal_th, wealth_aw)
 colnames(da_ta) <- c("Momentum Strategy", "Benchmark")
 dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
   dyAxis("y", label="Benchmark", independentTicks=TRUE) %>%
@@ -3185,7 +3275,7 @@ dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
       \vspace{-2em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional
-back_test_momentum <- function(re_turns, 
+backtest_momentum <- function(re_turns, 
                       perform_ance=function(re_turns) (sum(re_turns)/sd(re_turns)), 
                       look_back=12, re_balance="months", bid_offer=0.001,
                       end_points=rutils::calc_endpoints(re_turns, inter_val=re_balance), 
@@ -3218,7 +3308,7 @@ back_test_momentum <- function(re_turns,
     rutils::lag_it(cbind(pnl_s, weight_s))
   else
     rutils::lag_it(pnl_s)
-}  # end back_test_momentum
+}  # end backtest_momentum
       @
 \end{block}
 
@@ -3251,9 +3341,8 @@ back_test_momentum <- function(re_turns,
 source("C:/Develop/lecture_slides/scripts/back_test.R")
 look_backs <- seq(3, 15, by=1)
 perform_ance <- function(re_turns) sum(re_turns)/sd(re_turns)
-end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
 pro_files <- sapply(look_backs, function(look_back) {
-  pnl_s <- back_test_momentum(re_turns=re_turns, end_points=end_points, 
+  pnl_s <- backtest_momentum(re_turns=re_turns, end_points=end_points, 
     look_back=look_back, perform_ance=perform_ance)
   last(cumprod(1 + pnl_s))
 })  # end sapply
@@ -3280,15 +3369,14 @@ plot(x=look_backs, y=pro_files, t="l",
       The \emph{training} data is specified over the \emph{look-back} intervals, and the forecast weights are applied to the future data defined by the \emph{look-forward} intervals.
       <<echo=TRUE,eval=FALSE>>=
 look_back <- look_backs[which.max(pro_files)]
-pnl_s <- back_test_momentum(re_turns=re_turns, price_s=price_s, 
+pnl_s <- backtest_momentum(re_turns=re_turns, 
   look_back=look_back, end_points=end_points, 
   perform_ance=perform_ance, with_weights=TRUE)
 tail(pnl_s)
-weal_th <- cumprod(1 + pnl_s[, 1])
-in_dex <- zoo::index(re_turns[end_points])
-weal_th <- xts::xts(weal_th, in_dex)
-da_ta <- cbind(weal_th, all_weather)
-colnames(da_ta) <- c("Momentum Strategy", "Benchmark")
+ret_mom <- as.numeric(pnl_s[, 1])
+weal_th <- cumprod(1 + ret_mom)
+da_ta <- cbind(weal_th, wealth_aw)
+colnames(da_ta) <- c("Momentum Strategy", "All_weather")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3297,10 +3385,10 @@ colnames(da_ta) <- c("Momentum Strategy", "Benchmark")
       <<echo=TRUE,eval=FALSE>>=
 # Plot the Momentum strategy and benchmark
 dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
-  dyAxis("y", label="Benchmark", independentTicks=TRUE) %>%
+  dyAxis("y", label="All_weather", independentTicks=TRUE) %>%
   dyAxis("y2", label="Momentum Strategy", independentTicks=TRUE) %>%
   dySeries(name="Momentum Strategy", axis="y2", label="Momentum Strategy", strokeWidth=2, col="red") %>%
-  dySeries(name="Benchmark", axis="y", label="Benchmark", strokeWidth=2, col="blue")
+  dySeries(name="All_weather", axis="y", label="All_weather", strokeWidth=2, col="blue")
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
@@ -3330,11 +3418,11 @@ legend("topleft", legend=colnames(da_ta),
       The weights are scaled to limit the portfolio \emph{leverage} and its market \emph{beta}.
       <<echo=TRUE,eval=FALSE>>=
 # Plot the momentum portfolio weights
-da_ta <- cbind(rutils::etf_env$price_s$VTI[in_dex],
-               weight_s)
+weight_s <- pnl_s[, -1]
+vt_i <- rutils::etf_env$price_s$VTI[in_dex]
+da_ta <- cbind(vt_i, weight_s)
 da_ta <- na.omit(da_ta)
-colnames(da_ta)[2:4] <- paste0(colnames(weight_s), "_weight")
-x11(width=6, height=7)
+colnames(da_ta)[2:NCOL(pnl_s)] <- paste0(colnames(weight_s), "_weight")
 zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
       @
     \column{0.5\textwidth}
@@ -3360,7 +3448,7 @@ zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
 betas_etf <- sapply(re_turns, function(x) 
   cov(re_turns$VTI, x)/var(x))
 # Betas equal weights times ETF betas
-beta_s <- pnl_s[, 2:4] %*% betas_etf
+beta_s <- weight_s %*% betas_etf
 beta_s <- xts(beta_s, order.by=in_dex)
 colnames(beta_s) <- "momentum_beta"
 da_ta <- cbind(beta_s, rutils::etf_env$VTI[in_dex, 4])
@@ -3386,45 +3474,28 @@ zoo::plot.zoo(da_ta,
     \column{0.5\textwidth}
       \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
       \vskip1ex
-      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
-      \vskip1ex
-      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
-      \end{displaymath}
-      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free returns.
-      \vskip1ex
-      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
-      \vskip1ex
-      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
-      \vskip1ex
-      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
-      \end{displaymath}
+      The \emph{Treynor-Mazuy} test shows that the \emph{momentum} strategy has significant \emph{market timing} skill.
+      <<echo=(-(1:3)),eval=FALSE>>=
+# Open x11 for plotting and set parameters to reduce whitespace around plot
+x11(width=6, height=4)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+# Merton-Henriksson test
+vt_i <- rutils::diff_it(vt_i)/rutils::lag_it(vt_i)
+de_sign <- cbind(VTI=vt_i, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(de_sign)[2:3] <- c("merton", "treynor")
+mod_el <- lm(ret_mom ~ VTI + merton, data=de_sign); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(ret_mom ~ VTI + treynor, data=de_sign); summary(mod_el)
+# Plot residual scatterplot
+plot.default(x=vt_i, y=ret_mom, xlab="VTI", ylab="momentum")
+title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+points.default(x=vt_i, y=mod_el$fitted.values, pch=16, col="red")
+text(x=0.05, y=0.15, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
+      @
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_timing.png}
-    \vspace{-2em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=6, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-pnl_s <- as.numeric(pnl_s[, 1])
-vt_i <- as.numeric(rutils::diff_it(log(rutils::etf_env$price_s$VTI[in_dex])))
-# Merton-Henriksson test
-de_sign <- cbind(VTI=vt_i, skill=0.5*(vt_i+abs(vt_i)))
-mod_el <- lm(pnl_s ~ de_sign); summary(mod_el)
-# Treynor-Mazuy test
-de_sign <- cbind(VTI=vt_i, skill=vt_i^2)
-mod_el <- lm(pnl_s ~ de_sign); summary(mod_el)
-# Plot scatterplot
-plot(x=vt_i, y=pnl_s, xlab="VTI", ylab="momentum")
-title(main="Treynor-Mazuy market timing test\n for Momentum vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-points(x=vt_i, y=mod_el$fitted.values, pch=16, col="red")
-      @
   \end{columns}
 \end{block}
 
@@ -3445,10 +3516,10 @@ points(x=vt_i, y=mod_el$fitted.values, pch=16, col="red")
       The \emph{momentum} strategy is a genuine \emph{market anomaly}, because it has both positive returns and positive skewness.
       <<echo=TRUE,eval=FALSE>>=
 # Standardize the returns
-momen_tum <- (pnl_s-mean(pnl_s))/sd(pnl_s)
+ret_mom_std <- (ret_mom-mean(ret_mom))/sd(ret_mom)
 vt_i <- (vt_i-mean(vt_i))/sd(vt_i)
 # Calculate skewness and kurtosis
-apply(cbind(momen_tum, vt_i), 2, function(x) 
+apply(cbind(ret_mom_std, vt_i), 2, function(x) 
   sapply(c(skew=3, kurt=4), 
     function(e) sum(x^e)))/n_rows
       @
@@ -3458,12 +3529,12 @@ apply(cbind(momen_tum, vt_i), 2, function(x)
     \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
-hist(momen_tum, breaks=30, 
-  main="Momentum and VTI Return Distributions", 
+hist(ret_mom_std, breaks=30, 
+  main="Momentum and VTI Return Distributions (standardized", 
   xlim=c(-4, 4), 
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
-lines(density(momen_tum), col='red', lwd=2)
+lines(density(ret_mom_std), col='red', lwd=2)
 lines(density(vt_i), col='blue', lwd=2)
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
@@ -3490,9 +3561,9 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
       This suggests that combining the \emph{momentum} strategy with a static buy-and-hold strategy can achieve significant diversification of risk.
       <<echo=TRUE,eval=FALSE>>=
 # Combine momentum strategy with all-weather
-all_weather <- (re_turns %*% weights_aw)[end_points]
-all_weather <- sd(pnl_s)*all_weather/sd(all_weather)
-da_ta <- cbind(pnl_s, all_weather, 0.5*(pnl_s + all_weather))
+ret_aw <- rutils::diff_it(wealth_aw)/rutils::lag_it(wealth_aw)
+ret_aw <- sd(ret_mom)*ret_aw/sd(ret_aw)
+da_ta <- cbind(ret_mom, ret_aw, 0.5*(ret_mom + ret_aw))
 colnames(da_ta) <- c("momentum", "all_weather", "combined")
 # Calculate strategy annualized Sharpe ratios
 apply(da_ta, MARGIN=2, function(x) {
@@ -3513,15 +3584,231 @@ weal_th <- xts::xts(weal_th, in_dex)
       <<echo=TRUE,eval=FALSE>>=
 # Plot ETF momentum strategy combined with All-Weather
 dygraphs::dygraph(weal_th, main="ETF Momentum Strategy Combined with All-Weather") %>% 
-  dyOptions(colors=c("red", "blue", "green"), strokeWidth=2) %>%
+  dyOptions(colors=c("green", "blue", "red"), strokeWidth=2) %>%
   dyLegend(show="always")
 # Or
 plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("red", "blue", "green")
+plot_theme$col$line.col <- c("green", "blue", "red")
 chart_Series(da_ta, theme=plot_theme, 
              name="ETF Momentum Strategy Combined with All-Weather")
 legend("topleft", legend=colnames(da_ta), 
   inset=0.1, bg="white", lty=1, lwd=6, 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Momentum} Strategy With Daily Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A momentum strategy with \emph{daily} rebalancing can't be practically backtested using \texttt{apply()} loops because they are too slow.
+      \vskip1ex
+      The package \emph{roll} contains extremely fast functions for calculating rolling aggregations using compiled \texttt{C++} code.
+      \vskip1ex
+      The momentum strategy with \emph{daily} rebalancing performs worse than the strategy with \emph{monthly} rebalancing.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate rolling variance
+look_back <- 252
+vari_ance <- roll::roll_var(re_turns, width=look_back)
+vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
+vari_ance[is.na(vari_ance)] <- 0
+# Calculate rolling Sharpe
+pas_t <- roll::roll_mean(re_turns, width=look_back)
+weight_s <- pas_t/sqrt(vari_ance)
+weight_s[vari_ance == 0] <- 0
+weight_s[1:look_back, ] <- 1
+weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+weight_s[is.na(weight_s)] <- 0
+weight_s <- rutils::lag_it(weight_s)
+sum(is.na(weight_s))
+# Calculate momentum profits and losses
+pnl_s <- rowMeans(weight_s*re_turns)
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_daily_etf.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate transaction costs
+bid_offer <- 0.001
+cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
+weal_th <- cumprod(1 + pnl_s - cost_s)
+weal_th <- xts(weal_th, order.by=index(re_turns))
+# Plot momentum and VTI
+wealth_aw <- cumprod(1 + re_turns %*% weights_aw)
+da_ta <- cbind(wealth_aw, weal_th)
+colnames(da_ta) <- c("all_weather", "momentum")
+col_names <- colnames(da_ta)
+dygraphs::dygraph(da_ta, main="Momentum vs All-Weather") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Functional for \protect\emph{Daily Momentum} Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# Define backtest functional for daily momentum strategy
+# If tre_nd=(-1) then it backtests a mean reverting strategy
+momentum_daily <- function(re_turns, look_back=252, bid_offer=0.001, tre_nd=1, ...) {
+  stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
+  # Calculate rolling variance
+  vari_ance <- roll::roll_var(re_turns, width=look_back)
+  vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
+  vari_ance[is.na(vari_ance)] <- 0
+  # Calculate rolling Sharpe
+  pas_t <- roll::roll_mean(re_turns, width=look_back)
+  weight_s <- pas_t/sqrt(vari_ance)
+  weight_s[vari_ance == 0] <- 0
+  weight_s[1:look_back, ] <- 1
+  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
+  weight_s[is.na(weight_s)] <- 0
+  weight_s <- rutils::lag_it(weight_s)
+  # Calculate momentum profits and losses
+  pnl_s <- tre_nd*rowMeans(weight_s*re_turns)
+  # Calculate transaction costs
+  cost_s <- 0.5*bid_offer*rowSums(abs(rutils::diff_it(weight_s)))
+  cumprod(1 + pnl_s - cost_s)
+}  # end momentum_daily
+@
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Multiple Daily ETF \protect\emph{Momentum} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple daily ETF \emph{momentum} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      \vskip1ex
+      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
+      <<echo=TRUE,eval=FALSE>>=
+# Backtest a daily ETF momentum strategy
+source("C:/Develop/lecture_slides/scripts/back_test.R")
+weal_th <- momentum_daily(look_back=252, 
+  re_turns=re_turns, bid_offer=bid_offer)
+# Perform sapply loop over look_backs
+look_backs <- seq(50, 300, by=50)
+weal_th <- sapply(look_backs, momentum_daily, 
+  re_turns=re_turns, bid_offer=bid_offer)
+colnames(weal_th) <- paste0("look_back=", look_backs)
+weal_th <- xts(weal_th, index(re_turns))
+tail(weal_th)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_daily_etf_mult.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- 
+  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
+chart_Series(weal_th, 
+  theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
+legend("bottomleft", legend=colnames(weal_th), 
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Multiple \protect\emph{S\&P500} \protect\emph{Momentum} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      \vskip1ex
+      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{look-back} parameter.
+      <<echo=TRUE,eval=FALSE>>=
+# Backtest a daily S&P500 momentum strategy
+source("C:/Develop/lecture_slides/scripts/back_test.R")
+load("C:/Develop/lecture_slides/data/sp500_prices.RData")
+# Perform sapply loop over look_backs
+look_backs <- seq(50, 300, by=50)
+weal_th <- sapply(look_backs, momentum_daily, 
+  re_turns=returns_100, bid_offer=0)
+colnames(weal_th) <- paste0("look_back=", look_backs)
+weal_th <- xts(weal_th, index(re_turns))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/momentum_sp500_mult.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot daily S&P500 momentum strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- 
+  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
+chart_Series(weal_th, 
+  theme=plot_theme, name="Cumulative Returns of S&P500 Momentum Strategies")
+legend("bottomleft", legend=colnames(weal_th), 
+  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Multiple \protect\emph{S\&P500} \protect\emph{Mean Reverting} Strategies}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{look-back} parameters.
+      \vskip1ex
+      The \emph{mean reverting} strategies for the \emph{S\&P500} constituents perform the best for short \emph{look-back} parameters.
+      \vskip1ex
+      The \emph{mean reverting} strategies had their best performance prior to the 2008 financial crisis.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform sapply loop over look_backs
+look_backs <- seq(5, 50, by=5)
+weal_th <- sapply(look_backs, momentum_daily, 
+  re_turns=returns_100, bid_offer=0, tre_nd=(-1))
+colnames(weal_th) <- paste0("look_back=", look_backs)
+weal_th <- xts(weal_th, index(price_s))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/sp500_revert_mult.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot EWMA strategies with custom line colors
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- 
+  colorRampPalette(c("blue", "red"))(NCOL(weal_th))
+chart_Series(weal_th, 
+  theme=plot_theme, name="Cumulative Returns of S&P500 Mean Reverting Strategies")
+legend("topleft", legend=colnames(weal_th), 
+  inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
   col=plot_theme$col$line.col, bty="n")
       @
   \end{columns}
@@ -3552,16 +3839,18 @@ legend("topleft", legend=colnames(da_ta),
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # sym_bols contains all the symbols in rutils::etf_env$re_turns except "VXX" and "SVXY"
-sym_bols <- colnames(rutils::etf_env$re_turns)
-sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
+sym_bols <- c("DBC", "IEF", "VTI", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY")
+# sym_bols <- colnames(rutils::etf_env$re_turns)
+# sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
 # Extract columns of rutils::etf_env$re_turns and remove NA values
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-re_turns <- zoo::na.locf(re_turns)
-re_turns <- zoo::na.locf(re_turns, fromLast=TRUE)
+re_turns <- na.omit(re_turns)
+# re_turns[1, is.na(re_turns[1, ])] <- 0
+# re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 # Calculate vector of monthly end points and start points
 look_back <- 12
 end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
-end_points[end_points<2*NCOL(re_turns)] <- 2*NCOL(re_turns)
+end_points[end_points < 2*NCOL(re_turns)] <- 2*NCOL(re_turns)
       @
     \column{0.5\textwidth}
       \vspace{-2em}
@@ -3570,13 +3859,13 @@ n_rows <- NROW(end_points)
 # Sliding window
 start_points <- c(rep_len(1, look_back-1), end_points[1:(n_rows-look_back+1)])
 # OR expanding window
-# Start_points <- rep_len(1, NROW(end_points))
+# Start_points <- rep_len(1, n_rows)
 # risk_free is the daily risk-free rate
 risk_free <- 0.03/252
 # Calculate daily excess returns 
 ex_cess <- re_turns - risk_free
 # Perform loop over end_points
-portf_rets <- lapply(2:NROW(end_points),
+portf_rets <- lapply(2:n_rows,
   function(i) {
     # Subset the ex_cess returns
     ex_cess <- ex_cess[start_points[i-1]:end_points[i-1], ]
@@ -3590,11 +3879,11 @@ portf_rets <- lapply(2:NROW(end_points),
     xts(re_turns %*% weight_s, index(re_turns))
   }  # end anonymous function
 )  # end lapply
-portf_rets <- do.call(rbind, portf_rets)
+portf_rets <- rutils::do_call(rbind, portf_rets)
 colnames(portf_rets) <- "portf_rets"
-# Calculate compounded cumulative portfolio returns
-portf_rets <- cumsum(portf_rets)
-quantmod::chart_Series(portf_rets,
+# Calculate compounded cumulative portfolio wealth
+weal_th <- cumprod(1 + portf_rets)
+quantmod::chart_Series(weal_th,
   name="Cumulative Returns of Max Sharpe Portfolio Strategy")
       @
   \end{columns}
@@ -3604,176 +3893,78 @@ quantmod::chart_Series(portf_rets,
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Momentum} Strategy for \protect\emph{S\&P500} Stock Portfolio}
+\subsection{draft: Rolling Portfolio Optimization Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A very simple \emph{momentum} strategy for the \emph{S\&P500}, is to go long constituents with positive recent performance, and short constituents with negative performance.
+      Repeat previous slide but regularize solve(), same as in HighFreq::back\_test()
       \vskip1ex
-      This \emph{momentum} strategy does not perform well and suffers from \emph{momentum crashes} when the market rebounds sharply from a recent lows.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling variance of S&P500 portfolio
-wid_th <- 252
-vari_ance <- roll::roll_var(re_turns, width=wid_th)
-vari_ance <- zoo::na.locf(vari_ance)
-vari_ance[is.na(vari_ance)] <- 0
-# Calculate rolling Sharpe of S&P500 portfolio
-returns_width <- rutils::diff_it(log(price_s), lagg=wid_th)
-weight_s <- returns_width/sqrt(wid_th*vari_ance)
-weight_s[vari_ance==0] <- 0
-weight_s[1:wid_th, ] <- 1
-weight_s[is.na(weight_s)] <- 0
-weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-weight_s[is.na(weight_s)] <- 0
-weight_s <- rutils::lag_it(weight_s)
-sum(is.na(weight_s))
-# Calculate portfolio profits and losses
-pnl_s <- weight_s*re_turns
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_momentum.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate transaction costs
-bid_offer <- 0.001
-cost_s <- 0.5*bid_offer*abs(rutils::diff_it(weight_s))
-pnl_s <- (pnl_s - cost_s)
-pnl_s <- exp(cumsum(pnl_s))
-pnl_s <- rowMeans(pnl_s)
-pnl_s <- xts(pnl_s, order.by=index(price_s))
-pnl_s <- cbind(rutils::etf_env$VTI[, 4], pnl_s)
-pnl_s <- na.omit(pnl_s)
-colnames(pnl_s) <- c("VTI", "momentum")
-col_names <- colnames(pnl_s)
-# Plot momentum and VTI
-dygraphs::dygraph(pnl_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
-  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
-  dySeries(name=col_names[1], axis="y", col="blue") %>%
-  dySeries(name=col_names[2], axis="y2", col="red")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Functional for \protect\emph{S\&P500} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-      \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
-# Define backtest functional
-backtest_rolling <- function(re_turns, price_s, wid_th=252, bid_offer=0.001, tre_nd=1, ...) {
-  stopifnot("package:quantmod" %in% search() || require("quantmod", quietly=TRUE))
-  # Define look-back and look-forward intervals
-  n_cols <- NCOL(re_turns)
-  vari_ance <- roll::roll_var(re_turns, width=wid_th)
-  vari_ance <- zoo::na.locf(vari_ance)
-  vari_ance[is.na(vari_ance)] <- 0
-  # Calculate rolling Sharpe of S&P500 portfolio
-  returns_width <- rutils::diff_it(log(price_s), lagg=wid_th)
-  weight_s <- tre_nd*returns_width/sqrt(wid_th*vari_ance)
-  weight_s[vari_ance==0] <- 0
-  weight_s[1:wid_th, ] <- 1
-  weight_s[is.na(weight_s)] <- 0
-  weight_s <- weight_s/sqrt(rowSums(weight_s^2))
-  weight_s[is.na(weight_s)] <- 0
-  weight_s <- rutils::lag_it(weight_s)
-  sum(is.na(weight_s))
-  # Calculate portfolio profits and losses
-  pnl_s <- weight_s*re_turns
-  # Calculate transaction costs
-  bid_offer <- 0.001
-  cost_s <- 0.5*bid_offer*abs(rutils::diff_it(weight_s))
-  pnl_s <- (pnl_s - cost_s)
-  pnl_s <- exp(cumsum(pnl_s))
-  pnl_s <- rowMeans(pnl_s)
-  pnl_s
-}  # end backtest_rolling
-@
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Multiple \protect\emph{S\&P500} \protect\emph{Momentum} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{momentum} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{width} parameters.
+      Reproduce function HighFreq::calc\_weights() in R. 
       \vskip1ex
-      The \emph{momentum} strategies do not perform well, especially the ones with a small \emph{width} parameter.
-      <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/back_test.R")
-pnl_s <- backtest_rolling(wid_th=252, re_turns=re_turns, 
-  price_s=price_s, bid_offer=bid_offer)
-width_s <- seq(50, 300, by=50)
-# Perform sapply loop over width_s
-pro_files <- sapply(width_s, backtest_rolling, re_turns=re_turns, 
-  price_s=price_s, bid_offer=bid_offer)
-colnames(pro_files) <- paste0("width=", width_s)
-pro_files <- xts(pro_files, index(price_s))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_momentum_mult.png}
+      A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over a vector of end points: 
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculate the maximum Sharpe ratio portfolio weights at each end point.
+        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
+      \end{enumerate}
+      The parameters of this strategy are:
+      \begin{enumerate}
+        \item Rebalancing frequency (annual, monthly, etc.)
+        \item Length of look-back interval (sliding or expanding).
+        \item Scaling of weights (sum or sum-of-squares).
+      \end{enumerate}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA strategies with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- 
-  colorRampPalette(c("blue", "red"))(NCOL(pro_files))
-chart_Series(pro_files, 
-  theme=plot_theme, name="Cumulative Returns of S&P500 Momentum Strategies")
-legend("bottomleft", legend=colnames(pro_files), 
-  inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
-  col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Multiple \protect\emph{S\&P500} \protect\emph{Mean Reverting} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Multiple \emph{S\&P500} \emph{mean reverting} strategies can be backtested by calling the function \texttt{backtest\_rolling()} in a loop over a vector of \emph{width} parameters.
-      \vskip1ex
-      The \emph{mean reverting} strategies for the \emph{S\&P500} constituents perform the best for short \emph{width} parameters.
-      <<echo=TRUE,eval=FALSE>>=
-width_s <- seq(5, 50, by=5)
-# Perform sapply loop over width_s
-pro_files <- sapply(width_s, backtest_rolling, re_turns=re_turns, 
-  price_s=price_s, bid_offer=bid_offer, tre_nd=(-1))
-colnames(pro_files) <- paste0("width=", width_s)
-pro_files <- xts(pro_files, index(price_s))
+# sym_bols contains all the symbols in rutils::etf_env$re_turns except "VXX" and "SVXY"
+sym_bols <- c("DBC", "IEF", "VTI", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY")
+# sym_bols <- colnames(rutils::etf_env$re_turns)
+# sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
+# Extract columns of rutils::etf_env$re_turns and remove NA values
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
+re_turns <- na.omit(re_turns)
+# re_turns[1, is.na(re_turns[1, ])] <- 0
+# re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+# Calculate vector of monthly end points and start points
+look_back <- 12
+end_points <- rutils::calc_endpoints(re_turns, inter_val="months")
+# Lag the initial end_points in warmpup period
+end_points[end_points < 2*NCOL(re_turns)] <- 2*NCOL(re_turns)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_revert_mult.png}
-      \vspace{-1em}
+      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA strategies with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- 
-  colorRampPalette(c("blue", "red"))(NCOL(pro_files))
-chart_Series(pro_files, 
-  theme=plot_theme, name="Cumulative Returns of S&P500 Mean Reverting Strategies")
-legend("topleft", legend=colnames(pro_files), 
-  inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)), 
-  col=plot_theme$col$line.col, bty="n")
+n_rows <- NROW(end_points)
+# Sliding window
+start_points <- c(rep_len(1, look_back-1), end_points[1:(n_rows-look_back+1)])
+# OR expanding window
+# Start_points <- rep_len(1, n_rows)
+# risk_free is the daily risk-free rate
+risk_free <- 0.03/252
+# Calculate daily excess returns 
+ex_cess <- re_turns - risk_free
+# Perform loop over end_points
+portf_rets <- lapply(2:n_rows,
+  function(ep) {
+    # Subset the ex_cess returns
+    ex_cess <- ex_cess[start_points[ep-1]:end_points[ep-1], ]
+    in_verse <- solve(cov(ex_cess))
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weight_s <- in_verse %*% colMeans(ex_cess)
+    weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+    # Subset the re_turns to out-of-sample returns
+    re_turns <- re_turns[(end_points[ep-1]+1):end_points[ep], ]
+    # Calculate the out-of-sample portfolio returns
+    xts::xts(re_turns %*% weight_s, index(re_turns))
+  }  # end anonymous function
+)  # end lapply
+portf_rets <- do.call(rbind, portf_rets)
+colnames(portf_rets) <- "portf_rets"
+# Calculate compounded cumulative portfolio wealth
+weal_th <- cumprod(1 + portf_rets)
+quantmod::chart_Series(weal_th,
+  name="Cumulative Returns of Max Sharpe Portfolio Strategy")
       @
   \end{columns}
 \end{block}
@@ -3818,11 +4009,11 @@ pnl_s <- HighFreq::back_test(ex_cess=re_turns,
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot strategy in log scale
-pnl_s <- cumsum(pnl_s)
-pnl_s <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
+weal_th <- cumprod(1 + pnl_s)
+weal_th <- cbind(weal_th, in_dex, (weal_th+in_dex)/2)
 col_names <- c("Strategy", "Index", "Average")
-colnames(pnl_s) <- col_names
-dygraphs::dygraph(pnl_s[end_points], main="Rolling Portfolio Optimization Strategy") %>%
+colnames(weal_th) <- col_names
+dygraphs::dygraph(weal_th[end_points], main="Rolling S&P500 Portfolio Optimization Strategy") %>%
   dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
   dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
   dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%

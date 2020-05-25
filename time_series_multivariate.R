@@ -5,7 +5,7 @@ options(width=60, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
-library(HighFreq)
+library(rutils)
 # Specify formula and perform regression
 mod_el <- lm(XLP ~ VTI, 
   data=rutils::etf_env$re_turns)
@@ -23,7 +23,7 @@ abline(mod_el, lwd=2, col="red")
 abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
  lwd=2, col="blue")
 
-library(HighFreq)  # load HighFreq
+library(rutils)  # load rutils
 re_turns <- na.omit(rutils::etf_env$re_turns)
 # Perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(re_turns)[-1],
@@ -52,7 +52,7 @@ etf_reg_stats <- etf_reg_stats[
 
 etf_reg_stats[, 1:3]
 
-library(HighFreq)
+library(rutils)
 # Specify regression formula
 for_mula <- XLP ~ VTI
 # Perform rolling beta regressions every month
@@ -165,7 +165,7 @@ save(etf_env, file="etf_data.RData")
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
 
 # load S&P500 constituent stock prices
-load("C:/Develop/R/lecture_slides/data/sp500_prices.RData")
+load("C:/Develop/lecture_slides/data/sp500_prices.RData")
 date_s <- index(price_s)
 # Calculate simple returns (not percentage)
 re_turns <- rutils::diff_it(price_s)
@@ -401,7 +401,7 @@ factor_pca$r2  # R-squared regression
 factor_pca$Omega[1:3, 4:6]
 
 library(factorAnalytics)
-# load(file="C:/Develop/R/lecture_slides/data/portf_optim.RData")
+# load(file="C:/Develop/lecture_slides/data/portf_optim.RData")
 plot(factor_pca, which.plot.group=3,
      n.max=30, loop=FALSE)
 # ?plot.sfm

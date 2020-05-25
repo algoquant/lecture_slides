@@ -19,7 +19,7 @@ ls("package:tseries")  # List all objects in "tseries"
 detach("package:tseries")  # Remove tseries from search path
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Get start and end dates
 in_dex <- time(ts_stx_adj)
 e_nd <- in_dex[NROW(in_dex)]
@@ -257,7 +257,7 @@ ch_ob$set_ylim(y_lim)  # use setter function
 # Render the plot
 plot(ch_ob)
 
-library(HighFreq)
+library(rutils)
 # Calculate VTI and XLF volume-weighted average price
 v_wap <-
   TTR::VWAP(price=Ad(rutils::etf_env$VTI),
@@ -334,8 +334,31 @@ library(dygraphs)
 dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
   dyAxis(name="y", label="VTI", independentTicks=TRUE) %>%
   dyAxis(name="y2", label="IEF", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", col="red") %>%
-  dySeries(name="IEF", axis="y2", col="blue")
+  dySeries(name="VTI", axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name="IEF", axis="y2", strokeWidth=2, col="blue")
+
+# Open plot window and set plot margins
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
+# Plot first time series without x-axis
+zoo::plot.zoo(price_s[, 1], lwd=2, col="orange",
+        xlab=NA, ylab=NA, xaxt="n")
+# Create X-axis date labels and add X-axis
+in_dex <- pretty(index(price_s))
+axis(side=1, at=in_dex, labels=format(in_dex, "%b-%d-%y"))
+# Plot second time series without y-axis
+par(new=TRUE)  # Allow new line on same plot
+zoo::plot.zoo(price_s[, 2], xlab=NA, ylab=NA,
+        lwd=2, yaxt="n", col="blue", xaxt="n")
+# Plot second y-axis on right
+axis(side=4, lwd=2, col="blue")
+# Add axis labels
+mtext(col_names[1], cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-5), col="orange")
+mtext(col_names[2], cex=1.2, lwd=3, side=4, las=2, adj=1.5, padj=(-5), col="blue")
+# Add title and legend
+title(main=paste(col_names, collapse=" and "), line=0.5)
+legend("top", legend=col_names, cex=1.0, bg="white",
+ lty=1, lwd=6, col=c("orange", "blue"), bty="n")
 
 # Load package qmao
 library(qmao)
@@ -536,7 +559,7 @@ plot.zoo(per_centage, main="Percentage of GBM paths below mean",
    xlab=NA, ylab=NA, col="blue")
 
 # Load S&P500 stock prices
-load("C:/Develop/R/lecture_slides/data/sp500.RData")
+load("C:/Develop/lecture_slides/data/sp500.RData")
 ls(env_sp500)
 # Extract closing prices
 price_s <- eapply(env_sp500, quantmod::Cl)
@@ -597,18 +620,16 @@ re_turns <-
 acf(re_turns, lag=10, main="")
 title(main="acf of DAX returns", line=-1)
 
+# Ljung-Box test for DAX returns
+# 'lag' is the number of autocorrelation coefficients
+Box.test(re_turns, lag=10, type="Ljung")
 library(Ecdat)  # Load Ecdat
 macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macro_zoo) <- c("unemprate", "3mTbill")
 macro_diff <- na.omit(diff(macro_zoo))
-# Ljung-Box test for DAX returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(re_turns, lag=10, type="Ljung")
-
 # Changes in 3 month T-bill rate are autocorrelated
 Box.test(macro_diff[, "3mTbill"],
    lag=10, type="Ljung")
-
 # Changes in unemployment rate are autocorrelated
 Box.test(macro_diff[, "unemprate"],
    lag=10, type="Ljung")

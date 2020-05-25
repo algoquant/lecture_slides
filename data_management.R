@@ -46,7 +46,7 @@ in_put <- as.numeric(in_put)
 # file.show("mytext.txt")
 # file.show("mytext.txt", pager="")
 
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
 mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
 rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
@@ -64,7 +64,7 @@ class(mat_read)
 mat_read <- as.matrix(mat_read)
 class(mat_read)
 
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
 data_frame <- read.table("mydata.txt", header=TRUE)
 data_frame <- read.table("clipboard", header=TRUE)
@@ -124,7 +124,7 @@ mat_read <- read.csv(file="matrix_ex_rows.csv")
 mat_read <- as.matrix(mat_read)
 mat_read  # A matrix without row names
 
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 library(MASS)  # Load package "MASS"
 # Write to CSV file by row - it's very SLOW!!!
 MASS::write.matrix(mat_rix,
@@ -171,7 +171,7 @@ mat_rix[is.na(mat_rix)] <- 0
 # matrix without NAs
 mat_rix
 
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 rm(list=ls())
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
@@ -242,7 +242,7 @@ head(zoo_read, 3)
 all.equal(zoo_series, zoo_read)
 
 # Read time series from CSV file, with numeric date-time
-zoo_read <- read.table(file="C:/Develop/R/lecture_slides/data/es_ohlc.csv",
+zoo_read <- read.table(file="C:/Develop/lecture_slides/data/es_ohlc.csv",
   header=TRUE, sep=",")
 # A data frame
 class(zoo_read)
@@ -266,7 +266,7 @@ save(var1, file="my_data.RData")
 # Save multiple objects
 save(var1, var2, file="my_data.RData")
 # Save first object in list by passing to "..." argument
-# Ls()[1] is not evaluated
+# ls()[1] is not evaluated
 save(ls()[1], file="my_data.RData")
 # Save first object in list by passing to "list" argument
 save(list=ls()[1], file="my_data.RData")
@@ -366,7 +366,7 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # Read a data table from CSV file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
+dir_name <- "C:/Develop/lecture_slides/data/"
 file_name <- file.path(dir_name, "weather_delays14.csv")
 data_table <- data.table::fread(file_name)
 class(data_table); dim(data_table)
@@ -681,7 +681,7 @@ ls("package:fst")
 detach("package:fst")
 
 # Read a data frame from CSV file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
+dir_name <- "C:/Develop/lecture_slides/data/"
 file_name <- file.path(dir_name, "weather_delays14.csv")
 data.table::setDF(data_frame)
 class(data_frame); dim(data_frame)
@@ -729,7 +729,7 @@ fst:::print.fst_table(fs_t)
 # Subset reference to .fst just like a data table
 fs_t[1e4:(1e4+5), ]
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 library(tseries)  # Load package tseries
 # Download MSFT data in ts format
 ts_stx <- suppressWarnings(
@@ -767,13 +767,13 @@ zoo_stx <- suppressWarnings(
     origin="1970-01-01")
 )  # end suppressWarnings
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 class(zoo_stx)
 dim(zoo_stx)
 head(zoo_stx, 4)
 
 library(tseries)  # Load package tseries
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Calculate price adjustment vector
 adj_vector <-
   as.vector(zoo_stx[, "AdjClose"] / zoo_stx[, "Close"])
@@ -805,43 +805,12 @@ zoo_stxeur <-
 save(zoo_stx, zoo_stx_adj,
      ts_stx, ts_stx_adj,
      zoo_eurusd, zoo_stxeur,
-     file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+     file="C:/Develop/lecture_slides/data/zoo_data.RData")
 
-load(file="C:/Develop/R/lecture_slides/data/zoo_data.RData")
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Inspect the data
 class(zoo_eurusd)
 head(zoo_eurusd, 4)
-
-library(xtable)
-# Define ETF symbols for asset allocation
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ",
-  "DBC", "XLY", "XLP", "XLE", "XLF", "XLV",
-  "XLI", "XLB", "XLK", "XLU", "VYM", "IVW",
-  "IWB", "IWD", "IWF", "VXX", "SVXY")
-# Read etf database into data frame
-etf_list <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/etf_list.csv",
-         stringsAsFactors=FALSE)
-rownames(etf_list) <- etf_list$Symbol
-# Select from etf_list only those ETF's in sym_bols
-etf_list <- etf_list[sym_bols, ]
-# Shorten names
-etf_names <- sapply(etf_list$Name,
-              function(name) {
-  name_split <- strsplit(name, split=" ")[[1]]
-  name_split <-
-    name_split[c(-1, -NROW(name_split))]
-  name_match <- match("Select", name_split)
-  if (!is.na(name_match))
-    name_split <- name_split[-name_match]
-  paste(name_split, collapse=" ")
-})  # end sapply
-etf_list$Name <- etf_names
-etf_list["IEF", "Name"] <- "Treasury Bond Fund"
-etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
-etf_list["SVXY", "Name"] <- "Short VIX Futures"
-
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
 
 library(tseries)  # Load package tseries
 # Download price and volume data for sym_bols into list of zoo objects
@@ -866,14 +835,14 @@ write.zoo(zoo_series, file="zoo_series.csv", sep=",")
 # Save zoo_series to a binary .RData file
 save(zoo_series, file="zoo_series.RData")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 etf_env <- new.env()  # new environment for data
 # Download data for sym_bols into etf_env from Alpha Vantage
 getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
   output.size="full", api.key="T7JPW54ES8G75310")
 # getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 ls(etf_env)  # List files in etf_env
 # get class of object in etf_env
 class(get(x=sym_bols[1], envir=etf_env))
@@ -886,7 +855,7 @@ eapply(etf_env, class)
 # get class of all objects in R workspace
 lapply(ls(), function(ob_ject) class(get(ob_ject)))
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Check of object is an OHLC time series
 is.OHLC(etf_env$VTI)
 # Adjust single OHLC object using its name
@@ -907,7 +876,7 @@ for (sym_bol in ls(etf_env)) {
    envir=etf_env)
 }  # end for
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Extract and cbind all data, subset by symbols
 price_s <- rutils::do_call(cbind,
   as.list(etf_env)[sym_bols])
@@ -950,7 +919,7 @@ head(cbind(daily_returns, vti_returns))
 all.equal(daily_returns, vti_returns, check.attributes=FALSE)
 # Calculate returns for all prices in etf_env$price_s
 re_turns <- lapply(etf_env$price_s, function(x_ts) {
-  daily_returns <- quantmod::dailyReturn(x_ts)
+  daily_returns <- quantmod::dailyReturn(na.omit(x_ts))
   colnames(daily_returns) <- names(x_ts)
   daily_returns
 })  # end lapply
@@ -995,7 +964,7 @@ assign("price_s", rutils::do_call(cbind,
          })), envir=new_env)
 
 # Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
 # Inspect data frame of S&P500 constituents
 dim(sp_500)
 colnames(sp_500)
@@ -1003,8 +972,8 @@ colnames(sp_500)
 sym_bols <- sp_500$co_tic
 # Get duplicate tickers
 ta_ble <- table(sym_bols)
-ta_ble[ta_ble>1]
-dupli_cate <- names(ta_ble[ta_ble>1])
+dupli_cate <- ta_ble[ta_ble>1]
+dupli_cate <- names(dupli_cate)
 # Get duplicate records (rows) of sp_500
 sp_500[sym_bols %in% dupli_cate, ]
 # Get unique tickers
@@ -1014,8 +983,8 @@ which(sym_bols=="BRK.B")
 # Remove "BRK.B" and later download it separately
 sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 
-# Load package HighFreq
-library(HighFreq)
+# Load package rutils
+library(rutils)
 # Create new environment for data
 env_sp500 <- new.env()
 # Boolean vector of symbols already downloaded
@@ -1029,8 +998,8 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-getSymbols(sym_bol, src="tiingo", adjust=TRUE,
-           from="1990-01-01", env=env_sp500, api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10"),
+getSymbols(sym_bol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
+           from="1990-01-01", env=env_sp500, api.key="d84fc2a9c5bde2d68e33034f65a838092c6b9f10"),
 # Error handler captures error condition
 error=function(error_cond) {
   print(paste("error handler: ", error_cond))
@@ -1080,10 +1049,11 @@ for (sym_bol in ls(env_sp500)) {
 }  # end for
 class(index(env_sp500$AAPL))
 # Save the environment to compressed .RData file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
+dir_name <- "C:/Develop/lecture_slides/data/"
 save(env_sp500, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
-dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+dir_name <- "C:/Develop/lecture_slides/data/SP500/"
+dir.create(dir_name)
 for (sym_bol in ls(env_sp500)) {
   zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
@@ -1113,10 +1083,10 @@ for (sym_bol in ls(env_sp500)) {
 }  # end for
 class(index(env_sp500$AAPL))
 # Save the environment to compressed .RData file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
+dir_name <- "C:/Develop/lecture_slides/data/"
 save(env_sp500, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
-dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+dir_name <- "C:/Develop/lecture_slides/data/SP500/"
 for (sym_bol in ls(env_sp500)) {
   zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
@@ -1136,10 +1106,10 @@ file_names <- eapply(env_sp500 , function(x_ts) {
 unlist(file_names)
 
 # Load the environment from compressed .RData file
-dir_name <- "C:/Develop/R/lecture_slides/data/"
+dir_name <- "C:/Develop/lecture_slides/data/"
 load(file=paste0(dir_name, "sp500.RData"))
 # Get all the .csv file names in the directory
-dir_name <- "C:/Develop/R/lecture_slides/data/SP500/"
+dir_name <- "C:/Develop/lecture_slides/data/SP500/"
 file_names <- Sys.glob(paste0(dir_name, "*.csv"))
 # Create new environment for data
 env_sp500 <- new.env()
@@ -1168,7 +1138,7 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-getSymbols(sym_bol, src="av", adjust=TRUE, env=env_sp500,
+getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=env_sp500,
            output.size="full", api.key="T7JPW54ES8G75310"),
 # error handler captures error condition
 error=function(error_cond) {
@@ -1188,7 +1158,7 @@ for (sym_bol in ls(env_sp500)) {
     envir=env_sp500)
 }  # end for
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Assign name SP500 to ^GSPC symbol
 setSymbolLookup(
   SP500=list(name="^GSPC", src="yahoo"))
@@ -1198,12 +1168,12 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
 getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
        TA="add_Vo()",
        name="S&P500 index")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Assign name DJIA to ^DJI symbol
 setSymbolLookup(
   DJIA=list(name="^DJI", src="yahoo"))
@@ -1213,12 +1183,12 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download DJIA prices into etf_env
 getSymbols("DJIA", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$DJIA["2016/"],
        TA="add_Vo()",
        name="DJIA index")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Create name corresponding to "^GSPC" symbol
 setSymbolLookup(
   SP500=list(name="^GSPC", src="yahoo"))
@@ -1228,12 +1198,12 @@ options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
 getSymbols("SP500", env=etf_env,
-    adjust=TRUE, from="1990-01-01")
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
        TA="add_Vo()",
        name="S&P500 index")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 library(RCurl)  # Load package RCurl
 library(XML)  # Load package XML
 # Download text data from URL
@@ -1253,12 +1223,12 @@ sp_500$names <- gsub("-", "_", sp_500$Ticker)
 sp_500$names <- gsub("[.]", "_", sp_500$names)
 # Write data frame of S&P500 constituents to CSV file
 write.csv(sp_500,
-  file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+  file="C:/Develop/lecture_slides/data/sp500_Yahoo.csv",
   row.names=FALSE)
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/R/lecture_slides/data/sp500_Yahoo.csv",
+sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_Yahoo.csv",
      stringsAsFactors=FALSE)
 # Register symbols corresponding to R names
 for (in_dex in 1:NROW(sp_500)) {
@@ -1279,7 +1249,7 @@ for (sym_bol in sp_500$names) {
   rutils::get_symbols(sym_bol,
    env_out=env_sp500, start_date="1990-01-01")
 }  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
        name="BRK-B stock")
 
@@ -1292,7 +1262,7 @@ unemp_rate <- getSymbols("UNRATE",
 chart_Series(unemp_rate["1990/"],
       name="U.S. unemployment rate")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 install.packages("devtools")
 library(devtools)
 # Install package Quandl from github
@@ -1307,7 +1277,7 @@ help(package="Quandl")
 # Remove Quandl from search path
 detach("package:Quandl")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Download EOD AAPL prices from WIKI free database
 price_s <- Quandl(code="WIKI/AAPL",
             type="xts", start_date="1990-01-01")
@@ -1333,10 +1303,10 @@ price_s <- Quandl(code="PE/AAPL_HURST",
 chart_Series(price_s["2016/", 1],
        name="AAPL Hurst")
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Load S&P500 stock Quandl codes
 sp_500 <- read.csv(
-  file="C:/Develop/R/lecture_slides/data/sp500_quandl.csv",
+  file="C:/Develop/lecture_slides/data/sp500_quandl.csv",
   stringsAsFactors=FALSE)
 # Replace "-" with "_" in symbols
 sp_500$free_code <-
@@ -1352,7 +1322,7 @@ tick_ers <- matrix(unlist(
 tick_ers <- do_call_rbind(
   strsplit(sp_500$free_code, split="/"))[, 2]
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 env_sp500 <- new.env()  # new environment for data
 # Remove all files (if necessary)
 rm(list=ls(env_sp500), envir=env_sp500)
@@ -1368,11 +1338,11 @@ for (tick_er in tick_ers[!down_loaded]) {
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
   assign(tick_er, da_ta, envir=env_sp500)
 }  # end for
-save(env_sp500, file="C:/Develop/R/lecture_slides/data/sp500.RData")
+save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
 chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
        name="XOM stock")
 
-library(HighFreq)
+library(rutils)
 library(Quandl)
 # Register Quandl API key
 Quandl.api_key("pVJi9Nv3V8CD3Js5s7Qx")
@@ -1392,7 +1362,7 @@ dygraphs::dygraph(price_s["2008-06/2009-06", -5],
   dyCandlestick()
 
 # Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/R/lecture_slides/data/futures_expiration_dates_codes.csv",
+date_s <- read.csv(file="C:/Develop/lecture_slides/data/futures_expiration_dates_codes.csv",
   stringsAsFactors=FALSE, row.names=1)
 dir_name <- "C:/Develop/data/vix_data"
 dir.create(dir_name)
@@ -1423,7 +1393,7 @@ vix_env <- new.env()
 # Download VIX data for the months 6, 7, and 8 in 2018
 library(qmao)
 quantmod::getSymbols("VX", Months=1:12,
-  Years=2018, src="cfe", env=vix_env)
+  Years=2018, src="cfe", auto.assign=TRUE, env=vix_env)
 # Or
 qmao::getSymbols.cfe(Symbols="VX",
   Months=6:8, Years=2018, env=vix_env,
@@ -1441,7 +1411,7 @@ save(vix_env,
 # Install and load package readxl
 install.packages("readxl")
 library(readxl)
-dir_name <- "C:/Develop/R/lecture_slides/data"
+dir_name <- "C:/Develop/lecture_slides/data"
 fil_e <- file.path(dir_name, "multi_tabs.xlsx")
 # Read a time series from first sheet of xlsx file
 tib_ble <- readxl::read_xlsx(fil_e)
@@ -1464,7 +1434,7 @@ x_ts <- xts::xts(do.call(cbind, lis_t)[, -1], lis_t[[1]])
 class(x_ts); dim(x_ts)
 # Replace NA values with the most recent non-NA values
 sum(is.na(x_ts))
-x_ts <- zoo::na.locf(x_ts)
+x_ts <- zoo::na.locf(x_ts, na.rm=FALSE)
 x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
 
 # Read names of all the sheets in an Excel spreadsheet
@@ -1493,12 +1463,12 @@ sheet_s <- lapply(sheet_s, to_xts)
 sapply(sheet_s, class)
 # Replace NA values with the most recent non-NA values
 sapply(sheet_s, function(x_ts) sum(is.na(x_ts)))
-sheet_s <- lapply(sheet_s, zoo::na.locf)
+sheet_s <- lapply(sheet_s, zoo::na.locf, na.rm=FALSE)
 sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
 
 #Perform calculations in R,
 #And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 # Read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv",
               row.names=1)
@@ -1510,7 +1480,7 @@ write.csv(data_read, file="daisies.csv")
 
 #Perform calculations in R,
 #And export to CSV files
-setwd("C:/Develop/R/lecture_slides/data")
+setwd("C:/Develop/lecture_slides/data")
 # Read data frame, with row names from first column
 data_read <- read.csv(file="florist.csv",
               row.names=1)
@@ -1547,7 +1517,7 @@ gs_read_csv(google_sheet, ws=tab_s[1])
 google_sheet %>% gs_read(ws=tab_s[1])
 # Download data from sheet into file
 gs_download(google_sheet, ws=tab_s[1],
-      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
+      to="C:/Develop/lecture_slides/data/google_sheet.csv")
 # Open sheet in internet browser
 gs_browse(google_sheet)
 
@@ -1578,6 +1548,6 @@ gs_read_csv(google_sheet, ws=tab_s[1])
 google_sheet %>% gs_read(ws=tab_s[1])
 # Download data from sheet into file
 gs_download(google_sheet, ws=tab_s[1],
-      to="C:/Develop/R/lecture_slides/data/google_sheet.csv")
+      to="C:/Develop/lecture_slides/data/google_sheet.csv")
 # Open sheet in internet browser
 gs_browse(google_sheet)
