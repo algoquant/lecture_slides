@@ -1908,12 +1908,15 @@ save(zoo_series, file="zoo_series.RData")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Stock Prices Using Package \protect\emph{quantmod}}
+\subsection{draft: Downloading Stock Prices Using Package \protect\emph{quantmod}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      download using while loop
+      requires 1 minute pacing
+      \vskip1ex
       The function \texttt{getSymbols()} downloads time series data into the specified \emph{environment}.
       \vskip1ex
       \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names).
@@ -1926,9 +1929,9 @@ save(zoo_series, file="zoo_series.RData")
       \vskip1ex
       If the argument \texttt{"auto.assign"} is set to \texttt{FALSE}, then \texttt{getSymbols()} returns the data, instead of assigning it silently.
       \vskip1ex
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo} and \emph{Alpha Vantage} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, leaving \emph{Alpha Vantage} as the only major provider of free daily \emph{ETF} prices.
+      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, leaving \emph{Alpha Vantage} as the best provider of free daily \emph{ETF} prices.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -1937,6 +1940,30 @@ etf_env <- new.env()  # new environment for data
 # Download data for sym_bols into etf_env from Alpha Vantage
 getSymbols.av(sym_bols, adjust=TRUE, env=etf_env,
   output.size="full", api.key="T7JPW54ES8G75310")
+# Download data from Alpha Vantage using while loop
+at_tempt <- 0  # number of download attempts
+while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
+  # Download data and copy it into environment
+  at_tempt <- at_tempt + 1
+  cat("Download attempt = ", at_tempt, "/n")
+  for (sym_bol in sym_bols[!down_loaded][1:5]) {
+    cat("processing: ", sym_bol, "/n")
+    tryCatch(  # With error handler
+      quantmod::getSymbols.av(sym_bol, adjust=TRUE, env=etf_env, auto.assign = TRUE, output.size="full", api.key="T7NHW54ES8GG501C"),
+      # Error handler captures error condition
+      error=function(error_cond) {
+        print(paste("error handler: ", error_cond))
+      },  # end error handler
+      finally=print(paste("sym_bol=", sym_bol))
+    )  # end tryCatch
+  }  # end for
+  # Update vector of symbols already downloaded
+  down_loaded <- sym_bols %in% ls(etf_env)
+  Sys.sleep(65)
+}  # end while
+
+
+
 # getSymbols(sym_bols, env=etf_env, adjust=TRUE, from="2005-01-03")
       @
       \vspace{-2em}
@@ -2032,33 +2059,26 @@ for (sym_bol in ls(etf_env)) {
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
-# Extract and cbind all data, subset by symbols
-price_s <- rutils::do_call(cbind,
-  as.list(etf_env)[sym_bols])
-# Or
-# price_s <- do.call(cbind,
-#   as.list(etf_env)[sym_bols])
-# Extract and cbind adjusted prices, subset by symbols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(etf_env)[sym_bols], Ad))
-# Same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(etf_env, Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <-
-  sapply(colnames(price_s),
+# Extract and cbind all Close prices for sym_bols
+price_s <- do.call(cbind,
+  lapply(as.list(etf_env)[sym_bols], quantmod::Cl))
+# wippp
+# Drop ".Close" from colnames
+colnames(price_s) <- sapply(colnames(price_s),
     function(col_name)
       strsplit(col_name, split="[.]")[[1]],
     USE.NAMES=FALSE)[1, ]
-head(price_s[, 1:2], 3)
+head(price_s[, 1:9], 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
-  file="etf_series.csv", sep=",")
+  file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
 # Copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file="etf_data.RData")
+etf_env$etf_list <- etf_list
+# assign("price_s", price_s, envir=etf_env)
+etf_env$price_s <- price_s
+save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2067,13 +2087,13 @@ save(etf_env, file="etf_data.RData")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Calculating Percentage Returns from Adjusted Prices}
+\subsection{Calculating Percentage Returns from Close Prices}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      The function \texttt{quantmod::dailyReturn()} calculates the percentage daily returns from the adjusted prices.
+      The function \texttt{quantmod::dailyReturn()} calculates the percentage daily returns from the \emph{Close} prices.
       \vskip1ex
       The \texttt{lapply()} and \texttt{sapply()} functionals perform a loop over the columns of \emph{zoo} and \emph{xts} series.
     \column{0.6\textwidth}
@@ -2101,12 +2121,13 @@ re_turns <- lapply(etf_env$price_s, function(x_ts) {
 class(re_turns)
 class(re_turns[[1]])
 # Flatten list of xts into a single xts
-re_turns <- rutils::do_call(cbind, re_turns)
+re_turns <- do.call(cbind, re_turns)
 class(re_turns)
 dim(re_turns)
 # Copy re_turns into etf_env and save to .RData file
-assign("re_turns", re_turns, envir=etf_env)
-save(etf_env, file="etf_data.RData")
+# assign("re_turns", re_turns, envir=etf_env)
+etf_env$re_turns <- re_turns
+save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2138,10 +2159,10 @@ new_env <- as.environment(eapply(etf_env, "[",
 new_env <- as.environment(
   lapply(as.list(etf_env)[sym_bols], "[",
          paste(start_date, end_date, sep="/")))
-# Extract and cbind adjusted prices and return to environment
+# Extract and cbind Close prices and return to environment
 assign("price_s", rutils::do_call(cbind,
                lapply(ls(etf_env), function(sym_bol) {
-                 x_ts <- Ad(get(sym_bol, etf_env))
+                 x_ts <- quantmod::Cl(get(sym_bol, etf_env))
                  colnames(x_ts) <- sym_bol
                  x_ts
                })), envir=new_env)
@@ -2214,9 +2235,9 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
+      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
       \vskip1ex
       The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Tiingo}, called \texttt{getSymbols.tiingo()}.
       \vskip1ex
@@ -2230,9 +2251,9 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 # Load package rutils
 library(rutils)
 # Create new environment for data
-env_sp500 <- new.env()
+sp500_env <- new.env()
 # Boolean vector of symbols already downloaded
-down_loaded <- sym_bols %in% ls(env_sp500)
+down_loaded <- sym_bols %in% ls(sp500_env)
 # Download in while loop from Tiingo and copy into environment
 at_tempt <- 0  # number of download attempts
 while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
@@ -2242,8 +2263,8 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-      getSymbols(sym_bol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
-                 from="1990-01-01", env=env_sp500, api.key="d84fc2a9c5bde2d68e33034f65a838092c6b9f10"),
+      quantmod::getSymbols(sym_bol, src="tiingo", adjust=TRUE, auto.assign=TRUE,
+                 from="1990-01-01", env=sp500_env, api.key="d84fc2a9c5bde2d68e33034f65a838092c6b9f10"),
       # Error handler captures error condition
       error=function(error_cond) {
         print(paste("error handler: ", error_cond))
@@ -2252,11 +2273,11 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<5)) {
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
+  down_loaded <- sym_bols %in% ls(sp500_env)
   Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
-class(env_sp500$AAPL)
-class(index(env_sp500$AAPL))
+class(sp500_env$AAPL)
+class(index(sp500_env$AAPL))
 @
   \end{columns}
 \end{block}
@@ -2278,31 +2299,31 @@ class(index(env_sp500$AAPL))
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)
 # Rename "LOW" colnames to "LO_WES"
-colnames(env_sp500$LOW) <- paste("LO_WES", 
-  sapply(strsplit(colnames(env_sp500$LOW), split="[.]"), 
+colnames(sp500_env$LOW) <- paste("LO_WES", 
+  sapply(strsplit(colnames(sp500_env$LOW), split="[.]"), 
          function(col_name) col_name[2]), sep=".")
-env_sp500$LO_WES <- env_sp500$LOW[, unique(colnames(env_sp500$LOW))]
-rm(LOW, envir=env_sp500)
-chart_Series(x=env_sp500$LO_WES["2017-06/"],
+sp500_env$LO_WES <- sp500_env$LOW[, unique(colnames(sp500_env$LOW))]
+rm(LOW, envir=sp500_env)
+chart_Series(x=sp500_env$LO_WES["2017-06/"],
   TA="add_Vo()", name="LOWES stock")
 # Download "BRK.B" separately with auto.assign=FALSE
-BRK_B <- getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
+BRK_B <- quantmod::getSymbols("BRK-B", auto.assign=FALSE, src="tiingo", adjust=TRUE, from="1990-01-01", api.key="j84ac2b9c5bde2d68e33034f65d838092c6c9f10")
 colnames(BRK_B) <- paste("BRK_B", 
   sapply(strsplit(colnames(BRK_B), split="[.]"), 
          function(col_name) col_name[2]), sep=".")
-env_sp500$BRK_B <- BRK_B
+sp500_env$BRK_B <- BRK_B
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/lowes_stock.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Rename "BF-B" colnames to "BF_B"
-colnames(env_sp500$"BF-B") <- paste("BF_B", 
-  sapply(strsplit(colnames(env_sp500$"BF-B"), split="[.]"), 
+colnames(sp500_env$"BF-B") <- paste("BF_B", 
+  sapply(strsplit(colnames(sp500_env$"BF-B"), split="[.]"), 
          function(col_name) col_name[2]), sep=".")
-names(colnames(env_sp500$"BF-B")) <- NULL
-env_sp500$BF_B <- env_sp500$"BF-B"
-rm("BF-B", envir=env_sp500)
+names(colnames(sp500_env$"BF-B")) <- NULL
+sp500_env$BF_B <- sp500_env$"BF-B"
+rm("BF-B", envir=sp500_env)
       @
 
   \end{columns}
@@ -2334,34 +2355,34 @@ rm("BF-B", envir=env_sp500)
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-class(env_sp500$AAPL)
+class(sp500_env$AAPL)
 # The date-time index is class POSIXct not Date
-class(index(env_sp500$AAPL))
+class(index(sp500_env$AAPL))
 # Coerce time indices from class POSIXct to class Date
-for (sym_bol in ls(env_sp500)) {
-  x_ts <- get(sym_bol, envir=env_sp500)
+for (sym_bol in ls(sp500_env)) {
+  x_ts <- get(sym_bol, envir=sp500_env)
   index(x_ts) <- as.Date(index(x_ts))
-  assign(sym_bol, x_ts, envir=env_sp500)
+  assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
-class(index(env_sp500$AAPL))
+class(index(sp500_env$AAPL))
 # Save the environment to compressed .RData file
 dir_name <- "C:/Develop/lecture_slides/data/"
-save(env_sp500, file=paste0(dir_name, "sp500.RData"))
+save(sp500_env, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
 dir_name <- "C:/Develop/lecture_slides/data/SP500/"
 dir.create(dir_name)
-for (sym_bol in ls(env_sp500)) {
-  zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
+for (sym_bol in ls(sp500_env)) {
+  zoo::write.zoo(sp500_env$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
 # Or using lapply()
-file_names <- lapply(ls(env_sp500), function(sym_bol) {
-  x_ts <- get(sym_bol, envir=env_sp500)
+file_names <- lapply(ls(sp500_env), function(sym_bol) {
+  x_ts <- get(sym_bol, envir=sp500_env)
   zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
   sym_bol
 })  # end lapply
 unlist(file_names)
 # Or using eapply() and data.table::fwrite()
-file_names <- eapply(env_sp500 , function(x_ts) {
+file_names <- eapply(sp500_env , function(x_ts) {
   file_name <- rutils::get_name(colnames(x_ts)[1])
   data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
   file_name
@@ -2397,33 +2418,33 @@ unlist(file_names)
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-class(env_sp500$AAPL)
+class(sp500_env$AAPL)
 # The date-time index is class POSIXct not Date
-class(index(env_sp500$AAPL))
+class(index(sp500_env$AAPL))
 # Coerce time indices from class POSIXct to class Date
-for (sym_bol in ls(env_sp500)) {
-  x_ts <- get(sym_bol, envir=env_sp500)
+for (sym_bol in ls(sp500_env)) {
+  x_ts <- get(sym_bol, envir=sp500_env)
   index(x_ts) <- as.Date(index(x_ts))
-  assign(sym_bol, x_ts, envir=env_sp500)
+  assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
-class(index(env_sp500$AAPL))
+class(index(sp500_env$AAPL))
 # Save the environment to compressed .RData file
 dir_name <- "C:/Develop/lecture_slides/data/"
-save(env_sp500, file=paste0(dir_name, "sp500.RData"))
+save(sp500_env, file=paste0(dir_name, "sp500.RData"))
 # Save the ETF prices into CSV files
 dir_name <- "C:/Develop/lecture_slides/data/SP500/"
-for (sym_bol in ls(env_sp500)) {
-  zoo::write.zoo(env_sp500$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
+for (sym_bol in ls(sp500_env)) {
+  zoo::write.zoo(sp500_env$sym_bol, file=paste0(dir_name, sym_bol, ".csv"))
 }  # end for
 # Or using lapply()
-file_names <- lapply(ls(env_sp500), function(sym_bol) {
-  x_ts <- get(sym_bol, envir=env_sp500)
+file_names <- lapply(ls(sp500_env), function(sym_bol) {
+  x_ts <- get(sym_bol, envir=sp500_env)
   zoo::write.zoo(x_ts, file=paste0(dir_name, sym_bol, ".csv"))
   sym_bol
 })  # end lapply
 unlist(file_names)
 # Or using eapply() and data.table::fwrite()
-file_names <- eapply(env_sp500 , function(x_ts) {
+file_names <- eapply(sp500_env , function(x_ts) {
   file_name <- rutils::get_name(colnames(x_ts)[1])
   data.table::fwrite(data.table::as.data.table(x_ts), file=paste0(dir_name, file_name, ".csv"))
   file_name
@@ -2464,11 +2485,11 @@ load(file=paste0(dir_name, "sp500.RData"))
 dir_name <- "C:/Develop/lecture_slides/data/SP500/"
 file_names <- Sys.glob(paste0(dir_name, "*.csv"))
 # Create new environment for data
-env_sp500 <- new.env()
+sp500_env <- new.env()
 for (file_name in file_names) {
   x_ts <- xts::as.xts(zoo::read.csv.zoo(file_name))
   sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
-  assign(sym_bol, x_ts, envir=env_sp500)
+  assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
 # Or using fread()
 for (file_name in file_names) {
@@ -2476,7 +2497,7 @@ for (file_name in file_names) {
   data.table::setDF(x_ts)
   x_ts <- xts::xts(x_ts[, -1], as.Date(x_ts[, 1]))
   sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
-  assign(sym_bol, x_ts, envir=env_sp500)
+  assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
 @
   \end{columns}
@@ -2492,9 +2513,9 @@ for (file_name in file_names) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
-      But \emph{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
+      But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
       \vskip1ex
       The function \texttt{getSymbols()} has a \emph{method} for downloading time series data from \emph{Alpha Vantage}, called \texttt{getSymbols.av()}.
       \vskip1ex
@@ -2506,9 +2527,9 @@ for (file_name in file_names) {
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Remove all files from environment(if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
+rm(list=ls(sp500_env), envir=sp500_env)
 # Download in while loop from Alpha Vantage and copy into environment
-down_loaded <- sym_bols %in% ls(env_sp500)
+down_loaded <- sym_bols %in% ls(sp500_env)
 at_tempt <- 0
 while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
   # Download data and copy it into environment
@@ -2516,7 +2537,7 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
   for (sym_bol in sym_bols[!down_loaded]) {
     cat("processing: ", sym_bol, "\n")
     tryCatch(  # With error handler
-      getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=env_sp500,
+      quantmod::getSymbols(sym_bol, src="av", adjust=TRUE, auto.assign=TRUE, env=sp500_env,
                  output.size="full", api.key="T7JPW54ES8G75310"),
       # error handler captures error condition
       error=function(error_cond) {
@@ -2526,14 +2547,14 @@ while (((sum(!down_loaded)) > 0) & (at_tempt<10)) {
     )  # end tryCatch
   }  # end for
   # Update vector of symbols already downloaded
-  down_loaded <- sym_bols %in% ls(env_sp500)
+  down_loaded <- sym_bols %in% ls(sp500_env)
   Sys.sleep(10)  # Wait 10 seconds until next attempt
 }  # end while
 # Adjust all OHLC prices in environment
-for (sym_bol in ls(env_sp500)) {
+for (sym_bol in ls(sp500_env)) {
   assign(sym_bol,
-    adjustOHLC(get(x=sym_bol, envir=env_sp500), use.Adjusted=TRUE),
-    envir=env_sp500)
+    adjustOHLC(get(x=sym_bol, envir=sp500_env), use.Adjusted=TRUE),
+    envir=sp500_env)
 }  # end for
       @
   \end{columns}
@@ -2559,7 +2580,7 @@ for (sym_bol in ls(env_sp500)) {
       \vskip1ex
       The function \texttt{setSymbolLookup()} creates valid names corresponding to stock symbols, which are then used by the function \texttt{getSymbols()} to create objects with the valid names.
       \vskip1ex
-      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \emph{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
+      \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Alpha Vantage} and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -2572,7 +2593,7 @@ getSymbolLookup()
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
-getSymbols("SP500", env=etf_env,
+quantmod::getSymbols("SP500", env=etf_env,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
              TA="add_Vo()",
@@ -2612,7 +2633,7 @@ getSymbolLookup()
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download DJIA prices into etf_env
-getSymbols("DJIA", env=etf_env,
+quantmod::getSymbols("DJIA", env=etf_env,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$DJIA["2016/"],
              TA="add_Vo()",
@@ -2657,7 +2678,7 @@ getSymbolLookup()
 options("getSymbols.sources")
 options(getSymbols.sources=NULL)
 # Download S&P500 prices into etf_env
-getSymbols("SP500", env=etf_env,
+quantmod::getSymbols("SP500", env=etf_env,
     adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
 chart_Series(x=etf_env$SP500["2016/"],
              TA="add_Vo()",
@@ -2745,20 +2766,20 @@ for (in_dex in 1:NROW(sp_500)) {
     list(list(name=sp_500$Ticker[in_dex])),
     names=sp_500$names[in_dex]))
 }  # end for
-env_sp500 <- new.env()  # new environment for data
+sp500_env <- new.env()  # new environment for data
 # Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
+rm(list=ls(sp500_env), envir=sp500_env)
 # Download data and copy it into environment
-rutils::get_symbols(sp_500$names,
-   env_out=env_sp500, start_date="1990-01-01")
+rutils::get_data(sp_500$names,
+   env_out=sp500_env, start_date="1990-01-01")
 # Or download in loop
 for (sym_bol in sp_500$names) {
   cat("processing: ", sym_bol, "\n")
-  rutils::get_symbols(sym_bol,
-   env_out=env_sp500, start_date="1990-01-01")
+  rutils::get_data(sym_bol,
+   env_out=sp500_env, start_date="1990-01-01")
 }  # end for
-save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
+save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
+chart_Series(x=sp500_env$BRK_B["2016/"], TA="add_Vo()",
              name="BRK-B stock")
       @
   \end{columns}
@@ -2789,7 +2810,7 @@ chart_Series(x=env_sp500$BRK_B["2016/"], TA="add_Vo()",
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)
 # Download U.S. unemployment rate data
-unemp_rate <- getSymbols("UNRATE",
+unemp_rate <- quantmod::getSymbols("UNRATE",
                   auto.assign=FALSE,
                   src="FRED")
 # Plot U.S. unemployment rate data
@@ -2809,17 +2830,17 @@ chart_Series(unemp_rate["1990/"],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets.
+      \href{https://www.quandl.com/}{Quandl} is a distributor of third party data, and offers several million financial, economic, and social datasets.
       \vskip1ex
-      Much of the \emph{Quandl} data is free, while premium data can be obtained under a temporary license.
+      Much of the \href{https://www.quandl.com/}{Quandl} data is free, while premium data can be obtained under a temporary license.
       \vskip1ex
-      \emph{Quandl} offers online help and a guide to its datasets:\\
+      \href{https://www.quandl.com/}{Quandl} provides online help and a guide to its datasets:\\
       \hskip1em\url{https://www.quandl.com/help/r}\\
       \hskip1em\url{https://www.quandl.com/browse}\\
       \hskip1em\url{https://www.quandl.com/blog/getting-started-with-the-quandl-api}\\
       \hskip1em\url{https://www.quandl.com/blog/stock-market-data-guide}
       \vskip1ex
-      \emph{Quandl} offers stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
+      \href{https://www.quandl.com/}{Quandl} provides stock prices, stock fundamentals, financial ratios, indexes, options and volatility, earnings estimates, analyst ratings, etc.:\\
       \hskip1em\url{https://www.quandl.com/blog/api-for-stock-data}
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2839,7 +2860,7 @@ help(package="Quandl")
 # Remove Quandl from search path
 detach("package:Quandl")
       @
-      \emph{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \emph{Quandl} directly into \texttt{R}.
+      \href{https://www.quandl.com/}{Quandl} has developed an \texttt{R} package called \emph{Quandl} that allows downloading data from \href{https://www.quandl.com/}{Quandl} directly into \texttt{R}.
       \vskip1ex
       To make more than 50 downloads a day, you need to register your \emph{Quandl} API key using the function \texttt{Quandl.api\_key()},
   \end{columns}
@@ -2855,11 +2876,11 @@ detach("package:Quandl")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
+      \href{https://www.quandl.com/}{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
       \vskip1ex
       The dots \texttt{"..."} argument of the \texttt{Quandl()} function accepts additional parameters to the \emph{Quandl API},\\
       \vskip1ex
-      \emph{Quandl} datasets have a unique \emph{Quandl code} in the format \texttt{"database/ticker"}, which can be found on the \emph{Quandl} website for that dataset:\\
+      \href{https://www.quandl.com/}{Quandl} datasets have a unique \emph{Quandl code} in the format \texttt{"database/ticker"}, which can be found on the \href{https://www.quandl.com/}{Quandl} website for that dataset:\\
       \hskip1em\url{https://www.quandl.com/data/WIKI?keyword=aapl}
       \vskip1ex
       \emph{WIKI} is a user maintained free database of daily prices for 3,000 U.S. stocks,\\
@@ -2915,10 +2936,10 @@ chart_Series(price_s["2016/", 1],
     \column{0.5\textwidth}
       Instrument metadata specifies properties of instruments, like its currency, contract size, tick value, delievery months, start date, etc.
       \vskip1ex
-      \emph{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
+      \href{https://www.quandl.com/}{Quandl} provides instrument metadata for stock indices, futures, and currencies:\\
       \hskip1em\url{https://www.quandl.com/blog/useful-lists}
       \vskip1ex
-      \emph{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
+      \href{https://www.quandl.com/}{Quandl} also provides constituents for stock indices, for example the \emph{S\&P500}, \emph{Dow Jones Industrial Average}, \emph{NASDAQ Composite}, \emph{FTSE 100}, etc.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -2954,18 +2975,18 @@ tick_ers <- do_call_rbind(
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
-      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \emph{Quandl}.
+      Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \href{https://cran.r-project.org/web/packages/Quandl/index.html}{Quandl}.
       \vskip1ex
       The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
     \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
-env_sp500 <- new.env()  # new environment for data
+sp500_env <- new.env()  # new environment for data
 # Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
+rm(list=ls(sp500_env), envir=sp500_env)
 # Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
+down_loaded <- tick_ers %in% ls(sp500_env)
 # Download data and copy it into environment
 for (tick_er in tick_ers[!down_loaded]) {
   cat("processing: ", tick_er, "\n")
@@ -2974,10 +2995,10 @@ for (tick_er in tick_ers[!down_loaded]) {
                   type="xts")[, -(1:7)]
   colnames(da_ta) <- paste(tick_er,
     c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
+  assign(tick_er, da_ta, envir=sp500_env)
 }  # end for
-save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
+save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
+chart_Series(x=sp500_env$XOM["2016/"], TA="add_Vo()",
              name="XOM stock")
       @
   \end{columns}
@@ -2993,7 +3014,7 @@ chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Quandl} provides the
+      \href{https://www.quandl.com/}{Quandl} provides the
       \href{https://www.quandl.com/data/CHRIS-Wiki-Continuous-Futures}{Wiki CHRIS Database} 
       of time series of prices for \texttt{600} different futures contracts.
       \vskip1ex
@@ -3002,7 +3023,7 @@ chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
       \vskip1ex
       A continuous futures contract is a time series of prices obtained by chaining together prices from consecutive futures contracts.
       \vskip1ex
-      The data is curated by the \emph{Quandl} community from data provided by the \emph{CME}, \emph{ICE}, \emph{LIFFE}, and other exchanges.
+      The data is curated by the \href{https://www.quandl.com/}{Quandl} community from data provided by the \emph{CME}, \emph{ICE}, \emph{LIFFE}, and other exchanges.
       \vskip1ex
       The \emph{Quandl codes} are specified as \texttt{CHRIS/\{EXCHANGE\}\_\{CODE\}\{DEPTH\}}, where \texttt{\{DEPTH\}} is the depth of the chained contract.
       \vskip1ex
@@ -3010,7 +3031,7 @@ chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
       \vskip1ex
       The continuous front and back month contracts allow building continuous futures curves.
       \vskip1ex
-      \emph{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
+      \href{https://www.quandl.com/}{Quandl} data can be downloaded directly into \texttt{R} using the function \texttt{Quandl()}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=

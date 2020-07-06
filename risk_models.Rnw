@@ -1934,7 +1934,7 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
         <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
 price_s <- quantmod::Cl(rutils::etf_env$VTI)
-re_turns <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
+re_turns <- (24*3600)*rutils::diff_it(price_s)/rutils::lag_it(price_s)/rutils::diff_it(.index(price_s))
 # Number of observations
 n_rows <- NROW(re_turns)
 # Mean of VTI returns
@@ -3875,17 +3875,19 @@ chart.Boxplot(etf_env$re_turns[,
       \vspace{-1em}
       <<echo=(-1),eval=FALSE>>=
 library(PerformanceAnalytics)
-tail(table.Stats(etf_env$re_turns[,
-  c("VTI", "IEF", "DBC", "VXX")]), 4)
+table.Stats(etf_env$re_turns[, c("VTI", "IEF", "DBC", "VXX")])
 risk_return <- table.Stats(etf_env$re_turns)
-class(risk_return)
 # Transpose the data frame
+class(risk_return)
 risk_return <- as.data.frame(t(risk_return))
-      @
-      \vspace{-1em}
-      <<returns_scatter,echo=(-1),eval=FALSE,fig.width=5,fig.height=5,fig.show="hide">>=
+# Copy risk_return into etf_env and save to .RData file
+etf_env$risk_return <- risk_return
+save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
+# Remove VIX etf data
+risk_return <- risk_return[-match(c("VXX", "SVXY"), rownames(risk_return)), ]
 # Plot scatterplot
 plot(Kurtosis ~ Skewness, data=risk_return,
+     ylim=c(1, max(risk_return$Kurtosis)), 
      main="Kurtosis vs Skewness")
 # Add labels
 text(x=risk_return$Skewness, y=risk_return$Kurtosis,
@@ -3894,7 +3896,7 @@ text(x=risk_return$Skewness, y=risk_return$Kurtosis,
       @
     \column{0.5\textwidth}
     \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/returns_scatter-1}
+      \includegraphics[width=0.5\paperwidth]{figure/etf_skew_kurtosis.png}
   \end{columns}
 \end{block}
 
