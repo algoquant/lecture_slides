@@ -1578,10 +1578,10 @@ wrds_con <- rwrds::wrds_connect(username="jp3900", password="RipvanWinkle20")
 names_table <- rwrds::compustat_names(wrds=wrds_con, subset=FALSE, dl=TRUE)
 dim(names_table)
 # Save names table as csv file
-write.csv(names_table, file="C:/Develop/data/WRDS/compustat_table.csv", row.names=FALSE)
+write.csv(names_table, file="C:/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
 # rm(names_table)
 # Read names table from csv file
-names_table <- read.csv(file="C:/Develop/data/WRDS/compustat_table.csv", stringsAsFactors=FALSE)
+names_table <- read.csv(file="C:/Develop/lecture_slides/data/compustat_table.csv", stringsAsFactors=FALSE)
 # sym_bol <- "VTI"
 # match(sym_bol, names_table$tic)
 # Create ETF symbols (tickers)
@@ -1592,11 +1592,11 @@ names(in_dex) <- sym_bols
 etf_cusips <- names_table$cusip[in_dex]
 names(etf_cusips) <- sym_bols
 # Save cusips into text file
-cat(etf_cusips, file="C:/Develop/data/WRDS/etf_cusips.txt", sep="\n")
+cat(etf_cusips, file="C:/Develop/lecture_slides/data/etf_cusips.txt", sep="\n")
 # Save gvkeys into text file
 etf_gvkeys <- names_table$gvkey[in_dex]
 names(etf_gvkeys) <- sym_bols
-cat(etf_gvkeys, file="C:/Develop/data/WRDS/etf_gvkeys.txt", sep="\n")
+cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       @
   \end{columns}
 \end{block}
@@ -1646,8 +1646,12 @@ cat(etf_gvkeys, file="C:/Develop/data/WRDS/etf_gvkeys.txt", sep="\n")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sp500_table <- read.csv(file="C:/Develop/data/WRDS/sp500_constituents.csv", stringsAsFactors=FALSE)
+# Read .csv file with S&P500 constituents
+sp500_table <- read.csv(file="C:/Develop/lecture_slides/data/sp500_constituents.csv", stringsAsFactors=FALSE)
 class(sp500_table)
+# Select unique sp500 tickers and save them into text file
+sp500_tickers <- unique(sp500_table$co_tic)
+cat(sp500_tickers, file="C:/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
 # Some gvkeys are duplicates
 duplicate_s <- table(sp500_table$gvkey)
 duplicate_s <- duplicate_s[duplicate_s > 1]
@@ -1656,10 +1660,13 @@ duplicate_s <- sp500_table[match(as.numeric(names(duplicate_s)), sp500_table$gvk
 sp500_gvkeys <- unique(sp500_table$gvkey)
 # foo <- sp500_table[match(sp500_gvkeys, sp500_table$gvkey), ]
 # Save gvkeys into text file
-cat(sp500_gvkeys, file="C:/Develop/data/WRDS/sp500_gvkeys.txt", sep="\n")
+cat(sp500_gvkeys, file="C:/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
 # Select unique cusips and save into text file
 sp500_cusips <- unique(sp500_table$co_cusip)
-cat(sp500_cusips, file="C:/Develop/data/WRDS/sp500_cusips.txt", sep="\n")
+# Remove empty cusips
+which(sp500_cusips == "")
+sp500_cusips <- sp500_cusips[-which(sp500_cusips == "")]
+cat(sp500_cusips, file="C:/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
 # Find the rows corresponding to the sp500_cusips
 rows_cusips <- sp500_table[match(sp500_cusips, sp500_table$co_cusip), ]
 # Find the rows corresponding to duplicate gvkeys
@@ -1724,19 +1731,34 @@ duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s))
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
+    \column{0.4\textwidth}
       The time series data downloaded into a \texttt{.csv} file can then be read into \texttt{R}. 
+      \vskip1ex
+      But the data downloaded from the 
+      \href{https://wrds-web.wharton.upenn.edu/wrds/ds/compd/secd/index.cfm?navId=83}{\emph{Compustat Daily Prices}} 
+      database may contain data for several related securities, so it must be properly selected (pruned).
       \vskip1ex
       The \emph{OHLC} prices can be adjusted by dividing them by the \emph{split adjustment factor} and multiplying them by the \emph{total return factor}.
       \vskip1ex
       The \emph{OHLC} prices are also divided by the final \emph{total return factor} so that the most recent adjusted prices are equal to the most recent market prices.
-    \column{0.5\textwidth}
+    \column{0.6\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # Load package HighFreq
-# Read .csv file with EEM OHLC prices
-oh_lc <- read.csv(file="C:/Develop/data/WRDS/EEM.csv", stringsAsFactors=FALSE)
-sym_bol <- oh_lc[1, "tic"]
+# Read .csv file with TAP OHLC prices
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv", stringsAsFactors=FALSE)
+# oh_lc contains cusips not in sp500_cusips
+cusip_s <- unique(oh_lc$cusip)
+cusip_s %in% sp500_cusips
+# Select data only for sp500_cusips
+oh_lc <- oh_lc[oh_lc$cusip %in% sp500_cusips, ]
+# oh_lc contains tickers not in sp500_tickers
+ticker_s <- unique(oh_lc$tic)
+ticker_s %in% sp500_tickers
+# Select data only for sp500_tickers
+oh_lc <- oh_lc[oh_lc$tic %in% sp500_tickers, ]
+# Select ticker from sp500_table
+sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
 # Adjustment factor and total return factor
 adj_fact <- drop(oh_lc[, "ajexdi"])
 tr_fact <- drop(oh_lc[, "trfd"])
@@ -1754,7 +1776,8 @@ oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
 sum(is.na(oh_lc))
 # Adjust all the prices
 oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
-plot(quantmod::Cl(oh_lc), main="EEM Etf Stock")
+oh_lc <- na.omit(oh_lc)
+plot(quantmod::Cl(oh_lc), main="TAP Stock")
       @
   \end{columns}
 \end{block}
@@ -1763,34 +1786,20 @@ plot(quantmod::Cl(oh_lc), main="EEM Etf Stock")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Reading Index Constituent Prices Into \texttt{R}}
+\subsection{Function for Reading Daily Prices Into \texttt{R}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.5\textwidth}
-      The prices for all the index constituents are first downloaded from \emph{Compustat} into a single \texttt{.csv} file, and then they are read into \texttt{R} and formatted into a time series of \emph{OHLC} prices. 
-      <<echo=TRUE,eval=FALSE>>=
-# Load OHLC prices from .csv file downloaded from WRDS by gvkey
-sp500_prices <- read.csv(file="C:/Develop/data/WRDS/sp500_prices_bygvkey.csv", 
-  stringsAsFactors=FALSE)
-# Create new data environment
-sp500_env <- new.env()
-# Perform OHLC aggregations by gvkey column
-sp500_prices <- split(sp500_prices, 
-  sp500_prices$gvkey)
-process_ed <- lapply(sp500_prices, 
-  format_ohlc, environ_ment=sp500_env)
-# Save OHLC prices to .RData file
-save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
-plot(quantmod::Cl(sp500_env$MSFT))
-      @
-    \column{0.5\textwidth}
+    \column{0.4\textwidth}
       The function \texttt{format\_ohlc()} formats raw data downloaded from \emph{Compustat} into a time series of \emph{OHLC} prices.
+    \column{0.6\textwidth}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define formatting function for OHLC prices 
 format_ohlc <- function(oh_lc, environ_ment) {
-  sym_bol <- names_table$tic[match(oh_lc$gvkey[1], names_table$gvkey)]
+  # Select ticker from sp500_table
+  sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
   # Split adjustment and total return factors
   adj_fact <- drop(oh_lc[, c("ajexdi")])
   tr_fact <- drop(oh_lc[, "trfd"])
@@ -1809,10 +1818,100 @@ format_ohlc <- function(oh_lc, environ_ment) {
   # Adjust the prices
   oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
   # Copy the OHLCV data to environ_ment
+  oh_lc <- na.omit(oh_lc)
   assign(x=sym_bol, value=oh_lc, envir=environ_ment)
   sym_bol
 }  # end format_ohlc
       @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading Index Constituent Prices Into \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.4\textwidth}
+      The prices for all the index constituents are first downloaded from \emph{Compustat} into a single \texttt{.csv} file, and then they are read into \texttt{R} and formatted into a time series of \emph{OHLC} prices. 
+      \vskip1ex
+      But the prices downloaded from the 
+      \href{https://wrds-web.wharton.upenn.edu/wrds/ds/compd/secd/index.cfm?navId=83}{\emph{Compustat Daily Prices}} 
+      database often contain prices for several related securities from the same company, so they must be properly selected (pruned) to match the index constituents.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Load OHLC prices from .csv file downloaded from WRDS by cusip
+sp500_prices <- read.csv(file="C:/Develop/lecture_slides/data/sp500_prices_bycusip.csv", 
+  stringsAsFactors=FALSE)
+# sp500_prices contains cusips not in sp500_cusips
+cusip_s <- unique(sp500_prices$cusip)
+NROW(sp500_cusips); NROW(cusip_s)
+# Select data only for sp500_cusips
+sp500_prices <- sp500_prices[sp500_prices$cusip %in% sp500_cusips, ]
+# sp500_prices contains tickers not in sp500_tickers
+ticker_s <- unique(sp500_prices$tic)
+NROW(sp500_tickers); NROW(ticker_s)
+# Select data only for sp500_tickers
+sp500_prices <- sp500_prices[sp500_prices$tic %in% sp500_tickers, ]
+# Create new data environment
+sp500_env <- new.env()
+# Perform OHLC aggregations by cusip column
+sp500_prices <- split(sp500_prices, sp500_prices$cusip)
+process_ed <- lapply(sp500_prices, format_ohlc, 
+                     environ_ment=sp500_env)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Exceptions in Index Constituent Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Some securities of past index constituents may no longer be trading because of corporate events (mergers, bankruptcies, etc.), so they should be removed from the data.
+      \vskip1ex
+      Tickers which contain a dot in their name (like "BRK.B") are not valid symbols in \texttt{R}, so they must be renamed.
+      \vskip1ex
+      The column names for symbol \texttt{"LOW"} (Lowe's company) must be renamed for the extractor function \texttt{quantmod::Lo()} to work properly.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get end dates of series in sp500_env
+end_dates <- eapply(sp500_env, end)
+end_dates <- unlist(end_dates)
+end_dates <- as.Date(end_dates)
+# Remove elements with short end dates
+se_lect <- (end_dates < max(end_dates))
+rm(list=names(sp500_env)[se_lect], envir=sp500_env)
+# Rename element "BRK.B" to "BRKB"
+sp500_env$BRKB <- sp500_env$BRK.B
+rm(BRK.B, envir=sp500_env)
+names(sp500_env$BRKB) <- paste("BRKB", 
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+# Rename element "LOW" to "LOWES"
+sp500_env$LOWES <- sp500_env$LOW
+names(sp500_env$LOWES) <- paste("LO_WES", 
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+rm(LOW, envir=sp500_env)
+# Rename element "BF.B" to "BFB"
+sp500_env$BFB <- sp500_env$BF.B
+names(sp500_env$BFB) <- paste("BFB", 
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+rm(BF.B, envir=sp500_env)
+# Save OHLC prices to .RData file
+save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
+plot(quantmod::Cl(sp500_env$MSFT))
+      @
+
   \end{columns}
 \end{block}
 
@@ -1976,7 +2075,7 @@ library(HighFreq)  # Load package HighFreq
 col_class <- "character"
 names(col_class) <- "TICKER"
 # Read .csv file with Ford OHLC prices
-oh_lc <- read.csv(file="C:/Develop/data/WRDS/F_CRSP.csv", 
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/F_CRSP.csv", 
   stringsAsFactors=FALSE, colClasses=col_class)
 sym_bol <- oh_lc[1, "TICKER"]
 # Adjustment factor
@@ -2046,7 +2145,7 @@ plot(quantmod::Cl(oh_lc), main="Ford Stock")
       \includegraphics[width=0.5\paperwidth]{figure/wrds_crsp_compustat.png}
       \vspace{-1em}
       <<echo=FALSE,eval=FALSE,results='asis'>>=
-crsp_compustat <- read.csv(file="C:/Develop/data/WRDS/crsp_compustat_indices.csv", stringsAsFactors=FALSE)
+crsp_compustat <- read.csv(file="C:/Develop/lecture_slides/data/crsp_compustat_indices.csv", stringsAsFactors=FALSE)
 colnames(crsp_compustat) <- crsp_compustat[1, ]
 crsp_compustat <- crsp_compustat[-1, ]
 print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE)
@@ -2070,8 +2169,8 @@ print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE
       The time series data can be downloaded into a \texttt{.csv} file, and then read into \texttt{R}. 
       <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # Load package HighFreq
-# Read .csv file with EEM OHLC prices
-oh_lc <- read.csv(file="C:/Develop/data/WRDS/EEM.csv", stringsAsFactors=FALSE)
+# Read .csv file with TAP OHLC prices
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv", stringsAsFactors=FALSE)
 sym_bol <- oh_lc[1, "tic"]
 # Adjustment factor and total return factor
 adj_fact <- drop(oh_lc[, "ajexdi"])
@@ -2090,7 +2189,7 @@ oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
 sum(is.na(oh_lc))
 # Adjust all the prices
 oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
-plot(quantmod::Cl(oh_lc), main="EEM Etf Stock")
+plot(quantmod::Cl(oh_lc), main="TAP Stock")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
