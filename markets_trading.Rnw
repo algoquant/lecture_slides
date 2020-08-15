@@ -800,7 +800,7 @@ print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownam
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{data.table::fread()} reads \texttt{.csv} files over five times faster than function \texttt{read.csv()}!
+      The function \texttt{data.table::fread()} reads \texttt{.csv} files over five times faster than the function \texttt{read.csv()}!
       \vskip1ex
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
       \vspace{-1em}
@@ -1605,7 +1605,7 @@ cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Downloading Index Constituents From \protect\emph{Compustat}}
+\subsection{draft: Downloading Index Constituents From \protect\emph{Compustat}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2247,6 +2247,230 @@ chart_Series(cumsum(fac_tors["2001/", 1]/100),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.4\textwidth}
+      \emph{High frequency data} is typically formatted as either Trade and Quote (\emph{TAQ}) data, or \emph{Open-High-Low-Close} (\emph{OHLC}) data.
+      \vskip1ex
+      Trade and Quote (\emph{TAQ}) data contains intraday \emph{trades} and \emph{quotes} on exchange-traded stocks and futures.
+      \vskip1ex
+      \emph{TAQ} data is often called \emph{tick data}, with a \emph{tick} being a row of data containing new \emph{trades} or \emph{quotes}.
+      \vskip1ex
+      The \emph{TAQ} data is spaced irregularly in time, with data recorded each time a new trade or quote arrives.
+      \vskip1ex
+      Each row of \emph{TAQ} data may contain the quote and trade prices, and the corresponding quote size or trade volume:
+      \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume}.
+      \vskip1ex
+      \emph{TAQ} data is often split into \emph{trade} data and \emph{quote} data.
+    \column{0.6\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),size="tiny",tidy=FALSE,eval=TRUE>>=
+options(width=200)
+# Load package HighFreq
+library(HighFreq)
+# Or load the high frequency data file directly:
+symbol_s <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
+head(SPY_TAQ)
+head(SPY)
+tail(SPY)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Downloading \protect\emph{TAQ} Data From \protect\emph{WRDS}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{TAQ} data can be downloaded from the 
+      \href{https://wrds-web.wharton.upenn.edu/wrds/ds/taq/ctm/index.cfm}{\emph{WRDS TAQ}} web page.
+      \vskip1ex
+      The \emph{TAQ} data are at millisecond frequency, and are \emph{consolidated} (combined) from the New York Stock Exchange \emph{NYSE} and other exchanges.
+      \vskip1ex
+      The 
+      \href{https://wrds-web.wharton.upenn.edu/wrds/ds/taq/ctm/index.cfm}{\emph{WRDS TAQ}} 
+      web page provides separately \emph{trades} data and separately \emph{quotes} data.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/wrds_taq_data.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reading \protect\emph{TAQ} Data From \texttt{.csv} Files}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{TAQ} data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
+      \vskip1ex
+      Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Read TAQ trade data from csv file
+ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv", 
+                          stringsAsFactors=FALSE)
+# Inspect the TAQ data
+ta_q
+class(ta_q)
+sapply(ta_q, class)
+# Number of ticks per second
+NROW(ta_q)/(6.5*3600)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{TAQ} Data to \texttt{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{strptime()} coerces \texttt{character} strings representing the date and time into \texttt{POSIXlt} \emph{date-time} objects.
+      \vskip1ex
+      The argument \texttt{format="\%H:\%M:\%OS"} allows the parsing of fractional seconds, for example \texttt{"15:59:59.989847074"}.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} coerces objects into \texttt{POSIXct} \emph{date-time} objects, with a \texttt{numeric} value representing the \emph{moment of time} in seconds.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create date-time index
+in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
+class(in_dex)
+last(in_dex)
+# Coerce date-time index to POSIXlt
+in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
+class(in_dex)
+# Display more significant digits
+options(digits=20, digits.secs=10)
+last(in_dex)
+unclass(last(in_dex))
+as.numeric(last(in_dex))
+# Coerce date-time index to POSIXct
+in_dex <- as.POSIXct(in_dex)
+class(in_dex)
+last(in_dex)
+unclass(last(in_dex))
+as.numeric(last(in_dex))
+# Coerce trade ticks to xts series
+x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+sym_bol <- ta_q$SYM_ROOT[1]
+colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
+save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Microstructure Noise in High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      High frequency data contains \emph{microstructure noise} in the form of \emph{price jumps} and the \emph{bid-ask bounce}.
+      \vskip1ex
+      \emph{Price jumps} are single ticks with prices far away from the average.
+      \vskip1ex
+      \emph{Price jumps} are often caused by data collection errors, but sometimes they represent actual very large lot trades.
+      \vskip1ex
+      The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
+      \vskip1ex
+      The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in fact the mid price is constant.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot in x11 window
+x11(width=6, height=4)
+par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
+quantmod::chart_Series(x=x_ts[, 1], 
+  name="XLK Trade Ticks for 2020-03-16")
+# Plot dygraph
+dygraphs::dygraph(x_ts[, 1], 
+  main="XLK Trade Ticks for 2020-03-16")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/hf_trade_ticks_dygraph.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/hf_stocks_bounce.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Removing Odd Lot Trades From \protect\emph{TAQ} Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Most of the \emph{trade} ticks are \emph{odd lots} with a small volume of less than $100$ shares.
+      \vskip1ex
+      The \emph{odd lot} ticks are often removed to reduce the size of the \emph{TAQ} data.
+      \vskip1ex
+      Selecting only the large lot trades reduces microstructure noise (price jumps, bid-ask bounce) in high frequency data.
+      <<echo=TRUE,eval=FALSE>>=
+# Select only the large lots greater than 100
+dim(ta_q)
+ta_q <- ta_q[ta_q$SIZE > 100]
+dim(ta_q)
+# Number of large lot ticks per second
+NROW(ta_q)/(6.5*3600)
+# Save trade ticks with large lots
+data.table::fwrite(ta_q, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
+# Create date-time index
+in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
+in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
+in_dex <- as.POSIXct(in_dex)
+# Coerce trade prices to xts
+x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/hf_trade_ticks_biglots_dygraph.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the large lots
+x11(width=6, height=4)
+par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
+quantmod::chart_Series(x=x_ts[, 1], 
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
+# Plot dygraph
+dygraphs::dygraph(x_ts[, 1], 
+  main="XLK Trade Ticks for 2020-03-16 (large lots only)")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Trade and Quote (\protect\emph{TAQ}) Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Trade and Quote (\emph{TAQ}) Data\\
+      The NYSE TAQ set is 'consolidated' meaning that the trades and quotes come from many exchanges, including the NASDAQ system. TAQ has all trades and quotes from the Consolidated Tape / Consolidated Quote, which includes data from the regional exchanges. (See https://www.tradearca.com/marketdata/intermarket.asp for a brief discussion of CTA/CQ and OTC/UTP.)
+      https://wrds-www.wharton.upenn.edu/pages/support/research-wrds/research-guides/wrds-taq-faqs/
+      \vskip1ex
       High frequency data is typically formatted as either Trade and Quote (\emph{TAQ}) data, or \emph{Open-High-Low-Close} (\emph{OHLC}) data.
       \vskip1ex
       Trade and Quote (\emph{TAQ}) data contains intraday trades and quotes on exchange-traded stocks and futures.
@@ -2257,7 +2481,7 @@ chart_Series(cumsum(fac_tors["2001/", 1]/100),
       \vskip1ex
       Each row of \emph{TAQ} data contains both the quote and trade prices, and the corresponding quote size or trade volume:
       \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),size="tiny",tidy=FALSE,eval=TRUE>>=
 options(width=200)

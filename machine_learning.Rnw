@@ -718,7 +718,7 @@ all.equal(cov_mat, cov_returns)
       \begin{displaymath}
         \mathbb{C} = \mathbb{R}^T \mathbb{R} / (n-1)
       \end{displaymath}
-      If the number of time periods of returns is less than the number of portfolio assets, then the returns are collinear, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero).
+      If the number of time periods of returns is less than the number of portfolio assets, then the returns are \emph{collinear}, and the sample covariance matrix is \emph{singular} (some \emph{eigenvalues} are zero).
       \vskip1ex
       The function \texttt{crossprod()} performs \emph{inner} (\emph{scalar}) multiplication, exactly the same as the \texttt{\%*\%} operator, but it is slightly faster.
       \vspace{-1em}
@@ -774,31 +774,30 @@ plot(y=e_values, x=n_data, t="l",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The covariance matrix of collinear vectors is \emph{singular}.
+      The \emph{regularization} technique allows calculating the inverse of \emph{singular} covariance matrices while reducing the effects of statistical noise.
       \vskip1ex
-      The statistical errors in the covariance matrix are most pronounced in the higher order eigenvalues and eigenvectors.
+      If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
       \vskip1ex
-      The \emph{regularization} technique calculates the inverse of the covariance matrix while reducing the effects of statistical errors.
-      \vskip1ex
-      The \emph{regularization} technique involves calculating the inverse of the covariance matrix $\mathbb{C}$ from a limited number of eigenvectors, ignoring the higher order eigenvectors:
+      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
       \begin{displaymath}
-        \mathbb{C}^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
       \end{displaymath}
       Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create rectangular matrix with collinear columns
-se_ries <- matrix(rnorm(10*8), nc=10)
+re_turns <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
-cov_mat <- cov(se_ries)
+cov_mat <- cov(re_turns)
 # Calculate inverse of cov_mat - error
 in_verse <- solve(cov_mat)
 # Calculate regularized inverse of cov_mat
 in_verse <- MASS::ginv(cov_mat)
 # Verify inverse property of mat_rix
-all.equal(cov_mat,
-  cov_mat %*% in_verse %*% cov_mat)
+all.equal(cov_mat, cov_mat %*% in_verse %*% cov_mat)
 # Perform eigen decomposition
 ei_gen <- eigen(cov_mat)
 eigen_vec <- ei_gen$vectors
@@ -811,17 +810,40 @@ reg_inverse <- eigen_vec[, not_zero] %*%
   (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
 # Verify inverse property of mat_rix
 all.equal(in_verse, reg_inverse)
-# Create random covariance matrix
-set.seed(1121)
-mat_rix <- matrix(rnorm(5e2), nc=5)
-cov_mat <- cov(mat_rix)
-# Perform eigen decomposition
-ei_gen <- eigen(cov_mat)
-eigen_vec <- ei_gen$vectors
-# Calculate regularized inverse matrix
-max_eigen <- 2
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Bias-Variance Tradeoff of the Regularized Inverse}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Removing the very small higher order eigenvalues can also be used to reduce the propagation of statistical noise and improve the signal-to-noise ratio.
+      \vskip1ex
+      Removing a larger number of eigenvalues further reduces the noise, but it increases the bias of the covariance matrix.
+      \vskip1ex
+      This is an example of the \emph{bias-variance tradeoff}.
+      \vskip1ex
+      Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
+      \vskip1ex
+      The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
+      \vskip1ex
+      The value of the parameter \texttt{max\_eigen} can be determined using \emph{backtesting} (\emph{cross-validation}).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate regularized inverse matrix using cutoff
+max_eigen <- 3
 in_verse <- eigen_vec[, 1:max_eigen] %*%
   (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+# Verify inverse property of mat_rix
+all.equal(in_verse, reg_inverse)
       @
   \end{columns}
 \end{block}
@@ -836,7 +858,7 @@ in_verse <- eigen_vec[, 1:max_eigen] %*%
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The estimates of the covariance matrix suffer from statistical errors, and those errors are magnified when the covariance matrix is inverted.
+      The estimates of the covariance matrix suffer from statistical noise, and those noise are magnified when the covariance matrix is inverted.
       \vskip1ex
       In the \emph{shrinkage} technique the covariance matrix $\mathbb{C}_s$ is estimated as a weighted sum of the sample covariance estimator $\mathbb{C}$ plus a target matrix $\mathbb{T}$:
       \begin{displaymath}
@@ -846,7 +868,7 @@ in_verse <- eigen_vec[, 1:max_eigen] %*%
       \vskip1ex
       The shrinkage intensity $\alpha$ determines the amount of shrinkage that is applied, with $\alpha = 1$ representing a complete shrinkage towards the target matrix.
       \vskip1ex
-      The \emph{shrinkage} estimator reduces the estimate variance at the expense of increasing its bias (known as the bias-variance tradeoff).
+      The \emph{shrinkage} estimator reduces the estimate variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -931,8 +953,8 @@ title(main="Brownian motion crossing a barrier level",
     \column{0.5\textwidth}
       What is Machine Learning?
 What is Machine Learning?
-Machine Learning (ML) studies statistical models which can identify patterns in the data and make predictions. 
-ML is closely related to statistics, but with an emphasis on prediction. 
+Machine Learning (ML) studies statistical models which can identify patterns in the data and make predictions.
+ML is closely related to statistics, but with an emphasis on prediction.
 ML models are divided into supervised learning or unsupervised learning.
 Supervised learning models require a training set to calibrate the model parameters.
 Examples of supervised learning models are linear regression, decision trees, support vector machines (SVM), and neural networks.
@@ -940,10 +962,10 @@ Unsupervised learning models don't require a training set.
 Examples of unsupervised learning models are clustering models, like principal component analysis (PCA) and k-nearest neighbors (KNN).
 ML models are also divided into classification and regression models.
 An example of a regression model is linear regression.  An example of a classification model is logistic regression.
-ML uses several techniques to calibrate models and improve prediction. 
+ML uses several techniques to calibrate models and improve prediction.
 First, ML uses cross-validation (backtesting) to determine the optimal model meta-parameters.
 Second, ML uses estimator shrinkage to achieve a better tradeoff between their bias and variance.
-      
+
       Data Science is very important to quantitative finance.
       \vskip1ex
       Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
@@ -1003,7 +1025,7 @@ title(main="Brownian motion crossing a barrier level",
       \vskip1ex
       Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
       \vskip1ex
-      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as: 
+      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as:
       \begin{displaymath}
         \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
       \end{displaymath}
@@ -1195,7 +1217,7 @@ class(mod_el)  # Regressions have class lm
 attributes(mod_el)
 eval(mod_el$call$formula)  # Regression formula
 mod_el$coeff  # Regression coefficients
-all.equal(coef(mod_el), c(al_pha, be_ta), 
+all.equal(coef(mod_el), c(al_pha, be_ta),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -1239,7 +1261,7 @@ points(x=de_sign, y=mod_el$fitted.values,
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Plot response without noise
-lines(x=de_sign, y=(res_ponse-noise), 
+lines(x=de_sign, y=(res_ponse-noise),
       col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
@@ -1307,11 +1329,11 @@ abline(h=0, lwd=3, col="red")
       \vskip1ex
       The standard errors of the regression coefficients are equal to their standard deviations, given the \emph{residuals} as the source of error.
       \vskip1ex
-      Since $\beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}}$, then its variance is equal to: 
+      Since $\beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}}$, then its variance is equal to:
       \begin{displaymath}
         \sigma^2_\beta = \frac{1}{(n-2)} \frac {E[(\varepsilon^T \hat{x})^2]} {(\hat{x}^T \hat{x})^2} = \frac{1}{(n-2)} \frac {E[\varepsilon^2]} {\hat{x}^T \hat{x}} = \frac {\sigma^2_\varepsilon} {\hat{x}^T \hat{x}}
       \end{displaymath}
-      Since $\alpha = \bar{y} - \beta \bar{x}$, then its variance is equal to: 
+      Since $\alpha = \bar{y} - \beta \bar{x}$, then its variance is equal to:
       \begin{displaymath}
         \sigma^2_\alpha = \frac{\sigma^2_\varepsilon}{n} + \sigma^2_\beta \bar{x}^2 = \sigma^2_\varepsilon (\frac{1}{n} + \frac {\bar{x}^2} {\hat{x}^T \hat{x}})
       \end{displaymath}
@@ -1321,10 +1343,10 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 deg_free <- mod_el$df.residual
 # Standard deviation of residuals
-resid_stddev <- 
+resid_stddev <-
   sqrt(sum(resid_uals^2)/deg_free)
 # Standard error of beta
-beta_stderror <- 
+beta_stderror <-
   resid_stddev/sqrt(sum(design_zm^2))
 # Standard error of alpha
 alpha_stderror <- resid_stddev*
@@ -1391,7 +1413,7 @@ attributes(model_sum)$names  # get summary elements
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
-all.equal(c(alpha_stderror, beta_stderror), 
+all.equal(c(alpha_stderror, beta_stderror),
           model_sum$coefficients[, "Std. Error"], check.attributes=FALSE)
 # R-squared
 model_sum$r.squared
@@ -1644,7 +1666,7 @@ lmtest::dwtest(mod_el)
       \vspace{-1em}
         <<echo=(-(1:3)),eval=FALSE>>=
 foo <- etf_env$re_turns[, c("VTI", "VEU")]
-end_points <- endpoints(foo, on="months")
+end_p <- endpoints(foo, on="months")
 head(foo)
 tail(foo)
 class(foo)
@@ -1656,7 +1678,7 @@ dwtest(mod_el)
 
 # Filter over non-overlapping periods
 bar <- names(foo)
-foo <- merge(period.sum(foo[, 1], INDEX=end_points), period.sum(foo[, 2], INDEX=end_points))
+foo <- merge(period.sum(foo[, 1], INDEX=end_p), period.sum(foo[, 2], INDEX=end_p))
 foo <- foo[complete.cases(foo), ]
 names(foo) <- bar
 
@@ -1719,7 +1741,7 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
       \vskip1ex
       After the second column of the \emph{design matrix} $\mathbb{X}$ is de-meaned, its \emph{covariance matrix} is given by:
       \begin{displaymath}
-        \mathbb{X}^T \mathbb{X} = 
+        \mathbb{X}^T \mathbb{X} =
           \begin{pmatrix}
             n & 0 \\
             0 & \sum_{i=1}^n (x_i - \bar{x})^2 \\
@@ -1727,7 +1749,7 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
       \end{displaymath}
       And the \emph{influence matrix} $\mathbb{H}$ is given by:
       \begin{displaymath}
-        \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} = 
+        \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} =
         \frac{1}{n} + \frac{(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^n (x_i - \bar{x})^2}
       \end{displaymath}
       The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta_1$.
@@ -1749,9 +1771,9 @@ design_inv <- MASS::ginv(de_sign)
 influ_ence <- de_sign %*% design_inv
 # Plot the leverage vector
 or_der <- order(de_sign[, 2])
-plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der], 
-     type="l", lwd=3, col="blue", 
-     xlab="predictor", ylab="leverage", 
+plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der],
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
       @
   \end{columns}
@@ -1804,7 +1826,7 @@ fit_sd <- sqrt(diag(fit_covar))
 # Plot the standard deviations
 fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
 fit_sd <- fit_sd[order(fit_ted), ]
-plot(fit_sd, type="l", lwd=3, col="blue", 
+plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
       @
@@ -1827,7 +1849,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
       \vskip1ex
       The fitted values for different realizations of random noise can be calculated using the influence matrix.
         <<echo=TRUE,eval=FALSE>>=
-# Calculate response without random noise for univariate regression, 
+# Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of de_sign
 weight_s <- c(-1, 1)
 res_ponse <- de_sign %*% weight_s
@@ -1849,10 +1871,10 @@ x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Plot fitted values
-matplot(x=de_sign[,2], y=fit_ted, 
+matplot(x=de_sign[,2], y=fit_ted,
         type="l", lty="solid", lwd=1, col="blue",
-        xlab="predictor", ylab="fitted", 
-        main="Fitted Values for Different Realizations 
+        xlab="predictor", ylab="fitted",
+        main="Fitted Values for Different Realizations
         of Random Noise")
 lines(x=de_sign[,2], y=res_ponse, col="red", lwd=4)
 legend(x="topleft", # Add legend
@@ -1882,7 +1904,7 @@ legend(x="topleft", # Add legend
         & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
         & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
-        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
         \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
       \end{align*}
       The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
@@ -1922,7 +1944,7 @@ predic_tions <- t(predic_tions)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}. 
+      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}.
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
@@ -1935,10 +1957,10 @@ predict_low <- predic_tions[, 1]-t_quant*predic_tions[, 2]
 predict_high <- predic_tions[, 1]+t_quant*predic_tions[, 2]
 y_lim <- range(c(res_ponse, y_data, predict_low, predict_high))
 # Plot the regression predictions
-plot(x=x_data, y=y_data, 
-     xlim=x_lim, ylim=y_lim,  
-     type="l", lwd=3, col="blue", 
-     xlab="predictor", ylab="fitted or predicted", 
+plot(x=x_data, y=y_data,
+     xlim=x_lim, ylim=y_lim,
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="fitted or predicted",
      main="Predictions from Linear Regression")
 points(x=de_sign[,2], y=res_ponse, col="blue")
 points(x=new_data, y=predic_tions[, 1], pch=16, col="blue")
@@ -1981,10 +2003,10 @@ predict_lm <- as.data.frame(predict_lm)
 all.equal(predict_lm$fit, predic_tions[, 1])
 all.equal(predict_lm$lwr, predict_low)
 all.equal(predict_lm$upr, predict_high)
-plot(res_ponse ~ predic_tor, 
+plot(res_ponse ~ predic_tor,
      xlim=range(predic_tor, new_data),
      ylim=range(res_ponse, predict_lm),
-     xlab="predictor", ylab="fitted or predicted", 
+     xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
       @
     \column{0.5\textwidth}
@@ -2152,7 +2174,7 @@ response_zm <- res_ponse - mean(res_ponse)
 # Calculate the regression coefficients
 beta_s <- MASS::ginv(design_zm) %*% response_zm
 # Calculate the regression alpha
-al_pha <- mean(res_ponse) - 
+al_pha <- mean(res_ponse) -
   sum(colSums(de_sign)*drop(beta_s))/n_rows
 # Compare with coefficients from lm()
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
@@ -2238,7 +2260,7 @@ all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
       \end{flalign*}
       Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
       \vskip1ex
-      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$. 
+      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -2249,7 +2271,7 @@ all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 resid_uals <- drop(res_ponse - fit_ted)
 all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to de_sign columns (predictors)
-sapply(resid_uals %*% de_sign, 
+sapply(resid_uals %*% de_sign,
        all.equal, target=0)
 # Residuals are orthogonal to the fitted values
 all.equal(sum(resid_uals*fit_ted), target=0)
@@ -2327,19 +2349,19 @@ has the same influence matrix, and
 # Calculate zero mean fitted values
 design_zm <- t(t(de_sign) - colMeans(de_sign))
 fitted_zm <- drop(design_zm %*% beta_s)
-all.equal(fitted_zm, 
-          mod_el$fitted.values - mean(res_ponse), 
+all.equal(fitted_zm,
+          mod_el$fitted.values - mean(res_ponse),
           check.attributes=FALSE)
 # Calculate the residuals
 response_zm <- res_ponse - mean(res_ponse)
 resid_uals <- drop(response_zm - fitted_zm)
-all.equal(resid_uals, mod_el$residuals, 
+all.equal(resid_uals, mod_el$residuals,
           check.attributes=FALSE)
 # Calculate the influence matrix
 influence_zm <- design_zm %*% MASS::ginv(design_zm)
 # Compare the fitted values
-all.equal(fitted_zm, 
-          drop(influence_zm %*% response_zm), 
+all.equal(fitted_zm,
+          drop(influence_zm %*% response_zm),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -2410,7 +2432,7 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
     \column{0.5\textwidth}
       The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
       \vskip1ex
-      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}: 
+      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}:
       \begin{displaymath}
         \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
       \end{displaymath}
@@ -2436,7 +2458,7 @@ var_resid <- sum(resid_uals^2)/deg_free
       The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
       \begin{flalign*}
         & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) = 
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) =
         \beta + \mathbb{X}_{inv} \hat\varepsilon
       \end{flalign*}
       Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
@@ -2485,9 +2507,9 @@ all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
 # Calculate two-sided p-values of betas
 beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
 all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
-# The square of the generalized inverse is equal 
+# The square of the generalized inverse is equal
 # to the inverse of the square
-all.equal(MASS::ginv(crossprod(de_sign)), 
+all.equal(MASS::ginv(crossprod(de_sign)),
           design_inv %*% t(design_inv))
       @
   \end{columns}
@@ -2534,7 +2556,7 @@ fit_sd <- sqrt(diag(fit_covar))
 fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
 fit_sd <- fit_sd[order(fit_ted), ]
 # Plot the standard deviations
-plot(fit_sd, type="l", lwd=3, col="blue", 
+plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
       @
@@ -2601,7 +2623,7 @@ t(apply(boot_data, MARGIN=1,
       \begin{displaymath}
         y_{pred} = \mathbb{X}_{new} \, \beta
       \end{displaymath}
-      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: 
+      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
       \begin{align*}
         \hat{y}_{pred} = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
         y_{pred} + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
@@ -2611,7 +2633,7 @@ t(apply(boot_data, MARGIN=1,
         & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
         & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
-        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
         \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
       \end{align*}
     \column{0.5\textwidth}
@@ -2649,14 +2671,14 @@ std_dev <- drop(sqrt(
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Create formula from text string
-for_mula <- paste0("res_ponse ~ ", 
+for_mula <- paste0("res_ponse ~ ",
   paste(colnames(de_sign), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-mod_el <- lm(for_mula, 
+mod_el <- lm(for_mula,
              data=data.frame(cbind(res_ponse, de_sign)))
 model_sum <- summary(mod_el)
 # Predict from lm object
-predict_lm <- predict.lm(object=mod_el, newdata=new_data, 
+predict_lm <- predict.lm(object=mod_el, newdata=new_data,
            interval="confidence", level=1-2*(1-pnorm(2)))
 # Calculate t-quantile
 t_quant <- qt(pnorm(2), df=deg_free)
@@ -2686,7 +2708,7 @@ all.equal(predict_lm[1, "upr"], predict_high)
         & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
         & RSS = (y - y_{fit})^T (y - y_{fit})
       \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$: 
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
       \begin{displaymath}
         (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
       \end{displaymath}
@@ -2778,10 +2800,10 @@ n_cols <- NCOL(de_sign)
 # Degrees of freedom of residuals
 deg_free <- (n_rows - n_cols)
 # Adjusted R-squared
-r_squared_adj <- 
+r_squared_adj <-
   (1-sum(resid_uals^2)/deg_free/var(res_ponse))
 # Compare adjusted R-squared from lm()
-all.equal(drop(r_squared_adj), 
+all.equal(drop(r_squared_adj),
           model_sum$adj.r.squared)
       @
       The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
@@ -2810,7 +2832,7 @@ all.equal(drop(r_squared_adj),
       \end{displaymath}
       The \emph{F-distribution} depends on the \emph{F-statistic} $F$ and also on the degrees of freedom, $m$ and $n$.
       \vskip1ex
-      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}. 
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}.
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
@@ -2820,7 +2842,7 @@ deg_free <- c(3, 5, 9)  # Degrees of freedom
 col_ors <- c("black", "red", "blue", "green")
 for (in_dex in 1:NROW(deg_free)) {
 curve(expr=df(x, df1=deg_free[in_dex], df2=3),
-      xlim=c(0, 4), xlab="", ylab="", lwd=2, 
+      xlim=c(0, 4), xlab="", ylab="", lwd=2,
       col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
       @
@@ -2850,10 +2872,10 @@ legend("topright", inset=0.05, title="degrees of freedom",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let 
+      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let
       $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
       and
-      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$ 
+      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
       be their sample variances.
       \vskip1ex
       The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
@@ -2893,7 +2915,7 @@ pf(f_ratio, n_rows-1, n_rows-1)
       \vskip1ex
       Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_2 < p_1$.
       \vskip1ex
-      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}: 
+      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
       \begin{displaymath}
         F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
       \end{displaymath}
@@ -2901,13 +2923,13 @@ pf(f_ratio, n_rows-1, n_rows-1)
     \column{0.5\textwidth}
       If the \emph{restricted} model only has one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
       \vskip1ex
-      Let the \emph{unrestricted} multivariate regression model be defined as: 
+      Let the \emph{unrestricted} multivariate regression model be defined as:
       \begin{displaymath}
         y = \mathbb{X} \beta + \varepsilon
       \end{displaymath}
       Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{design matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
       \vskip1ex
-      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as: 
+      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as:
       \begin{displaymath}
         F = \frac{ESS/(k-1)}{RSS/(n-k)}
       \end{displaymath}
@@ -2926,7 +2948,7 @@ pf(f_ratio, n_rows-1, n_rows-1)
     \column{0.5\textwidth}
       The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
       \vskip1ex
-      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}: 
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
       \begin{displaymath}
         F = \frac{ESS/(k-1)}{RSS/(n-k)}
       \end{displaymath}
@@ -2963,10 +2985,10 @@ all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
   \begin{columns}[T]
     \column{0.5\textwidth}
       The scaled returns of \emph{XLP} and \emph{VTI} can be expressed as linear combinations of two orthogonal principal components: \\
-      The first principal component can be 
+      The first principal component can be
       returns of \emph{XLP} and \emph{VTI} are highly correlated because they both share a common factor of market returns.
       <<echo=TRUE,eval=FALSE>>=
-re_turns <- 
+re_turns <-
   scale(na.omit(rutils::etf_env$re_turns
                 [, as.character(for_mula)[-1]]))
 crossprod(re_turns) / NROW(re_turns)
@@ -2989,13 +3011,13 @@ crossprod(re_turns) / NROW(re_turns)
 (t(bar) %*% bar) / NROW(bar)
 
 angle_s <- seq(0, pi/2, by=pi/24)
-cov_mat <- sapply(angle_s, function(an_gle) 
+cov_mat <- sapply(angle_s, function(an_gle)
   cov_mat(re_turns, an_gle=an_gle)[1, 1])
 plot(x=angle_s, y=cov_mat, t="l")
 
 op_tim <- optimize(
-  f=function(an_gle) 
-    -cov_mat(re_turns, an_gle=an_gle)[1, 1], 
+  f=function(an_gle)
+    -cov_mat(re_turns, an_gle=an_gle)[1, 1],
   interval=range(angle_s))
 an_gle <- op_tim$minimum
 bar <- cov_mat(re_turns, an_gle=an_gle)
@@ -3020,8 +3042,8 @@ plot(x=foo[, 1], y=foo[, 2])
 summary(lm(foo[, 1] ~ foo[, 2]))
 
 op_tim <- optimize(
-  f=function(an_gle) 
-    -cov_mat(foo, an_gle=an_gle)[1, 1], 
+  f=function(an_gle)
+    -cov_mat(foo, an_gle=an_gle)[1, 1],
   interval=range(angle_s))
 an_gle <- op_tim$minimum
 tan(an_gle)
@@ -3096,19 +3118,19 @@ cor_mat <- cor(re_turns)
 # cor_mat <- t(t(cor_mat) / sqrt(vari_ance))
 # Reorder correlation matrix based on clusters
 library(corrplot)
-or_der <- corrMatOrder(cor_mat, 
-              order="hclust", 
+or_der <- corrMatOrder(cor_mat,
+              order="hclust",
               hclust.method="complete")
 cor_mat <- cor_mat[or_der, or_der]
 # Plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title="ETF Correlation Matrix", 
-    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0), 
-    method="square", col=col_ors(8), 
-    cl.offset=0.75, cl.cex=0.7, 
+corrplot(cor_mat, title="ETF Correlation Matrix",
+    tl.col="black", tl.cex=0.8, mar=c(0,0,1,0),
+    method="square", col=col_ors(8),
+    cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
-# draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2, 
+# Draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
                 method="complete", col="red")
       @
     \column{0.5\textwidth}
@@ -3117,13 +3139,13 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
             <<echo=TRUE,eval=FALSE>>=
 # Plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title="Correlation Matrix", 
+corrplot(cor_mat, title="Correlation Matrix",
     tl.col="black", tl.cex=0.8, mar = c(0,0,1,0),
-    method="square", col=col_ors(NCOL(cor_mat)), 
-    cl.offset=0.75, cl.cex=0.7, 
+    method="square", col=col_ors(NCOL(cor_mat)),
+    cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
-# draw rectangles on the correlation matrix plot
-corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2, 
+# Draw rectangles on the correlation matrix plot
+corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2,
                 method="complete", col="red")
       @
 
@@ -3157,13 +3179,13 @@ corrRect.hclust(cor_mat, k=NCOL(cor_mat) %/% 2,
 n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
-# objective function equal to minus portfolio variance
+# Objective function equal to minus portfolio variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets^2) + 
+  -sum(portf_rets^2) +
     1e7*(1 - sum(weight_s^2))^2
 }  # end object_ive
-# objective for equal weight portfolio
+# Objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
@@ -3183,12 +3205,12 @@ optim_run <- optim(par=weight_s,
   method="L-BFGS-B",
   upper=rep(10.0, n_weights),
   lower=rep(-10.0, n_weights))
-# optimal weights and maximum variance
+# Optimal weights and maximum variance
 weight_s <- optim_run$par
 -object_ive(weight_s, re_turns)
 # Plot first principal component weights
-barplot(weight_s, names.arg=names(weight_s), 
-        xlab="", ylab="", 
+barplot(weight_s, names.arg=names(weight_s),
+        xlab="", ylab="",
         main="First Principal Component Weights")
       @
   \end{columns}
@@ -3214,15 +3236,15 @@ pc_1 <- re_turns %*% weights_1
 # Redefine objective function
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets^2) + 
-    1e7*(1 - sum(weight_s^2))^2 + 
+  -sum(portf_rets^2) +
+    1e7*(1 - sum(weight_s^2))^2 +
     1e7*(sum(weights_1*weight_s))^2
 }  # end object_ive
 # Find second PC weights using parallel DEoptim
 optim_run <- DEoptim::DEoptim(fn=object_ive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
-  re_turns=re_turns, control=list(parVar="weights_1", 
+  re_turns=re_turns, control=list(parVar="weights_1",
     trace=FALSE, itermax=1000, parallelType=1))
       @
     \column{0.5\textwidth}
@@ -3236,8 +3258,8 @@ names(weights_2) <- colnames(re_turns)
 sum(weights_2^2)
 sum(weights_1*weights_2)
 # Plot second principal component loadings
-barplot(weights_2, names.arg=names(weights_2), 
-        xlab="", ylab="", 
+barplot(weights_2, names.arg=names(weights_2),
+        xlab="", ylab="",
         main="Second Principal Component Loadings")
       @
   \end{columns}
@@ -3288,7 +3310,7 @@ var(pc_2)
 sum(vari_ance)
 sum(ei_gen$values)
 barplot(ei_gen$values, # Plot eigenvalues
-  names.arg=paste0("PC", 1:n_weights), 
+  names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
       @
   \end{columns}
@@ -3324,7 +3346,7 @@ ei_gen <- eigen(cov_mat)
 pc_a <- prcomp(re_turns, scale=FALSE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(ei_gen$vectors), abs(pc_a$rotation), 
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
           check.attributes=FALSE)
 # Eigen decomposition of correlation matrix
 cor_mat <- cor(re_turns)
@@ -3333,7 +3355,7 @@ ei_gen <- eigen(cor_mat)
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
-all.equal(abs(ei_gen$vectors), abs(pc_a$rotation), 
+all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -3356,14 +3378,14 @@ all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
 # Redefine objective function to minimize variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  sum(portf_rets^2) + 
+  sum(portf_rets^2) +
     1e7*(1 - sum(weight_s^2))^2
 }  # end object_ive
 # Find highest order PC weights using parallel DEoptim
 optim_run <- DEoptim::DEoptim(fn=object_ive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
-  re_turns=re_turns, control=list(trace=FALSE, 
+  re_turns=re_turns, control=list(trace=FALSE,
     itermax=1000, parallelType=1))
 # pc6 weights and returns
 weights_6 <- optim_run$optim$bestmem
@@ -3380,8 +3402,8 @@ object_ive(ei_gen$vectors[, 6], re_turns)
       \vspace{-3em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot highest order principal component loadings
-barplot(weights_6, names.arg=names(weights_2), 
-        xlab="", ylab="", 
+barplot(weights_6, names.arg=names(weights_2),
+        xlab="", ylab="",
         main="Highest Order Principal Component Loadings")
       @
   \end{columns}
@@ -3414,10 +3436,10 @@ barplot(weights_6, names.arg=names(weights_2),
 # Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Plot standard deviations of principal components
-barplot(pc_a$sdev, 
-        names.arg=colnames(pc_a$rotation), 
-        las=3, xlab="", ylab="", 
-        main="Scree Plot: Volatilities of Principal Components 
+barplot(pc_a$sdev,
+        names.arg=colnames(pc_a$rotation),
+        las=3, xlab="", ylab="",
+        main="Scree Plot: Volatilities of Principal Components
   of Stock Returns")
       @
   \end{columns}
@@ -3445,9 +3467,9 @@ pc_a$rotation
 par(mfrow=c(n_weights/2, 2))
 par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (or_der in 1:n_weights) {
-  barplot(pc_a$rotation[, or_der], 
+  barplot(pc_a$rotation[, or_der],
         las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0, 
+  title(paste0("PC", or_der), line=-2.0,
         col.main="red")
 }  # end for
       @
@@ -3475,7 +3497,7 @@ for (or_der in 1:n_weights) {
 # Calculate products of principal component time series
 round(t(pc_a$x) %*% pc_a$x, 2)
 # Calculate principal component time series from re_turns
-pca_rets <- xts(re_turns %*% pc_a$rotation, 
+pca_rets <- xts(re_turns %*% pc_a$rotation,
                 order.by=date_s)
 round(cov(pca_rets), 3)
 all.equal(coredata(pca_rets), pc_a$x, check.attributes=FALSE)
@@ -3485,8 +3507,8 @@ par(mfrow=c(n_weights/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 ra_nge <- range(pca_ts)
 for (or_der in 1:n_weights) {
-  plot.zoo(pca_ts[, or_der], 
-           ylim=ra_nge, 
+  plot.zoo(pca_ts[, or_der],
+           ylim=ra_nge,
            xlab="", ylab="")
   title(paste0("PC", or_der), line=-2.0)
 }  # end for
@@ -3531,7 +3553,7 @@ cum_returns <- xts:::cumsum.xts(re_turns)
 # Plot the solved returns
 for (sym_bol in sym_bols) {
   plot.zoo(
-    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]), 
+    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
          legend=paste0(sym_bol, c("", " solved")),
@@ -3577,7 +3599,7 @@ for (sym_bol in sym_bols) {
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Define transformation matrix
-trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), 
+trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1),
                     ncol=n_cols)
 # Calculate linear combinations of design columns
 design_trans <- de_sign %*% trans_mat
@@ -3607,7 +3629,7 @@ all.equal(influ_ence, influence_trans)
       \vskip1ex
       The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
       \vskip1ex
-      \emph{Principal Component Regression} is used to: 
+      \emph{Principal Component Regression} is used to:
       \begin{itemize}
         \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
         \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
@@ -3617,12 +3639,12 @@ all.equal(influ_ence, influence_trans)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
-pc_a <- prcomp(de_sign, 
+pc_a <- prcomp(de_sign,
                center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
 # Principal components are orthogonal to each other
 round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
+round(apply(design_pcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
@@ -3649,7 +3671,7 @@ all.equal(influ_ence, influence_pcr)
       \vskip1ex
       The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
       \vskip1ex
-      \emph{Principal Component Regression} is used to: 
+      \emph{Principal Component Regression} is used to:
       \begin{itemize}
         \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
         \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
@@ -3659,12 +3681,12 @@ all.equal(influ_ence, influence_pcr)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
-pc_a <- prcomp(de_sign, 
+pc_a <- prcomp(de_sign,
                center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
 # Principal components are orthogonal to each other
 round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
+round(apply(design_pcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
@@ -3691,7 +3713,7 @@ all.equal(influ_ence, influence_pcr)
       \vskip1ex
       The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
       \vskip1ex
-      \emph{Principal Component Regression} is used to: 
+      \emph{Principal Component Regression} is used to:
       \begin{itemize}
         \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
         \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
@@ -3701,12 +3723,12 @@ all.equal(influ_ence, influence_pcr)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
-pc_a <- prcomp(de_sign, 
+pc_a <- prcomp(de_sign,
                center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
 # Principal components are orthogonal to each other
 round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
+round(apply(design_pcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
@@ -3733,7 +3755,7 @@ all.equal(influ_ence, influence_pcr)
       \vskip1ex
       The \emph{PCA design matrix} $\mathbb{X}_{pca}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$, so \emph{Principal Component Regression} is equivalent to the original regression model.
       \vskip1ex
-      \emph{Principal Component Regression} is used to: 
+      \emph{Principal Component Regression} is used to:
       \begin{itemize}
         \item Remove \emph{collinearity} between predictors, by excluding principal components with very small eignevalues,
         \item Perform \emph{dimension reduction}, by including only principal components with significantly large eignevalues,
@@ -3743,12 +3765,12 @@ all.equal(influ_ence, influence_pcr)
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Perform PCA
-pc_a <- prcomp(de_sign, 
+pc_a <- prcomp(de_sign,
                center=FALSE, scale=FALSE)
 design_pcr <- pc_a$x
 # Principal components are orthogonal to each other
 round(t(design_pcr) %*% design_pcr, 2)
-round(apply(design_pcr, 2, 
+round(apply(design_pcr, 2,
   function(x) c(mean=mean(x), sd=sd(x))), 3)
 # Calculate the PCR influence matrix
 influence_pcr <- design_pcr %*% MASS::ginv(design_pcr)
@@ -3854,7 +3876,7 @@ summary(g_lm)
 x11(width=7, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
-plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der], 
+plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
      type="l", lwd=4, col="orange",
      main="Category Densities and Logistic Function",
      xlab="score", ylab="density")
@@ -3867,10 +3889,10 @@ den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="blue")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
-legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA), 
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
        lwd=c(6, NA, NA), pch=c(NA, 15, 15),
        legend=c("logistic fit", "TRUE", "FALSE"),
-       col=c("orange", "red", "blue"), 
+       col=c("orange", "red", "blue"),
        text.col=c("black", "red", "blue"))
       @
   \end{columns}
@@ -3886,7 +3908,7 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{ISLR} contains datasets used in the book 
+      The package \emph{ISLR} contains datasets used in the book
       \href{http://www-bcf.usc.edu/~gareth/ISL/index.html}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
     \vskip1ex
       The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
