@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(digits=3)
-options(width=60, dev='pdf')
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 va_r <- 0.3/3
 va_r  # Printed as "0.1"
 va_r - 0.1  # va_r is not equal to "0.1"
@@ -620,9 +613,8 @@ len_gth <- 1000; da_ta <- rnorm(len_gth)
 mean(da_ta); sd(da_ta)
 # Bootstrap of sample mean and median
 boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(len_gth,
-                              replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(sampl_e), median=median(sampl_e))
 })  # end sapply
 boot_data <- t(boot_data)
 
@@ -644,10 +636,10 @@ len_gth <- 1000
 da_ta <- rnorm(len_gth)
 # Bootstrap of sample mean and median
 boot_data <- sapply(1:10000, function(x) {
-  # Boot_sample from Standard Normal Distribution
-  boot_sample <- rnorm(len_gth)
-  c(mean=mean(boot_sample),
-    median=median(boot_sample))
+  # sampl_e from Standard Normal Distribution
+  sampl_e <- rnorm(len_gth)
+  c(mean=mean(sampl_e),
+    median=median(sampl_e))
 })  # end sapply
 boot_data[, 1:3]
 # Standard error from formula
@@ -667,19 +659,19 @@ da_ta <- rnorm(len_gth)
 # Bootstrap mean and median under Windows
 boot_data <- parLapply(clus_ter, 1:10000,
   function(x, da_ta, len_gth) {
-  boot_sample <- da_ta[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(sampl_e), median=median(sampl_e))
   }, da_ta=da_ta, len_gth=len_gth)  # end parLapply
 # Bootstrap mean and median under Mac-OSX or Linux
 boot_data <- mclapply(1:10000,
   function(x) {
-  boot_sample <- da_ta[sample.int(len_gth, replace=TRUE)]
-  c(mean=mean(boot_sample), median=median(boot_sample))
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  c(mean=mean(sampl_e), median=median(sampl_e))
   }, mc.cores=n_cores)  # end mclapply
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), std_error=sd(x)))
 # Standard error from formula
 sd(da_ta)/sqrt(len_gth)
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
@@ -692,37 +684,35 @@ median(abs(da_ta - median(da_ta)))
 median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 boot_data <- sapply(1:10000, function(x) {
-  boot_sample <-
-    da_ta[sample.int(len_gth, replace=TRUE)]
-  c(sd=sd(boot_sample), mad=mad(boot_sample))
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  c(sd=sd(sampl_e), mad=mad(sampl_e))
 })  # end sapply
 boot_data <- t(boot_data)
 # Analyze bootstrapped variance
 head(boot_data)
 sum(is.na(boot_data))
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), std_error=sd(x)))
 # Parallel bootstrap under Windows
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 boot_data <- parLapply(clus_ter, 1:10000,
   function(x, da_ta) {
-    boot_sample <- da_ta[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+    sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, da_ta=da_ta)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
-  function(x) {
-    boot_sample <- da_ta[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+boot_data <- mclapply(1:10000, function(x) {
+    sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
-apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+apply(boot_data, MARGIN=2, function(x)
+  c(mean=mean(x), std_error=sd(x)))
 
 # Sample from time series of ETF returns
 re_turns <- rutils::etf_env$re_turns[, "VTI"]
@@ -736,14 +726,13 @@ clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all core
 n_boot <- 1e4
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, re_turns, len_gth) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+    sampl_e <- re_turns[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, re_turns=re_turns, len_gth=len_gth)  # end parLapply
 # Bootstrap sd and MAD under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot,
-  function(x) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+boot_data <- mclapply(1:n_boot, function(x) {
+    sampl_e <- re_turns[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 boot_data <- rutils::do_call(rbind, boot_data)
@@ -751,13 +740,13 @@ boot_data <- rutils::do_call(rbind, boot_data)
 sd(re_turns)/sqrt(n_boot)
 # Means and standard errors from bootstrap
 std_errors <- apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+  function(x) c(mean=mean(x), std_error=sd(x)))
 std_errors
 # Relative standard errors
 std_errors[2, ]/std_errors[1, ]
 
 # Calculate percentage returns from VTI prices
-price_s <- quantmod::Ad(rutils::etf_env$VTI)
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
 star_t <- as.numeric(price_s[1, ])
 re_turns <- rutils::diff_it(log(price_s))
 class(re_turns); head(re_turns)
@@ -766,11 +755,11 @@ len_gth <- NROW(re_turns)
 # Define barrier level with respect to price_s
 bar_rier <- 1.5*max(price_s)
 # Calculate single bootstrap sample
-boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
+sampl_e <- re_turns[sample.int(len_gth, replace=TRUE)]
 # Calculate prices from percentage returns
-boot_sample <- star_t*exp(cumsum(boot_sample))
+sampl_e <- star_t*exp(cumsum(sampl_e))
 # Calculate statistic
-sum(boot_sample > bar_rier) > 0
+sum(sampl_e > bar_rier) > 0
 
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
@@ -781,20 +770,19 @@ clusterExport(clus_ter, c("star_t", "bar_rier"))
 n_boot <- 1e4
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, re_turns, len_gth) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
+    sampl_e <- re_turns[sample.int(len_gth, replace=TRUE)]
     # Calculate prices from percentage returns
-    boot_sample <- star_t*exp(cumsum(boot_sample))
+    sampl_e <- star_t*exp(cumsum(sampl_e))
     # Calculate statistic
-    sum(boot_sample > bar_rier) > 0
+    sum(sampl_e > bar_rier) > 0
   }, re_turns=re_turns, len_gth=len_gth)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot,
-  function(x) {
-    boot_sample <- re_turns[sample.int(len_gth, replace=TRUE)]
+boot_data <- mclapply(1:n_boot, function(x) {
+    sampl_e <- re_turns[sample.int(len_gth, replace=TRUE)]
     # Calculate prices from percentage returns
-    boot_sample <- star_t*exp(cumsum(boot_sample))
+    sampl_e <- star_t*exp(cumsum(sampl_e))
     # Calculate statistic
-    sum(boot_sample > bar_rier) > 0
+    sum(sampl_e > bar_rier) > 0
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 boot_data <- rutils::do_call(rbind, boot_data)
@@ -838,8 +826,7 @@ boot_data <- parLapply(clus_ter, 1:n_boot,
     sum(boot_ohlc[, 2] > bar_rier) > 0
   }, re_turns=re_turns, len_gth=len_gth)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:n_boot,
-  function(x) {
+boot_data <- mclapply(1:n_boot, function(x) {
     # Calculate OHLC prices from percentage returns
     da_ta <- sample.int(len_gth, replace=TRUE)
     boot_prices <- star_t*exp(cumsum(re_turns[da_ta]))
@@ -859,16 +846,14 @@ len_gth <- 1000
 da_ta <- rnorm(len_gth)
 # Estimate the 95% quantile
 boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(len_gth,
-                              replace=TRUE)]
-  quantile(boot_sample, 0.95)
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  quantile(sampl_e, 0.95)
 })  # end sapply
 sd(boot_data)
 # Estimate the 95% quantile using antithetic sampling
 boot_data <- sapply(1:10000, function(x) {
-  boot_sample <- da_ta[sample.int(len_gth,
-                              replace=TRUE)]
-  quantile(c(boot_sample, -boot_sample), 0.95)
+  sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+  quantile(c(sampl_e, -sampl_e), 0.95)
 })  # end sapply
 # Standard error of quantile from bootstrap
 sd(boot_data)
@@ -918,7 +903,7 @@ boot_data <- sapply(1:1000, function(x) {
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 
 # Quantile from Naive Monte Carlo
 conf_level <- 0.98
@@ -939,7 +924,7 @@ boot_data <- sapply(1:1000, function(x) {
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 
 # Quantile from importance sample
 quant_import <-
@@ -961,7 +946,7 @@ boot_data <- sapply(1:1000, function(x) {
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 
 set.seed(1121) # Reset random number generator
 # Sample from Standard Normal Distribution
@@ -989,7 +974,7 @@ boot_data <- sapply(1:1000, function(x) {
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 # Monte Carlo expected value
 integrate(function(x) x*dnorm(x), low=2, up=Inf)
 sum((da_ta > 2)*da_ta)/len_gth
@@ -1006,7 +991,7 @@ boot_data <- sapply(1:1000, function(x) {
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 
 # Binomial sample
 len_gth <- 1000
@@ -1027,7 +1012,7 @@ boot_data <- sapply(1:1000, function(x) {
     importance=weigh_t*sum(rbinom(n=len_gth, size=1, p_tilted))/len_gth)
 }) # end sapply
 apply(boot_data, MARGIN=1,
-function(x) c(mean=mean(x), sd=sd(x)))
+  function(x) c(mean=mean(x), sd=sd(x)))
 
 set.seed(1121)  # Initialize random number generator
 # Define explanatory and response variables
@@ -1041,10 +1026,8 @@ for_mula <- paste(colnames(de_sign)[1],
   sep=" ~ ")
 # Bootstrap of regression
 boot_data <- sapply(1:100, function(x) {
-  boot_sample <- sample.int(NROW(de_sign),
-                      replace=TRUE)
-  mod_el <- lm(for_mula,
-          data=de_sign[boot_sample, ])
+  sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
+  mod_el <- lm(for_mula, data=de_sign[sampl_e, ])
   mod_el$coefficients
 })  # end sapply
 
@@ -1052,7 +1035,7 @@ par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=
 x11(width=6, height=6)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=1,
-      function(x) c(mean=mean(x), std_error=sd(x)))
+  function(x) c(mean=mean(x), std_error=sd(x)))
 # Means and standard errors from regression summary
 mod_el <- lm(for_mula, data=de_sign)
 mod_el$coefficients
@@ -1069,10 +1052,8 @@ clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 # Bootstrap of regression under Windows
 boot_data <- parLapply(clus_ter, 1:1000,
   function(x, for_mula, de_sign) {
-    boot_sample <-
-sample.int(NROW(de_sign), replace=TRUE)
-    mod_el <- lm(for_mula,
-data=de_sign[boot_sample, ])
+    sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
+    mod_el <- lm(for_mula, data=de_sign[sampl_e, ])
     mod_el$coefficients
   },
   for_mula=for_mula,
@@ -1080,16 +1061,14 @@ data=de_sign[boot_sample, ])
 # Bootstrap of regression under Mac-OSX or Linux
 boot_data <- mclapply(1:1000,
   function(x) {
-    boot_sample <-
-sample.int(NROW(de_sign), replace=TRUE)
-    lm(for_mula,
-data=de_sign[boot_sample, ])$coefficients
+    sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
+    lm(for_mula, data=de_sign[sampl_e, ])$coefficients
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2,
-function(x) c(mean=mean(x), std_error=sd(x)))
+  function(x) c(mean=mean(x), std_error=sd(x)))
 x11(width=6, height=6)
 plot(density(boot_data[, "de_sign"]),
      lwd=2, xlab="regression slopes",
@@ -1561,9 +1540,8 @@ summary(microbenchmark(
 # Define Ornstein-Uhlenbeck function in R
 boot_data <- function(da_ta, n_boot=1000) {
   boot_data <- sapply(1:10000, function(x) {
-    boot_sample <-
-da_ta[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+    sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
   boot_data <- t(boot_data)
   # Analyze bootstrapped variance
@@ -1571,7 +1549,7 @@ da_ta[sample.int(len_gth, replace=TRUE)]
   sum(is.na(boot_data))
   # Means and standard errors from bootstrap
   apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
+    function(x) c(mean=mean(x), std_error=sd(x)))
 
   re_turns <- numeric(len_gth)
   price_s <- numeric(len_gth)
@@ -1675,9 +1653,8 @@ summary(microbenchmark(
 # Define Ornstein-Uhlenbeck function in R
 boot_data <- function(da_ta, n_boot=1000) {
   boot_data <- sapply(1:10000, function(x) {
-    boot_sample <-
-da_ta[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+    sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
   boot_data <- t(boot_data)
   # Analyze bootstrapped variance
@@ -1685,7 +1662,7 @@ da_ta[sample.int(len_gth, replace=TRUE)]
   sum(is.na(boot_data))
   # Means and standard errors from bootstrap
   apply(boot_data, MARGIN=2,
-  function(x) c(mean=mean(x), std_error=sd(x)))
+    function(x) c(mean=mean(x), std_error=sd(x)))
 
   re_turns <- numeric(len_gth)
   price_s <- numeric(len_gth)
@@ -1705,9 +1682,8 @@ ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_
 # Define Ornstein-Uhlenbeck function in R
 boot_data <- function(da_ta, n_boot=1000) {
   boot_data <- sapply(1:10000, function(x) {
-    boot_sample <-
-da_ta[sample.int(len_gth, replace=TRUE)]
-    c(sd=sd(boot_sample), mad=mad(boot_sample))
+    sampl_e <- da_ta[sample.int(len_gth, replace=TRUE)]
+    c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
   boot_data <- t(boot_data)
   # Analyze bootstrapped variance
