@@ -1,3 +1,10 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=60, dev='pdf')
+options(digits=3)
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 # Display documentation on function "getwd"
 help(getwd)
 # Equivalent to "help(getwd)"
@@ -164,18 +171,6 @@ dir(normalizePath(file.path(R.home(), "etc"), winslash="/"))
 getwd()
 dir(getwd(), all.files=TRUE, pattern="\\.R")
 dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
-
-setwd("C:/Develop/R")
-
-scan(file=".Rprofile", what=character(), sep="\n")
-
-cat("sourcing .Rprofile file\n")
-
-
-
-cat("sourcing .Rprofile file\n")
-
-
 
 # Single numbers are vectors of length 1
 1
@@ -543,12 +538,12 @@ is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
 rm(list=ls())
 TRUE | FALSE
 TRUE | NA
-vec_tor1 <- c(2, 4, 6)
-vec_tor1 < 5  # element-wise comparison
-(vec_tor1 < 5) & (vec_tor1 > 3)
-vec_tor1[(vec_tor1 < 5) & (vec_tor1 > 3)]
-vec_tor2 <- c(-10, 0, 10)
-vec_tor1 < vec_tor2
+vector1 <- c(2, 4, 6)
+vector1 < 5  # element-wise comparison
+(vector1 < 5) & (vector1 > 3)
+vector1[(vector1 < 5) & (vector1 > 3)]
+vector2 <- c(-10, 0, 10)
+vector1 < vector2
 c(FALSE, TRUE, FALSE) & c(TRUE, TRUE, FALSE)
 c(FALSE, TRUE, FALSE) | c(TRUE, TRUE, FALSE)
 
@@ -959,16 +954,16 @@ c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 # coercion converted matrix to vector
 c(is.matrix(mat_rix), is.vector(mat_rix))
 
-vec_tor1 <- 1:3  # define vector
-vec_tor2 <- 6:4  # define vector
+vector1 <- 1:3  # define vector
+vector2 <- 6:4  # define vector
 # bind vectors into columns
-cbind(vec_tor1, vec_tor2)
+cbind(vector1, vector2)
 # bind vectors into rows
-rbind(vec_tor1, vec_tor2)
+rbind(vector1, vector2)
 # extend to four elements
-vec_tor2 <- c(vec_tor2, 7)
+vector2 <- c(vector2, 7)
 # recycling rule applied
-cbind(vec_tor1, vec_tor2)
+cbind(vector1, vector2)
 # another example of recycling rule
 1:6 + c(10, 20)
 
@@ -983,40 +978,40 @@ rep(c("a", "b"), each=5)
 rep(c("a", "b"), length.out=5)
 
 # define vector and matrix
-vec_tor1 <- c(2, 4, 3)
+vector1 <- c(2, 4, 3)
 mat_rix <- matrix(sample(1:12), ncol=3)
 # multiply matrix by vector column-wise
-vec_tor1 * mat_rix
-mat_rix * vec_tor1
+vector1 * mat_rix
+mat_rix * vector1
 # multiply matrix by vector row-wise
-t(vec_tor1 * t(mat_rix))
+t(vector1 * t(mat_rix))
 
-vec_tor1
-vec_tor2 <- 6:4  # define vector
+vector1
+vector2 <- 6:4  # define vector
 # multiply two vectors element-by-element
-vec_tor1 * vec_tor2
+vector1 * vector2
 # calculate inner product
-vec_tor1 %*% vec_tor2
+vector1 %*% vector2
 # calculate inner product and drop dimensions
-drop(vec_tor1 %*% vec_tor2)
+drop(vector1 %*% vector2)
 # multiply columns of matrix by vector
-mat_rix %*% vec_tor1  # single column matrix
-drop(mat_rix %*% vec_tor1)  # vector
-rowSums(t(vec_tor1 * t(mat_rix)))
+mat_rix %*% vector1  # single column matrix
+drop(mat_rix %*% vector1)  # vector
+rowSums(t(vector1 * t(mat_rix)))
 # using rowSums() and t() is 10 times slower than %*%
 library(microbenchmark)
 summary(microbenchmark(
-  in_ner=drop(mat_rix %*% vec_tor1),
-  row_sums=rowSums(t(vec_tor1 * t(mat_rix))),
+  in_ner=drop(mat_rix %*% vector1),
+  row_sums=rowSums(t(vector1 * t(mat_rix))),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 library(microbenchmark)
 # multiply matrix by vector fails because dimensions aren't conformable
-vec_tor1 %*% mat_rix
+vector1 %*% mat_rix
 # works after transpose
-drop(vec_tor1 %*% t(mat_rix))
+drop(vector1 %*% t(mat_rix))
 # calculate inner product
-crossprod(vec_tor1, vec_tor2)
+crossprod(vector1, vector2)
 # create matrix and vector
 mat_rix <- matrix(1:3000, ncol=3)
 tmat_rix <- t(mat_rix)
@@ -1028,19 +1023,19 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 # define named vectors
-vec_tor1 <- sample(1:4)
-names(vec_tor1) <-
-  paste0("row", 1:4, "=", vec_tor1)
-vec_tor1
-vec_tor2 <- sample(1:3)
-names(vec_tor2) <-
-  paste0("col", 1:3, "=", vec_tor2)
-vec_tor2
+vector1 <- sample(1:4)
+names(vector1) <-
+  paste0("row", 1:4, "=", vector1)
+vector1
+vector2 <- sample(1:3)
+names(vector2) <-
+  paste0("col", 1:3, "=", vector2)
+vector2
 # calculate outer product of two vectors
-mat_rix <- outer(vec_tor1, vec_tor2)
+mat_rix <- outer(vector1, vector2)
 mat_rix
 # calculate vectorized function spanned over two vectors
-mat_rix <- outer(vec_tor1, vec_tor2,
+mat_rix <- outer(vector1, vector2,
            FUN=function(x1, x2) x2*sin(x1))
 mat_rix
 

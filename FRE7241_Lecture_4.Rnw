@@ -5,8 +5,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -68,7 +68,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{September 21, 2020}
+\date{September 29, 2020}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -84,50 +84,276 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Active Investment Strategies}
+\section{Calibrating Time Series Models}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Volume-Weighted Average Price Indicator}
+\subsection{Fitting Time Series to Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes.
+      An \emph{autoregressive} process \emph{AR(p)} for the time series of returns $r_i$:
+      \begin{multline*}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i = \\
+        \sum_{j=1}^{p} {\varphi_j r_{i-j}} + \xi_i
+      \end{multline*}
+      Can be solved as a \emph{multivariate} linear regression, with the \emph{response} equal to $r_i$, and the columns of the \emph{design matrix} equal to the lags of $r_i$.
       \vskip1ex
-      Moving averages (such as \emph{VWAP}) are often used to define technical indicators (trading signals).
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate open, close, and lagged prices
-sym_bol <- "VTI"
-# oh_lc <- rutils::etf_env$VTI
-oh_lc <- get(sym_bol, rutils::etf_env)
-op_en <- quantmod::Op(oh_lc)
-cl_ose <- quantmod::Cl(oh_lc)
-vol_ume <- quantmod::Vo(oh_lc)
-star_t <- as.numeric(cl_ose[1])
-# Define aggregation interval and calculate VWAP
-look_back <- 200
-v_wap <- rutils::roll_sum(x_ts=cl_ose*vol_ume, 
-  look_back=look_back)
-volume_roll <- rutils::roll_sum(x_ts=vol_ume, 
-  look_back=look_back)
-v_wap <- v_wap/volume_roll
-v_wap[is.na(v_wap)] <- 0
-      @
+      An intercept term can be added to the above formula by adding a unit column to the regression design matrix.
+      \vskip1ex
+      Adding the intercept term produces slightly different coefficients, depending on the mean of the returns.
+      \vskip1ex
+      The function \texttt{stats::ar.ols()} fits an \emph{AR(p)} model, but it produces slightly different coefficients than linear regression, because it uses a different calibration procedure.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_indic.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Specify AR process parameters
+n_rows <- 1e3
+co_eff <- c(0.1, 0.39, 0.5); n_coeff <- NROW(co_eff)
+set.seed(1121); in_nov <- rnorm(n_rows)
+# ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+# Simulate AR process using C_rfilter()
+ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+  double(n_rows + n_coeff))[-(1:n_coeff)]
+# Fit AR model using ar.ols()
+ar_fit <- ar.ols(ari_ma, order.max=n_coeff, aic=FALSE)
+class(ar_fit)
+is.list(ar_fit)
+drop(ar_fit$ar)
+# Define design matrix with intercept column
+de_sign <- sapply(1:n_coeff, function(lagg) {
+  rutils::lag_it(ari_ma, lagg=lagg)
+})  # end sapply
+de_sign <- cbind(rep(1, n_rows), de_sign)
+# Fit AR model using regression
+design_inv <- MASS::ginv(de_sign)
+coeff_reg <- drop(design_inv %*% ari_ma)
+all.equal(drop(ar_fit$ar), coeff_reg[-1], check.attributes=FALSE)
+# Define design matrix without intercept column
+de_sign <- sapply(1:n_coeff, function(lagg) {
+  rutils::lag_it(ari_ma, lagg=lagg)
+})  # end sapply
+# Fit AR model using regression
+design_inv <- MASS::ginv(de_sign)
+coeff_reg <- drop(design_inv %*% ari_ma)
+all.equal(drop(ar_fit$ar), coeff_reg, check.attributes=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Standard Errors of the \protect\emph{AR(p)} Coefficients}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{standard errors} of the fitted \emph{AR(p)} coefficients are proportional to the standard deviation of the fitted residuals.
+      \vskip1ex
+      Their \emph{t}-values are equal to the ratio of the fitted coefficients divided by their standard errors.
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot prices and VWAP
+# Calculate the regression residuals
+fit_ted <- drop(de_sign %*% coeff_reg)
+residual_s <- drop(ari_ma - fit_ted)
+# Variance of residuals
+var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_reg))
+# Design matrix squared
+design_2 <- crossprod(de_sign)
+# Calculate covariance matrix of AR coefficients
+co_var <- var_resid*MASS::ginv(design_2)
+coeff_regd <- sqrt(diag(co_var))
+# Calculate t-values of AR coefficients
+coeff_tvals <- drop(coeff_reg)/coeff_regd
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Order Selection of \protect\emph{AR(p)} Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Order selection means determining the \emph{order parameter} $p$ of the \emph{AR(p)} model that best fits the time series.
+      \vskip1ex
+      The order parameter $p$ can be set equal to the number of significantly non-zero \emph{partial autocorrelations} of the time series.
+      \vskip1ex
+      The order parameter can also be determined by only selecting coefficients with statistically significant \emph{t}-values.
+      \vskip1ex
+      Fitting an \emph{AR(p)} model can be performed by first determining the order $p$, and then calculating the coefficients.
+      \vskip1ex
+      The function \texttt{stats::arima()} calibrates (fits) an \emph{ARIMA} model to a univariate time series.
+      \vskip1ex
+      The function \texttt{auto.arima()} from the package \emph{forecast} performs order selection, and calibrates an \emph{AR(p)} model to a univariate time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Fit AR(5) model into AR(3) process
+de_sign <- sapply(1:5, function(lagg) {
+  rutils::lag_it(ari_ma, lagg=lagg)
+})  # end sapply
+de_sign <- cbind(rep(1, n_rows), de_sign)
+design_inv <- MASS::ginv(de_sign)
+coeff_reg <- drop(design_inv %*% ari_ma)
+# Calculate t-values of AR(5) coefficients
+residual_s <- drop(ari_ma - drop(de_sign %*% coeff_reg))
+var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_reg))
+co_var <- var_resid*MASS::ginv(crossprod(de_sign))
+coeff_regd <- sqrt(diag(co_var))
+coeff_tvals <- drop(coeff_reg)/coeff_regd
+# Fit AR(5) model using arima()
+arima_fit <- arima(ari_ma, order=c(5, 0, 0), include.mean=FALSE)
+arima_fit$coef
+# Fit AR(5) model using auto.arima()
+library(forecast)  # Load forecast
+arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
+# Fit AR(5) model into VTI returns
+re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
+de_sign <- sapply(1:5, function(lagg) {
+  rutils::lag_it(re_turns, lagg=lagg)
+})  # end sapply
+de_sign <- cbind(rep(1, NROW(re_turns)), de_sign)
+design_inv <- MASS::ginv(de_sign)
+coeff_reg <- drop(design_inv %*% re_turns)
+# Calculate t-values of AR(5) coefficients
+residual_s <- drop(re_turns - drop(de_sign %*% coeff_reg))
+var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_reg))
+co_var <- var_resid*MASS::ginv(crossprod(de_sign))
+coeff_regd <- sqrt(diag(co_var))
+coeff_tvals <- drop(coeff_reg)/coeff_regd
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Yule-Walker Equations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      To lighten the notation we can assume that the time series $r_i$ has zero mean $\mathbb{E}[r_i] = 0$ and unit variance $\mathbb{E}[r_i^2] = 1$.  ($\mathbb{E}$ is the expectation operator.)
+      \vskip1ex
+      Then the \emph{autocorrelations} of $r_i$ are equal to: $\rho_k = \mathbb{E}[r_i r_{i-k}]$.
+      \vskip1ex
+      If we multiply the \emph{autoregressive} process \emph{AR(p)}: $r_i = \sum_{j=1}^{p} {\varphi_j r_{i-j}} + \xi_i$, by $r_{i-k}$ and take the expectations, then we obtain the Yule-Walker equations:
+      \begin{displaymath}
+        \begin{pmatrix}
+          \rho_1 \\
+          \rho_2 \\
+          \rho_3 \\
+          \vdots \\
+          \rho_p
+        \end{pmatrix} =
+        \begin{pmatrix}
+          1 & \rho_1 & \dots & \rho_{p-1} \\
+          \rho_1 & 1 & \dots & \rho_{p-2} \\
+          \rho_2 & \rho_1 & \dots & \rho_{p-3} \\
+          \vdots & \vdots & \ddots & \vdots \\
+          \rho_{p-1} & \rho_{p-2} & \dots & 1
+        \end{pmatrix}
+        \begin{pmatrix}
+          \varphi_1 \\
+          \varphi_2 \\
+          \varphi_3 \\
+          \vdots \\
+          \varphi_p
+        \end{pmatrix}
+      \end{displaymath}
+      The Yule-Walker equations relate the \emph{autocorrelation coefficients} $\rho_i$ with the coefficients of the \emph{AR(p)} process $\varphi_i$.
+      \vskip1ex
+      The Yule-Walker equations can be solved for the \emph{AR(p)} coefficients $\varphi_i$ using matrix inversion.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Compute autocorrelation coefficients
+ac_f <- acf(ari_ma, lag=10, plot=FALSE)
+ac_f <- drop(ac_f$acf)
+acf1 <- ac_f[-NROW(ac_f)]
+# Define Yule-Walker matrix
+yule_walker <- sapply(2:9, function(lagg) {
+  c(acf1[lagg:1], acf1[2:(NROW(acf1)-lagg+1)])
+})  # end sapply
+yule_walker <- cbind(acf1, yule_walker, rev(acf1))
+# Generalized inverse of Yule-Walker matrix
+yule_walker_inv <- MASS::ginv(yule_walker)
+# Solve Yule-Walker equations
+coeff_yw <- drop(yule_walker_inv %*% ac_f[-1])
+round(coeff_yw, 5)
+coeff_reg
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Forecasting Autoregressive Processes}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      An \emph{autoregressive} process \emph{AR(p)}:
+      \begin{displaymath}
+        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
+      \end{displaymath}
+      Can be simulated using the function \texttt{filter()} with the argument \texttt{method="recursive"}.
+      \vskip1ex
+      Filtering can be performed even faster by directly calling the compiled \texttt{C++} function \texttt{stats:::C\_rfilter()}.
+      <<echo=TRUE,eval=FALSE>>=
+n_rows <- 1e2
+co_eff <- c(0.1, 0.39, 0.5); n_coeff <- NROW(co_eff)
+set.seed(1121); in_nov <- rnorm(n_rows)
+# Simulate AR process using filter()
+ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+ari_ma <- as.numeric(ari_ma)
+# Simulate AR process using C_rfilter()
+arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+  double(n_rows + n_coeff))
+all.equal(ari_ma, arima_fast[-(1:n_coeff)], 
+  check.attributes=FALSE)
+      @
+      The one step ahead \emph{forecast} $f_i$ is equal to the \emph{convolution} of the time series $r_i$ with the \emph{AR(p)} coefficients:
+      \begin{displaymath}
+        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
+      \end{displaymath}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ar_forecast.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Forecast AR(3) process using loop in R
+forecast_s <- numeric(NROW(ari_ma)+1)
+forecast_s[1] <- 0
+forecast_s[2] <- co_eff[1]*ari_ma[1]
+forecast_s[3] <- co_eff[1]*ari_ma[2] + co_eff[2]*ari_ma[1]
+for (it in 4:NROW(forecast_s)) {
+  forecast_s[it] <- ari_ma[(it-1):(it-3)] %*% co_eff
+}  # end for
+# Plot with legend
 x11(width=6, height=5)
-chart_Series(x=cl_ose, 
-  name="VTI prices and VWAP", col="orange")
-add_TA(v_wap, on=1, lwd=2, col="blue")
-legend("top", legend=c("VTI", "VWAP"), 
-  bg="white", lty=1, lwd=6, 
-  col=c("orange", "blue"), bty="n")
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(ari_ma, main="Forecasting Using AR(3) Model",
+  xlab="", ylab="", type="l")
+lines(forecast_s, col="orange", lwd=3)
+legend(x="topright", legend=c("series","forecasts"),
+       col=c("black", "orange"), lty=1, lwd=6,
+       cex=0.9, bg="white", bty="n")
       @
   \end{columns}
 \end{block}
@@ -136,209 +362,47 @@ legend("top", legend=c("VTI", "VWAP"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Moving Average Crossover Strategy}
+\subsection{Fast Forecasting of Autoregressive Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In a \emph{Moving Average Crossover} strategy, when the current price crosses above the \emph{VWAP}, then the strategy switches its position to long risk, and vice versa.
-      \vskip1ex
-      A single-period time lag is applied to the \emph{VWAP indicator}, so that the strategy trades immediately after the \emph{VWAP indicator} is evaluated at the end of the day.
-      \vskip1ex
-      This assumption may be too optimistic because in practice it's difficult to trade immediately just before the close of markets.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate VWAP indicator
-indica_tor <- sign(cl_ose - v_wap)
-# Calculate positions as lagged indicator
-position_s <- rutils::lag_it(indica_tor)
-# Calculate daily profits and losses of strategy
-re_turns <- rutils::diff_it(cl_ose)
-pnl_s <- re_turns*position_s
-cum_pnls <- star_t + cumsum(pnl_s)
-# Annualized Sharpe ratio of VWAP strategy
-sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
-# Annualized Sharpe ratio of VTI
-sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
-# Plot prices and VWAP
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI", col="orange")
-add_TA(cum_pnls, on=1, lwd=2, col="blue")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=c(sym_bol, "VWAP strategy"), 
-       inset=0.1, bg="white", lty=1, lwd=6, 
-       col=c("orange", "blue"), bty="n")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot prices and VWAP
-da_ta <- cbind(cl_ose, cum_pnls, v_wap)
-colnames(da_ta) <- c(sym_bol, "strategy", "vwap")
-dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy")) %>%
-  dyAxis("y", label=sym_bol, independentTicks=TRUE) %>%
-  dyAxis("y2", label="strategy", independentTicks=TRUE) %>%
-  dySeries(name=sym_bol, axis="y", label=sym_bol, strokeWidth=2, col="red") %>%
-  dySeries(name="vwap", axis="y", label="vwap", strokeWidth=2, col="green") %>%
-  dySeries(name="strategy", axis="y2", label="strategy", strokeWidth=2, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{MA Crossover Strategy With Lag}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{MA Crossover} strategy suffers losses when prices are range-bound without a trend, because whenever it switches position the prices soon change direction.  (This is called a "whipsaw".)
-      \vskip1ex
-      To prevent whipsaws and over-trading, the \emph{MA Crossover} strategy may choose to delay switching positions until the indicator repeats the same value for several periods.
-      \vskip1ex
-      There's a tradeoff between switching positions too early and risking a whipsaw, and waiting too long and missing a trend.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate positions from lagged indicator
-lagg <- 2
-indic_sum <- roll::roll_sum(indica_tor, width=lagg)
-indic_sum[1:lagg] <- 0
-position_s <- rep(NA_integer_, NROW(cl_ose))
-position_s[1] <- 0
-position_s <- ifelse(indic_sum == lagg, 1, position_s)
-position_s <- ifelse(indic_sum == (-lagg), -1, position_s)
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-# Lag the positions to trade in next period
-position_s <- rutils::lag_it(position_s, lagg=1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat_lag.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate PnLs of lagged strategy
-pnl_s <- re_turns*position_s
-cum_pnls_lag <- star_t + cumsum(pnl_s)
-# Plot both strategies
-da_ta <- cbind(cum_pnls_lag, cum_pnls)
-colnames(da_ta) <- c("lag_strategy", "strategy")
-dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy With Lag")) %>%
-  dySeries(name="lag_strategy", label="Strategy With Lag", strokeWidth=2, col="green") %>%
-  dySeries(name="strategy", label="Strategy", strokeWidth=2, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{MA Crossover Strategy Trading at the \protect\emph{Open} Price}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A more realistic assumption is that the strategy trades at the \emph{Open} price in the next period.
-      <<echo=TRUE,eval=FALSE>>=
-# Determine dates right after VWAP has crossed prices
-trade_dates <- (rutils::diff_it(indica_tor) != 0)
-trade_dates <- which(trade_dates) + 1
-# Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
-position_s[1] <- 0
-position_s[trade_dates] <- indica_tor[trade_dates-1]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
-pos_lagged <- rutils::lag_it(position_s)
-# Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
-# Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
-pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
-  (op_en[trade_dates] - close_lag[trade_dates])
-# Calculate unrealized pnl for days with trade
-pnl_s[trade_dates] <- pnl_s[trade_dates] + 
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-cum_pnls_open <- star_t + cumsum(pnl_s)
-# Annualized Sharpe ratio of VWAP strategy
-sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
-# Annualized Sharpe ratio of VTI
-sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vwap_strat_open.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot both strategies
-da_ta <- cbind(cum_pnls_open, cum_pnls)
-colnames(da_ta) <- c("strategy_open", "strategy")
-dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy on Open")) %>%
-  dySeries(name="strategy_open", label="Strategy on Open", strokeWidth=2, col="green") %>%
-  dySeries(name="strategy", label="Strategy", strokeWidth=2, col="blue")
-# Plot VTI and VWAP strategy
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
-add_TA(cum_pnls, on=1, lwd=2, col="blue")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=c(sym_bol, "VWAP strategy"), 
-       inset=0.1, bg="white", lty=1, lwd=6, 
-       col=c("orange", "blue"), bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Price Technical Indicator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
+      The one step ahead \emph{forecast} $f_i$ is equal to the \emph{convolution} of the time series $r_i$ with the \emph{AR(p)} coefficients:
       \begin{displaymath}
-        P_i^{EWMA} = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) P_{i-j}
+        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
       \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
-      <<echo=TRUE,eval=FALSE>>=
-# Define length for weights and decay parameter
-wid_th <- 352
-lamb_da <- 0.01
-# Calculate EWMA prices
-weight_s <- exp(-lamb_da*1:wid_th)
-weight_s <- weight_s/sum(weight_s)
-ew_ma <- stats::filter(cl_ose, filter=weight_s, 
-  sides=1, method="convolution")
-ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-ew_ma <- cbind(cl_ose, as.numeric(ew_ma))
-colnames(ew_ma) <- c("VTI", "VTI EWMA")
-      @
+      The above \emph{convolution} can be quickly calculated by using the function \texttt{filter()} with the argument \texttt{method="convolution"}.
+      \vskip1ex
+      The convolution can be calculated even faster by directly calling the compiled \texttt{C++} function \texttt{stats:::C\_cfilter()}.
+      \vskip1ex
+      The forecasts can also be calculated using the design matrix multiplied by the \emph{AR(p)} coefficients.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
-      \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA prices with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(ew_ma["2007/2010"], theme=plot_theme, 
-             name="EWMA prices")
-legend("bottomleft", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=1, lwd=6, 
-       col=plot_theme$col$line.col, bty="n")
+# Forecast using filter()
+filter_fast <- filter(x=ari_ma, sides=1,
+  filter=co_eff, method="convolution")
+filter_fast <- as.numeric(filter_fast)
+# Compare excluding warmup period
+all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))], 
+          check.attributes=FALSE)
+# Filter using C_cfilter() compiled C++ function directly
+filter_fast <- .Call(stats:::C_cfilter, ari_ma, filter=co_eff, 
+                     sides=1, circular=FALSE)
+# Compare excluding warmup period
+all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))], 
+          check.attributes=FALSE)
+# Define design matrix without intercept column
+de_sign <- sapply(1:(n_coeff-1), function(lagg) {
+  rutils::lag_it(ari_ma, lagg=lagg)
+})  # end sapply
+de_sign <- cbind(ari_ma, de_sign)
+de_sign <- rbind(numeric(n_coeff), de_sign)
+# Forecast using design matrix
+filter_fast <- drop(de_sign %*% co_eff)
+# Compare with loop in R
+all.equal(forecast_s, filter_fast, check.attributes=FALSE)
       @
   \end{columns}
 \end{block}
@@ -347,47 +411,43 @@ legend("bottomleft", legend=colnames(ew_ma),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating The \protect\emph{EWMA} Crossover Strategy}
+\subsection{Forecasting Using \texttt{predict.Arima()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In a trend following \emph{EWMA Crossover} strategy, the risk position switches depending if the current price is above or below the \emph{EWMA}.
+      The forecasts of the \emph{AR(p)} process can also be calculated using the function \texttt{predict()}.
       \vskip1ex
-      If the current price crosses above the \emph{EWMA}, then the strategy switches its risk position to a fixed unit of long risk, and if it crosses below, to a fixed unit of short risk.
+      The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
       \vskip1ex
-      The strategy holds the same position until the \emph{EWMA} crosses over the current price (either from above or below), and then it switches its position.
+      The \emph{method} \texttt{predict.Arima()} is \emph{dispatched} by \texttt{R} for calculating predictions from \emph{ARIMA} models produced by the function \texttt{stats::arima()}.
       \vskip1ex
-      The strategy is therefore always either in a long risk, or in a short risk position.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Determine dates right after VWAP has crossed prices
-indica_tor <- sign(cl_ose - ew_ma[, 2])
-trade_dates <- (rutils::diff_it(indica_tor) != 0)
-trade_dates <- which(trade_dates) + 1
-# Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
-position_s[1] <- 0
-position_s[trade_dates] <- indica_tor[trade_dates-1]
-position_s <- na.locf(position_s)
-position_s <- xts(position_s, order.by=index(oh_lc))
-      @
+      The \emph{method} \texttt{predict.Arima()} returns a prediction object which is a \texttt{list} containing the predicted value and its standard error.
+      \vskip1ex
+      The function \texttt{stats::arima()} calibrates (fits) an \emph{ARIMA} model to a univariate time series, using the \emph{maximum likelihood} method (which may give slightly different coefficients than the linear regression model).
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA prices with position shading
-chart_Series(ew_ma["2007/2010"], theme=plot_theme, 
-             name="EWMA prices")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("bottomleft", legend=colnames(ew_ma), 
-       inset=0.1, bg="white", lty=1, lwd=6, 
-       col=plot_theme$col$line.col, bty="n")
+# Fit ARIMA model using arima()
+arima_fit <- arima(ari_ma, order=c(3,0,0), include.mean=FALSE)
+arima_fit$coef
+co_eff
+# One-step-ahead forecast using predict.Arima()
+pre_dict <- predict(arima_fit, n.ahead=1)
+# Or directly call predict.Arima()
+# pre_dict <- predict.Arima(arima_fit, n.ahead=1)
+# Inspect the prediction object
+class(pre_dict)
+names(pre_dict)
+class(pre_dict$pred)
+unlist(pre_dict)
+# One-step-ahead forecast using matrix algebra
+fore_cast <- drop(ari_ma[n_rows:(n_rows-2)] %*% arima_fit$coef)
+# Compare one-step-ahead forecasts
+all.equal(pre_dict$pred[[1]], fore_cast)
+# Get information about predict.Arima()
+?stats:::predict.Arima
       @
   \end{columns}
 \end{block}
@@ -396,235 +456,30 @@ legend("bottomleft", legend=colnames(ew_ma),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of \protect\emph{EWMA} Crossover Strategy}
+\subsection{The Forecasting Residuals}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The strategy trades at the \emph{Open} price on the next day after prices cross the \emph{EWMA}, since in practice it may not be possible to trade immediately.
+      The \emph{forecasting residuals} $\varepsilon_i$ are equal to the differences between the actual values $r_i$ minus their \emph{forecasts} $f_i$: $\varepsilon_i = r_i - f_i$.
       \vskip1ex
-      The Profit and Loss (\emph{PnL}) on a trade date is the sum of the realized \emph{PnL} from closing the old position, plus the unrealized \emph{PnL} after opening the new position.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate daily profits and losses
-# Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
-# Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
-pos_lagged <- rutils::lag_it(position_s)
-pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
-  (op_en[trade_dates] - close_lag[trade_dates])
-# Calculate unrealized pnl for days with trade
-pnl_s[trade_dates] <- pnl_s[trade_dates] + 
-  position_s[trade_dates] * 
-  (cl_ose[trade_dates] - op_en[trade_dates])
-# Annualized Sharpe ratio of EWMA strategy
-sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
-# Cumulative pnls
-cum_pnls <- star_t + cumsum(pnl_s)
-cum_pnls <- cbind(cl_ose, cum_pnls)
-colnames(cum_pnls) <- c("VTI", "EWMA PnL")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_pnl.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA PnL with position shading
-chart_Series(cum_pnls, theme=plot_theme, 
-             name="Performance of EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(cum_pnls), 
-       inset=0.05, bg="white", lty=1, lwd=6, 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Crossover Strategy With Transaction Costs}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
+      Accurate forecasting of an \emph{AR(p)} process requires knowing its coefficients.
       \vskip1ex
-      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
+      If the coefficients of the \emph{AR(p)} process are known exactly, then its \emph{in-sample residuals} $\varepsilon_i$ are equal to its \emph{innovations} $\xi_i$: $\varepsilon_i = r_i - f_i = \xi_i$.
       \vskip1ex
-      The \emph{transaction costs} $c_t$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
-      \begin{displaymath}
-        c_t = \frac{\delta}{2} \left| \Delta n_t \right| p_t
-      \end{displaymath}
-      Where $\Delta n_t$ is the number of shares traded, and $p_t$ is their price.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_transcosts.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# bid_offer equal to 10 bps for liquid ETFs
-bid_offer <- 0.001
-# Calculate transaction costs
-cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
-# pnl_s <- (pnl_s - cost_s)
-# Plot strategy with transaction costs
-cum_pnls <- star_t + cumsum(pnl_s)
-cum_pnls <- cbind(cum_pnls, cum_pnls - cumsum(cost_s))
-colnames(cum_pnls) <- c(sym_bol, "costs")
-dygraphs::dygraph(cum_pnls, main=paste(sym_bol, "EWMA Strategy With Transaction Costs")) %>%
-  dySeries(name="costs", label="Strategy With Transaction Costs", strokeWidth=2, col="green") %>%
-  dySeries(name=sym_bol, label="EWMA Strategy", strokeWidth=2, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Function for \protect\emph{EWMA} Crossover Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{EWMA} strategy can be simulated by a single function, which allows the analysis of its performance depending on its parameters.
+      In reality, we don't know the \emph{AR(p)} coefficients, so they must be fitted to an empirical time series.
       \vskip1ex
-      The function \texttt{simu\_ewma()} performs a simulation of the \emph{EWMA} strategy, given an \emph{OHLC} time series of prices, and a decay parameter $\lambda$.
-      \vskip1ex
-      The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
-    \column{0.6\textwidth}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
-  # Calculate EWMA prices
-  weight_s <- exp(-lamb_da*1:wid_th)
-  weight_s <- weight_s/sum(weight_s)
-  cl_ose <- quantmod::Cl(oh_lc)
-  ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1, method="convolution")
-  ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-  # Determine dates right after EWMA has crossed prices
-  indica_tor <- tre_nd*sign(cl_ose - as.numeric(ew_ma))
-  trade_dates <- (rutils::diff_it(indica_tor) != 0)
-  trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates < NROW(oh_lc)]
-  # Calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(oh_lc))
-  position_s[1] <- 0
-  position_s[trade_dates] <- indica_tor[trade_dates-1]
-  position_s <- na.locf(position_s)
-  op_en <- quantmod::Op(oh_lc)
-  close_lag <- rutils::lag_it(cl_ose)
-  pos_lagged <- rutils::lag_it(position_s)
-  # Calculate daily profits and losses
-  pnl_s <- rutils::diff_it(cl_ose)*position_s
-  pnl_s[trade_dates] <- pos_lagged[trade_dates] * 
-    (op_en[trade_dates] - close_lag[trade_dates])
-  pnl_s[trade_dates] <- pnl_s[trade_dates] + 
-    position_s[trade_dates] * 
-    (cl_ose[trade_dates] - op_en[trade_dates])
-  # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
-  pnl_s <- (pnl_s - cost_s)
-  # Calculate strategy returns
-  pnl_s <- cbind(position_s, pnl_s)
-  colnames(pnl_s) <- c("positions", "pnls")
-  pnl_s
-}  # end simu_ewma
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Multiple Trend Following \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Multiple \emph{EWMA} strategies can be simulated by calling the function \texttt{simu\_ewma()} in a loop over a vector of $\lambda$ parameters.
-      \vskip1ex
-      But \texttt{simu\_ewma()} returns an \emph{xts} time series, and \texttt{sapply()} cannot merge \emph{xts} time series together.
-      \vskip1ex
-      So instead the loop is performed using \texttt{lapply()} which returns a list of \emph{xts}, and the list is merged into a single \emph{xts} using the functions \texttt{do.call()} and \texttt{cbind()}.
-      <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lamb_das <- seq(from=1e-5, to=0.05, by=0.01)
-# Perform lapply() loop over lamb_das
-pnl_s <- lapply(lamb_das, function(lamb_da) {
-  # Simulate EWMA strategy and calculate re_turns
-  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
-    lamb_da=lamb_da, wid_th=wid_th)[, "pnls"])
-})  # end lapply
-pnl_s <- do.call(cbind, pnl_s)
-colnames(pnl_s) <- paste0("lambda=", lamb_das)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_trend_returns.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA strategies with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- 
-  colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
-chart_Series(pnl_s, theme=plot_theme, 
-  name="Cumulative Returns of EWMA Strategies")
-legend("topleft", legend=colnames(pnl_s), inset=0.1, 
-  bg="white", cex=0.8, lwd=rep(6, NCOL(pnl_s)), 
-  col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{EWMA} Strategies Using Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulating \emph{EWMA} strategies naturally lends itself to parallel computing, since the simulations are independent from each other.
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores.
-      \vskip1ex
-      The resulting list of time series can then be collapsed into a single \emph{xts} series using the functions \texttt{rutils::do\_call()} and \texttt{cbind()}.
+      If the \emph{AR(p)} coefficients are fitted to an empirical time series, then its \emph{residuals} are \emph{not} equal to its \emph{innovations}.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# initialize compute cluster under Windows
-library(parallel)
-clus_ter <- makeCluster(detectCores()-1)
-clusterExport(clus_ter, 
-  varlist=c("oh_lc", "wid_th", "simu_ewma"))
-# Perform parallel loop over lamb_das under Windows
-pnl_s <- parLapply(clus_ter, lamb_das, function(lamb_da) {
-  library(quantmod)
-  # Simulate EWMA strategy and calculate re_turns
-  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
-    lamb_da=lamb_da, wid_th=wid_th)[, "pnls"])
-})  # end parLapply
-# Perform parallel loop over lamb_das under Mac-OSX or Linux
-re_turns <- mclapply(lamb_das, function(lamb_da) {
-  library(quantmod)
-  # Simulate EWMA strategy and calculate re_turns
-  star_t + cumsum(simu_ewma(oh_lc=oh_lc, 
-    lamb_da=lamb_da, wid_th=wid_th)[, "pnls"])
-})  # end mclapply
-stopCluster(clus_ter)  # Stop R processes over cluster under Windows
-pnl_s <- rutils::do_call(cbind, pnl_s)
-colnames(pnl_s) <- paste0("lambda=", lamb_das)
+# Calculate the in-sample forecasting residuals
+residual_s <- (ari_ma - forecast_s[-NROW(forecast_s)])
+# Compare residuals with innovations
+all.equal(in_nov, residual_s, check.attributes=FALSE)
+plot(residual_s, t="l", lwd=3, xlab="", ylab="", 
+     main="ARIMA Forecast Errors")
       @
   \end{columns}
 \end{block}
@@ -633,1048 +488,53 @@ colnames(pnl_s) <- paste0("lambda=", lamb_das)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Performance of Trend Following \protect\emph{EWMA} Strategies}
+\subsection{Backtesting Autoregressive Forecasting Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Sharpe ratios} of \emph{EWMA} strategies with different $\lambda$ parameters can be calculated by performing an \texttt{sapply()} loop over the \emph{columns} of returns.
+      \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
       \vskip1ex
-      \texttt{sapply()} treats the columns of \emph{xts} time series as list elements, and loops over the columns.
+      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over a rolling look-back interval.
       \vskip1ex
-      Performing loops in \texttt{R} over the \emph{columns} of returns is acceptable, but \texttt{R} loops over the \emph{rows} of returns should be avoided.
+      The coefficients of the \emph{AR(p)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The performance of trend following \emph{EWMA} strategies depends on the $\lambda$ parameter, with larger $\lambda$ parameters performing worse than smaller ones.
+      The \emph{meta-parameters} of the \emph{backtesting} procedure are the order of the \emph{AR(p)} forecasting model (\texttt{p = or\_der}) and the length of look-back interval (\texttt{look\_back}).
+    \column{0.5\textwidth}
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-sharpe_ratios <- sqrt(252)*sapply(pnl_s, function(x_ts) {
-  # Calculate annualized Sharpe ratio of strategy returns
-  x_ts <- rutils::diff_it(x_ts)
-  sum(x_ts)/sd(x_ts)
-})/NROW(pnl_s)  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA trend following strategies 
-     as function of the decay parameter lambda")
-trend_returns <- rutils::diff_it(pnl_s)
-trend_sharpe <- sharpe_ratios
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_trend_performance.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Trend Following \protect\emph{EWMA} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The best performing trend following \emph{EWMA} strategy has a relatively small $\lambda$ parameter, corresponding to slower weight decay (giving more weight to past prices), and producing less frequent trading.
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate best performing strategy
-ewma_trend <- simu_ewma(oh_lc=oh_lc, 
-  lamb_da=lamb_das[which.max(sharpe_ratios)], 
-  wid_th=wid_th)
-position_s <- ewma_trend[, "positions"]
-pnl_s <- star_t + cumsum(ewma_trend[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# Plot EWMA PnL with position shading
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of Trend Following EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pnl_s), 
-  inset=0.05, bg="white", lty=1, lwd=6, 
-  col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_trend_best.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Backtesting Multiple Mean Reverting \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Mean reverting \emph{EWMA} strategies can be simulated using function \texttt{simu\_ewma()} with argument \texttt{tre\_nd=(-1)}.
-      \vskip1ex
-      If transaction costs could be reduced by using limit orders, then the profitability of mean reverting strategies could be significantly improved.
-      <<echo=TRUE,eval=FALSE>>=
-source("C:/Develop/lecture_slides/scripts/ewma_model.R")
-lamb_das <- seq(0.05, 1.0, 0.05)
-# Perform lapply() loop over lamb_das
-pnl_s <- lapply(lamb_das, function(lamb_da) {
-  # backtest EWMA strategy and calculate re_turns
-  star_t + cumsum(simu_ewma(
-    oh_lc=oh_lc, lamb_da=lamb_da, wid_th=wid_th, tre_nd=(-1))[, "pnls"])
-})  # end lapply
-pnl_s <- do.call(cbind, pnl_s)
-colnames(pnl_s) <- paste0("lambda=", lamb_das)
-# Plot EWMA strategies with custom line colors
-column_s <- seq(1, NCOL(pnl_s), by=4)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- 
-  colorRampPalette(c("blue", "red"))(NROW(column_s))
-chart_Series(pnl_s[, column_s], 
-  theme=plot_theme, name="Cumulative Returns of Mean Reverting EWMA Strategies")
-legend("topleft", legend=colnames(pnl_s[, column_s]), 
-  inset=0.1, bg="white", cex=0.8, lwd=6, 
-  col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_returns.png}
-      \includegraphics[width=0.45\paperwidth]{figure/ewma_revert_notranscosts.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performance of Mean Reverting \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Sharpe ratios} of \emph{EWMA} strategies with different $\lambda$ parameters can be calculated by performing an \texttt{sapply()} loop over the \emph{columns} of returns.
-      \vskip1ex
-      \texttt{sapply()} treats the columns of \emph{xts} time series as list elements, and loops over the columns.
-      \vskip1ex
-      Performing loops in \texttt{R} over the \emph{columns} of returns is acceptable, but \texttt{R} loops over the \emph{rows} of returns should be avoided.
-      \vskip1ex
-      The performance of mean reverting \emph{EWMA} strategies depends on the $\lambda$ parameter, with performance decreasing for very small or very large $\lambda$ parameters.
-      \vskip1ex
-      For too large $\lambda$ parameters, the trading frequency is too high, causing high transaction costs.
-      \vskip1ex
-      For too small $\lambda$ parameters, the trading frequency is too low, causing the strategy to miss profitable trades.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_revert_performance.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-sharpe_ratios <- sqrt(252)*sapply(pnl_s, function(x_ts) {
-  # Calculate annualized Sharpe ratio of strategy returns
-  x_ts <- rutils::diff_it(x_ts)
-  sum(x_ts)/sd(x_ts)
-})/NROW(pnl_s)  # end sapply
-plot(x=lamb_das, y=sharpe_ratios, t="l", 
-     main="Performance of EWMA mean reverting strategies 
-     as function of the decay parameter lambda")
-revert_returns <- rutils::diff_it(pnl_s)
-revert_sharpe <- sharpe_ratios
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Optimal Mean Reverting \protect\emph{EWMA} Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Reverting the direction of the trend following \emph{EWMA} strategy creates a mean reverting strategy.
-      \vskip1ex
-      The best performing mean reverting \emph{EWMA} strategy has a relatively large $\lambda$ parameter, corresponding to faster weight decay (giving more weight to recent prices), and producing more frequent trading.
-      \vskip1ex
-      But a too large $\lambda$ parameter also causes very high trading frequency, and high transaction costs.
-      <<echo=TRUE,eval=FALSE>>=
-# backtest best performing strategy
-ewma_revert <- simu_ewma(oh_lc=oh_lc, bid_offer=0.0,
-  lamb_da=lamb_das[which.max(sharpe_ratios)],
-  wid_th=wid_th, tre_nd=(-1))
-position_s <- ewma_revert[, "positions"]
-pnl_s <- star_t + cumsum(ewma_revert[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_revert_best.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA PnL with position shading
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of Mean Reverting EWMA Strategy")
-add_TA(position_s > 0, on=-1,
-       col="lightgreen", border="lightgreen")
-add_TA(position_s < 0, on=-1,
-       col="lightgrey", border="lightgrey")
-legend("top", legend=colnames(pnl_s), 
-  inset=0.05, bg="white", lty=1, lwd=6, 
-  col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Combining Trend Following and Mean Reverting Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The returns of trend following and mean reverting strategies are usually negatively correlated to each other, so combining them can achieve significant diversification of risk.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate correlation between trend following and mean reverting strategies
-trend_ing <- ewma_trend[, "pnls"]
-colnames(trend_ing) <- "trend"
-revert_ing <- ewma_revert[, "pnls"]
-colnames(revert_ing) <- "revert"
-close_rets <- rutils::diff_it(cl_ose)
-cor(cbind(trend_ing, revert_ing, close_rets))
-# Calculate combined strategy
-com_bined <- trend_ing + revert_ing
-colnames(com_bined) <- "combined"
-# Calculate annualized Sharpe ratio of strategy returns
-re_turns <- cbind(close_rets, trend_ing, revert_ing, com_bined)
-sqrt(252)*sapply(re_turns, function(x_ts) 
-  sum(x_ts)/sd(x_ts))/NROW(com_bined)
-pnl_s <- lapply(re_turns, function(x_ts) {star_t + cumsum(x_ts)})
-pnl_s <- rutils::do_call(cbind, pnl_s)
-colnames(pnl_s) <- c("VTI", "trending", "reverting", "EWMA combined PnL")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_combined.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue", "green", "magenta2")
-chart_Series(pnl_s, theme=plot_theme, 
-             name="Performance of Combined EWMA Strategies")
-legend("topleft", legend=colnames(pnl_s),
-       inset=0.05, bg="white", lty=1, lwd=6, 
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ensemble of \protect\emph{EWMA} Strategies}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Instead of selecting the best performing \emph{EWMA} strategy, one can choose a weighted average of strategies (ensemble), which corresponds to allocating positions according to the weights.
-      \vskip1ex
-      The weights can be chosen to be proportional to the Sharpe ratios of the \emph{EWMA} strategies.
-      <<echo=TRUE,eval=FALSE>>=
-weight_s <- c(trend_sharpe, revert_sharpe)
-weight_s[weight_s<0] <- 0
-weight_s <- weight_s/sum(weight_s)
-re_turns <- cbind(trend_returns, revert_returns)
-avg_returns <- re_turns %*% weight_s
-avg_returns <- xts(avg_returns, order.by=index(re_turns))
-pnl_s <- (star_t + cumsum(avg_returns))
-pnl_s <- cbind(cl_ose, pnl_s)
-colnames(pnl_s) <- c("VTI", "EWMA PnL")
-# Plot EWMA PnL without position shading
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(pnl_s, theme=plot_theme, 
-  name="Performance of Ensemble EWMA Strategy")
-legend("top", legend=colnames(pnl_s), 
-  inset=0.05, bg="white", lty=1, lwd=6, 
-  col=plot_theme$col$line.col, bty="n")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_ensemble.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Publishing Interactive Documents}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
-      \vskip1ex
-      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
-      \vskip1ex
-      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
-      \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
-      \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here:
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2
-  \leq
-  \left( \sum_{k=1}^n a_k^2 \right)
-  \left( \sum_{k=1}^n b_k^2 \right)
-$$
-
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Interactive Charts Using Package \protect\emph{shiny}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{shiny} creates interactive charts that display the outputs of live models running in \texttt{R}.
-      \vskip1ex
-      The function \texttt{inputPanel()} creates a panel for user input of model parameters.
-      \vskip1ex
-      The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R}.
-      \vskip1ex
-      To create a shiny chart, you can first create an \texttt{.Rmd} file, embed the \emph{shiny} code in an \texttt{R} chunk, and then compile the \texttt{.Rmd} file into an \emph{html} document, using the \emph{knitr} package.
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# R startup chunk
-# ```{r setup, include=FALSE}
-library(shiny)
-library(quantmod)
-inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-# ```
-### end R startup chunk
-inputPanel(
-  sliderInput("lamb_da", label="lambda:",
-    min=0.01, max=0.2, value=0.1, step=0.01)
-)  # end inputPanel
-      @
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_shiny.pdf}
-      \vspace{-5em}
-      <<echo=TRUE,eval=FALSE>>=
-renderPlot({
-  # Calculate EWMA prices
-  lamb_da <- input$lamb_da
-  weight_s <- exp(-lamb_da*1:inter_val)
-  weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
-  ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
-  colnames(ew_ma) <- c("VTI", "VTI EWMA")
-  # Plot EWMA prices
-  ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")
-  plot(ch_ob)
-  legend("top", legend=colnames(ew_ma),
-         inset=0.1, bg="white", lty=1, lwd=2,
-         col=plot_theme$col$line.col, bty="n")
-})  # end renderPlot
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Estimating and Modeling Volatility and Skew}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time.
-      \vskip1ex
-      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time.
-      \vskip1ex
-      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
-      \end{align*}
-      Where \texttt{k} is the \emph{look-back interval} for performing aggregations over the past.
-      \vskip1ex
-      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# VTI percentage returns
-re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# Define end points
-end_points <- seq_along(re_turns)
-n_rows <- NROW(end_points)
-look_back <- 51
-# start_points are multi-period lag of end_points
-start_points <- c(rep_len(1, look_back-1),
-    end_points[1:(n_rows-look_back+1)])
-# Define list of look-back intervals for aggregations over past
-look_backs <- lapply(seq_along(end_points),
-  function(in_dex) {
-    start_points[in_dex]:end_points[in_dex]
-})  # end lapply
-# Calculate realized VTI variance in sapply() loop
-vari_ance <- sapply(look_backs,
-  function(look_back) {
-    ret_s <- re_turns[look_back]
-    sum((ret_s - mean(ret_s))^2)
-}) / (look_back-1)  # end sapply
-tail(vari_ance)
-class(vari_ance)
-# Coerce vari_ance into xts
-vari_ance <- xts(vari_ance, order.by=index(re_turns))
-colnames(vari_ance) <- "VTI.variance"
-head(vari_ance)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Variance Using Package \protect\emph{roll}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{roll} contains functions for calculating \emph{weighted} rolling aggregations over \emph{vectors} and \emph{time series} objects:
-      \begin{itemize}
-        \item \texttt{roll\_var()} for \emph{weighted} rolling variance,
-        \item \texttt{roll\_scale()} for rolling scaling and centering of time series,
-        \item \texttt{roll\_pcr()} for rolling principal component regressions of time series,
-      \end{itemize}
-      The \emph{roll} functions are about \texttt{1,000} times faster than \texttt{apply()} loops!
-      \vskip1ex
-      The \emph{roll} functions are extremely fast because they perform calculations in \emph{parallel} in compiled \texttt{C++} code, using packages \emph{Rcpp} and \emph{RcppArmadillo}.
-      \vskip1ex
-      The \emph{roll} functions accept \emph{xts} time series, and they return \emph{xts}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling VTI variance using package roll
-library(roll)  # load roll
-vari_ance <-
-  roll::roll_var(re_turns, width=look_back)
-colnames(vari_ance) <- "VTI.variance"
-head(vari_ance)
-sum(is.na(vari_ance))
-vari_ance[1:(look_back-1)] <- 0
-# Benchmark calculation of rolling variance
-library(microbenchmark)
-summary(microbenchmark(
-  roll_sapply=sapply(look_backs, function(look_back) {
-    ret_s <- re_turns[look_back]
-    sum((ret_s - mean(ret_s))^2)
-  }),
-  ro_ll=roll::roll_var(re_turns, width=look_back),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rolling \protect\emph{EWMA} Realized Variance Estimator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Time-varying volatility can be more accurately estimated using an \emph{Exponentially Weighted Moving Average} (\emph{EWMA}) variance estimator.
-      \vskip1ex
-      If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
-      \begin{displaymath}
-        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
-      \end{displaymath}
-      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
-      \vskip1ex
-      The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
-      \vskip1ex
-      The function \texttt{filter()} calculates the convolution of a vector or time series with a vector of filter coefficients (weights).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vol_ewma.png}\\
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate EWMA VTI variance using filter()
-look_back <- 51
-weight_s <- exp(-0.1*1:look_back)
-weight_s <- weight_s/sum(weight_s)
-vari_ance <- stats::filter(re_turns^2,
-    filter=weight_s, sides=1)
-vari_ance[1:(look_back-1)] <- vari_ance[look_back]
-class(vari_ance)
-vari_ance <- as.numeric(vari_ance)
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
-# Plot EWMA standard deviation
-chart_Series(x_ts,
-  name="EWMA standard deviation")
-dygraphs::dygraph(x_ts, main="EWMA standard deviation")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating \protect\emph{EWMA} Variance Using Package \protect\emph{roll}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
-      \begin{align*}
-        \sigma_i^2 = \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2}\\
-        \bar{r_i} = \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
-      \end{align*}
-      Where $w_j$ is the vector of weights:
-      \begin{displaymath}
-        w_j = \frac{\lambda^j}{\sum_{j=0}^{k-1} \lambda^j}
-      \end{displaymath}
-      The function \texttt{roll\_var()} from package \emph{roll} calculates the rolling \emph{EWMA} variance.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate rolling VTI variance using package roll
-library(roll)  # load roll
-vari_ance <- roll::roll_var(re_turns,
-  weights=rev(weight_s), width=look_back)
-colnames(vari_ance) <- "VTI.variance"
-class(vari_ance)
-head(vari_ance)
-sum(is.na(vari_ance))
-vari_ance[1:(look_back-1)] <- 0
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Volatility}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Variance calculated over non-overlapping intervals has very statistically significant autocorrelations.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
-# VTI percentage returns
-re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
-# Calculate rolling VTI variance using package roll
-look_back <- 22
-vari_ance <-
-  roll::roll_var(re_turns, width=look_back)
-vari_ance[1:(look_back-1)] <- 0
-colnames(vari_ance) <- "VTI.variance"
-# Number of look_backs that fit over re_turns
-n_rows <- NROW(re_turns)
-n_agg <- n_rows %/% look_back
-end_points <- # Define end_points with beginning stub
-  n_rows-look_back*n_agg + (0:n_agg)*look_back
-n_rows <- NROW(end_points)
-# subset vari_ance to end_points
-vari_ance <- vari_ance[end_points]
-# improved autocorrelation function
-acf_plus(coredata(vari_ance), lag=10, main="")
-title(main="acf of variance", line=-1)
-# Partial autocorrelation
-pacf(coredata(vari_ance), lag=10, main="", ylab=NA)
-title(main="pacf of variance", line=-1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_var.png}\\
-      \includegraphics[width=0.5\paperwidth]{figure/pacf_var.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
-      \begin{align*}
-        r_i = \mu + \sigma_{i-1} \xi_i \\
-        \sigma_i^2 = \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
-      \end{align*}
-      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$.
-      \vskip1ex
-      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$.
-      \vskip1ex
-      The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance.
-      \vskip1ex
-      The parameter $\omega$ is proportional to the long-term average level of variance, which is given by:
-      \begin{displaymath}
-        \sigma^2 = \frac{\omega}{1 - \alpha - \beta}
-      \end{displaymath}
-      The sum of $\alpha$ plus $\beta$ should be less than $1$, otherwise the volatility is explosive.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define GARCH parameters
-om_ega <- 0.01 ; al_pha <- 0.2
-be_ta <- 0.79 ; n_rows <- 1000
-re_turns <- numeric(n_rows)
-vari_ance <- numeric(n_rows)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
-    be_ta*vari_ance[i-1]
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Volatility Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{GARCH(1,1)} volatility model exhibits sharp spikes in the volatility, followed by a quick decay of volatility.
-      \vskip1ex
-      But the decay of volatility in the \emph{GARCH} model is faster than what is observed in practice.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=5, height=3.5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-# Plot GARCH cumulative returns
-plot(cumsum(re_turns/100), t="l",
-  lwd=2, col="blue", xlab="", ylab="",
-  main="GARCH cumulative returns")
-# Plot dygraphs GARCH standard deviation
-date_s <- seq.Date(from=Sys.Date()-n_rows+1,
-  to=Sys.Date(), length.out=n_rows)
-x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
-# Plot GARCH standard deviation
-plot(sqrt(vari_ance), t="l",
-  col="blue", xlab="", ylab="",
-  main="GARCH standard deviation")
-# Plot dygraphsGARCH standard deviation
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH standard deviation")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/garch_returns.png}\\
-      \includegraphics[width=0.45\paperwidth]{figure/garch_stdev.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Properties}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The parameter $\alpha$ is the weight of the squared realized returns in the variance.
-      \vskip1ex
-      Greater values of $\alpha$ produce a stronger feedback between the realized returns and variance, causing stronger variance spikes and higher kurtosis.
-      <<echo=TRUE,eval=FALSE>>=
-# Define GARCH parameters
-om_ega <- 0.0001 ; al_pha <- 0.5
-be_ta <- 0.1 ; n_rows <- 10000
-re_turns <- numeric(n_rows)
-vari_ance <- numeric(n_rows)
-vari_ance[1] <- om_ega/(1-al_pha-be_ta)
-re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
-# simulate GARCH model
-set.seed(1121)  # reset random numbers
-for (i in 2:n_rows) {
-  re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
-  vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
-    be_ta*vari_ance[i-1]
-}  # end for
-# Calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) /
-  moments::moment(re_turns, order=2)^2
-# Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-optim_fit <- MASS::fitdistr(re_turns,
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05, bty="n",
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=1, col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Calibration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{GARCH} models can be calibrated on returns using the \emph{maximum-likelihood} method, but it's a complex optimization procedure.
-      \vskip1ex
-      The package \emph{fGarch} contains functions for applying \emph{GARCH} models.
-      \vskip1ex
-      The function \texttt{garchFit()} calibrates a \emph{GARCH} model on a time series of returns.
-      \vskip1ex
-      The function \texttt{garchFit()} returns an \texttt{S4} object of class \emph{fGARCH}, with multiple slots containing the \emph{GARCH} model outputs and diagnostic information.
-      <<echo=(-(1:2)),eval=FALSE>>=
-# use fixed notation instead of exponential notation
-options(scipen=999)
-library(fGarch)
-# fit returns into GARCH
-garch_fit <- fGarch::garchFit(data=re_turns)
-# fitted GARCH parameters
-round(garch_fit@fit$coef, 5)
-# Actual GARCH parameters
-round(c(mu=mean(re_turns), omega=om_ega,
-  alpha=al_pha, beta=be_ta), 5)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_fitted.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot GARCH fitted standard deviation
-plot(sqrt(garch_fit@fit$series$h), t="l",
-  col="blue", xlab="", ylab="",
-  main="GARCH fitted standard deviation")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{GARCH} Model Simulation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{garchSpec()} from package \emph{fGarch} specifies a \emph{GARCH} model.
-      \vskip1ex
-      The function \texttt{garchSim()} simulates a \emph{GARCH} model.
-      <<echo=TRUE,eval=FALSE>>=
-# specify GARCH model
-garch_spec <- fGarch::garchSpec(
-  model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
-# simulate GARCH model
-garch_sim <-
-  fGarch::garchSim(spec=garch_spec, n=n_rows)
-re_turns <- as.numeric(garch_sim)
-# Calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) /
-  moments::moment(re_turns, order=2)^2
-# Perform Jarque-Bera test of normality
-tseries::jarque.bera.test(re_turns)
-# Plot histogram of GARCH returns
-histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=200, xlim=c(-0.05, 0.05),
-  ylab="frequency", freq=FALSE,
-  main="GARCH returns histogram")
-lines(density(re_turns, adjust=1.5),
-      lwd=3, col="blue")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/garch_fGarch_hist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# fit t-distribution into GARCH returns
-optim_fit <- MASS::fitdistr(re_turns,
-  densfun="t", df=2, lower=c(-1, 1e-7))
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
-  type="l", xlab="", ylab="", lwd=3,
-  col="red", add=TRUE)
-legend("topright", inset=0.05, bty="n",
-       leg=c("density", "t-distr w/ 2 dof"),
-       lwd=6, lty=1, col=c("blue", "red"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating Volatility of Intraday Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{close-to-close} estimator depends on \emph{Close} prices specified over the aggregation intervals:
-      \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{C_i}{C_{i-1}})-\bar{r})^2
-      \end{displaymath}
-      \vspace{-1em}
-      \begin{displaymath}
-        \bar{r} = \frac{1}{n} \sum_{i=1}^{n} \log(\frac{C_i}{C_{i-1}})
-      \end{displaymath}
-      Volatility estimates for intraday time series depend both on the units of returns (per second, minute, day, etc.), and on the aggregation interval (secondly, minutely, daily, etc.)
-      \vskip1ex
-      A minutely time interval is equal to \texttt{60} seconds, a daily time interval is equal to \texttt{24*60*60 = 86,400} seconds.
-      \vskip1ex
-      For example, it's possible to measure returns in minutely intervals in units per second.
-      \vskip1ex
-      The estimated volatility is directly proportional to the measurement units.
-      \vskip1ex
-      For example, the volatility estimated from per minute returns is \texttt{60} times the volatility estimated from per second returns.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=TRUE>>=
-library(HighFreq)  # load HighFreq
-# Minutely SPY returns (unit per minute) single day
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
-# Minutely SPY volatility (unit per minute)
-sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4])) /
-  rutils::diff_it(.index(SPY["2012-02-13"]))
-# Minutely SPY volatility scaled to unit per minute
-60*sd(re_turns)
-# Minutely SPY returns multiple days no overnight scaling
-re_turns <- rutils::diff_it(log(SPY[, 4]))
-# Minutely SPY volatility (unit per minute)
-sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
-# Minutely SPY volatility scaled to unit per minute
-60*sd(re_turns)
-# Table of time intervals - 60 second is most frequent
-interval_s <- rutils::diff_it(.index(SPY))
-table(interval_s)
-# hist(interval_s)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Volatility as Function of Aggregation Interval}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The estimated volatility depends on the length of the aggregation time interval approximately as the \emph{square root} of the interval:
-      \begin{displaymath}
-        \hat\sigma \propto {\Delta t} ^ H
-      \end{displaymath}
-      Where $\Delta t$ is the length of the aggregation interval, and \texttt{H} is the \emph{Hurst} exponent.
-      \vskip1ex
-      If returns follow \emph{Brownian motion} then the volatility scales as the \emph{square root} of the length of the aggregation interval (\texttt{H = 0.5}).
-      \vskip1ex
-      If returns are \emph{mean reverting} then the volatility grows slower than the \emph{square root} (\texttt{H < 0.5}).
-      \vskip1ex
-      If returns are \emph{trending} then the volatility grows faster than the \emph{square root} (\texttt{H > 0.5}).
-      \vskip1ex
-      The length of the daily time interval is often approximated to be equal to \texttt{390=6.5*60} minutes, since the trading session is equal to \texttt{6.5} hours, and daily volatility is dominated by that of the trading session.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=TRUE>>=
-library(HighFreq)  # load HighFreq
-# Daily OHLC SPY prices
-SPY_daily <-
-  rutils::to_period(oh_lc=SPY, period="days")
-# Daily SPY returns and volatility
-sd(rutils::diff_it(log(SPY_daily[, 4])))
-# Minutely SPY returns (unit per minute)
-re_turns <- rutils::diff_it(log(SPY[, 4]))
-# Minutely SPY volatility scaled to daily interval
-sqrt(6.5*60)*sd(re_turns)
-# Minutely SPY returns (unit per second)
-re_turns <- rutils::diff_it(log(SPY[, 4])) /
-  rutils::diff_it(.index(SPY))
-# Minutely SPY volatility scaled to daily aggregation interval
-60*sqrt(6.5*60)*sd(re_turns)
-# Daily SPY volatility
-# including extra time over weekends and holidays
-24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4])) /
-            rutils::diff_it(.index(SPY_daily)))
-table(rutils::diff_it(.index(SPY_daily)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Rescaled Range Analysis}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Rescaled range} (R/S) analysis consists of calculating the range of a time series of prices as a function of the aggregation interval length (time horizon).
-      \vskip1ex
-      The range $R_t$ of prices $p_t$ over an aggregation interval $\left\{0 \ldots t\right\}$, is the difference between the highest attained price minus the lowest:
-      \begin{displaymath}
-        R_t = \max_{0 \ldots t}{[p_{\tau}]} - \min_{0 \ldots t}{[p_{\tau}]}
-      \end{displaymath}
-      The \emph{rescaled} range $RS_t$ is equal to the range divided by the standard deviation of the price differences: $RS_t = R_t / \sigma_t$.
-      \vskip1ex
-      The minutely \emph{SPY} prices have large overnight returns, which can be handled by dividing the overnight returns by the overnight time interval.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Scaled minutely SPY returns
-re_turns <- rutils::diff_it(as.numeric(Cl(SPY)))[-1] /
-  rutils::diff_it(.index(SPY))[-1]
-range(re_turns)
-hist(re_turns, breaks=100,
-     xlim=c(-0.005, 0.005))
-# SPY prices
-price_s <- cumsum(re_turns)
-plot(price_s, t="l")
-# Perform rescaled range analysis
+# Simulate AR process using C_rfilter()
+n_rows <- 1e3
+co_eff <- c(0.5, 0.0, 0.0); n_coeff <- NROW(co_eff)
+set.seed(1121); in_nov <- rnorm(n_rows)
+ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+  double(n_rows + n_coeff))[-(1:n_coeff)]
+# Define order of the AR(p) forecasting model
+or_der <- 5
+# Define design matrix for forecasting
+de_sign <- sapply(1:or_der, function(lagg) {
+  rutils::lag_it(ari_ma, lagg=lagg)
+})  # end sapply
+de_sign <- cbind(rep(1, n_rows), de_sign)
+de_sign <- cbind(ari_ma, de_sign)
+# Length of look-back interval
 look_back <- 100
-end_points <- rutils::calc_endpoints(re_turns,
-  inter_val=look_back)
-r_s <- sapply(seq_along(end_points)[-1],
-              function(it) {
-  indeks <- end_points[it-1]:end_points[it]
-  price_s <- price_s[indeks]
-  (max(price_s) - min(price_s)) /
-    sd(re_turns[indeks])
+# Perform rolling forecasting
+forecast_s <- sapply(look_back:(n_rows-1), function(now) {
+  # Subset the design matrix
+  star_t <- max(1, now-look_back+1)
+  de_sign <- de_sign[star_t:now, ]
+  n_rows <- NROW(de_sign)
+  # Fit AR(p) coefficients
+  design_inv <- MASS::ginv(de_sign[, -1])
+  co_eff <- drop(design_inv %*% de_sign[, 1])
+  # Calculate forecast
+  # de_sign[now:(now-or_der), 1] %*% co_eff
+  sum(de_sign[n_rows:(n_rows-or_der), 1]*co_eff)
 })  # end sapply
-mean(r_s)
+# Add warmup period
+forecast_s <- c(numeric(look_back), forecast_s)
       @
   \end{columns}
 \end{block}
@@ -1683,52 +543,81 @@ mean(r_s)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Hurst Exponent}
+\subsection{The Accuracy of the Autoregressive Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Hurst} power law states that the \emph{rescaled} range $RS_t$ is proportional to the length of the aggregation interval $t$ raised to the power of the \emph{Hurst exponent} $H$:
+      The accuracy of a forecasting model can be measured using the \emph{mean squared error} and the \emph{correlation}.
+      \vskip1ex
+      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting residuals $\varepsilon_i$, equal to the differences between the actual values $r_i$ minus the \emph{forecasts} $f_i$: $\varepsilon_i = r_i - f_i$:
       \begin{displaymath}
-        RS_t \propto t^H
+        \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_i - f_i)^2
       \end{displaymath}
-      \vspace{-2em}
-        <<echo=TRUE,eval=FALSE>>=
-# Perform rescaled range analysis over many look-backs
-look_backs <- seq.int(1e2, 1e3, 1e2)
-r_s <- sapply(look_backs, function(look_back) {
-  end_points <- rutils::calc_endpoints(re_turns, inter_val=look_back)
-  r_s <- sapply(seq_along(end_points)[-1], function(it) {
-    indeks <- end_points[it-1]:end_points[it]
-    (max(price_s[indeks]) - min(price_s[indeks]))/sd(re_turns[indeks])
-  })  # end sapply
-  mean(r_s)
-})  # end sapply
-names(r_s) <- paste0("agg_", look_backs)
-rs_log <- log(r_s)
-look_log <- log(look_backs)
-mod_el <- lm(rs_log ~ look_log)
-hurst_lm <- summary(mod_el)$coeff[2, 1]
-look_log <- look_log - mean(look_log)
-rs_log <- rs_log - mean(rs_log)
-hurst_mat <- sum(rs_log*look_log)/sum(look_log^2)
-all.equal(hurst_lm, hurst_mat)
-      @
-    \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hurst_reg.png}
-      \vspace{-1em}
-        <<echo=(-(1:2)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
+# Mean squared error
+mean((ari_ma - forecast_s)^2)
+# Correlation
+cor(forecast_s, ari_ma)
+# Plot forecasting series with legend
 x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-plot(rs_log ~ look_log, lwd=6, col="red",
-     xlab="aggregation intervals (log)",
-     ylab="rescaled range (log)",
-     main="Rescaled Range Analysis for SPY")
-abline(mod_el, lwd=3, col="blue")
-text(-1.2, 0.2, paste0("Hurst = ",
-  round(hurs_t, 4)))
+par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(ari_ma[(n_rows-look_back):n_rows], xlab="", ylab="", type="l", lwd=2,
+  main="Rolling Forecasting Using AR(5) Model")
+lines(forecast_s[(n_rows-look_back):n_rows], col="orange", lwd=2)
+legend(x="topright", legend=c("series","forecasts"),
+       col=c("black", "orange"), lty=1, lwd=6,
+       cex=0.9, bg="white", bty="n")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_rolling.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Function for the Forecasting Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{meta-parameters} of the \emph{backtesting} function are the order $p$ of the \emph{AR(p)} forecasting model ($p$) and the length of look-back interval (\texttt{look\_back}).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define backtesting function
+back_test <- function(ari_ma, or_der=2, look_back=11) {
+  n_rows <- NROW(ari_ma)
+  # Define design matrix for forecasting
+  de_sign <- sapply(1:or_der, function(lagg) {
+    rutils::lag_it(ari_ma, lagg=lagg)
+  })  # end sapply
+  de_sign <- cbind(rep(1, n_rows), de_sign)
+  de_sign <- cbind(ari_ma, de_sign)
+  # Perform rolling forecasting
+  forecast_s <- sapply(look_back:(n_rows-1), function(now) {
+    # Subset the design matrix
+    star_t <- max(1, now-look_back+1)
+    de_sign <- de_sign[star_t:now, ]
+    n_rows <- NROW(de_sign)
+    # Fit AR(p) coefficients
+    design_inv <- MASS::ginv(de_sign[, -1])
+    co_eff <- drop(design_inv %*% de_sign[, 1])
+    # Calculate forecast
+    # de_sign[now:(now-or_der), 1] %*% co_eff
+    sum(de_sign[n_rows:(n_rows-or_der), 1]*co_eff)
+  })  # end sapply
+  # Add warmup period
+  forecast_s <- c(numeric(look_back), forecast_s)
+  c(mse=mean((ari_ma - forecast_s)^2), cor=cor(forecast_s, ari_ma))
+}  # end back_test
+# Apply the backtesting function
+back_test(ari_ma, or_der=5, look_back=100)
       @
   \end{columns}
 \end{block}
@@ -1737,58 +626,245 @@ text(-1.2, 0.2, paste0("Hurst = ",
 
 
 %%%%%%%%%%%%%%%
-\subsection{\protect\emph{Range} Volatility Estimators of \texttt{OHLC} Time Series}
+\subsection{The Optimal Parameters of the Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Range} volatility estimators utilize the \texttt{high} and \texttt{low} prices, and therefore have lower standard error than the standard \emph{close-to-close} estimator.
+      The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
       \vskip1ex
-      The \emph{Garman-Klass} estimator uses the \emph{low-to-high} price range, but it underestimates volatility because it doesn't account for \emph{close-to-open} price jumps:
-      \begin{displaymath}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)\log(\frac{C_i}{O_i})^2)
-      \end{displaymath}
-      The \emph{Yang-Zhang} estimator is the most efficient (has the lowest standard error) among unbiased estimators, and also accounts for \emph{close-to-open} price jumps:
-      \vspace{-1em}
-      \begin{multline*}
-        \hspace{-1em}\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^{n} (\log(\frac{O_i}{C_{i-1}})-\bar{r}_{co})^2 + \\
-        0.134(\log(\frac{C_i}{O_i})-\bar{r}_{oc})^2 + \\
-        \frac{0.866}{n} \sum_{i=1}^{n} (\log(\frac{H_i}{O_i})\log(\frac{H_i}{C_i}) + \log(\frac{L_i}{O_i})\log(\frac{L_i}{C_i}))
-      \end{multline*}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # load HighFreq
-# Daily SPY volatility from minutely prices using package TTR
-library(TTR)
-sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(SPY, N=1,
-                  calc="yang.zhang"))^2))
-# SPY volatility using package HighFreq
-60*sqrt((6.5*60)*agg_regate(oh_lc=SPY,
-            weight_ed=FALSE, mo_ment="run_variance",
-            calc_method="yang_zhang"))
+      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model and on the length of look-back interval (\texttt{look\_back}).
+      \vskip1ex
+      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
+      <<echo=TRUE,eval=FALSE>>=
+look_backs <- seq(20, 200, 20)
+back_tests <- sapply(look_backs, back_test, 
+              ari_ma=ari_ma, or_der=or_der)
+back_tests <- t(back_tests)
+rownames(back_tests) <- look_backs
+# Plot forecasting series with legend
+plot(x=look_backs, y=back_tests[, 1], 
+  xlab="look-back", ylab="MSE", type="l", lwd=2,
+  main="MSE of AR(5) Forecasting Model")
       @
-      \vspace{-1em}
-      Theoretically, the \emph{Yang-Zhang} (\emph{YZ}) and \emph{Garman-Klass-Yang-Zhang} (\emph{GKYZ}) range variance estimators are unbiased and have up to seven times smaller standard errors than the standard close-to-close estimator.
-      \vskip1ex
-      But in practice, prices are not observed continuously, so the price range is underestimated, and so is the variance when using the \emph{YZ} and \emph{GKYZ} range estimators.
-      \vskip1ex
-      Therefore in practice the \emph{YZ} and \emph{GKYZ} range estimators underestimate volatility.
-      \vskip1ex
-      In addition, their standard errors are reduced less than by the theoretical amount, for the same reason.
-      \vskip1ex
-      The \emph{Garman-Klass-Yang-Zhang} estimator is another very efficient and unbiased estimator, and also accounts for \emph{close-to-open} price jumps:
-      \vspace{-1em}
-      \begin{multline*}
-        \hat\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} ((\log(\frac{O_i}{C_{i-1}})-\bar{r})^2 + \\
-        0.5\log(\frac{H_i}{L_i})^2 - (2\log2-1)(\log(\frac{C_i}{O_i})^2))
-      \end{multline*}
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_mse.png}
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In the \emph{Ornstein-Uhlenbeck} process, the returns $r_i$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $p_i$:
+      \begin{displaymath}
+        r_i = p_i - p_{i-1} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i
+      \end{displaymath}
+      Where the parameter $\theta$ is the strength of mean reversion, $\sigma$ is the volatility, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process for prices can be written as an \emph{AR(1)} process plus a drift:
+      \begin{displaymath}
+        p_i = \theta \, \mu + (1 - \theta ) \, p_{i-1} + \sigma \, \xi_i
+      \end{displaymath}
+      The \emph{Ornstein-Uhlenbeck} process cannot be simulated using the function \texttt{filter()} because of the drift term in its equation, and must be simulated using loops.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define Ornstein-Uhlenbeck parameters
+eq_price <- 1.0; sigma_r <- 0.02
+the_ta <- 0.01; n_rows <- 1000
+drif_t <- the_ta*eq_price
+theta_1 <- 1-the_ta
+# Simulate Ornstein-Uhlenbeck process
+in_nov <- sigma_r*rnorm(n_rows)
+price_s <- numeric(n_rows)
+price_s[1] <- in_nov[1]
+for (i in 2:n_rows) {
+  price_s[i] <- theta_1*price_s[i-1] + in_nov[i] + drif_t
+}  # end for
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Solution of the Ornstein-Uhlenbeck Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ornstein-Uhlenbeck} process in continuous time is:
+      \begin{displaymath}
+        \mathrm{d} p_t = \theta \, (\mu - p_t) \, \mathrm{d} t + \sigma \, \mathrm{d} W_t
+      \end{displaymath}
+      Where $W_t$ is a \emph{Wiener process}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      \vskip1ex
+      The solution of the \emph{Ornstein-Uhlenbeck} process is given by:
+      \begin{displaymath}
+        p_t = p_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) + \sigma \int_{0}^{t} {e^{\theta (s - t)} \mathrm{d} W_s}
+      \end{displaymath}
+      \vskip1ex
+      The mean and variance are given by:\\
+      $\mathbb{E}[p_t] = p_0 e^{-\theta t} + \mu (1 - e^{-\theta t}) \rightarrow \mu$ \\
+      $\mathbb{E}[(p_t - \mathbb{E}[p_t])^2] = \frac{\sigma^2}{2 \theta} (1 - e^{-\theta t}) \rightarrow \frac{\sigma^2}{2 \theta}$
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process is mean reverting to a non-zero equilibrium price $\mu$.
+      \vskip1ex
+      The \emph{Ornstein-Uhlenbeck} process needs a \emph{warmup period} before it reaches equilibrium.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ou_proc.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l",
+     xlab="time", ylab="prices",
+     main="Ornstein-Uhlenbeck Process")
+legend("topright",
+       title=paste(c(paste0("sigma_r = ", sigma_r),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8, inset=0.1, bg="white", bty="n")
+abline(h=eq_price, col='red', lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Ornstein-Uhlenbeck Process Returns Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
+      <<echo=TRUE,eval=FALSE>>=
+re_turns <- rutils::diff_it(price_s)
+lag_prices <- rutils::lag_it(price_s)
+for_mula <- re_turns ~ lag_prices
+l_m <- lm(for_mula)
+summary(l_m)
+# Plot regression
+plot(for_mula, main="OU Returns Versus Lagged Prices")
+abline(l_m, lwd=2, col="red")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ou_scatter.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Calibrating the Ornstein-Uhlenbeck Parameters}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The volatility parameter of the Ornstein-Uhlenbeck process can be estimated directly from the standard deviation of the returns.
+      \vskip1ex
+      The $\theta$ and $\mu$ parameters can be estimated from the linear regression of the returns versus the lagged prices.
+      \vskip1ex
+      Calculating regression parameters directly from formulas has the advantage of much faster calculations.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate volatility parameter
+c(volatility=sigma_r, estimate=sd(re_turns))
+# Extract OU parameters from regression
+co_eff <- summary(l_m)$coefficients
+# Calculate regression alpha and beta directly
+be_ta <- cov(re_turns, lag_prices)/var(lag_prices)
+al_pha <- (mean(re_turns) - be_ta*mean(lag_prices))
+cbind(direct=c(alpha=al_pha, beta=be_ta), lm=co_eff[, 1])
+all.equal(c(alpha=al_pha, beta=be_ta), co_eff[, 1],
+          check.attributes=FALSE)
+# Calculate regression standard errors directly
+beta_s <- c(alpha=al_pha, beta=be_ta)
+fit_ted <- (al_pha + be_ta*lag_prices)
+residual_s <- (re_turns - fit_ted)
+prices_squared <- sum((lag_prices - mean(lag_prices))^2)
+beta_sd <- sqrt(sum(residual_s^2)/prices_squared/(n_rows-2))
+alpha_sd <- sqrt(sum(residual_s^2)/(n_rows-2)*(1/n_rows + mean(lag_prices)^2/prices_squared))
+cbind(direct=c(alpha_sd=alpha_sd, beta_sd=beta_sd), lm=co_eff[, 2])
+all.equal(c(alpha_sd=alpha_sd, beta_sd=beta_sd), co_eff[, 2],
+          check.attributes=FALSE)
+# Compare mean reversion parameter theta
+c(theta=(-the_ta), round(co_eff[2, ], 3))
+# Compare equilibrium price mu
+c(eq_price=eq_price, estimate=-co_eff[1, 1]/co_eff[2, 1])
+# Compare actual and estimated parameters
+co_eff <- cbind(c(the_ta*eq_price, -the_ta), co_eff[, 1:2])
+rownames(co_eff) <- c("drift", "theta")
+colnames(co_eff)[1] <- "actual"
+round(co_eff, 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Schwartz Process}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Ornstein-Uhlenbeck} time series can have negative values, while prices are usually not negative.
+      \vskip1ex
+      The \emph{Schwartz} process is similar to the \emph{Ornstein-Uhlenbeck} process, but it avoids negative prices by using the percentage returns $\mathrm{d} \log{p}$ instead of the simple returns $\mathrm{d} p$:
+      \begin{displaymath}
+        r_i = \log{p_i} - \log{p_{i-1}} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i
+      \end{displaymath}
+      Where the parameter $\theta$ is the strength of mean reversion, $\sigma$ is the volatility, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate Schwartz process
+re_turns <- numeric(n_rows)
+price_s <- numeric(n_rows)
+price_s[1] <- eq_price
+set.seed(1121)  # Reset random numbers
+for (i in 2:n_rows) {
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + sigma_r*rnorm(1)
+  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/ou_schwartz.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+plot(price_s, type="l", xlab="time", ylab="prices",
+     main="Schwartz Process")
+legend("topright",
+       title=paste(c(paste0("sigma_r = ", sigma_r),
+                     paste0("eq_price = ", eq_price),
+                     paste0("the_ta = ", the_ta)),
+                   collapse="\n"),
+       legend="", cex=0.8, inset=0.12, bg="white", bty="n")
+abline(h=eq_price, col='red', lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%

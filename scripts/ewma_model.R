@@ -1,6 +1,6 @@
 # Functions for simulating EWMA strategies
 
-# library(HighFreq)  # load package HighFreq
+library(rutils)  # load package rutils
 
 # Simulate single EWMA model using historical oh_lc data,
 # and return percentage returns.

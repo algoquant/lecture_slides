@@ -3,8 +3,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=6, fig.height=5)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -202,14 +202,14 @@ in_put <- as.numeric(in_put)
       \vskip1ex
       \texttt{write.table()} coerces objects to \emph{data frames} before it writes them.
       \vskip1ex
-      \texttt{read.table()} returns a \emph{data frame}, and coerces non-numeric values to \texttt{factors} (unless the \texttt{stringsAsFactors=FALSE} option is set).
+      \texttt{read.table()} returns a \emph{data frame}, without coercing non-numeric values to \texttt{factors} (so no need for the option \texttt{stringsAsFactors=FALSE}).
       \vskip1ex
       \texttt{write.table()} and \texttt{read.table()} can be used to write and read matrices from text files, but they have to be coerced back to matrices.
       \vskip1ex
       \texttt{write.table()} and \texttt{read.table()} are inefficient for very large data sets.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:4)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 setwd("C:/Develop/lecture_slides/data")
 data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
 mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
@@ -301,7 +301,7 @@ data_frame <- edit(data_frame)
       \vskip1ex
       These functions are \emph{wrappers} for \texttt{write.table()} and \texttt{read.table()}.
       \vskip1ex
-      \texttt{read.csv()} coerces non-numeric values to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is set.
+      \texttt{read.csv()} doesn't coerce non-numeric values to \texttt{factors}, so no need for the option \texttt{stringsAsFactors=FALSE}.
       \vskip1ex
       \texttt{read.csv()} reads row names as an extra column, unless the \texttt{row.names=1} argument is used.
       \vskip1ex
@@ -313,8 +313,7 @@ data_frame <- edit(data_frame)
       <<echo=TRUE,eval=FALSE>>=
 # Write data frame to CSV file, and then read it back
 write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv",
-                       stringsAsFactors=FALSE)
+data_read <- read.csv(file="florist.csv")
 data_read  # the row names are read in as extra column
 # Restore row names
 rownames(data_read) <- data_read[, 1]
@@ -421,8 +420,7 @@ mat_read <- scan(file="matrix.csv",
 col_names <- readLines(con="matrix.csv", n=1)
 col_names  # this is a string!
 # Convert to char vector
-col_names <- strsplit(col_names,
-  s=",")[[1]]
+col_names <- strsplit(col_names, split=",")[[1]]
 mat_read  # mat_read is a vector, not matrix!
 # Coerce by row to matrix
 mat_read <- matrix(mat_read,
@@ -464,8 +462,7 @@ summary(microbenchmark(
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv",
-  row.names=1, stringsAsFactors=FALSE)
+mat_rix <- read.csv(file="matrix_bad.csv", row.names=1)
 mat_rix
 class(mat_rix)
 # Columns with bad data are character or factor
@@ -525,8 +522,7 @@ data_frame <- cbind(in_dex, data_frame)
 write.table(data_frame, file="zoo_series.txt",
             row.names=FALSE, col.names=FALSE)
 # Read data frame from file
-zoo_read <- read.table(file="zoo_series.txt",
-                       stringsAsFactors=FALSE)
+zoo_read <- read.table(file="zoo_series.txt")
 sapply(zoo_read, class)  # A data frame
 # Coerce data frame into zoo_series
 zoo_read <- zoo::zoo(
@@ -924,7 +920,7 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
       \vskip1ex
       The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
@@ -934,7 +930,7 @@ summary(microbenchmark(
       The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
       \vskip1ex
       The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read a data table from CSV file
@@ -944,7 +940,7 @@ data_table <- data.table::fread(file_name)
 class(data_table); dim(data_table)
 data_table
 # fread() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+all.equal(read.csv(file_name),
           setDF(data.table::fread(file_name)))
 # fread() is much faster than read.csv()
 summary(microbenchmark(
@@ -975,7 +971,7 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}.
       \vskip1ex
       \emph{Data table} rows can be subset without a following comma.
@@ -987,7 +983,7 @@ summary(microbenchmark(
       The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
       \vskip1ex
       The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Select first five rows of data_table
@@ -1029,7 +1025,7 @@ head(data_table[, -"origin"])
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
       \vskip1ex
       The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
@@ -1037,7 +1033,7 @@ head(data_table[, -"origin"])
       The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
       \vskip1ex
       The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Select flights with positive carrier_delay
@@ -1075,7 +1071,7 @@ data_table[origin=="JFK", .N]
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
       \begin{itemize}
         \item \texttt{i}: the row index to select, 
@@ -1089,7 +1085,7 @@ data_table[origin=="JFK", .N]
       Multiple \emph{data table} columns can be referenced by passing a list of names.
       \vskip1ex
       The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Number of flights from each airport
@@ -1128,7 +1124,7 @@ data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
       \vskip1ex
       The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
@@ -1138,7 +1134,7 @@ data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)),
       \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
       \vskip1ex
       Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Sort ascending by origin, then descending by dest
@@ -1173,7 +1169,7 @@ order_table[, .(mean_delay=mean(aircraft_delay)),
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
       \vskip1ex
       The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
@@ -1183,7 +1179,7 @@ order_table[, .(mean_delay=mean(aircraft_delay)),
       The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol.
       \vskip1ex
       If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Select weather_delay and aircraft_delay in two different ways
@@ -1226,7 +1222,7 @@ data_table[, .(weather_delay=mean(weather_delay),
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
       \vskip1ex
       The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
@@ -1238,7 +1234,7 @@ data_table[, .(weather_delay=mean(weather_delay),
       The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
       \vskip1ex
       Modifying by reference is several times faster than standard \texttt{R} assignment.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Add tot_delay column
@@ -1281,7 +1277,7 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
       \vskip1ex
       The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
@@ -1289,7 +1285,7 @@ summary(microbenchmark(
       \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
       \vskip1ex
       Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Add a key based on the "origin" column
@@ -1329,7 +1325,7 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Subsetting and grouping \protect\emph{data tables} using \emph{keys} can be several times faster than standard \texttt{R}.
       \vskip1ex
       The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
@@ -1337,7 +1333,7 @@ summary(microbenchmark(
       The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
       \vskip1ex
       \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Select rows with dest to MIA
@@ -1416,14 +1412,14 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
       \vskip1ex
       The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
       \vskip1ex
       \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
       \vskip1ex
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create data frame and coerce it to data table
@@ -1455,14 +1451,14 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
       \vskip1ex
       But then the time index of the \texttt{xts} series is coerced into strings, not dates.
       \vskip1ex
       An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
       \vskip1ex
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
@@ -1495,14 +1491,14 @@ all.equal(price_s, data_table, check.attributes=FALSE)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
       \vskip1ex
       But then the time index of the \texttt{xts} series is coerced into strings, not dates.
       \vskip1ex
       An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
       \vskip1ex
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce xts to a data frame
@@ -1578,7 +1574,7 @@ detach("package:fst")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The package 
       \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
       allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format.
@@ -1586,7 +1582,7 @@ detach("package:fst")
       The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
       \vskip1ex
       The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read a data frame from CSV file
@@ -1605,7 +1601,7 @@ summary(microbenchmark(
   cat=cat(unlist(data_frame), file="data_frame3.csv"),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 # fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
+all.equal(read.csv(file_name),
           fst::read_fst("data_frame.fst"))
 # fst::read_fst() is 10 times faster than read.csv()
 summary(microbenchmark(
@@ -1625,7 +1621,7 @@ summary(microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The package 
       \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
       allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
@@ -1635,7 +1631,7 @@ summary(microbenchmark(
       function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
       \vskip1ex
       The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Coerce TAQ xts to a data frame
@@ -1680,13 +1676,13 @@ fs_t[1e4:(1e4+5), ]
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \texttt{get.hist.quote()} can download daily historical data in \emph{ts} format using the argument \texttt{"retclass="ts"}.
       \vskip1ex
       \texttt{get.hist.quote()} returns a \emph{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates.
       \vskip1ex
       The \emph{ts} contains \texttt{NA} values for weekends and holidays.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
@@ -1727,7 +1723,7 @@ tail(ts_stx_adj)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{get.hist.quote()} downloads historical data from online sources.
       \vskip1ex
       The \texttt{"provider"} argument determines the \emph{online source}, and its default value is \texttt{c("yahoo", "oanda")}.
@@ -1737,7 +1733,7 @@ tail(ts_stx_adj)
       The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")}.
       \vskip1ex
       The \texttt{"AdjClose"} data field is for the \emph{Close} price adjusted for stock splits and dividends.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(tseries)  # Load package tseries
@@ -1771,13 +1767,13 @@ head(zoo_stx, 4)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Stock prices experience jumps due to stock splits and dividends.
       \vskip1ex
       \emph{Adjusted} stock prices are stock prices that have been adjusted so they don't have jumps.
       \vskip1ex
       \emph{OHLC} data can be adjusted for stock splits and dividends.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
 library(tseries)  # Load package tseries
@@ -1806,7 +1802,7 @@ tail(zoo_stx_adj)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \emph{Oanda} is a foreign exchange broker that also provides free historical currency rates data.
       \vskip1ex
       The function \texttt{get.hist.quote()} downloads historical data from online sources.
@@ -1818,7 +1814,7 @@ tail(zoo_stx_adj)
       The \texttt{"quote"} argument determines the data fields, and its default value is \texttt{c("Open", "High", "Low", "Close")}.
       \vskip1ex
       The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(tseries)  # Load package tseries
@@ -2000,7 +1996,7 @@ lapply(ls(), function(ob_ject) class(get(ob_ject)))
       \vskip1ex
       The function \texttt{get()} retrieves objects that are referenced using character strings, instead of their names.
       \vskip1ex
-      The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
+      The function \texttt{assign()} assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
       \vskip1ex
       The functions \texttt{get()} and \texttt{assign()} allow retrieving and assigning values to objects that are referenced using character strings.
       \vskip1ex
@@ -2036,49 +2032,107 @@ for (sym_bol in ls(etf_env)) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Extracting Prices Using Package \protect\emph{quantmod}}
+\subsection{Extracting Time Series from Environments}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The extractor (accessor) functions \texttt{Ad()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data.
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects extracted from an \emph{environment}.
       \vskip1ex
-      Data can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()}.
+      The extractor (accessor) functions from package \emph{quantmod}: \texttt{Cl()}, \texttt{Vo()}, etc., extract columns from \emph{OHLC} data.
       \vskip1ex
-      A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()}.
+      A list of \emph{xts} series can be flattened into a single \emph{xts} series using the function \texttt{do.call()}.
       \vskip1ex
       The function \texttt{do.call()} executes a function call using a function name and a list of arguments.
       \vskip1ex
-      The function \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument.
-      \vskip1ex
-      The function \texttt{do\_call()} from package \emph{rutils} performs the same operation as \texttt{do.call()}, but using recursion, which is much faster and uses less memory.
+      \texttt{do.call()} passes the list elements individually, instead of passing the whole list as one argument.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
+      \vskip1ex
+      Time series can also be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} series using the function \texttt{do.call()}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
-# Extract and cbind all Close prices for sym_bols
+# Define ETF symbols
+sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
+# Extract sym_bols from rutils::etf_env
+price_s <- mget(sym_bols, envir=rutils::etf_env)
+# price_s is a list of xts series
+class(price_s)
+class(price_s[[1]])
+# Extract Close prices
+price_s <- lapply(price_s, quantmod::Cl)
+# Collapse list into time series the hard way
+xts_1 <- cbind(price_s[[1]], price_s[[2]], price_s[[3]], price_s[[4]])
+class(xts_1)
+dim(xts_1)
+# Collapse list into time series using do.call()
+price_s <- do.call(cbind, price_s)
+all.equal(xts_1, price_s)
+class(price_s)
+dim(price_s)
+# Extract and cbind in single step
+price_s <- do.call(cbind, lapply(
+  mget(sym_bols, envir=rutils::etf_env), 
+  quantmod::Cl))
+# Or
+# Extract and bind all data, subset by sym_bols
+price_s <- lapply(sym_bols, function(sym_bol) {
+    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
+})  # end lapply
+# Same, but loop over etf_env without anonymous function
 price_s <- do.call(cbind,
-  lapply(as.list(etf_env)[sym_bols], quantmod::Cl))
-# wippp
+  lapply(as.list(rutils::etf_env)[sym_bols], 
+         quantmod::Cl))
+# Same, but works only for OHLC series - produces error
+price_s <- do.call(cbind,
+  eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Time series columns can be renamed, and then saved into \texttt{.csv} files.
+      \vskip1ex
+      The function \texttt{strsplit()} splits the elements of a character vector.
+      \vskip1ex
+      The package \emph{zoo} contains functions \texttt{write.zoo()} and \texttt{read.zoo()} for writing and reading \emph{zoo} time series from \texttt{.txt} and \texttt{.csv} files.
+      \vskip1ex
+      The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
+      \vskip1ex
+      The function \texttt{assign()} assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
+      \vskip1ex
+      The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
 # Drop ".Close" from colnames
-colnames(price_s) <- sapply(colnames(price_s),
-    function(col_name)
-      strsplit(col_name, split="[.]")[[1]],
-    USE.NAMES=FALSE)[1, ]
-head(price_s[, 1:9], 3)
+colnames(price_s) <- unname(sapply(colnames(price_s),
+    function(col_name) 
+      strsplit(col_name, split="[.]")[[1]][1]))
+tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
 write.zoo(price_s,
   file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
-# Copy price_s into etf_env and save to .RData file
+# Copy price_s into etf_env
 etf_env$etf_list <- etf_list
-# assign("price_s", price_s, envir=etf_env)
-etf_env$price_s <- price_s
-save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
+# Or
+assign("price_s", price_s, envir=etf_env)
+# Save to .RData file
+save(etf_env, file="etf_data.RData")
       @
   \end{columns}
 \end{block}
@@ -2092,11 +2146,11 @@ save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{quantmod::dailyReturn()} calculates the percentage daily returns from the \emph{Close} prices.
       \vskip1ex
       The \texttt{lapply()} and \texttt{sapply()} functionals perform a loop over the columns of \emph{zoo} and \emph{xts} series.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract VTI prices
@@ -2141,13 +2195,13 @@ save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{as.environment()} coerces objects (lists) into an environment.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
       \vskip1ex
-      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects.
-    \column{0.6\textwidth}
+      The function \texttt{mget()} accepts a vector of strings and returns a list of the corresponding objects extracted from an \emph{environment}.
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)
@@ -2191,7 +2245,7 @@ assign("price_s", rutils::do_call(cbind,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The file \texttt{sp500\_WRDS\_08-30-17.csv} contains a \emph{data frame} of \emph{S\&P500} constituents.
       \vskip1ex
       The stock tickers are stored in the column \texttt{"co\_tic"}.
@@ -2199,11 +2253,11 @@ assign("price_s", rutils::do_call(cbind,
       The \emph{data frame} contains duplicate tickers, which must be removed.
       \vskip1ex
       Some tickers (like "BRK.B") are not valid symbols in \texttt{R}, so they must be downloaded separately.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_WRDS_08-30-17.csv", stringsAsFactors=FALSE)
+sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_WRDS_08-30-17.csv")
 # Inspect data frame of S&P500 constituents
 dim(sp_500)
 colnames(sp_500)
@@ -2234,7 +2288,7 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
       But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Tiingo} does.
@@ -2245,7 +2299,7 @@ sym_bols <- sym_bols[-which(sym_bols=="BRK.B")]
       https://www.tiingo.com/
       \vskip1ex
       Note that the data are downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load package rutils
@@ -2337,7 +2391,7 @@ rm("BF-B", envir=sp500_env)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The data from \emph{Tiingo} is downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
       \vskip1ex
       The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
@@ -2351,7 +2405,7 @@ rm("BF-B", envir=sp500_env)
       The function \texttt{data.table::fread()} reads from \texttt{.csv} files over \texttt{6} times faster than the function \texttt{read.csv()}!
       \vskip1ex
       The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{278} times faster than function \texttt{cat()}!
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 class(sp500_env$AAPL)
@@ -2400,7 +2454,7 @@ unlist(file_names)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The data from \emph{Tiingo} is downloaded as \texttt{xts} time series, with a date-time index of class \texttt{POSIXct} (not \texttt{Date}).
       \vskip1ex
       The function \texttt{as.Date()} parses \texttt{character} strings, and coerces \texttt{numeric}  and \texttt{POSIXct} objects into \texttt{Date} objects.
@@ -2414,7 +2468,7 @@ unlist(file_names)
       The function \texttt{data.table::fread()} reads from \texttt{.csv} files over \texttt{6} times faster than the function \texttt{read.csv()}!
       \vskip1ex
       The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{278} times faster than function \texttt{cat()}!
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 class(sp500_env$AAPL)
@@ -2462,7 +2516,7 @@ unlist(file_names)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{load()} reads data from \texttt{.RData} files, and \emph{invisibly} returns a vector of names of objects created in the workspace.
       \vskip1ex
       The function \texttt{Sys.glob()} lists files matching names obtained from wildcard expansion.
@@ -2474,7 +2528,7 @@ unlist(file_names)
       The function \texttt{data.table::setDF()} coerces a \emph{data table} object into a \emph{data frame} using a \emph{side effect}, without making copies of data.
       \vskip1ex
       The function \texttt{data.table::fread()} reads from \texttt{.csv} files over \texttt{6} times faster than the function \texttt{read.csv()}!
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load the environment from compressed .RData file
@@ -2511,7 +2565,7 @@ for (file_name in file_names) {
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \emph{Yahoo} data quality deteriorated significantly in \texttt{2017}, and \emph{Google} data quality is also poor, leaving \emph{Tiingo}, \emph{Alpha Vantage}, and \href{https://www.quandl.com/}{Quandl} as the only major providers of free daily \emph{OHLC} stock prices.
       \vskip1ex
       But \href{https://www.quandl.com/}{Quandl} doesn't provide free \emph{ETF} prices, while \emph{Alpha Vantage} does.
@@ -2522,7 +2576,7 @@ for (file_name in file_names) {
       https://www.alphavantage.co/
       \vskip1ex
       The function \texttt{adjustOHLC()} with argument \texttt{use.Adjusted=TRUE}, adjusts all the \emph{OHLC} price columns, using the \emph{Adjusted} price column.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-2em}
       <<echo=TRUE,eval=FALSE>>=
 # Remove all files from environment(if necessary)
@@ -2653,18 +2707,17 @@ chart_Series(x=etf_env$DJIA["2016/"],
     \column{0.5\textwidth}
       Stock market indices can be capitalization-weighted (\emph{S\&P500}), price-weighted (\emph{DJIA}), or equal-weighted.
       \vskip1ex
-      The capitalization-weighted and price-weighted indices have a fixed number of shares (excluding stock splits), while equal-weighted indices must be rebalanced as market prices change.
+      The cap-weighted and price-weighted indices own a fixed number of shares (excluding stock splits).
+      \vskip1ex
+      Equal-weighted indices own the same dollar amount of each stock, so they must be rebalanced as market prices change.
+      \vskip1ex
+      Cap-weighted index = Sum \{ (Stock Price * Number of shares) / Index Divisor \}
+      \vskip1ex
+      Price-weighted index = Sum \{Stock Price / Index Divisor \}
+      \vskip1ex
+      Equal-weighted index = Sum \{ (Stock Price * factor) / Index Divisor \}
       \vskip1ex
       Cap-weighted indices are over-weight large-cap stocks, while equal-weighted indices are over-weight small-cap stocks.
-      \vskip1ex
-      Capitalization-weighted index:\\
-      Index level = Sum \{ (Price of stock * Number of freely traded shares) / Index Divisor \}
-      \vskip1ex
-      Price-weighted index:\\
-      Index level = Sum \{ Price of stock / Index Divisor \}
-      \vskip1ex
-      Equal-weighted index:\\
-      Index level = Sum \{ (Price of stock * factor) / Index Divisor \}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
@@ -2717,8 +2770,7 @@ library(XML)  # Load package XML
 sp_500 <- getURL(
   "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
 # Extract tables from the text data
-sp_500 <- readHTMLTable(sp_500,
-                    stringsAsFactors=FALSE)
+sp_500 <- readHTMLTable(sp_500)
 str(sp_500)
 # Extract colnames of data frames
 lapply(sp_500, colnames)
@@ -2745,19 +2797,18 @@ write.csv(sp_500,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Before time series data for the \emph{S\&P500} index constituents can be downloaded from \emph{Yahoo}, it's necessary to create valid names corresponding to symbols containing special characters like \texttt{"-"}.
       \vskip1ex
       The function \texttt{setSymbolLookup()} creates a lookup table for \emph{Yahoo} symbols, using valid names in \texttt{R}.
       \vskip1ex
       For example \emph{Yahoo} uses the symbol \texttt{"BRK-B"}, which isn't a valid name in \texttt{R}, but can be mapped to \texttt{"BRK\_B"}, using the function \texttt{setSymbolLookup()}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Load data frame of S&P500 constituents from CSV file
-sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_Yahoo.csv",
-     stringsAsFactors=FALSE)
+sp_500 <- read.csv(file="C:/Develop/lecture_slides/data/sp500_Yahoo.csv")
 # Register symbols corresponding to R names
 for (in_dex in 1:NROW(sp_500)) {
   cat("processing: ", sp_500$Ticker[in_dex], "\n")
@@ -2945,8 +2996,7 @@ chart_Series(price_s["2016/", 1],
 library(rutils)  # Load package rutils
 # Load S&P500 stock Quandl codes
 sp_500 <- read.csv(
-  file="C:/Develop/lecture_slides/data/sp500_quandl.csv",
-  stringsAsFactors=FALSE)
+  file="C:/Develop/lecture_slides/data/sp500_quandl.csv")
 # Replace "-" with "_" in symbols
 sp_500$free_code <-
   gsub("-", "_", sp_500$free_code)
@@ -2973,11 +3023,11 @@ tick_ers <- do_call_rbind(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Time series data for a portfolio of stocks can be downloaded by performing a loop over the function \texttt{Quandl()} from package \href{https://cran.r-project.org/web/packages/Quandl/index.html}{Quandl}.
       \vskip1ex
       The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
@@ -3088,7 +3138,7 @@ dygraphs::dygraph(price_s["2008-06/2009-06", -5],
       <<echo=TRUE,eval=FALSE>>=
 # Read CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/lecture_slides/data/futures_expiration_dates_codes.csv",
-  stringsAsFactors=FALSE, row.names=1)
+  row.names=1)
 dir_name <- "C:/Develop/data/vix_data"
 dir.create(dir_name)
 sym_bols <- rownames(date_s)
@@ -3169,7 +3219,7 @@ save(vix_env,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The package 
       \href{https://cran.r-project.org/web/packages/readxl/index.html}{\emph{readxl}} reads data from \texttt{Excel} spreadsheet files into \texttt{R}.
       \vskip1ex
@@ -3186,7 +3236,7 @@ save(vix_env,
       \vskip1ex
       DataCamp offers a 
       \href{https://www.datacamp.com/community/tutorials/r-tutorial-read-excel-into-r}{Tutorial on Importing Excel Files into R}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Install and load package readxl
@@ -3230,7 +3280,7 @@ x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{readxl::excel\_sheets()} returns a vector of character strings with the names of all the sheets in an \texttt{Excel} spreadsheet.
       \vskip1ex
       The package 
@@ -3246,7 +3296,7 @@ x_ts <- zoo::na.locf(x_ts, fromLast=TRUE)
       \vskip1ex
       \emph{tibble} objects are also used by the package 
       \href{https://cran.r-project.org/web/packages/dplyr/index.html}{\emph{dplyr}}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Read names of all the sheets in an Excel spreadsheet
@@ -3368,7 +3418,7 @@ write.csv(data_read, file="daisies.csv")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       An \texttt{R} session can be launched from \texttt{Excel} using a \texttt{VBA} script (macro).
       \vskip1ex
       The \texttt{VBA} function \texttt{shell()} executes a program by running an executable \emph{exe} file (with extension \emph{exe}).
@@ -3376,7 +3426,7 @@ write.csv(data_read, file="daisies.csv")
       A \texttt{VBA} script can also run an \texttt{R} \emph{batch} process.
       \vskip1ex
       The \texttt{R} \emph{batch} process can write to \texttt{.csv} files, which can then be imported into \texttt{Excel}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \renewcommand{\ttdefault}{pcr}
       \begin{lstlisting}[language=VBScript,basicstyle=\tiny\ttfamily\bfseries\color{yellow},backgroundcolor=\color{vba_background},showstringspaces=FALSE]
 ' VBA macro to run R process

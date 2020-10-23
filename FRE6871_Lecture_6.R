@@ -1,3 +1,258 @@
+# Create a list with two elements
+lis_t <- list(c("a", "b"), 1:4)
+lis_t
+c(typeof(lis_t), mode(lis_t), class(lis_t))
+# Lists are also vectors
+c(is.vector(lis_t), is.list(lis_t))
+NROW(lis_t)
+# Create named list
+lis_t <- list(first=c("a", "b"), second=1:4)
+lis_t
+names(lis_t)
+unlist(lis_t)
+
+lis_t[2]  # Extract second element as sublist
+lis_t[[2]]  # Extract second element
+lis_t[[2]][3]  # Extract third element of second element
+lis_t[[c(2, 3)]]  # Third element of second element
+lis_t$second  # Extract second element
+lis_t$s  # Extract second element - partial name matching
+lis_t$second[3]  # Third element of second element
+lis_t <- list()  # Empty list
+lis_t$a <- 1
+lis_t[2] <- 2
+lis_t
+names(lis_t)
+
+as.list(c(1,2,3))
+list(c(1,2,3))
+
+data_frame <- data.frame(  # Create a data frame
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
+                price=c(1.5, 0.5, 1.0)
+              )  # end data.frame
+data_frame
+dim(data_frame)  # Get dimension attribute
+colnames(data_frame)  # Get the colnames attribute
+rownames(data_frame)  # Get the rownames attribute
+class(data_frame)  # Get object class
+typeof(data_frame)  # Data frames are lists
+is.data.frame(data_frame)
+
+class(data_frame$type)  # Get column class
+class(data_frame$price)  # Get column class
+
+data_frame[, 3]  # Extract third column as vector
+data_frame[[3]]  # Extract third column as vector
+data_frame[3]  # Extract third column as data frame
+data_frame[, 3, drop=FALSE]  # Extract third column as data frame
+data_frame[[3]][2]  # Second element from third column
+data_frame$price[2]  # Second element from "price" column
+is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
+data_frame[2, ]  # Extract second row
+data_frame[2, ][3]  # Third element from second column
+data_frame[2, 3]  # Third element from second column
+unlist(data_frame[2, ])  # Coerce to vector
+is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
+
+data_frame <- data.frame(  # Create a data frame
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
+                price=c(1.5, 0.5, 1.0),
+                row.names=c("flower1", "flower2", "flower3"),
+                stringsAsFactors=FALSE
+              )  # end data.frame
+data_frame
+class(data_frame$type)  # Get column class
+class(data_frame$price)  # Get column class
+# Set option to not coerce character vectors to factors
+options(stringsAsFactors=FALSE)
+options("stringsAsFactors")
+default.stringsAsFactors()
+
+str(data_frame)  # Display the object structure
+dim(cars)  # The cars data frame has 50 rows
+head(cars, n=5)  # Get first five rows
+tail(cars, n=5)  # Get last five rows
+
+# Create a named vector
+stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
+names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# Sort the vector into ascending order
+sort(stu_dents)
+# Calculate index to sort into ascending order
+order(stu_dents)
+# Sort the vector into ascending order
+stu_dents[order(stu_dents)]
+# Calculate the sorted (ordered) vector
+sort_ed <- stu_dents[order(stu_dents)]
+# Calculate index to sort into unsorted (original) order
+order(order(stu_dents))
+sort_ed[order(order(stu_dents))]
+stu_dents
+# Create a data frame of stu_dents and their ranks
+ra_nks <- c("first", "second", "third", "fourth", "fifth")
+data.frame(students=stu_dents,
+  rank=ra_nks[order(order(stu_dents))])
+# Permute data_frame of flowers on price column
+order(data_frame$price)
+# Sort data_frame on price
+data_frame[order(data_frame$price), ]
+# Sort data_frame on color
+data_frame[order(data_frame$color), ]
+# Read the Examples for sort()
+order(c(2, 1:4))  # There's a tie
+order(c(2, 1:4), 1:5)  # There's a tie
+
+as.matrix(data_frame)
+vec_tor <- sample(9)
+matrix(vec_tor, ncol=3)
+as.matrix(vec_tor, ncol=3)
+
+mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
+rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
+colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
+library(microbenchmark)
+# Call method instead of generic function
+as.data.frame.matrix(mat_rix)
+# A few methods for generic function as.data.frame()
+sample(methods(as.data.frame), size=4)
+# Function method is faster than generic function
+summary(microbenchmark(
+  as_data_frame_matrix=
+    as.data.frame.matrix(mat_rix),
+  as_data_frame=as.data.frame(mat_rix),
+  data_frame=data.frame(mat_rix),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+library(microbenchmark)
+# lapply is faster than coercion function
+summary(microbenchmark(
+  as_list=
+    as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=
+    lapply(seq_along(mat_rix[1, ]),
+     function(in_dex) mat_rix[, in_dex]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# ?iris  # Get information on iris
+dim(iris)
+head(iris, 2)
+colnames(iris)
+unique(iris$Species)  # List of unique elements of iris
+class(unique(iris$Species))
+# Find which columns of iris are numeric
+sapply(iris, is.numeric)
+# Calculate means of iris columns
+sapply(iris, mean)  # Returns NA for Species
+
+# ?mtcars  # mtcars data from 1974 Motor Trend magazine
+# mpg   Miles/(US) gallon
+# qsec   1/4 mile time
+# hp	 Gross horsepower
+# wt	 Weight (lb/1000)
+# cyl   Number of cylinders
+dim(mtcars)
+head(mtcars, 2)
+colnames(mtcars)
+head(rownames(mtcars), 3)
+unique(mtcars$cyl)  # Extract list of car cylinders
+sapply(mtcars, mean)  # Calculate means of mtcars columns
+
+library(MASS)
+# ?Cars93  # Get information on Cars93
+dim(Cars93)
+head(colnames(Cars93))
+# head(Cars93, 2)
+unique(Cars93$Type)  # Extract list of car types
+# sapply(Cars93, mean)  # Calculate means of Cars93 columns
+# Plot histogram of Highway MPG using the Freedman-Diaconis rule
+hist(Cars93$MPG.highway, col="lightblue1",
+     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
+
+rm(list=ls())
+as.numeric(c(1:3, "a"))  # NA from coercion
+0/0  # NaN from ambiguous math
+1/0  # Inf from divide by zero
+is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
+NA*1:4  # Create vector of Nas
+# Create vector with some NA values
+da_ta <- c(1, 2, NA, 4, NA, 5)
+da_ta
+mean(da_ta)  # Returns NA, when NAs are input
+mean(da_ta, na.rm=TRUE)  # remove NAs from input data
+da_ta[!is.na(da_ta)]  # Delete the NA values
+sum(!is.na(da_ta))  # Count non-NA values
+
+rm(list=ls())
+# Airquality data has some NAs
+head(airquality)
+dim(airquality)
+# Number of NA elements
+sum(is.na(airquality))
+# Number of rows with NA elements
+sum(!complete.cases(airquality))
+# Display rows containing NAs
+head(airquality[!complete.cases(airquality), ])
+
+rm(list=ls())
+# Remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+head(good_air)  # NAs removed
+library(zoo)  # load package zoo
+# Replace NAs
+good_air <- zoo::na.locf(airquality)
+dim(good_air)
+head(good_air)  # NAs replaced
+# Create vector containing NA values
+vec_tor <- sample(22)
+vec_tor[sample(NROW(vec_tor), 4)] <- NA
+# Replace NA values with the most recent non-NA values
+zoo::na.locf(vec_tor)
+# Replace NAs in xts time series
+se_ries <- rutils::etf_env$price_s[, 1]
+head(se_ries)
+sum(is.na(se_ries))
+library(quantmod)
+series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
+series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
+all.equal(series_zoo, series_xts, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+
+# NULL values have no mode or type
+c(mode(NULL), mode(NA))
+c(typeof(NULL), typeof(NA))
+c(length(NULL), length(NA))
+# Check for NULL values
+is.null(NULL)
+# NULL values are ignored when combined into a vector
+c(1, 2, NULL, 4, 5)
+# But NA value isn't ignored
+c(1, 2, NA, 4, 5)
+# Vectors can be initialized to NULL
+vec_tor <- NULL
+is.null(vec_tor)
+# Grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# Initialize empty vector
+vec_tor <- numeric()
+# Grow the vector in a loop - very bad code!!!
+for (in_dex in 1:5)
+  vec_tor <- c(vec_tor, in_dex)
+# Allocate vector
+vec_tor <- numeric(5)
+# Assign to vector in a loop - good code
+for (in_dex in 1:5)
+  vec_tor[in_dex] <- runif(1)
+
 # Create list of vectors
 li_st <- lapply(1:3, function(x) sample(6))
 # Bind list elements into matrix - doesn't work
@@ -74,16 +329,16 @@ sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars, 
+aggregate(formula=(mpg ~ cyl), data=mtcars,
     FUN=mean)
 # Or: aggregate() using data frame syntax
-aggregate(x=mtcars$mpg, 
+aggregate(x=mtcars$mpg,
   by=list(cyl=mtcars$cyl), FUN=mean)
 # Or: using name for mpg
-aggregate(x=list(mpg=mtcars$mpg), 
+aggregate(x=list(mpg=mtcars$mpg),
   by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
-aggregate(x=mtcars, 
+aggregate(x=mtcars,
   by=list(cyl=mtcars$cyl), FUN=mean)
 
 # Mean mpg for each cylinder group
@@ -119,7 +374,7 @@ do.call(cbind, data_cars)
 
 # Download CRSPpanel.txt from NYU Classes
 # Read the file using read.table() with header and sep arguments
-panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt", 
+panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt",
                    header=TRUE, sep="\t")
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
@@ -130,16 +385,16 @@ sapply(split_panel, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
 # Or
-aggregate(formula=(Sector ~ Industry), 
+aggregate(formula=(Sector ~ Industry),
   data=panel_data, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry), 
+aggregate(formula=(Sector ~ Industry),
   data=panel_data, FUN=unique)
 # Or
-with(panel_data, aggregate(x=Sector, 
+with(panel_data, aggregate(x=Sector,
   by=list(Industry), FUN=unique))
 # Or
-with(panel_data, sapply(levels(Industry), 
+with(panel_data, sapply(levels(Industry),
   function(x) {
     Sector[match(x, Industry)]
   }))  # end sapply
@@ -149,14 +404,14 @@ split_panel <- split(panel_data, panel_data$Sector)
 # number of companies in each Sector
 sapply(split_panel, NROW)
 # Industries belonging to each Sector (jagged array)
-sec_ind <- sapply(split_panel, 
+sec_ind <- sapply(split_panel,
   function(x) unique(as.vector(x$Industry)))
 # Or use aggregate() (returns a data frame)
-sec_ind2 <- aggregate(formula=(Industry ~ Sector), 
+sec_ind2 <- aggregate(formula=(Industry ~ Sector),
   data=panel_data, FUN=function(x) unique(as.vector(x)))
 # Or use aggregate() with "by" argument
-sec_ind2 <- with(panel_data, 
-  aggregate(x=Industry, by=list(Sector), 
+sec_ind2 <- with(panel_data,
+  aggregate(x=Industry, by=list(Sector),
     FUN=function(x) as.vector(unique(x))))
 # Coerce sec_ind2 into a jagged array
 name_s <- as.vector(sec_ind2[, 1])
@@ -164,37 +419,37 @@ sec_ind2 <- sec_ind2[, 2]
 names(sec_ind2) <- name_s
 all.equal(sec_ind2, sec_ind)
 # Or use tapply() (returns an array)
-sec_ind2 <- with(panel_data, 
+sec_ind2 <- with(panel_data,
   tapply(X=as.vector(Industry), INDEX=Sector, FUN=unique))
 # Coerce sec_ind2 into a jagged array
 sec_ind2 <- drop(as.matrix(sec_ind2))
 all.equal(sec_ind2, sec_ind)
 
 # Average ROE in each Industry
-with(panel_data, 
+with(panel_data,
   sapply(split(ROE, Industry), mean))
 # Average, min, and max ROE in each Industry
-t(with(panel_data, 
-  sapply(split(ROE, Industry), 
-    FUN=function(x) 
+t(with(panel_data,
+  sapply(split(ROE, Industry),
+    FUN=function(x)
 c(mean=mean(x), max=max(x), min=min(x)))))
 # Split panel_data based on Industry column
-split_panel <- split(panel_data, 
+split_panel <- split(panel_data,
   panel_data$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel, FUN=function(x) 
-  c(mean_roe=mean(x$ROE), 
+t(sapply(split_panel, FUN=function(x)
+  c(mean_roe=mean(x$ROE),
     mean_eps=mean(x$EPS.EXCLUDE.EI))))
 # Or: split panel_data based on Industry column
-split_panel <- 
-  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
+split_panel <-
+  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   panel_data$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel, 
+t(sapply(split_panel,
   FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
-aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")], 
-  by=list(panel_data$Industry), 
+aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
+  by=list(panel_data$Industry),
   FUN=mean)
 
 # ?options  # Get info on global options
@@ -252,7 +507,7 @@ vali_date <- function(in_put) {
   if (missing(in_put)) {
     stop("vali_date: in_put is missing")
   } else if (!is.numeric(in_put)) {
-    cat("in_put=", in_put)
+    cat("in_put =", in_put, "\n")
     stop("vali_date: in_put is not numeric")
   } else 2*in_put
 }  # end vali_date
@@ -265,8 +520,7 @@ traceback()
 
 vali_date <- function(in_put) {
 # Check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-        is.numeric(in_put))
+  stopifnot(!missing(in_put) & is.numeric(in_put))
   2*in_put
 }  # end vali_date
 vali_date(3)
@@ -378,316 +632,319 @@ finally=print(paste("(finally) num_var =", num_var))
   }  # end anonymous function
 )  # end apply
 
-rm(list=ls())
-# Get base environment
-baseenv()
-# Get global environment
-globalenv()
-# Get current environment
-environment()
-# Get environment class
-class(environment())
-# Define variable in current environment
-glob_var <- 1
-# Get objects in current environment
-ls(environment())
-# Create new environment
-new_env <- new.env()
-# Get calling environment of new environment
-parent.env(new_env)
-# Assign Value to Name
-assign("new_var1", 3, envir=new_env)
-# Create object in new environment
-new_env$new_var2 <- 11
-# Get objects in new environment
-ls(new_env)
-# Get objects in current environment
-ls(environment())
-# Environments are subset like lists
-new_env$new_var1
-# Environments are subset like lists
-new_env[["new_var1"]]
+cat("Enter\ttab")  # Cat() interprets backslash escape sequences
+print("Enter\ttab")
 
-search()  # Get search path for R objects
-my_list <-
-  list(flowers=c("rose", "daisy", "tulip"),
-       trees=c("pine", "oak", "maple"))
-my_list$trees
-attach(my_list)
-trees
-search()  # Get search path for R objects
-detach(my_list)
-head(trees)  # "trees" is in datasets base package
+my_text <- print("hello")
+my_text  # Print() returns its argument
 
-library(HighFreq)  # Load package HighFreq
-# ETF symbols
-sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind,
-  lapply(sym_bols, function(sym_bol) {
-    quantmod::Ad(get(sym_bol, envir=rutils::etf_env))
-}))
-# Extract and merge adjusted prices, subset by sym_bols
-price_s <- rutils::do_call(cbind,
-  lapply(as.list(rutils::etf_env)[sym_bols], 
-   quantmod::Ad))
-# Same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <- sapply(colnames(price_s),
-    function(col_name)
-strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
-# Which objects in global environment are class xts?
-unlist(eapply(globalenv(), is.xts))
-# Save xts to csv file
-write.zoo(price_s, file="etf_series.csv", sep=",")
-# Copy price_s into etf_env and save to .RData file
-assign("price_s", price_s, envir=etf_env)
-save(etf_env, file="etf_data.RData")
+# Create string
+my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
 
-# "trees" is in datasets base package
-head(trees, 3)
-colnames(trees)
-mean(Girth)
-mean(trees$Girth)
-with(trees,
-     c(mean(Girth), mean(Height), mean(Volume)))
+cat(my_text, file="mytext.txt")  # Write to text file
 
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Sample mean - MC estimate
-mean(da_ta)
-# Sample standard deviation - MC estimate
-sd(da_ta)
-# Monte Carlo estimate of cumulative probability
-da_ta <- sort(da_ta)
-pnorm(1)
-sum(da_ta<1)/n_rows
-# Monte Carlo estimate of quantile
-conf_level <- 0.99
-qnorm(conf_level)
-cut_off <- conf_level*n_rows
-da_ta[cut_off]
-quantile(da_ta, probs=conf_level)
-# Analyze the source code of quantile()
-stats:::quantile.default
-# Microbenchmark quantile
+cat("Title: My Text",  # Write several lines to text file
+    "Some numbers: 1,2,3,...",
+    "Rprofile files contain code executed at R startup,",
+    file="mytext.txt", sep="\n")
+
+save(my_text, file="mytext.RData")  # Write to binary file
+
+print(pi)
+print(pi, digits=10)
+getOption("digits")
+foo <- 12
+bar <- "months"
+sprintf("There are %i %s in the year", foo, bar)
+
+# Read text from file
+scan(file="mytext.txt", what=character(), sep="\n")
+
+# Read lines from file
+readLines(con="mytext.txt")
+
+# Read text from console
+in_put <- readline("Enter a number: ")
+class(in_put)
+# Coerce to numeric
+in_put <- as.numeric(in_put)
+
+# Read text from file and display in editor:
+# file.show("mytext.txt")
+# file.show("mytext.txt", pager="")
+
+setwd("C:/Develop/lecture_slides/data")
+data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
+mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
+rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
+# Write data frame to text file, and then read it back
+write.table(data_frame, file="florist.txt")
+data_read <- read.table(file="florist.txt")
+data_read  # A data frame
+
+# Write matrix to text file, and then read it back
+write.table(mat_rix, file="matrix.txt")
+mat_read <- read.table(file="matrix.txt")
+mat_read  # write.table() coerced matrix to data frame
+class(mat_read)
+# Coerce from data frame back to matrix
+mat_read <- as.matrix(mat_read)
+class(mat_read)
+
+setwd("C:/Develop/lecture_slides/data")
+data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
+data_frame <- read.table("mydata.txt", header=TRUE)
+data_frame <- read.table("clipboard", header=TRUE)
+
+write.table(x=data_frame, file="clipboard", sep="\t")
+
+# Wrapper function for copying data frame from clipboard into R
+# by default, data is tab delimited, with a header
+read_clip <- function(file="clipboard", sep="\t",
+              header=TRUE, ...) {
+  read.table(file=file, sep=sep, header=header, ...)
+}  # end read_clip
+
+data_frame <- read_clip()
+
+# Wrapper function for copying data frame from R into clipboard
+# by default, data is tab delimited, with a header
+write_clip <- function(data, row.names=FALSE,
+               col.names=TRUE, ...) {
+  write.table(x=data, file="clipboard", sep="\t",
+      row.names=row.names, col.names=col.names, ...)
+}  # end write_clip
+
+write_clip(data=data_frame)
+
+# Launch spreadsheet-style data editor
+data_frame <- edit(data_frame)
+
+# Write data frame to CSV file, and then read it back
+write.csv(data_frame, file="florist.csv")
+data_read <- read.csv(file="florist.csv",
+                 stringsAsFactors=FALSE)
+data_read  # the row names are read in as extra column
+# Restore row names
+rownames(data_read) <- data_read[, 1]
+data_read <- data_read[, -1]  # Remove extra column
+data_read
+# Read data frame, with row names from first column
+data_read <- read.csv(file="florist.csv", row.names=1)
+data_read
+
+# Write data frame to CSV file, without row names
+write.csv(data_frame, row.names=FALSE, file="florist.csv")
+data_read <- read.csv(file="florist.csv")
+data_read  # A data frame without row names
+
+# Write matrix to csv file, and then read it back
+write.csv(mat_rix, file="matrix.csv")
+mat_read <- read.csv(file="matrix.csv", row.names=1)
+mat_read  # Read.csv() reads matrix as data frame
+class(mat_read)
+mat_read <- as.matrix(mat_read)  # Coerce to matrix
+identical(mat_rix, mat_read)
+write.csv(mat_rix, row.names=FALSE,
+    file="matrix_ex_rows.csv")
+mat_read <- read.csv(file="matrix_ex_rows.csv")
+mat_read <- as.matrix(mat_read)
+mat_read  # A matrix without row names
+
+setwd("C:/Develop/lecture_slides/data")
+library(MASS)  # Load package "MASS"
+# Write to CSV file by row - it's very SLOW!!!
+MASS::write.matrix(mat_rix,
+  file="matrix.csv", sep=",")
+# Read using scan() and skip first line with colnames
+mat_read <- scan(file="matrix.csv",
+  sep=",", skip=1, what=numeric())
+# Read colnames
+col_names <- readLines(con="matrix.csv", n=1)
+col_names  # this is a string!
+# Convert to char vector
+col_names <- strsplit(col_names,
+  s=",")[[1]]
+mat_read  # mat_read is a vector, not matrix!
+# Coerce by row to matrix
+mat_read <- matrix(mat_read,
+  ncol=NROW(col_names), byrow=TRUE)
+# Restore colnames
+colnames(mat_read) <- col_names
+mat_read
+# Scan() is a little faster than read.csv()
 library(microbenchmark)
 summary(microbenchmark(
-  monte_carlo=da_ta[cut_off],
-  quan_tile=quantile(da_ta, probs=conf_level),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+  read_csv=read.csv("matrix.csv"),
+  scan=scan(file="matrix.csv", sep=",",
+    skip=1, what=numeric()),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Read data from a csv file, including row names
+mat_rix <- read.csv(file="matrix_bad.csv",
+  row.names=1, stringsAsFactors=FALSE)
+mat_rix
+class(mat_rix)
+# Columns with bad data are character or factor
+sapply(mat_rix, class)
+# Copy row names
+row_names <- row.names(mat_rix)
+# sapply loop over columns and coerce to numeric
+mat_rix <- sapply(mat_rix, as.numeric)
+# Restore row names
+row.names(mat_rix) <- row_names
+# Replace NAs with zero
+mat_rix[is.na(mat_rix)] <- 0
+# matrix without NAs
+mat_rix
+
+setwd("C:/Develop/lecture_slides/data")
+rm(list=ls())
 set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-pa_th <- numeric(n_rows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) &&
- (pa_th[in_dex - 1] < bar_rier)) {
-# Simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # Advance in_dex
-}  # end while
-# Fill remaining pa_th after it crosses bar_rier
-if (in_dex <= n_rows)
-  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+library(zoo)  # Load package zoo
+# Create zoo with Date index
+in_dex <- seq(from=as.Date("2013-06-15"),
+        by="day", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to text file, and then read it back
+write.zoo(zoo_series, file="zoo_series.txt")
+zoo_read <- read.zoo("zoo_series.txt")  # Read it back
+all.equal(zoo_read, zoo_series)
+# Perform the same using write.table() and read.table()
+# First coerce zoo_series into data frame
+data_frame <- as.data.frame(zoo_series)
+data_frame <- cbind(in_dex, data_frame)
+# Write zoo_series to text file using write.table
+write.table(data_frame, file="zoo_series.txt",
+      row.names=FALSE, col.names=FALSE)
+# Read data frame from file
+zoo_read <- read.table(file="zoo_series.txt",
+                 stringsAsFactors=FALSE)
+sapply(zoo_read, class)  # A data frame
+# Coerce data frame into zoo_series
+zoo_read <- zoo::zoo(
+  drop(as.matrix(zoo_read[, -1])),
+  order.by=as.Date(zoo_read[, 1]))
+all.equal(zoo_read, zoo_series)
 
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # Load package zoo
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+    sep=",", col.names=TRUE)
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=TRUE, sep=",", drop=FALSE)
+all.equal(zoo_series, drop(zoo_read))
+
 set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-# Simulate path of Brownian motion
-pa_th <- cumsum(rnorm(n_rows))
-# Find index when pa_th crosses bar_rier
-cro_ss <- which(pa_th > bar_rier)
-# Fill remaining pa_th after it crosses bar_rier
-if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):n_rows] <-
-    pa_th[cro_ss[1]]
-}  # end if
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
-# Create plot with horizontal line
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+# Create zoo with POSIXct date-time index
+in_dex <- seq(from=as.POSIXct("2013-06-15"),
+        by="hour", length.out=100)
+zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+head(zoo_series, 3)
+# Write zoo series to CSV file, and then read it back
+write.zoo(zoo_series, file="zoo_series.csv",
+    sep=",", col.names=TRUE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv")
+all.equal(zoo_series, zoo_read)
+# Coerce to xts series
+x_ts <- xts::as.xts(zoo_read)
+class(x_ts); head(x_ts, 3)
+# Coerce zoo series into data frame with custom date format
+data_frame <- as.data.frame(zoo_series)
+data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
+head(data_frame, 3)
+# Write zoo series to csv file using write.table
+write.table(data_frame, file="zoo_series.csv",
+      sep=",", row.names=FALSE, col.names=FALSE)
+# Read from CSV file using read.csv.zoo()
+zoo_read <- read.zoo(file="zoo_series.csv",
+  header=FALSE, sep=",", FUN=as.POSIXct,
+  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+# Or using read.csv.zoo()
+zoo_read <- read.csv.zoo(file="zoo_series.csv",
+  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
+head(zoo_read, 3)
+all.equal(zoo_series, zoo_read)
 
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 1000
-# Simulate geometric Brownian motion
-re_turns <- sigma_r*rnorm(len_gth) +
-  dri_ft - sigma_r^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
+# Read time series from CSV file, with numeric date-time
+zoo_read <- read.table(file="C:/Develop/lecture_slides/data/es_ohlc.csv",
+  header=TRUE, sep=",")
+# A data frame
+class(zoo_read)
+sapply(zoo_read, class)
+# Coerce data frame into xts series
+zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
+  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
+# An xts series
+class(zoo_read)
+head(zoo_read, 3)
 
-# Simulate geometric Brownian motion
-sigma_r <- 0.01/sqrt(48)
-dri_ft <- 0.0
-len_gth <- 1e4
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-  length.out=len_gth, by="30 min")
-price_s <- xts(exp(cumsum(sigma_r*rnorm(len_gth) + dri_ft - sigma_r^2/2)),
-  order.by=in_dex)
-price_s <- cbind(price_s,
-  volume=sample(x=10*(2:18), size=len_gth, replace=TRUE))
-# Aggregate to daily OHLC data
-oh_lc <- xts::to.daily(price_s)
-quantmod::chart_Series(oh_lc, name="random prices")
-# dygraphs candlestick plot using pipes syntax
-library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>%
-  dyCandlestick()
-# dygraphs candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
+rm(list=ls())  # Remove all objects
+var1 <- 1; var2 <- 2
+ls()  # List all objects
+ls()[1]  # List first object
+args(save)  # List arguments of save function
+# Save "var1" to a binary file using string argument
+save("var1", file="my_data.RData")
+# Save "var1" to a binary file using object name
+save(var1, file="my_data.RData")
+# Save multiple objects
+save(var1, var2, file="my_data.RData")
+# Save first object in list by passing to "..." argument
+# ls()[1] is not evaluated
+save(ls()[1], file="my_data.RData")
+# Save first object in list by passing to "list" argument
+save(list=ls()[1], file="my_data.RData")
+# Save whole list by passing it to the "list" argument
+save(list=ls(), file="my_data.RData")
 
-# Standard deviations of log-normal distribution
-sig_mas <- c(0.5, 1, 1.5)
-# Create plot colors
-col_ors <- c("black", "red", "blue")
-# Plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-  type="l", xlim=c(0, 3), lwd=2,
-  xlab="", ylab="", col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
+rm(list=ls())  # Remove all objects
+# Load objects from file
+load_ed <- load(file="my_data.RData")
+load_ed  # vector of loaded objects
+ls()  # List objects
+# Assign new values to objects in  global environment
+sapply(load_ed, function(sym_bol) {
+  assign(sym_bol, runif(1), envir=globalenv())
+})  # end sapply
+ls()  # List objects
+# Assign new values to objects using for loop
+for (sym_bol in load_ed) {
+  assign(sym_bol, runif(1))
 }  # end for
+ls()  # List objects
+# Save vector of objects
+save(list=load_ed, file="my_data.RData")
+# Remove only loaded objects
+rm(list=load_ed)
+# Remove the object "load_ed"
+rm(load_ed)
 
-# Add title and legend
-title(main="Log-normal Distributions", line=0.5)
-legend("topright", inset=0.05, title="Sigmas",
- paste("sigma", sig_mas, sep="="),
- cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
- col=col_ors)
+sink("sinkdata.txt")# Redirect text output to file
 
-x11(width=6, height=5)
-par(mar=c(4, 4, 3, 1))
-# Return volatility of VTI ETF
-sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
-sigmar_2 <- sigma_r^2
-n_rows <- NROW(rutils::etf_env$VTI)
-# Standard deviation of log-normal prices
-sqrt(n_rows)*sigma_r
+cat("Redirect text output from R\n")
+print(runif(10))
+cat("\nEnd data\nbye\n")
 
-# Skewness of log-normal prices
-skew_ness <- function(t) {
-  ex_p <- exp(t*sigmar_2)
-  (ex_p + 2)*sqrt(ex_p - 1)
-}  # end skew_ness
-curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
-xlab="Number of days", ylab="Skewness", col="blue",
-main="Skewness of Log-normal Prices
-as a Function of Time")
+sink()  # turn redirect off
 
-# Probability that random log-normal price will be lower than the mean price
-curve(expr=pnorm(sigma_r*sqrt(x)/2),
-xlim=c(1, n_rows), lwd=3,
-xlab="Number of days", ylab="Probability", col="blue",
-main="Probability That Random Log-normal Price
-Will be Lower Than the Mean Price")
+pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
 
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 5000
-path_s <- 10
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Create xts time series
-price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
-# Plot xts time series
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+cat("Redirect data from R into pdf file\n")
+my_var <- seq(-2*pi, 2*pi, len=100)
+plot(x=my_var, y=sin(my_var), main="Sine wave",
+   xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
 
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; len_gth <- 10000
-path_s <- 100
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*len_gth) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Calculate percentage of paths below the expected value
-per_centage <- rowSums(price_s < 1.0) / path_s
-# Create xts time series of percentage of paths below the expected value
-per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
-# Plot xts time series of percentage of paths below the expected value
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(per_centage, main="Percentage of GBM paths below mean",
-   xlab=NA, ylab=NA, col="blue")
+dev.off()  # turn pdf output off
 
-# Load S&P500 stock prices
-load("C:/Develop/lecture_slides/data/sp500.RData")
-ls(env_sp500)
-# Extract closing prices
-price_s <- eapply(env_sp500, quantmod::Cl)
-# Flatten price_s into a single xts series
-price_s <- rutils::do_call(cbind, price_s)
-# Carry forward and backward non-NA prices
-price_s <- xts:::na.locf.xts(price_s)
-price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
-sum(is.na(price_s))
-# Rename and normalize columns
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
-         order.by=index(price_s))
-# Calculate permution index for sorting the lowest to highest final price_s
-or_der <- order(price_s[NROW(price_s), ])
-# Select a few symbols
-sym_bols <- colnames(price_s)[or_der]
-sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+png("r_plot.png")  # Redirect graphics output to png file
 
-# Plot xts time series of price_s
-col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
-   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-legend(x="topleft", inset=0.05, cex=0.8,
- legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+cat("Redirect graphics from R into png file\n")
+plot(x=my_var, y=sin(my_var), main="Sine wave",
+ xlab="", ylab="", type="l", lwd=2, col="red")
+cat("\nEnd data\nbye\n")
 
-# Calculate average of valid stock prices
-val_id <- (price_s != 1)  # valid stocks
-n_stocks <- rowSums(val_id)
-n_stocks[1] <- NCOL(price_s)
-in_dex <- rowSums(price_s * val_id) / n_stocks
-# Calculate percentage of stock prices below the average price
-per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
-# Create xts time series of average stock prices
-in_dex <- xts(in_dex, order.by=index(price_s))
-
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-# Plot xts time series of average stock prices
-plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
-   xlab=NA, ylab=NA, col="blue")
-# Create xts time series of percentage of stock prices below the average price
-per_centage <- xts(per_centage, order.by=index(price_s))
-# Plot percentage of stock prices below the average price
-plot.zoo(per_centage[-(1:2),],
-   main="Percentage of S&P500 stock prices below the average price",
-   xlab=NA, ylab=NA, col="blue")
+dev.off()  # turn png output off

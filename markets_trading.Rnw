@@ -3,8 +3,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=6, fig.height=5)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -97,7 +97,6 @@ knit_theme$set(thm)
       \texttt{getSymbols()} creates objects in the specified \emph{environment} from the input strings (names).
       \vskip1ex
       It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect}.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
@@ -115,8 +114,7 @@ save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/treas_20y_rate.png}
-    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/treas_20y_rate.png}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=4)
 par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
@@ -145,14 +143,14 @@ chart_Series(rates_env$DGS20["1990/"],
       The \emph{yield curve} is a vector of interest rates at different maturities, on a given date.
       \vskip1ex
       The \emph{yield curve} shape changes depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
-      \vspace{-1em}
-      <<echo=(-(1:3)),eval=FALSE>>=
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
 load(file="C:/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
 date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
-date_s <- zoo::index(rates_env$DGS1["2006/"])[date_s]
+date_s <- zoo::index(rates_env$DGS1["2006/"][date_s])
 # Create time series of end-of-year rates
 rate_s <- eapply(rates_env, function(ra_te) ra_te[date_s])
 rate_s <- rutils::do_call(cbind, rate_s)
@@ -174,8 +172,7 @@ legend("topleft", legend=colnames(rate_s),
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/yield_curve.png}
-    \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/yield_curve.png}
       <<echo=TRUE,eval=FALSE>>=
 # Alternative plot using matplot()
 matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
@@ -183,7 +180,7 @@ matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # Add legend
-legend("bottomright", legend=colnames(rate_s),
+legend("topleft", legend=colnames(rate_s),
        col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
       @
   \end{columns}
@@ -193,38 +190,32 @@ legend("bottomright", legend=colnames(rate_s),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Correlation Matrix of the Yield Curve}
+\subsection{Covariance Matrix of Interest Rates}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The covariance matrix $\mathbf{V}$, of the data matrix $\mathbf{r}$, is given by:
+      The covariance matrix $\mathbb{C}$, of the interest rate matrix $\mathbf{r}$ is given by:
       \begin{displaymath}
-        \mathbf{V} = \frac{\mathbf{r}^T \, \mathbf{r}} {n-1}
+        \mathbb{C} = \frac{(\mathbf{r} - \bar{\mathbf{r}})^T (\mathbf{r} - \bar{\mathbf{r}})} {n-1}
       \end{displaymath}
-      \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
-# Load constant maturity Treasury rates
-load(file="C:/Develop/lecture_slides/data/rates_data.RData")
-# Symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS20")
+      <<echo=TRUE,eval=FALSE>>=
+# Extract rates from rates_env
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+rate_s <- mget(sym_bols, envir=rates_env)
+rate_s <- rutils::do_call(cbind, rate_s)
+rate_s <- zoo::na.locf(rate_s, na.rm=FALSE)
+rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
 # Calculate daily rates changes
-rate_s <- xts:::na.locf.xts(rutils::do_call(cbind,
-    as.list(rates_env)[sym_bols]))
-rate_s <- xts:::na.locf.xts(rate_s)
-rate_s <- xts:::na.locf.xts(rate_s, fromLast=TRUE)
-re_turns <- rutils::diff_it(rate_s)
-date_s <- zoo::index(re_turns)
-# De-mean (center) and scale the returns
-re_turns <- t(t(re_turns) - colMeans(re_turns))
-re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
-re_turns <- xts(re_turns, date_s)
-# Correlation matrix of Treasury rates
+re_turns <- rutils::diff_it(log(rate_s))
+# Standardize (de-mean and scale) the returns
+re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
+re_turns <- rutils::do_call(cbind, re_turns)
+# Covariance and Correlation matrices of Treasury rates
+cov_mat <- cov(re_turns)
 cor_mat <- cor(re_turns)
-# reorder correlation matrix based on clusters
+# Reorder correlation matrix based on clusters
 library(corrplot)
 or_der <- corrMatOrder(cor_mat, order="hclust",
   hclust.method="complete")
@@ -232,16 +223,15 @@ cor_mat <- cor_mat[or_der, or_der]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/cor_rates.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/cor_int_rates.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the correlation matrix
+x11(width=6, height=6)
 col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat, title=NA, tl.col="black",
-  tl.cex=0.8, mar=c(0,0,0,0), method="square",
-  col=col_ors(8), cl.offset=0.75, cl.cex=0.7,
-  cl.align.text="l", cl.ratio=0.25)
-title("Correlation of Treasury rates", line=-1)
+corrplot(cor_mat, title=NA, tl.col="black", 
+    method="square", col=col_ors(NCOL(cor_mat)), tl.cex=0.8, 
+    cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
+title("Correlation of Treasury Rates", line=1)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
   method="complete", col="red")
@@ -270,19 +260,18 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
         \mathbf{w}_j = {\operatorname{\arg \, \max}} \, \left\{ \mathbf{pc}_j^T \, \mathbf{pc}_j \right\} \\
         \mathbf{pc}_i^T \, \mathbf{pc}_j = 0 \> (i \neq j)
       \end{align*}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create initial vector of portfolio weights
 n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
-# objective function equal to minus portfolio variance
+# Objective function equal to minus portfolio variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) +
-    1e7*(1 - sum(weight_s*weight_s))^2
+  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s*weight_s))^2
 }  # end object_ive
-# objective for equal weight portfolio
+# Objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
@@ -291,24 +280,23 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load.png}\\
-      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_rates_load1.png}\\
       <<echo=TRUE,eval=FALSE>>=
-# find weights with maximum variance
-optim_run <- optim(par=weight_s,
+# Find weights with maximum variance
+op_tim <- optim(par=weight_s,
   fn=object_ive,
   re_turns=re_turns,
   method="L-BFGS-B",
   upper=rep(1.0, n_weights),
   lower=rep(-1.0, n_weights))
-# optimal weights and maximum variance
-weight_s <- optim_run$par
--object_ive(weight_s, re_turns)
+# Optimal weights and maximum variance
+weights_1 <- op_tim$par
+-object_ive(weights_1, re_turns)
 # Plot first principal component loadings
-barplot(weight_s, names.arg=names(weight_s),
-  xlab="", ylab="",
-  main="first principal component loadings")
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+barplot(weights_1, names.arg=names(weights_1),
+  xlab="", ylab="", main="First Principal Component Loadings")
       @
   \end{columns}
 \end{block}
@@ -326,20 +314,17 @@ barplot(weight_s, names.arg=names(weight_s),
       The \emph{second principal component} can be calculated by maximizing its variance, under the constraint that it must be orthogonal to the \emph{first principal component}.
       \vskip1ex
       Similarly, higher order \emph{principal components} can be calculated by maximizing their variances, under the constraint that they must be orthogonal to all the previous \emph{principal components}.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # pc1 weights and returns
-weights_1 <- weight_s
-pc_1 <- re_turns %*% weights_1
-# redefine objective function
+pc_1 <- drop(re_turns %*% weights_1)
+# Redefine objective function
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) +
-    1e7*(1 - sum(weight_s*weight_s))^2 +
-    1e7*sum(pc_1*portf_rets)^2
+  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2 +
+    1e7*sum(weights_1*weight_s)^2
 }  # end object_ive
-# find second principal component weights
-optim_run <- optim(par=weight_s,
+# Find second principal component weights
+op_tim <- optim(par=weight_s,
                    fn=object_ive,
                    re_turns=re_turns,
                    method="L-BFGS-B",
@@ -348,17 +333,15 @@ optim_run <- optim(par=weight_s,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_load2.png}\\
-      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_rates_load2.png}\\
       <<echo=TRUE,eval=FALSE>>=
 # pc2 weights and returns
-weights_2 <- optim_run$par
-pc_2 <- re_turns %*% weights_2
+weights_2 <- op_tim$par
+pc_2 <- drop(re_turns %*% weights_2)
 sum(pc_1*pc_2)
 # Plot second principal component loadings
 barplot(weights_2, names.arg=names(weights_2),
-        xlab="", ylab="",
-        main="second principal component loadings")
+        xlab="", ylab="", main="Second Principal Component Loadings")
       @
   \end{columns}
 \end{block}
@@ -391,28 +374,21 @@ barplot(weights_2, names.arg=names(weights_2),
       \end{displaymath}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_rates_eigenvalues.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_rates_eigenvalues.png}
       <<echo=TRUE,eval=FALSE>>=
-# Covariance matrix and variance vector of returns
-cov_mat <- cov(re_turns)
-vari_ance <- diag(cov_mat)
-cor_mat <- cor(re_turns)
-# Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(cov_mat)
+ei_gen <- eigen(cor_mat)
 ei_gen$vectors
-weights_1
-weights_2
-ei_gen$values[1]
-var(pc_1)
-(cov_mat %*% weights_1) / weights_1
-ei_gen$values[2]
-var(pc_2)
-(cov_mat %*% weights_2) / weights_2
-sum(vari_ance)
-sum(ei_gen$values)
-barplot(ei_gen$values, # Plot eigenvalues
-  names.arg=paste0("PC", 1:n_weights),
+# Compare with optimization
+all.equal(sum(diag(cor_mat)), sum(ei_gen$values))
+all.equal(abs(ei_gen$vectors[, 1]), abs(weights_1), check.attributes=FALSE)
+all.equal(abs(ei_gen$vectors[, 2]), abs(weights_2), check.attributes=FALSE)
+all.equal(ei_gen$values[1], var(pc_1), check.attributes=FALSE)
+all.equal(ei_gen$values[2], var(pc_2), check.attributes=FALSE)
+# Eigenvalue equations
+(cor_mat %*% weights_1) / weights_1 / var(pc_1)
+(cor_mat %*% weights_2) / weights_2 / var(pc_2)
+# Plot eigenvalues
+barplot(ei_gen$values, names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
       @
   \end{columns}
@@ -428,11 +404,11 @@ barplot(ei_gen$values, # Plot eigenvalues
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the covariance or the correlation matrix.
+      \emph{Principal Component Analysis} (\emph{PCA}) is equivalent to the \emph{eigen decomposition} of either the correlation or the covariance matrix.
       \vskip1ex
-      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the covariance matrix.
+      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the eigen decomposition of the \emph{correlation matrix}.
       \vskip1ex
-      If the input time series \emph{are} scaled, then \emph{PCA} is equivalent to the \emph{eigen decomposition} of the correlation matrix.
+      If the input time series \emph{are not} scaled, then \emph{PCA} is equivalent to the eigen decomposition of the \emph{covariance matrix}.
       \vskip1ex
       Scaling the input time series improves the accuracy of the \emph{PCA dimension reduction}, allowing a smaller number of \emph{principal components} to more accurately capture the data contained in the input time series.
       \vskip1ex
@@ -440,20 +416,18 @@ barplot(ei_gen$values, # Plot eigenvalues
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# eigen decomposition of covariance matrix
-cov_mat <- cov(re_turns)
-ei_gen <- eigen(cov_mat)
-# Perform PCA without scaling
-pc_a <- prcomp(re_turns, scale=FALSE)
+# Eigen decomposition of correlation matrix
+ei_gen <- eigen(cor_mat)
+# Perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
           check.attributes=FALSE)
-# eigen decomposition of correlation matrix
-cor_mat <- cor(re_turns)
-ei_gen <- eigen(cor_mat)
-# Perform PCA with scaling
-pc_a <- prcomp(re_turns, scale=TRUE)
+# Eigen decomposition of covariance matrix
+ei_gen <- eigen(cov_mat)
+# Perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
@@ -482,14 +456,13 @@ all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
       \vskip1ex
       The \texttt{prcomp()} argument \texttt{scale=TRUE} specifies that the input time series should be scaled by their standard deviations.
     \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_scree.png}
+      \includegraphics[width=0.4\paperwidth]{figure/pca_rates_scree.png}\\
       A \emph{scree plot} is a bar plot of the volatilities of the \emph{principal components}.
       <<echo=TRUE,eval=FALSE>>=
 # Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Plot standard deviations
-barplot(pc_a$sdev,
-  names.arg=colnames(pc_a$rotation),
+barplot(pc_a$sdev, names.arg=colnames(pc_a$rotation),
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components
   of Treasury rates")
@@ -522,16 +495,14 @@ x11(width=6, height=7)
 pc_a$rotation
 # Plot loading barplots in multiple panels
 par(mfrow=c(3,2))
-par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+par(mar=c(3.5, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (or_der in 1:NCOL(pc_a$rotation)) {
-  barplot(pc_a$rotation[, or_der],
-        las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0,
-        col.main="red")
+  barplot(pc_a$rotation[, or_der], las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, col.main="red")
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_rates_loadings.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_loadings.png}
   \end{columns}
 \end{block}
 
@@ -560,16 +531,14 @@ pca_ts <- cumsum(pca_ts)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-ra_nge <- range(pca_ts)
+rang_e <- range(pca_ts)
 for (or_der in 1:NCOL(pca_ts)) {
-  plot.zoo(pca_ts[, or_der],
-           ylim=ra_nge,
-           xlab="", ylab="")
-  title(paste0("PC", or_der), line=-2.0)
+  plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
+  title(paste0("PC", or_der), line=-1, col.main="red")
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_rates_series.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series.png}
   \end{columns}
 \end{block}
 
@@ -593,22 +562,19 @@ for (or_der in 1:NCOL(pca_ts)) {
       \vskip1ex
       The function \texttt{solve()} solves systems of linear equations, and also inverts square matrices.
       \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-par(mfrow=c(n_weights/2, 2))
-par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
+      <<echo=TRUE,eval=FALSE>>=
 # Invert all the principal component time series
 pca_rets <- re_turns %*% pc_a$rotation
 sol_ved <- pca_rets %*% solve(pc_a$rotation)
 all.equal(coredata(re_turns), sol_ved)
 # Invert first 3 principal component time series
 sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
-sol_ved <- xts::xts(sol_ved, date_s)
-sol_ved <- xts:::cumsum.xts(sol_ved)
-cum_returns <- xts:::cumsum.xts(re_turns)
+sol_ved <- xts::xts(sol_ved, zoo::index(re_turns))
+sol_ved <- cumsum(sol_ved)
+cum_returns <- cumsum(re_turns)
 # Plot the solved returns
 for (sym_bol in sym_bols) {
-  plot.zoo(
-    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+  plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
          legend=paste0(sym_bol, c("", " solved")),
@@ -617,7 +583,7 @@ for (sym_bol in sym_bols) {
 }  # end for
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/pca_rates_series_solved.png}
+      \includegraphics[width=0.45\paperwidth]{figure/pca_rates_series_solved.png}
   \end{columns}
 \end{block}
 
@@ -709,7 +675,7 @@ plot(x=disc_curves$zerorates, t="l", main="zerorates")
     \begin{minipage}{0.48\textwidth}
     % \centering
     <<echo=FALSE,eval=TRUE,results='asis'>>=
-# futures contracts codes
+# Futures contracts codes
 future_s <- rbind(c("S&P500 index", "ES"),
                   c("10yr Treasury", "ZN"),
                   c("VIX index", "VX"),
@@ -774,7 +740,7 @@ print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.row
     \vspace{-1em}
     \begin{table}[htb]
     <<echo=FALSE,eval=TRUE,results='asis'>>=
-# futures contracts codes
+# Futures contracts codes
 future_s <- rbind(c("S&P500 index", "SP", "ES"),
                   c("10yr Treasury", "ZN", "ZN"),
                   c("VIX index", "VX", "delisted"),
@@ -803,7 +769,6 @@ print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownam
       The function \texttt{data.table::fread()} reads \texttt{.csv} files over five times faster than the function \texttt{read.csv()}!
       \vskip1ex
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load data for S&P Emini futures June 2019 contract
 dir_name <- "C:/Develop/data/ib_data"
@@ -825,8 +790,7 @@ tail(price_s)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_futures.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot OHLC data in x11 window
 x11(width=5, height=4)  # Open x11 for plotting
@@ -874,8 +838,7 @@ colnames(ES_M8)[1:5] <- c("Open", "High", "Low", "Close", "Volume")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures_volumes.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_futures_volumes.png}
       <<echo=(-(1:1)),eval=FALSE>>=
 x11(width=6, height=5)  # Open x11 for plotting
 # Plot last month of ESU8 and ESM8 volume data
@@ -922,8 +885,7 @@ legend("topleft", legend=colnames(vol_ume), col=col_ors,
       \hskip1em\href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/technicalanalytics/continuous.htm}{Continuous Contract Futures Data}
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_futures_chained.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_futures_chained.png}
       <<echo=TRUE,eval=FALSE>>=
 # Find date when ESU8 volume exceeds ESM8
 exceed_s <- (vol_ume[, "ESU8"] > vol_ume[, "ESM8"])
@@ -985,7 +947,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_historical.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_historical.png}
   \end{columns}
 \end{block}
 
@@ -1021,8 +983,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Read CBOE monthly futures expiration dates
 date_s <- read.csv(
-  file="C:/Develop/data/vix_data/vix_dates.csv",
-  stringsAsFactors=FALSE)
+  file="C:/Develop/data/vix_data/vix_dates.csv")
 date_s <- as.Date(date_s[, 1])
 year_s <- format(date_s, format="%Y")
 year_s <- substring(year_s, 4)
@@ -1039,7 +1000,7 @@ write.csv(date_s, row.names=TRUE,
   file="C:/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
-  stringsAsFactors=FALSE, row.names=1)
+  row.names=1)
 date_s[, 1] <- as.Date(date_s[, 1])
       @
   \end{columns}
@@ -1120,7 +1081,7 @@ legend(x="topright", legend=colnames(curve_s),
        col=c("blue", "red"), lwd=6, lty=1)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_curves.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_curves.png}
   \end{columns}
 \end{block}
 
@@ -1133,18 +1094,18 @@ legend(x="topright", legend=colnames(curve_s),
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       A constant maturity futures price is the price of a hypothetical futures contract with an expiration date at a fixed number of days in the future.
       \vskip1ex
       Futures prices at a constant maturity can be calculated by interpolating the prices of contracts with neighboring expiration dates.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
 # Read CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
-  stringsAsFactors=FALSE, row.names=1)
+  row.names=1)
 sym_bols <- rownames(date_s)
 date_s <- as.Date(date_s[, 1])
 to_day <- as.Date("2018-05-07")
@@ -1191,8 +1152,7 @@ pric_e <- (ra_tio*back_price + (1-ra_tio)*front_price)
       \vskip1ex
       Standard and Poor's explains the calculation of the
       \href{http://us.spindices.com/documents/methodologies/methodology-sp-vix-future-index.pdf?force_download=true}{Total Return on VIX Futures Indices}.
-      <<echo=(-(1:4)),eval=FALSE>>=
-library(HighFreq)
+      <<echo=(-(1:3)),eval=FALSE>>=
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
@@ -1206,8 +1166,8 @@ chart_Series(x=Cl(rutils::etf_env$VTI["2007/"]),
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_historical2.png}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_vti.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_historical2.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_vti.png}
   \end{columns}
 \end{block}
 
@@ -1239,8 +1199,8 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_historical3.png}
-      \includegraphics[width=0.5\paperwidth]{figure/vix_svxy2.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_historical3.png}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_svxy2.png}
   \end{columns}
 \end{block}
 
@@ -1269,8 +1229,7 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
-                     stringsAsFactors=FALSE)
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
@@ -1308,8 +1267,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
-                     stringsAsFactors=FALSE)
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
@@ -1419,7 +1377,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \vskip1ex
       NYU students can obtain user accounts for \emph{WRDS} data.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_home.pdf}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_home.pdf}
   \end{columns}
 \end{block}
 
@@ -1445,7 +1403,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \hskip1em\href{https://wrds-www.wharton.upenn.edu/pages/classroom/futures-contracts/}{\emph{Futures Contracts}}\\
       \hskip1em\href{https://wrds-www.wharton.upenn.edu/pages/grid-items/using-sas-studio/}{\emph{Using SAS Studio}}
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_classroom.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_classroom.png}
   \end{columns}
 \end{block}
 
@@ -1463,7 +1421,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \href{https://wrds-www.wharton.upenn.edu/pages/support/manuals-and-overviews/}{\emph{Vendor and Database Manuals}}.
       \vskip1ex
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_manuals.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_manuals.png}
   \end{columns}
 \end{block}
 
@@ -1487,7 +1445,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \vskip1ex
       The easest way to download data from \emph{WRDS} into \texttt{R}, is by first downloading it into a \texttt{.csv} file, and then reading it into \texttt{R}.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_browse_data.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_browse_data.png}
   \end{columns}
 \end{block}
 
@@ -1515,8 +1473,8 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
       \emph{Compustat} provides only recent time series of data starting in $1983$.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_compustat.png}\\
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_compustat_north_america.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_compustat.png}\\
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_compustat_north_america.png}
   \end{columns}
 \end{block}
 
@@ -1529,9 +1487,9 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The package \emph{rwrds} contains functions for downloading data from \emph{WRDS}.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Install package "rwrds"
@@ -1581,7 +1539,7 @@ dim(names_table)
 write.csv(names_table, file="C:/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
 # rm(names_table)
 # Read names table from csv file
-names_table <- read.csv(file="C:/Develop/lecture_slides/data/compustat_table.csv", stringsAsFactors=FALSE)
+names_table <- read.csv(file="C:/Develop/lecture_slides/data/compustat_table.csv")
 # sym_bol <- "VTI"
 # match(sym_bol, names_table$tic)
 # Create ETF symbols (tickers)
@@ -1621,7 +1579,7 @@ cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       \emph{WRDS} provides 
       \href{http://asklib.library.hbs.edu/faq/47512}{\emph{help about how to download index constituents}}.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_index_constituents.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_index_constituents.png}
   \end{columns}
 \end{block}
 
@@ -1647,7 +1605,7 @@ cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read .csv file with S&P500 constituents
-sp500_table <- read.csv(file="C:/Develop/lecture_slides/data/sp500_constituents.csv", stringsAsFactors=FALSE)
+sp500_table <- read.csv(file="C:/Develop/lecture_slides/data/sp500_constituents.csv")
 class(sp500_table)
 # Select unique sp500 tickers and save them into text file
 sp500_tickers <- unique(sp500_table$co_tic)
@@ -1692,7 +1650,7 @@ duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s))
       \vskip1ex
       The user can download data for either a single identifier, or for many identifiers supplied in a text file.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_compustat_fundamental.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_compustat_fundamental.png}
   \end{columns}
 \end{block}
 
@@ -1731,7 +1689,7 @@ duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s))
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The time series data downloaded into a \texttt{.csv} file can then be read into \texttt{R}. 
       \vskip1ex
       But the data downloaded from the 
@@ -1741,12 +1699,12 @@ duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s))
       The \emph{OHLC} prices can be adjusted by dividing them by the \emph{split adjustment factor} and multiplying them by the \emph{total return factor}.
       \vskip1ex
       The \emph{OHLC} prices are also divided by the final \emph{total return factor} so that the most recent adjusted prices are equal to the most recent market prices.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
-oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv", stringsAsFactors=FALSE)
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
 # oh_lc contains cusips not in sp500_cusips
 cusip_s <- unique(oh_lc$cusip)
 cusip_s %in% sp500_cusips
@@ -1791,9 +1749,9 @@ plot(quantmod::Cl(oh_lc), main="TAP Stock")
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{format\_ohlc()} formats raw data downloaded from \emph{Compustat} into a time series of \emph{OHLC} prices.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define formatting function for OHLC prices 
@@ -1835,18 +1793,17 @@ format_ohlc <- function(oh_lc, environ_ment) {
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The prices for all the index constituents are first downloaded from \emph{Compustat} into a single \texttt{.csv} file, and then they are read into \texttt{R} and formatted into a time series of \emph{OHLC} prices. 
       \vskip1ex
       But the prices downloaded from the 
       \href{https://wrds-web.wharton.upenn.edu/wrds/ds/compd/secd/index.cfm?navId=83}{\emph{Compustat Daily Prices}} 
       database often contain prices for several related securities from the same company, so they must be properly selected (pruned) to match the index constituents.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load OHLC prices from .csv file downloaded from WRDS by cusip
-sp500_prices <- read.csv(file="C:/Develop/lecture_slides/data/sp500_prices_bycusip.csv", 
-  stringsAsFactors=FALSE)
+sp500_prices <- read.csv(file="C:/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
 # sp500_prices contains cusips not in sp500_cusips
 cusip_s <- unique(sp500_prices$cusip)
 NROW(sp500_cusips); NROW(cusip_s)
@@ -1928,7 +1885,7 @@ plot(quantmod::Cl(sp500_env$MSFT))
       \emph{WRDS} queries can be saved and reused again.
       \vskip1ex
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_saved_queries.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_saved_queries.png}
   \end{columns}
 \end{block}
 
@@ -2050,7 +2007,7 @@ viewFinancials(funda_mentals)
       \emph{WRDS} provides a tool to translate tickers to PERMCO/PERMNO:\\
       \hskip1em\url{https://wrds-web.wharton.upenn.edu/wrds/ds/crsp/tools_a/dse/translate/index.cfm}
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_crsp.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_crsp.png}
   \end{columns}
 \end{block}
 
@@ -2068,15 +2025,14 @@ viewFinancials(funda_mentals)
       \href{https://wrds-web.wharton.upenn.edu/wrds/ds/crsp/stock_a/dsf.cfm?navId=128}{\emph{CRSP daily}} database.
       \vskip1ex
       The time series data can be downloaded into a \texttt{.csv} file, and then read into \texttt{R}.
-      \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Specify class for column "TICKER" so that "F" doesn't become FALSE
 col_class <- "character"
 names(col_class) <- "TICKER"
 # Read .csv file with Ford OHLC prices
 oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/F_CRSP.csv", 
-  stringsAsFactors=FALSE, colClasses=col_class)
+  colClasses=col_class)
 sym_bol <- oh_lc[1, "TICKER"]
 # Adjustment factor
 adj_fact <- drop(oh_lc[, "CFACPR"])
@@ -2097,7 +2053,7 @@ plot(quantmod::Cl(oh_lc), main="Ford Stock")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_crsp_prices.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_crsp_prices.png}
   \end{columns}
 \end{block}
 
@@ -2142,10 +2098,9 @@ plot(quantmod::Cl(oh_lc), main="Ford Stock")
       \vskip1ex
       The \texttt{assign()} function assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_crsp_compustat.png}
-      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_crsp_compustat.png}
       <<echo=FALSE,eval=FALSE,results='asis'>>=
-crsp_compustat <- read.csv(file="C:/Develop/lecture_slides/data/crsp_compustat_indices.csv", stringsAsFactors=FALSE)
+crsp_compustat <- read.csv(file="C:/Develop/lecture_slides/data/crsp_compustat_indices.csv")
 colnames(crsp_compustat) <- crsp_compustat[1, ]
 crsp_compustat <- crsp_compustat[-1, ]
 print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE)
@@ -2168,9 +2123,9 @@ print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE
       \vskip1ex
       The time series data can be downloaded into a \texttt{.csv} file, and then read into \texttt{R}. 
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
-oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv", stringsAsFactors=FALSE)
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
 sym_bol <- oh_lc[1, "tic"]
 # Adjustment factor and total return factor
 adj_fact <- drop(oh_lc[, "ajexdi"])
@@ -2193,7 +2148,7 @@ plot(quantmod::Cl(oh_lc), main="TAP Stock")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_compustat_prices.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_compustat_prices.png}
   \end{columns}
 \end{block}
 
@@ -2219,7 +2174,7 @@ plot(quantmod::Cl(oh_lc), main="TAP Stock")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Download Fama-French factors from KFRENCH database
 fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
         start_date="2001-01-01", type="xts")
@@ -2246,7 +2201,7 @@ chart_Series(cumsum(fac_tors["2001/", 1]/100),
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       \emph{High frequency data} is typically formatted as either Trade and Quote (\emph{TAQ}) data, or \emph{Open-High-Low-Close} (\emph{OHLC}) data.
       \vskip1ex
       Trade and Quote (\emph{TAQ}) data contains intraday \emph{trades} and \emph{quotes} on exchange-traded stocks and futures.
@@ -2259,7 +2214,7 @@ chart_Series(cumsum(fac_tors["2001/", 1]/100),
       \emph{Bid.Price, Bid.Size, Ask.Price, Ask.Size, Trade.Price, Volume}.
       \vskip1ex
       \emph{TAQ} data is often split into \emph{trade} data and \emph{quote} data.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=(-(1:1)),size="tiny",tidy=FALSE,eval=TRUE>>=
 options(width=200)
@@ -2294,7 +2249,7 @@ tail(SPY)
       web page provides separately \emph{trades} data and separately \emph{quotes} data.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/wrds_taq_data.png}
+      \includegraphics[width=0.45\paperwidth]{figure/wrds_taq_data.png}
   \end{columns}
 \end{block}
 
@@ -2315,8 +2270,7 @@ tail(SPY)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read TAQ trade data from csv file
-ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv", 
-                          stringsAsFactors=FALSE)
+ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
 # Inspect the TAQ data
 ta_q
 class(ta_q)
@@ -2402,9 +2356,9 @@ dygraphs::dygraph(x_ts[, 1],
   main="XLK Trade Ticks for 2020-03-16")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_trade_ticks_dygraph.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_stocks_bounce.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
   \end{columns}
 \end{block}
 
@@ -2442,8 +2396,7 @@ colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_trade_ticks_biglots_dygraph.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_biglots_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the large lots
 x11(width=6, height=4)
@@ -2558,7 +2511,7 @@ chart_Series(SPY[inter_val], name=sym_bol)
       \vskip1ex
       If you are not able to install package \emph{HighFreq} then download the file \texttt{hf\_data.RData} from NYU Classes and load it.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_ohlc_chart-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_ohlc_chart-1}
   \end{columns}
 \end{block}
 
@@ -2714,19 +2667,19 @@ head(SPY)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      High frequency returns exhibit \emph{large negative skewness} and \emph{leptokurtosis} (very large kurtosis, or fat tails).
+      High frequency returns exhibit \emph{large negative skewness} and \emph{very large kurtosis} (leptokurtosis), or fat tails.
       \vskip1ex
       Student's \emph{t-distribution} has fat tails, so it fits high frequency returns much better than the normal distribution.
       \vskip1ex
       The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization.
       \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly.
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # SPY percentage returns
 oh_lc <- HighFreq::SPY
-clo_se <- quantmod::Cl(oh_lc)
-re_turns <- rutils::diff_it(clo_se)/rutils::lag_it(clo_se)
+clos_e <- quantmod::Cl(oh_lc)
+re_turns <- rutils::diff_it(clos_e)/rutils::lag_it(clos_e)
 colnames(re_turns) <- "SPY"
 # Standardize raw returns to make later comparisons
 ret_std <- re_turns/sd(re_turns)
@@ -2741,8 +2694,7 @@ scal_e <- optim_fit$estimate[2]
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_dist.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_dist.png}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -2780,7 +2732,6 @@ legend("topright", inset=0.05, bty="n",
       High frequency returns aggregated to a lower periodicity become less negatively skewed and less fat tailed, and closer to the normal distribution.
       \vskip1ex
       The function \texttt{xts::to.period()} converts a time series to a lower periodicity (for example from hourly to daily periodicity).
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Hourly SPY percentage returns
 price_s <- Cl(xts::to.period(x=oh_lc, period="hours"))
@@ -2799,8 +2750,7 @@ sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_dist_agg.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_dist_agg.png}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -2858,7 +2808,7 @@ vol_rolling <- na.omit(vol_rolling)
       @
     \column{0.5\textwidth}
       % \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_vol.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_vol.png}
         <<echo=TRUE,eval=FALSE>>=
 # Plot rolling volatility
 plot_theme <- chart_theme()
@@ -2898,7 +2848,7 @@ par(mar=c(2, 2, 0, 0), oma=c(1, 1, 0, 0))
 chart_Series(x=price_s, name="S&P500 Futures Bid-Ask Bounce")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_futures_bounce.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_futures_bounce.png}
   \end{columns}
 \end{block}
 
@@ -2938,7 +2888,7 @@ dygraphs::dygraph(da_ta,
       @
     \column{0.5\textwidth}
       % \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_daily_volat_volume.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volat_volume.png}
   \end{columns}
 \end{block}
 
@@ -2977,7 +2927,7 @@ mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_daily_volume_volat_reg.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volume_volat_reg.png}
   \end{columns}
 \end{block}
 
@@ -3014,8 +2964,7 @@ data_frame <- as.data.frame(da_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_hourly_volume_volat_reg.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_hourly_volume_volat_reg.png}
       <<echo=TRUE,eval=FALSE>>=
 for_mula <- as.formula(paste(colnames(da_ta), collapse="~"))
 mod_el <- lm(for_mula, data=data_frame)
@@ -3046,7 +2995,6 @@ mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
       The returns can be divided by the \emph{trading volume} to obtain scaled returns over equal trading volumes.
       \vskip1ex
       The scaled returns have a smaller \emph{skewness} and \emph{kurtosis}, and they also have even higher autocorrelations than unscaled returns.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Scale returns using volume (volume clock)
 ret_scaled <- ifelse(vol_ume>0, 
@@ -3060,8 +3008,7 @@ sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_scaled.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_scaled.png}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
@@ -3162,7 +3109,7 @@ title("Partial Autocorrelations of Scaled SPY Returns", line=1)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_pacf.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_pacf.png}
   \end{columns}
 \end{block}
 
@@ -3201,7 +3148,7 @@ chart_Series(vol_daily["2010"],
 @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_liquidity.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_liquidity.png}
   \end{columns}
 \end{block}
 
@@ -3241,7 +3188,7 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_intraday_volume_volat.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_intraday_volume_volat.png}
   \end{columns}
 \end{block}
 
@@ -3273,7 +3220,7 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_intraday_liquid_volat.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_intraday_liquid_volat.png}
   \end{columns}
 \end{block}
 
@@ -3290,7 +3237,7 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
       The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility.
       <<daily_volat_hurst,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 chart_Series(roll_sum(vol_daily, 10)[-(1:10)]/10,
              name=paste(sym_bol, "variance"))
 chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
@@ -3299,7 +3246,7 @@ abline(h=0.5, col="blue", lwd=2)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/daily_volat_hurst.png}
+      \includegraphics[width=0.45\paperwidth]{figure/daily_volat_hurst.png}
   \end{columns}
 \end{block}
 
@@ -3316,7 +3263,7 @@ abline(h=0.5, col="blue", lwd=2)
       The Hurst exponent typically moves higher with higher market price volatility, and is above 0.5 with high volatility.
       <<daily_season_hurst_volat,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily seasonality of Hurst exponent
 inter_val <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[inter_val, 1:4]))
@@ -3339,7 +3286,7 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/intraday_season_hurst_volat.png}
+      \includegraphics[width=0.45\paperwidth]{figure/intraday_season_hurst_volat.png}
   \end{columns}
 \end{block}
 
@@ -3361,11 +3308,11 @@ season_var <- season_ality(vol_ohlc(ohlc=SPY))
       The function \texttt{roll\_agg\_ohlc()} aggregates rolling, volume weighted moment estimators.
       <<earl_highfreq_runskew,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
-# rolling variance
+library(rutils)  # Load package rutils
+# Rolling variance
 var_iance <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
-# rolling skew
+# Rolling skew
 sk_ew <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
 sk_ew <- sk_ew/(var_iance)^(1.5)
@@ -3379,7 +3326,7 @@ chart_Series(sk_ew[inter_val],
             ylim=c(-1, 1))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_highfreq_runskew-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_highfreq_runskew-1}
   \end{columns}
 \end{block}
 
@@ -3396,7 +3343,7 @@ chart_Series(sk_ew[inter_val],
       The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \emph{OHLC} time series.
       <<earl_dailyskew,echo=(-(1:2)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily variance and skew
 vol_daily <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                         agg_fun="vol_ohlc")
@@ -3412,7 +3359,7 @@ chart_Series(daily_skew[inter_val],
              name=paste(sym_bol, "skew"))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_dailyskew-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_dailyskew-1}
   \end{columns}
 \end{block}
 
@@ -3427,7 +3374,6 @@ chart_Series(daily_skew[inter_val],
   \begin{columns}[T]
     \column{0.5\textwidth}
       A regression of lagged skews versus returns appears to be statistically significant, especially in periods of high volatility during the financial crisis of 2008-09.
-      \vspace{-1em}
       <<echo=(-(1:1))>>=
 # skew scatterplot
 re_turns <- calc_rets(xts_data=SPY)
@@ -3446,7 +3392,7 @@ summary(lm(for_mula, data=da_ta["/2011-01-01"]))$coef
 summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_skew_scatter-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_skew_scatter-1}
       <<earl_skew_scatter,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 inter_val <- "2013-12-01/"
 plot(for_mula, data=da_ta[inter_val],
@@ -3488,7 +3434,7 @@ bid_offer <- 0.001  # 10 bps for liquid ETFs
 bid_offer*sum(abs(sign(sk_ew)-sign(lag_skew)))
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_skew_strat-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_skew_strat-1}
       \vspace{-1em}
       <<earl_skew_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 chart_Series(
@@ -3511,7 +3457,6 @@ chart_Series(
       The Volume-Weighted Average Price (\emph{VWAP}) is an indicator used for momentum strategies.
       \vskip1ex
       The momentum reverses when the fast-moving \emph{VWAP} crosses the slow-moving one.
-      \vspace{-1em}
       <<earl_vwap_plot,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 # vwap plot
 vwap_short <-
@@ -3537,7 +3482,7 @@ add_TA(vwap_diff[inter_val] < 0, on=-1,
        col="lightgrey", border="lightgrey")
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_plot-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_plot-1}
   \end{columns}
 \end{block}
 
@@ -3552,7 +3497,6 @@ add_TA(vwap_diff[inter_val] < 0, on=-1,
   \begin{columns}[T]
     \column{0.5\textwidth}
       A regression of the \emph{VWAP} indicator versus returns appears to be statistically significant.
-      \vspace{-1em}
       <<echo=(-(1:6))>>=
 # vwap scatterplot
 # re_turns <- calc_rets(xts_data=SPY)
@@ -3574,7 +3518,7 @@ summary(lm(for_mula, data=da_ta["2011-01-01/"]))$coef
       @
     \column{0.5\textwidth}
     \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_scatter-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_scatter-1}
       <<earl_vwap_scatter,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 inter_val <- "2013-12-01/"
 plot(for_mula, data=cbind(re_turns[, 1], lag_vwap)[inter_val],
@@ -3612,7 +3556,7 @@ bid_offer <- 0.001  # 10 bps for liquid ETFs
 bid_offer*sum(abs(sign(vwap_diff)-sign(lag_vwap)))
 @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/earl_vwap_strat-1}
+      \includegraphics[width=0.45\paperwidth]{figure/earl_vwap_strat-1}
       \vspace{-1em}
       <<earl_vwap_strat,echo=TRUE,eval=FALSE,fig.width=7,fig.height=6,fig.show='hide'>>=
 chart_Series(
@@ -3647,10 +3591,9 @@ chart_Series(
       The function \texttt{agg\_ohlc()} calculates a statistical estimator over an \emph{OHLC} time series.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hf_daily_volat_volume.png}\\
-      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_daily_volat_volume.png}\\
       <<hurst_daily,echo=(-(1:1)),eval=FALSE,fig.width=7,fig.height=8,fig.show='hide'>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily Hurst exponents
 hurst_daily <- xts::apply.daily(x=HighFreq::SPY,
                            FUN=agg_ohlc,
@@ -3782,9 +3725,9 @@ devtools::install_github(repo="algoquant/IBrokers2")
       \href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/priceriskanalytics/custommemory.htm}{how to change the TWS heap size}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibapi_settings.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibapi_settings.png}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibtws_memory.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibtws_memory.png}
   \end{columns}
 \end{block}
 
@@ -3971,7 +3914,7 @@ IBrokers::reqContractDetails(conn=ib_connect,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The function \texttt{reqHistoricalData()} downloads historical data to a \texttt{.csv} file.
       \vskip1ex
       The historical \emph{daily} bar data fields are \texttt{"Open", "High", "Low", "Close", "Volume", "WAP", "Count"}. (\texttt{"WAP"} is the weighted average price.)
@@ -3979,7 +3922,7 @@ IBrokers::reqContractDetails(conn=ib_connect,
       Interactive Brokers provides more information about historical market data:\\
       \hskip1em\href{http://interactivebrokers.github.io/tws-api/historical_data.html}{IB Historical Market Data}\\
       \hskip1em\href{http://interactivebrokers.github.io/tws-api/historical_bars.html}{IB Historical Bar Data Fields}
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define S&P Emini futures June 2019 contract
@@ -4017,11 +3960,11 @@ IBrokers::twsDisconnect(ib_connect)
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Historical data for a portfolio of symbols can be downloaded in a loop.
       \vskip1ex
       The historical \emph{intraday} bar data fields are \texttt{"Open", "High", "Low", "Close", "Volume", "WAP", "XTRA", "Count"}. (\texttt{"WAP"} is the weighted average price.)
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define IB contract objects for stock symbols
@@ -4092,8 +4035,7 @@ IBrokers::twsDisconnect(ib_connect)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sp500_ESM8_futures.png}
-      \vspace{-2em}
+      \includegraphics[width=0.45\paperwidth]{figure/sp500_ESM8_futures.png}
       <<echo=TRUE,eval=FALSE>>=
 # Load OHLC data and coerce it into xts series
 price_s <- data.table::fread(file_name)
@@ -4362,7 +4304,7 @@ dygraphs::dygraph(price_s[, 1:4], main="ZN 10yr Treasury futures") %>%
       \vskip1ex
       The \texttt{character} strings are then parsed by \texttt{processMsg()}, and copied to the data environment of the \emph{eWrapper} object.
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/market_event_processing.png}
+      \includegraphics[width=0.45\paperwidth]{figure/market_event_processing.png}
   \end{columns}
 \end{block}
 
@@ -4954,9 +4896,9 @@ https://www.rstudio.com/products/rstudio/download-server/
       \href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/priceriskanalytics/custommemory.htm}{how to change the TWS heap size}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibapi_settings.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibapi_settings.png}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibtws_memory.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibtws_memory.png}
   \end{columns}
 \end{block}
 
@@ -5044,9 +4986,9 @@ https://www.rstudio.com/products/rstudio/download-server/
       \href{https://www.interactivebrokers.com/en/software/tws/usersguidebook/priceriskanalytics/custommemory.htm}{how to change the TWS heap size}.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibapi_settings.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibapi_settings.png}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ibtws_memory.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ibtws_memory.png}
   \end{columns}
 \end{block}
 

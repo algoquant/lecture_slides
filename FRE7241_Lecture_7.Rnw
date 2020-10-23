@@ -4,8 +4,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -66,7 +66,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{May 19, 2020}
+\date{October 20, 2020}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -82,134 +82,58 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Time Series Modeling}
+\section{Autoregressive Strategies}
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Ornstein-Uhlenbeck Process}
+\subsection{In-sample Forecasting Using Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      In the \emph{Ornstein-Uhlenbeck} process, the returns $r_i$ are proportional to the difference between the equilibrium price $\mu$ minus the current price $p_i$:
-      \begin{displaymath}
-        r_i = p_i - p_{i-1} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i
-      \end{displaymath}
-      Where the parameter $\theta$ is the strength of mean reversion, and $\sigma$ is the volatility.
+      \emph{In-sample forecasting} consists of first fitting an \emph{AR(p)} model to the data, and calculating its coefficients.
       \vskip1ex
-      The \emph{Ornstein-Uhlenbeck} process can be written as an \emph{AR(1)} process plus a drift:
-      \begin{displaymath}
-        p_i = \theta \, \mu + (1 - \theta ) \, p_{i-1} + \sigma \, \xi_i
-      \end{displaymath}
-      The \emph{Ornstein-Uhlenbeck} process cannot be simulated using the function \texttt{filter()} because of the drift term in its equation, and must be simulated using loops.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define Ornstein-Uhlenbeck parameters
-eq_price <- 1.0; sigma_r <- 0.02
-the_ta <- 0.01; len_gth <- 1000
-drif_t <- the_ta*eq_price
-theta_1 <- 1-the_ta
-# Simulate Ornstein-Uhlenbeck process
-in_nov <- sigma_r*rnorm(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- in_nov[1]
-for (i in 2:len_gth) {
-  price_s[i] <- theta_1*price_s[i-1] +
-    in_nov[i] + drif_t
-}  # end for
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process Warmup and Mean Reversion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Stationary \emph{AR(p)} time series are mean reverting to zero, while the \emph{Ornstein-Uhlenbeck} process is mean reverting to a non-zero equilibrium price $\mu$.
+      The \emph{in-sample} forecasts are calculated by multiplying the response vector of returns by the fitted coefficients.
       \vskip1ex
-      The \emph{Ornstein-Uhlenbeck} process needs a \emph{warmup period} before it reaches equilibrium.
+      The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
       <<echo=TRUE,eval=FALSE>>=
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Ornstein-Uhlenbeck process")
-legend("topright",
-       title=paste(c(paste0("sigma_r = ", sigma_r),
-                     paste0("eq_price = ", eq_price),
-                     paste0("the_ta = ", the_ta)),
-                   collapse="\n"),
-       legend="", cex=0.8,
-       inset=0.1, bg="white", bty="n")
-abline(h=eq_price, col='red', lwd=2)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ou_proc.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ornstein-Uhlenbeck Process Returns Correlation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Ornstein-Uhlenbeck} process, the returns are negatively correlated to the lagged prices.
-      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+# Calculate a vector of daily VTI log returns
+price_s <- log(quantmod::Cl(rutils::etf_env$VTI))
 re_turns <- rutils::diff_it(price_s)
-lag_price <- rutils::lag_it(price_s)
-for_mula <- re_turns ~ lag_price
-l_m <- lm(for_mula)
-summary(l_m)
-# Plot regression
-plot(for_mula, main="OU Returns Versus Lagged Prices")
-abline(l_m, lwd=2, col="red")
+re_turns <- as.numeric(re_turns)
+n_rows <- NROW(re_turns)
+# Define predictor matrix for forecasting
+order_max <- 10
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse)
+  # Calculate in-sample forecasts of re_turns
+  drop(predic_tor[, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ou_scatter.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Estimating the Ornstein-Uhlenbeck Parameters}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The volatility parameter of the Ornstein-Uhlenbeck process can be estimated directly from the returns.
-      \vskip1ex
-      The $\theta$ and $\mu$ parameters can be estimated from the linear regression of the returns versus the lagged prices.
-    \column{0.5\textwidth}
-      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_insample.png}
       <<echo=TRUE,eval=FALSE>>=
-# volatility parameter
-c(sigma_r, sd(re_turns))
-# Extract OU parameters from regression
-co_eff <- summary(l_m)$coefficients
-# theta strength of mean reversion
-round(co_eff[2, ], 3)
-# Equilibrium price
-co_eff[1, 1]/co_eff[2, 1]
-# Parameter and t-values
-co_eff <- cbind(c(the_ta*eq_price, the_ta),
-  co_eff[, 1:2])
-rownames(co_eff) <- c("drift", "theta")
-round(co_eff, 3)
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns - x)^2), cor=cor(re_turns, x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1], 
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of In-sample AR(p) Forecasting Model for VTI")
       @
   \end{columns}
 \end{block}
@@ -218,47 +142,929 @@ round(co_eff, 3)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Schwartz Process}
+\subsection{Out-of-sample Forecasting Using Autoregressive Models}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Ornstein-Uhlenbeck} time series can have negative values, while prices cannot be negative.
+      \emph{Out-of-sample forecasting} consists of first fitting an \emph{AR(p)} model to the training data, and calculating its coefficients.
       \vskip1ex
-      The \emph{Schwartz} process is similar to the \emph{Ornstein-Uhlenbeck} process, but it avoids negative prices by using the percentage returns $\mathrm{d} \log{P}$ instead of the simple returns $\mathrm{d} P$:
-      \begin{displaymath}
-        r_i = \log{p_i} - \log{p_{i-1}} = \theta \, (\mu - p_{i-1}) + \sigma \, \xi_i
-      \end{displaymath}
-      \vspace{-1em}
+      The \emph{out-of-sample} forecasts are calculated by multiplying the \emph{out-of-sample} response vector of returns by the fitted coefficients.
+      \vskip1ex
+      The mean squared errors (\emph{MSE}) of the \emph{out-of-sample} forecasts increase steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
+      \vskip1ex
+      The reason for the increasing out-of-sample MSE is \emph{overfitting} of the coefficients to the training data.
       <<echo=TRUE,eval=FALSE>>=
-# Simulate Schwartz process
-re_turns <- numeric(len_gth)
-price_s <- numeric(len_gth)
-price_s[1] <- eq_price
-set.seed(1121)  # Reset random numbers
-for (i in 2:len_gth) {
-  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) +
-    sigma_r*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+in_sample <- 1:(n_rows %/% 2)
+out_of_sample <- (n_rows %/% 2 + 1):n_rows
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_outofsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns[out_of_sample] - x)^2), cor=cor(re_turns[out_of_sample], x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1], 
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of Out-of-sample AR(p) Forecasting Model for VTI")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Model Out-of-sample Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the autoregressive strategy is better with a smaller order parameter $p$ of the \emph{AR(p)} model.
+      \vskip1ex
+      Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage}.
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor matrix for forecasting
+order_max <- 5  # Define maximum order parameter
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_order.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s, 
+  main="Autoregressive Strategies Performance With Different Order Parameters")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>% 
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
 }  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Model With Rolling Sum as Predictor}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{out-of-sample} forecasts can be greatly improved by using the rolling sum of returns as a predictor.
+      \vskip1ex
+      The performance of the autoregressive strategy is better with a smaller order parameter $p$ of the \emph{AR(p)} model.
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor as a rolling sum
+look_back <- 5
+predic_tor <- rutils::roll_sum(re_turns, look_back=look_back)
+# Shift the res_ponse forward into out-of-sample
+res_ponse <- rutils::lag_it(predic_tor, lagg=(-look_back))
+# Define predictor matrix for forecasting
+predic_tor <- sapply(1+look_back*(0:order_max), rutils::lag_it, 
+                     in_put=predic_tor)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s, 
+  main="Autoregressive Strategies With Rolling Sum Predictor")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>% 
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
+}  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Portfolio Optimization Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization In-sample}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{ETF} portfolio is overweight bond ETFs, for example \emph{TLT} and \emph{VYM}.
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)
+# Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
+sym_bols <- colnames(rutils::etf_env$re_turns)
+sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
+# Extract columns of rutils::etf_env$re_turns and overwrite NA values
+re_turns <- rutils::etf_env$re_turns[, sym_bols]
+n_assets <- NCOL(re_turns)
+# re_turns <- na.omit(re_turns)
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+# Returns in excess of risk-free rate
+risk_free <- 0.03/252
+ex_cess <- (re_turns - risk_free)
+# Maximum Sharpe weights in-sample interval
+in_verse <- MASS::ginv(cov(re_turns["/2014"]))
+weight_s <- in_verse %*% colMeans(ex_cess)
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Plot portfolio weights
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+barplot(sort(weight_s), main="Maximum Sharpe Weights", cex.names=0.7)
+# Calculate portfolio returns
+rets_is <- re_turns["/2014"]
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+in_dex <- xts(rowSums(rets_is)/sqrt(n_assets), index(rets_is))
+portf_is <- portf_is*sd(in_dex)/sd(portf_is)
+# Plot cumulative portfolio returns
+weal_th <- cumsum(cbind(portf_is, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="In-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(width=500)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ou_lognormal.png}
-      \vspace{-2em}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_in_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="Log-normal Ornstein-Uhlenbeck process")
-legend("topright",
-       title=paste(c(paste0("sigma_r = ", sigma_r),
-                     paste0("eq_price = ", eq_price),
-                     paste0("the_ta = ", the_ta)),
-                   collapse="\n"),
-       legend="", cex=0.8,
-       inset=0.12, bg="white", bty="n")
-abline(h=eq_price, col='red', lwd=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Strategy for ETFs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy invests in the best performing portfolio in the past \emph{in-sample} interval, expecting that it will continue performing well \emph{out-of-sample}.
+      \vskip1ex
+      The \emph{portfolio optimization} strategy consists of:
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculating the maximum Sharpe ratio portfolio weights in the \emph{in-sample} interval,
+        \item Applying the weights and calculating the portfolio returns in the \emph{out-of-sample} interval.
+      \end{enumerate}
+      This strategy has performed well for \emph{ETF} portfolios because of the consistent performance of bond ETFs, like \emph{TLT} and \emph{VYM}.
+      <<echo=TRUE,eval=FALSE>>=
+# Out-of-sample portfolio returns
+rets_os <- re_turns["2015/"]
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(rets_os)/sqrt(n_assets), index(rets_os))
+portf_os <- portf_os*sd(in_dex)/sd(portf_os)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_etf_out_of_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative portfolio returns
+weal_th <- cumsum(cbind(portf_os, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Strategy for Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfitted} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy completely fails in the \emph{out-of-sample} interval.
+      <<echo=TRUE,eval=FALSE>>=
+load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+# Overwrite NA values in re_turns
+re_turns <- re_turns["2000/"]
+n_assets <- NCOL(re_turns)
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+risk_free <- 0.03/252
+ex_cess <- (re_turns - risk_free)
+rets_is <- re_turns["/2010"]
+rets_os <- re_turns["2011/"]
+# Maximum Sharpe weights in-sample interval
+cov_mat <- cov(rets_is)
+in_verse <- MASS::ginv(cov_mat)
+weight_s <- in_verse %*% colMeans(ex_cess["/2010"])
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of Singular Covariance Matrices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{regularization} technique allows calculating the inverse of \emph{singular} covariance matrices while reducing the effects of statistical noise.
+      \vskip1ex
+      If the number of time periods of returns is less than the number of assets (columns), then the covariance matrix of returns is \emph{singular}, and some of its \emph{eigenvalues} are zero, so it doesn't have an inverse.
+      \vskip1ex
+      The \emph{regularized} inverse $\mathbb{C}_n^{-1}$ is calculated by removing the higher order eigenvalues that are almost zero, and keeping only the first $n$ \emph{eigenvalues}:
+      \begin{displaymath}
+        \mathbb{C}_n^{-1} = \mathbb{O}_n \, \mathbb{D}_n^{-1} \, \mathbb{O}_n^T
+      \end{displaymath}
+      Where $\mathbb{D}_n$ and $\mathbb{O}_n$ are matrices with the higher order eigenvalues and eigenvectors removed.
+      \vskip1ex
+      The function \texttt{MASS::ginv()} calculates the \emph{regularized} inverse of a matrix.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create rectangular matrix with collinear columns
+ran_dom <- matrix(rnorm(10*8), nc=10)
+# Calculate covariance matrix
+cov_mat <- cov(ran_dom)
+# Calculate inverse of cov_mat - error
+in_verse <- solve(cov_mat)
+# Calculate regularized inverse of cov_mat
+in_verse <- MASS::ginv(cov_mat)
+# Verify inverse property of mat_rix
+all.equal(cov_mat, cov_mat %*% in_verse %*% cov_mat)
+# Perform eigen decomposition
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+eigen_val <- ei_gen$values
+# Set tolerance for determining zero singular values
+to_l <- sqrt(.Machine$double.eps)
+# Calculate regularized inverse matrix
+not_zero <- (eigen_val > (to_l * eigen_val[1]))
+reg_inverse <- eigen_vec[, not_zero] %*%
+  (t(eigen_vec[, not_zero]) / eigen_val[not_zero])
+# Verify inverse property of mat_rix
+all.equal(in_verse, reg_inverse)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Inverse of the Covariance Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      For a portfolio of \emph{S\&P500} stocks, the number return columns is very large, which may make the covariance matrix of returns simgular.
+      \vskip1ex
+      Removing the very small higher order eigenvalues also reduces the propagation of statistical noise and improves the signal-to-noise ratio.
+      \vskip1ex
+      But removing a larger number of eigenvalues increases the bias of the covariance matrix, which is an example of the \emph{bias-variance tradeoff}.
+      \vskip1ex
+      Even though the \emph{regularized} inverse $\mathbb{C}_n^{-1}$ does not satisfy the matrix inverse property, its out-of-sample forecasts may be more accurate than those using the actual inverse matrix.
+      \vskip1ex
+      The parameter \texttt{max\_eigen} specifies the number of eigenvalues used for calculating the \emph{regularized} inverse of the covariance matrix of returns.
+      \vskip1ex
+      The optimal value of the parameter \texttt{max\_eigen} can be determined using \emph{backtesting} (\emph{cross-validation}).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate in-sample covariance matrix
+cov_mat <- cov(rets_is)
+ei_gen <- eigen(cov_mat)
+eigen_vec <- ei_gen$vectors
+eigen_val <- ei_gen$values
+# Calculate regularized inverse of covariance matrix
+max_eigen <- 21
+in_verse <- eigen_vec[, 1:max_eigen] %*%
+  (t(eigen_vec[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Regularized Portfolio Optimization Strategy for Stocks}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfitted} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy completely fails in the \emph{out-of-sample} interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate portfolio weights
+weight_s <- in_verse %*% colMeans(ex_cess["/2010"])
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample_reg.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Optimal Portfolio Weights With Return Shrinkage}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimal portfolio weights $\mathbf{w}$ are calculated using the past in-sample returns $\mathbf{r}$:
+      \begin{displaymath}
+        \mathbf{w} = \mathbb{C}_n^{-1} \mathbf{r}
+      \end{displaymath}
+      To further reduce the statistical noise, the individual returns $r_i$ can be \emph{shrunk} to the average portfolio returns $\mathbf{\bar{r}}$:
+      \begin{displaymath}
+        r_i = (1 - \alpha) \, r_i + \alpha \, \mathbf{\bar{r}}
+      \end{displaymath}
+      The parameter $\alpha$ is the \emph{shrinkage} intensity, and it determines the strength of the \emph{shrinkage} of individual returns to their mean.
+      \vskip1ex
+      If $\alpha = 0$ then there is no \emph{shrinkage}, while if $\alpha = 1$ then all the returns are \emph{shrunk} to their common mean: $r_i = \mathbf{\bar{r}}$.
+      \vskip1ex
+      The optimal value of the \emph{shrinkage} intensity $\alpha$ can be determined using \emph{backtesting} (\emph{cross-validation}).
+      <<echo=TRUE,eval=FALSE>>=
+# Shrink the in-sample returns to their mean
+rets_mean <- colMeans(rets_is) - risk_free
+al_pha <- 0.7
+rets_mean <- (1 - al_pha)*rets_mean + al_pha*mean(rets_mean)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample_reg_shink.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate portfolio weights
+weight_s <- in_verse %*% rets_mean
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Covariance Matrix Inverse Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  % \begin{columns}[T]
+    % \column{0.4\textwidth}
+      \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Rcpp header with information for C++ compiler
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
+
+//' @export
+// [[Rcpp::export]]
+arma::mat calc_inv(const arma::mat& mat_rix, const arma::uword& max_eigen) {
+  arma::mat eigen_vec;
+  arma::vec eigen_val;
+
+  arma::eig_sym(eigen_val, eigen_vec, cov(mat_rix));
+  eigen_vec = eigen_vec.cols(eigen_vec.n_cols-max_eigen, eigen_vec.n_cols-1);
+  eigen_val = 1/eigen_val.subvec(eigen_val.n_elem-max_eigen, eigen_val.n_elem-1);
+
+  return eigen_vec*diagmat(eigen_val)*eigen_vec.t();
+
+}  // end calc_inv
+    \end{lstlisting}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(RcppArmadillo)
+# Source Rcpp functions from file
+Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
+# Create random matrix of returns
+mat_rix <- matrix(rnorm(300), nc=5)
+# Regularized inverse of covariance matrix
+max_eigen <- 4
+ei_gen <- eigen(cov(mat_rix))
+cov_inv <- ei_gen$vectors[, 1:max_eigen] %*%
+  (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+# Regularized inverse using RcppArmadillo
+cov_inv_arma <- calc_inv(mat_rix, max_eigen)
+all.equal(cov_inv, cov_inv_arma)
+# Microbenchmark RcppArmadillo code
+library(microbenchmark)
+summary(microbenchmark(
+  pure_r={
+    ei_gen <- eigen(cov(mat_rix))
+    ei_gen$vectors[, 1:max_eigen] %*%
+      (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
+  },
+  r_cpp=calc_inv(mat_rix, max_eigen),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    % \column{0.6\textwidth}
+  % \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  % \begin{columns}[T]
+    % \column{0.5\textwidth}
+      Fast portfolio optimization using matrix algebra can be implemented using \protect\emph{RcppArmadillo}.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// Fast portfolio optimization using matrix algebra and RcppArmadillo
+// Rcpp header with information for C++ compiler
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
+
+//' @export
+// [[Rcpp::export]]
+arma::vec calc_weights(const arma::mat& re_turns,
+                       const std::string& typ_e = "max_sharpe",
+                       int max_eigen = 1,
+                       const double& pro_b = 0.1,
+                       const double& al_pha = 0.0,
+                       const bool scal_e = true) {
+  // Initialize
+  arma::vec weight_s(re_turns.n_cols);
+  if (max_eigen == 1)  max_eigen = re_turns.n_cols;
+
+  // Calculate weights depending on typ_e
+  if (typ_e == "max_sharpe") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
+    // Shrink mean_cols to the mean of re_turns
+    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::mean(mean_cols));
+    // Apply regularized inverse
+    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
+  } else if (typ_e == "max_sharpe_median") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
+    // Shrink mean_cols to the mean of re_turns
+    mean_cols = ((1-al_pha)*mean_cols + al_pha*arma::median(mean_cols));
+    // Apply regularized inverse
+    weight_s = calc_inv(re_turns, max_eigen)*mean_cols;
+  } else if (typ_e == "min_var") {
+    // Apply regularized inverse to unit vector
+    weight_s = calc_inv(re_turns, max_eigen)*arma::ones(re_turns.n_cols);
+  } else if (typ_e == "min_varpca") {
+    // Calculate highest order principal component
+    arma::vec eigen_val;
+    arma::mat eigen_vec;
+    arma::eig_sym(eigen_val, eigen_vec, cov(re_turns));
+    weight_s = eigen_vec.col(0);
+  } else if (typ_e == "rank") {
+    // Mean returns by columns
+    arma::vec mean_cols = arma::trans(arma::mean(re_turns, 0));
+    // Standard deviation by columns
+    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    sd_cols.replace(0, 1);
+    mean_cols = mean_cols/sd_cols;
+    // Weights equal to ranks of Sharpe
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else if (typ_e == "rankrob") {
+    // Median returns by columns
+    arma::vec mean_cols = arma::trans(arma::median(re_turns, 0));
+    // Standard deviation by columns
+    arma::vec sd_cols = arma::trans(arma::stddev(re_turns, 0));
+    sd_cols.replace(0, 1);
+    mean_cols = mean_cols/sd_cols;
+    // Apply regularized inverse
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(mean_cols)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else if (typ_e == "quan_tile") {
+    // Sum of quantiles for columns
+    arma::vec prob_s = {pro_b, 1-pro_b};
+    weight_s = conv_to< vec >::from(arma::sum(arma::quantile(re_turns, prob_s, 0), 0));
+    // Weights equal to ranks
+    weight_s = conv_to< vec >::from(arma::sort_index(arma::sort_index(weight_s)));
+    weight_s = (weight_s - arma::mean(weight_s));
+  } else {
+    cout << "Warning: Incorrect typ_e argument: " << typ_e << endl;
+    return arma::ones(re_turns.n_cols);
+  }  // end if
+
+  if (scal_e == TRUE) {
+    return weight_s*arma::stddev(arma::mean(re_turns, 1))/arma::stddev(re_turns*weight_s);
+  }  // end if
+
+  return weight_s;
+}  // end calc_weights
+    \end{lstlisting}
+    % \column{0.5\textwidth}
+      % \vspace{-1em}
+  % \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Strategy Backtesting Using \protect\emph{RcppArmadillo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  % \begin{columns}[T]
+    % \column{0.5\textwidth}
+      Fast backtesting of strategies can be implemented using \protect\emph{RcppArmadillo}.
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>  // include Rcpp C++ header files
+using namespace std;
+using namespace Rcpp; // use Rcpp C++ namespace
+using namespace arma;
+
+arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
+                    const arma::mat& re_turns, // Portfolio returns
+                    const arma::uvec& start_points,
+                    const arma::uvec& end_points,
+                    const std::string& typ_e = "max_sharpe",
+                    const arma::uword& max_eigen = 1,
+                    const double& pro_b = 0.1,
+                    const double& al_pha = 0,
+                    const bool& scal_e = true,
+                    const double& co_eff = 1.0,
+                    const double& bid_offer = 0.0) {
+  arma::vec pnl_s = zeros(re_turns.n_rows);
+  arma::vec weights_past = zeros(re_turns.n_cols);
+  arma::vec weight_s(re_turns.n_cols);
+
+  // Perform loop over the end_points
+  for (arma::uword it=1; it < end_points.size(); it++) {
+    // cout << "it: " << it << endl;
+    // Calculate portfolio weights
+    weight_s = co_eff*calc_weights(ex_cess.rows(start_points(it-1), end_points(it-1)), typ_e, max_eigen, pro_b, al_pha, scal_e);
+    // Calculate out-of-sample returns
+    pnl_s.subvec(end_points(it-1)+1, end_points(it)) = re_turns.rows(end_points(it-1)+1, end_points(it))*weight_s;
+    // Add transaction costs
+    pnl_s.row(end_points(it-1)+1) -= bid_offer*sum(abs(weight_s - weights_past))/2;
+    weights_past = weight_s;
+  }  // end for
+  // Return the strategy returns
+  return pnl_s;
+}  // end back_test
+    \end{lstlisting}
+    % \column{0.5\textwidth}
+      % \vspace{-1em}
+  % \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over the end points:
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculate the maximum Sharpe ratio portfolio weights at each end point,
+        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
+      \end{enumerate}
+      The parameters of this strategy are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate vector of monthly end points and start points
+end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
+end_p <- end_p[end_p > 2*NCOL(re_turns)]
+n_rows <- NROW(end_p)
+look_back <- 24
+start_p <- c(rep_len(0, look_back-1),
+             end_p[1:(n_rows-look_back+1)])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_rolling_portfolio.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform loop over end points
+rets_portf <- lapply(2:n_rows, function(i) {
+    # Subset the ex_cess returns
+    ex_cess <- ex_cess[start_p[i-1]:end_p[i-1], ]
+    in_verse <- MASS::ginv(cov(ex_cess))
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weight_s <- in_verse %*% colMeans(ex_cess)
+    weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+    # Calculate the out-of-sample portfolio returns
+    re_turns <- re_turns[(end_p[i-1]+1):end_p[i], ]
+    xts(re_turns %*% weight_s, index(re_turns))
+})  # end lapply
+rets_portf <- rutils::do_call(rbind, rets_portf)
+# Plot cumulative strategy returns
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
+weal_th <- cumsum(na.omit(cbind(rets_portf, in_dex*sd(rets_portf)/sd(in_dex))))
+colnames(weal_th) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization Strategy for \protect\emph{S\&P500}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In a rolling portfolio optimization strategy the portfolio weights are adjusted to their optimal values at every end point.
+      \vskip1ex
+      A portfolio optimization is performed using past data, and the optimal portfolio weights are applied out-of-sample in the next interval.
+      \vskip1ex
+      The weights are scaled to match the volatility of the equally weighted portfolio, and are kept constant until the next end point.
+      <<echo=TRUE,eval=FALSE>>=
+load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+# Overwrite NA values in re_turns
+returns_100[1, is.na(returns_100[1, ])] <- 0
+returns_100 <- zoo::na.locf(returns_100, na.rm=FALSE)
+n_cols <- NCOL(returns_100) ; date_s <- index(returns_100)
+# Define monthly end points
+end_p <- rutils::calc_endpoints(returns_100, inter_val="months")
+end_p <- end_p[end_p > (n_cols+1)]
+n_rows <- NROW(end_p) ; look_back <- 12
+start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+end_p <- (end_p - 1)
+start_p <- (start_p - 1)
+start_p[start_p < 0] <- 0
+al_pha <- 0.7 ; max_eigen <- 21
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_sp500_monthly.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform backtest in Rcpp
+pnl_s <- HighFreq::back_test(typ_e="max_sharpe",
+  ex_cess=returns_100, re_turns=returns_100,
+  start_p=start_p, end_p=end_p,
+  al_pha=al_pha, max_eigen=max_eigen)
+# Calculate returns on equal weight portfolio
+in_dex <- xts(rowMeans(returns_100), index(returns_100))
+# Plot cumulative strategy returns
+weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
+weal_th <- cumsum(na.omit(weal_th))
+col_names <- c("Strategy", "Index", "Average")
+colnames(weal_th) <- col_names
+dygraphs::dygraph(weal_th[end_p], main="Rolling S&P500 Portfolio Optimization Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%
+  dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=1) %>%
+  dySeries(name=col_names[3], axis="y2", col="green", strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining Strategy Parameters Using Backtesting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimal values of the parameters \texttt{max\_eigen} and $\alpha$ can be determined using \emph{backtesting}.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform backtest over alphas
+alpha_s <- seq(from=0.01, to=0.91, by=0.1)
+pnl_s <- lapply(alpha_s, function(al_pha) {
+  HighFreq::back_test(typ_e="max_sharpe",
+  ex_cess=returns_100, re_turns=returns_100,
+  start_p=start_p, end_p=end_p,
+  al_pha=al_pha, max_eigen=max_eigen)
+})  # end lapply
+pro_files <- sapply(pnl_s, sum)
+plot(x=alpha_s, y=pro_files, t="l", main="Strategy PnL as Function of Shrinkage Intensity Alpha",
+  xlab="Shrinkage Intensity Alpha", ylab="pnl")
+al_pha <- alpha_s[which.max(pro_files)]
+pnl_s <- pnl_s[[which.max(pro_files)]]
+# Perform backtest over max_eigens
+max_eigens <- seq(from=3, to=40, by=2)
+pnl_s <- lapply(max_eigens, function(max_eigen) {
+  HighFreq::back_test(typ_e="max_sharpe",
+    ex_cess=returns_100, re_turns=returns_100,
+    start_p=start_p, end_p=end_p,
+    al_pha=al_pha, max_eigen=max_eigen)
+})  # end lapply
+pro_files <- sapply(pnl_s, sum)
+plot(x=max_eigens, y=pro_files, t="l", main="Strategy PnL as Function of Max_eigen",
+  xlab="Max_eigen", ylab="pnl")
+max_eigen <- max_eigens[which.max(pro_files)]
+pnl_s <- pnl_s[[which.max(pro_files)]]
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_sp500_monthly_best.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative strategy returns
+weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
+weal_th <- cumsum(na.omit(weal_th))
+col_names <- c("Strategy", "Index", "Average")
+colnames(weal_th) <- col_names
+dygraphs::dygraph(weal_th[end_p], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%
+  dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=1) %>%
+  dySeries(name=col_names[3], axis="y2", col="green", strokeWidth=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining Look-back Interval Using Backtesting}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The optimal value of the look-back interval can be determined using \emph{backtesting}.
+      <<echo=TRUE,eval=FALSE>>=
+# Perform backtest over look-backs
+look_backs <- seq(from=3, to=24, by=1)
+pnl_s <- lapply(look_backs, function(look_back) {
+  start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+  start_p <- (start_p - 1)
+  start_p[start_p < 0] <- 0
+  HighFreq::back_test(typ_e="max_sharpe",
+    ex_cess=returns_100, re_turns=returns_100,
+    start_p=start_p, end_p=end_p,
+    al_pha=al_pha, max_eigen=max_eigen)
+})  # end lapply
+pro_files <- sapply(pnl_s, sum)
+plot(x=look_backs, y=pro_files, t="l", main="Strategy PnL as Function of Look-back Interval",
+  xlab="Look-back Interval", ylab="pnl")
+look_back <- look_backs[which.max(pro_files)]
+pnl_s <- pnl_s[[which.max(pro_files)]]
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_sp500_monthly_best_lookback.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot cumulative strategy returns
+weal_th <- cbind(pnl_s, in_dex, (pnl_s+in_dex)/2)
+weal_th <- cumsum(na.omit(weal_th))
+col_names <- c("Strategy", "Index", "Average")
+colnames(weal_th) <- col_names
+dygraphs::dygraph(weal_th[end_p], main="Optimal Rolling S&P500 Portfolio Strategy") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="red", strokeWidth=1) %>%
+  dySeries(name=col_names[2], axis="y2", col="blue", strokeWidth=1) %>%
+  dySeries(name=col_names[3], axis="y2", col="green", strokeWidth=2)
       @
   \end{columns}
 \end{block}
@@ -432,22 +1238,22 @@ summary(microbenchmark(
       Simulating the Ornstein-Uhlenbeck Process in \emph{Rcpp} is about 30 times faster than in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
-sim_ou <- function(len_gth=1000, eq_price=5.0,
+sim_ou <- function(n_rows=1000, eq_price=5.0,
                     vol_at=0.01, the_ta=0.01) {
-  re_turns <- numeric(len_gth)
-  price_s <- numeric(len_gth)
+  re_turns <- numeric(n_rows)
+  price_s <- numeric(n_rows)
   price_s[1] <- eq_price
-  for (i in 2:len_gth) {
+  for (i in 2:n_rows) {
     re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
     price_s[i] <- price_s[i-1] * exp(re_turns[i])
   }  # end for
   price_s
 }  # end sim_ou
 # Simulate Ornstein-Uhlenbeck process in R
-eq_price <- 5.0; sigma_r <- 0.01
-the_ta <- 0.01; len_gth <- 1000
+eq_price <- 5.0; sig_ma <- 0.01
+the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -458,11 +1264,11 @@ NumericVector sim_ou_rcpp(double eq_price,
                       double vol_at,
                       double the_ta,
                       NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
+  int n_rows = in_nov.size();
+  NumericVector price_s(n_rows);
+  NumericVector re_turns(n_rows);
   price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
+  for (int it = 1; it < n_rows; it++) {
     re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
     price_s[it] = price_s[it-1] * exp(re_turns[it]);
   }  // end for
@@ -471,15 +1277,15 @@ NumericVector sim_ou_rcpp(double eq_price,
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sigma_r,
+  vol_at=sig_ma,
   the_ta=the_ta,
-  in_nov=rnorm(len_gth))
+  in_nov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta, in_nov=rnorm(len_gth)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -510,15 +1316,15 @@ Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_ou.cpp")
 # Simulate Ornstein-Uhlenbeck process in Rcpp
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
-  vol_at=sigma_r,
+  vol_at=sig_ma,
   the_ta=the_ta,
-  in_nov=rnorm(len_gth))
+  in_nov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(len_gth=len_gth, eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sigma_r, the_ta=the_ta, in_nov=rnorm(len_gth)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -535,11 +1341,11 @@ NumericVector sim_ou_rcpp(double eq_price,
                           double vol_at,
                           double the_ta,
                           NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
+  int n_rows = in_nov.size();
+  NumericVector price_s(n_rows);
+  NumericVector re_turns(n_rows);
   price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
+  for (int it = 1; it < n_rows; it++) {
     re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
     price_s[it] = price_s[it-1] * exp(re_turns[it]);
   }  // end for
@@ -562,10 +1368,10 @@ NumericVector sim_ou_rcpp(double eq_price,
       The \emph{logistic map} in \emph{Rcpp} is about seven times faster than the loop in \texttt{R}, and even slightly faster than the standard \texttt{runif()} function in \texttt{R}!
       <<echo=TRUE,eval=FALSE>>=
 # Calculate uniformly distributed pseudo-random sequence
-uni_form <- function(see_d, len_gth=10) {
-  out_put <- numeric(len_gth)
+uni_form <- function(see_d, n_rows=10) {
+  out_put <- numeric(n_rows)
   out_put[1] <- see_d
-  for (i in 2:len_gth) {
+  for (i in 2:n_rows) {
     out_put[i] <- 4*out_put[i-1]*(1-out_put[i-1])
   }  # end for
   acos(1-2*out_put)/pi
@@ -601,15 +1407,15 @@ using namespace Rcpp; // use Rcpp C++ namespace
 // function uni_form() produces a vector of
 // uniformly distributed pseudo-random numbers
 // [[Rcpp::export]]
-NumericVector uniform_rcpp(double see_d, int len_gth) {
+NumericVector uniform_rcpp(double see_d, int n_rows) {
 // define pi
 static const double pi = 3.14159265;
 // allocate output vector
-  NumericVector out_put(len_gth);
+  NumericVector out_put(n_rows);
 // initialize output vector
   out_put[0] = see_d;
 // perform loop
-  for (int i=1; i < len_gth; ++i) {
+  for (int i=1; i < n_rows; ++i) {
     out_put[i] = 4*out_put[i-1]*(1-out_put[i-1]);
   }  // end for
 // rescale output vector and return it
@@ -644,7 +1450,7 @@ static const double pi = 3.14159265;
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/armadillo_functions.cpp")
 vec1 <- runif(1e5)
 vec2 <- runif(1e5)
 vec_in(vec1, vec2)
@@ -674,16 +1480,16 @@ double vec_in(const arma::vec& vec1, const arma::vec& vec2){
 // It accepts pointers to the matrix and vectors, and returns a double.
 //' @export
 // [[Rcpp::export]]
-double mat_2vec_in(const arma::vec& vec_tor2, const arma::mat& mat_rix, const arma::vec& vec_tor1){
-  return arma::as_scalar(trans(vec_tor2) * (mat_rix * vec_tor1));
+double mat_2vec_in(const arma::vec& vector2, const arma::mat& mat_rix, const arma::vec& vector1){
+  return arma::as_scalar(trans(vector2) * (mat_rix * vector1));
 }  // end mat_2vec_in
     \end{lstlisting}
       \vspace{-1.5em}
       <<echo=TRUE,eval=FALSE>>=
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
-  vec_in=vec_in(vec1, vec2),
-  r_code=(vec1 %*% vec2),
+  vec_in = vec_in(vec1, vec2),
+  r_code = (vec1 %*% vec2),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # vec_in() is several times faster than %*%, especially for longer vectors.
@@ -710,9 +1516,9 @@ summary(microbenchmark(
 Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_arima.cpp")
 # Define AR(2) coefficients
 co_eff <- c(0.9, 0.09)
-len_gth <- 1e4
+n_rows <- 1e4
 set.seed(1121)
-in_nov <- rnorm(len_gth)
+in_nov <- rnorm(n_rows)
 # Simulate ARIMA using filter()
 arima_filter <- filter(x=in_nov,
   filter=co_eff, method="recursive")
@@ -722,8 +1528,8 @@ all.equal(drop(ari_ma),
   as.numeric(arima_filter))
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  sim_arima=sim_arima(in_nov, rev(co_eff)),
+  sim_arima = sim_arima(in_nov, rev(co_eff)),
+  filter = filter(x=in_nov, filter=co_eff, method="recursive"),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
     \column{0.5\textwidth}
@@ -738,9 +1544,9 @@ using namespace arma; // use C++ namespace from Armadillo library
 //' @export
 // [[Rcpp::export]]
 arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
-  uword len_gth = in_nov.n_elem;
+  uword n_rows = in_nov.n_elem;
   uword look_back = co_eff.n_elem;
-  arma::vec ari_ma(len_gth);
+  arma::vec ari_ma(n_rows);
 
   // startup period
   ari_ma(0) = in_nov(0);
@@ -750,7 +1556,7 @@ arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
   }  // end for
 
   // remaining periods
-  for (uword it = look_back; it < len_gth; it++) {
+  for (uword it = look_back; it < n_rows; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
   }  // end for
 
@@ -777,7 +1583,7 @@ arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
       <<echo=TRUE,eval=FALSE>>=
 library(RcppArmadillo)
 # Source Rcpp functions from file
-Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/armadillo_functions.cpp")
+Rcpp::sourceCpp(file="C:/Develop/R/Rcpp/armadillo_functions.cpp")
 mat_rix <- matrix(runif(1e5), nc=1e3)
 # De-mean using apply()
 new_mat <- apply(mat_rix, 2,
@@ -787,8 +1593,8 @@ demean_mat(mat_rix)
 all.equal(new_mat, mat_rix)
 # Microbenchmark RcppArmadillo code
 summary(microbenchmark(
-  demean_mat=demean_mat(mat_rix),
-  apply=(apply(mat_rix, 2, mean)),
+  apply = (apply(mat_rix, 2, mean)),
+  demean_mat = demean_mat(mat_rix),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # Demean_mat() is over 70 times faster than apply()
@@ -807,8 +1613,8 @@ all.equal(inv_mat, mat_rix)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  inv_mat=inv_mat(mat_rix),
-  solve=solve(mat_rix),
+  solve = solve(mat_rix),
+  inv_mat = inv_mat(mat_rix),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 # Microbenchmark shows:
 # inv_mat() is over 10 times faster than solve()
@@ -863,7 +1669,7 @@ double inv_mat(arma::mat& mat_rix){
 \vspace{-1em}
 \begin{block}{}
   % \begin{columns}[T]
-    % \column{0.4\textwidth}
+    % \column{0.5\textwidth}
       \emph{RcppArmadillo} can be used to quickly calculate the regularized inverse of a covariance matrix.
       \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
 // Rcpp header with information for C++ compiler
@@ -878,13 +1684,13 @@ using namespace arma;
 arma::mat calc_inv(const arma::mat& mat_rix, const arma::uword& max_eigen) {
   arma::mat eigen_vec;
   arma::vec eigen_val;
-  
+
   arma::eig_sym(eigen_val, eigen_vec, cov(mat_rix));
   eigen_vec = eigen_vec.cols(eigen_vec.n_cols-max_eigen, eigen_vec.n_cols-1);
   eigen_val = 1/eigen_val.subvec(eigen_val.n_elem-max_eigen, eigen_val.n_elem-1);
 
   return eigen_vec*diagmat(eigen_val)*eigen_vec.t();
-  
+
 }  // end calc_inv
     \end{lstlisting}
       \vspace{-1em}
@@ -897,7 +1703,7 @@ mat_rix <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
 max_eigen <- 4
 ei_gen <- eigen(cov(mat_rix))
-cov_inv <- ei_gen$vectors[, 1:max_eigen] %*% 
+cov_inv <- ei_gen$vectors[, 1:max_eigen] %*%
   (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
 # Regularized inverse using RcppArmadillo
 cov_inv_arma <- calc_inv(mat_rix, max_eigen)
@@ -905,15 +1711,15 @@ all.equal(cov_inv, cov_inv_arma)
 # Microbenchmark RcppArmadillo code
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r={
+  Rcode = {
     ei_gen <- eigen(cov(mat_rix))
-    ei_gen$vectors[, 1:max_eigen] %*% 
+    ei_gen$vectors[, 1:max_eigen] %*%
       (t(ei_gen$vectors[, 1:max_eigen]) / ei_gen$values[1:max_eigen])
   },
-  r_cpp=calc_inv(mat_rix, max_eigen),
+  Rcpp = calc_inv(mat_rix, max_eigen),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
       @
-    % \column{0.6\textwidth}
+    % \column{0.5\textwidth}
   % \end{columns}
 \end{block}
 
@@ -939,7 +1745,7 @@ using namespace arma;
 
 //' @export
 // [[Rcpp::export]]
-arma::vec calc_weights(const arma::mat& re_turns, 
+arma::vec calc_weights(const arma::mat& re_turns,
                        const std::string& typ_e = "max_sharpe",
                        int max_eigen = 1,
                        const double& pro_b = 0.1,
@@ -948,7 +1754,7 @@ arma::vec calc_weights(const arma::mat& re_turns,
   // Initialize
   arma::vec weight_s(re_turns.n_cols);
   if (max_eigen == 1)  max_eigen = re_turns.n_cols;
-  
+
   // Calculate weights depending on typ_e
   if (typ_e == "max_sharpe") {
     // Mean returns by columns
@@ -1008,7 +1814,7 @@ arma::vec calc_weights(const arma::mat& re_turns,
   if (scal_e == TRUE) {
     return weight_s*arma::stddev(arma::mean(re_turns, 1))/arma::stddev(re_turns*weight_s);
   }  // end if
-  
+
   return weight_s;
 }  // end calc_weights
     \end{lstlisting}
@@ -1037,8 +1843,8 @@ using namespace arma;
 
 arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
                     const arma::mat& re_turns, // Portfolio returns
-                    const arma::uvec& start_points, 
-                    const arma::uvec& end_points, 
+                    const arma::uvec& start_points,
+                    const arma::uvec& end_points,
                     const std::string& typ_e = "max_sharpe",
                     const arma::uword& max_eigen = 1,
                     const double& pro_b = 0.1,
@@ -1049,7 +1855,7 @@ arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
   arma::vec pnl_s = zeros(re_turns.n_rows);
   arma::vec weights_past = zeros(re_turns.n_cols);
   arma::vec weight_s(re_turns.n_cols);
-  
+
   // Perform loop over the end_points
   for (arma::uword it=1; it < end_points.size(); it++) {
     // cout << "it: " << it << endl;
@@ -1639,6 +2445,1883 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vix_historical3.png}
       \includegraphics[width=0.5\paperwidth]{figure/vix_svxy2.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Date and Time Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Date Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} has a \texttt{Date} class for date objects (but without time).
+      \vskip1ex
+      The function \texttt{as.Date()} parses \texttt{character} strings and coerces \texttt{numeric} objects into \texttt{Date} objects.
+      \vskip1ex
+      \texttt{R} stores \texttt{Date} objects as the number of days since the \emph{epoch} (January 1, 1970).
+      \vskip1ex
+      The function \texttt{difftime()} calculates the difference between \texttt{Date} objects, and returns a time interval object of class \texttt{difftime}.
+      \vskip1ex
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators and the \texttt{"<"} and \texttt{">"} logical comparison operators are overloaded to allow these operations directly on \texttt{Date} objects.
+      \vskip1ex
+      \texttt{numeric} \emph{year-fraction} dates can be coerced to \texttt{Date} objects using the functions \texttt{attributes()} and \texttt{structure()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+Sys.Date()  # Get today's date
+as.Date(1e3)  # Coerce numeric into date object
+date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
+date_time
+class(date_time)  # Date object
+as.Date("07-14-2014", "%m-%d-%Y")  # Specify format
+date_time + 20  # Add 20 days
+# Extract internal representation to integer
+as.numeric(date_time)
+date_old <- as.Date("07/14/2013", "%m/%d/%Y")
+date_old
+# Difference between dates
+difftime(date_time, date_old, units="weeks")
+weekdays(date_time)  # Get day of the week
+# Coerce numeric into date-times
+date_time <- 0
+attributes(date_time) <- list(class="Date")
+date_time  # "Date" object
+structure(0, class="Date")  # "Date" object
+structure(10000.25, class="Date")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXct} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{POSIXct} class in \texttt{R} represents \emph{date-time} objects, that can store both the date and time.
+      \vskip1ex
+      The \emph{clock time} is the time (number of hours, minutes and seconds) in the local \emph{time zone}.
+      \vskip1ex
+      The \emph{moment of time} is the \emph{clock time} in the \texttt{UTC} \emph{time zone}.
+      \vskip1ex
+      \texttt{POSIXct} objects are stored as the number of seconds that have elapsed since the \emph{epoch} (January 1, 1970) in the \texttt{UTC} \emph{time zone}.
+      \vskip1ex
+      \texttt{POSIXct} objects are stored as the \emph{moment of time}, but are printed out as the \emph{clock time} in the local \emph{time zone}.
+      \vskip1ex
+      A \emph{clock time} together with a \emph{time zone} uniquely specifies a \emph{moment of time}.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXct} object.
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface".
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+date_time <- Sys.time()  # Get today's date and time
+date_time
+class(date_time)  # POSIXct object
+# POSIXct stored as integer moment of time
+as.numeric(date_time)
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXct object
+date_time <- as.POSIXct("2014-07-14 13:30:10")
+# Different time zones can have same clock time
+as.POSIXct("2014-07-14 13:30:10", tz="America/New_York")
+as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Format argument allows parsing different date-time string formats
+as.POSIXct("07/14/2014 13:30:10", format="%m/%d/%Y %H:%M:%S",
+           tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operations on \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{"+"} and \texttt{"-"} arithmetic operators are overloaded to allow addition and subtraction operations on \texttt{POSIXct} objects.
+      \vskip1ex
+      The \texttt{"<"} and \texttt{">"} logical comparison operators are also overloaded to allow direct comparisons between \texttt{POSIXct} objects.
+      \vskip1ex
+      Operations on \texttt{POSIXct} objects are equivalent to the same operations on the internal integer representation of \texttt{POSIXct} (number of seconds since the \emph{epoch}).
+      \vskip1ex
+      Subtracting \texttt{POSIXct} objects creates a time interval object of class \texttt{difftime}.
+      \vskip1ex
+      The method \texttt{seq.POSIXt} creates a vector of \texttt{POSIXct} \emph{date-times}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Same moment of time corresponds to different clock times
+time_ny <- as.POSIXct("2014-07-14 13:30:10",
+           tz="America/New_York")
+time_ldn <- as.POSIXct("2014-07-14 13:30:10",
+           tz="UTC")
+# Add five hours to POSIXct
+time_ny + 5*60*60
+# subtract POSIXct
+time_ny - time_ldn
+class(time_ny - time_ldn)
+# Compare POSIXct
+time_ny > time_ldn
+# Create vector of POSIXct times during trading hours
+trading_times <- seq(
+  from=as.POSIXct("2014-07-14 09:30:00", tz="America/New_York"),
+  to=as.POSIXct("2014-07-14 16:00:00", tz="America/New_York"),
+  by="10 min")
+head(trading_times, 3)
+tail(trading_times, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Moment of Time and Clock Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{as.POSIXct()} can also coerce \texttt{integer} objects into \texttt{POSIXct}, given an \texttt{origin} in time.
+      \vskip1ex
+      The same \emph{moment of time} corresponds to different \emph{clock times} in different \emph{time zones}.
+      \vskip1ex
+      The same \emph{clock times} in different \emph{time zones} correspond to different \emph{moments of time}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# POSIXct is stored as integer moment of time
+int_time <- as.numeric(date_time)
+# Same moment of time corresponds to different clock times
+as.POSIXct(int_time, origin="1970-01-01",
+           tz="America/New_York")
+as.POSIXct(int_time, origin="1970-01-01",
+           tz="UTC")
+# Same clock time corresponds to different moments of time
+as.POSIXct("2014-07-14 13:30:10",
+           tz="America/New_York") -
+  as.POSIXct("2014-07-14 13:30:10", tz="UTC")
+# Add 20 seconds to POSIXct
+date_time + 20
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Methods for Manipulating \texttt{POSIXct} Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{format()} formats \texttt{R} objects for printing and display.
+      \vskip1ex
+      The method \texttt{format.POSIXct()} parses \texttt{POSIXct} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone}.
+      \vskip1ex
+      The method \texttt{as.POSIXct.Date()} parses \texttt{Date} objects into \texttt{POSIXct}, and assigns to them the \emph{moment of time} corresponding to midnight \texttt{UTC}.
+      \vskip1ex
+      \texttt{POSIX} is an acronym for "Portable Operating System Interface".
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+date_time  # POSIXct date and time
+# Parse POSIXct to string representing the clock time
+format(date_time)
+class(format(date_time))  # Character string
+# Get clock times in different time zones
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# Format with custom format strings
+format(date_time, "%m/%Y")
+format(date_time, "%m-%d-%Y %H hours")
+# Trunc to hour
+format(date_time, "%m-%d-%Y %H:00:00")
+# Date converted to midnight UTC moment of time
+as.POSIXct(Sys.Date())
+as.POSIXct(as.numeric(as.POSIXct(Sys.Date())),
+           origin="1970-01-01",
+           tz="UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{POSIXlt} Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{POSIXlt} class in \texttt{R} represents \emph{date-time} objects, that are stored internally as a list.
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} can parse a \texttt{character} string (representing the \emph{clock time}) and a \emph{time zone} into a \texttt{POSIXlt} object.
+      \vskip1ex
+      The method \texttt{format.POSIXlt()} parses \texttt{POSIXlt} objects into a \texttt{character} string representing the \emph{clock time} in a given \emph{time zone}.
+      \vskip1ex
+      The function \texttt{as.POSIXlt()} can also parse a \texttt{POSIXct} object into a \texttt{POSIXlt} object, and \texttt{as.POSIXct()} can perform the reverse.
+      \vskip1ex
+      Adding a number to \texttt{POSIXlt} causes implicit coercion to \texttt{POSIXct}.
+      \vskip1ex
+      \texttt{POSIXct} and \texttt{POSIXlt} are two derived classes from the \texttt{POSIXt} class.
+      \vskip1ex
+      The methods \texttt{round.POSIXt()} and \texttt{trunc.POSIXt()} round and truncate \texttt{POSIXt} objects, and return \texttt{POSIXlt} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Parse character string "%Y-%m-%d %H:%M:%S" to POSIXlt object
+date_time <- as.POSIXlt("2014-07-14 18:30:10")
+date_time
+class(date_time)  # POSIXlt object
+as.POSIXct(date_time)  # Coerce to POSIXct object
+# Extract internal list representation to vector
+unlist(date_time)
+date_time + 20  # Add 20 seconds
+class(date_time + 20)  # Implicit coercion to POSIXct
+trunc(date_time, units="hours")  # Truncate to closest hour
+trunc(date_time, units="days")  # Truncate to closest day
+methods(trunc)  # Trunc methods
+trunc.POSIXt
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones and Date-time Conversion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{date-time} objects require a \emph{time zone} to be uniquely specified.
+      \vskip1ex
+      \texttt{UTC} stands for "Universal Time Coordinated", and is synonymous with \texttt{GMT}, but doesn't change with Daylight Saving Time.
+      \vskip1ex
+      \texttt{EST} stands for "Eastern Standard Time", and is \texttt{UTC} - 5 hours.
+      \vskip1ex
+      \texttt{EDT} stands for "Eastern Daylight Time", and is \texttt{UTC} - 4 hours.
+      \vskip1ex
+      The function \texttt{Sys.setenv()} can be used to set the default \emph{time zone}, but the environment variable \texttt{"TZ"} must be capitalized.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+Sys.timezone()  # Get time-zone
+Sys.setenv(TZ="UTC")  # set time-zone to UTC
+Sys.timezone()  # Get time-zone
+# Standard Time in effect
+as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
+# Daylight Savings Time in effect
+as.POSIXct("2013-03-10 11:00:00", tz="America/New_York")
+date_time <- Sys.time()  # Today's date and time
+# Convert to character in different TZ
+format(date_time, tz="America/New_York")
+format(date_time, tz="UTC")
+# Parse back to POSIXct
+as.POSIXct(format(date_time, tz="America/New_York"))
+# Difference between New_York time and UTC
+as.POSIXct(format(Sys.time(), tz="UTC")) -
+  as.POSIXct(format(Sys.time(), tz="America/New_York"))
+# set time-zone to New York
+Sys.setenv(TZ="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Manipulating Date-time Objects Using \protect\emph{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{lubridate} contains functions for manipulating \texttt{POSIXct} date-time objects.
+      \vskip1ex
+      The \texttt{ymd(), dmy()}, etc. functions parse \texttt{character} and \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects.
+      \vskip1ex
+      The \texttt{mday(), month(), year()}, etc. accessor functions extract date-time components.
+      \vskip1ex
+      The function \texttt{decimal\_date()} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates.
+      \vskip1ex
+      The function \texttt{date\_decimal()} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Parse strings into date-times
+as.POSIXct("07-14-2014", format="%m-%d-%Y", tz="America/New_York")
+date_time <- lubridate::mdy("07-14-2014", tz="America/New_York")
+date_time
+class(date_time)  # POSIXct object
+lubridate::dmy("14.07.2014", tz="America/New_York")
+
+# Parse numeric into date-times
+as.POSIXct(as.character(14072014), format="%d%m%Y",
+                        tz="America/New_York")
+lubridate::dmy(14072014, tz="America/New_York")
+
+# Parse decimal to date-times
+lubridate::decimal_date(date_time)
+lubridate::date_decimal(2014.25, tz="America/New_York")
+date_decimal(decimal_date(date_time), tz="America/New_York")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Zones Using \protect\emph{lubridate}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{lubridate} simplifies \emph{time zone} calculations.
+      \vskip1ex
+      The package \emph{lubridate} uses the \emph{UTC} \emph{time zone} as default.
+      \vskip1ex
+      The function \texttt{with\_tz()} creates a date-time object with the same moment of time in a different \emph{time zone}.
+      \vskip1ex
+      The function \texttt{force\_tz()} creates a date-time object with the same clock time in a different \emph{time zone}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+date_time <- lubridate::ymd_hms(20140714142010,
+                     tz="America/New_York")
+date_time
+# Get same moment of time in "UTC" time zone
+lubridate::with_tz(date_time, "UTC")
+as.POSIXct(format(date_time, tz="UTC"), tz="UTC")
+# Get same clock time in "UTC" time zone
+lubridate::force_tz(date_time, "UTC")
+as.POSIXct(format(date_time, tz="America/New_York"),
+           tz="UTC")
+# Same moment of time
+date_time - with_tz(date_time, "UTC")
+# Different moments of time
+date_time - force_tz(date_time, "UTC")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{lubridate} Time Span Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{lubridate} has two time span classes: \texttt{durations} and \texttt{periods}.
+      \vskip1ex
+      \texttt{durations} specify exact time spans, such as numbers of seconds, hours, days, etc.
+      \vskip1ex
+      The functions \texttt{ddays(), dyears()}, etc. return \texttt{duration} objects.
+      \vskip1ex
+      \texttt{periods} specify relative time spans that don't have a fixed length, such as months, years, etc.
+      \vskip1ex
+      \texttt{periods} account for variable days in the months, for Daylight Savings Time, and for leap years.
+      \vskip1ex
+      The functions \texttt{days(), months(), years()}, etc. return \texttt{period} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Daylight Savings Time handling periods vs durations
+date_time <- as.POSIXct("2013-03-09 11:00:00",
+                        tz="America/New_York")
+date_time
+date_time + lubridate::ddays(1)  # Add duration
+date_time + lubridate::days(1)  # Add period
+
+leap_year(2012)  # Leap year
+date_time <- lubridate::dmy(01012012, tz="America/New_York")
+date_time
+date_time + lubridate::dyears(1)  # Add duration
+date_time + lubridate::years(1)  # Add period
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Adding Time Spans to Date-time Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{periods} allow calculating future dates with the same day of the month, or month of the year.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+date_time <- lubridate::ymd_hms(20140714142010, tz="America/New_York")
+date_time
+# Add periods to a date-time
+c(date_time + lubridate::seconds(1), date_time + lubridate::minutes(1),
+  date_time + lubridate::days(1), date_time + lubridate::months(1))
+
+# Create vectors of dates
+date_time <- lubridate::ymd(20140714, tz="America/New_York")
+date_time + 0:2 * lubridate::months(1)  # Monthly dates
+date_time + lubridate::months(0:2)
+date_time + 0:2 * lubridate::months(2)  # bi-monthly dates
+date_time + seq(0, 5, by=2) * lubridate::months(1)
+seq(date_time, length=3, by="2 months")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{End-of-month Dates}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Adding monthly \texttt{periods} can create invalid dates.
+      \vskip1ex
+      The operators \texttt{\%m+\%} and \texttt{\%m-\%} add or subtract monthly \texttt{periods} to account for the varible number of days per month.
+      \vskip1ex
+      This allows creating vectors of end-of-month dates.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+# Adding monthly periods can create invalid dates
+date_time <- lubridate::ymd(20120131, tz="America/New_York")
+date_time + 0:2 * lubridate::months(1)
+date_time + lubridate::months(1)
+date_time + lubridate::months(2)
+
+# Create vector of end-of-month dates
+date_time %m-% lubridate::months(13:1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Package \protect\emph{RQuantLib} Calendar Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package
+      \href{https://cran.r-project.org/web/packages/RQuantLib/index.html}{\emph{RQuantLib}}
+      is an interface to the
+      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
+      open source \texttt{C/C++} library for quantitative finance, mostly designed for pricing fixed-income instruments and options.
+      \vskip1ex
+      The
+      \href{http://quantlib.org/index.shtml}{\emph{QuantLib}}
+      library also contains calendar functions for determining holidays and business days in many different jurisdictions.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load zoo
+library(RQuantLib)  # Load RQuantLib
+
+# Create daily date series of class "Date"
+in_dex <- Sys.Date() + -5:2
+in_dex
+
+# Create Boolean vector of business days
+is_busday <- isBusinessDay(  # RQuantLib calendar
+  calendar="UnitedStates/GovernmentBond", in_dex)
+
+# Create daily series of business days
+bus_index <- in_dex[is_busday]
+bus_index
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Review of Date-time Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{Date} class from the \texttt{base} package is suitable for \emph{daily} time series.
+      \vskip1ex
+      The \texttt{POSIXct} class from the \texttt{base} package is suitable for \emph{intra-day} time series.
+      \vskip1ex
+      The \texttt{yearmon} and  \texttt{yearqtr} classes from the \emph{zoo} package are suitable for \emph{quarterly} and \emph{monthly} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load package zoo
+date_time <- Sys.Date()  # Create date series of class "Date"
+in_dex <- date_time + 0:365  # Daily series over one year
+head(in_dex, 4)  # Print first few dates
+format(head(in_dex, 4), "%m/%d/%Y")  # Print first few dates
+# Create daily date-time series of class "POSIXct"
+in_dex <- seq(Sys.time(), by="days", length.out=365)
+head(in_dex, 4)  # Print first few dates
+format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+# Create series of monthly dates of class "zoo"
+monthly_index <- yearmon(2010+0:36/12)
+head(monthly_index, 4)  # Print first few dates
+# Create series of quarterly dates of class "zoo"
+qrtly_index <- yearqtr(2010+0:16/4)
+head(qrtly_index, 4)  # Print first few dates
+# Parse quarterly "zoo" dates to POSIXct
+Sys.setenv(TZ="UTC")
+as.POSIXct(head(qrtly_index, 4))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Objects of Class \protect\emph{ts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Time series} are data objects that contain a \emph{date-time} index and data associated with it.
+      \vskip1ex
+      The native time series class in \texttt{R} is \emph{ts}.
+      \vskip1ex
+      \emph{ts} time series are \emph{regular}, i.e. they can only have an equally spaced \emph{date-time} index.
+      \vskip1ex
+      \emph{ts} time series have a \texttt{numeric} \emph{date-time} index, usually encoded as a \emph{year-fraction}, or some other unit, like number of months, etc.
+      \vskip1ex
+      For example the date \texttt{"2015-03-31"} can be encoded as a \emph{year-fraction} equal to \texttt{2015.244}.
+      \vskip1ex
+      The \emph{stats} base package contains functions for manipulating time series objects of class \emph{ts}.
+      \vskip1ex
+      The function \texttt{ts()} creates a \emph{ts} time series from a \texttt{numeric} vector or matrix, and from the associated \emph{date-time} information (the number of data per time unit: year, month, etc.).
+      \vskip1ex
+      The \texttt{frequency} argument is the number of observations per unit of time.
+      \vskip1ex
+      For example, if the \emph{date-time} index is encoded as a \emph{year-fraction}, then \texttt{frequency=12} means \texttt{12} monthly data points per year.
+    \column{0.5\textwidth}
+        \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+set.seed(1121)  # Reset random number generator
+# Create daily time series ending today
+start_date <- decimal_date(Sys.Date()-6)
+end_date <- decimal_date(Sys.Date())
+# Create vector of geometric Brownian motion
+da_ta <- exp(cumsum(rnorm(6)/100))
+fre_quency <- NROW(da_ta)/(end_date-start_date)
+ts_series <- ts(data=da_ta,
+                start=start_date,
+                frequency=fre_quency)
+ts_series  # Display time series
+# Display index dates
+as.Date(date_decimal(zoo::coredata(time(ts_series))))
+# bi-monthly geometric Brownian motion starting mid-1990
+ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
+             frequency=6, start=1990.5)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Manipulating \protect\emph{ts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{ts} time series don't store their \emph{date-time} indices, and instead store only a \texttt{"tsp"} attribute that specifies the index \texttt{start} and \texttt{end} dates and its \texttt{frequency}.
+      \vskip1ex
+      The \emph{date-time} index is calculated as needed from the \texttt{"tsp"} attribute.
+      \vskip1ex
+      The function \texttt{time()} extracts the \emph{date-time} index of a \emph{ts} time series object.
+      \vskip1ex
+      The function \texttt{window()} subsets the a \emph{ts} time series object.
+    \column{0.5\textwidth}
+        \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# show some methods for class "ts"
+matrix(methods(class="ts")[3:8], ncol=2)
+# "tsp" attribute specifies the date-time index
+attributes(ts_series)
+# Extract the index
+tail(time(ts_series), 11)
+# The index is equally spaced
+diff(tail(time(ts_series), 11))
+# Subset the time series
+window(ts_series, start=1992, end=1992.25)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{ts} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The method \texttt{plot.ts()} plots \emph{ts} time series objects.
+      <<ts_obj,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+plot(ts_series, type="l",  # Create plot
+     col="red", lty="solid", xlab="", ylab="")
+title(main="Random Prices", line=-1)  # Add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/ts_obj-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{EuStockMarkets Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} includes a number of \texttt{base} packages that are already installed and loaded.
+      \vskip1ex
+      \texttt{datasets} is a \texttt{base} package containing various datasets, for example: \texttt{EuStockMarkets}.
+      \vskip1ex
+      The \texttt{EuStockMarkets} dataset contains daily closing prices of european stock indices.
+      \vskip1ex
+      \texttt{EuStockMarkets} is a \texttt{mts()} time series object.
+      \vskip1ex
+      The \texttt{EuStockMarkets} \emph{date-time} index is equally spaced (\emph{regular}), so the \emph{year-fraction} dates don't correspond to actual trading days.
+      <<echo=TRUE,eval=FALSE>>=
+class(EuStockMarkets)  # Multiple ts object
+dim(EuStockMarkets)
+head(EuStockMarkets, 3)  # Get first three rows
+# EuStockMarkets index is equally spaced
+diff(tail(time(EuStockMarkets), 11))
+      @
+      \vspace{-2em}
+      <<echo=(-1),eval=FALSE>>=
+par(mar=c(1, 2, 1, 1), oma=c(0, 0, 0, 0))
+# Plot all the columns in separate panels
+plot(EuStockMarkets, main="EuStockMarkets", xlab="")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_ts.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\begin{frame}[fragile,t]{Plotting \subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The argument \texttt{plot.type="single"} for method \texttt{plot.zoo()} allows plotting multiple lines in a single panel (pane).
+      \vskip1ex
+      The four \texttt{EuStockMarkets} time series can be plotted in a single panel (pane).
+      <<eustx_plot,echo=(-1),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Plot in single panel
+plot(EuStockMarkets, main="EuStockMarkets",
+     xlab="", ylab="", plot.type="single",
+     col=c("black", "red", "blue", "green"))
+# Add legend
+legend(x=1992, y=8000,
+       legend=colnames(EuStockMarkets),
+       col=c("black", "red", "blue", "green"),
+       lwd=6, lty=1)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/eustx_plot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{zoo} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{zoo} is designed for managing \emph{irregular} time series and ordered objects of class \emph{zoo}.
+      \vskip1ex
+      \emph{Irregular} time series have \emph{date-time} indeices that aren't equally spaced (because of weekends, overnight hours, etc.).
+      \vskip1ex
+      The function \texttt{zoo()} creates a \emph{zoo} object from a \texttt{numeric} vector or matrix, and an associated \emph{date-time} index.
+      \vskip1ex
+      The \emph{zoo} index is a vector of \emph{date-time} objects, and can be from any \emph{date-time} class.
+      \vskip1ex
+      The \emph{zoo} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+library(zoo)  # Load package zoo
+# Create zoo time series of random returns
+in_dex <- Sys.Date() + 0:3
+zoo_series <- zoo(rnorm(NROW(in_dex)),
+               order.by=in_dex)
+zoo_series
+attributes(zoo_series)
+class(zoo_series)  # Class "zoo"
+tail(zoo_series, 3)  # Get last few elements
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Operations on \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{zoo::coredata()} extracts the data contained in \emph{zoo} object, and returns a vector or matrix.
+      \vskip1ex
+      The function \texttt{zoo::index()} extracts the time index of a \emph{zoo} object.
+      \vskip1ex
+      The function \texttt{xts::.index()} extracts the time index expressed in the number of seconds.
+      \vskip1ex
+      The functions \texttt{start()} and \texttt{end()} return the time index values of the first and last elements of a \emph{zoo} object.
+      \vskip1ex
+      The functions \texttt{cumsum()}, \texttt{cummax()}, and \texttt{cummin()} return cumulative sums, minima and maxima of a \emph{zoo} object.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load package zoo
+zoo::coredata(zoo_series)  # Extract coredata
+zoo::index(zoo_series)  # Extract time index
+start(zoo_series)  # First date
+end(zoo_series)  # Last date
+zoo_series[start(zoo_series)]  # First element
+zoo_series[end(zoo_series)]  # Last element
+zoo::coredata(zoo_series) <- rep(1, 4)  # Replace coredata
+cumsum(zoo_series)  # Cumulative sum
+cummax(cumsum(zoo_series))
+cummin(cumsum(zoo_series))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Single Column \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Single column \emph{zoo} time series usually don't have a dimension attribute (they have a \texttt{NULL} dimension), and they don't have a column name, unlike multi-column \emph{zoo} time series.
+      \vskip1ex
+      Single column \emph{zoo} time series without a dimension attribute should be avoided, since they can cause hard to detect bugs.
+      \vskip1ex
+      If a single column \emph{zoo} time series is created from a single column matrices, then it have a dimension attribute, and can be assigned a column name.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load package zoo
+zoo_series <-
+  zoo(as.matrix(cumsum(rnorm(100)), nc=1),
+      order.by=seq(from=as.Date("2013-06-15"),
+                   by="day", length.out=100))
+colnames(zoo_series) <- "zoo_series"
+tail(zoo_series)
+dim(zoo_series)
+attributes(zoo_series)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \texttt{lag()} and \texttt{diff()} Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The method \texttt{lag.zoo()} returns a lagged version of a \emph{zoo} time series, shifting the time index by \texttt{"k"} observations.
+      \vskip1ex
+      If \texttt{"k"} is positive, then \texttt{lag.zoo()} shifts values from the future to the present, and if \texttt{"k"} is negative then it shifts them from the past.
+      \vskip1ex
+      This is the opposite of what is usually considered as a positive \emph{lag}.
+      \vskip1ex
+      A positive \emph{lag} should replace the current value with values from the past (negative lags should replace with values from the future).
+      \vskip1ex
+      The method \texttt{diff.zoo()} returns the difference between a \emph{zoo} time series and its proper lagged version from the past, given a positive \emph{lag} value.
+      \vskip1ex
+      By default, the methods \texttt{lag.zoo()} and \texttt{diff.zoo()} omit any \texttt{NA} values they may have produced, and return shorter time series.
+      \vskip1ex
+      If the \texttt{"na.pad"} argument is set to \texttt{TRUE}, then they return time series of the same length, with \texttt{NA} values added where needed.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-1)>>=
+library(zoo)  # Load package zoo
+zoo::coredata(zoo_series) <- (1:4)^2  # Replace coredata
+zoo_series
+lag(zoo_series)  # One day lag
+lag(zoo_series, 2)  # Two day lag
+lag(zoo_series, k=-1)  # Proper one day lag
+diff(zoo_series)  # Diff with one day lag
+# Proper lag and original length
+lag(zoo_series, -2, na.pad=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.zoo()} method.
+      <<echo=(-(1:1))>>=
+set.seed(1121)  # Reset random number generator
+library(zoo)  # Load package zoo
+# Create index of daily dates
+in_dex <- seq(from=as.Date("2014-07-14"),
+                  by="day", length.out=1000)
+# Create vector of geometric Brownian motion
+zoo_data <-
+  exp(cumsum(rnorm(NROW(in_dex))/100))
+# Create zoo series of geometric Brownian motion
+zoo_series <- zoo(x=zoo_data, order.by=in_dex)
+      @
+      \vspace{-2em}
+      <<zoo_ts,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Plot using plot.zoo method
+plot(zoo_series, xlab="", ylab="")
+title(main="Random Prices", line=-1)  # Add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/zoo_ts-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be subset in similar ways to \texttt{matrices} and \emph{ts} time series.
+      \vskip1ex
+      The function \texttt{window()} can also subset \emph{zoo} time series objects.
+      \vskip1ex
+      In addition, \emph{zoo} time series can be subset using \texttt{Date} objects.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(zoo)  # Load package zoo
+# Subset zoo as matrix
+zoo_series[459:463, 1]
+# Subset zoo using window()
+window(zoo_series,
+       start=as.Date("2014-10-15"),
+       end=as.Date("2014-10-19"))
+# Subset zoo using Date object
+zoo_series[as.Date("2014-10-15")]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sequential Joining \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be joined sequentially using function \texttt{rbind()}.
+      <<zoo_join_seq,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+set.seed(1121)  # Reset random number generator
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+library(zoo)  # Load package zoo
+# Create daily date series of class "Date"
+in_dex1 <- seq(Sys.Date(), by="days",
+                   length.out=365)
+# Create zoo time series of random returns
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
+                 order.by=in_dex1)
+# Create another zoo time series of random returns
+in_dex2 <- seq(Sys.Date()+350, by="days",
+                   length.out=365)
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
+                 order.by=in_dex2)
+# rbind the two time series - ts1 supersedes ts2
+zoo_series3 <- rbind(zoo_series1,
+                 zoo_series2[zoo::index(zoo_series2) > end(zoo_series1)])
+# Plot zoo time series of geometric Brownian motion
+plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
+# Add vertical lines at stitch point
+abline(v=end(zoo_series1), col="blue", lty="dashed")
+abline(v=start(zoo_series2), col="red", lty="dashed")
+title(main="Random Prices", line=-1)  # Add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/zoo_join_seq-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Merging \protect\emph{zoo} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{zoo} time series can be combined concurrently by joining their columns using function \texttt{merge()}.
+      \vskip1ex
+      Function \texttt{merge()} is similar to function \texttt{cbind()}.
+      \vskip1ex
+      If the \texttt{all=TRUE} option is set, then \texttt{merge()} returns the union of their dates, otherwise it returns their intersection.
+      \vskip1ex
+      The \texttt{merge()} operation can produce \texttt{NA} values.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create daily date series of class "Date"
+in_dex1 <- Sys.Date() + -3:1
+# Create zoo time series of random returns
+zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
+               order.by=in_dex1)
+# Create another zoo time series of random returns
+in_dex2 <- Sys.Date() + -1:3
+zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
+               order.by=in_dex2)
+merge(zoo_series1, zoo_series2)  # union of dates
+# Intersection of dates
+merge(zoo_series1, zoo_series2, all=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing \texttt{NA} Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Binding two time series that don't share the same time index produces \texttt{NA} values.
+      \vskip1ex
+      There are two dedicated functions for managing \texttt{NA} values in time series:
+      \begin{itemize}
+        \item \texttt{stats::na.omit()} removes whole rows of data containing \texttt{NA} values.
+        \item \texttt{zoo::na.locf()} copies the last non-\texttt{NA} values onto future \texttt{NA} values (\emph{locf} stands for \emph{last observation carry forward}).
+      \end{itemize}
+      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data.
+      \vskip1ex
+      But copying values forward requires initializing the first row of data, to guarantee that initial \texttt{NA} values are also over-written.
+      \vskip1ex
+      The initial \texttt{NA} \emph{prices} can be initialized to the first non-\texttt{NA} price in the future, which can be done by calling \texttt{zoo::na.locf()} with the argument \texttt{fromLast=TRUE}.
+      \vskip1ex
+      But the initial \texttt{NA} \emph{return} values should be initialized to \emph{zero}, to avoid data \emph{snooping}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create matrix containing NA values
+mat_rix <- sample(18)
+mat_rix[sample(NROW(mat_rix), 4)] <- NA
+mat_rix <- matrix(mat_rix, nc=3)
+# Replace NA values with most recent non-NA values
+zoo::na.locf(mat_rix)
+rutils::na_locf(mat_rix)
+# Get time series of prices
+price_s <- mget(c("VTI", "VXX"), envir=rutils::etf_env)
+price_s <- lapply(price_s, quantmod::Cl)
+price_s <- rutils::do_call(cbind, price_s)
+sum(is.na(price_s))
+# Carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, na.rm=FALSE, fromLast=TRUE)
+sum(is.na(price_s))
+# Remove whole rows containing NA returns
+re_turns <- rutils::etf_env$re_turns
+sum(is.na(re_turns))
+re_turns <- na.omit(re_turns)
+# Or carry forward non-NA returns (preferred)
+re_turns <- rutils::etf_env$re_turns
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+sum(is.na(re_turns))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing \texttt{NA} Values in \texttt{"xts"} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{na.locf.xts()} from package \emph{xts} is faster than \texttt{zoo::na.locf()}, but it only operates on time series of class \texttt{"xts"}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Replace NAs in xts time series
+se_ries <- rutils::etf_env$price_s[, 1]
+head(se_ries)
+sum(is.na(se_ries))
+library(quantmod)
+series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
+series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
+all.equal(series_zoo, series_xts, check.attributes=FALSE)
+library(microbenchmark)
+summary(microbenchmark(
+  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
+  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Time Series Objects Into \protect\emph{zoo}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{as.zoo()} coerces objects into \emph{zoo} time series.
+      \vskip1ex
+      The function \texttt{as.zoo()} creates a \emph{zoo} object with a \texttt{numeric} \emph{date-time} index, with \emph{date-time} encoded as a \emph{year-fraction}.
+      \vskip1ex
+      The \emph{year-fraction} can be \emph{approximately} converted to a \texttt{Date} object by first calculating the number of days since the \emph{epoch} (\texttt{1970}), and then coercing the \texttt{numeric} days using \texttt{as.Date()}.
+      \vskip1ex
+      The function \texttt{date\_decimal()} from package \emph{lubridate} converts \texttt{numeric} \emph{year-fraction} dates into \texttt{POSIXct} objects.
+      \vskip1ex
+      The function \texttt{date\_decimal()} provides a more accurate way of converting a \emph{year-fraction} index to \texttt{POSIXct}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+library(zoo)  # Load package zoo
+# methods(as.zoo)  # Many methods of coercing into zoo
+class(EuStockMarkets)  # Multiple ts object
+# Coerce mts object into zoo
+zoo_series <- as.zoo(EuStockMarkets)
+class(zoo::index(zoo_series))  # Index is numeric
+head(zoo_series, 3)
+# Approximately convert index into class "Date"
+zoo::index(zoo_series) <-
+  as.Date(365*(zoo::index(zoo_series)-1970))
+head(zoo_series, 3)
+# Convert index into class "POSIXct"
+zoo_series <- as.zoo(EuStockMarkets)
+zoo::index(zoo_series) <- date_decimal(zoo::index(zoo_series))
+head(zoo_series, 3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{zoo} Time Series Into Class \protect\emph{ts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The generic function \texttt{as.ts()} from package \emph{stats} coerces time series objects (including \emph{zoo}) into \emph{ts} time series.
+      \vskip1ex
+      The function \texttt{as.ts()} creates a \emph{ts} object with a \texttt{frequency=1}, implying a \emph{"day"} time unit, instead of a \emph{"year"} time unit suitable for \emph{year-fraction} dates.
+      \vskip1ex
+      A \emph{ts} time series can be created from a \emph{zoo} using the function \texttt{ts()}, after extracting the data and date attributes from \emph{zoo}.
+      \vskip1ex
+      The function \texttt{decimal\_date()} from package \emph{lubridate} converts \texttt{POSIXct} objects into \texttt{numeric} \emph{year-fraction} dates.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:3)),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+library(zoo)  # Load package zoo
+set.seed(1121)  # Reset random number generator
+# Create index of daily dates
+in_dex <- seq(from=as.Date("2014-07-14"),
+                  by="day", length.out=1000)
+# Create vector of geometric Brownian motion
+zoo_data <- exp(cumsum(rnorm(NROW(in_dex))/100))
+# Create zoo time series of geometric Brownian motion
+zoo_series <- zoo(x=zoo_data,
+                  order.by=in_dex)
+head(zoo_series, 3)  # zoo object
+# as.ts() creates ts object with frequency=1
+ts_series <- as.ts(zoo_series)
+tsp(ts_series)  # Frequency=1
+# Get start and end dates of zoo_series
+start_date <- decimal_date(start(zoo_series))
+end_date <- decimal_date(end(zoo_series))
+# Calculate frequency of zoo_series
+fre_quency <- NROW(zoo_series)/(end_date-start_date)
+da_ta <- zoo::coredata(zoo_series)  # Extract data from zoo_series
+# Create ts object using ts()
+ts_series <- ts(data=da_ta, start=start_date,
+                frequency=fre_quency)
+# Display start of time series
+window(ts_series, start=start(ts_series),
+       end=start(ts_series)+4/365)
+head(time(ts_series))  # Display index dates
+head(as.Date(date_decimal(zoo::coredata(time(ts_series)))))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing Irregular Time Series Into Class \protect\emph{ts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Irregular time series cannot be properly coerced into \emph{ts} time series without modifying their index.
+      \vskip1ex
+      The function \texttt{as.ts()} creates \texttt{NA} values when it coerces irregular time series into a \emph{ts} time series.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:2)),eval=FALSE>>=
+library(lubridate)  # Load lubridate
+library(zoo)  # Load package zoo
+# Create weekday Boolean vector
+week_days <- weekdays(zoo::index(zoo_series))
+is_weekday <- !((week_days == "Saturday") |
+  (week_days == "Sunday"))
+# Remove weekends from zoo time series
+zoo_series <- zoo_series[is_weekday, ]
+head(zoo_series, 7)  # zoo object
+# as.ts() creates NA values
+ts_series <- as.ts(zoo_series)
+head(ts_series, 7)
+# Create vector of regular dates, including weekends
+in_dex <- seq(from=start(zoo_series),
+                  by="day",
+                  length.out=NROW(zoo_series))
+zoo::index(zoo_series) <- in_dex
+ts_series <- as.ts(zoo_series)
+head(ts_series, 7)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{\protect\emph{xts} Time Series Objects}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{xts} Time Series Objects}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{xts} defines time series objects of class \emph{xts},
+      \begin{itemize}
+        \item Class \emph{xts} is an extension of the \emph{zoo} class (derived from \emph{zoo}),
+        \item Class \emph{xts} is the most widely accepted time series class,
+        \item Class \emph{xts} is designed for high-frequency and \emph{OHLC} data,
+        \item Class \emph{xts} contains many convenient functions for plotting, calculating rolling max, min, etc.
+      \end{itemize}
+      The function \texttt{xts()} creates a \emph{xts} object from a \texttt{numeric} vector or matrix, and an associated \emph{date-time} index.
+      \vskip1ex
+      The \emph{xts} index is a vector of \emph{date-time} objects, and can be from any \emph{date-time} class.
+      \vskip1ex
+      The \emph{xts} class can manage \emph{irregular} time series whose \emph{date-time} index isn't equally spaced.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+set.seed(1121)  # Reset random number generator
+library(xts)  # Load package xts
+# Create xts time series of random returns
+in_dex <- Sys.Date() + 0:3
+x_ts <- xts(rnorm(NROW(in_dex)),
+               order.by=in_dex)
+names(x_ts) <- "random"
+x_ts
+tail(x_ts, 3)  # Get last few elements
+first(x_ts)  # Get first element
+last(x_ts)  # Get last element
+class(x_ts)  # Class "xts"
+attributes(x_ts)
+# Get the time zone of an xts object
+indexTZ(x_ts)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Coercing \protect\emph{zoo} Time Series Into Class \protect\emph{xts}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{as.xts()} coerces \emph{zoo} time series into \emph{xts} series.
+      \vskip1ex
+      \texttt{as.xts()} preserves the \emph{index} attributes of the original time series.
+      \vskip1ex
+      \emph{xts} can be plotted using the generic function \texttt{plot()}, which dispatches the \texttt{plot.xts()} method.
+      <<echo=(-(1:1)),eval=FALSE>>=
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
+library(xts)  # Load package xts
+# as.xts() coerces zoo series into xts series
+st_ox <- as.xts(zoo_stx)
+dim(st_ox)
+head(st_ox[, 1:4], 4)
+# Plot using plot.xts method
+xts::plot.xts(st_ox[, "Close"], xlab="", ylab="", main="")
+title(main="MSFT Prices")  # Add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_plot2.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Multiple \protect\emph{xts} Using Packages \protect\emph{xts} and \protect\emph{quantmod}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<xts_mult_plot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(xts)  # Load xts
+library(lubridate)  # Load lubridate
+# Coerce EuStockMarkets into class xts
+x_ts <- xts(zoo::coredata(EuStockMarkets),
+            order.by=date_decimal(zoo::index(EuStockMarkets)))
+# Plot all columns in single panel: xts v.0.9-8
+col_ors <- rainbow(NCOL(x_ts))
+plot(x_ts, main="EuStockMarkets using xts",
+     col=col_ors, major.ticks="years",
+     minor.ticks=FALSE)
+legend("topleft", legend=colnames(EuStockMarkets),
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
+       lwd=3, col=col_ors, bg="white")
+# Plot only first column: xts v.0.9-7
+plot(x_ts[, 1], main="EuStockMarkets using xts",
+     col=col_ors[1], major.ticks="years",
+     minor.ticks=FALSE)
+# Plot remaining columns
+for (col_umn in 2:NCOL(x_ts))
+  lines(x_ts[, col_umn], col=col_ors[col_umn])
+# Plot using quantmod
+library(quantmod)
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- col_ors
+chart_Series(x=x_ts, theme=plot_theme,
+             name="EuStockMarkets using quantmod")
+legend("topleft", legend=colnames(EuStockMarkets),
+       inset=0.2, cex=0.7, , lty=rep(1, NCOL(x_ts)),
+       lwd=3, col=col_ors, bg="white")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_mult_plot}\\
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_quantmod_plot}\\
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{xts} Using Package \protect\emph{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{xts} time series can be plotted using the package \emph{ggplot2}.
+      \vskip1ex
+      The function \texttt{qplot()} is the simplest function in the \emph{ggplot2} package, and allows creating line and bar plots.
+      \vskip1ex
+      The function \texttt{theme()} customizes plot objects.
+      <<xts_ggplot,echo=(-(1:1)),eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(rutils)
+library(ggplot2)
+price_s <- rutils::etf_env$price_s[, 1]
+price_s <- na.omit(price_s)
+# Create ggplot object
+etf_gg <- qplot(x=zoo::index(price_s),
+                y=as.numeric(price_s),
+                geom="line",
+                main=names(price_s)) +
+  xlab("") + ylab("") +
+  theme(  # Add legend and title
+    legend.position=c(0.1, 0.5),
+    plot.title=element_text(vjust=-2.0),
+    plot.background=element_blank()
+  )  # end theme
+# Render ggplot object
+etf_gg
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_ggplot-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting Multiple \protect\emph{xts} Using Package \protect\emph{ggplot2}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Multiple \emph{xts} time series can be plotted using the function \texttt{ggplot()} from package \emph{ggplot2}.
+      \vskip1ex
+      But \emph{ggplot2} functions don't accept time series objects, so time series must be first coerced into \texttt{data frames}.
+      <<xts_mult_ggplot,echo=TRUE,eval=FALSE,fig.width=5,fig.show='hide'>>=
+library(rutils)  # Load xts time series data
+library(reshape2)
+library(ggplot2)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+# Create data frame of time series
+data_frame <- data.frame(dates=zoo::index(price_s),
+    zoo::coredata(price_s))
+# reshape data into a single column
+data_frame <-
+  reshape2::melt(data_frame, id="dates")
+x11(width=6, height=5)  # Open plot window
+# ggplot the melted data_frame
+ggplot(data=data_frame,
+       mapping=aes(x=dates, y=value, colour=variable)) +
+       geom_line() +
+  xlab("") + ylab("") +
+  ggtitle("VTI and IEF") +
+  theme(  # Add legend and title
+    legend.position=c(0.2, 0.8),
+    plot.title=element_text(vjust=-2.0)
+  )  # end theme
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_mult_ggplot.png}\\
+      Time series with multiple columns must be reshaped into a single column, which can be performed using the function \texttt{melt()} from package \emph{reshape2},
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive Time Series Plots Using Package \protect\emph{dygraphs}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive, zoomable plots from \emph{xts} time series.
+      \vskip1ex
+      The function \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot.
+      \vskip1ex
+      The function \texttt{dyRangeSelector()} adds a date range selector to the bottom of a \emph{dygraphs} plot.
+      <<echo=TRUE,eval=FALSE>>=
+# Load rutils which contains etf_env dataset
+library(rutils)
+library(dygraphs)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+# Plot dygraph with date range selector
+dygraph(price_s, main="VTI and IEF prices") %>%
+  dyOptions(colors=c("blue","green")) %>%
+  dyRangeSelector()
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/time_series_dygraphs.png}\\
+      \vspace{3em}
+      The \emph{dygraphs} package in \texttt{R} is an interface to the \emph{dygraphs} \emph{JavaScript} charting library.
+      \vskip1ex
+      Interactive \emph{dygraphs} plots require running \emph{JavaScript} code, which can be embedded in \emph{html} documents, and displayed by web browsers.
+      \vskip1ex
+      But \emph{pdf} documents can't run \emph{JavaScript} code, so they can't display interactive \emph{dygraphs} plots,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Interactive Time Series Plots Using Package \protect\emph{plotly}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{plot\_ly()} from package \emph{plotly} creates interactive plots from data residing in \texttt{data frames}.
+      \vskip1ex
+      The function \texttt{add\_trace()} adds elements to a \emph{plotly} plot.
+      \vskip1ex
+      The function \texttt{layout()} modifies the layout of a \emph{plotly} plot.
+      \vspace{-1em}
+      <<time_series_plotly,echo=TRUE,eval=FALSE>>=
+# Load rutils which contains etf_env dataset
+library(rutils)
+library(plotly)
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+# Create data frame of time series
+data_frame <- data.frame(dates=zoo::index(price_s),
+    zoo::coredata(price_s))
+# Plotly syntax using pipes
+data_frame %>%
+  plot_ly(x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI") %>%
+  add_trace(x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF") %>%
+  layout(title="VTI and IEF prices",
+         xaxis=list(title="Time"),
+         yaxis=list(title="Stock Prices"),
+         legend=list(x=0.1, y=0.9))
+# Or use standard plotly syntax
+p_lot <- plot_ly(data=data_frame, x=~dates, y=~VTI, type="scatter", mode="lines", name="VTI")
+p_lot <- add_trace(p=p_lot, x=~dates, y=~IEF, type="scatter", mode="lines", name="IEF")
+p_lot <- layout(p=p_lot, title="VTI and IEF prices", xaxis=list(title="Time"), yaxis=list(title="Stock Prices"), legend=list(x=0.1, y=0.9))
+p_lot
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/time_series_plotly.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{xts} time series can be subset in similar ways as \emph{zoo} time series.
+      \vskip1ex
+      In addition, \emph{xts} time series can be subset using date strings, or date range strings, for example: \texttt{["2014-10-15/2015-01-10"]}.
+      \vskip1ex
+      \emph{xts} time series can be subset by year, week, days, or even seconds.
+      \vskip1ex
+      If only the date is subset, then a comma \texttt{","} after the date range isn't necessary.
+      \vskip1ex
+      The function \texttt{.subset\_xts()} allows fast subsetting of \emph{xts} time series, which for large datasets can be faster than the bracket \texttt{"[]"} notation.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Subset xts using a date range string
+price_s <- rutils::etf_env$price_s
+sub_prices <- price_s["2014-10-15/2015-01-10", 1:4]
+first(sub_prices)
+last(sub_prices)
+# Subset Nov 2014 using a date string
+sub_prices <- price_s["2014-11", 1:4]
+first(sub_prices)
+last(sub_prices)
+# Subset all data after Nov 2014
+sub_prices <- price_s["2014-11/", 1:4]
+first(sub_prices)
+last(sub_prices)
+# Comma after date range not necessary
+all.equal(price_s["2014-11", ], price_s["2014-11"])
+# .subset_xts() is faster than the bracket []
+library(microbenchmark)
+summary(microbenchmark(
+  bracket=price_s[10:20, ],
+  subset=xts::.subset_xts(price_s, 10:20),
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fast Subsetting of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Subsetting of \emph{xts} time series can be made much faster if the right operations are used.
+      \vskip1ex
+      Subsetting \emph{xts} time series using \texttt{Boolean} vectors is usually faster than using date strings.
+      \vskip1ex
+      But the speed of subsetting can be reduced by additional operations, like coercing strings into dates.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Specify string representing a date
+dat_e <- "2014-10-15"
+# Subset price_s in two different ways
+price_s <- rutils::etf_env$price_s
+all.equal(price_s[zoo::index(price_s) >= dat_e],
+          price_s[paste0(dat_e, "/")])
+# Boolean subsetting is slower because coercing string into date
+library(microbenchmark)
+summary(microbenchmark(
+  boolean=(price_s[zoo::index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+# Coerce string into a date
+dat_e <- as.Date("2014-10-15")
+# Boolean subsetting is faster than using date string
+summary(microbenchmark(
+  boolean=(price_s[zoo::index(price_s) >= dat_e]),
+  date=(price_s[paste0(dat_e, "/")]),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Subsetting Recurring \protect\emph{xts} Time Intervals}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{recurring time interval} is the same time interval every day, for example the time interval from 9:30AM to 4:00PM every day.
+      \vskip1ex
+      \emph{xts} series can be subset on recurring time intervals using the \texttt{"T"} notation.
+      \vskip1ex
+      For example, to subset the time interval from 9:30AM to 4:00PM every day: \texttt{["T09:30:00/T16:00:00"]}
+      \vskip1ex
+      Warning messages that "timezone of object is different than current timezone" can be suppressed by calling the function options() with argument \texttt{"xts\_check\_tz=FALSE"}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+price_s <- HighFreq::SPY["2012-04"]
+# Subset recurring time interval using "T notation",
+price_s <- price_s["T10:30:00/T15:00:00"]
+first(price_s["2012-04-16"])  # First element of day
+last(price_s["2012-04-16"])  # Last element of day
+# suppress timezone warning messages
+options(xts_check_tz=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Properties of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{xts} series always have a \texttt{dim} attribute, unlike \emph{zoo}, which have no \texttt{dim} attribute when they only have one column of data.
+      \vskip1ex
+      \emph{zoo} series with multiple columns have a \texttt{dim} attribute, and are therefore matrices.
+      \vskip1ex
+      But \emph{zoo} with a single column don't, and are therefore vectors not matrices.
+      \vskip1ex
+      When a \emph{zoo} is subset to a single column, the \texttt{dim} attribute is dropped, which can create errors.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+str(price_s)  # Display structure of xts
+# Subsetting zoo to single column drops dim attribute
+zoo_prices <- as.zoo(price_s)
+dim(zoo_prices)
+dim(zoo_prices[, 1])
+# zoo with single column are vectors not matrices
+c(is.matrix(zoo_prices), is.matrix(zoo_prices[, 1]))
+# xts always have a dim attribute
+rbind(base=dim(price_s), subs=dim(price_s[, 1]))
+c(is.matrix(price_s), is.matrix(price_s[, 1]))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\texttt{lag()} and \texttt{diff()} Operations on \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The methods \texttt{xts::lag()} and \texttt{xts::diff()} for \emph{xts} series differ from those of package \emph{zoo}.
+      \vskip1ex
+      By default, the method \texttt{xts::lag()} replaces the current value with values from the past (negative lags replace with values from the future).
+      \vskip1ex
+      The methods \texttt{zoo::lag()} and \texttt{zoo::diff()} shorten the series by the number of lag periods.
+      \vskip1ex
+      By default, the methods \texttt{xts::lag()} and \texttt{xts::diff()} retain the same number of elements, by padding with leading or trailing \texttt{NA} values.
+      \vskip1ex
+      In order to avoid padding with \texttt{NA} values, asset returns can be padded with zeros, and prices can be padded with the first or last elements of the input vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Lag of zoo shortens it by one row
+rbind(base=dim(zoo_prices), lag=dim(lag(zoo_prices)))
+# Lag of xts doesn't shorten it
+rbind(base=dim(price_s), lag=dim(lag(price_s)))
+# Lag of zoo is in opposite direction from xts
+head(lag(zoo_prices, -1), 4)
+head(lag(price_s), 4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Determining Calendar \protect\emph{End points} of \protect\emph{xts} Time Series}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{endpoints()} from package \emph{xts} extracts the indices of the last observations in each calendar period of time of an \emph{xts} series.
+      \vskip1ex
+      For example:\\ \-\ \texttt{endpoints(x, on="hours")}\\
+      extracts the indices of the last observations in each hour.
+      \vskip1ex
+      The \emph{end points} calculated by \texttt{endpoints()} aren't always equally spaced, and aren't the same as those calculated from fixed intervals.
+      \vskip1ex
+      For example, the last observations in each day aren't equally spaced due to weekends and holidays.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+# library(rutils)  # Load package rutils
+# Indices of last observations in each hour
+end_p <- xts::endpoints(price_s, on="hours")
+head(end_p)
+# Extract the last observations in each hour
+head(price_s[end_p, ])
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Converting \protect\emph{xts} Time Series to Lower Periodicity}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{to.period()} converts a time series to a lower periodicity (for example from hourly to daily periodicity).
+      \vskip1ex
+      \texttt{to.period()} returns a time series of open, high, low, and close values (\emph{OHLC}) for the lower period.
+      \vskip1ex
+      \texttt{to.period()} converts both univariate and \emph{OHLC} time series to a lower periodicity.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Lower the periodicity to months
+xts_monthly <- to.period(x=price_s,
+                   period="months", name="MSFT")
+# Convert colnames to standard OHLC format
+colnames(xts_monthly)
+colnames(xts_monthly) <- sapply(
+  strsplit(colnames(xts_monthly), split=".", fixed=TRUE),
+  function(na_me) na_me[-1]
+  )  # end sapply
+head(xts_monthly, 3)
+# Lower the periodicity to years
+xts_yearly <- to.period(x=xts_monthly,
+                   period="years", name="MSFT")
+colnames(xts_yearly) <- sapply(
+  strsplit(colnames(xts_yearly), split=".", fixed=TRUE),
+  function(na_me) na_me[-1]
+  )  # end sapply
+head(xts_yearly)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Plotting \protect\emph{OHLC} Time Series Using \texttt{plot.xts()}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The method (function) \texttt{plot.xts()} can plot \emph{OHLC} time series of class \emph{xts}.
+      <<xts_plot_OHLC,echo=(-(1:2)),eval=FALSE,fig.show='hide'>>=
+par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
+library(xts)  # Load package xts
+# as.xts() coerces zoo series into xts series
+st_ox <- as.xts(zoo_prices)
+# Subset xts using a date
+stox_sub <- st_ox["2014-11", 1:4]
+
+# Plot OHLC using plot.xts method
+xts::plot.xts(stox_sub, type="candles", main="")
+title(main="MSFT Prices")  # Add title
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/xts_plot_OHLC-1}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Series Classes in \texttt{R}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \texttt{R} and other packages contain a number of different time series classes:
+      \begin{itemize}
+        \item Class \emph{ts} from base package \emph{stats}:\\
+        native time series class in \texttt{R}, but allows only \emph{regular} (equally spaced) date-time index,\\
+        not suitable for sophisticated financial applications,
+        \item Class \emph{zoo}: allows \emph{irregular} date-time index,\\
+        the \emph{zoo} index can be from any \emph{date-time} class,
+        \item Class \emph{xts} extension of \emph{zoo} class: most widely accepted time series class,\\
+        designed for high-frequency and \emph{OHLC} data,\\
+        contains convenient functions for plotting, calculating rolling max, min, etc.
+        \item Class \emph{timeSeries} from the \emph{Rmetrics} suite,
+      \end{itemize}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1))>>=
+load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
+ts_stx <- as.ts(zoo_stx)
+class(ts_stx)
+tail(ts_stx[, 1:4])
+library(xts)
+st_ox <- as.xts(zoo_stx)
+class(st_ox)
+tail(st_ox[, 1:4])
+      @
   \end{columns}
 \end{block}
 
@@ -2413,745 +5096,6 @@ eWrapper_realtimebars <- function(n = 1) {
   }  # end eW$realtimeBars
   return(eW)
 }  # end eWrapper_realtimebars
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{High Performance Data Management}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{data.table} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/data.table/}{\emph{data.table}} 
-      is designed for high performance data management.
-      \vskip1ex
-      The package \emph{data.table} implements \emph{data table} objects, which are a special type of \emph{data frame}, and an extension of the \emph{data frame} class.
-      \vskip1ex
-      \emph{Data tables} are faster and more convenient to work with than \emph{data frames}.
-      \vskip1ex
-      \emph{data.table} functions are optimized for high performance (speed), because they are written in \texttt{C++} and they perform operations by reference (in place), without copying data in memory.
-      \vskip1ex
-      Some of the attractive features of package \emph{data.table} are:
-      \begin{itemize}
-        \item Very fast writing and reading from files,
-        \item Very fast sorting and merging operations,
-        \item Subsetting using multiple logical clauses,
-        \item Columns of type \texttt{character} are never converted to factors,
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package data.table
-install.packages("data.table")
-# Load package data.table
-library(data.table)
-# get documentation for package data.table
-# get short description
-packageDescription("data.table")
-# Load help page
-help(package="data.table")
-# List all datasets in "data.table"
-data(package="data.table")
-# List all objects in "data.table"
-ls("package:data.table")
-# Remove data.table from search path
-detach("package:data.table")
-      @
-      \vspace{-1em}
-      The package \emph{data.table} has extensive documentation:\\
-      \hskip1em\url{https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html}\\
-      \hskip1em\url{https://github.com/Rdatatable/data.table/wiki}
-      \vskip1ex
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      \emph{Data table} objects resemble databases, with columns of different types of data, and rows of records containing individual observations.
-      \vskip1ex
-      The function \texttt{data.table::data.table()} creates a \emph{data table} object.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes), and their rows can be referenced without a following comma.
-      \vskip1ex
-      When a \emph{data table} is printed (by typing its name) then only the top \texttt{5} and bottom \texttt{5} rows are displayed (unless \texttt{getOption("datatable.print.nrows")} is less than \texttt{100}).
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-      \vskip1ex
-      \emph{Data table} computations are usually much faster than equivalent \texttt{R} computations, but not always.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a data table
-library(data.table)
-data_table <- data.table::data.table(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-# Print data_table
-class(data_table); data_table
-# column referenced without quotes
-data_table[, col2]
-# row referenced without a following comma
-data_table[2]
-# Print option "datatable.print.nrows"
-getOption("datatable.print.nrows")
-options(datatable.print.nrows=10)
-getOption("datatable.print.nrows")
-# Number of rows in data_table
-NROW(data_table)
-# Or
-data_table[, NROW(col1)]
-# Or
-data_table[, .N]
-# microbenchmark speed of data.table syntax
-library(microbenchmark)
-summary(microbenchmark(
-  dt=data_table[, .N],
-  pure_r=NROW(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{data.table}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The easiest way to share data between \texttt{R} and \texttt{Excel} is through \texttt{.csv} files.
-      \vskip1ex
-      The function \texttt{data.table::fread()} reads from \texttt{.csv} files and returns a \emph{data table} object of class \texttt{data.table}.
-      \vskip1ex
-      \emph{Data table} objects are a special type of \emph{data frame}, and are derived from the class \texttt{data.frame}.
-      \vskip1ex
-      The function \texttt{data.table::fread()} is over \texttt{6} times faster than \texttt{read.csv()}!
-      \vskip1ex
-      The function \texttt{data.table::fwrite()} writes to \texttt{.csv} files over \texttt{12} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()}!
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data table from CSV file
-dir_name <- "C:/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data_table <- data.table::fread(file_name)
-class(data_table); dim(data_table)
-data_table
-# fread() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
-          setDF(data.table::fread(file_name)))
-# fread() is much faster than read.csv()
-summary(microbenchmark(
-  pure_r=read.csv(file_name),
-  fread=setDF(data.table::fread(file_name)),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Write data table to file in different ways
-data.table::fwrite(data_table, file="data_table.csv")
-write.csv(data_table, file="data_table2.csv")
-cat(unlist(data_table), file="data_table3.csv")
-# microbenchmark speed of data.table::fwrite()
-library(microbenchmark)
-summary(microbenchmark(
-  fwrite=data.table::fwrite(data_table, file="data_table.csv"),
-  write_csv=write.csv(data_table, file="data_table2.csv"),
-  cat=cat(unlist(data_table), file="data_table3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The square braces (brackets) \texttt{"[]"} operator subsets (references) the rows and columns of \emph{data tables}.
-      \vskip1ex
-      \emph{Data table} rows can be subset without a following comma.
-      \vskip1ex
-      \emph{Data table} columns can be referenced directly by their names (without quotes, as if they were variables), after a comma.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The brackets \texttt{"[]"} operator is a \emph{data.table} function, and all the commands inside the brackets \texttt{"[]"} are executed using code from the package \emph{data.table}.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select first five rows of data_table
-data_table[1:5]
-# Select rows with JFK flights
-jfk_flights <- data_table[origin=="JFK"]
-# Select rows JFK flights in June
-jfk_flights <- data_table[origin=="JFK" & month==6]
-# Select rows without JFK flights
-jfk_flights <- data_table[!(origin=="JFK")]
-# Select flights with carrier_delay
-data_table[carrier_delay > 0]
-# Select column of data_table and return a vector
-head(data_table[, origin])
-# Select column of data_table and return a data_table, not vector
-head(data_table[, list(origin)])
-head(data_table[, .(origin)])
-# Select two columns of data_table
-data_table[, list(origin, month)]
-data_table[, .(origin, month)]
-column_s <- c("origin", "month")
-data_table[, ..column_s]
-data_table[, month, origin]
-# Select two columns and rename them
-data_table[, .(orig=origin, mon=month)]
-# Select all columns except origin
-head(data_table[, !c("origin")])
-head(data_table[, -c("origin")])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Computations on \protect\emph{Data Table} Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      If the second argument in the brackets \texttt{"[]"} operator is a function of the columns, then the brackets return the result of the function's computations on those columns.
-      \vskip1ex
-      The second argument in the brackets \texttt{"[]"} can also be a list of functions, in which case the brackets return a vector of computations.
-      \vskip1ex
-      The brackets \texttt{"[]"} can evaluate most standard \texttt{R} functions, but they are executed using \emph{data.table} code, which is usually much faster than the equivalent \texttt{R} functions.
-      \vskip1ex
-      The operator \texttt{.N} returns the number of observations (rows) in the \emph{data table}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select flights with positive carrier_delay
-data_table[carrier_delay > 0]
-# Number of flights with carrier_delay
-data_table[, sum(carrier_delay > 0)]
-# Or standard R commands
-sum(data_table[, carrier_delay > 0])
-# microbenchmark speed of data.table syntax
-summary(microbenchmark(
-  dt=data_table[, sum(carrier_delay > 0)],
-  pure_r=sum(data_table[, carrier_delay > 0]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average carrier_delay
-data_table[, mean(carrier_delay)]
-# Average carrier_delay and aircraft_delay
-data_table[, .(carrier=mean(carrier_delay), 
-               aircraft=mean(aircraft_delay))]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Number of flights from JFK
-data_table[origin=="JFK", NROW(aircraft_delay)]
-# Or
-data_table[origin=="JFK", .N]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Grouping \protect\emph{Data Table} Computations by Factor Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The brackets \texttt{"[]"} operator can accept three arguments: \texttt{[i, j, by]}
-      \begin{itemize}
-        \item \texttt{i}: the row index to select, 
-        \item \texttt{j}: a list of columns or functions on columns, 
-        \item \texttt{by}: the columns of factors.
-      \end{itemize}
-      The computations on \emph{data table} columns can be \emph{grouped} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The \texttt{"keyby"} argument is similar to \texttt{"by"}, but it sorts the output according to the categories used to group by.
-      \vskip1ex
-      Multiple \emph{data table} columns can be referenced by passing a list of names.
-      \vskip1ex
-      The dot \texttt{.()} operator is equivalent to the list function \texttt{list()}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Number of flights from each airport
-data_table[, .N, by=origin]
-# Same, but add names to output
-data_table[, .(flights=.N), by=.(airport=origin)]
-# Number of AA flights from each airport
-data_table[carrier=="AA", .(flights=.N), 
-           by=.(airport=origin)]
-# Number of flights from each airport and airline
-data_table[, .(flights=.N), 
-           by=.(airport=origin, airline=carrier)]
-# Average aircraft_delay
-data_table[, mean(aircraft_delay)]
-# Average aircraft_delay from JFK
-data_table[origin=="JFK", mean(aircraft_delay)]
-# Average aircraft_delay from each airport
-data_table[, .(delay=mean(aircraft_delay)), 
-           by=.(airport=origin)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
-           by=.(airport=origin, month=month)]
-# Average and max delays from each airport and month
-data_table[, .(mean_delay=mean(aircraft_delay), max_delay=max(aircraft_delay)), 
-           keyby=.(airport=origin, month=month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sorting \protect\emph{Data Table} Rows by Columns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Standard \texttt{R} functions can be used inside the brackets \texttt{"[]"} operator.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index, to sort a given vector into ascending order.
-      \vskip1ex
-      The function \texttt{setorder()} sorts the rows of a \emph{data table} by reference (in place), without copying data in memory.
-      \vskip1ex
-      \texttt{setorder()} is over \texttt{10} times faster than \texttt{order()}, because it doesn't copy data in memory.
-      \vskip1ex
-      Several brackets \texttt{"[]"} operators can be chained together to perform several consecutive computations.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Sort ascending by origin, then descending by dest
-order_table <- data_table[order(origin, -dest)]
-order_table
-# Doesn't work outside data_table
-order(origin, -dest)
-# Sort data_table by reference
-setorder(data_table, origin, -dest)
-all.equal(data_table, order_table)
-# setorder() is much faster than order()
-summary(microbenchmark(
-  order=data_table[order(origin, -dest)],
-  setorder=setorder(data_table, origin, -dest),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# Average aircraft_delay by month
-order_table[, .(mean_delay=mean(aircraft_delay)), 
-            by=.(month=month)]
-# Chained brackets to sort output by month
-order_table[, .(mean_delay=mean(aircraft_delay)), 
-            by=.(month=month)][order(month)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Subsetting, Computing, and Grouping \protect\emph{Data Table} Objects}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The special symbol \texttt{.SD} selects a subset of a \emph{data table}.
-      \vskip1ex
-      The symbol \texttt{.SDcols} specifies the columns to select by the symbol \texttt{.SD}.
-      \vskip1ex
-      Inside the brackets \texttt{"[]"} operator, the \texttt{.SD} symbol can be treated as a virtual \emph{data table}, and standard \texttt{R} functions can be applied to it.
-      \vskip1ex
-      The \texttt{"by"} argument can be used to group the outputs produced by the functions applied to the \texttt{.SD} symbol.
-      \vskip1ex
-      If the symbol \texttt{.SDcols} is not defined, then the symbol \texttt{.SD} returns the remaining columns not passed to the \texttt{"by"} operator.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Select weather_delay and aircraft_delay in two different ways
-data_table[1:7, .SD, 
-           .SDcols=c("weather_delay", "aircraft_delay")]
-data_table[1:7, .(weather_delay, aircraft_delay)]
-# Calculate mean of weather_delay and aircraft_delay
-data_table[, sapply(.SD, mean), 
-           .SDcols=c("weather_delay", "aircraft_delay")]
-sapply(data_table[, .SD, 
-           .SDcols=c("weather_delay", "aircraft_delay")], mean)
-# Return origin and dest, then all other columns
-data_table[1:7, .SD, by=.(origin, dest)]
-# Return origin and dest, then weather_delay and aircraft_delay columns
-data_table[1:7, .SD, 
-           by=.(origin, dest), 
-           .SDcols="weather_delay", "aircraft_delay"]
-# Return first two rows from each month
-data_table[, head(.SD, 2), by=.(month)]
-data_table[, head(.SD, 2), by=.(month), 
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Calculate mean of weather_delay and aircraft_delay, grouped by origin
-data_table[, lapply(.SD, mean), 
-           by=.(origin), 
-           .SDcols=c("weather_delay", "aircraft_delay")]
-# Or simply
-data_table[, .(weather_delay=mean(weather_delay), 
-               aircraft_delay=mean(aircraft_delay)), 
-           by=.(origin)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Modifying \protect\emph{Data Table} Objects by Reference}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The special assignment operator \texttt{":="} allows modifying \emph{data table} columns by reference (in place), without copying data in memory.
-      \vskip1ex
-      The computations on columns by reference can be \emph{grouped} over categories defined by one or more columns passed to the \texttt{"by"} argument.
-      \vskip1ex
-      The computations are recycled to fit the size of each group.
-      \vskip1ex
-      The selected parts of columns can also be modified by reference, by combining the \texttt{i} and \texttt{j} arguments.
-      \vskip1ex
-      The special symbols \texttt{.SD} and \texttt{.SDcols} can be used to perform computations on several columns.
-      \vskip1ex
-      Modifying by reference is several times faster than standard \texttt{R} assignment.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add tot_delay column
-data_table[, tot_delay := (carrier_delay + aircraft_delay)]
-head(data_table, 4)
-# Delete tot_delay column
-data_table[, tot_delay := NULL]
-# Add max_delay column grouped by origin and dest
-data_table[, max_delay := max(aircraft_delay), 
-           by=.(origin, dest)]
-data_table[, max_delay := NULL]
-# Add date and tot_delay columns
-data_table[, c("date", "tot_delay") := 
-             list(paste(month, day, year, sep="/"), 
-                  (carrier_delay + aircraft_delay))]
-# Modify select rows of tot_delay column
-data_table[month == 12, tot_delay := carrier_delay]
-data_table[, c("date", "tot_delay") := NULL]
-# Add several columns
-data_table[, c("max_carrier", "max_aircraft") := 
-             lapply(.SD, max), 
-           by=.(origin, dest), 
-           .SDcols=c("carrier_delay", "aircraft_delay")]
-data_table[, c("max_carrier", "max_aircraft") := NULL]
-# Modifying by reference is much faster than standard R
-summary(microbenchmark(
-  dt=data_table[, tot_delay := (carrier_delay + aircraft_delay)],
-  pure_r=(data_table[, "tot_delay"] <- data_table[, "carrier_delay"] + data_table[, "aircraft_delay"]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Adding \protect\emph{keys} to \protect\emph{Data Tables} for Fast Binary Search}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \emph{key} of a \emph{data table} is analogous to the row indices of a \emph{data frame}, and it determines the ordering of its rows.
-      \vskip1ex
-      The function \texttt{data.table::setkey()} adds a \emph{key} to a \emph{data table}, and sorts the \emph{data table} rows by reference according to the key.
-      \vskip1ex
-      \texttt{setkey()} creates the \emph{key} from one or more columns of the \emph{data frame}.
-      \vskip1ex
-      Subsetting rows using a \emph{key} can be several times faster than standard \texttt{R}.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add a key based on the "origin" column
-setkey(data_table, origin)
-haskey(data_table)
-key(data_table)
-# Select rows with LGA using the key
-data_table["LGA"]
-all.equal(data_table["LGA"], 
-          data_table[origin == "LGA"])
-# Select rows with LGA and JFK using the key
-data_table[c("LGA", "JFK")]
-# Add a key based on the "origin" and "dest" columns
-setkey(data_table, origin, dest)
-key(data_table)
-# Select rows with origin from JFK and MIA
-data_table[c("JFK", "MIA")]
-# Select rows with origin from JFK and dest to MIA
-data_table[.("JFK", "MIA")]
-all.equal(data_table[.("JFK", "MIA")], 
-          data_table[origin == "JFK" & dest == "MIA"])
-# Selecting rows using a key is much faster than standard R
-summary(microbenchmark(
-  with_key=data_table[.("JFK", "MIA")],
-  standard_r=data_table[origin == "JFK" & dest == "MIA"],
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \protect\emph{Data Table} Objects Into \protect\emph{Data Frames}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The functions \texttt{data.table::setDT()} and \texttt{data.table::setDF()} coerce \emph{data frames} to \emph{data tables}, and vice versa.
-      \vskip1ex
-      The \emph{set} functions \texttt{data.table::set*()} perform their operations by reference (in place), without returning any values or copying data to a new memory location, which makes them very fast.
-      \vskip1ex
-      \emph{Data table} objects can also be coerced into \emph{data frames} using the function \texttt{as.data.frame()}, but it's much slower because it makes copies of data.
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create data frame and coerce it to data table
-data_table <- data.frame(
-  col1=sample(7), col2=sample(7), col3=sample(7))
-class(data_table); data_table
-data.table::setDT(data_table)
-class(data_table); data_table
-# Coerce data_table into data frame
-data.table::setDF(data_table)
-class(data_table); data_table
-# Or
-data_table <- data.table:::as.data.frame.data.table(data_table)
-# SetDF() is much faster than as.data.frame()
-summary(microbenchmark(
-  as.data.frame=data.table:::as.data.frame.data.table(data_table),
-  setDF=data.table::setDF(data_table),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \texttt{xts} Time Series Into \protect\emph{Data Frames}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      An \texttt{xts} time series can be coerced into a \emph{data table} by first coercing it into a \emph{data frame} and then into a \emph{data table} using the function \texttt{data.table::setDT()}.
-      \vskip1ex
-      But then the time index of the \texttt{xts} series is coerced into strings, not dates.
-      \vskip1ex
-      An \texttt{xts} time series can also be coerced directly into a \emph{data table} using the function \texttt{data.table::as.data.table()}.
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce xts to a data frame
-price_s <- rutils::etf_env$VTI
-class(price_s); head(price_s)
-price_s <- as.data.frame(price_s)
-class(price_s); head(price_s)
-# Coerce data frame to a data table
-data.table::setDT(price_s, keep.rownames=TRUE)
-class(price_s); head(price_s)
-# Dates are coerced to strings
-sapply(price_s, class)
-# Coerce xts directly to a data table
-data_table <- as.data.table(rutils::etf_env$VTI,
-  keep.rownames=TRUE)
-class(data_table); head(data_table)
-# Dates are not coerced to strings
-sapply(data_table, class)
-all.equal(price_s, data_table, check.attributes=FALSE)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Package \protect\emph{fst} for High Performance Data Management}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
-      provides functions for very fast writing and reading of \emph{data frames} from \emph{compressed binary files}.
-      \vskip1ex
-      The package \emph{fst} writes to \emph{compressed binary files} in the
-\texttt{fst} fast-storage format.
-      \vskip1ex
-      The package \emph{fst} uses the \texttt{LZ4} and \texttt{ZSTD} compression algorithms, and utilizes multithreaded (parallel) processing on multiple CPU cores.
-      \vskip1ex
-      The package \emph{fst} has extensive documentation:\\
-      \hskip1em\url{http://www.fstpackage.org/}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Install package fst
-install.packages("fst")
-# Load package fst
-library(fst)
-# get documentation for package fst
-# get short description
-packageDescription("fst")
-# Load help page
-help(package="fst")
-# List all datasets in "fst"
-data(package="fst")
-# List all objects in "fst"
-ls("package:fst")
-# Remove fst from search path
-detach("package:fst")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing and Reading Data Using Package \protect\emph{fst}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
-      allows very fast writing and reading of \emph{data frames} from \emph{compressed binary files} in the \texttt{fst} fast-storage format.
-      \vskip1ex
-      The function \texttt{fst::write\_fst()} writes to \texttt{.fst} files over \texttt{10} times faster than the function \texttt{write.csv()}, and \texttt{300} times faster than function \texttt{cat()} write to \texttt{.csv} files!
-      \vskip1ex
-      The function \texttt{fst::fread()} reads from \texttt{.fst} files over \texttt{10} times faster than the function \texttt{read.csv()} from \texttt{.csv} files!
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read a data frame from CSV file
-dir_name <- "C:/Develop/lecture_slides/data/"
-file_name <- file.path(dir_name, "weather_delays14.csv")
-data.table::setDF(data_frame)
-class(data_frame); dim(data_frame)
-# Write data frame to .fst file in different ways
-fst::write_fst(data_frame, path="data_frame.fst")
-write.csv(data_frame, file="data_frame2.csv")
-# microbenchmark speed of fst::write_fst()
-library(microbenchmark)
-summary(microbenchmark(
-  fst=fst::write_fst(data_frame, path="data_frame.csv"),
-  write_csv=write.csv(data_frame, file="data_frame2.csv"),
-  cat=cat(unlist(data_frame), file="data_frame3.csv"),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-# fst::read_fst() reads the same data as read.csv()
-all.equal(read.csv(file_name, stringsAsFactors=FALSE),
-          fst::read_fst("data_frame.fst"))
-# fst::read_fst() is 10 times faster than read.csv()
-summary(microbenchmark(
-  fst=fst::read_fst("data_frame.fst"),
-  read_csv=read.csv(file_name),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Random Access to Large Data Files}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The package 
-      \href{https://cran.r-project.org/web/packages/fst/}{\emph{fst}} 
-      allows \emph{random access} to very large \emph{data frames} stored in compressed data files in the \texttt{.fst} format.
-      \vskip1ex
-      Data frames can be accessed \emph{randomly} by loading only the selected rows and columns into memory, without fully loading the whole data frame.
-      \vskip1ex
-      function \texttt{fst::fst()} reads an \texttt{.fst} file and returns an \emph{fst\_table} reference object (pointer) to the data, without loading the whole data into memory.
-      \vskip1ex
-      The \emph{fst\_table} reference provides access to the data similar to a regular \emph{data frame}, but it requires only a small amount of memory because the data isn't loaded into memory.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Coerce TAQ xts to a data frame
-library(HighFreq)
-t_aq <- HighFreq::SPY_TAQ
-t_aq <- as.data.frame(t_aq)
-class(t_aq)
-# Coerce data frame to a data table
-data.table::setDT(t_aq, keep.rownames=TRUE)
-class(t_aq); head(t_aq)
-# Get memory size of data table
-format(object.size(t_aq), units="MB")
-# Save data table to .fst file
-fst::write_fst(t_aq, path="C:/Develop/data/taq.fst")
-# Create reference to .fst file similar to a data frame
-fs_t <- fst::fst("C:/Develop/data/taq.fst")
-class(fs_t)
-# Memory size of reference to .fst is very small
-format(object.size(fs_t), units="MB")
-# Get sizes of all objects in workspace
-sort(sapply(mget(ls()), object.size))
-# reference to .fst can be treated similar to a data table
-dim(t_aq); dim(fs_t)
-fst:::print.fst_table(fs_t)
-# Subset reference to .fst just like a data table
-fs_t[1e4:(1e4+5), ]
       @
   \end{columns}
 \end{block}

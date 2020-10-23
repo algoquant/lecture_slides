@@ -3,9 +3,9 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
 options(digits=3)
-options(width=60, dev='pdf')
+options(width=80, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 @
@@ -139,7 +139,7 @@ rt(n=5, df=2)
     \column{0.5\textwidth}
       The \emph{logistic map} is a recurrence relation which produces a deterministic sequence of numbers:
       \begin{displaymath}
-        x_{n+1} = r x_n (1 - x_n)
+        x_n = r x_{n-1} (1 - x_{n-1})
       \end{displaymath}
       If the \emph{seed} value $x_0$ is in the interval $(0, 1)$ and if $r=4$, then the sequence $x_n$ is also contained in the interval $(0, 1)$.
       \vskip1ex
@@ -370,19 +370,19 @@ sd(da_ta)  # Sample standard deviation
       \vspace{-1em}
         <<echo=(-(1:1)),eval=FALSE>>=
 rm(list=ls())
-# DAX returns
-re_turns <- diff(log(EuStockMarkets[, 1]))
+# VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Number of observations
 n_rows <- NROW(re_turns)
-# Mean of DAX returns
+# Mean of VTI returns
 mea_n <- mean(re_turns)
-# Standard deviation of DAX returns
+# Standard deviation of VTI returns
 s_d <- sd(re_turns)
 # Standardize returns
 re_turns <- (re_turns - mea_n)/s_d
-# Skewness of DAX returns
+# Skewness of VTI returns
 n_rows/((n_rows-1)*(n_rows-2))*sum(re_turns^3)
-# Kurtosis of DAX returns
+# Kurtosis of VTI returns
 n_rows/(n_rows-1)^2*sum(re_turns^4)
 # Random normal returns
 re_turns <- rnorm(n_rows)
@@ -410,7 +410,7 @@ n_rows/(n_rows-1)^2*sum(re_turns^4)
       \vskip1ex
       The \emph{quantile} of a data sample can be calculated by first sorting the sample, and then finding the value corresponding closest to the given \emph{probability} $p$.
       \vskip1ex
-      The function \texttt{quantile()} calculates the sample quantiles, but it's quite slow.
+	  The function \texttt{quantile()} calculates the sample quantiles.  It uses interpolation to improve the accuracy.  Information about the different interpolation methods can be found by typing \texttt{?quantile}.
       \vskip1ex
       The function \texttt{sort()} returns a vector sorted into ascending order.
       \vskip1ex
@@ -435,12 +435,12 @@ mean(da_ta)
 # Sample standard deviation - MC estimate
 sd(da_ta)
 # Monte Carlo estimate of cumulative probability
-da_ta <- sort(da_ta)
-c(pnorm(1), sum(da_ta<1)/n_rows)
+c(pnorm(1), sum(da_ta < 1)/n_rows)
 # Monte Carlo estimate of quantile
 conf_level <- 0.99
 qnorm(conf_level)
 cut_off <- conf_level*n_rows
+da_ta <- sort(da_ta)
 c(da_ta[cut_off], quantile(da_ta, probs=conf_level))
 # Read the source code of quantile()
 stats:::quantile.default
@@ -481,7 +481,7 @@ summary(microbenchmark(
       where: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample standard deviation (the estimator of the population standard deviation).
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
@@ -490,6 +490,8 @@ da_ta <- rnorm(n_rows)
 mean(da_ta)
 # Sample standard deviation
 sd(da_ta)
+# Standard error of sample mean
+sd(da_ta)/sqrt(n_rows)
       @
   \end{columns}
 \end{block}
@@ -1293,18 +1295,18 @@ ks.test(rnorm(100), rnorm(100, mean=1.0))
       \vskip1ex
       The \emph{Shapiro-Wilk} statistic is close to one for samples from normal distributions.
       \vskip1ex
-      The \emph{p}-value for \emph{DAX} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{DAX} returns are not from a normally distributed population.
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
+# Calculate VTI percentage returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Shapiro-Wilk test for normal distribution
-shapiro.test(rnorm(NROW(dax_rets)))
-# Shapiro-Wilk test for DAX returns
-shapiro.test(dax_rets)
+shapiro.test(rnorm(NROW(re_turns)))
+# Shapiro-Wilk test for VTI returns
+shapiro.test(re_turns)
 # Shapiro-Wilk test for uniform distribution
-shapiro.test(runif(NROW(dax_rets)))
+shapiro.test(runif(NROW(re_turns)))
       @
   \end{columns}
 \end{block}
@@ -1335,17 +1337,17 @@ shapiro.test(runif(NROW(dax_rets)))
       \vskip1ex
       The \emph{Jarque-Bera} statistic is small for samples from normal distributions.
       \vskip1ex
-      The \emph{p}-value for \emph{DAX} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{DAX} returns are not from a normally distributed population.
+      The \emph{p}-value for \emph{VTI} returns is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and the \emph{VTI} returns are not from a normally distributed population.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
-jarque.bera.test(rnorm(NROW(dax_rets)))
-# Jarque-Bera test for DAX returns
-jarque.bera.test(dax_rets)
+jarque.bera.test(rnorm(NROW(re_turns)))
+# Jarque-Bera test for VTI returns
+jarque.bera.test(re_turns)
 # Jarque-Bera test for uniform distribution
-jarque.bera.test(runif(NROW(dax_rets)))
+jarque.bera.test(runif(NROW(re_turns)))
       @
   \end{columns}
 \end{block}
@@ -1759,8 +1761,7 @@ wilcox.test(re_turns-median(re_turns))
 n_rows <- 1e3
 sample1 <- rnorm(n_rows, sd=1)
 sample2 <- rnorm(n_rows, sd=10)
-wilcox.test(sample1, sample2, 
-            paired=TRUE)
+wilcox.test(sample1, sample2, paired=TRUE)
       @
   \end{columns}
 \end{block}
@@ -2395,25 +2396,19 @@ apply(boot_data, MARGIN=2, function(x)
       The function \texttt{cor()} calculates the correlation between two numeric vectors.
       \vskip1ex
       Depending on the argument \texttt{"method"}, it calculates either the \emph{Pearson} (default), \emph{Spearman}, or \emph{Kendall} correlations.
-      \vskip1ex
-      The function \texttt{cor.test()} performs a test of the statistical significance of the correlation coefficient.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/cor_scatter_plot.png}
       \vspace{-2em}
-        <<echo=(-(1:1)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # initialize random number generator
 # Define variables and calculate correlation
 n_rows <- 100
 x_var <- runif(n_rows); y_var <- runif(n_rows)
 cor(x_var, y_var)
-# Test statistical significance of correlation
-cor.test(x_var, y_var)
 # Correlate the variables and calculate correlation
 rh_o <- 0.5
 y_var <- rh_o*x_var + (1-rh_o)*y_var
-# Test statistical significance of correlation
-cor.test(x_var, y_var)
 # Plot in x11 window
 x11(width=5, height=4)
 # Set plot parameters to reduce whitespace around plot
@@ -2424,6 +2419,122 @@ title(main="Correlated Variables", line=0.5)
 abline(a=0.25, b=rh_o, lwd=3, col="blue")
 # Calculate regression
 summary(lm(y_var ~ x_var))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Standard Error of \protect\emph{Pearson} Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      See my comment to Jean Paul comment: \\
+      {\tiny{
+      https://www.jstor.org/stable/2277400 \\
+      https://www.tandfonline.com/doi/abs/10.1080/00220973.1956.11010555 \\
+      % https://en.wikipedia.org/wiki/Pearson_correlation_coefficient \\
+      % https://en.wikipedia.org/wiki/Fisher_transformation \\
+      https://stats.stackexchange.com/questions/73621/standard-error-from-correlation-coefficient/262893 \\
+      https://stats.stackexchange.com/questions/226380/derivation-of-the-standard-error-for-pearsons-correlation-coefficient \\
+      https://stats.stackexchange.com/questions/154362/confidence-interval-on-point-biserial-correlation-coefficient \\
+      }}
+      \vskip1ex
+      Let $x$ be standard normally distributed with mean zero $E[x] = 0$ and standard deviation equal to one: $E[x^2] = 1$.
+      \vskip1ex
+      Let $y = \rho x + \varepsilon \sqrt{1 - \rho^2}$, where $\varepsilon$ is standard normally distributed, with zero correlation to $x$: $E[x \varepsilon] = 0$.
+      \vskip1ex
+      Then $y$ is also standard normally distributed, with correlation to $x$ equal to $\rho$: $E[x y] = E[x (\rho x + \varepsilon \sqrt{1 - \rho^2})] = E[\rho x^2] = \rho$.
+      \vskip1ex
+      The variance of the correlation is equal to: $E[(x y - \rho)^2] = E[\rho^2 x^4 + 2 x^3 \varepsilon \rho \sqrt{1 - \rho^2} + x^2 \varepsilon^2 (1 - \rho^2) - 2 \rho x y + \rho^2] = 1 - \rho^2 + \rho^2 E[x^4] = 3 \rho^2 + 1 - \rho^2 - 2 \rho^2 + \rho^2$.
+      \vskip1ex
+      $E[\rho^2 x^4 + 2 x^3 \varepsilon \rho \sqrt{1 - \rho^2} + x^2 \varepsilon^2 (1 - \rho^2)] = 1 - \rho^2 + 3 \rho^2$
+      \vskip1ex
+      The standard error of
+      
+      the correlation estimator is equal to: $\frac{1}{\sqrt{n-2}}$, and slowly decreases as the square root of $n$ - the length of the data.
+      \vskip1ex
+      The function \texttt{cor.test()} performs a test of the statistical significance of the correlation coefficient, under the \emph{null hypothesis} of zero correlation.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Simulation of sample correlation
+n_rows <- 1e4
+rh_o <- 0.99
+rho_2 <- sqrt(1-rh_o^2)
+da_ta <- sapply(1:1000, function(x) {
+  x_var <- rnorm(n_rows)
+  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+  cor(x_var, y_var)
+})  # end sapply
+sd(da_ta)
+# Correct formula
+(1-rh_o^2)/sqrt(n_rows-2)
+# Incorrect formula
+sqrt((1-rh_o^2)/(n_rows-2))
+
+
+# Correlation
+co_r <- cor(x_var, y_var)
+# Standard error of correlation
+std_error <- sqrt((1-co_r^2)/(n_rows-2))
+# t-value of correlation
+co_r/std_error
+# 95% confidence intervals
+co_r*c(1-qnorm(0.975)*std_error, 1+qnorm(0.975)*std_error)
+
+
+# Test statistical significance of correlation
+cor.test(x_var, y_var)
+
+rh_o <- 0.9
+rho_2 <- sqrt(1-rh_o^2)
+set.seed(1121)
+# Bootstrap of sample mean and median
+boot_data <- sapply(1:1000, function(x) {
+  x_var <- rnorm(n_rows)
+  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+  c(rho=mean(y_var*x_var), y_sd=sd(y_var), cor=cor(x_var, y_var))
+})  # end sapply
+
+# Means and standard errors from bootstrap
+foo <- apply(boot_data, MARGIN=1, function(x) 
+  c(mean=mean(x), std_error=sd(x)))
+foo[2, ]
+(1-rh_o^2)/sqrt(n_rows-2)
+sqrt((1-rh_o^2)/(n_rows-2))
+
+rho_2^2
+
+rh_o^4
+
+
+# Simulation of sample correlation
+rh_o <- 0.99
+rho_2 <- sqrt(1-rh_o^2)
+da_ta <- sapply(1:10000, function(x) {
+  x_var <- rnorm(n_rows)
+  y_var <- (rh_o*x_var + rho_2*rnorm(n_rows))
+  cor(x_var, y_var)
+})  # end sapply
+sd(da_ta)
+# Correct formula
+(1-rh_o^2)/sqrt(n_rows-2)
+# Incorrect formula
+sqrt((1-rh_o^2)/(n_rows-2))
+
+da_ta <- sapply(1:10000, function(x) {
+  rnorm(n_rows)^2 * rnorm(n_rows)^2
+})  # end sapply
+sd(da_ta)
+
+foo <- (rnorm(n_rows)^2 * rnorm(n_rows)^2)
+mean(rnorm(n_rows)^2 * rnorm(n_rows)^2)
       @
   \end{columns}
 \end{block}

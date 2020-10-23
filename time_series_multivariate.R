@@ -1,7 +1,7 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
 options(digits=3)
-options(width=60, dev='pdf')
+options(width=80, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
@@ -23,7 +23,7 @@ abline(mod_el, lwd=2, col="red")
 abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
  lwd=2, col="blue")
 
-library(rutils)  # load rutils
+library(rutils)  # Load rutils
 re_turns <- na.omit(rutils::etf_env$re_turns)
 # Perform regressions and collect statistics
 etf_reg_stats <- sapply(colnames(re_turns)[-1],
@@ -164,19 +164,20 @@ save(etf_env, file="etf_data.RData")
 
 capm_stats[, c("Information Ratio", "Annualized Alpha")]
 
-# load S&P500 constituent stock prices
+# Load S&P500 constituent stock prices
 load("C:/Develop/lecture_slides/data/sp500_prices.RData")
-date_s <- index(price_s)
-# Calculate simple returns (not percentage)
-re_turns <- rutils::diff_it(price_s)
-# Center (de-mean) and scale the returns
-re_turns <- t(t(re_turns) - colMeans(re_turns))
-re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
-re_turns <- xts(re_turns, date_s)
+# Calculate stock prices and percentage returns
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+re_turns <- rutils::diff_it(log(price_s))
+# Standardize (de-mean and scale) the returns
+re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
+re_turns <- rutils::do_call(cbind, re_turns)
 # Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Find number of components with variance greater than 2
 n_comp <- which(pc_a$sdev^2 < 2)[1]
+
 # Plot standard deviations of principal components
 barplot(pc_a$sdev[1:n_comp],
   names.arg=colnames(pc_a$rotation[, 1:n_comp]),
@@ -190,31 +191,25 @@ par(mfrow=c(n_comps/2, 2))
 par(mar=c(4, 2, 2, 1), oma=c(0, 0, 0, 0))
 # First principal component weights
 weight_s <- sort(pc_a$rotation[, 1], decreasing=TRUE)
-barplot(weight_s[1:6],
-  las=3, xlab="", ylab="", main="")
-title(paste0("PC", 1), line=-2.0,
-col.main="red")
+barplot(weight_s[1:6], las=3, xlab="", ylab="", main="")
+title(paste0("PC", 1), line=-2.0, col.main="red")
 for (or_der in 2:n_comps) {
   weight_s <- sort(pc_a$rotation[, or_der], decreasing=TRUE)
-  barplot(weight_s[c(1:3, 498:500)],
-  las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0,
-  col.main="red")
+  barplot(weight_s[c(1:3, 498:500)], las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, col.main="red")
 }  # end for
 
 # Calculate principal component time series
 pca_rets <- xts(re_turns %*% pc_a$rotation[, 1:n_comps],
           order.by=date_s)
 round(cov(pca_rets), 3)
-pca_ts <- xts:::cumsum.xts(pca_rets)
+pca_ts <- cumsum(pca_rets)
 # Plot principal component time series in multiple panels
 par(mfrow=c(n_comps/2, 2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-ra_nge <- range(pca_ts)
+rang_e <- range(pca_ts)
 for (or_der in 1:n_comps) {
-  plot.zoo(pca_ts[, or_der],
-     ylim=ra_nge,
-     xlab="", ylab="")
+  plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
   title(paste0("PC", or_der), line=-2.0)
 }  # end for
 
@@ -225,13 +220,12 @@ inv_rotation <- solve(pc_a$rotation)
 all.equal(inv_rotation, t(pc_a$rotation))
 sol_ved <- pca_rets %*% inv_rotation[1:n_comps, ]
 sol_ved <- xts::xts(sol_ved, date_s)
-sol_ved <- xts:::cumsum.xts(sol_ved)
-cum_returns <- xts:::cumsum.xts(re_turns)
+sol_ved <- cumsum(sol_ved)
+cum_returns <- cumsum(re_turns)
 # Plot the solved returns
 sym_bols <- c("MSFT", "XOM", "JPM", "AAPL", "BRK_B", "JNJ")
 for (sym_bol in sym_bols) {
-  plot.zoo(
-    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+  plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
    legend=paste0(sym_bol, c("", " solved")),
@@ -250,15 +244,12 @@ sapply(sym_bols, function(sym_bol) {
 for (sym_bol in sym_bols) {
   plot.zoo(cum_returns[, sym_bol] - sol_ved[, sym_bol],
     plot.type="single", col="blue", xlab="", ylab="")
-  legend(x="topleft", bty="n",
-   legend=paste0(sym_bol, " residuals"),
-   title=NULL, inset=0.05, cex=1.0, lwd=6,
-   lty=1, col="blue")
+  legend(x="topleft", bty="n", legend=paste(sym_bol, "residuals"),
+   title=NULL, inset=0.05, cex=1.0, lwd=6, lty=1, col="blue")
 }  # end for
 # Perform ADF unit-root test on principal component time series
-pca_rets <- xts(re_turns %*% pc_a$rotation,
-          order.by=date_s)
-pca_ts <- xts:::cumsum.xts(pca_rets)
+pca_rets <- xts(re_turns %*% pc_a$rotation, order.by=date_s)
+pca_ts <- cumsum(pca_rets)
 adf_pvalues <- sapply(1:NCOL(pca_ts), function(or_der)
   tseries::adf.test(pca_ts[, or_der])$p.value)
 # AdF unit-root test on stationary time series
@@ -273,15 +264,13 @@ rownames(cor_mat) <- colnames(re_turns)
 # Reorder correlation matrix based on clusters
 # Calculate permutation vector
 library(corrplot)
-or_der <- corrMatOrder(cor_mat,
-        order="hclust",
+or_der <- corrMatOrder(cor_mat, order="hclust",
         hclust.method="complete")
 # Apply permutation vector
 cor_mat <- cor_mat[or_der, or_der]
 # Plot the correlation matrix
 col_ors <- colorRampPalette(c("red", "white", "blue"))
-corrplot(cor_mat,
-    tl.col="black", tl.cex=0.8,
+corrplot(cor_mat, tl.col="black", tl.cex=0.8,
     method="square", col=col_ors(8),
     cl.offset=0.75, cl.cex=0.7,
     cl.align.text="l", cl.ratio=0.25)
@@ -297,7 +286,7 @@ plot(clus_ter, ann=FALSE, xlab="", ylab="")
 title("Dendrogram representing hierarchical clustering
 \nwith dissimilarity = 1-correlation", line=-0.5)
 
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 # PC returns from rotation and scaled re_turns
 re_turns_scaled <- apply(re_turns, 2, scale)
 pca_rets <- re_turns_scaled %*% pc_a$rotation
@@ -309,7 +298,7 @@ head(pc_a$x[, 1:3], 3)
 pca_rets <- xts(pc_a$x/100,
     order.by=index(re_turns))
 
-library(PerformanceAnalytics)  # load package "PerformanceAnalytics"
+library(PerformanceAnalytics)  # Load package "PerformanceAnalytics"
 chart.CumReturns(
   pca_rets[, 1:3], lwd=2, ylab="",
   legend.loc="topright", main="")
@@ -369,17 +358,17 @@ for (or_der in 1:3) {
     colnames(pca_vecs[[or_der]])))
 }  # end for
 
-library(factorAnalytics)  # load package "factorAnalytics"
+library(factorAnalytics)  # Load package "factorAnalytics"
 # Get documentation for package "factorAnalytics"
 packageDescription("factorAnalytics")  # Get short description
-help(package="factorAnalytics")  # load help page
+help(package="factorAnalytics")  # Load help page
 
 options(width=50)
-library(factorAnalytics)  # load package "factorAnalytics"
-# list all objects in "factorAnalytics"
+library(factorAnalytics)  # Load package "factorAnalytics"
+# List all objects in "factorAnalytics"
 ls("package:factorAnalytics")
 
-# list all datasets in "factorAnalytics"
+# List all datasets in "factorAnalytics"
 # data(package="factorAnalytics")
 
 # Remove factorAnalytics from search path

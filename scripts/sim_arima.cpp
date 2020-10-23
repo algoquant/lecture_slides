@@ -36,9 +36,9 @@ using namespace arma;
 //' @export
 // [[Rcpp::export]]
 arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
-  uword len_gth = in_nov.n_elem;
+  uword n_rows = in_nov.n_elem;
   uword look_back = co_eff.n_elem;
-  arma::vec ari_ma(len_gth);
+  arma::vec ari_ma(n_rows);
 
   // startup period
   ari_ma(0) = in_nov(0);
@@ -48,7 +48,7 @@ arma::vec sim_arima(const arma::vec& in_nov, const arma::vec& co_eff) {
   }  // end for
   
   // remaining periods
-  for (uword it = look_back; it < len_gth; it++) {
+  for (uword it = look_back; it < n_rows; it++) {
     ari_ma(it) = in_nov(it) + arma::dot(co_eff, ari_ma.subvec(it-look_back, it-1));
   }  // end for
   

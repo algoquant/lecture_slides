@@ -1,6 +1,6 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -71,7 +71,7 @@ if (!require("xts")) install.packages("xts")
 
 # calculate VTI volume-weighted average price
 v_wap <- TTR::VWAP(
-  price=quantmod::Ad(rutils::etf_env$VTI),
+  price=quantmod::Cl(rutils::etf_env$VTI),
   volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
 
 library()  # list all packages installed on the system

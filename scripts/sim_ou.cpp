@@ -11,11 +11,11 @@ NumericVector sim_ou_rcpp(double eq_price,
                           double vol_at, 
                           double the_ta, 
                           NumericVector in_nov) {
-  int len_gth = in_nov.size();
-  NumericVector price_s(len_gth);
-  NumericVector re_turns(len_gth);
+  int n_rows = in_nov.size();
+  NumericVector price_s(n_rows);
+  NumericVector re_turns(n_rows);
   price_s[0] = eq_price;
-  for (int it = 1; it < len_gth; it++) {
+  for (int it = 1; it < n_rows; it++) {
     re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
     price_s[it] = price_s[it-1] * exp(re_turns[it]);
   }  // end for

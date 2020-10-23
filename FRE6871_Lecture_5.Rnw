@@ -5,8 +5,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -69,7 +69,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@poly.edu}
-\date{May 4, 2020}
+\date{October 5, 2020}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -84,143 +84,43 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
-\section{Hypothesis Testing}
+\section{Optimization}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Hypothesis Testing}
+\subsection{One-dimensional Optimization Using The Functional \texttt{optimize()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Hypothesis Tests} are designed to test the validity of \emph{null hypotheses}, and they consist of:
-      \begin{itemize}
-        \item A \emph{null hypothesis},
-        \item A test \emph{statistic} derived from the data sample,
-        \item A \emph{p}-value: the conditional probability of observing the test statistic value, assuming the \emph{null hypothesis} is \texttt{TRUE},
-        \item A \emph{significance level} $\alpha$ corresponding to a \emph{critical value}.
-      \end{itemize}
-      The \emph{p}-value is compared to the \emph{significance level} and if the \emph{p}-value is less than the \emph{significance level} $\alpha$, then the \emph{null hypothesis} is rejected.
+      The functional \texttt{optimize()} performs \emph{one-dimensional} optimization over a single independent variable.
       \vskip1ex
-      It's possible for the \emph{null hypothesis} to be \texttt{TRUE}, but to obtain a very small \emph{p}-value purely by chance.
+      \texttt{optimize()} searches for the minimum of the objective function with respect to its first argument, in the specified interval.
       \vskip1ex
-      The \emph{p}-value is the probability of erroneously rejecting a \texttt{TRUE} \emph{null hypothesis}, due to the randomness of the data sample.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-### Perform two-tailed test that sample is
-### from Standard Normal Distribution (mean=0, SD=1)
-# generate vector of samples and store in data frame
-test_frame <- data.frame(samples=rnorm(1e4))
-# get p-values for all the samples
-test_frame$p_values <- sapply(test_frame$samples,
-              function(x) 2*pnorm(-abs(x)))
-# Significance level, two-tailed test, critical value=2*SD
-signif_level <- 2*(1-pnorm(2))
-# Compare p_values to significance level
-test_frame$result <-
-  test_frame$p_values > signif_level
-# Number of null rejections
-sum(!test_frame$result) / NROW(test_frame)
-# Show null rejections
-head(test_frame[!test_frame$result, ])
-      @
-      The \emph{p}-value is a conditional probability, and is not equal to the un-conditional probability of the hypothesis being \texttt{TRUE}.
-      \vskip1ex
-      In statistics we cannot \emph{prove} that a hypothesis is \texttt{TRUE} or not, but we can attempt to invalidate it, and conclude that it's unlikely to be \texttt{TRUE}, given the test statistic value and its \emph{p}-value.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Two-tailed Hypothesis Tests}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      In two-tailed hypothesis tests, both tails of the probability distribution contribute to the \emph{p}-value.
-      \vskip1ex
-      Two-tailed hypothesis tests are applied for testing if the absolute value of a sample  exceeds the critical value.
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot the Normal probability distribution
-curve(expr=dnorm(x, sd=1), type="l", xlim=c(-4, 4),
-      xlab="", ylab="", lwd=3, col="blue")
-title(main="Two-tailed Test", line=0.5)
-# Plot tails of the distribution using polygons
-star_t <- 2; e_nd <- 4
-# Plot right tail using polygon
-x_var <- seq(star_t, e_nd, length=100)
-y_var <- dnorm(x_var, sd=1)
-y_var[1] <- (-1)
-y_var[NROW(y_var)] <- (-1)
-polygon(x=x_var, y=y_var, col="red")
-# Plot left tail using polygon
-y_var <- dnorm(-x_var, sd=1)
-y_var[1] <- (-1)
-y_var[NROW(y_var)] <- (-1)
-polygon(x=(-x_var), y=y_var, col="red")
+      \texttt{optimize()} returns a list containing the location of the minimum and the objective function value,
+        <<echo=(-(1:1)),eval=FALSE>>=
+options(width=50, dev='pdf')
+str(optimize)
+# Objective function with multiple minima
+object_ive <- function(in_put, param1=0.01) {
+  sin(0.25*pi*in_put) + param1*(in_put-1)^2
+}  # end object_ive
+unlist(optimize(f=object_ive, interval=c(-4, 2)))
+unlist(optimize(f=object_ive, interval=c(0, 8)))
+options(width=80, dev='pdf')
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/hyp_test_tow_tail.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Student's t-test} for the Distribution Mean}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Student's t-test} is designed to test the \emph{null hypothesis} that a sample: $\{x_1, \ldots, x_n\}$ was obtained from a normal distribution with a \emph{mean} equal to $\mu$.
-      \vskip1ex
-      The test statistic is equal to the \emph{t-ratio}:
-      \begin{displaymath}
-        t = \frac{\bar{x} - \mu}{\hat\sigma / \sqrt{n}}
-      \end{displaymath}
-      Where $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$ is the sample mean and $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$ is the sample variance.
-      \vskip1ex
-      Under the \emph{null hypothesis} the \emph{t-ratio} follows the \emph{t-distribution} with $n$ degrees of freedom, with the probability density function:
-      \begin{displaymath}
-        f(x) = \frac{\Gamma((n+1)/2)}{\sqrt{\pi n} \, \Gamma(n/2)} \, (1 + x^2/n)^{-(n+1)/2}
-      \end{displaymath}
-      \emph{Student's t-test} can also be used to test if two different normally distributed samples have equal \emph{population means}.
-      \vskip1ex
-      \emph{Student's t-test} is not valid for random variables that do not follow the normal distribution.
-    \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/t_dist_norm.png}\\
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# t-test for single sample
-t.test(rnorm(100))
-# t-test for two samples
-t.test(rnorm(100),
-       rnorm(100, mean=1))
-# Plot the normal and t-distribution densities
-x11(width=6, height=5)
-par(mar=c(3, 3, 3, 1), oma=c(0, 0, 0, 0))
-curve(expr=dnorm, xlim=c(-4, 4),
-      xlab="", ylab="", lwd=3)
-curve(expr=dt(x, df=3),
-      xlab="", ylab="", lwd=3,
-      col="red", add=TRUE)
+      \includegraphics[width=0.5\paperwidth]{figure/optim_one_dim-1}
+      \vspace{-4em}
+        <<optim_one_dim,eval=FALSE,echo=(-(1:1)),fig.show='hide'>>=
+par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+# Plot the objective function
+curve(expr=object_ive, type="l", xlim=c(-8, 9),
+xlab="", ylab="", lwd=2)
 # Add title
-title(main="Normal and t-distribution densities", line=0.5)
-# Add legend
-legend("topright", inset=0.05, bty="n",
-       title=NULL, c("normal", "t-dist"),
-       cex=0.8, lwd=6, lty=1,
-       col=c("black", "red"))
+title(main="Objective Function", line=-1)
       @
   \end{columns}
 \end{block}
@@ -229,47 +129,40 @@ legend("topright", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Wilcoxon Signed Rank} Test for Distribution Similarity}
+\subsection{Package \protect\emph{rgl} for Interactive 3d Surface Plots}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $\{x_1, \ldots, x_n\}$ and $\{y_1, \ldots, y_n\}$ be two samples of data, which form pairs of observations: $\{x_1, y_1\}, \ldots, \{x_n, y_n\}$.
+      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
       \vskip1ex
-      The \emph{null hypothesis} of the \emph{Wilcoxon Signed Rank} test is that the two data samples, $x_i$ and $y_i$, were obtained from \emph{similar} probability distributions.
-      \vskip1ex
-      For \emph{symmetric} distributions, the \emph{Wilcoxon} test only requires that the distributions have equal \emph{medians}, but they can have different \emph{standard deviations}.
-      \vskip1ex
-      But for \emph{skewed} distributions, the \emph{Wilcoxon} test requires that the distributions be the same.
-      \vskip1ex
-      The function \texttt{wilcox.test()} with parameter \texttt{paired=TRUE} calculates the \emph{Wilcoxon Signed Rank} test statistic and its \emph{p}-value.
-      \vskip1ex
-      If a single argument is passed into \texttt{wilcox.test()} then it tests if the data has zero \emph{median}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# VTI returns
-re_turns <- as.numeric(na.omit(
-  rutils::etf_env$re_turns[, "VTI"]))
-# Wilcoxon test for normal distribution
-da_ta <- rnorm(NROW(re_turns), sd=100)
-wilcox.test(da_ta)
-# Skewed distribution with mean=0
-mean(re_turns); median(re_turns)
-wilcox.test(re_turns-mean(re_turns))
-# Same as
-wilcox.test(re_turns-mean(re_turns), 
-  rep(0, NROW(re_turns)), paired=TRUE)
-# Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns))
-# Normal samples with different standard deviations
-n_rows <- 1e3
-sample1 <- rnorm(n_rows, sd=1)
-sample2 <- rnorm(n_rows, sd=10)
-wilcox.test(sample1, sample2, 
-            paired=TRUE)
+      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
+      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
+library(rgl)  # Load rgl
+# Define function of two variables
+sur_face <- function(x, y) y*sin(x)
+# Draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE)
+# Draw 3d surface plot of matrix
+x_lim <- seq(from=-5, to=5, by=0.1)
+y_lim <- seq(from=-5, to=5, by=0.1)
+persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+        xlab="x", ylab="y", zlab="sur_face",
+        col="green")
+# Save current view to png file
+rgl.snapshot("surface_plot.png")
+# Define function of two variables and two parameters
+sur_face <- function(x, y, par_1=1, par_2=1)
+  sin(par_1*x)*sin(par_2*y)
+# Draw 3d surface plot of function
+persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE,
+        par_1=1, par_2=2)
       @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/rgl_surf3d.png}
   \end{columns}
 \end{block}
 
@@ -277,808 +170,52 @@ wilcox.test(sample1, sample2,
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{W} Statistic of the \protect\emph{Wilcoxon Signed Rank} Test}
+\subsection{Multi-dimensional Optimization Using \texttt{optim()}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{W} statistic of the \emph{Wilcoxon Signed Rank} test is equal to the sum of the ranks of the absolute differences $r_i = \operatorname{rank}(|x_i - y_i|)$, weighted by their signs:
-      \begin{displaymath}
-        W = \sum_{i=1}^n \operatorname{sgn}(x_i - y_i) r_i
-      \end{displaymath}
-      The function \texttt{wilcox.test()} returns the \emph{V} statistic, not the the \emph{W} statistic:       \begin{displaymath}
-        V = \sum_{i=1}^n \operatorname{H}(x_i - y_i) r_i
-      \end{displaymath}
-      Where $\operatorname{H}(x) = 1$ if $x > 0$, and $0$ otherwise.
+      The functional \texttt{optim()} performs \emph{multi-dimensional} optimization.
+      \vskip1ex
+      The argument \texttt{fn} is the objective function to be minimized.
+      \vskip1ex
+      The argument of \texttt{fn} that is to be optimized, must be a vector argument.
+      \vskip1ex
+      The argument \texttt{par} is the initial vector argument value.
+      \vskip1ex
+      \texttt{optim()} accepts additional parameters bound to the dots \texttt{"..."} argument, and passes them to the \texttt{fn} objective function.
+      \vskip1ex
+      The arguments \texttt{lower} and \texttt{upper} specify the search range for the variables of the objective function \texttt{fn}.
+      \vskip1ex
+      \texttt{method="L-BFGS-B"} specifies the quasi-Newton \emph{gradient} optimization method.
+      \vskip1ex
+      \texttt{optim()} returns a list containing the location of the minimum and the objective function value.
+      \vskip1ex
+      The \emph{gradient} methods used by \texttt{optim()} can only find the local minimum, not the global minimum.
     \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for random data around 0
-da_ta <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(da_ta)
-# Calculate V statistic of Wilcoxon test
-wil_cox$statistic
-sum(rank(abs(da_ta))[da_ta>0])
-# Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
-# Two sets of normal data
-sample1 <- rnorm(n_rows)
-sample2 <- rnorm(n_rows, mean=0.1)
-# Wilcoxon test
-wil_cox <- wilcox.test(sample1, sample2, 
-                       paired=TRUE)
-wil_cox$statistic
-# Calculate V statistic of Wilcoxon test
-da_ta <- (sample1 - sample2)
-sum(rank(abs(da_ta))[da_ta>0])
-# Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Distribution of the \protect\emph{W} Statistic}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{W} statistic follows a distribution without a simple formula, which converges to the normal distribution for large sample size $n$, with an expected value equal to $0$ and a variance equal to $\frac{n(n+1)(2n+1)}{6}$.
         <<echo=TRUE,eval=FALSE>>=
-# Calculate distributon of Wilcoxon W statistic
-wilcox_w <- sapply(1:1e3, function(x) {
-  da_ta <- (runif(n_rows) - 0.5)
-  sum(sign(da_ta)*rank(abs(da_ta)))
-})  # end sapply
-wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
-var(wilcox_w)
-      @
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)  # Plot in window
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-hist(wilcox_w, col="lightgrey",
-     xlab="returns", breaks=50, xlim=c(-3, 3),
-     ylab="frequency", freq=FALSE,
-     main="Wilcoxon W Statistic Histogram")
-lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
-curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
-# Add legend
-legend("topright", inset=0.05, bty="n",
-       leg=c("W density", "Normal"),
-       lwd=6, lty=1, col=c("red", "blue"))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/wilcoxon_hist.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Wilcoxon Signed Rank} Test Versus \protect\emph{Student's t-test}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Wilcoxon} test can be considered to be a \emph{nonparametric} analogue of the \emph{Student's t-test}, but it tests for the \emph{medians}, rather than the \emph{means}.
-      \vskip1ex
-      The \emph{Wilcoxon} test is \emph{nonparametric} because it doesn't assume any type of sample distribution, unlike the \emph{Student's t-test} which assumes that the sample is taken from the \emph{normal} distribution.
-      \vskip1ex
-      The \emph{Wilcoxon} test is more \emph{robust} with respect to data outliers because it only depends on the ranks of the sample differences $(x_i - y_i)$, not the differences themselves.
-      \vskip1ex
-      Therefore the \emph{Wilcoxon} test reports fewer \emph{false positive} cases when there are outliers.
-      \vskip1ex
-      For many distributions, the \emph{Wilcoxon} test has greater \emph{sensitivity} than the \emph{Student's t-test}.
-      \vskip1ex
-      The \emph{sensitivity} of a statistical test is the ability to correctly identify \emph{true positive} cases (when the null hypothesis is \texttt{FALSE}).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Wilcoxon test for two normal distributions
-sample1 <- rnorm(1e2)
-sample2 <- rnorm(1e2, mean=0.1)
-wilcox.test(sample1, sample2, 
-            paired=TRUE)$p.value
-t.test(sample1, sample2)$p.value
-# Wilcoxon test with data outliers
-sample2 <- rnorm(1e2)
-sample2[1:3] <- sample2[1:3] + 1e3
-wilcox.test(sample1, sample2, 
-            paired=TRUE)$p.value
-t.test(sample1, sample2)$p.value
-      @
-      \vspace{-1em}
-      The \emph{sensitivity} of a statistical test is equal to the \emph{true positive} rate, i.e the fraction of \texttt{FALSE} null hypothesis cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{specificity} of a statistical test is the ability to correctly identify \emph{true negative} cases (when the null hypothesis is \texttt{TRUE}).
-      \vskip1ex
-      The \emph{specificity} of a statistical test is equal to the \emph{true negative} rate, i.e the fraction of \texttt{TRUE} null hypothesis cases that are correctly classified as \texttt{TRUE}.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Recursive Data Objects}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Lists}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists are a type of vector that contain elements of different \emph{types}.
-      \vskip1ex
-      Lists are recursive object types, meaning each list element can contain other vectors or lists.
-      \vskip1ex
-      The function \texttt{list()} creates a list from a list of vectors.
-      \vskip1ex
-      \texttt{list()} creates a named list from a list of symbol-value pairs.
-      \vskip1ex
-      The function \texttt{is.list()} returns \texttt{TRUE} if its argument is a list, and \texttt{FALSE} otherwise.
-      \vskip1ex
-      The function \texttt{unlist()} flattens a list into a vector that contains the atomic elements of the list (which typically causes coercion).
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a list with two elements
-lis_t <- list(c('a', 'b'), 1:4)
-lis_t
-c(typeof(lis_t), mode(lis_t), class(lis_t))
-# Lists are also vectors
-c(is.vector(lis_t), is.list(lis_t))
-NROW(lis_t)
-# Create named list
-lis_t <- list(first=c('a', 'b'), second=1:4)
-lis_t
-names(lis_t)
-unlist(lis_t)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Lists can be subset (indexed) using:
-      \begin{itemize}
-        \item the \texttt{"["} operator (returns sublist),
-        \item the \texttt{"[["} operator (returns an element),
-        \item the \texttt{"\$"} operator (for named lists only),
-      \end{itemize}
-      \vskip1ex
-      Partial name matching allows subsetting with partial name, as long as it can be resolved.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-lis_t[2]  # Extract second element as sublist
-lis_t[[2]]  # Extract second element
-lis_t[[2]][3]  # Extract third element of second element
-lis_t[[c(2, 3)]]  # third element of second element
-lis_t$second  # Extract second element
-lis_t$s  # Extract second element - partial name matching
-lis_t$second[3]  # third element of second element
-lis_t <- list()  # empty list
-lis_t$a <- 1
-lis_t[2] <- 2
-lis_t
-names(lis_t)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Vectors Into \subsecname \hskip0.5em Using \texttt{as.list()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.list()} coerces vectors and other objects into lists.
-      \vskip1ex
-      \texttt{as.list()} returns a list with the same elements as the vector.
-      \vskip1ex
-      \texttt{list()} called on a vector returns a single element equal to the vector.
-      \vskip1ex
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.list(c(1,2,3))
-list(c(1,2,3))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Data Frames}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames are \texttt{2-D} objects (like matrices), but their columns can be of different \emph{types}.
-      \vskip1ex
-      Data frames can be thought of as lists of vectors of the same length.
-      \vskip1ex
-      The function \texttt{data.frame()} creates a \emph{data frame} from vectors assigned to column names.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # Create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0)
-                    )  # end data.frame
-data_frame
-dim(data_frame)  # Get dimension attribute
-colnames(data_frame)  # Get the colnames attribute
-rownames(data_frame)  # Get the rownames attribute
-class(data_frame)  # Get object class
-typeof(data_frame)  # Data frames are lists
-is.data.frame(data_frame)
-
-class(data_frame$type)  # Get column class
-class(data_frame$price)  # Get column class
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Subsetting \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      Data frames can be subset in a similar way to lists and matrices.
-      \vskip1ex
-      Depending on how a data frame is subset, the result can be either a data frame or a vector.
-      \vskip1ex
-      Extracting a single column from a data frame produces a vector.
-      \vskip1ex
-      The data frame class attribute can be preserved by using the parameter \texttt{"drop=FALSE"}.
-      \vskip1ex
-      Extracting a single row from a data frame produces a data frame.
-      \vskip1ex
-      The function \texttt{unlist()} applied to a single row extracted from a data frame coerces it to a vector.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame[, 3]  # Extract third column as vector
-data_frame[[3]]  # Extract third column as vector
-data_frame[3]  # Extract third column as data frame
-data_frame[, 3, drop=FALSE]  # Extract third column as data frame
-data_frame[[3]][2]  # Second element from third column
-data_frame$price[2]  # Second element from 'price' column
-is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
-data_frame[2, ]  # Extract second row
-data_frame[2, ][3]  # third element from second column
-data_frame[2, 3]  # third element from second column
-unlist(data_frame[2, ])  # Coerce to vector
-is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{\subsecname \hskip0.5em and Factors}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      By default \texttt{data.frame()} coerces \texttt{character} vectors to \texttt{factors}, unless the \texttt{stringsAsFactors=FALSE} option is passed into \texttt{data.frame()}.
-      \vskip1ex
-      The function \texttt{options()} sets global \emph{options}, that determine how \texttt{R} computes and displays its results.
-      \vskip1ex
-      If the global \texttt{option} \texttt{stringsAsFactors=FALSE} is set, then \texttt{character} vectors will not be coerced to \texttt{factors} in all subsequent \texttt{data frame} operations.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-data_frame <- data.frame(  # Create a data frame
-                      type=c('rose', 'daisy', 'tulip'),
-                      color=c('red', 'white', 'yellow'),
-                      price=c(1.5, 0.5, 1.0),
-                      row.names=c('flower1', 'flower2', 'flower3'),
-                      stringsAsFactors=FALSE
-                    )  # end data.frame
-data_frame
-class(data_frame$type)  # Get column class
-class(data_frame$price)  # Get column class
-# Set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
-options("stringsAsFactors")
-default.stringsAsFactors()
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Exploring \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{str()} displays the structure of an \texttt{R} object.
-      \vskip1ex
-      The functions \texttt{head()} and \texttt{tail()} display the first and last rows of an \texttt{R} object.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-str(data_frame)  # Display the object structure
-dim(cars)  # the cars data frame has 50 rows
-head(cars, n=5)  # Get first five rows
-tail(cars, n=5)  # Get last five rows
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Sorting Vectors and \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{sort()} returns a vector sorted into ascending order.
-      \vskip1ex
-      A permutation is a re-ordering of the elements of a vector.
-      \vskip1ex
-      The permutation index specifies how the elements are re-ordered in a permutation.
-      \vskip1ex
-      The function \texttt{order()} calculates the permutation index to sort a given vector into ascending order.
-      \vskip1ex
-      Applying the function \texttt{order()} twice: \texttt{order(order())}, calculates the permutation index to sort the vector from ascending order into its unsorted (original) order.
-      \vskip1ex
-      So the permutation index produced by: \texttt{order(order())} is the reverse of the permutation index produced by: \texttt{order()}.
-      \vskip1ex
-      \texttt{order()} can take several vectors as input, to break any ties.
-      \vskip1ex
-      Data frames can be sorted on any column.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Create a named vector
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
-# Sort the vector into ascending order
-sort(stu_dents)
-# Calculate index to sort into ascending order
-order(stu_dents)
-# Sort the vector into ascending order
-stu_dents[order(stu_dents)]
-# Calculate the sorted (ordered) vector
-sort_ed <- stu_dents[order(stu_dents)]
-# Calculate index to sort into unsorted (original) order
-order(order(stu_dents))
-sort_ed[order(order(stu_dents))]
-stu_dents
-# Create a data frame of stu_dents and their ranks
-ra_nks <- c("first", "second", "third", "fourth", "fifth")
-data.frame(students=stu_dents, 
-  rank=ra_nks[order(order(stu_dents))])
-# Permute data_frame of flowers on price column
-order(data_frame$price)
-# Sort data_frame on price
-data_frame[order(data_frame$price), ]
-# Sort data_frame on color
-data_frame[order(data_frame$color), ]
-# Read the Examples for sort()
-order(c(2, 1:4))  # there's a tie
-order(c(2, 1:4), 1:5)  # there's a tie
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing \subsecname \hskip0.5em Into Matrices Using \texttt{as.matrix()}}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The function \texttt{as.matrix()} coerces vectors and data frames into matrices.
-      \vskip1ex
-      Coercing a data frame into a matrix causes coercion of \texttt{numeric} values into \texttt{character}.
-      \vskip1ex
-      \texttt{as.matrix()} coerces vectors into single column matrices, as opposed to \texttt{matrix()}, which produces a matrix.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-as.matrix(data_frame)
-vec_tor <- sample(9)
-matrix(vec_tor, ncol=3)
-as.matrix(vec_tor, ncol=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames.
-      \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames.
-      \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch.
-      \vskip1ex
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch.
-      \vskip1ex
-      The function \texttt{data.frame()} can also be used to coerce matrices into data frames, but is much slower than even \texttt{as.data.frame()}.
-      \vskip1ex
-      \texttt{as.data.frame()} is about three times faster than \texttt{data.frame()}, because it doesn't require extra \texttt{R} code in \texttt{data.frame()} needed for handling different types of vectors, and for method dispatch.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:3))>>=
-mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
-colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
-library(microbenchmark)
-# Call method instead of generic function
-as.data.frame.matrix(mat_rix)
-# A few methods for generic function as.data.frame()
-sample(methods(as.data.frame), size=4)
-# Function method is faster than generic function
-summary(microbenchmark(
-  as_data_frame_matrix=
-    as.data.frame.matrix(mat_rix),
-  as_data_frame=as.data.frame(mat_rix),
-  data_frame=data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\begin{frame}[fragile,t]{Coercing Matrices Into Lists}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Matrices can be coerced into lists in at least two different ways.
-      \vskip1ex
-      Matrices can be first coerced into a data frame, and then into a list using function \texttt{as.list()}.
-      \vskip1ex
-      Matrices can be directly coerced into a list using function \texttt{lapply()}.
-      \vskip1ex
-      Using \texttt{lapply()} is the faster of the two methods, because \texttt{lapply()} is a \emph{compiled} function.
-    \column{0.5\textwidth}
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(microbenchmark)
-# lapply is faster than coercion function
-summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
-           function(in_dex) mat_rix[, in_dex]),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{iris} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{iris} data frame is included in the \texttt{datasets} base package.
-      \vskip1ex
-      \texttt{iris} contains sepal and petal dimensions of 50 flowers from 3 species of iris.
-      \vskip1ex
-      The function \texttt{unique()} extracts unique elements of an object.
-      \vskip1ex
-      \texttt{sapply()} applies a function to a list or a vector of objects and returns a vector.
-      \vskip1ex
-      \texttt{sapply()} performs a loop over the list of objects, and can replace \texttt{"for"} loops in \texttt{R}.
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?iris  # Get information on iris
-dim(iris)
-head(iris, 2)
-colnames(iris)
-unique(iris$Species)  # List of unique elements of iris
-class(unique(iris$Species))
-# Find which columns of iris are numeric
-sapply(iris, is.numeric)
-# Calculate means of iris columns
-sapply(iris, mean)  # Returns NA for Species
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{mtcars} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      The \texttt{mtcars} data frame is included in the \texttt{datasets} base package, and contains design and performance data for 32 automobiles.
-      \vskip1ex
-    \column{0.6\textwidth}
-        <<echo=TRUE,eval=FALSE>>=
-# ?mtcars  # mtcars data from 1974 Motor Trend magazine
-# mpg   Miles/(US) gallon
-# qsec   1/4 mile time
-# hp	 Gross horsepower
-# wt	 Weight (lb/1000)
-# cyl   Number of cylinders
-dim(mtcars)
-head(mtcars, 2)
-colnames(mtcars)
-head(rownames(mtcars), 3)
-unique(mtcars$cyl)  # Extract list of car cylinders
-sapply(mtcars, mean)  # Calculate means of mtcars columns
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \texttt{Cars93} Data Frame}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \texttt{Cars93} data frame is included in the \texttt{MASS} package, and contains design and performance data for 93 automobiles.
-      \vskip1ex
-      The function \texttt{hist()} calculates and plots a histogram, and returns its data invisibly.
-      \vskip1ex
-      The parameter \texttt{breaks} is the number of cells of the histogram.
-      \vskip1ex
-      \texttt{"FD"} stands for the Freedman-Diaconis rule for calculating histogram breaks,
-        <<fig.show='hide'>>=
-library(MASS)
-# ?Cars93  # Get information on Cars93
-dim(Cars93)
-head(colnames(Cars93))
-# head(Cars93, 2)
-unique(Cars93$Type)  # Extract list of car types
-# sapply(Cars93, mean)  # Calculate means of Cars93 columns
-# Plot histogram of Highway MPG using the Freedman-Diaconis rule
-hist(Cars93$MPG.highway, col="lightblue1",
-     main="Distance per Gallon 1993", xlab="Highway MPG", breaks="FD")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/Cars93_hist-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Data Management and Analysis}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bad Data}
-\begin{frame}[fragile,t]{Types of \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Possible sources of bad data are: imported data, class coercion, numeric overflow.
-      \vskip1ex
-      Types of bad data:
-      \begin{itemize}
-        \item \texttt{NA} (not available) is a logical constant indicating missing data,
-        \item \texttt{NaN} means Not a Number data,
-        \item \texttt{Inf} means numeric overflow - divide by zero,
-      \end{itemize}
-      \vskip1ex
-      When a function produces \texttt{NA} or \texttt{NaN} values, then it also produces a \emph{warning} condition, but not an \emph{error}.
-      \vskip1ex
-      \texttt{NA} or \texttt{NaN} values are not \emph{errors}.
-      \vskip1ex
-      The functions \texttt{is.na()} and \texttt{is.nan()} test for \texttt{NA} and \texttt{NaN} values.
-      \vskip1ex
-      Many functions have a \texttt{na.rm} parameter to remove \texttt{NAs} from input data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-as.numeric(c(1:3, "a"))  # NA from coercion
-0/0  # NaN from ambiguous math
-1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
-NA*1:4  # Create vector of Nas
-# Create vector with some NA values
-da_ta <- c(1, 2, NA, 4, NA, 5)
-da_ta
-mean(da_ta)  # Returns NA, when NAs are input
-mean(da_ta, na.rm=TRUE)  # remove NAs from input data
-da_ta[!is.na(da_ta)]  # Delete the NA values
-sum(!is.na(da_ta))  # Count non-NA values
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{complete.cases()} returns \texttt{TRUE} if a row has no \texttt{NA} values.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# Airquality data has some NAs
-head(airquality)
-dim(airquality)
-# Number of NA elements
-sum(is.na(airquality))
-# Number of rows with NA elements
-sum(!complete.cases(airquality))
-# Display rows containing NAs
-head(airquality[!complete.cases(airquality), ])
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-\begin{frame}[fragile,t]{Scrubbing \subsecname \hskip0.5em (cont.)}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Rows containing bad data may be either removed or replaced with an estimated value.
-      \vskip1ex
-      The function \texttt{na.locf()} from package \emph{zoo} replaces NAs with most recent non-NA prior to it.
-      \vskip1ex
-      The function \texttt{na.locf.xts()} from package \emph{xts} is faster than \texttt{zoo::na.locf()}, but it only operates on time series of class \texttt{"xts"}.
-      \vskip1ex
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-1),eval=FALSE>>=
-rm(list=ls())
-# Remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# Replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
-# Create vector containing NA values
-vec_tor <- sample(22)
-vec_tor[sample(NROW(vec_tor), 4)] <- NA
-# Replace NA values with the most recent non-NA values
-zoo::na.locf(vec_tor)
-# Replace NAs in xts time series
-se_ries <- rutils::etf_env$price_s[, 1]
-head(se_ries)
-sum(is.na(se_ries))
-library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
-series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
-all.equal(series_zoo, series_xts, check.attributes=FALSE)
-library(microbenchmark)
-summary(microbenchmark(
-  zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
-  xts=xts:::na.locf.xts(se_ries, fromLast=TRUE),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\texttt{NULL} Values}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{NULL} represents a null object, and is a legitimate value, not bad data.
-      \vskip1ex
-      \texttt{NULL} is often returned by functions whose value is undefined.
-      \vskip1ex
-      \texttt{NULL} can also be used to initialize vectors.
-      \vskip1ex
-      \texttt{NULL} is not the same as \texttt{NA} values or zero-length (empty) vectors.
-      \vskip1ex
-      The functions \texttt{numeric()} and \texttt{character()} return empty (zero-length) vectors of the specified \emph{type}.
-      \vskip1ex
-      The function \texttt{is.null()} tests for \texttt{NULL} values.
-      \vskip1ex
-      Very often variables are initialized to \texttt{NULL} before the start of iteration.
-      \vskip1ex
-      A more efficient way to perform iteration is by pre-allocating the vector.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# NULL values have no mode or type
-c(mode(NULL), mode(NA))
-c(typeof(NULL), typeof(NA))
-c(length(NULL), length(NA))
-# Check for NULL values
-is.null(NULL)
-# NULL values are ignored when combined into a vector
-c(1, 2, NULL, 4, 5)
-# But NA value isn't ignored
-c(1, 2, NA, 4, 5)
-# Vectors can be initialized to NULL
-vec_tor <- NULL
-is.null(vec_tor)
-# Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# Initialize empty vector
-vec_tor <- numeric()
-# Grow the vector in a loop - very bad code!!!
-for (in_dex in 1:5)
-  vec_tor <- c(vec_tor, in_dex)
-# Allocate vector
-vec_tor <- numeric(5)
-# Assign to vector in a loop - good code
-for (in_dex in 1:5)
-  vec_tor[in_dex] <- runif(1)
+# Rastrigin function with vector argument for optimization
+rastri_gin <- function(vec_tor, pa_ram=25){
+  sum(vec_tor^2 - pa_ram*cos(vec_tor))
+}  # end rastri_gin
+vec_tor <- c(pi/6, pi/6)
+rastri_gin(vec_tor=vec_tor)
+# Draw 3d surface plot of Rastrigin function
+rgl::persp3d(
+  x=Vectorize(function(x, y) rastri_gin(vec_tor=c(x, y))),
+  xlim=c(-10, 10), ylim=c(-10, 10),
+  col="green", axes=FALSE, zlab="", main="rastri_gin")
+# Optimize with respect to vector argument
+op_tim <- optim(par=vec_tor, fn=rastri_gin,
+                method="L-BFGS-B",
+                upper=c(4*pi, 4*pi),
+                lower=c(pi/2, pi/2),
+                pa_ram=1)
+# Optimal parameters and value
+op_tim$par
+op_tim$value
+rastri_gin(op_tim$par, pa_ram=1)
       @
   \end{columns}
 \end{block}
@@ -1089,41 +226,6 @@ for (in_dex in 1:5)
 
 %%%%%%%%%%%%%%%
 \section{Univariate Regression}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vector and Matrix Calculus}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-    \begin{columns}[T]
-    \column{0.5\textwidth}
-      Let $\mathbf{v}$ and $\mathbf{w}$ be vectors, with $\mathbf{v} = \left\{ v_i \right\}_{i=1}^{i=n}$, and let $\mathbbm{1}$ be the unit vector, with $\mathbbm{1} = \left\{ 1 \right\}_{i=1}^{i=n}$.
-      \vskip1ex
-      Then the inner product of $\mathbf{v}$ and $\mathbf{w}$ can be written as $\mathbf{v}^T \mathbf{w} = \mathbf{w}^T \mathbf{v} = {\sum_{i=1}^n {v_i w_i}}$.
-      \vskip1ex
-      We can then express the sum of the elements of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbbm{1} = \mathbbm{1}^T \mathbf{v} = {\sum_{i=1}^n v_i}$.
-      \vskip1ex
-      And the sum of squares of $\mathbf{v}$ as the inner product: $\mathbf{v}^T \mathbf{v} = {\sum_{i=1}^n v^2_i}$.
-      \vskip1ex
-      Let $\mathbb{A}$ be a matrix, with $\mathbb{A} = \left\{ A_{ij} \right\}_{{i,j}=1}^{{i,j}=n}$.
-      \vskip1ex
-      Then the inner product of matrix $\mathbb{A}$ with vectors $\mathbf{v}$ and $\mathbf{w}$ can be written as: 
-      \begin{displaymath}
-        \mathbf{v}^T \mathbb{A} \, \mathbf{w} = \mathbf{w}^T \mathbb{A}^T \mathbf{v} = {\sum_{{i,j}=1}^n {A_{ij} v_i w_j}}
-      \end{displaymath}
-    \column{0.5\textwidth}
-      The derivative of a scalar variable with respect to a vector variable is a vector, for example:
-      \begin{align*}
-        \frac{d (\mathbf{v}^T \mathbbm{1})}{d \mathbf{v}} = d_v[\mathbf{v}^T \mathbbm{1}] = d_v[\mathbbm{1}^T \mathbf{v}] = \mathbbm{1}^T\\
-        d_v[\mathbf{v}^T \mathbf{w}] = d_v[\mathbf{w}^T \mathbf{v}] = \mathbf{w}^T\\
-        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{w}] = \mathbf{w}^T \mathbb{A}^T\\
-        d_v[\mathbf{v}^T \mathbb{A} \, \mathbf{v}] = \mathbf{v}^T \mathbb{A} + \mathbf{v}^T \mathbb{A}^T
-      \end{align*}
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -1188,7 +290,7 @@ update(for_mula, log(.) ~ . + beta)
       \end{displaymath}
       $\alpha$ and $\beta$ are the unknown \emph{regression coefficients}.
       \vskip1ex
-      $\varepsilon_i$ are the \emph{residuals}, which are usually assumed to be normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
+      $\varepsilon_i$ are the \emph{residuals}, which are usually assumed to be standard normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
       \vskip1ex
       In the Ordinary Least Squares method (\emph{OLS}), the regression parameters are estimated by minimizing the \emph{Residual Sum of Squares} (\emph{RSS}):
       \begin{align*}
@@ -1300,7 +402,7 @@ class(mod_el)  # Regressions have class lm
 attributes(mod_el)
 eval(mod_el$call$formula)  # Regression formula
 mod_el$coeff  # Regression coefficients
-all.equal(coef(mod_el), c(al_pha, be_ta), 
+all.equal(coef(mod_el), c(al_pha, be_ta),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -1336,16 +438,14 @@ title(main="Simple Regression", line=0.5)
 # Add regression line
 abline(mod_el, lwd=3, col="blue")
 # Plot fitted (predicted) response values
-points(x=de_sign, y=mod_el$fitted.values,
-       pch=16, col="blue")
+points(x=de_sign, y=mod_el$fitted.values, pch=16, col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/reg_scatter_plot.png}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Plot response without noise
-lines(x=de_sign, y=(res_ponse-noise), 
-      col="red", lwd=3)
+lines(x=de_sign, y=(res_ponse-noise), col="red", lwd=3)
 legend(x="topleft", # Add legend
        legend=c("response without noise", "fitted values"),
        title=NULL, inset=0.08, cex=0.8, lwd=6,
@@ -1371,14 +471,14 @@ legend(x="topleft", # Add legend
         <<echo=TRUE,eval=TRUE>>=
 # Calculate the residuals
 fit_ted <- (al_pha + be_ta*de_sign)
-resid_uals <- (res_ponse - fit_ted)
-all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
+residual_s <- (res_ponse - fit_ted)
+all.equal(residual_s, mod_el$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to the de_sign
-all.equal(sum(resid_uals*de_sign), target=0)
+all.equal(sum(residual_s*de_sign), target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(resid_uals*fit_ted), target=0)
+all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
-all.equal(mean(resid_uals), target=0)
+all.equal(mean(residual_s), target=0)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/reg_residuals.png}
@@ -1412,11 +512,11 @@ abline(h=0, lwd=3, col="red")
       \vskip1ex
       The standard errors of the regression coefficients are equal to their standard deviations, given the \emph{residuals} as the source of error.
       \vskip1ex
-      Since $\beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}}$, then its variance is equal to: 
+      Since $\beta = \frac {\hat{y}^T \hat{x}} {\hat{x}^T \hat{x}}$, then its variance is equal to:
       \begin{displaymath}
         \sigma^2_\beta = \frac{1}{(n-2)} \frac {E[(\varepsilon^T \hat{x})^2]} {(\hat{x}^T \hat{x})^2} = \frac{1}{(n-2)} \frac {E[\varepsilon^2]} {\hat{x}^T \hat{x}} = \frac {\sigma^2_\varepsilon} {\hat{x}^T \hat{x}}
       \end{displaymath}
-      Since $\alpha = \bar{y} - \beta \bar{x}$, then its variance is equal to: 
+      Since $\alpha = \bar{y} - \beta \bar{x}$, then its variance is equal to:
       \begin{displaymath}
         \sigma^2_\alpha = \frac{\sigma^2_\varepsilon}{n} + \sigma^2_\beta \bar{x}^2 = \sigma^2_\varepsilon (\frac{1}{n} + \frac {\bar{x}^2} {\hat{x}^T \hat{x}})
       \end{displaymath}
@@ -1426,11 +526,9 @@ abline(h=0, lwd=3, col="red")
 # Degrees of freedom of residuals
 deg_free <- mod_el$df.residual
 # Standard deviation of residuals
-resid_stddev <- 
-  sqrt(sum(resid_uals^2)/deg_free)
+resid_stddev <- sqrt(sum(residual_s^2)/deg_free)
 # Standard error of beta
-beta_stderror <- 
-  resid_stddev/sqrt(sum(design_zm^2))
+beta_stderror <- resid_stddev/sqrt(sum(design_zm^2))
 # Standard error of alpha
 alpha_stderror <- resid_stddev*
   sqrt(1/len_gth + mean(de_sign)^2/sum(design_zm^2))
@@ -1496,8 +594,9 @@ attributes(model_sum)$names  # get summary elements
 model_sum$coeff
 # Standard errors
 model_sum$coefficients[2, "Std. Error"]
-all.equal(c(alpha_stderror, beta_stderror), 
-          model_sum$coefficients[, "Std. Error"], check.attributes=FALSE)
+all.equal(c(alpha_stderror, beta_stderror),
+  model_sum$coefficients[, "Std. Error"], 
+  check.attributes=FALSE)
 # R-squared
 model_sum$r.squared
 model_sum$adj.r.squared
@@ -1544,15 +643,15 @@ summary(mod_el)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \vspace{-2em}
+    \vspace{-1em}
       <<reg_noise,eval=FALSE,echo=(-(1:1)),fig.height=5.2,fig.show='hide'>>=
 par(oma=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=1.0, cex.axis=1.0, cex.main=1.0, cex.sub=1.0)
 reg_stats <- function(std_dev) {  # Noisy regression
   set.seed(1121)  # initialize number generator
 # Define explanatory (design) and response variables
   de_sign <- rnorm(100, mean=2)
-  res_ponse <- (1 + 0.2*de_sign +
-    rnorm(NROW(de_sign), sd=std_dev))
+  res_ponse <- (1 + 0.2*de_sign + 
+  rnorm(NROW(de_sign), sd=std_dev))
 # Specify regression formula
   for_mula <- res_ponse ~ de_sign
 # Perform regression and get summary
@@ -1572,8 +671,7 @@ for (in_dex in 1:NCOL(mat_stats)) {
   plot(mat_stats[, in_dex], type="l",
        xaxt="n", xlab="", ylab="", main="")
   title(main=colnames(mat_stats)[in_dex], line=-1.0)
-  axis(1, at=1:(NROW(mat_stats)),
-       labels=rownames(mat_stats))
+  axis(1, at=1:(NROW(mat_stats)), labels=rownames(mat_stats))
 }  # end for
       @
     \column{0.5\textwidth}
@@ -1592,15 +690,13 @@ for (in_dex in 1:NCOL(mat_stats)) {
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-    \vspace{-2em}
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 reg_stats <- function(da_ta) {  # get regression
 # Perform regression and get summary
   col_names <- colnames(da_ta)
-  for_mula <-
-    paste(col_names[2], col_names[1], sep="~")
-  model_sum <- summary(lm(for_mula,
-                              data=da_ta))
+  for_mula <- paste(col_names[2], col_names[1], sep="~")
+  model_sum <- summary(lm(for_mula, data=da_ta))
 # Extract regression statistics
   with(model_sum, c(pval=coefficients[2, 4],
          adj_rsquared=adj.r.squared,
@@ -1609,8 +705,7 @@ reg_stats <- function(da_ta) {  # get regression
 # Apply reg_stats() to vector of std dev values
 vec_sd <- seq(from=0.1, to=0.5, by=0.1)
 names(vec_sd) <- paste0("sd=", vec_sd)
-mat_stats <-
-  t(sapply(vec_sd, function(std_dev) {
+mat_stats <- t(sapply(vec_sd, function(std_dev) {
     set.seed(1121)  # initialize number generator
 # Define explanatory (design) and response variables
     de_sign <- rnorm(100, mean=2)
@@ -1738,7 +833,7 @@ lmtest::dwtest(mod_el)
       \vskip1ex
       After the second column of the \emph{design matrix} $\mathbb{X}$ is de-meaned, its \emph{covariance matrix} is given by:
       \begin{displaymath}
-        \mathbb{X}^T \mathbb{X} = 
+        \mathbb{X}^T \mathbb{X} =
           \begin{pmatrix}
             n & 0 \\
             0 & \sum_{i=1}^n (x_i - \bar{x})^2 \\
@@ -1746,7 +841,7 @@ lmtest::dwtest(mod_el)
       \end{displaymath}
       And the \emph{influence matrix} $\mathbb{H}$ is given by:
       \begin{displaymath}
-        \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} = 
+        \mathbb{H}_{ij} = [\mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T]_{ij} =
         \frac{1}{n} + \frac{(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i=1}^n (x_i - \bar{x})^2}
       \end{displaymath}
       The first term above is due to the influence of the regression intercept $\alpha$, and the second term is due to the influence of the regression slope $\beta_1$.
@@ -1768,9 +863,9 @@ design_inv <- MASS::ginv(de_sign)
 influ_ence <- de_sign %*% design_inv
 # Plot the leverage vector
 or_der <- order(de_sign[, 2])
-plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der], 
-     type="l", lwd=3, col="blue", 
-     xlab="predictor", ylab="leverage", 
+plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der],
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="leverage",
      main="Leverage as Function of Predictor")
       @
   \end{columns}
@@ -1800,7 +895,6 @@ plot(x=de_sign[or_der, 2], y=diag(influ_ence)[or_der],
       The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
       \vskip1ex
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
-      \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
@@ -1815,15 +909,15 @@ all.equal(influ_ence, influ_ence %*% influ_ence)
 # Calculate covariance and standard deviations of fitted values
 beta_s <- design_inv %*% res_ponse
 fit_ted <- drop(de_sign %*% beta_s)
-resid_uals <- drop(res_ponse - fit_ted)
+residual_s <- drop(res_ponse - fit_ted)
 deg_free <- (NROW(de_sign) - NCOL(de_sign))
-var_resid <- sqrt(sum(resid_uals^2)/deg_free)
+var_resid <- sqrt(sum(residual_s^2)/deg_free)
 fit_covar <- var_resid*influ_ence
 fit_sd <- sqrt(diag(fit_covar))
 # Plot the standard deviations
 fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
 fit_sd <- fit_sd[order(fit_ted), ]
-plot(fit_sd, type="l", lwd=3, col="blue", 
+plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
       @
@@ -1846,7 +940,7 @@ plot(fit_sd, type="l", lwd=3, col="blue",
       \vskip1ex
       The fitted values for different realizations of random noise can be calculated using the influence matrix.
         <<echo=TRUE,eval=FALSE>>=
-# Calculate response without random noise for univariate regression, 
+# Calculate response without random noise for univariate regression,
 # equal to weighted sum over columns of de_sign
 weight_s <- c(-1, 1)
 res_ponse <- de_sign %*% weight_s
@@ -1862,16 +956,16 @@ fit_ted <- rutils::do_call(cbind, fit_ted)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/reg_fitted.png}
-      \vspace{-3em}
+      \vspace{-2em}
         <<echo=(-(1:3)),eval=FALSE>>=
 x11(width=5, height=4)  # Open x11 for plotting
 # Set plot parameters to reduce whitespace around plot
 par(mar=c(5, 5, 2, 1), oma=c(0, 0, 0, 0))
 # Plot fitted values
-matplot(x=de_sign[,2], y=fit_ted, 
+matplot(x=de_sign[,2], y=fit_ted,
         type="l", lty="solid", lwd=1, col="blue",
-        xlab="predictor", ylab="fitted", 
-        main="Fitted Values for Different Realizations 
+        xlab="predictor", ylab="fitted",
+        main="Fitted Values for Different Realizations
         of Random Noise")
 lines(x=de_sign[,2], y=res_ponse, col="red", lwd=4)
 legend(x="topleft", # Add legend
@@ -1891,7 +985,7 @@ legend(x="topleft", # Add legend
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       The prediction $y_{pred}$ from a regression model is equal to the \emph{response value} corresponding to the \emph{predictor} vector with the new data $\mathbb{X}_{new}$:
       \begin{displaymath}
         y_{pred} = \mathbb{X}_{new} \, \beta
@@ -1901,11 +995,11 @@ legend(x="topleft", # Add legend
         & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
         & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
-        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
         \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
       \end{align*}
       The variance $\sigma^2_{pred}$ of the \emph{predicted value} is equal to the \emph{predictor} vector multiplied by the \emph{covariance matrix} of the \emph{regression coefficients} $\sigma^2_\beta$.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Inverse of design matrix squared
@@ -1914,16 +1008,18 @@ design_2 <- MASS::ginv(crossprod(de_sign))
 new_data <- (max(de_sign[, 2]) + 10*(1:5)/len_gth)
 # Calculate the predicted values and standard errors
 design_new <- cbind(rep(1, NROW(new_data)), new_data)
+std_dev <- sqrt(design_new %*% design_2 %*% t(design_new))
 predic_tions <- cbind(
   prediction=drop(design_new %*% beta_s),
-  stddev=diag(var_resid*sqrt(design_new %*% design_2 %*% t(design_new))))
+  stddev=diag(var_resid*std_dev))
 # OR: Perform loop over new_data
 predic_tions <- sapply(new_data, function(predic_tor) {
   predic_tor <- cbind(1, predic_tor)
   # Calculate predicted values
   predic_tion <- predic_tor %*% beta_s
   # Calculate standard deviation
-  predict_sd <- var_resid*sqrt(predic_tor %*% design_2 %*% t(predic_tor))
+  std_dev <- sqrt(predic_tor %*% design_2 %*% t(predic_tor))
+  predict_sd <- var_resid*std_dev
   c(prediction=predic_tion, stddev=predict_sd)
 })  # end sapply
 predic_tions <- t(predic_tions)
@@ -1941,8 +1037,7 @@ predic_tions <- t(predic_tions)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}. 
-      \vspace{-1em}
+      The variables $\sigma^2_\varepsilon$ and $\sigma^2_y$ follow the \emph{chi-squared} distribution with $d_{free} = (n-k-1)$ degrees of freedom, so the \emph{predicted value} $y_{pred}$ follows the \emph{t-distribution}.
         <<echo=TRUE,eval=FALSE>>=
 # Prepare plot data
 x_data <- c(de_sign[,2], new_data)
@@ -1954,10 +1049,9 @@ predict_low <- predic_tions[, 1]-t_quant*predic_tions[, 2]
 predict_high <- predic_tions[, 1]+t_quant*predic_tions[, 2]
 y_lim <- range(c(res_ponse, y_data, predict_low, predict_high))
 # Plot the regression predictions
-plot(x=x_data, y=y_data, 
-     xlim=x_lim, ylim=y_lim,  
-     type="l", lwd=3, col="blue", 
-     xlab="predictor", ylab="fitted or predicted", 
+plot(x=x_data, y=y_data, xlim=x_lim, ylim=y_lim,
+     type="l", lwd=3, col="blue",
+     xlab="predictor", ylab="fitted or predicted",
      main="Predictions from Linear Regression")
 points(x=de_sign[,2], y=res_ponse, col="blue")
 points(x=new_data, y=predic_tions[, 1], pch=16, col="blue")
@@ -2000,10 +1094,10 @@ predict_lm <- as.data.frame(predict_lm)
 all.equal(predict_lm$fit, predic_tions[, 1])
 all.equal(predict_lm$lwr, predict_low)
 all.equal(predict_lm$upr, predict_high)
-plot(res_ponse ~ predic_tor, 
+plot(res_ponse ~ predic_tor,
      xlim=range(predic_tor, new_data),
      ylim=range(res_ponse, predict_lm),
-     xlab="predictor", ylab="fitted or predicted", 
+     xlab="predictor", ylab="fitted or predicted",
      main="Predictions from lm() Regression")
       @
     \column{0.5\textwidth}
@@ -2041,7 +1135,6 @@ legend(x="topleft", # Add legend
       But the Durbin-Watson test shows residuals are autocorrelated, which invalidates the other tests.
       \vskip1ex
       The Q-Q plot also shows that residuals are \emph{not} normally distributed.
-      \vspace{-1em}
         <<echo=(-(1:3)),eval=FALSE>>=
 set.seed(1121)
 library(lmtest)
@@ -2171,7 +1264,7 @@ response_zm <- res_ponse - mean(res_ponse)
 # Calculate the regression coefficients
 beta_s <- MASS::ginv(design_zm) %*% response_zm
 # Calculate the regression alpha
-al_pha <- mean(res_ponse) - 
+al_pha <- mean(res_ponse) -
   sum(colSums(de_sign)*drop(beta_s))/n_rows
 # Compare with coefficients from lm()
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
@@ -2257,7 +1350,7 @@ all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
       \end{flalign*}
       Therefore the \emph{residuals} are also orthogonal to the \emph{fitted values}: $\varepsilon^T y_{fit} = \varepsilon^T \mathbb{X} \beta = 0$.
       \vskip1ex
-      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$. 
+      Since the first column of the \emph{design matrix} $\mathbb{X}$ is a unit vector, the \emph{residuals} $\varepsilon$ have zero mean: $\varepsilon^T \mathbbm{1} = 0$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
@@ -2265,15 +1358,14 @@ all.equal(drop(beta_s), coef(mod_el), check.attributes=FALSE)
 fit_ted <- drop(de_sign %*% beta_s)
 all.equal(fit_ted, mod_el$fitted.values, check.attributes=FALSE)
 # Calculate the residuals
-resid_uals <- drop(res_ponse - fit_ted)
-all.equal(resid_uals, mod_el$residuals, check.attributes=FALSE)
+residual_s <- drop(res_ponse - fit_ted)
+all.equal(residual_s, mod_el$residuals, check.attributes=FALSE)
 # Residuals are orthogonal to de_sign columns (predictors)
-sapply(resid_uals %*% de_sign, 
-       all.equal, target=0)
+sapply(residual_s %*% de_sign, all.equal, target=0)
 # Residuals are orthogonal to the fitted values
-all.equal(sum(resid_uals*fit_ted), target=0)
+all.equal(sum(residual_s*fit_ted), target=0)
 # Sum of residuals is equal to zero
-all.equal(sum(resid_uals), target=0)
+all.equal(sum(residual_s), target=0)
       @
       \vspace{-1em}
   \end{columns}
@@ -2346,19 +1438,19 @@ has the same influence matrix, and
 # Calculate zero mean fitted values
 design_zm <- t(t(de_sign) - colMeans(de_sign))
 fitted_zm <- drop(design_zm %*% beta_s)
-all.equal(fitted_zm, 
-          mod_el$fitted.values - mean(res_ponse), 
-          check.attributes=FALSE)
+all.equal(fitted_zm,
+  mod_el$fitted.values - mean(res_ponse),
+  check.attributes=FALSE)
 # Calculate the residuals
 response_zm <- res_ponse - mean(res_ponse)
-resid_uals <- drop(response_zm - fitted_zm)
-all.equal(resid_uals, mod_el$residuals, 
+residual_s <- drop(response_zm - fitted_zm)
+all.equal(residual_s, mod_el$residuals,
           check.attributes=FALSE)
 # Calculate the influence matrix
 influence_zm <- design_zm %*% MASS::ginv(design_zm)
 # Compare the fitted values
-all.equal(fitted_zm, 
-          drop(influence_zm %*% response_zm), 
+all.equal(fitted_zm,
+          drop(influence_zm %*% response_zm),
           check.attributes=FALSE)
       @
   \end{columns}
@@ -2379,7 +1471,6 @@ all.equal(fitted_zm,
       The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
       \vskip1ex
       But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests.
-      \vspace{-1em}
         <<echo=(-(1:1)),eval=FALSE>>=
 library(lmtest)  # Load lmtest
 de_sign <- data.frame(  # Design matrix
@@ -2388,8 +1479,7 @@ de_sign <- data.frame(  # Design matrix
 res_ponse <- with(de_sign,
           0.2*de_sign + omit_var + 0.2*rnorm(30))
 # Mis-specified regression only one predictor
-mod_el <- lm(res_ponse ~ de_sign,
-                data=de_sign)
+mod_el <- lm(res_ponse ~ de_sign, data=de_sign)
 model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
@@ -2429,7 +1519,7 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
     \column{0.5\textwidth}
       The \emph{residuals} $\hat\varepsilon$ can be considered to be \emph{random variables}, with expected value equal to zero $\mathbbm{E}[\hat\varepsilon] = 0$, and variance equal to $\sigma^2_\varepsilon$.
       \vskip1ex
-      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}: 
+      The variance of the \emph{residuals} is equal to the expected value of the squared \emph{residuals} divided by the number of \emph{degrees of freedom}:
       \begin{displaymath}
         \sigma^2_\varepsilon = \frac{\mathbbm{E}[\varepsilon^T \varepsilon]}{d_{free}}
       \end{displaymath}
@@ -2450,12 +1540,12 @@ n_cols <- NCOL(de_sign)
 deg_free <- (n_rows - n_cols)
 all.equal(deg_free, model_sum$df[2])
 # Variance of residuals
-var_resid <- sum(resid_uals^2)/deg_free
+var_resid <- sum(residual_s^2)/deg_free
       @
       The \emph{regression coefficients} $\beta$ can also be considered to be \emph{random variables} $\hat\beta$:
       \begin{flalign*}
         & \hat\beta = \mathbb{X}_{inv} \hat{y} = \mathbb{X}_{inv} (y_{fit} + \hat\varepsilon) = \\
-        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) = 
+        & (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T (\mathbb{X} \beta + \hat\varepsilon) =
         \beta + \mathbb{X}_{inv} \hat\varepsilon
       \end{flalign*}
       Where $\beta$ is equal to the expected value of $\hat\beta$: $\beta = \mathbbm{E}[\hat\beta] = \mathbb{X}_{inv} y_{fit} = \mathbb{X}_{inv} y$.
@@ -2492,7 +1582,7 @@ var_resid <- sum(resid_uals^2)/deg_free
 design_2 <- MASS::ginv(crossprod(de_sign))
 # design_2 <- t(de_sign) %*% de_sign
 # Variance of residuals
-var_resid <- sum(resid_uals^2)/deg_free
+var_resid <- sum(residual_s^2)/deg_free
 # Calculate covariance matrix of betas
 beta_covar <- var_resid*design_2
 # Round(beta_covar, 3)
@@ -2504,9 +1594,9 @@ all.equal(beta_tvals, model_sum$coeff[, 3], check.attributes=FALSE)
 # Calculate two-sided p-values of betas
 beta_pvals <- 2*pt(-abs(beta_tvals), df=deg_free)
 all.equal(beta_pvals, model_sum$coeff[, 4], check.attributes=FALSE)
-# The square of the generalized inverse is equal 
+# The square of the generalized inverse is equal
 # to the inverse of the square
-all.equal(MASS::ginv(crossprod(de_sign)), 
+all.equal(MASS::ginv(crossprod(de_sign)),
           design_inv %*% t(design_inv))
       @
   \end{columns}
@@ -2534,7 +1624,6 @@ all.equal(MASS::ginv(crossprod(de_sign)),
       The variance of the \emph{fitted values} $\sigma^2_{fit}$ increases with the distance of the \emph{predictors} from their mean values.
       \vskip1ex
       This is because the \emph{fitted values} farther from their mean are more sensitive to the variance of the regression slope.
-      \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
 # Calculate the influence matrix
 influ_ence <- de_sign %*% design_inv
@@ -2553,7 +1642,7 @@ fit_sd <- sqrt(diag(fit_covar))
 fit_sd <- cbind(fitted=fit_ted, stddev=fit_sd)
 fit_sd <- fit_sd[order(fit_ted), ]
 # Plot the standard deviations
-plot(fit_sd, type="l", lwd=3, col="blue", 
+plot(fit_sd, type="l", lwd=3, col="blue",
      xlab="Fitted Value", ylab="Standard Deviation",
      main="Standard Deviations of Fitted Values\nin Multivariate Regression")
       @
@@ -2591,9 +1680,8 @@ model_sum <- summary(mod_el)
 # Bootstrap of regression
 set.seed(1121)  # initialize random number generator
 boot_data <- sapply(1:100, function(x) {
-  boot_sample <- sample.int(n_rows, replace=TRUE)
-  mod_el <- lm(for_mula,
-               data=re_turns[boot_sample, ])
+  sampl_e <- sample.int(n_rows, replace=TRUE)
+  mod_el <- lm(for_mula, data=re_turns[sampl_e, ])
   mod_el$coefficients
 })  # end sapply
 # Means and standard errors from regression
@@ -2620,7 +1708,7 @@ t(apply(boot_data, MARGIN=1,
       \begin{displaymath}
         y_{pred} = \mathbb{X}_{new} \, \beta
       \end{displaymath}
-      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}: 
+      The prediction is a \emph{random variable} $\hat{y}_{pred}$, because the \emph{regression coefficients} $\hat\beta$ are \emph{random variables}:
       \begin{align*}
         \hat{y}_{pred} = \mathbb{X}_{new} \hat\beta = \mathbb{X}_{new} (\beta + \mathbb{X}_{inv} \hat\varepsilon) = \\
         y_{pred} + \mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon
@@ -2630,7 +1718,7 @@ t(apply(boot_data, MARGIN=1,
         & \sigma^2_{pred} = \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \, (\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon)^T]}{d_{free}} = \\
         & \frac{\mathbbm{E}[\mathbb{X}_{new} \mathbb{X}_{inv} \hat\varepsilon \hat\varepsilon^T \mathbb{X}_{inv}^T \mathbb{X}_{new}^T]}{d_{free}} = \\
         & \sigma^2_\varepsilon \mathbb{X}_{new} \mathbb{X}_{inv} \mathbb{X}_{inv}^T \mathbb{X}_{new}^T = \\
-        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T = 
+        & \sigma^2_\varepsilon \, \mathbb{X}_{new} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}_{new}^T =
         \mathbb{X}_{new} \, \sigma^2_\beta \, \mathbb{X}_{new}^T
       \end{align*}
     \column{0.5\textwidth}
@@ -2643,8 +1731,7 @@ col_names <- colnames(de_sign)
 colnames(new_data) <- col_names
 new_datav <- as.matrix(new_data)
 predic_tion <- drop(new_datav %*% beta_s)
-std_dev <- drop(sqrt(
-    new_datav %*% beta_covar %*% t(new_datav)))
+std_dev <- drop(sqrt(new_datav %*% beta_covar %*% t(new_datav)))
       @
   \end{columns}
 \end{block}
@@ -2668,14 +1755,14 @@ std_dev <- drop(sqrt(
       \vspace{-1em}
         <<echo=TRUE,eval=TRUE>>=
 # Create formula from text string
-for_mula <- paste0("res_ponse ~ ", 
+for_mula <- paste0("res_ponse ~ ",
   paste(colnames(de_sign), collapse=" + "), " - 1")
 # Specify multivariate regression using formula
-mod_el <- lm(for_mula, 
+mod_el <- lm(for_mula,
              data=data.frame(cbind(res_ponse, de_sign)))
 model_sum <- summary(mod_el)
 # Predict from lm object
-predict_lm <- predict.lm(object=mod_el, newdata=new_data, 
+predict_lm <- predict.lm(object=mod_el, newdata=new_data,
            interval="confidence", level=1-2*(1-pnorm(2)))
 # Calculate t-quantile
 t_quant <- qt(pnorm(2), df=deg_free)
@@ -2705,7 +1792,7 @@ all.equal(predict_lm[1, "upr"], predict_high)
         & ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})\\
         & RSS = (y - y_{fit})^T (y - y_{fit})
       \end{flalign*}
-      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$: 
+      Since the \emph{residuals} $\varepsilon = y - y_{fit}$ are orthogonal to the \emph{fitted values} $y_{fit}$, they are also orthogonal to the \emph{fitted} excess values $(y_{fit} - \bar{y})$:
       \begin{displaymath}
         (y - y_{fit})^T (y_{fit} - \bar{y}) = 0
       \end{displaymath}
@@ -2723,7 +1810,7 @@ all.equal(predict_lm[1, "upr"], predict_high)
 # TSS = ESS + RSS
 t_ss <- sum((res_ponse-mean(res_ponse))^2)
 e_ss <- sum((fit_ted-mean(fit_ted))^2)
-r_ss <- sum(resid_uals^2)
+r_ss <- sum(residual_s^2)
 all.equal(t_ss, e_ss + r_ss)
       @
   \end{columns}
@@ -2797,17 +1884,217 @@ n_cols <- NCOL(de_sign)
 # Degrees of freedom of residuals
 deg_free <- (n_rows - n_cols)
 # Adjusted R-squared
-r_squared_adj <- 
-  (1-sum(resid_uals^2)/deg_free/var(res_ponse))
+r_squared_adj <- (1-sum(residual_s^2)/deg_free/var(res_ponse))
 # Compare adjusted R-squared from lm()
-all.equal(drop(r_squared_adj), 
-          model_sum$adj.r.squared)
+all.equal(drop(r_squared_adj), model_sum$adj.r.squared)
       @
       The performance of two different models can be compared by comparing their \emph{adjusted R-squared}, since the model with the larger \emph{adjusted R-squared} has a smaller \emph{residual variance}, so it's better able to explain the \emph{response}.
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fisher's \protect\emph{F-distribution}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\chi^2_m$ and $\chi^2_n$ be independent random variables following \emph{chi-squared} distributions with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F-statistic} random variable:
+      \begin{displaymath}
+        F = \frac{\chi^2_m / m}{\chi^2_n / n}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom, with the probability density function:
+      \begin{displaymath}
+        P(F) = \frac{\Gamma((m+n)/2) m^{m/2} n^{n/2}}{\Gamma(m/2) \Gamma(n/2)} \frac{F^{m/2-1}}{(n+mF)^{(m+n)/2}}
+      \end{displaymath}
+      The \emph{F-distribution} depends on the \emph{F-statistic} $F$ and also on the degrees of freedom, $m$ and $n$.
+      \vskip1ex
+      The function \texttt{df()} calculates the probability density of the \emph{F-distribution}.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot three curves in loop
+deg_free <- c(3, 5, 9)  # Degrees of freedom
+col_ors <- c("black", "red", "blue", "green")
+for (in_dex in 1:NROW(deg_free)) {
+curve(expr=df(x, df1=deg_free[in_dex], df2=3),
+      xlim=c(0, 4), xlab="", ylab="", lwd=2,
+      col=col_ors[in_dex], add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/f_dist.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="F-Distributions", line=0.5)
+# Add legend
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, title="degrees of freedom",
+       lab_els, cex=0.8, lwd=2, lty=1, col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} For the Variance Ratio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $x$ and $y$ be independent standard \emph{Normal} variables, and let
+      $\sigma^2_x = \frac{1}{m-1} \sum_{i=1}^m (x_i-\bar{x})^2$
+      and
+      $\sigma^2_y = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar{y})^2$
+      be their sample variances.
+      \vskip1ex
+      The ratio $F = \sigma^2_x / \sigma^2_y$ of the sample variances follows the \emph{F-distribution} with $m$ and $n$ degrees of freedom.
+      \vskip1ex
+      The \emph{F-test} tests the \emph{null hypothesis} that the \emph{F-statistic} $F$ is not significantly greater than $1$ (the variance $\sigma^2_x$ is not significantly greater than $\sigma^2_y$).
+      \vskip1ex
+      A large value of the \emph{F-statistic} $F$ indicates that the variances are unlikely to be equal.
+      \vskip1ex
+      The function \texttt{pf(q)} returns the cumulative probability of the \emph{F-distribution}, i.e. the cumulative probability that the \emph{F-statistic} $F$ is less than the quantile $q$.
+      \vskip1ex
+      This \emph{F-test} is very sensitive to the assumption of the normality of the variables.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+sigma_x <- var(rnorm(n_rows))
+sigma_y <- var(rnorm(n_rows))
+f_ratio <- sigma_x/sigma_y
+# Cumulative probability for q = f_ratio
+pf(f_ratio, n_rows-1, n_rows-1)
+# p-value for f_ratios
+1-pf((10:20)/10, n_rows-1, n_rows-1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-statistic} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of two different regression models can be compared by directly comparing their \emph{Residual Sum of Squares} (\emph{RSS}), since the model with a smaller \emph{RSS} is better able to explain the \emph{response}.
+      \vskip1ex
+      Let the \emph{restricted} model have $p_1$ parameters with $df_1 = n - p_1$ degrees of freedom, and the \emph{unrestricted} model have $p_2$ parameters with $df_2 = n - p_2$ degrees of freedom, with $p_2 < p_1$.
+      \vskip1ex
+      Then the \emph{F}-statistic $F$, defined as the ratio of the scaled \emph{Residual Sum of Squares}:
+      \begin{displaymath}
+        F = \frac{(RSS_1 - RSS_2)/(df_1 - df_2)}{RSS_2/df_2}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(p_2 - p_1)$ and $(n - p_2)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      If the \emph{restricted} model only has one parameter (the constant intercept term), then $df_1 = n - 1$, and its \emph{fitted values} are equal to the average of the \emph{response}: $y^{fit}_i = \bar{y}$, so $RSS_1$ is equal to the $TSS$: $RSS_1 = TSS = (y - \bar{y})^2$, so its \emph{Explained Sum of Squares} is equal to zero: $ESS_1 = TSS - RSS_1 = 0$.
+      \vskip1ex
+      Let the \emph{unrestricted} multivariate regression model be defined as:
+      \begin{displaymath}
+        y = \mathbb{X} \beta + \varepsilon
+      \end{displaymath}
+      Where $y$ is the \emph{response}, $\mathbb{X}$ is the \emph{design matrix} (with $k$ \emph{predictors}, including the intercept term), and $\beta$ are the $k$ \emph{regression coefficients}.
+      \vskip1ex
+      So the \emph{unrestricted} model has $k$ parameters ($p_2 = k$), and $RSS_2 = RSS$ and $ESS_2 = ESS$, and then the \emph{F}-statistic can be written as:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{F-test} for Linear Regression}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Residual Sum of Squares} $RSS = \varepsilon^T \varepsilon$ and the \emph{Explained Sum of Squares} $ESS = (y_{fit} - \bar{y})^T (y_{fit} - \bar{y})$ follow independent \emph{chi-squared} distributions with $(n-k)$ and $(k-1)$ degrees of freedom.
+      \vskip1ex
+      Then the \emph{F}-statistic, equal to the ratio of the \emph{ESS} divided by \emph{RSS}:
+      \begin{displaymath}
+        F = \frac{ESS/(k-1)}{RSS/(n-k)}
+      \end{displaymath}
+      Follows the \emph{F-distribution} with $(k-1)$ and $(n-k)$ degrees of freedom (assuming that the \emph{residuals} are normally distributed).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=TRUE>>=
+# F-statistic from lm()
+model_sum$fstatistic
+# Degrees of freedom of residuals
+deg_free <- (n_rows - n_cols)
+# F-statistic from ESS and RSS
+f_stat <- (e_ss/(n_cols-1))/(r_ss/deg_free)
+all.equal(f_stat, model_sum$fstatistic[1], check.attributes=FALSE)
+# p-value of F-statistic
+1-pf(q=f_stat, df1=n_cols-1, df2=n_rows-n_cols)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Regression Regularization}
+
+%%%%%%%%%%%%%%%
+\subsection{Linear Transformation of the Design Matrix}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{multivariate} linear regression model can be transformed by replacing its \emph{predictors} ${x_j}$ with their own linear combinations.
+      \vskip1ex
+      This is equivalent to multiplying the \emph{design matrix} $\mathbb{X}$ by a transformation matrix $\mathbb{W}$:
+      \begin{displaymath}
+        \mathbb{X}_{trans} = \mathbb{X} \, \mathbb{W}
+      \end{displaymath}
+      The transformed \emph{design matrix} $\mathbb{X}_{trans}$ produces the same \emph{influence matrix} $\mathbb{H}$ as the original \emph{design matrix} $\mathbb{X}$:
+      \begin{flalign*}
+        & \mathbb{H}_{trans} = \mathbb{X}_{trans} (\mathbb{X}^T_{trans} \mathbb{X}_{trans})^{-1} \mathbb{X}^T_{trans} = \\
+        & \mathbb{X}\mathbb{W} (\mathbb{W}^T \mathbb{X}^T \mathbb{X} \mathbb{W})^{-1} \mathbb{W}^T \mathbb{X}^T = \\
+        & \mathbb{X}\mathbb{W} \mathbb{W}^{-1} (\mathbb{X}^T \mathbb{X})^{-1} {\mathbb{W}^T}^{-1} \mathbb{W}^T \mathbb{X}^T = \\
+        & \mathbb{X} (\mathbb{X}^T \mathbb{X})^{-1} \mathbb{X}^T = \mathbb{H}
+      \end{flalign*}
+      Since the \emph{influence matrix} $\mathbb{H}$ is the same, the transformed regression model produces the same \emph{fitted values} and \emph{residuals} as the original regression model, so it's equivalent to it.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+        <<echo=TRUE,eval=TRUE>>=
+# Define transformation matrix
+trans_mat <- matrix(runif(n_cols^2, min=(-1), max=1), ncol=n_cols)
+# Calculate linear combinations of design columns
+design_trans <- de_sign %*% trans_mat
+# Calculate the influence matrix
+influence_trans <- design_trans %*% MASS::ginv(design_trans)
+# Compare the influence matrices
+all.equal(influ_ence, influence_trans)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
@@ -2839,8 +2126,7 @@ col_ors <- c("red", "blue", "green")
 # Plot three curves in loop
 for (in_dex in 1:3) {
   curve(expr=plogis(x, scale=lamb_da[in_dex]),
-        xlim=c(-4, 4), type="l",
-        xlab="", ylab="", lwd=4,
+        xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
         col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
       @
@@ -2878,8 +2164,7 @@ legend("topleft", title="Scale parameters",
       \vskip1ex
       \texttt{glm()} can fit two different types of response variables: categorical data (\texttt{factors}) from individual observations, or counts of categorical data (\texttt{integers}) from groups of observations.
       \vskip1ex
-      The family object \texttt{binomial(link="logit")} specifies a binomial distribution of residuals.
-      \vspace{-1em}
+      The family object \texttt{binomial(logit)} specifies a binomial distribution of residuals.
       <<echo=(-(1:1)),eval=FALSE>>=
 set.seed(1121)
 # Simulate overlapping scores data
@@ -2898,15 +2183,14 @@ summary(g_lm)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/logistic_density.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=7, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
-plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der], 
-     type="l", lwd=4, col="orange",
+plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
      main="Category Densities and Logistic Function",
-     xlab="score", ylab="density")
+     type="l", lwd=4, col="orange", xlab="score", ylab="density")
 den_sity <- density(predic_tor[res_ponse])
 den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="red")
@@ -2916,10 +2200,10 @@ den_sity$y <- den_sity$y/max(den_sity$y)
 lines(den_sity, col="blue")
 polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
 # Add legend
-legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA), 
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
        lwd=c(6, NA, NA), pch=c(NA, 15, 15),
        legend=c("logistic fit", "TRUE", "FALSE"),
-       col=c("orange", "red", "blue"), 
+       col=c("orange", "red", "blue"),
        text.col=c("black", "red", "blue"))
       @
   \end{columns}
@@ -2935,12 +2219,13 @@ legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{ISLR} contains datasets used in the book 
+      The package \emph{ISLR} contains datasets used in the book
       \href{http://www-bcf.usc.edu/~gareth/ISL/index.html}{\emph{Introduction to Statistical Learning}} by Gareth James, Daniela Witten, Trevor Hastie, and Robert Tibshirani.
     \vskip1ex
       The book introduces machine learning techniques using \texttt{R}, and it's a must for advanced finance applications.
       % \fullcite{islbook}
     \column{0.5\textwidth}
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(ISLR)  # Load package ISLR
 # get documentation for package tseries
@@ -2974,15 +2259,13 @@ detach("package:ISLR")  # Remove ISLR from search path
       The \texttt{Default} data frame contains two columns of categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}.
       \vskip1ex
       The columns \texttt{student}, \texttt{balance}, and \texttt{income} can be used as \emph{predictors} to predict the \texttt{default} column.
-      \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-library(ISLR)  # Load package ISLR
 # Coerce the student and default columns into Boolean
 Default <- ISLR::Default
 Default$student <- (Default$student == "No")
 Default$default <- (Default$default == "No")
-colnames(Default)[1:2] <- c("no_default", "not_student")
-attach(Default)
+colnames(Default)[1:2] <- c("not_default", "not_student")
+attach(Default)  # Attach Default to search path
 # Explore credit default data
 summary(Default)
 sapply(Default, class)
@@ -2991,17 +2274,17 @@ dim(Default); head(Default)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/islr_default_data.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data points for non-defaulters
 x_lim <- range(balance); y_lim <- range(income)
 plot(income ~ balance,
      main="Default Dataset from Package ISLR",
      xlim=x_lim, ylim=y_lim, pch=4, col="blue",
-     data=Default[no_default, ])
+     data=Default[not_default, ])
 # Plot data points for defaulters
 points(income ~ balance, pch=4, lwd=2, col="red",
-       data=Default[!no_default, ])
+       data=Default[!not_default, ])
 # Add legend
 legend(x="topright", bty="n",
        legend=c("non-defaulters", "defaulters"),
@@ -3020,39 +2303,36 @@ legend(x="topright", bty="n",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of values:
+      A \emph{Box Plot} (box-and-whisker plot) is a graphical display of a distribution of data:
       \vskip1ex
       The \emph{box} represents the upper and lower quartiles, \\
       The vertical lines (whiskers) represent values beyond the quartiles, \\
       Open circles represent values beyond the nominal range (outliers).
       \vskip1ex
-      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of values.
+      The function \texttt{boxplot()} plots a box-and-whisker plot for a distribution of data.
       \vskip1ex
       \texttt{boxplot()} has two \texttt{methods}: one for \texttt{formula} objects (involving categorical variables), and another for \texttt{data frames}.
       \vskip1ex
       The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Wilcoxon test for balance predictor
-wilcox.test(balance[no_default], balance[!no_default])
+wilcox.test(balance[not_default], balance[!not_default])
 # Wilcoxon test for income predictor
-wilcox.test(income[no_default], income[!no_default])
+wilcox.test(income[not_default], income[!not_default])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/islr_default_boxplot.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
 x11()
 par(mfrow=c(1,2))  # Set plot panels
 # Balance boxplot
-boxplot(formula=balance ~ no_default,
-        col="lightgrey",
-        main="balance", xlab="No default")
+boxplot(formula=balance ~ not_default,
+        col="lightgrey", main="balance", xlab="No default")
 # income boxplot
-boxplot(formula=income ~ no_default,
-        col="lightgrey",
-        main="income", xlab="No default")
+boxplot(formula=income ~ not_default,
+        col="lightgrey", main="income", xlab="No default")
       @
   \end{columns}
 \end{block}
@@ -3073,28 +2353,28 @@ boxplot(formula=income ~ no_default,
       \vskip1ex
       The \emph{logit} residuals are not normally distributed, so the data is fitted using the \emph{maximum-likelihood} method, instead of least squares.
       \vskip1ex
-      The family object \texttt{binomial(link="logit")} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
+      The family object \texttt{binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
       <<echo=TRUE,eval=FALSE>>=
 # Fit logistic regression model
-g_lm <- glm(!no_default ~ balance,
-              family=binomial(logit))
+g_lm <- glm(!not_default ~ balance, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/islr_logistic_reg.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot(x=balance, y=!no_default,
-     main="Logistic Regression of Credit Defaults", col="orange",
-     xlab="credit balance", ylab="defaults")
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+plot(x=balance, y=!not_default,
+     main="Logistic Regression of Credit Defaults", 
+     col="orange", xlab="credit balance", ylab="defaults")
 or_der <- order(balance)
-lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
-      col="blue", lwd=3)
-legend(x="topleft", inset=0.1, bty="n",
+lines(x=balance[or_der], y=g_lm$fitted.values[or_der], col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", lwd=6,
        legend=c("defaults", "logit fitted values"),
-       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+       col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
       @
   \end{columns}
 \end{block}
@@ -3116,21 +2396,19 @@ legend(x="topleft", inset=0.1, bty="n",
       These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-to_tal <- sum(!no_default)
+to_tal <- sum(!not_default)
 default_s <- sapply(balance, function(lim_it) {
-    sum(!no_default[balance <= lim_it])
+    sum(!not_default[balance <= lim_it])
 })  # end sapply
 # Perform logit regression
-g_lm <- glm(
-  cbind(default_s, to_tal-default_s) ~
-    balance,
+g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
   family=binomial(logit))
 summary(g_lm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/islr_logistic_count.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
      main="Cumulative Defaults Versus Balance",
@@ -3167,14 +2445,14 @@ legend(x="topleft", inset=0.1, bty="n",
       \end{itemize}
       The \texttt{balance} and \texttt{student} columns are statistically significant, but the \texttt{income} column is not.
     \column{0.5\textwidth}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Fit multifactor logistic regression model
 col_names <- colnames(Default)
 for_mula <- as.formula(paste(col_names[1],
   paste(col_names[-1], collapse="+"), sep=" ~ "))
-g_lm <- glm(for_mula, data=Default,
-              family=binomial(logit))
+for_mula
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
 summary(g_lm)
       @
   \end{columns}
@@ -3199,35 +2477,32 @@ summary(g_lm)
       That's why the multifactor regression coefficient for \texttt{student} is negative, while the single factor coefficient for \texttt{student} is positive.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-default_s <- sapply(balance, function(lim_it) {
-  c(student=sum(!no_default[!not_student & (balance <= lim_it)]),
-    non_student=sum(!no_default[not_student & (balance <= lim_it)]))
+cum_defaults <- sapply(balance, function(lim_it) {
+c(student=sum(!not_default[!not_student & (balance <= lim_it)]),
+  non_student=sum(!not_default[not_student & (balance <= lim_it)]))
 })  # end sapply
-to_tal <- c(sum(!no_default[!not_student]), sum(!no_default[not_student]))
-default_s <- t(default_s / to_tal)
+total_defaults <- c(student=sum(!not_student & !not_default), 
+            not_student=sum(not_student & !not_default))
+cum_defaults <- t(cum_defaults / total_defaults)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/islr_student_boxplot.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative defaults
 par(mfrow=c(1,2))  # Set plot panels
 or_der <- order(balance)
-plot(x=balance[or_der], y=default_s[or_der, 1],
-     col="red", t="l", lwd=2,
-     main="Cumulative defaults of\n students and non-students",
-     xlab="credit balance", ylab="")
-lines(x=balance[or_der], y=default_s[or_der, 2],
-      col="blue", lwd=2)
+plot(x=balance[or_der], y=cum_defaults[or_der, 1],
+     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
+     main="Cumulative defaults of\n students and non-students")
+lines(x=balance[or_der], y=cum_defaults[or_der, 2], col="blue", lwd=2)
 legend(x="topleft", bty="n",
        legend=c("students", "non-students"),
-       col=c("red", "blue"), text.col=c("red", "blue"),
-       lwd=3)
+       col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
 # Balance boxplot for student factor
 boxplot(formula=balance ~ not_student,
-        col="lightgrey",
-        main="balance", xlab="Not student")
+        col="lightgrey", main="balance", xlab="Not student")
       @
   \end{columns}
 \end{block}
@@ -3244,33 +2519,37 @@ boxplot(formula=balance ~ not_student,
     \column{0.5\textwidth}
       The function \texttt{predict()} is a \emph{generic function} for forecasting based on a given model.
       \vskip1ex
-      The method \texttt{predict.glm()} produces forecasts for a generalized linear model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
+      The method \texttt{predict.glm()} produces forecasts for a generalized linear (\emph{glm}) model, in the form of \texttt{numeric} probabilities, not the \texttt{Boolean} response variable.
       \vskip1ex
-      The \texttt{Boolean} forecasts are obtained by comparing the forecast probabilities with a \emph{discrimination threshold}.
+      The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
+      \vskip1ex
+      If the \emph{forecast probability} is greater than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
+      \vskip1ex
+      The \emph{in-sample forecasts} are just the \emph{fitted values} of the \emph{glm} model.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Fit multifactor logistic regression model
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1],
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-# Perform forecast in-sample
+# Perform in-sample forecast from logistic regression model
 forecast_s <- predict(g_lm, type="response")
 all.equal(g_lm$fitted.values, forecast_s)
-# Define discrimination threshold
-thresh_old <- 0.95
+# Define discrimination threshold value
+thresh_old <- 0.7
 # Calculate confusion matrix in-sample
-table(no_default, (forecast_s > thresh_old))
+table(actual=not_default, forecast=(forecast_s > thresh_old))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
-n_rows <- NROW(no_default)
+n_rows <- NROW(not_default)
 da_ta <- sample.int(n=n_rows, size=n_rows/2)
 train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
+g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
 # Forecast over test data out-of-sample
 test_data <- Default[-da_ta, ]
 forecast_s <- predict(g_lm, newdata=test_data, type="response")
+# Calculate confusion matrix out-of-sample
+table(actual=test_data$not_default, 
+      forecast=(forecast_s > thresh_old))
       @
   \end{columns}
 \end{block}
@@ -3285,15 +2564,17 @@ forecast_s <- predict(g_lm, newdata=test_data, type="response")
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{no\_default=TRUE}.
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
+      \vskip1ex
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
       \vskip1ex
       A \emph{positive} result corresponds to rejecting the null hypothesis, while a \emph{negative} result corresponds to accepting the null hypothesis.
       \vskip1ex
       The forecasts are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
       \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} null hypothesis (i.e. a "false positive"), for example, when there is no default, but it's forecast to be a default.
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), for example, when there is no default, but it's forecast to be a default.
       \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} null hypothesis (i.e. a "false negative"), for example, when there is a default, but it's forecast to be no default.
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), for example, when there is a default, but it's forecast to be no default.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
@@ -3301,12 +2582,9 @@ forecast_s <- predict(g_lm, newdata=test_data, type="response")
 g_lm <- glm(for_mula, data=Default, family=binomial(logit))
 forecast_s <- predict(g_lm, type="response")
 # Calculate FALSE positive (type I error)
-sum(no_default & (forecast_s < thresh_old))
+sum(not_default & (forecast_s < thresh_old))
 # Calculate FALSE negative (type II error)
-sum(!no_default & (forecast_s > thresh_old))
-# Calculate confusion matrix
-table(no_default, (forecast_s > thresh_old))
-detach(Default)
+sum(!not_default & (forecast_s > thresh_old))
       @
   \end{columns}
 \end{block}
@@ -3315,46 +2593,40 @@ detach(Default)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Confusion Matrix of a Classification Model}
+\subsection{The Confusion Matrix of a Binary Classification Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the true values are known.
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
       \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} null hypothesis cases that are correctly classified as \texttt{FALSE}.
-      \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} null hypothesis cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} null hypothesis cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} null hypothesis cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:10)),eval=TRUE>>=
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
-set.seed(1121)  # Reset random number generator
-n_rows <- NROW(Default)
-da_ta <- sample(x=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(link="logit"))
-test_data <- Default[-da_ta, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-thresh_old <- 0.95
+      \newcommand\MyBox[2]{
+        \fbox{\lower0.75cm
+          \vbox to 1.2cm{\vfil
+            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
+            \vfil}
+        }
+      }
+      \renewcommand\arraystretch{0.3}
+      \setlength\tabcolsep{0pt}
+      {\tiny
+      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
+      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
+      & \multicolumn{2}{c}{\bfseries Forecast} & \\
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=TRUE>>=
 # Calculate confusion matrix
-confu_sion <- table(test_data$no_default,
-                    (forecast_s > thresh_old))
-dimnames(confu_sion) <- list(actual=rownames(confu_sion),
-  forecast=colnames(confu_sion))
+confu_sion <- table(actual=not_default, 
+  forecast=(forecast_s > thresh_old))
 confu_sion
+# Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+detach(Default)
       @
       <<echo=FALSE,eval=FALSE,results='asis'>>=
 # Below is an unsuccessful attempt to draw confusion matrix using xtable
@@ -3369,22 +2641,20 @@ print(xtable::xtable(confusion_matrix,
       include.colnames=TRUE)
 # end unsuccessful attempt to draw confusion table using xtable
       @
-      \newcommand\MyBox[2]{
-        \fbox{\lower0.75cm
-          \vbox to 1.2cm{\vfil
-            \hbox to 1.7cm{\parbox{\textwidth}{#1\\#2}}
-            \vfil}
-        }
-      }
-      \renewcommand\arraystretch{0.3}
-      \setlength\tabcolsep{0pt}
-      \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
-      \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
-      & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries FALSE & \bfseries TRUE \\
-      & FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
   \end{columns}
 \end{block}
 
@@ -3398,25 +2668,24 @@ print(xtable::xtable(confusion_matrix,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The ROC curve is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
       \vskip1ex
-      The area under the ROC curve (AUC) is a measure of the performance of a binary classification model.
-      \vspace{-1em}
+      The area under the \emph{ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of thresh_old
-con_fuse <- function(res_ponse, forecast_s, thresh_old) {
-    confu_sion <- table(res_ponse, (forecast_s > thresh_old))
+con_fuse <- function(actu_al, forecast_s, thresh_old) {
+    confu_sion <- table(actu_al, (forecast_s > thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$no_default, forecast_s, thresh_old=thresh_old)
+con_fuse(test_data$not_default, forecast_s, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
 threshold_s <- seq(0.01, 0.95, by=0.01)^2
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  res_ponse=(test_data$no_default),
-  forecast_s=forecast_s)  # end sapply
+  actu_al=(test_data$not_default), forecast_s=forecast_s)  # end sapply
 error_rates <- t(error_rates)
+rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
 error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
@@ -3428,15 +2697,12 @@ abs(sum(true_pos*false_pos))
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/islr_defaults_roc.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ROC Curve for Defaults
-plot(x=error_rates[, "typeI"],
-     y=1-error_rates[, "typeII"],
-     xlab="FALSE positive rate",
-     ylab="TRUE positive rate",
-     main="ROC Curve for Defaults",
-     type="l", lwd=3, col="blue")
+plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
       @
   \end{columns}

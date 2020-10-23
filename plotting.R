@@ -2,8 +2,8 @@ library(knitr)
 library(rgl)
 knit_hooks$set(rgl=hook_rgl)
 knit_hooks$set(webgl=hook_webgl)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="scriptsize", fig.width=4, fig.height=4)
-options(width=60, dev="pdf")
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size="tiny", fig.width=4, fig.height=4)
+options(width=80, dev="pdf")
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -185,8 +185,7 @@ par(graph_params)  # Restore original parameters
 
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)
-plot(x_var, y_var, type="l", lty="solid",
-     xlab="", ylab="")
+plot(x_var, y_var, type="l", lty="solid", xlab="", ylab="")
 title(main="Normal Density Function", line=0.5)
 star_t <- 3; fin_ish <- 5  # Set lower and upper bounds
 # Set polygon base
@@ -201,18 +200,15 @@ col_ors <- c("red", "black", "blue", "green")
 # Create legend labels
 lab_els <- paste("sigma", sig_mas, sep="=")
 for (in_dex in 1:4) {  # Plot four curves
-curve(expr=dnorm(x, sd=sig_mas[in_dex]),
-xlim=c(-4, 4),
-xlab="", ylab="", lwd=2,
-col=col_ors[in_dex],
-add=as.logical(in_dex-1))
+  curve(expr=dnorm(x, sd=sig_mas[in_dex]),
+  xlim=c(-4, 4), xlab="", ylab="", lwd=2,
+  col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
 # Add title
 title(main="Normal Distributions", line=0.5)
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
- lab_els, cex=0.8, lwd=2, lty=1, bty="n",
- col=col_ors)
+ lab_els, cex=0.8, lwd=2, lty=1, bty="n", col=col_ors)
 
 rm(list=ls())
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -224,8 +220,7 @@ col_ors <- c("red", "black", "blue", "green")
 lab_els <- paste("sigma", sig_mas, sep="=")
 # Plot the first chart
 plot(x_var, dnorm(x_var, sd=sig_mas[1]),
-     type="n", xlab="", ylab="",
-     main="Normal Distributions")
+     type="n", xlab="", ylab="", main="Normal Distributions")
 # Add lines to plot
 for (in_dex in 1:4) {
   lines(x_var, dnorm(x_var, sd=sig_mas[in_dex]),
@@ -233,8 +228,7 @@ for (in_dex in 1:4) {
 }  # end for
 # Add legend
 legend("topright", inset=0.05, title="Sigmas",
- lab_els, cex=0.8, lwd=2, lty=1, bty="n",
- col=col_ors)
+ lab_els, cex=0.8, lwd=2, lty=1, bty="n", col=col_ors)
 
 # Standard deviations of log-normal distribution
 sig_mas <- c(0.5, 1, 1.5)
@@ -252,8 +246,7 @@ for (in_dex in 1:NROW(sig_mas)) {
 title(main="Log-normal Distributions", line=0.5)
 legend("topright", inset=0.05, title="Sigmas",
  paste("sigma", sig_mas, sep="="),
- cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
- col=col_ors)
+ cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)), col=col_ors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -262,10 +255,10 @@ deg_free <- c(2, 5, 8, 11)
 # Plot four curves in loop
 col_ors <- c("red", "black", "blue", "green")
 for (in_dex in 1:4) {
-curve(expr=dchisq(x, df=deg_free[in_dex]),
-xlim=c(0, 20), ylim=c(0, 0.3),
-xlab="", ylab="", col=col_ors[in_dex],
-lwd=2, add=as.logical(in_dex-1))
+  curve(expr=dchisq(x, df=deg_free[in_dex]),
+  xlim=c(0, 20), ylim=c(0, 0.3),
+  xlab="", ylab="", col=col_ors[in_dex],
+  lwd=2, add=as.logical(in_dex-1))
 }  # end for
 
 # Add title
@@ -317,8 +310,7 @@ title(main="F-Distributions", line=0.5)
 # Add legend
 lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, title="degrees of freedom",
-       lab_els, cex=0.8, lwd=2, lty=1,
-       col=col_ors)
+       lab_els, cex=0.8, lwd=2, lty=1, col=col_ors)
 
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
@@ -326,11 +318,10 @@ deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
 lab_els <- c("normal", paste("df", deg_free, sep="="))
 # Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-4, 4),
-      xlab="", ylab="", lwd=2)
+curve(expr=dnorm, xlim=c(-4, 4), xlab="", ylab="", lwd=2)
 for (in_dex in 1:3) {  # Plot three t-distributions
-curve(expr=dt(x, df=deg_free[in_dex]),
-      lwd=2, col=col_ors[in_dex+1], add=TRUE)
+  curve(expr=dt(x, df=deg_free[in_dex]),
+lwd=2, col=col_ors[in_dex+1], add=TRUE)
 }  # end for
 
 # Add title
@@ -347,8 +338,7 @@ deg_free <- c(3, 6, 9)  # df values
 col_ors <- c("black", "red", "blue", "green")
 lab_els <- c("normal", paste("df", deg_free, sep="="))
 # Plot chart of normal distribution
-plot(x_var, dnorm(x_var), type="l",
-     lwd=2, xlab="", ylab="")
+plot(x_var, dnorm(x_var), type="l", lwd=2, xlab="", ylab="")
 for (in_dex in 1:3) {  # Add lines for t-distributions
   lines(x_var, dt(x_var, df=deg_free[in_dex]),
 lwd=2, col=col_ors[in_dex+1])
@@ -515,7 +505,7 @@ animation::saveHTML(expr=eval(ex_pr),
 library(shiny)
 library(quantmod)
 inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
+clos_e  <- quantmod::Cl(rutils::etf_env$VTI)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 # ```
@@ -530,9 +520,9 @@ renderPlot({
   lamb_da <- input$lamb_da
   weight_s <- exp(-lamb_da*1:inter_val)
   weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma <- filter(clos_e , filter=weight_s, sides=1)
   ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  ew_ma <- xts(cbind(clos_e , ew_ma), order.by=index(clos_e ))
   colnames(ew_ma) <- c("VTI", "VTI EWMA")
   # Plot EWMA prices
   ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")

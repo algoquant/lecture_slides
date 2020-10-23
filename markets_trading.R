@@ -1,6 +1,6 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=6, fig.height=5)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -30,12 +30,13 @@ sapply(ls(), function(ob_ject) class(get(ob_ject)))
 chart_Series(rates_env$DGS20["1990/"],
   name="20-year constant maturity Treasury rate")
 
+x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
 load(file="C:/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
 date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
-date_s <- zoo::index(rates_env$DGS1["2006/"])[date_s]
+date_s <- zoo::index(rates_env$DGS1["2006/"][date_s])
 # Create time series of end-of-year rates
 rate_s <- eapply(rates_env, function(ra_te) ra_te[date_s])
 rate_s <- rutils::do_call(cbind, rate_s)
@@ -61,41 +62,36 @@ matplot(rate_s, main="Yield curve since 2006", xaxt="n", lwd=3, lty=1,
 # Add x-axis
 axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
 # Add legend
-legend("bottomright", legend=colnames(rate_s),
+legend("topleft", legend=colnames(rate_s),
  col=col_ors, lty=1, lwd=4, inset=0.05, cex=0.8)
 
-x11(width=6, height=4)
-par(mar=c(0, 0, 0, 0), oma=c(0, 0, 0, 0), mgp=c(0, 0, 0))
-# Load constant maturity Treasury rates
-load(file="C:/Develop/lecture_slides/data/rates_data.RData")
-# Symbols for constant maturity Treasury rates
-sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS20")
+# Extract rates from rates_env
+sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20")
+rate_s <- mget(sym_bols, envir=rates_env)
+rate_s <- rutils::do_call(cbind, rate_s)
+rate_s <- zoo::na.locf(rate_s, na.rm=FALSE)
+rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
 # Calculate daily rates changes
-rate_s <- xts:::na.locf.xts(rutils::do_call(cbind,
-    as.list(rates_env)[sym_bols]))
-rate_s <- xts:::na.locf.xts(rate_s)
-rate_s <- xts:::na.locf.xts(rate_s, fromLast=TRUE)
-re_turns <- rutils::diff_it(rate_s)
-date_s <- zoo::index(re_turns)
-# De-mean (center) and scale the returns
-re_turns <- t(t(re_turns) - colMeans(re_turns))
-re_turns <- t(t(re_turns) / sqrt(colSums(re_turns^2)/(NROW(re_turns)-1)))
-re_turns <- xts(re_turns, date_s)
-# Correlation matrix of Treasury rates
+re_turns <- rutils::diff_it(log(rate_s))
+# Standardize (de-mean and scale) the returns
+re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
+re_turns <- rutils::do_call(cbind, re_turns)
+# Covariance and Correlation matrices of Treasury rates
+cov_mat <- cov(re_turns)
 cor_mat <- cor(re_turns)
-# reorder correlation matrix based on clusters
+# Reorder correlation matrix based on clusters
 library(corrplot)
 or_der <- corrMatOrder(cor_mat, order="hclust",
   hclust.method="complete")
 cor_mat <- cor_mat[or_der, or_der]
 
 # Plot the correlation matrix
+x11(width=6, height=6)
 col_ors <- colorRampPalette(c("red", "white", "blue"))
 corrplot(cor_mat, title=NA, tl.col="black",
-  tl.cex=0.8, mar=c(0,0,0,0), method="square",
-  col=col_ors(8), cl.offset=0.75, cl.cex=0.7,
-  cl.align.text="l", cl.ratio=0.25)
-title("Correlation of Treasury rates", line=-1)
+    method="square", col=col_ors(NCOL(cor_mat)), tl.cex=0.8,
+    cl.offset=0.75, cl.cex=0.7, cl.align.text="l", cl.ratio=0.25)
+title("Correlation of Treasury Rates", line=1)
 # Draw rectangles on the correlation matrix plot
 corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
   method="complete", col="red")
@@ -104,13 +100,12 @@ corrRect.hclust(cor_mat, k=NROW(cor_mat) %/% 2,
 n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
-# objective function equal to minus portfolio variance
+# Objective function equal to minus portfolio variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) +
-    1e7*(1 - sum(weight_s*weight_s))^2
+  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s*weight_s))^2
 }  # end object_ive
-# objective for equal weight portfolio
+# Objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
@@ -118,33 +113,32 @@ summary(microbenchmark(
   s_um=sum(re_turns*re_turns),
   times=10))[, c(1, 4, 5)]
 
-# find weights with maximum variance
-optim_run <- optim(par=weight_s,
+# Find weights with maximum variance
+op_tim <- optim(par=weight_s,
   fn=object_ive,
   re_turns=re_turns,
   method="L-BFGS-B",
   upper=rep(1.0, n_weights),
   lower=rep(-1.0, n_weights))
-# optimal weights and maximum variance
-weight_s <- optim_run$par
--object_ive(weight_s, re_turns)
+# Optimal weights and maximum variance
+weights_1 <- op_tim$par
+-object_ive(weights_1, re_turns)
 # Plot first principal component loadings
-barplot(weight_s, names.arg=names(weight_s),
-  xlab="", ylab="",
-  main="first principal component loadings")
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+barplot(weights_1, names.arg=names(weights_1),
+  xlab="", ylab="", main="First Principal Component Loadings")
 
 # pc1 weights and returns
-weights_1 <- weight_s
-pc_1 <- re_turns %*% weights_1
-# redefine objective function
+pc_1 <- drop(re_turns %*% weights_1)
+# Redefine objective function
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets*portf_rets) +
-    1e7*(1 - sum(weight_s*weight_s))^2 +
-    1e7*sum(pc_1*portf_rets)^2
+  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2 +
+    1e7*sum(weights_1*weight_s)^2
 }  # end object_ive
-# find second principal component weights
-optim_run <- optim(par=weight_s,
+# Find second principal component weights
+op_tim <- optim(par=weight_s,
              fn=object_ive,
              re_turns=re_turns,
              method="L-BFGS-B",
@@ -152,49 +146,40 @@ optim_run <- optim(par=weight_s,
              lower=rep(-1.0, n_weights))
 
 # pc2 weights and returns
-weights_2 <- optim_run$par
-pc_2 <- re_turns %*% weights_2
+weights_2 <- op_tim$par
+pc_2 <- drop(re_turns %*% weights_2)
 sum(pc_1*pc_2)
 # Plot second principal component loadings
 barplot(weights_2, names.arg=names(weights_2),
-  xlab="", ylab="",
-  main="second principal component loadings")
+  xlab="", ylab="", main="Second Principal Component Loadings")
 
-# Covariance matrix and variance vector of returns
-cov_mat <- cov(re_turns)
-vari_ance <- diag(cov_mat)
-cor_mat <- cor(re_turns)
-# Calculate eigenvectors and eigenvalues
-ei_gen <- eigen(cov_mat)
+ei_gen <- eigen(cor_mat)
 ei_gen$vectors
-weights_1
-weights_2
-ei_gen$values[1]
-var(pc_1)
-(cov_mat %*% weights_1) / weights_1
-ei_gen$values[2]
-var(pc_2)
-(cov_mat %*% weights_2) / weights_2
-sum(vari_ance)
-sum(ei_gen$values)
-barplot(ei_gen$values, # Plot eigenvalues
-  names.arg=paste0("PC", 1:n_weights),
+# Compare with optimization
+all.equal(sum(diag(cor_mat)), sum(ei_gen$values))
+all.equal(abs(ei_gen$vectors[, 1]), abs(weights_1), check.attributes=FALSE)
+all.equal(abs(ei_gen$vectors[, 2]), abs(weights_2), check.attributes=FALSE)
+all.equal(ei_gen$values[1], var(pc_1), check.attributes=FALSE)
+all.equal(ei_gen$values[2], var(pc_2), check.attributes=FALSE)
+# Eigenvalue equations
+(cor_mat %*% weights_1) / weights_1 / var(pc_1)
+(cor_mat %*% weights_2) / weights_2 / var(pc_2)
+# Plot eigenvalues
+barplot(ei_gen$values, names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
 
-# eigen decomposition of covariance matrix
-cov_mat <- cov(re_turns)
-ei_gen <- eigen(cov_mat)
-# Perform PCA without scaling
-pc_a <- prcomp(re_turns, scale=FALSE)
+# Eigen decomposition of correlation matrix
+ei_gen <- eigen(cor_mat)
+# Perform PCA with scaling
+pc_a <- prcomp(re_turns, scale=TRUE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
     check.attributes=FALSE)
-# eigen decomposition of correlation matrix
-cor_mat <- cor(re_turns)
-ei_gen <- eigen(cor_mat)
-# Perform PCA with scaling
-pc_a <- prcomp(re_turns, scale=TRUE)
+# Eigen decomposition of covariance matrix
+ei_gen <- eigen(cov_mat)
+# Perform PCA without scaling
+pc_a <- prcomp(re_turns, scale=FALSE)
 # Compare outputs
 all.equal(ei_gen$values, pc_a$sdev^2)
 all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
@@ -203,8 +188,7 @@ all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
 # Perform principal component analysis PCA
 pc_a <- prcomp(re_turns, scale=TRUE)
 # Plot standard deviations
-barplot(pc_a$sdev,
-  names.arg=colnames(pc_a$rotation),
+barplot(pc_a$sdev, names.arg=colnames(pc_a$rotation),
   las=3, xlab="", ylab="",
   main="Scree Plot: Volatilities of Principal Components
   of Treasury rates")
@@ -214,12 +198,10 @@ x11(width=6, height=7)
 pc_a$rotation
 # Plot loading barplots in multiple panels
 par(mfrow=c(3,2))
-par(mar=c(2, 2, 2, 1), oma=c(0, 0, 0, 0))
+par(mar=c(3.5, 2, 2, 1), oma=c(0, 0, 0, 0))
 for (or_der in 1:NCOL(pc_a$rotation)) {
-  barplot(pc_a$rotation[, or_der],
-  las=3, xlab="", ylab="", main="")
-  title(paste0("PC", or_der), line=-2.0,
-  col.main="red")
+  barplot(pc_a$rotation[, or_der], las=3, xlab="", ylab="", main="")
+  title(paste0("PC", or_der), line=-2.0, col.main="red")
 }  # end for
 
 # Calculate products of principal component time series
@@ -231,29 +213,24 @@ pca_ts <- cumsum(pca_ts)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
 par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
-ra_nge <- range(pca_ts)
+rang_e <- range(pca_ts)
 for (or_der in 1:NCOL(pca_ts)) {
-  plot.zoo(pca_ts[, or_der],
-     ylim=ra_nge,
-     xlab="", ylab="")
-  title(paste0("PC", or_der), line=-2.0)
+  plot.zoo(pca_ts[, or_der], ylim=rang_e, xlab="", ylab="")
+  title(paste0("PC", or_der), line=-1, col.main="red")
 }  # end for
 
-par(mfrow=c(n_weights/2, 2))
-par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 # Invert all the principal component time series
 pca_rets <- re_turns %*% pc_a$rotation
 sol_ved <- pca_rets %*% solve(pc_a$rotation)
 all.equal(coredata(re_turns), sol_ved)
 # Invert first 3 principal component time series
 sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
-sol_ved <- xts::xts(sol_ved, date_s)
-sol_ved <- xts:::cumsum.xts(sol_ved)
-cum_returns <- xts:::cumsum.xts(re_turns)
+sol_ved <- xts::xts(sol_ved, zoo::index(re_turns))
+sol_ved <- cumsum(sol_ved)
+cum_returns <- cumsum(re_turns)
 # Plot the solved returns
 for (sym_bol in sym_bols) {
-  plot.zoo(
-    cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
+  plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
   legend(x="topleft", bty="n",
    legend=paste0(sym_bol, c("", " solved")),
@@ -290,7 +267,7 @@ disc_curves <- DiscountCurve(params=curve_params,
 x11()
 plot(x=disc_curves$zerorates, t="l", main="zerorates")
 
-# futures contracts codes
+# Futures contracts codes
 future_s <- rbind(c("S&P500 index", "ES"),
               c("10yr Treasury", "ZN"),
               c("VIX index", "VX"),
@@ -308,7 +285,7 @@ month_codes <- cbind(c("January", "February", "March", "April", "May", "June", "
 colnames(month_codes) <- c("Month", "Code")
 print(xtable::xtable(month_codes), comment=FALSE, size="scriptsize", include.rownames=FALSE, latex.environments="flushright")
 
-# futures contracts codes
+# Futures contracts codes
 future_s <- rbind(c("S&P500 index", "SP", "ES"),
               c("10yr Treasury", "ZN", "ZN"),
               c("VIX index", "VX", "delisted"),
@@ -420,8 +397,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
 
 # Read CBOE monthly futures expiration dates
 date_s <- read.csv(
-  file="C:/Develop/data/vix_data/vix_dates.csv",
-  stringsAsFactors=FALSE)
+  file="C:/Develop/data/vix_data/vix_dates.csv")
 date_s <- as.Date(date_s[, 1])
 year_s <- format(date_s, format="%Y")
 year_s <- substring(year_s, 4)
@@ -438,7 +414,7 @@ write.csv(date_s, row.names=TRUE,
   file="C:/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
-  stringsAsFactors=FALSE, row.names=1)
+  row.names=1)
 date_s[, 1] <- as.Date(date_s[, 1])
 
 # Load VIX futures data from binary file
@@ -476,7 +452,7 @@ legend(x="topright", legend=colnames(curve_s),
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
 # Read CBOE futures expiration dates
 date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
-  stringsAsFactors=FALSE, row.names=1)
+  row.names=1)
 sym_bols <- rownames(date_s)
 date_s <- as.Date(date_s[, 1])
 to_day <- as.Date("2018-05-07")
@@ -496,7 +472,6 @@ ra_tio <- as.numeric(maturi_ty - front_date) /
   as.numeric(back_date - front_date)
 pric_e <- (ra_tio*back_price + (1-ra_tio)*front_price)
 
-library(HighFreq)
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
 load(file="C:/Develop/data/vix_data/vix_cboe.RData")
@@ -516,18 +491,194 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
-               stringsAsFactors=FALSE)
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
 
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
 
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv",
-               stringsAsFactors=FALSE)
+  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
 
 print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownames=FALSE)
+
+# Install package "rwrds"
+devtools::install_github("davidsovich/rwrds")
+# Load package "rwrds"
+library(rwrds)
+# Get documentation for package "rwrds"
+packageDescription("rwrds")
+# Load help page
+help(package="rwrds")
+# List all datasets in "rwrds"
+data(package="rwrds")
+# List all objects in "rwrds"
+ls("package:rwrds")
+# Remove rwrds from search path
+detach("package:rwrds")
+
+library(rwrds)
+library(dplyr)
+# Establish connection to WRDS
+wrds_con <- rwrds::wrds_connect(username="jp3900", password="RipvanWinkle20")
+# Download Compustat names table as dplyr object
+names_table <- rwrds::compustat_names(wrds=wrds_con, subset=FALSE, dl=TRUE)
+dim(names_table)
+# Save names table as csv file
+write.csv(names_table, file="C:/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
+# rm(names_table)
+# Read names table from csv file
+names_table <- read.csv(file="C:/Develop/lecture_slides/data/compustat_table.csv")
+# sym_bol <- "VTI"
+# match(sym_bol, names_table$tic)
+# Create ETF symbols (tickers)
+sym_bols <- c("VTI", "VEU", "EEM")
+# Get cusips of sym_bols
+in_dex <- match(sym_bols, names_table$tic)
+names(in_dex) <- sym_bols
+etf_cusips <- names_table$cusip[in_dex]
+names(etf_cusips) <- sym_bols
+# Save cusips into text file
+cat(etf_cusips, file="C:/Develop/lecture_slides/data/etf_cusips.txt", sep="\n")
+# Save gvkeys into text file
+etf_gvkeys <- names_table$gvkey[in_dex]
+names(etf_gvkeys) <- sym_bols
+cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
+
+# Read .csv file with S&P500 constituents
+sp500_table <- read.csv(file="C:/Develop/lecture_slides/data/sp500_constituents.csv")
+class(sp500_table)
+# Select unique sp500 tickers and save them into text file
+sp500_tickers <- unique(sp500_table$co_tic)
+cat(sp500_tickers, file="C:/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
+# Some gvkeys are duplicates
+duplicate_s <- table(sp500_table$gvkey)
+duplicate_s <- duplicate_s[duplicate_s > 1]
+duplicate_s <- sp500_table[match(as.numeric(names(duplicate_s)), sp500_table$gvkey), ]
+# Select unique gvkeys
+sp500_gvkeys <- unique(sp500_table$gvkey)
+# foo <- sp500_table[match(sp500_gvkeys, sp500_table$gvkey), ]
+# Save gvkeys into text file
+cat(sp500_gvkeys, file="C:/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
+# Select unique cusips and save into text file
+sp500_cusips <- unique(sp500_table$co_cusip)
+# Remove empty cusips
+which(sp500_cusips == "")
+sp500_cusips <- sp500_cusips[-which(sp500_cusips == "")]
+cat(sp500_cusips, file="C:/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
+# Find the rows corresponding to the sp500_cusips
+rows_cusips <- sp500_table[match(sp500_cusips, sp500_table$co_cusip), ]
+# Find the rows corresponding to duplicate gvkeys
+duplicate_s <- table(rows_cusips$gvkey)
+duplicate_s <- duplicate_s[duplicate_s > 1]
+duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s)), ]
+
+library(rutils)  # Load package rutils
+# Read .csv file with TAP OHLC prices
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
+# oh_lc contains cusips not in sp500_cusips
+cusip_s <- unique(oh_lc$cusip)
+cusip_s %in% sp500_cusips
+# Select data only for sp500_cusips
+oh_lc <- oh_lc[oh_lc$cusip %in% sp500_cusips, ]
+# oh_lc contains tickers not in sp500_tickers
+ticker_s <- unique(oh_lc$tic)
+ticker_s %in% sp500_tickers
+# Select data only for sp500_tickers
+oh_lc <- oh_lc[oh_lc$tic %in% sp500_tickers, ]
+# Select ticker from sp500_table
+sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
+# Adjustment factor and total return factor
+adj_fact <- drop(oh_lc[, "ajexdi"])
+tr_fact <- drop(oh_lc[, "trfd"])
+# Extract index of dates
+in_dex <- drop(oh_lc[, "datadate"])
+in_dex <- lubridate::ymd(in_dex)
+# Select only OHLCV data columns
+oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
+colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+# Coerce to xts series
+oh_lc <- xts::xts(oh_lc, in_dex)
+# Fill the missing (NA) Open prices
+is_na <- is.na(oh_lc[, 1])
+oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
+sum(is.na(oh_lc))
+# Adjust all the prices
+oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
+oh_lc <- na.omit(oh_lc)
+plot(quantmod::Cl(oh_lc), main="TAP Stock")
+
+# Define formatting function for OHLC prices
+format_ohlc <- function(oh_lc, environ_ment) {
+  # Select ticker from sp500_table
+  sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
+  # Split adjustment and total return factors
+  adj_fact <- drop(oh_lc[, c("ajexdi")])
+  tr_fact <- drop(oh_lc[, "trfd"])
+  tr_fact <- ifelse(is.na(tr_fact), 1, tr_fact)
+  # Extract dates index
+  in_dex <- drop(oh_lc[, "datadate"])
+  in_dex <- lubridate::ymd(in_dex)
+  # Select only OHLCV data
+  oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
+  colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+  # Coerce to xts series
+  oh_lc <- xts::xts(oh_lc, in_dex)
+  # Fill NA prices
+  is_na <- is.na(oh_lc[, 1])
+  oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
+  # Adjust the prices
+  oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
+  # Copy the OHLCV data to environ_ment
+  oh_lc <- na.omit(oh_lc)
+  assign(x=sym_bol, value=oh_lc, envir=environ_ment)
+  sym_bol
+}  # end format_ohlc
+
+# Load OHLC prices from .csv file downloaded from WRDS by cusip
+sp500_prices <- read.csv(file="C:/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
+# sp500_prices contains cusips not in sp500_cusips
+cusip_s <- unique(sp500_prices$cusip)
+NROW(sp500_cusips); NROW(cusip_s)
+# Select data only for sp500_cusips
+sp500_prices <- sp500_prices[sp500_prices$cusip %in% sp500_cusips, ]
+# sp500_prices contains tickers not in sp500_tickers
+ticker_s <- unique(sp500_prices$tic)
+NROW(sp500_tickers); NROW(ticker_s)
+# Select data only for sp500_tickers
+sp500_prices <- sp500_prices[sp500_prices$tic %in% sp500_tickers, ]
+# Create new data environment
+sp500_env <- new.env()
+# Perform OHLC aggregations by cusip column
+sp500_prices <- split(sp500_prices, sp500_prices$cusip)
+process_ed <- lapply(sp500_prices, format_ohlc,
+               environ_ment=sp500_env)
+
+# Get end dates of series in sp500_env
+end_dates <- eapply(sp500_env, end)
+end_dates <- unlist(end_dates)
+end_dates <- as.Date(end_dates)
+# Remove elements with short end dates
+se_lect <- (end_dates < max(end_dates))
+rm(list=names(sp500_env)[se_lect], envir=sp500_env)
+# Rename element "BRK.B" to "BRKB"
+sp500_env$BRKB <- sp500_env$BRK.B
+rm(BRK.B, envir=sp500_env)
+names(sp500_env$BRKB) <- paste("BRKB",
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+# Rename element "LOW" to "LOWES"
+sp500_env$LOWES <- sp500_env$LOW
+names(sp500_env$LOWES) <- paste("LO_WES",
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+rm(LOW, envir=sp500_env)
+# Rename element "BF.B" to "BFB"
+sp500_env$BFB <- sp500_env$BF.B
+names(sp500_env$BFB) <- paste("BFB",
+  c("Open", "High", "Low", "Close", "Volume"), sep=".")
+rm(BF.B, envir=sp500_env)
+# Save OHLC prices to .RData file
+save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
+plot(quantmod::Cl(sp500_env$MSFT))
 
 library(Quandl)  # Load package Quandl
 # Register Quandl API key
@@ -586,44 +737,60 @@ viewFinancials(funda_mentals,  period="Q")
 funda_mentals <- getFinancials("HPQ", src="yahoo", auto.assign=FALSE)
 viewFinancials(funda_mentals)
 
+library(rutils)  # Load package rutils
+# Specify class for column "TICKER" so that "F" doesn't become FALSE
+col_class <- "character"
+names(col_class) <- "TICKER"
+# Read .csv file with Ford OHLC prices
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/F_CRSP.csv",
+  colClasses=col_class)
+sym_bol <- oh_lc[1, "TICKER"]
+# Adjustment factor
+adj_fact <- drop(oh_lc[, "CFACPR"])
+# Extract dates index
+in_dex <- drop(oh_lc[, "date"])
+in_dex <- lubridate::ymd(in_dex)
+# Select only OHLCV data
+oh_lc <- oh_lc[, c("OPENPRC", "ASKHI", "BIDLO", "PRC", "VOL")]
+colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+# Coerce to xts series
+oh_lc <- xts::xts(oh_lc, in_dex)
+# Fill missing Open NA prices
+is_na <- is.na(oh_lc[, 1])
+oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
+# Adjust all the prices
+oh_lc[, 1:4] <- oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
+plot(quantmod::Cl(oh_lc), main="Ford Stock")
 
+crsp_compustat <- read.csv(file="C:/Develop/lecture_slides/data/crsp_compustat_indices.csv")
+colnames(crsp_compustat) <- crsp_compustat[1, ]
+crsp_compustat <- crsp_compustat[-1, ]
+print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE)
 
-library(HighFreq)  # Load package HighFreq
-install.packages("devtools")
-library(devtools)
-# Install package WRDS from github
-install_github("WRDS/R-package")
-library(WRDS)  # Load package WRDS
-# Register WRDS API key
-WRDS.api_key("pVJi9Nv3V8CD3Js5s7Qx")
-# Get short description
-packageDescription("WRDS")
-# Load help page
-help(package="WRDS")
-# Remove WRDS from search path
-detach("package:WRDS")
+library(rutils)  # Load package rutils
+# Read .csv file with TAP OHLC prices
+oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
+sym_bol <- oh_lc[1, "tic"]
+# Adjustment factor and total return factor
+adj_fact <- drop(oh_lc[, "ajexdi"])
+tr_fact <- drop(oh_lc[, "trfd"])
+# Extract dates index
+in_dex <- drop(oh_lc[, "datadate"])
+in_dex <- lubridate::ymd(in_dex)
+# Select only OHLCV data
+oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
+colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
+# Coerce to xts series
+oh_lc <- xts::xts(oh_lc, in_dex)
+# Fill missing Open NA prices
+is_na <- is.na(oh_lc[, 1])
+oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
+sum(is.na(oh_lc))
+# Adjust all the prices
+oh_lc[, 1:4] <- tr_fact*oh_lc[, 1:4]/adj_fact/tr_fact[NROW(tr_fact)]
+plot(quantmod::Cl(oh_lc), main="TAP Stock")
 
-library(HighFreq)  # Load package HighFreq
-env_sp500 <- new.env()  # new environment for data
-# Remove all files (if necessary)
-rm(list=ls(env_sp500), envir=env_sp500)
-# Boolean vector of symbols already downloaded
-down_loaded <- tick_ers %in% ls(env_sp500)
-# Download data and copy it into environment
-for (tick_er in tick_ers[!down_loaded]) {
-  cat("processing: ", tick_er, "\n")
-  da_ta <- Quandl(code=paste0("WIKI/", tick_er),
-            start_date="1990-01-01",
-            type="xts")[, -(1:7)]
-  colnames(da_ta) <- paste(tick_er,
-    c("Open", "High", "Low", "Close", "Volume"), sep=".")
-  assign(tick_er, da_ta, envir=env_sp500)
-}  # end for
-save(env_sp500, file="C:/Develop/lecture_slides/data/sp500.RData")
-chart_Series(x=env_sp500$XOM["2016/"], TA="add_Vo()",
-       name="XOM stock")
-
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Download Fama-French factors from KFRENCH database
 fac_tors <- Quandl(code="KFRENCH/FACTORS_D",
   start_date="2001-01-01", type="xts")
@@ -632,6 +799,82 @@ head(fac_tors)
 tail(fac_tors)
 chart_Series(cumsum(fac_tors["2001/", 1]/100),
   name="Fama-French factors")
+
+options(width=200)
+# Load package HighFreq
+library(HighFreq)
+# Or load the high frequency data file directly:
+symbol_s <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
+head(SPY_TAQ)
+head(SPY)
+tail(SPY)
+
+# Read TAQ trade data from csv file
+ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
+# Inspect the TAQ data
+ta_q
+class(ta_q)
+sapply(ta_q, class)
+# Number of ticks per second
+NROW(ta_q)/(6.5*3600)
+
+# Create date-time index
+in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
+class(in_dex)
+last(in_dex)
+# Coerce date-time index to POSIXlt
+in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
+class(in_dex)
+# Display more significant digits
+options(digits=20, digits.secs=10)
+last(in_dex)
+unclass(last(in_dex))
+as.numeric(last(in_dex))
+# Coerce date-time index to POSIXct
+in_dex <- as.POSIXct(in_dex)
+class(in_dex)
+last(in_dex)
+unclass(last(in_dex))
+as.numeric(last(in_dex))
+# Coerce trade ticks to xts series
+x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+sym_bol <- ta_q$SYM_ROOT[1]
+colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
+save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+
+# Plot in x11 window
+x11(width=6, height=4)
+par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
+quantmod::chart_Series(x=x_ts[, 1],
+  name="XLK Trade Ticks for 2020-03-16")
+# Plot dygraph
+dygraphs::dygraph(x_ts[, 1],
+  main="XLK Trade Ticks for 2020-03-16")
+
+# Select only the large lots greater than 100
+dim(ta_q)
+ta_q <- ta_q[ta_q$SIZE > 100]
+dim(ta_q)
+# Number of large lot ticks per second
+NROW(ta_q)/(6.5*3600)
+# Save trade ticks with large lots
+data.table::fwrite(ta_q, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
+# Create date-time index
+in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
+in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
+in_dex <- as.POSIXct(in_dex)
+# Coerce trade prices to xts
+x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+
+# Plot the large lots
+x11(width=6, height=4)
+par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
+quantmod::chart_Series(x=x_ts[, 1],
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
+# Plot dygraph
+dygraphs::dygraph(x_ts[, 1],
+  main="XLK Trade Ticks for 2020-03-16 (large lots only)")
 
 options(width=200)
 # Load package HighFreq
@@ -714,11 +957,11 @@ data(hf_data)
 # HighFreq datasets are now loaded and in the workspace
 head(SPY)
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # SPY percentage returns
 oh_lc <- HighFreq::SPY
-clo_se <- quantmod::Cl(oh_lc)
-re_turns <- rutils::diff_it(clo_se)/rutils::lag_it(clo_se)
+clos_e <- quantmod::Cl(oh_lc)
+re_turns <- rutils::diff_it(clos_e)/rutils::lag_it(clos_e)
 colnames(re_turns) <- "SPY"
 # Standardize raw returns to make later comparisons
 ret_std <- re_turns/sd(re_turns)
@@ -985,7 +1228,7 @@ chart_Series(vol_agg[c(-1, -NROW(vol_agg))], theme=plot_theme,
   name="Daily Seasonality of SPY Volatility")
 
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 chart_Series(roll_sum(vol_daily, 10)[-(1:10)]/10,
        name=paste(sym_bol, "variance"))
 chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
@@ -993,7 +1236,7 @@ chart_Series(roll_sum(hurst_daily, 10)[-(1:10)]/10,
 abline(h=0.5, col="blue", lwd=2)
 
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily seasonality of Hurst exponent
 inter_val <- "2013"
 season_hurst <- season_ality(hurst_ohlc(ohlc=SPY[inter_val, 1:4]))
@@ -1015,11 +1258,11 @@ abline(h=0.5, col="blue", lwd=2)
 season_var <- season_ality(vol_ohlc(ohlc=SPY))
 
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
-# rolling variance
+library(rutils)  # Load package rutils
+# Rolling variance
 var_iance <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="vol_ohlc")
-# rolling skew
+# Rolling skew
 sk_ew <-
   roll_agg_ohlc(ohlc=SPY, agg_fun="skew_ohlc")
 sk_ew <- sk_ew/(var_iance)^(1.5)
@@ -1033,7 +1276,7 @@ chart_Series(sk_ew[inter_val],
       ylim=c(-1, 1))
 
 par(mfrow=c(2,1))  # set plot panels
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily variance and skew
 vol_daily <- xts::apply.daily(x=HighFreq::SPY, FUN=agg_ohlc,
                   agg_fun="vol_ohlc")
@@ -1145,7 +1388,7 @@ chart_Series(
   cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
   name=paste(sym_bol, "VWAP momentum strategy pnl"))
 
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Daily Hurst exponents
 hurst_daily <- xts::apply.daily(x=HighFreq::SPY,
                      FUN=agg_ohlc,

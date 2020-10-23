@@ -1,6 +1,6 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=6, fig.height=5)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -82,19 +82,18 @@ test_func("some_val")  # Invalid string
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
 # calc_skew() calculates skew of time series of returns
 # Default is normal time series
-calc_skew <- function(se_ries=rnorm(1000)) {
+calc_skew <- function(re_turns=rnorm(1000)) {
   # Number of observations
-  len_gth <- NROW(se_ries)
-  # Standardize se_ries
-  se_ries <-
-    (se_ries - mean(se_ries))/sd(se_ries)
+  n_rows <- NROW(re_turns)
+  # Standardize re_turns
+  re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
   # Calculate skew - last statement automatically returned
-  len_gth*sum(se_ries^3)/((len_gth-1)*(len_gth-2))
+  n_rows*sum(re_turns^3)/((n_rows-1)*(n_rows-2))
 }  # end calc_skew
 
 # Calculate skew of DAX returns
 # Bind arguments by name
-calc_skew(se_ries=re_turns)
+calc_skew(re_turns=re_turns)
 # Bind arguments by position
 calc_skew(re_turns)
 # Use default value of arguments

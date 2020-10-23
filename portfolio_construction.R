@@ -1,13 +1,13 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
 options(digits=3)
-options(width=60, dev='pdf')
+options(width=80, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
 library(PortfolioAnalytics)
-# Use ETF returns from package HighFreq
-library(HighFreq)
+# Use ETF returns from package rutils
+library(rutils)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
@@ -41,8 +41,8 @@ portf_maxSR <- add.objective(
   name="StdDev")
 
 library(PortfolioAnalytics)
-# Use ETF returns from package HighFreq
-library(HighFreq)
+# Use ETF returns from package rutils
+library(rutils)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
@@ -90,7 +90,7 @@ sym_bols <- c("VTI", "IEF", "DBC")
 n_weights <- NROW(sym_bols)
 # Calculate mean returns
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
-re_turns <- xts:::na.locf.xts(re_turns)
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 re_turns <- na.omit(re_turns)
 mean_rets <- colMeans(re_turns)
 # Specify weight constraints
@@ -470,8 +470,7 @@ optim_rets <- lapply(re_turns,
   function(re_turns) exp(cumsum(re_turns)))
 optim_rets <- rutils::do_call(cbind, optim_rets)
 # Calculate market portfolio returns
-optim_rets <- cbind(
-  exp(cumsum(re_turns %*%
+optim_rets <- cbind(exp(cumsum(re_turns %*%
     c(weight_s[in_dex], 1-weight_s[in_dex]))),
   optim_rets)
 colnames(optim_rets)[1] <- "market"
@@ -487,7 +486,7 @@ legend("top", legend=colnames(optim_rets),
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
 # VTI percentage returns
-re_turns <- rutils::diff_it(log(Ad(rutils::etf_env$VTI)))
+re_turns <- rutils::diff_it(log(quantmod::Cl(rutils::etf_env$VTI)))
 conf_level <- 0.1
 va_r <- quantile(re_turns, conf_level)
 c_var <- mean(re_turns[re_turns < va_r])
@@ -517,7 +516,7 @@ polygon(
   col=rgb(1, 0, 0,0.5), border=NA)
 text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
 
-library(HighFreq)
+library(rutils)  # Load rutils
 library(Rglpk)
 # Vector of symbol names and returns
 sym_bols <- c("VTI", "IEF", "DBC")
@@ -883,8 +882,8 @@ ls("package:PortfolioAnalytics")  # list all objects in "PortfolioAnalytics"
 detach("package:PortfolioAnalytics")  # remove PortfolioAnalytics from search path
 
 library(PortfolioAnalytics)
-# Use ETF returns from package HighFreq
-library(HighFreq)
+# Use ETF returns from package rutils
+library(rutils)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
@@ -1262,16 +1261,17 @@ barplot(weights_2h,
   main="Portfolio Weights Second Half")
 
 # Calculate random default probabilities
+set.seed(1121)
 n_assets <- 100
 def_probs <- runif(n_assets, max=0.2)
 mean(def_probs)
-# Calculate number of defaults
+# Simulate number of defaults
 uni_form <- runif(n_assets)
 sum(uni_form < def_probs)
-# Simulate average number of defaults
+# Simulate average number of defaults using for() loop (inefficient way)
 n_simu <- 1000
+set.seed(1121)
 de_faults <- numeric(n_simu)
-# Simulate using for() loop (inefficient way)
 for (i in 1:n_simu) {  # Perform loop
   uni_form <- runif(n_assets)
   de_faults[i] <- sum(uni_form < def_probs)
@@ -1279,50 +1279,67 @@ for (i in 1:n_simu) {  # Perform loop
 # Calculate average number of defaults
 mean(de_faults)
 # Simulate using vectorized functions  (efficient way)
-uni_form <- matrix(runif(n_simu*n_assets),
-             ncol=n_simu)
-sum(uni_form < def_probs)/n_simu
+set.seed(1121)
+uni_form <- matrix(runif(n_simu*n_assets), ncol=n_simu)
+de_faults <- colSums(uni_form < def_probs)
+mean(de_faults)
+# Plot the distribution of defaults
+x11(width=6, height=5)
+plot(density(de_faults), main="Distribution of Defaults",
+     xlab="number of defaults", ylab="frequqncy")
+abline(v=mean(de_faults), lwd=3, col="red")
+
+# Calculate default thresholds and asset values
+def_thresh <- qnorm(def_probs)
+asset_s <- qnorm(uni_form)
+# Simulate defaults
+de_faults <- colSums(asset_s < def_thresh)
+mean(de_faults)
 
 # Plot Standard Normal distribution
-curve(expr=dnorm(x),
-type="l", xlim=c(-4, 4),
-xlab="asset value", ylab="", lwd=2,
+x11(width=6, height=5)
+x_lim <- 4; def_thresh <- qnorm(0.025)
+curve(expr=dnorm(x), type="l", xlim=c(-x_lim, x_lim),
+xlab="asset value", ylab="", lwd=3,
 col="blue", main="Distribution of Asset Values")
-abline(v=qnorm(0.025), col="red", lwd=2)
-text(x=qnorm(0.025)-0.1, y=0.15,
- labels="default threshold",
+abline(v=def_thresh, col="red", lwd=3)
+text(x=def_thresh-0.1, y=0.15, labels="default threshold",
  lwd=2, srt=90, pos=3)
+# Plot polygon area
+x_var <- seq(-x_lim, x_lim, length=100)
+y_var <- dnorm(x_var)
+are_a <- ((x_var >= (-x_lim)) & (x_var <= def_thresh))
+polygon(c(x_lim, x_var[are_a], def_thresh),
+  c(-1, y_var[are_a], -1), col="red")
 
 # Define correlation parameters
 rh_o <- 0.2
 rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
 n_assets <- 5 ; n_simu <- 10000
-# Calculate vector of systematic factors
+# Calculate vector of systematic and idiosyncratic factors
 system_atic <- rnorm(n_simu)
+idio_syncratic <- rnorm(n_simu*n_assets)
 # Simulate asset values using vectorized functions (efficient way)
-asset_s <- rho_sqrt*system_atic +
-  rho_sqrtm*rnorm(n_simu*n_assets)
+asset_s <- rho_sqrt*system_atic + rho_sqrtm*idio_syncratic
 dim(asset_s) <- c(n_simu, n_assets)
+# Asset values are standard normally distributed
+apply(asset_s, MARGIN=2, function(x) c(mean=mean(x), sd=sd(x)))
 # Calculate correlations between asset values
 cor(asset_s)
 # Simulate asset values using for() loop (inefficient way)
-# allocate matrix of assets
+# Allocate matrix of assets
 asset_s <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
 for (i in 1:n_simu) {  # Perform loop
-  asset_s[i, ] <-
-    rho_sqrt*system_atic[i] +
-    rho_sqrtm*rnorm(n_assets)
+  asset_s[i, ] <- rho_sqrt*system_atic[i] + rho_sqrtm*rnorm(n_assets)
 }  # end for
 cor(asset_s)
 # benchmark the speed of the two methods
 library(microbenchmark)
 summary(microbenchmark(
   for_loop={for (i in 1:n_simu) {
-    rho_sqrt*system_atic[i] +
-    rho_sqrtm*rnorm(n_assets)}},
-  vector_ized={rho_sqrt*system_atic +
-        rho_sqrtm*rnorm(n_simu*n_assets)},
+    rho_sqrt*system_atic[i] + rho_sqrtm*rnorm(n_assets)}},
+  vector_ized={rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)},
   times=10))[, c(1, 4, 5)]
 
 # Calculate random default probabilities
@@ -1340,8 +1357,7 @@ def_probs
 de_faults <- matrix(nr=n_simu, nc=n_assets)
 # Simulate asset values using for() loop
 for (i in 1:n_simu) {  # Perform loop
-  de_faults[i, ] <-
-    (asset_s[i, ] < def_thresh)
+  de_faults[i, ] <- (asset_s[i, ] < def_thresh)
 }  # end for
 colSums(de_faults) / n_simu
 def_probs
@@ -1359,8 +1375,7 @@ rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
 n_simu <- 1000
 system_atic <- rnorm(n_simu)
 # Simulate asset values using vectorized functions
-asset_s <- rho_sqrt*system_atic +
-  rho_sqrtm*rnorm(n_simu*n_assets)
+asset_s <- rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)
 dim(asset_s) <- c(n_simu, n_assets)
 # Calculate number of defaults using vectorized functions
 de_faults <- t(t(asset_s) < def_thresh)
@@ -1455,8 +1470,7 @@ func_tion <- function(x, lamb_da=1) {
   exp(-x*lamb_da)
 }  # end func_tion
 integrate(func_tion, lower=0, upper=Inf)
-integrate(func_tion, lower=0, upper=Inf,
-    lamb_da=2)
+integrate(func_tion, lower=0, upper=Inf, lamb_da=2)
 # Cumulative probability over normal distribution
 pnorm(-2)
 integrate(dnorm, low=2, up=Inf)
@@ -1464,8 +1478,7 @@ str(dnorm)
 pnorm(-1)
 integrate(dnorm, low=2, up=Inf, mean=1)
 # Expected value over normal distribution
-integrate(function(x) x*dnorm(x),
-    low=2, up=Inf)
+integrate(function(x) x*dnorm(x), low=2, up=Inf)
 
 rh_o <- 0.1; l_gd <- 0.4
 # Define Vasicek loss distribution function
@@ -1484,6 +1497,52 @@ col="orange", main="Distribution of Losses")
 abline(v=l_gd*def_prob, col="red", lwd=3)
 text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
  lwd=2, srt=90, pos=3)
+
+# Define cumulative default probability function
+cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
+  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
+# Define Vasicek loss distribution function
+# (vectorized version with error handling for x)
+loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
+  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
+}  # end loss_distr
+
+def_prob <- 0.2; def_thresh <- qnorm(def_prob)
+rh_o <- 0.1; l_gd <- 0.4
+at_tach <- 0.15; de_tach <- 0.2
+# Expected tranche loss is sum of two terms
+tranche_loss <-
+  # Loss between at_tach and de_tach
+  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
+def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
+low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
+  # Loss in excess of de_tach
+  (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
+# Plot probability distribution of losses
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+type="l", xlim=c(0, 3*l_gd*def_prob),
+xlab="loss percentage", ylab="density", lwd=3,
+col="orange", main="CDO Tranche Losses")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
+ lwd=2, srt=90, pos=3)
+# Add lines for attach and detach
+abline(v=at_tach, col="blue", lwd=3)
+text(x=at_tach-0.001, y=4, labels="attach",
+ lwd=2, srt=90, pos=3)
+abline(v=de_tach, col="green", lwd=3)
+text(x=de_tach-0.001, y=4, labels="detach",
+ lwd=2, srt=90, pos=3)
+# Add shading for CDO tranche
+var_s <- seq(at_tach, de_tach, length=100)
+densi_ty <- sapply(var_s, loss_distr,
+  def_thresh=def_thresh, rh_o=rh_o)
+# Draw shaded polygon
+polygon(c(at_tach, var_s, de_tach), density=20,
+  c(-1, densi_ty, -1), col="red", border=NA)
+text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
 
 # Add lines for unexpected loss
 abline(v=0.04, col="blue", lwd=3)
@@ -1511,8 +1570,7 @@ xlab="loss percentage", ylab="density", lwd=3,
 col="orange", main="Conditional Value at Risk")
 # Add line for expected loss
 abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
- lwd=2, srt=90, pos=3)
+text(x=l_gd*def_prob-0.001, y=10, labels="expected loss", lwd=2, srt=90, pos=3)
 
 # Add lines for VaR
 abline(v=va_r, col="red", lwd=3)
@@ -1533,13 +1591,11 @@ var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
 var_func(x=0.99, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
 # Plot VaR
 curve(expr=var_func(x, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-type="l", xlim=c(0, 0.999),
-xlab="confidence level", ylab="VaR", lwd=3,
+type="l", xlim=c(0, 0.999), xlab="confidence level", ylab="VaR", lwd=3,
 col="orange", main="VaR versus Confidence Level")
 # Add line for expected loss
 abline(h=l_gd*def_prob, col="red", lwd=3)
-text(x=0.2, y=l_gd*def_prob, labels="expected loss",
-     lwd=2, pos=3)
+text(x=0.2, y=l_gd*def_prob, labels="expected loss", lwd=2, pos=3)
 
 # Integrate loss_distr() over full range
 integrate(loss_distr, low=0.0, up=l_gd,
@@ -1556,11 +1612,10 @@ level_s <- sapply(var_s, function(va_r, ...) {
 level_s <- cbind(as.numeric(t(level_s)[, 1]), var_s)
 colnames(level_s) <- c("level_s", "VaRs")
 # Calculate 95% confidence level VaR value
-level_s[
-  match(TRUE, level_s[, "level_s"] < 0.05), "VaRs"]
+level_s[match(TRUE, level_s[, "level_s"] < 0.05), "VaRs"]
 plot(x=1-level_s[, "level_s"],
      y=level_s[, "VaRs"], lwd=2,
-     xlab="Confidence Levels", ylab="VaRs",
+     xlab="confidence level", ylab="VaRs",
      t="l", main="VaR Values and Confidence Levels")
 
 # Calculate CVaR values
@@ -1571,8 +1626,7 @@ cvar_s <- sapply(var_s, function(va_r, ...) {
 level_s <- cbind(level_s, as.numeric(t(cvar_s)[, 1]))
 colnames(level_s)[3] <- "CVaRs"
 # Divide CVaR by confidence level
-level_s[, "CVaRs"] <-
-  level_s[, "CVaRs"]/level_s[, "level_s"]
+level_s[, "CVaRs"] <- level_s[, "CVaRs"]/level_s[, "level_s"]
 # Calculate 95% confidence level CVaR value
 level_s[match(TRUE,
   level_s[, "level_s"] < 0.05), "CVaRs"]
@@ -1581,12 +1635,11 @@ plot(x=1-level_s[, "level_s"],
      y=level_s[, "CVaRs"],
      t="l", col="red", lwd=2,
      ylim=range(level_s[, c("VaRs", "CVaRs")]),
-     xlab="Confidence Levels", ylab="CVaRs",
+     xlab="confidence level", ylab="CVaRs",
      main="CVaR Values and Confidence Levels")
 
 # Add VaRs
-lines(x=1-level_s[, "level_s"],
-y=level_s[, "VaRs"], lwd=2)
+lines(x=1-level_s[, "level_s"], y=level_s[, "VaRs"], lwd=2)
 # Add legend
 legend(x="topleft", legend=c("CVaRs", "VaRs"),
  title="default probability = 5%
@@ -1606,23 +1659,20 @@ def_thresh <- qnorm(def_probs)
 # Calculate vector of systematic factors
 system_atic <- rnorm(n_simu)
 # Simulate losses under Vasicek model
-asset_s <-
-  matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-asset_s <-
-  t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-loss_es <-
-  l_gd*colSums(asset_s < def_thresh)/n_assets
+asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
+asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
+loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
 
 # Calculate VaRs
 level_s <- seq(0.93, 0.99, 0.01)
 var_s <- quantile(loss_es, probs=level_s)
 plot(x=level_s, y=var_s, t="l", lwd=2,
-     xlab="Confidence Levels", ylab="VaRs",
+     xlab="confidence level", ylab="VaRs",
      main="Simulated VaR and Confidence Levels")
 
 # Calculate CVaRs
 cvar_s <- sapply(var_s, function(va_r) {
-  mean(loss_es[loss_es >=va_r])
+  mean(loss_es[loss_es >= va_r])
 })  # end sapply
 cvar_s <- cbind(cvar_s, var_s)
 # Alternative CVaR calculation using frequency table
@@ -1637,7 +1687,7 @@ cvar_s <- cbind(cvar_s, var_s)
 plot(x=level_s, y=cvar_s[, "cvar_s"],
      t="l", col="red", lwd=2,
      ylim=range(cvar_s),
-     xlab="Confidence Levels", ylab="CVaRs",
+     xlab="confidence level", ylab="CVaRs",
      main="Simulated CVaR and Confidence Levels")
 
 # Add VaRs
@@ -1681,8 +1731,7 @@ def_thresh <- qnorm(def_probs)
 n_boot <- 500
 # Perform bootstrap of calc_var
 set.seed(1121)
-boot_data <- sapply(rep(l_gd, n_boot),
-  calc_var,
+boot_data <- sapply(rep(l_gd, n_boot), calc_var,
   def_thresh=def_thresh,
   rho_sqrt=rho_sqrt, rho_sqrtm=rho_sqrtm,
   n_simu=n_simu, level_s=level_s)  # end sapply
@@ -1697,16 +1746,17 @@ std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 
 # Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(x=colnames(std_error_cvar), y=std_error_cvar[2, ],
+  t="l", col="red", lwd=2,
   ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
+  xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
-NA
 
 library(parallel)  # load package parallel
 n_cores <- detectCores() - 1  # number of cores
@@ -1737,7 +1787,7 @@ std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 plot(x=colnames(std_error_cvar),
   y=std_error_cvar[2, ], t="l", col="red", lwd=2,
   ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="level_s", ylab="Standard errors",
+  xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
@@ -1761,7 +1811,7 @@ calc_var <- function(def_probs, # Default probabilities
   # Calculate VaRs and CVaRs
   var_s <- quantile(loss_es, probs=level_s)
   cvar_s <- sapply(var_s, function(va_r) {
-    mean(loss_es[loss_es >=va_r])
+    mean(loss_es[loss_es >= va_r])
   })  # end sapply
   names(var_s) <- level_s
   names(cvar_s) <- level_s
@@ -1789,16 +1839,19 @@ std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
+# Scale the standard errors of VaRs and CVaRs
+std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
 
 # Plot the standard errors of VaRs and CVaRs
 plot(x=colnames(std_error_cvar),
   y=std_error_cvar[2, ], t="l", col="red", lwd=2,
   ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
-  xlab="Confidence Levels", ylab="Standard errors",
+  xlab="confidence level", ylab="standard error",
   main="Standard Errors of CVaR and VaR
   with Uncertain Default Probabilities")
 lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+legend(x="topright", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=1.0, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
 
@@ -1871,7 +1924,7 @@ var_s <- quantile(loss_es, probs=level_s)
 
 
 plot(x=level_s, y=var_s, t="l", lwd=2,
-     xlab="Confidence Levels", ylab="VaRs",
+     xlab="confidence level", ylab="VaRs",
      main="Simulated VaR and Confidence Levels")
 
 # Define model parameters
@@ -1899,49 +1952,3 @@ std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
 # Scale the standard errors of VaRs and CVaRs
 std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
 std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
-
-# Define cumulative default probability function
-cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
-  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
-# Define Vasicek loss distribution function
-# (vectorized version with error handling for x)
-loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
-  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
-}  # end loss_distr
-
-def_prob <- 0.2; def_thresh <- qnorm(def_prob)
-rh_o <- 0.1; l_gd <- 0.4
-at_tach <- 0.15; de_tach <- 0.2
-# Expected tranche loss is sum of two terms
-tranche_loss <-
-  # Loss between at_tach and de_tach
-  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
-def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
-  # Loss in excess of de_tach
-  (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
-# Plot probability distribution of losses
-curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-type="l", xlim=c(0, 3*l_gd*def_prob),
-xlab="loss percentage", ylab="density", lwd=3,
-col="orange", main="CDO Tranche Losses")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
- lwd=2, srt=90, pos=3)
-# Add lines for attach and detach
-abline(v=at_tach, col="blue", lwd=3)
-text(x=at_tach-0.001, y=4, labels="attach",
- lwd=2, srt=90, pos=3)
-abline(v=de_tach, col="green", lwd=3)
-text(x=de_tach-0.001, y=4, labels="detach",
- lwd=2, srt=90, pos=3)
-# Add shading for CDO tranche
-var_s <- seq(at_tach, de_tach, length=100)
-densi_ty <- sapply(var_s, loss_distr,
-  def_thresh=def_thresh, rh_o=rh_o)
-# Draw shaded polygon
-polygon(c(at_tach, var_s, de_tach), density=20,
-  c(-1, densi_ty, -1), col="red", border=NA)
-text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)

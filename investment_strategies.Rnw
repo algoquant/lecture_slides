@@ -3,8 +3,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -77,7 +77,6 @@ knit_theme$set(thm)
 \maketitle
 
 
-
 %%%%%%%%%%%%%%%
 \section{Market Databases}
 
@@ -103,7 +102,7 @@ colnames(price_s) <- unname(sapply(colnames(price_s),
 # Calculate percentage returns of the S&P500 constituent stocks
 # re_turns <- rutils::diff_it(log(price_s))
 re_turns <- lapply(price_s, function(x)
-  rutils::diff_it(x)/rutils::lag_it(x))
+  rutils::diff_it(x)/rutils::lag_it(x, pad_zeros=FALSE))
 re_turns <- rutils::do_call(cbind, re_turns)
 set.seed(1121)
 sam_ple <- sample(NCOL(re_turns), s=100, replace=FALSE)
@@ -111,7 +110,7 @@ returns_100 <- re_turns[, sam_ple]
 save(price_s, re_turns, returns_100,
   file="C:/Develop/lecture_slides/data/sp500_prices.RData")
 # Calculate number of constituents without prices
-da_ta <- rowSums(rutils::roll_sum(re_turns, 4)==0)
+da_ta <- rowSums(rutils::roll_sum(re_turns, 4) == 0)
 da_ta <- xts::xts(da_ta, order.by=index(re_turns))
 dygraphs::dygraph(da_ta, main="Number of S&P 500 Constituents Without Prices") %>%
   dyAxis("y", valueRange=c(0, 300))
@@ -174,9 +173,8 @@ dygraphs::dygraph(da_ta,
       \vskip1ex
       We will select a portfolio of \emph{ETFs} for illustrating various investment strategies.
     \column{0.5\textwidth}
-    \vspace{-2em}
-      <<echo=(-(1:1)),eval=TRUE>>=
-library(xtable)
+    \vspace{-1em}
+      <<echo=TRUE,eval=TRUE,size="tiny">>=
 # Select ETF symbols for asset allocation
 sym_bols <- c("VTI", "VEU", "EEM",
   "XLY", "XLP", "XLE", "XLF", "XLV",
@@ -184,7 +182,7 @@ sym_bols <- c("VTI", "VEU", "EEM",
   "IWB", "IWD", "IWF", "IEF", "TLT", "VNQ",
   "DBC", "GLD", "USO", "VXX", "SVXY", "MTUM")
 # Read etf database into data frame
-etf_list <- read.csv(file="C:/Develop/lecture_slides/data/etf_list.csv", stringsAsFactors=FALSE)
+etf_list <- read.csv(file="C:/Develop/lecture_slides/data/etf_list.csv")
 rownames(etf_list) <- etf_list$Symbol
 # Select from etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
@@ -208,7 +206,7 @@ etf_list["VXX", "Name"] <- "Long VIX Futures"
 etf_list["DBC", "Name"] <- "Commodity Futures Fund"
 etf_list["USO", "Name"] <- "WTI Oil Futures Fund"
 etf_list["GLD", "Name"] <- "Physical Gold Fund"
-    @
+      @
   \end{columns}
 \end{block}
 
@@ -244,7 +242,7 @@ etf_list["GLD", "Name"] <- "Physical Gold Fund"
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
-print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
       @
   \end{columns}
 \end{block}
@@ -287,16 +285,9 @@ print(xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
         r^s_i = p_i - p_{i-1} \quad r^p_i = \frac{p_i - p_{i-1}}{p_{i-1}} \quad r^l_i = \log(\frac{p_i}{p_{i-1}})
       \end{displaymath}
       If the log returns are small $r^l \ll 1$, then they are approximately equal to the percentage returns: $r^l \approx r^p$.
-      \vskip1ex
-      Adding together the simple returns represents the dollar returns from owning a fixed number of shares.
-      \vskip1ex
-      Compounding the percentage returns also represents the returns of owning a fixed number of shares.
-      \vskip1ex
-      Adding together the percentage returns without compounding represents the returns from owning a fixed dollar amount of shares (which requires periodic rebalancing).
-      \vskip1ex
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=(-(1:1)),eval=TRUE>>=
+      <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
 # Extract ETF prices from rutils::etf_env$price_s
 price_s <- rutils::etf_env$price_s
@@ -307,20 +298,11 @@ rets_dollar <- rutils::diff_it(price_s)
 # Or
 rets_dollar <- lapply(price_s, rutils::diff_it)
 rets_dollar <- rutils::do_call(cbind, rets_dollar)
-# Calculate percentage returns
-rets_percent <- rets_dollar/rutils::lag_it(price_s, lagg=1)
 # Calculate log returns
-log_rets <- rutils::diff_it(log(price_s))
-# Calculate prices from simple dollar returns
-rets_dollar[1, ] <- price_s[1, ]
-new_prices <- cumsum(rets_dollar)
-all.equal(new_prices, price_s)
-# Calculate prices from percentage returns
-new_prices <- cumsum(rets_percent)
-new_prices <- lapply(1:NCOL(new_prices), function (i)
-  as.numeric(price_s[1, i])*new_prices[, i])
-new_prices <- rutils::do_call(cbind, new_prices)
-all.equal(new_prices, price_s)
+rets_log <- rutils::diff_it(log(price_s))
+# Calculate percentage returns
+rets_percent <- rets_dollar/
+  rutils::lag_it(price_s, lagg=1, pad_zeros=FALSE)
       @
   \end{columns}
 \end{block}
@@ -329,46 +311,107 @@ all.equal(new_prices, price_s)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Combining the Returns of Several Assets}
+\subsection{Compounding Asset Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      There are several ways of combining the returns of different assets.
+      The sum of the simple (dollar) returns 
+      $\sum_{i=1}^n r^s_i$ 
+      represents the wealth from owning a \emph{fixed number of shares}.
       \vskip1ex
-      Adding the simple returns is equivalent to buying an equal and fixed number of shares.
+      The compounded percentage returns represent the wealth from owning a \emph{fixed number of shares}.
       \vskip1ex
-      Adding the percentage returns is equivalent to investing in equal dollar amounts of the stocks.
+      The sum of the percentage returns (without compounding) represents the wealth from owning a \emph{fixed dollar amount} of stock.
       \vskip1ex
-      Multiplying the percentage returns by fixed weights is equivalent to investing in dollar amounts of the stocks proportional to the weights.
+      Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing} - selling shares when their price goes up, and vice versa.
       \vskip1ex
-      The dollar amounts are not fixed over time, but they remain proportional to the weights.
+      This \emph{rebalancing} therefore acts as a mean reverting strategy.
       \vskip1ex
-      Without rebalancing, the dollar amounts of the stocks would over time diverge from their target weights, even if they started out proportional to the weights.
+      Rebalancing requires borrowing from a \emph{margin account}, and it also incurs trading costs.
       \vskip1ex
-      So at every point in time the portfolio allocations must be rebalanced to keep the dollar amounts of the stocks proportional to the weights.
+      The logarithm of the wealth of a \emph{fixed number of shares} is often used to compare investments, and it's approximately equal to the sum of the percentage returns.
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_log_wealth.png}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Wealth for equal and fixed number of shares (no rebalancing)
-weight_s <- c(0.5, 0.5)
-rets_dollar <- rets_dollar[, c("VTI", "IEF")]
-re_turns <- rets_dollar %*% weight_s
-weal_th <- cumsum(re_turns)
-# Wealth for equal dollar amount of shares (with rebalancing)
-rets_percent <- rets_percent[, c("VTI", "IEF")]
-re_turns <- (rets_percent %*% weight_s)
-weal_th <- sum(weight_s)*cumsum(re_turns)
-# Wealth for equal dollar amount of shares (without rebalancing)
-wealth_nreb <- cumsum(rets_percent) %*% weight_s
-# Plot compounded wealth
-weal_th <- cbind(weal_th, wealth_nreb)
-weal_th <- xts::xts(weal_th, index(rets_percent))
-colnames(weal_th) <- c("With rebalancing", "Without rebalancing")
-dygraphs::dygraph(weal_th, main="Wealth for Equal Dollar Amount of Shares") %>%
-  dyOptions(colors=c("green","blue"), strokeWidth=2) %>%
+# Calculate prices from simple dollar returns
+init_prices <- as.numeric(price_s[1, ])
+new_prices <- cumsum(rets_dollar)
+new_prices <- lapply(1:NCOL(new_prices), function (i) 
+    new_prices[, i] + init_prices[i])
+new_prices <- rutils::do_call(cbind, new_prices)
+all.equal(new_prices, price_s)
+# Compound the percentage returns
+new_prices <- cumprod(1+ rets_percent)
+new_prices <- lapply(1:NCOL(new_prices), function (i) 
+    init_prices[i]*new_prices[, i])
+new_prices <- rutils::do_call(cbind, new_prices)
+all.equal(new_prices, price_s)
+# Sum the percentage returns
+new_prices <- cumsum(rets_percent)
+methods(cumsum)
+new_prices <- lapply(1:NCOL(new_prices), function (i) 
+    new_prices[, i] + log(init_prices[i]))
+new_prices <- rutils::do_call(cbind, new_prices)
+# Only approximately equal
+all.equal(new_prices, log(price_s))
+# Plot log VTI prices
+dygraphs::dygraph(log(quantmod::Cl(rutils::etf_env$VTI)), 
+  main="Logarithm of VTI Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2) %>%
   dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Funding Costs of Single Asset Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The wealth accumulated from owning a \emph{fixed dollar amount} of stock is equal to the cash earned from rebalancing, which is proportional to the sum of the percentage returns, and it's kept in a \emph{margin account}: $m_t = \sum_{i=1}^t r^p_i$.
+      \vskip1ex
+      The cash in the \emph{margin account} can be positive (accumulated profits) or negative (losses).
+      \vskip1ex
+      The \emph{funding costs} $c^f_t$ are approximately equal to the \emph{margin account} $m_t$ times the \emph{funding rate} $f$: $c^f_t = f \, m_t = f \, \sum_{i=1}^t r^p_i$.
+      \vskip1ex
+      Positive \emph{funding costs} represent interest profits earned on the \emph{margin account}, while negative costs represent the interest paid for funding stock purchases.
+      \vskip1ex
+      The \emph{cumulative funding costs} $\sum_{i=1}^t c^f_i$ must be added to the \emph{margin account}: $m_t + \sum_{i=1}^t c^f_i$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_margin.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate percentage VTI returns
+price_s <- quantmod::Cl(rutils::etf_env$VTI)
+re_turns <- rutils::diff_it(price_s)/
+  rutils::lag_it(price_s, pad_zeros=FALSE)
+# Funding rate per day
+f_rate <- 0.01/252
+# Margin account
+mar_gin <- cumsum(re_turns)
+# Cumulative funding costs
+f_costs <- cumsum(f_rate*mar_gin)
+# Add funding costs to margin account
+mar_gin <- (mar_gin + f_costs)
+# dygraph plot of margin and funding costs
+da_ta <- cbind(mar_gin, f_costs)
+col_names <- c("Margin", "Cumulative Funding")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="VTI Margin Funding Costs") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3)
       @
   \end{columns}
 \end{block}
@@ -409,46 +452,132 @@ dygraphs::dygraph(weal_th, main="Wealth for Equal Dollar Amount of Shares") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Transaction Costs of Rebalancing}
+\subsection{Transaction Costs of Single Asset Rebalancing}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $\omega_i$ be the fixed portfolio weights, $r_i$ be the percentage returns, and $\bar{r}_t = \sum_{i=1}^n \omega_i r_i)$ be the weighted percentage returns at time $t$.
+      Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing}, selling shares when their price goes up, and vice versa.
       \vskip1ex
-      The wealth at time $t$ is equal to the wealth at time $t-1$ multiplied by the weighted returns: $w_t = w_{t-1} (1 + \bar{r}_t)$.
+      The dollar amount of stock that must be traded in a given period is equal to the absolute of the percentage returns: $\left| r_t \right|$. 
       \vskip1ex
-      The dollar amount of stock $i$ at time $t$ increases by $r_i$ so it's equal to $\omega_i w_{t-1} (1 + r_i)$, while the target amount is $\omega_i w_t = \omega_i w_{t-1} (1 + \bar{r}_t)$
+      The \emph{transaction costs} $c^r_t$ due to rebalancing are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \left| r_t \right|$.
       \vskip1ex
-      The dollar amount of stock $i$ needed to trade to rebalance back to the target weight is equal to:
-      \begin{flalign*}
-        \varepsilon_i &= \omega_i w_{t-1} (1 + \bar{r}_t) - \omega_i w_{t-1} (1 + r_i) \\
-        &= \omega_i w_{t-1} (\bar{r}_t - r_i)
-      \end{flalign*}
-      If $\bar{r}_t > r_i$ then an amount $\varepsilon_i$ of the stock $i$ needs to be bought, and if $\bar{r}_t < r_i$ then it needs to be sold.
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_i$.
     \column{0.5\textwidth}
-      The \emph{bid-offer spread} is the percentage difference between the \emph{offer} minus the \emph{bid} price, divided by the \emph{mid} price.
-      \vskip1ex
-      The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
-      \vskip1ex
-      The \emph{transaction costs} $c_t$ due to rebalancing are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amounts of the \emph{risky assets}:
-      \begin{displaymath}
-        c_t = \frac{\delta}{2} w_{t-1} \left| \sum_{i=1}^n \omega_i (\bar{r}_t - r_i) \right|
-      \end{displaymath}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_single_transaction_costs.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Extra amount of stocks
-ex_tra <- lapply(rets_percent, function(x)
-  rutils::lag_it(weal_th)*(re_turns - x))
-ex_tra <- lapply(seq_along(ex_tra), function(i)
-  weight_s[i]*ex_tra[[i]])
-ex_tra <- do.call(cbind, ex_tra)
-# ex_tra <- t(weight_s*t(ex_tra))
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
-# Calculate the transaction costs
-cost_s <- bid_offer*rowSums(abs(ex_tra))/2
+# Cumulative transaction costs
+cost_s <- bid_offer*cumsum(abs(re_turns))/2
+# Subtract transaction costs from margin account
+mar_gin <- cumsum(re_turns)
+mar_gin <- (mar_gin - cost_s)
+# dygraph plot of margin and transaction costs
+da_ta <- cbind(mar_gin, cost_s)
+col_names <- c("Margin", "Cumulative Transaction Costs")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="VTI Transaction Costs") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Combining the Returns of Several Assets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      There are several ways of combining the returns of different assets.
+      \vskip1ex
+      Adding the weighted simple (dollar) returns is equivalent to buying a \emph{fixed number of shares} proportional to the weights.
+      \vskip1ex
+      Adding the weighted percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} proportional to the weights.
+      \vskip1ex
+      The portfolio allocations must be periodically rebalanced to keep the dollar amounts of the stocks proportional to the weights.
+      \vskip1ex
+      This \emph{rebalancing} acts as a mean reverting strategy - selling shares when their price goes up, and vice versa.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_weighted_log_wealth.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI and IEF prices
+price_s <- rutils::etf_env$price_s[, c("VTI", "IEF")]
+price_s <- na.omit(price_s)
+# Wealth for fixed shares (no rebalancing)
+weight_s <- c(0.5, 0.5)
+wealth_fixed_shares <- price_s %*% weight_s
+wealth_fixed_shares <- wealth_fixed_shares/wealth_fixed_shares[1, ]
+# Calculate VTI and IEF percentage returns
+re_turns <- lapply(price_s, function(x)
+  rutils::diff_it(x)/rutils::lag_it(x, pad_zeros=FALSE))
+re_turns <- do.call(cbind, re_turns)
+# Wealth for fixed dollars (with rebalancing)
+wealth_fixed_dollars <- cumsum(re_turns %*% weight_s)
+# Plot log wealth
+weal_th <- cbind(wealth_fixed_dollars, log(wealth_fixed_shares))
+weal_th <- xts::xts(weal_th, index(price_s))
+colnames(weal_th) <- c("Fixed dollars", "Fixed shares")
+dygraphs::dygraph(weal_th, main="Log Wealth of Weighted Portfolios") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs of Weighted Portfolio Rebalancing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Maintaining a \emph{fixed dollar amount} of stock requires periodic \emph{rebalancing}, selling shares when their price goes up, and vice versa.
+      \vskip1ex
+      Adding the weighted percentage returns is equivalent to investing in \emph{fixed dollar amounts of stock} proportional to the weights.
+      \vskip1ex
+      The dollar amount of stock that must be traded in a given period is equal to the weighted sum of the absolute percentage returns: $w_1 \left| r^1_t \right| + w_2 \left| r^2_t \right|$. 
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ due to rebalancing are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} (w_1 \left| r^1_t \right| + w_2 \left| r^2_t \right|)$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{margin account} $m_t$: $m_t - \sum_{i=1}^t c^r_i$.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_transaction_costs.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Margin account for fixed dollars (with rebalancing)
+mar_gin <- cumsum(re_turns %*% weight_s)
+# Cumulative transaction costs
+cost_s <- bid_offer*cumsum(abs(re_turns) %*% weight_s)/2
+# Subtract transaction costs from margin account
+mar_gin <- (mar_gin - cost_s)
+# dygraph plot of margin and transaction costs
+da_ta <- cbind(mar_gin, cost_s)
+da_ta <- xts::xts(da_ta, index(re_turns))
+col_names <- c("Margin", "Cumulative Transaction Costs")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Fixed Dollar Portfolio Transaction Costs") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3)
       @
   \end{columns}
 \end{block}
@@ -463,11 +592,11 @@ cost_s <- bid_offer*rowSums(abs(ex_tra))/2
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Adding together the \emph{standardized returns} of several assets means buying amounts such that their volatilities are all the same.
+      Adding the weighted \emph{standardized returns} of several assets is equivalent to buying amounts such that their volatilities are proportional to the weights.
       \vskip1ex
-      Adding \emph{standardized simple returns} is equivalent to buying amounts such that their dollar volatilities are all the same.
+      Adding the weighted \emph{standardized dollar returns} is equivalent to buying \emph{fixed number of shares} such that their dollar volatilities are proportional to the weights.
       \vskip1ex
-      Adding \emph{standardized percentage returns} is equivalent to buying amounts such that their percentage volatilities are all the same.
+      Adding the weighted \emph{standardized percentage returns} is equivalent to buying \emph{fixed dollar amounts of stock} such that their percentage volatilities are proportional to the weights.
       \vskip1ex
       If the asset volatilities change over time then the portfolio allocations must be rebalanced to ensure that the volatilities remain proportional to the target weights.
     \column{0.5\textwidth}
@@ -480,7 +609,7 @@ rets_dollar <- lapply(rets_dollar, function(x) {
 rets_dollar <- do.call(cbind, rets_dollar)
 sapply(rets_dollar, sd)
 # Wealth for equal and fixed number of shares (no rebalancing)
-re_turns <- rets_dollar %*% weight_s
+re_turns <- rets_dollar[, c("VTI", "IEF")] %*% weight_s
 weal_th <- cumsum(re_turns)
 # Calculate standardized percentage returns
 rets_percent <- lapply(rets_percent, function(x) {
@@ -489,7 +618,7 @@ rets_percent <- lapply(rets_percent, function(x) {
 rets_percent <- do.call(cbind, rets_percent)
 sapply(rets_percent, sd)
 # Wealth for equal dollar amount of shares (with rebalancing)
-re_turns <- (rets_percent %*% weight_s)
+re_turns <- rets_percent[, c("VTI", "IEF")] %*% weight_s
 weal_th <- sum(weight_s)*cumsum(re_turns)
 # Wealth for equal dollar amount of shares (without rebalancing)
 wealth_nreb <- cumsum(rets_percent) %*% weight_s
@@ -508,33 +637,180 @@ dygraphs::dygraph(weal_th, main="Wealth for Equal Dollar Amount of Shares") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Static Stock and Bond Portfolio}
+\subsection{Portfolio With Fixed Percentage of Dollar Amounts}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Static portfolios consisting of stocks and bonds provide a much better risk versus return tradeoff than either of the assets separately.
+      Consider a portfolio with \emph{fixed percentage of dollar amounts}, not fixed dollar amounts.
       \vskip1ex
-      The returns of stocks and bonds are usually negatively correlated, so they are natural hedges for each other.
+      Let $\omega_i$ be the portfolio weights, $r_i$ be the percentage returns, and $\bar{r}_t = \sum_{i=1}^n \omega_i r_i$ be the weighted percentage returns at time $t$.
       \vskip1ex
-      The static weights depend on the investment horizon, with a greater allocation to bonds for a shorter investment horizon.
+      The total portfolio wealth at time $t$ is equal to the wealth at time $t-1$ multiplied by the weighted returns: $w_t = w_{t-1} (1 + \bar{r}_t)$.
+      \vskip1ex
+      The dollar amount of stock $i$ at time $t$ increases by $r_i$ so it's equal to $\omega_i w_{t-1} (1 + r_i)$, while the target amount is $\omega_i w_t = \omega_i w_{t-1} (1 + \bar{r}_t)$
+      \vskip1ex
+      All the wealth is held in the portfolio, so there is no \emph{margin account}.
+      \vskip1ex
+      The dollar amount of stock $i$ needed to trade to rebalance back to the target weight is equal to:
+      \begin{flalign*}
+        \varepsilon_i &= \left| \omega_i w_{t-1} (1 + \bar{r}_t) - \omega_i w_{t-1} (1 + r_i)  \right|\\
+        &= \omega_i w_{t-1} \left| \bar{r}_t - r_i \right|
+      \end{flalign*}
+      If $\bar{r}_t > r_i$ then an amount $\varepsilon_i$ of the stock $i$ needs to be bought, and if $\bar{r}_t < r_i$ then it needs to be sold.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_weighted_fixed_percent.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wealth for fixed dollars amounts
+wealth_fixed_dollars <- cumsum(re_turns %*% weight_s)
+# Wealth for fixed percentage of dollar amounts
+wealth_fixed_percent <- cumprod(1 + re_turns %*% weight_s)
+# Plot log wealth
+weal_th <- cbind(wealth_fixed_dollars, log(wealth_fixed_percent))
+weal_th <- xts::xts(weal_th, index(price_s))
+colnames(weal_th) <- c("Fixed dollars", "Fixed percentage")
+dygraphs::dygraph(weal_th, main="Log Wealth of Portfolio With Fixed Percentage of Dollar Amounts") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Transaction Costs With Fixed Dollar Percentages}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      In each period the stocks must be rebalanced to maintain the fixed percentage of dollar amounts.
+      \vskip1ex
+      The total dollar amount of stocks that need to be traded to rebalance back to the target weight is equal to: $\sum_{i=1}^n \varepsilon_i = w_{t-1} \sum_{i=1}^n \omega_i \left| \bar{r}_t - r_i \right|$
+      \vskip1ex
+      The \emph{transaction costs} $c^r_t$ are equal to half the \emph{bid-offer spread} $\delta$ times the dollar amount of the traded stock: $c^r_t = \frac{\delta}{2} \sum_{i=1}^n \varepsilon_i$.
+      \vskip1ex
+      The \emph{cumulative transaction costs} $\sum_{i=1}^t c^r_i$ must be subtracted from the \emph{wealth} $w_t$: $w_t - \sum_{i=1}^t c^r_i$.
+      <<echo=TRUE,eval=FALSE>>=
+# Weighted returns
+returns_weighted <- re_turns %*% weight_s
+# Wealth for fixed percentage of dollar amounts
+wealth_fixed_percent <- cumprod(1 + returns_weighted)
+# Returns in excess of weighted returns
+ex_cess <- lapply(re_turns, function(x) {returns_weighted - x})
+ex_cess <- do.call(cbind, ex_cess)
+sum(ex_cess %*% weight_s)
+# Weighted sum of absolute excess returns
+ex_cess <- abs(ex_cess) %*% weight_s
+# Total dollar amount of stocks that need to be traded
+ex_cess <- ex_cess*rutils::lag_it(wealth_fixed_percent)
+# Cumulative transaction costs
+cost_s <- bid_offer*cumsum(ex_cess)/2
+# Subtract transaction costs from wealth
+wealth_fixed_percent <- (wealth_fixed_percent - cost_s)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_transaction_costs_fixed_percent.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of wealth and transaction costs
+da_ta <- cbind(wealth_fixed_percent, cost_s)
+da_ta <- xts::xts(da_ta, index(re_turns))
+col_names <- c("Wealth", "Cumulative Transaction Costs")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Transaction Costs of Portfolio With Fixed Percentage of Dollar Amounts") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Stock Index Weighting Methods}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Split this slide to explain equal-weighted indices:
+      https://www.investopedia.com/terms/e/equalweight.asp
+      \vskip1ex
+      Stock market indices can be capitalization-weighted (\emph{S\&P500}), price-weighted (\emph{DJIA}), or equal-weighted.
+      \vskip1ex
+      The cap-weighted and price-weighted indices own a fixed number of shares (excluding stock splits).
+      \vskip1ex
+      Equal-weighted indices own the same dollar amount of each stock, so they must be rebalanced as market prices change.
+      \vskip1ex
+      Cap-weighted index = Sum \{ (Stock Price * Number of shares) / Index Divisor \}
+      \vskip1ex
+      Price-weighted index = Sum \{Stock Price / Index Divisor \}
+      \vskip1ex
+      Equal-weighted index = Sum \{ (Stock Price * factor) / Index Divisor \}
+      \vskip1ex
+      Cap-weighted indices are over-weight large-cap stocks, while equal-weighted indices are over-weight small-cap stocks.
+      \vskip1ex
+      Cap-weighted indices are \emph{trend following}, while equal-weighted indices are \emph{mean reverting} (contrarian).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Create name corresponding to "^GSPC" symbol
+setSymbolLookup(
+  SP500=list(name="^GSPC", src="yahoo"))
+getSymbolLookup()
+# view and clear options
+options("getSymbols.sources")
+options(getSymbols.sources=NULL)
+# Download S&P500 prices into etf_env
+quantmod::getSymbols("SP500", env=etf_env,
+    adjust=TRUE, auto.assign=TRUE, from="1990-01-01")
+chart_Series(x=etf_env$SP500["2016/"],
+             TA="add_Vo()",
+             name="S&P500 index")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Fixed Percentage Stock and Bond Portfolio}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Portfolios of stocks and bonds can provide a much better risk versus return tradeoff than either of the assets separately, because the returns of stocks and bonds are usually negatively correlated, so they are natural hedges of each other.
+      \vskip1ex
+      The fixed portfolio weights represent the percentage dollar allocations to stocks and bonds, while the portfolio wealth grows over time.
+      \vskip1ex
+      The weights depend on the investment horizon, with a greater allocation to bonds for a shorter investment horizon.
       \vskip1ex
       Active investment strategies are expected to outperform static stock and bond portfolios.
+      \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
-library(HighFreq)  # Load package HighFreq
+library(rutils)  # Load package rutils
 # Calculate stock and bond returns
-re_turns <- na.omit(
-  rutils::etf_env$re_turns[, c("VTI", "IEF")])
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
 weight_s <- c(0.4, 0.6)
 re_turns <- cbind(re_turns, re_turns %*% weight_s)
 colnames(re_turns)[3] <- "combined"
-# Calculate compounded wealth from returns
-weal_th <- lapply(re_turns,
-  function(x) cumsum(x))
-weal_th <- do.call(cbind, weal_th)
-# Plot compounded wealth
-dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
+# Wealth for fixed percentage of dollar amounts
+weal_th <- cumprod(1 + re_turns)
+# Plot cumulative wealth
+dygraphs::dygraph(log(weal_th), main="Stock and Bond Portfolio") %>%
   dyOptions(colors=c("green","blue","green")) %>%
   dySeries("combined", color="red", strokeWidth=2) %>%
   dyLegend(show="always")
@@ -542,7 +818,7 @@ dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_bonds.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate correlations
 cor(re_turns)
@@ -571,6 +847,60 @@ sapply(c(skew=3, kurt=4), function(x)
 
 
 %%%%%%%%%%%%%%%
+\subsection{draft: The Distributions of Terminal Wealth}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Perform a bootsrap to get the Distributions of Terminal Wealth
+      \vskip1ex
+      In the past, the returns of stocks and bonds have usually been negatively correlated.
+      \vskip1ex
+      Static portfolios consisting of stocks and bonds provide a much better risk versus return tradeoff than either of the assets separately.
+      \vskip1ex
+      The static weights depend on the investment horizon, with a greater allocation to bonds for a shorter investment horizon.
+      \vskip1ex
+      Active investment strategies are expected to outperform static stock and bond portfolios.
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Calculate ETF returns
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
+re_turns <- cbind(re_turns,
+  0.6*re_turns$IEF+0.4*re_turns$VTI)
+colnames(re_turns)[3] <- "combined"
+# Calculate correlations
+cor(re_turns)
+# Calculate Sharpe ratios
+sqrt(252)*sapply(re_turns, function(x) mean(x)/sd(x))
+# Calculate skewness and kurtosis
+sapply(re_turns, sd)
+# Calculate skewness and kurtosis
+t(sapply(c(skew=3, kurt=4), function(x)
+  moments::moment(re_turns, order=x, central=TRUE)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_bonds.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate prices from returns
+price_s <- lapply(re_turns,
+  function(x) exp(cumsum(x)))
+price_s <- do.call(cbind, price_s)
+# Plot prices
+dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
+  dyOptions(colors=c("green","blue","green")) %>%
+  dySeries("combined", color="red", strokeWidth=2) %>%
+  dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{The \protect\emph{All-Weather} Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -578,13 +908,13 @@ sapply(c(skew=3, kurt=4), function(x)
   \begin{columns}[T]
     \column{0.5\textwidth}
       The \emph{All-Weather} portfolio is a static portfolio of stocks (30\%), bonds (55\%), and commodities and precious metals (15\%) (approximately), and was designed by Bridgewater Associates, the largest hedge fund in the world:\\
-      \url{https://www.bridgewater.com/research-library/the-all-weather-strategy/}
-      \url{http://www.nasdaq.com/article/remember-the-allweather-portfolio-its-having-a-killer-year-cm685511}
-      \vskip1ex
+      {\tiny
+      \url{https://www.bridgewater.com/research-library/the-all-weather-strategy/} \\
+      \url{http://www.nasdaq.com/article/remember-the-allweather-portfolio-its-having-a-killer-year-cm685511} \\
+      }
       The three different asset classes (stocks, bonds, commodities) provide positive returns under different economic conditions (recession, expansion, inflation).
       \vskip1ex
       The combination of bonds, stocks, and commodities in the \emph{All-Weather} portfolio is designed to provide positive returns under most economic conditions, without the costs of trading.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Extract ETF returns
 sym_bols <- c("VTI", "IEF", "DBC")
@@ -597,12 +927,10 @@ colnames(re_turns)[4] <- "all_weather"
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/portf_all_weather.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate compounded wealth from returns
-weal_th <- lapply(re_turns,
-  function(x) cumsum(x))
-weal_th <- do.call(cbind, weal_th)
+# Calculate cumulative wealth from returns
+weal_th <- cumsum(re_turns)
 # dygraph all-weather wealth
 dygraphs::dygraph(weal_th, main="All-Weather Portfolio") %>%
   dyOptions(colors=c("orange", "blue", "green", "red")) %>%
@@ -693,7 +1021,7 @@ print(xtable(gambl_e), comment=FALSE)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_log.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -741,7 +1069,7 @@ title(main="Logarithmic Utility", line=0.5)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/kelly_fraction.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -787,7 +1115,7 @@ title(main="Kelly fraction", line=-0.8)
     \column{0.5\textwidth}
     \vspace{-1em}
     \includegraphics[width=0.5\paperwidth]{figure/kelly_fraction_max.png}
-    \vspace{-2em}
+    \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -853,7 +1181,7 @@ title(main="Kelly fraction", line=-0.8)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/kelly_multi.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -998,7 +1326,7 @@ title(main="Wealth of Multiperiod Betting", line=0.1)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/simu_prices.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:5)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -1095,7 +1423,7 @@ range(re_turns)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_rets.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -1138,6 +1466,8 @@ curve(expr=utili_ty(x, re_turns=re_turns),
       \begin{displaymath}
         \frac{\mathrm{d} u_r}{\mathrm{d}k_f} = \bar{r} - k_f \sigma^2 + k_f^2 \sigma^3 \varsigma - k_f^3 \sigma^4 \kappa = 0
       \end{displaymath}
+      % wippp
+      This shows that the logarithmic utility has positive odd derivatives and negative even derivatives.
     \column{0.5\textwidth}
       Assuming that the third and fourth moments $\sigma^4 \varsigma$ and $\sigma^4 \kappa$ are small and can be neglected, we get:
       \begin{displaymath}
@@ -1197,7 +1527,7 @@ colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/kelly_wealth.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot wealth paths
 plot_theme <- chart_theme()
@@ -1215,7 +1545,7 @@ legend("topleft", legend=colnames(kelly_paths),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Kelly Strategy Margin Account}
+\subsection{Kelly Strategy With Margin Account}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -1223,13 +1553,13 @@ legend("topleft", legend=colnames(kelly_paths),
     \column{0.5\textwidth}
       The \emph{margin debt} $m_t$ is equal to the dollar amount borrowed to purchase the \emph{risky asset}.
       \vskip1ex
-      The wealth $w_t$ at time $t$ is equal to the initial wealth $w_0 = 1$ plus the value of the \emph{risky asset} $a_t$, minus the \emph{margin debt} $m_t$: $w_t = 1 + a_t - m_t$.
+      The wealth $w_t$ at time $t$ is equal to the initial wealth $w_0 = 1$ plus the dollar amount of the \emph{risky asset} $a_t$, minus the \emph{margin debt} $m_t$: $w_t = 1 + a_t - m_t$.
       \vskip1ex
-      The value of the \emph{risky asset} $a_t$ is equal to the wealth $w_t$ times the \emph{leverage} $k_f$: $a_t = k_f w_t$.
+      The dollar amount of the \emph{risky asset} $a_t$ is equal to the wealth $w_t$ times the \emph{leverage} $k_f$: $a_t = k_f w_t$.
       \vskip1ex
       So the \emph{margin debt} $m_t$ is proportional to the wealth $w_t$: $m_t = (k_f - 1) w_t + 1$.
       \vskip1ex
-      The wealth changes from $w_{t-1}$ to: $w_t = w_{t-1} (1 + k_f \, r_t)$, while the value of the \emph{risky asset} changes from $a_{t-1} = k_f w_{t-1}$ to: $a_t = k_f w_{t-1} (1 + r_t)$, so that the leverage changes from $k_f$ to:
+      The wealth changes from $w_{t-1}$ to: $w_t = w_{t-1} (1 + k_f \, r_t)$, while the dollar amount of the \emph{risky asset} changes from $a_{t-1} = k_f w_{t-1}$ to: $a_t = k_f w_{t-1} (1 + r_t)$, so that the leverage changes from $k_f$ to:
       \begin{displaymath}
         \frac{k_f w_{t-1} (1 + r_t)}{w_{t-1} (1 + k_f \, r_t)} = \frac{k_f (1 + r_t)}{1 + k_f \, r_t}
       \end{displaymath}
@@ -1260,13 +1590,13 @@ legend("topleft", legend=colnames(kelly_paths),
       \vskip1ex
       The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
       \vskip1ex
-      The \emph{transaction costs} $c_t$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
+      The \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
       \begin{displaymath}
-        c_t = \frac{\delta}{2} \left| \Delta m_t \right|
+        c^r = \frac{\delta}{2} \left| \Delta m_t \right|
       \end{displaymath}
-      If the transaction costs are much less than the change in wealth $c_t \ll \left| \Delta w_t \right|$, then we can write approximately:
+      If the transaction costs are much less than the change in wealth $c^r \ll \left| \Delta w_t \right|$, then we can write approximately:
       \begin{displaymath}
-        c_t = \frac{\delta}{2} k_f (k_f - 1) w_{t-1} \left| r_t \right|
+        c^r = \frac{\delta}{2} k_f (k_f - 1) w_{t-1} \left| r_t \right|
       \end{displaymath}
     \column{0.5\textwidth}
       The wealth of the Kelly Strategy after accounting for the \emph{bid-offer spread} is then equal to:
@@ -1360,7 +1690,7 @@ title(main="Kelly fraction", line=-0.8)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_log2.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -1400,7 +1730,7 @@ curve(expr=log, lwd=3, col="blue", xlim=c(0.5, 5),
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_crra.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -1450,7 +1780,7 @@ legend(x="topleft", legend=c("risk seeking", "logarithmic", "risk averse"),
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/util_crra.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:4)),eval=FALSE>>=
 # Open x11 for plotting
 x11(width=5, height=4)
@@ -1507,7 +1837,7 @@ colnames(kelly_paths) <- c("kelly", "hyper-kelly", "sub-kelly")
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/kelly_wealth.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot wealth paths
 plot_theme <- chart_theme()
@@ -1639,203 +1969,6 @@ c(mean=sum(re_turns),
 \end{frame}
 
 
-
-%%%%%%%%%%%%%%%
-\section{Evaluating Manager Skill}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Tests for Market Timing Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
-      \vskip1ex
-      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
-      \vskip1ex
-      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
-      \end{displaymath}
-      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free returns.
-      \vskip1ex
-      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
-      \vskip1ex
-      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
-      \vskip1ex
-      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
-      \begin{displaymath}
-        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
-      \end{displaymath}
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/market_timing_ief_vti.png}
-    \vspace{-2em}
-      <<echo=(-(1:4)),eval=FALSE>>=
-# Open x11 for plotting
-x11(width=6, height=4)
-# Set plot parameters to reduce whitespace around plot
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-# Test if IEF can time VTI
-re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
-vt_i <- re_turns$VTI
-re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
-colnames(re_turns)[3:4] <- c("merton", "treynor")
-# Merton-Henriksson test
-mod_el <- lm(IEF ~ VTI + merton, data=re_turns); summary(mod_el)
-# Treynor-Mazuy test
-mod_el <- lm(IEF ~ VTI + treynor, data=re_turns); summary(mod_el)
-# Plot residual scatterplot
-residual_s <- (re_turns$IEF - mod_el$coefficients[2]*re_turns$VTI)
-plot.default(x=re_turns$VTI, y=residual_s, xlab="VTI", ylab="IEF")
-title(main="Treynor-Mazuy market timing test\n for IEF vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*re_turns$VTI)
-points.default(x=re_turns$VTI, y=fit_ted, pch=16, col="red")
-text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sell in May Calendar Strategy}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Sell in May} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate positions
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
-position_s <- rep(NA_integer_, NROW(re_turns))
-in_dex <- index(re_turns)
-in_dex <- format(in_dex, "%m-%d")
-position_s[in_dex == "05-01"] <- 0
-position_s[in_dex == "05-03"] <- 0
-position_s[in_dex == "11-01"] <- 1
-position_s[in_dex == "11-03"] <- 1
-# Carry forward and backward non-NA position_s
-position_s <- zoo::na.locf(position_s, na.rm=FALSE)
-position_s <- zoo::na.locf(position_s, fromLast=TRUE)
-# Calculate strategy returns
-sell_inmay <- position_s*re_turns
-weal_th <- cbind(cumsum(re_turns),
-                 cumsum(sell_inmay))
-colnames(weal_th) <- c("vti", "sell_in_may")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/sell_inmay_strategy.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot Sell in May strategy
-dygraphs::dygraph(weal_th, main="Sell in May Strategy") %>%
-  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always")
-# OR: Open x11 for plotting
-x11(width=6, height=4)
-par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue", "red")
-chart_Series(weal_th, theme=plot_theme,
-             name="Sell in May Strategy")
-legend("topleft", legend=colnames(weal_th),
-  inset=0.1, bg="white", lty=1, lwd=6,
-  col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Sell in May Strategy Market Timing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
-      <<echo=TRUE,eval=FALSE>>=
-# Test if Sell in May strategy can time VTI
-vt_i <- re_turns$VTI
-re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
-colnames(re_turns)[2:3] <- c("merton", "treynor")
-# Merton-Henriksson test
-mod_el <- lm(sell_inmay ~ VTI + merton, data=re_turns); summary(mod_el)
-# Treynor-Mazuy test
-mod_el <- lm(sell_inmay ~ VTI + treynor, data=re_turns); summary(mod_el)
-# Plot residual scatterplot
-residual_s <- (sell_inmay - mod_el$coefficients[2]*vt_i)
-plot.default(x=vt_i, y=residual_s, xlab="VTI", ylab="sell_inmay")
-title(main="Treynor-Mazuy market timing test\n for Sell in May vs VTI", line=0.5)
-# Plot fitted (predicted) response values
-fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*vt_i)
-points.default(x=vt_i, y=fit_ted, pch=16, col="red")
-text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/market_timing_sell_inmay.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Identifying Managers With Skill}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Adapt from RFinance\_2017.Rmd and from scratch.R.
-      \vskip1ex
-      \vskip1ex
-      Consider a binary investment (gamble) with the probability of winning equal to $p$, the winning amount (gain) equal to $a$, and the loss equal to $b$.
-      \vskip1ex
-      The investor makes no up-front payments, and either wins an amount $a$, or loses an amount $b$.
-      \vskip1ex
-      Assuming that an investor makes decisions exclusively on the basis of the expected value of future wealth, then they would choose to invest all their wealth on the gamble if its expected value is positive, and choose not to invest at all if its expected value is negative.
-    \column{0.5\textwidth}
-      <<results='asis',echo=FALSE,eval=TRUE>>=
-library(xtable)
-gambl_e <- data.frame(win=c("p", "a"), lose=c("q = 1 - p", "-b"))
-rownames(gambl_e) <- c("probability", "payout")
-# print(xtable(gambl_e), comment=FALSE, size="tiny")
-print(xtable(gambl_e), comment=FALSE)
-      @
-      The expected value of the gamble is equal to: $m = p \, a - q \, b$.
-      \vskip1ex
-      The variance of the gamble is equal to: $var=p \, q \, (a + b)^2$.
-      \vskip1ex
-      Without loss of generality we can assume that $p=q = \frac{1}{2}$,\\
-      $m = 0.5 \, (b - a)$,\\
-      $var=0.25 \, (a + b)^2$.
-      \vskip1ex
-      The \emph{Sharpe ratio} of the gamble is then equal to:
-      \begin{displaymath}
-        S_r = \frac{m}{sqrt(var)} = \frac{(b - a)}{(a + b)}
-      \end{displaymath}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Active Investment Strategies}
-
-
 %%%%%%%%%%%%%%%
 \subsection{Utility of Stock and Bond Portfolio}
 \begin{frame}[fragile,t]{\subsecname}
@@ -1849,8 +1982,7 @@ print(xtable(gambl_e), comment=FALSE)
       \end{displaymath}
       Where $r^s_i, r^b_i$ are the stock and bond returns.
       <<echo=TRUE,eval=FALSE>>=
-re_turns <- na.omit(
-  rutils::etf_env$re_turns[, c("VTI", "IEF")])
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
 # Logarithmic utility of stock and bond portfolio
 utili_ty <- function(w_s, w_b) {
   -sum(log(1 + w_s*re_turns$VTI + w_b*re_turns$IEF))
@@ -1936,9 +2068,7 @@ re_turns <- cbind(re_turns,
     weight_s[2]*re_turns$IEF)
 colnames(re_turns)[3] <- "Kelly_sub_optimal"
 # Calculate compounded wealth from returns
-weal_th <- lapply(re_turns,
-  function(x) cumprod(1 + x))
-weal_th <- do.call(cbind, weal_th)
+weal_th <- cumprod(1 + re_turns)
 # Plot compounded wealth
 dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
   dyOptions(colors=c("green","blue","green")) %>%
@@ -1968,8 +2098,7 @@ dygraphs::dygraph(weal_th, main="Stock and Bond Portfolio") %>%
       \vskip1ex
       The distribution of the Kelly weights depends on the rolling returns $\bar{r_t}$ and variance $\sigma_t^2$.
       <<echo=TRUE,eval=FALSE>>=
-re_turns <- na.omit(
-  rutils::etf_env$re_turns[, c("VTI", "IEF")])
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("VTI", "IEF")])
 # Calculate rolling returns and variance
 look_back <- 200
 var_rolling <- roll::roll_var(re_turns, width=look_back)
@@ -1982,10 +2111,10 @@ range(weight_s)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/kelly_distr.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the weight_s
-x11(width=6, height=4)
+x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 plot(density(re_turns$IEF), t="l", lwd=3, col="red",
      xlab="weights", ylab="density",
@@ -2054,9 +2183,9 @@ dygraphs::dygraph(weal_th, main="VTI Strategy Using Rolling Kelly Weight") %>%
       \vskip1ex
       So the transaction costs in each time period must be calculated recursively in a loop from the wealth in the past period.
       \vskip1ex
-      If the transaction costs are much less than the change in wealth $c_t \ll \left| \Delta w_t \right|$, then they can be calculated approximately as the absolute value of the change in \emph{margin} $m_t^{nc}$ for a wealth path with no transaction costs:
+      If the transaction costs are much less than the change in wealth $c^r \ll \left| \Delta w_t \right|$, then they can be calculated approximately as the absolute value of the change in \emph{margin} $m_t^{nc}$ for a wealth path with no transaction costs:
       \begin{displaymath}
-        c_t = \frac{\delta}{2} \left| \Delta m_t^{nc} \right|
+        c^r = \frac{\delta}{2} \left| \Delta m_t^{nc} \right|
       \end{displaymath}
     \column{0.5\textwidth}
       The transaction costs as a percentage of wealth are equal to: $c_t/w_t^{nc}$, where $w_t^{nc}$ is the wealth assuming no transaction costs.
@@ -2129,59 +2258,869 @@ dygraphs::dygraph(weal_th, main="Rolling Kelly Strategy For VTI and IEF") %>%
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{draft: The Distributions of Terminal Wealth}
+\section{Evaluating Manager Skill}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Tests for Market Timing Skill}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Perform a bootsrap to get the Distributions of Terminal Wealth
+      \emph{Market timing} skill is the ability to forecast the direction and magnitude of market returns.
       \vskip1ex
-      In the past, the returns of stocks and bonds have usually been negatively correlated.
+      The \emph{market timing} skill can be measured by performing a \emph{linear regression} of a strategy's returns against a strategy with perfect \emph{market timing} skill.
       \vskip1ex
-      Static portfolios consisting of stocks and bonds provide a much better risk versus return tradeoff than either of the assets separately.
+      The \emph{Merton-Henriksson} market timing test uses a linear \emph{market timing} term:
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma \max{(0, R_m - R_f)} + {\varepsilon}
+      \end{displaymath}
+      Where $R$ are the strategy returns, $R_m$ are the market returns, and $R_f$ are the risk-free returns.
       \vskip1ex
-      The static weights depend on the investment horizon, with a greater allocation to bonds for a shorter investment horizon.
+      If the coefficient $\gamma$ is statistically significant, then it's very likely due to \emph{market timing} skill.
       \vskip1ex
-      Active investment strategies are expected to outperform static stock and bond portfolios.
-      <<echo=(-(1:1)),eval=FALSE>>=
-library(rutils)  # Load package rutils
-# Calculate ETF returns
-re_turns <- na.omit(
-  rutils::etf_env$re_turns[, c("IEF", "VTI")])
-re_turns <- cbind(re_turns,
-  0.6*re_turns$IEF+0.4*re_turns$VTI)
-colnames(re_turns)[3] <- "combined"
-# Calculate correlations
-cor(re_turns)
-# Calculate Sharpe ratios
-sqrt(252)*sapply(re_turns, function(x) mean(x)/sd(x))
-# Calculate skewness and kurtosis
-sapply(re_turns, sd)
-# Calculate skewness and kurtosis
-t(sapply(c(skew=3, kurt=4), function(x)
-  moments::moment(re_turns, order=x, central=TRUE)))
-      @
+      The \emph{market timing} regression is a generalization of the \emph{Capital Asset Pricing Model}.
+      \vskip1ex
+      The \emph{Treynor-Mazuy} test uses a quadratic term, which makes it more sensitive to the magnitude of returns:
+      \begin{displaymath}
+        R - R_f = {\alpha} + \beta (R_m - R_f) + \gamma (R_m - R_f)^2 + {\varepsilon}
+      \end{displaymath}
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_bonds.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate prices from returns
-price_s <- lapply(re_turns,
-  function(x) exp(cumsum(x)))
-price_s <- do.call(cbind, price_s)
-# Plot prices
-dygraphs::dygraph(price_s, main="Stock and Bond Portfolio") %>%
-  dyOptions(colors=c("green","blue","green")) %>%
-  dySeries("combined", color="red", strokeWidth=2) %>%
-  dyLegend(show="always")
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/timing_skill_ief_vti.png}
+    \vspace{-1em}
+      <<echo=(-(1:4)),eval=FALSE>>=
+# Open x11 for plotting
+x11(width=6, height=5)
+# Set plot parameters to reduce whitespace around plot
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+# Test if IEF can time VTI
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("IEF", "VTI")])
+vt_i <- re_turns$VTI
+de_sign <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(de_sign)[3:4] <- c("merton", "treynor")
+# Merton-Henriksson test
+mod_el <- lm(IEF ~ VTI + merton, data=de_sign); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(IEF ~ VTI + treynor, data=de_sign); summary(mod_el)
+# Plot residual scatterplot
+residual_s <- (de_sign$IEF - mod_el$coefficients[2]*de_sign$VTI)
+plot.default(x=de_sign$VTI, y=residual_s, xlab="VTI", ylab="IEF")
+title(main="Treynor-Mazuy Market Timing Test\n for IEF vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*de_sign$VTI)
+points.default(x=de_sign$VTI, y=fit_ted, pch=16, col="red")
+text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Identifying Managers With Skill}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Adapt from RFinance\_2017.Rmd and from scratch.R.
+      \vskip1ex
+      \vskip1ex
+      Consider a binary investment (gamble) with the probability of winning equal to $p$, the winning amount (gain) equal to $a$, and the loss equal to $b$.
+      \vskip1ex
+      The investor makes no up-front payments, and either wins an amount $a$, or loses an amount $b$.
+      \vskip1ex
+      Assuming that an investor makes decisions exclusively on the basis of the expected value of future wealth, then they would choose to invest all their wealth on the gamble if its expected value is positive, and choose not to invest at all if its expected value is negative.
+    \column{0.5\textwidth}
+      <<results='asis',echo=FALSE,eval=TRUE>>=
+library(xtable)
+gambl_e <- data.frame(win=c("p", "a"), lose=c("q = 1 - p", "-b"))
+rownames(gambl_e) <- c("probability", "payout")
+# print(xtable(gambl_e), comment=FALSE, size="tiny")
+print(xtable(gambl_e), comment=FALSE)
+      @
+      The expected value of the gamble is equal to: $m = p \, a - q \, b$.
+      \vskip1ex
+      The variance of the gamble is equal to: $var=p \, q \, (a + b)^2$.
+      \vskip1ex
+      Without loss of generality we can assume that $p=q = \frac{1}{2}$,\\
+      $m = 0.5 \, (b - a)$,\\
+      $var=0.25 \, (a + b)^2$.
+      \vskip1ex
+      The \emph{Sharpe ratio} of the gamble is then equal to:
+      \begin{displaymath}
+        S_r = \frac{m}{sqrt(var)} = \frac{(b - a)}{(a + b)}
+      \end{displaymath}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Calendar Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Calendar Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Sell in May} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate positions
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+position_s <- rep(NA_integer_, NROW(re_turns))
+in_dex <- index(re_turns)
+in_dex <- format(in_dex, "%m-%d")
+position_s[in_dex == "05-01"] <- 0
+position_s[in_dex == "05-03"] <- 0
+position_s[in_dex == "11-01"] <- 1
+position_s[in_dex == "11-03"] <- 1
+# Carry forward and backward non-NA position_s
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
+position_s <- zoo::na.locf(position_s, fromLast=TRUE)
+# Calculate strategy returns
+sell_inmay <- position_s*re_turns
+weal_th <- cbind(cumsum(re_turns),
+                 cumsum(sell_inmay))
+colnames(weal_th) <- c("vti", "sell_in_may")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sell_inmay_strategy.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Sell in May strategy
+dygraphs::dygraph(weal_th, main="Sell in May Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always")
+# OR: Open x11 for plotting
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue", "red")
+chart_Series(weal_th, theme=plot_theme,
+             name="Sell in May Strategy")
+legend("topleft", legend=colnames(weal_th),
+  inset=0.1, bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Sell in May Strategy Market Timing}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Sell in May} strategy doesn't demonstrate any ability of \emph{timing} the \emph{VTI} ETF.
+      <<echo=TRUE,eval=FALSE>>=
+# Test if Sell in May strategy can time VTI
+vt_i <- re_turns$VTI
+re_turns <- cbind(re_turns, 0.5*(vt_i+abs(vt_i)), vt_i^2)
+colnames(re_turns)[2:3] <- c("merton", "treynor")
+# Merton-Henriksson test
+mod_el <- lm(sell_inmay ~ VTI + merton, data=re_turns); summary(mod_el)
+# Treynor-Mazuy test
+mod_el <- lm(sell_inmay ~ VTI + treynor, data=re_turns); summary(mod_el)
+# Plot residual scatterplot
+residual_s <- (sell_inmay - mod_el$coefficients[2]*vt_i)
+plot.default(x=vt_i, y=residual_s, xlab="VTI", ylab="sell_inmay")
+title(main="Treynor-Mazuy market timing test\n for Sell in May vs VTI", line=0.5)
+# Plot fitted (predicted) response values
+fit_ted <- (mod_el$fitted.values - mod_el$coefficients[2]*vt_i)
+points.default(x=vt_i, y=fit_ted, pch=16, col="red")
+text(x=0.05, y=0.03, paste("Treynor test t-value =", round(summary(mod_el)$coefficients["treynor", "t value"], 2)))
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/timing_skill_sell_inmay.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Seasonal Overnight Market Anomaly}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Overnight Strategy
+      \emph{Sell in May} is a \emph{market timing} \emph{calendar strategy}, in which stocks are sold at the beginning of May, and then bought back at the beginning of November.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate positions
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+position_s <- rep(NA_integer_, NROW(re_turns))
+in_dex <- index(re_turns)
+in_dex <- format(in_dex, "%m-%d")
+position_s[in_dex == "05-01"] <- 0
+position_s[in_dex == "05-03"] <- 0
+position_s[in_dex == "11-01"] <- 1
+position_s[in_dex == "11-03"] <- 1
+# Carry forward and backward non-NA position_s
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
+position_s <- zoo::na.locf(position_s, fromLast=TRUE)
+# Calculate strategy returns
+sell_inmay <- position_s*re_turns
+weal_th <- cbind(cumsum(re_turns),
+                 cumsum(sell_inmay))
+colnames(weal_th) <- c("vti", "sell_in_may")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/sell_inmay_strategy.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Sell in May strategy
+dygraphs::dygraph(weal_th, main="Sell in May Strategy") %>%
+  dyOptions(colors=c("blue", "red"), strokeWidth=2) %>%
+  dyLegend(show="always")
+# OR: Open x11 for plotting
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
+plot_theme <- chart_theme()
+plot_theme$col$line.col <- c("blue", "red")
+chart_Series(weal_th, theme=plot_theme,
+             name="Sell in May Strategy")
+legend("topleft", legend=colnames(weal_th),
+  inset=0.1, bg="white", lty=1, lwd=6,
+  col=plot_theme$col$line.col, bty="n")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Autoregressive Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{In-sample Forecasting Using Autoregressive Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{In-sample forecasting} consists of first fitting an \emph{AR(p)} model to the data, and calculating its coefficients.
+      \vskip1ex
+      The \emph{in-sample} forecasts are calculated by multiplying the response vector of returns by the fitted coefficients.
+      \vskip1ex
+      The mean squared errors (\emph{MSE}) of the \emph{in-sample} forecasts decrease steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+# Calculate a vector of daily VTI log returns
+price_s <- log(quantmod::Cl(rutils::etf_env$VTI))
+re_turns <- rutils::diff_it(price_s)
+re_turns <- as.numeric(re_turns)
+n_rows <- NROW(re_turns)
+# Define predictor matrix for forecasting
+order_max <- 10
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse)
+  # Calculate in-sample forecasts of re_turns
+  drop(predic_tor[, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_insample.png}
+      <<echo=TRUE,eval=FALSE>>=
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns - x)^2), cor=cor(re_turns, x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1], 
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of In-sample AR(p) Forecasting Model for VTI")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Out-of-sample Forecasting Using Autoregressive Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Out-of-sample forecasting} consists of first fitting an \emph{AR(p)} model to the training data, and calculating its coefficients.
+      \vskip1ex
+      The \emph{out-of-sample} forecasts are calculated by multiplying the \emph{out-of-sample} response vector of returns by the fitted coefficients.
+      \vskip1ex
+      The mean squared errors (\emph{MSE}) of the \emph{out-of-sample} forecasts increase steadily with the increasing order parameter $p$ of the \emph{AR(p)} model.
+      \vskip1ex
+      The reason for the increasing out-of-sample MSE is \emph{overfitting} of the coefficients to the training data.
+      <<echo=TRUE,eval=FALSE>>=
+in_sample <- 1:(n_rows %/% 2)
+out_of_sample <- (n_rows %/% 2 + 1):n_rows
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_outofsample.png}
+      <<echo=TRUE,eval=FALSE>>=
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns[out_of_sample] - x)^2), cor=cor(re_turns[out_of_sample], x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1], 
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of Out-of-sample AR(p) Forecasting Model for VTI")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Model Out-of-sample Performance}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the autoregressive strategy is better with a smaller order parameter $p$ of the \emph{AR(p)} model.
+      \vskip1ex
+      Decreasing the order parameter of the autoregressive model is a form of \emph{shrinkage}.
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor matrix for forecasting
+order_max <- 5  # Define maximum order parameter
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_order.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s, 
+  main="Autoregressive Strategies Performance With Different Order Parameters")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>% 
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
+}  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Model With Rolling Sum as Predictor}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{out-of-sample} forecasts can be greatly improved by using the rolling sum of returns as a predictor.
+      \vskip1ex
+      The performance of the autoregressive strategy is better with a smaller order parameter $p$ of the \emph{AR(p)} model.
+      <<echo=TRUE,eval=FALSE>>=
+# Define predictor as a rolling sum
+look_back <- 5
+predic_tor <- rutils::roll_sum(re_turns, look_back=look_back)
+# Shift the res_ponse forward into out-of-sample
+res_ponse <- rutils::lag_it(predic_tor, lagg=(-look_back))
+# Define predictor matrix for forecasting
+predic_tor <- sapply(1+look_back*(0:order_max), rutils::lag_it, 
+                     in_put=predic_tor)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_pnl_rolling_sum.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s, 
+  main="Autoregressive Strategies With Rolling Sum Predictor")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>% 
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
+}  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Forecasting Returns Using Autoregressive Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Forecasting using an autoregressive model is performed by first fitting an \emph{AR(p)} model to past data, and calculating its coefficients.
+      \vskip1ex
+      The fitted coefficients are then applied to calculating the \emph{out-of-sample} forecasts.
+      \vskip1ex
+      The forecasting model depends on two unknown \emph{meta-parameters}: the order $p$ of the \emph{AR(p)} model and the length of the look-back interval (\texttt{look\_back}).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+# Calculate a vector of daily VTI log returns
+price_s <- log(quantmod::Cl(rutils::etf_env$VTI))
+re_turns <- rutils::diff_it(price_s)
+re_turns <- as.numeric(re_turns)
+n_rows <- NROW(re_turns)
+# Define predictor matrix for forecasting
+order_max <- 5
+de_sign <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+de_sign <- cbind(rep(1, n_rows), de_sign)
+colnames(de_sign) <- paste0("pred_", 1:NCOL(de_sign))
+# Add response equal to re_turns
+de_sign <- cbind(re_turns, de_sign)
+colnames(de_sign)[1] <- "response"
+# Specify length of look-back interval
+look_back <- 100
+# Invert the predictor matrix
+rang_e <- (n_rows-look_back):(n_rows-1)
+design_inv <- MASS::ginv(de_sign[rang_e, -1])
+# Calculate fitted coefficients
+coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+# Calculate forecast of re_turns for n_rows
+drop(de_sign[n_rows, -1] %*% coeff_fit)
+# Compare with actual value
+de_sign[n_rows, 1]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Autoregressive Forecasting Models}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
+      \vskip1ex
+      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over either a \emph{rolling} or an \emph{expanding} look-back interval.
+      \vskip1ex
+      If the start date is fixed at the first row then the look-back interval is \emph{expanding}.
+      \vskip1ex
+      The coefficients of the \emph{AR(p)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
+      \vskip1ex
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order $p$ of the \emph{AR(p)} model and the length of look-back interval (\texttt{look\_back}).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform rolling forecasting
+forecast_s <- sapply(look_back:n_rows, function(now) {
+  # Define rolling look-back range
+  star_t <- max(1, now-look_back)
+  # Or expanding look-back range
+  # star_t <- 1
+  rang_e <- star_t:(now-1)
+  # Invert the predictor matrix
+  design_inv <- MASS::ginv(de_sign[rang_e, -1])
+  # Calculate fitted coefficients
+  coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+  # Calculate forecast
+  drop(de_sign[now, -1] %*% coeff_fit)
+})  # end sapply
+# Add warmup period
+forecast_s <- c(numeric(look_back-1), forecast_s)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Accuracy of the Autoregressive Forecasting Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The accuracy of a forecasting model can be measured using the \emph{mean squared error} and the \emph{correlation}.
+      \vskip1ex
+      The mean squared error (\emph{MSE}) of a forecasting model is the average of the squared forecasting residuals $\varepsilon_i$, equal to the differences between the actual values $r_i$ minus the \emph{forecasts} $f_i$: $\varepsilon_i = r_i - f_i$:
+      \begin{displaymath}
+        \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_i - f_i)^2
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Mean squared error
+mean((re_turns - forecast_s)^2)
+# Correlation
+cor(forecast_s, re_turns)
+# Plot forecasting series with legend
+plot(re_turns[(n_rows-look_back):n_rows], xlab="", ylab="", type="l", lwd=2,
+  main="Rolling Forecasting Using AR(5) Model")
+lines(forecast_s[(n_rows-look_back):n_rows], col="orange", lwd=2)
+legend(x="topright", legend=c("re_turns", "forecasts"),
+       col=c("black", "orange"), lty=1, lwd=6,
+       cex=0.9, bg="white", bty="n")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Backtesting Function for the Forecasting Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{meta-parameters} of the \emph{backtesting} function are the order $p$ of the \emph{AR(p)} model and the length of the look-back interval (\texttt{look\_back}).
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define backtesting function
+back_test <- function(res_ponse, predic_tor=res_ponse, 
+                      or_der=5, look_back=100, is_rolling=TRUE) {
+  n_rows <- NROW(res_ponse)
+  # Define predictor matrix for forecasting
+  de_sign <- sapply(1:or_der, rutils::lag_it, in_put=predic_tor)
+  de_sign <- cbind(rep(1, n_rows), de_sign)
+  # Add response equal to series
+  de_sign <- cbind(res_ponse, de_sign)
+  # Perform rolling forecasting
+  forecast_s <- sapply(look_back:n_rows, function(now) {
+    # Define rolling look-back range
+    star_t <- max(1, is_rolling*(now-look_back))
+    rang_e <- star_t:(now-1)
+    # Invert the predictor matrix
+    design_inv <- MASS::ginv(de_sign[rang_e, -1])
+    # Calculate fitted coefficients
+    coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
+    # Calculate forecast
+    drop(de_sign[now, -1] %*% coeff_fit)
+  })  # end sapply
+  # Add warmup period
+  forecast_s <- c(numeric(look_back-1), forecast_s)
+  forecast_s
+}  # end back_test
+# Apply the backtesting function
+forecast_s <- back_test(re_turns, or_der=5, look_back=100)
+c(mse=mean((re_turns - forecast_s)^2), cor=cor(re_turns, forecast_s))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Dependence on the Look-back Interval}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{backtesting} function can be used to find the optimal \emph{meta-parameters} of the autoregressive forecasting model.
+      \vskip1ex
+      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model and on the length of the look-back interval (\texttt{look\_back}).
+      \vskip1ex
+      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
+      \vskip1ex
+      The accuracy of the forecasting model increases steadily with longer look-back intervals (\texttt{look\_back}), because more data improves the estimates of the autoregressive coefficients.
+      <<echo=TRUE,eval=FALSE>>=
+look_backs <- seq(20, 600, 40)
+forecast_s <- lapply(look_backs, back_test, 
+              res_ponse=re_turns, predic_tor=re_turns, or_der=or_der)
+names(forecast_s) <- look_backs
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns - x)^2), cor=cor(re_turns, x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+plot(x=look_backs, y=back_tests[, 1], 
+  xlab="look-back", ylab="MSE", type="l", lwd=2,
+  main="MSE of AR(5) Forecasting Model for VTI")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/strat_ar_vti_mse.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Performance of the Autoregressive Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
+      \vskip1ex
+      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
+      \vskip1ex
+      Using the return forecasts as portfolio weights produces very large weights in periods of high volatility, and creates excessive risk.
+      \vskip1ex
+      To reduce excessive risk, a binary strategy uses portfolio weights equaly to the sign of the forecasts.
+      <<echo=TRUE,eval=FALSE>>=
+# Select forecasts for longest look_back
+look_back <- max(look_backs)
+forecasts_max <- forecast_s[[as.character(look_back)]]
+# Calculate PnLs
+pnl_s <- cumsum(forecasts_max*re_turns)/sd(forecasts_max)
+# Calculate PnLs for binary forecasts
+pnls_binary <- cumsum(sign(forecasts_max)*re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_lback.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnl_s, pnls_binary)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR_Strategy", "AR_Strategy_Binary")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Autoregressive Strategies") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Dependence on the Order Parameter}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The accuracy of the forecasting model depends on the order $p$ of the \emph{AR(p)} model.
+      \vskip1ex
+      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
+      \vskip1ex
+      Longer look-back intervals (\texttt{look\_back}) are usually better for the autoregressive forecasting model.
+      \vskip1ex
+      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
+      \vskip1ex
+      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate PnLs for or_der=5
+forecast_s <- back_test(re_turns, or_der=5, look_back=look_back)
+pnls_5 <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for or_der=3
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back)
+pnls_3 <- cumsum(sign(forecast_s)*re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_order.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnls_5, pnls_3)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(5)_Strategy", "AR(3)_Strategy")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Autoregressive Strategies for Different Order Parameters") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Autoregressive Strategy With an Expanding Look-back Interval}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The accuracy of the forecasting model depends on whether a \emph{rolling} or an \emph{expanding} look-back interval is used.
+      \vskip1ex
+      The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
+      \vskip1ex
+      Longer look-back intervals (\texttt{look\_back}) are usually better for the autoregressive forecasting model.
+      \vskip1ex
+      The return forecasts are calculated just before the close of the markets, so that trades can be executed before the close.
+      \vskip1ex
+      The autoregressive strategy is dominated by a few periods with very large returns, without producing profits for the remaining periods.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate PnLs for rolling look-back
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=TRUE)
+pnls_rolling <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for expanding look-back
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnls_expanding <- cumsum(sign(forecast_s)*re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_expanding.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnls_rolling, pnls_expanding)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(3)_Rolling", "AR(3)_Expanding")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Autoregressive Strategies for Expanding Look-back Interval") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Improved Autoregressive Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The performance of the autoregressive strategy can be improved by fitting its coefficients using the \emph{capped returns}, to reduce the leverage of very large returns.
+      \vskip1ex
+      The performance can be further improved by fitting the coefficients over an \emph{expanding look-back interval}, instead of a \emph{rolling look-back interval}.
+      \vskip1ex
+      A longer look-back interval (\texttt{look\_back}) also improves the performance.
+      <<echo=TRUE,eval=FALSE>>=
+# Cap the re_turns
+cut_off <- 0.03
+capp_ed <- ifelse(re_turns > cut_off, cut_off, re_turns)
+capp_ed <- ifelse(capp_ed < (-cut_off), -cut_off, capp_ed)
+# Calculate PnLs for re_turns
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnl_s <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for capped re_turns
+forecast_s <- back_test(capp_ed, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnls_capped <- cumsum(sign(forecast_s)*re_turns)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.48\paperwidth]{figure/strat_ar_vti_perf_capped.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnl_s, pnls_capped)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(3)_Rolling", "AR(3)_Expanding")
+col_names <- c("AR_Strategy", "AR_Strategy_Capped")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Improved Autoregressive Strategies") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Technical Indicator Strategies}
 
 
 %%%%%%%%%%%%%%%
@@ -2225,7 +3164,7 @@ eq_all <- exp(cumsum(sig_nals*re_turns))
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/rsi_indic.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot daily cumulative returns in panels
 end_p <- endpoints(re_turns, on="days")
@@ -2256,13 +3195,14 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
 sym_bol <- "VTI"
 # oh_lc <- rutils::etf_env$VTI
 oh_lc <- get(sym_bol, rutils::etf_env)
+n_rows <- NROW(oh_lc)
 op_en <- quantmod::Op(oh_lc)
-cl_ose <- quantmod::Cl(oh_lc)
+clos_e <- quantmod::Cl(oh_lc)
 vol_ume <- quantmod::Vo(oh_lc)
-star_t <- as.numeric(cl_ose[1])
+star_t <- as.numeric(clos_e[1])
 # Define aggregation interval and calculate VWAP
 look_back <- 200
-v_wap <- rutils::roll_sum(x_ts=cl_ose*vol_ume,
+v_wap <- rutils::roll_sum(x_ts=clos_e*vol_ume,
   look_back=look_back)
 volume_roll <- rutils::roll_sum(x_ts=vol_ume,
   look_back=look_back)
@@ -2276,7 +3216,7 @@ v_wap[is.na(v_wap)] <- 0
       <<echo=TRUE,eval=FALSE>>=
 # Plot prices and VWAP
 x11(width=6, height=5)
-chart_Series(x=cl_ose,
+chart_Series(x=clos_e,
   name="VTI prices and VWAP", col="orange")
 add_TA(v_wap, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "VWAP"),
@@ -2303,11 +3243,11 @@ legend("top", legend=c("VTI", "VWAP"),
       This assumption may be too optimistic because in practice it's difficult to trade immediately just before the close of markets.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate VWAP indicator
-indica_tor <- sign(cl_ose - v_wap)
+indica_tor <- sign(clos_e - v_wap)
 # Calculate positions as lagged indicator
 position_s <- rutils::lag_it(indica_tor)
 # Calculate daily profits and losses of strategy
-re_turns <- rutils::diff_it(cl_ose)
+re_turns <- rutils::diff_it(clos_e)
 pnl_s <- re_turns*position_s
 cum_pnls <- star_t + cumsum(pnl_s)
 # Annualized Sharpe ratio of VWAP strategy
@@ -2315,7 +3255,7 @@ sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 # Annualized Sharpe ratio of VTI
 sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
 # Plot prices and VWAP
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI", col="orange")
+chart_Series(x=clos_e, name="VWAP Crossover Strategy for VTI", col="orange")
 add_TA(cum_pnls, on=1, lwd=2, col="blue")
 add_TA(position_s > 0, on=-1,
        col="lightgreen", border="lightgreen")
@@ -2328,10 +3268,10 @@ legend("top", legend=c(sym_bol, "VWAP strategy"),
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vwap_strat.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot prices and VWAP
-da_ta <- cbind(cl_ose, cum_pnls, v_wap)
+da_ta <- cbind(clos_e, cum_pnls, v_wap)
 colnames(da_ta) <- c(sym_bol, "strategy", "vwap")
 dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy")) %>%
   dyAxis("y", label=sym_bol, independentTicks=TRUE) %>%
@@ -2363,7 +3303,7 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy")) %>%
 lagg <- 2
 indic_sum <- roll::roll_sum(indica_tor, width=lagg)
 indic_sum[1:lagg] <- 0
-position_s <- rep(NA_integer_, NROW(cl_ose))
+position_s <- rep(NA_integer_, NROW(clos_e))
 position_s[1] <- 0
 position_s <- ifelse(indic_sum == lagg, 1, position_s)
 position_s <- ifelse(indic_sum == (-lagg), -1, position_s)
@@ -2374,7 +3314,7 @@ position_s <- rutils::lag_it(position_s, lagg=1)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vwap_strat_lag.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate PnLs of lagged strategy
 pnl_s <- re_turns*position_s
@@ -2393,7 +3333,105 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy With Lag")) %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{MA Crossover Strategy Trading at the \protect\emph{Open} Price}
+\subsection{draft: MA Crossover Strategy Trading at the \protect\emph{Open} Price}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A more realistic assumption is that the strategy trades at the \emph{Open} price in the next period.
+      \vskip1ex
+      The strategy should trade at the open price on the next 
+day after indica\_tor changes sign, to reflect that 
+in practice it's difficult to trade immediately.
+      \vskip1ex
+Calculate a Boolean vector that is TRUE only on dates 
+right after indica\_tor changes sign.
+For example, if yesterday indica\_tor was -1 and today 
+it's +1, then tomorrow it should be TRUE, and yesterday 
+it should be FALSE.
+Calculate a vector of integer indices corresponding to 
+trade dates, and call it trade\_dates.
+      \vskip1ex
+The strategy invests in a fixed dollar amount of VTI 
+shares.
+      \vskip1ex
+The strategy either owns n\_shares number of shares 
+(long position), or sells the same number of shares 
+short (short position).
+Thus the strategy consists of consecutive time intervals 
+of long risk and short risk positions, depending on 
+the sign of indica\_tor.
+When indica\_tor becomes positive then the strategy buys 
+shares and flips to a long risk position, and vice versa.
+      \vskip1ex
+Calculate an xts series called position\_s, that is equal 
+to the number of shares owned by the strategy at any given 
+period in time, either positive (long risk position) or 
+negative (short risk position).
+The strategy should start with a position of zero.
+The strategy position should be reset on trade\_dates, 
+to be equal to the indica\_tor on the previous day. 
+The strategy position should remain unchanged between the 
+trade\_dates.
+      \vskip1ex
+The daily return for a day without 
+any trade, is equal to the position in the previous
+day, times the difference between this day's closing 
+Price minus the previous day's closing price, divided 
+by the previous day's closing price.
+      \vskip1ex
+The return for a day with a trade, is equal 
+to the sum of two terms. 
+The first term is equal to the position in the previous
+day, times the difference between this day's opening
+Price minus the previous day's closing price, divided 
+by the previous day's closing price.
+The first term represents the realized pnl after trading
+out of the previous position.
+The second term is equal to the current (new) position 
+times the difference between this day's closing minus 
+opening prices, divided by the opening price.
+The second term represents the unrealized pnl of the new
+position on the day of the trade.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Determine trade dates right after VWAP has crossed prices
+trade_dates <- (rutils::diff_it(indica_tor) != 0)
+trade_dates <- which(trade_dates) + 1
+trade_dates <- trade_dates[trade_dates < n_rows]
+# Calculate positions, either: -1, 0, or 1
+position_s <- rep(NA_integer_, n_rows)
+position_s[1] <- 0
+position_s[trade_dates] <- indica_tor[trade_dates-1]
+position_s <- zoo::na.locf(position_s, na.rm=FALSE)
+position_s <- xts(position_s, order.by=index(oh_lc))
+pos_lagged <- rutils::lag_it(position_s)
+# Calculate pnl for days without trade
+pnl_s <- rutils::diff_it(clos_e)*position_s
+# Calculate realized pnl for days with trade
+close_lag <- rutils::lag_it(clos_e)
+pnl_s[trade_dates] <- pos_lagged[trade_dates]*
+  (op_en[trade_dates] - close_lag[trade_dates])
+# Calculate unrealized pnl for days with trade
+pnl_s[trade_dates] <- pnl_s[trade_dates] +
+  position_s[trade_dates]*
+  (clos_e[trade_dates] - op_en[trade_dates])
+cum_pnls_open <- star_t + cumsum(pnl_s)
+# Annualized Sharpe ratio of VWAP strategy
+sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
+# Annualized Sharpe ratio of VTI
+sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: MA Crossover Strategy Trading at the \protect\emph{Open} Price}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2401,26 +3439,27 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy With Lag")) %>%
     \column{0.5\textwidth}
       A more realistic assumption is that the strategy trades at the \emph{Open} price in the next period.
       <<echo=TRUE,eval=FALSE>>=
-# Determine dates right after VWAP has crossed prices
+# Determine trade dates right after VWAP has crossed prices
 trade_dates <- (rutils::diff_it(indica_tor) != 0)
 trade_dates <- which(trade_dates) + 1
+trade_dates <- trade_dates[trade_dates < n_rows]
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
+position_s <- rep(NA_integer_, n_rows)
 position_s[1] <- 0
 position_s[trade_dates] <- indica_tor[trade_dates-1]
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
 position_s <- xts(position_s, order.by=index(oh_lc))
 pos_lagged <- rutils::lag_it(position_s)
 # Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
+pnl_s <- rutils::diff_it(clos_e)*position_s
 # Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
+close_lag <- rutils::lag_it(clos_e)
 pnl_s[trade_dates] <- pos_lagged[trade_dates]*
   (op_en[trade_dates] - close_lag[trade_dates])
 # Calculate unrealized pnl for days with trade
 pnl_s[trade_dates] <- pnl_s[trade_dates] +
   position_s[trade_dates]*
-  (cl_ose[trade_dates] - op_en[trade_dates])
+  (clos_e[trade_dates] - op_en[trade_dates])
 cum_pnls_open <- star_t + cumsum(pnl_s)
 # Annualized Sharpe ratio of VWAP strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
@@ -2430,7 +3469,7 @@ sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/vwap_strat_open.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot both strategies
 da_ta <- cbind(cum_pnls_open, cum_pnls)
@@ -2439,7 +3478,7 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy on Open")) %>%
   dySeries(name="strategy_open", label="Strategy on Open", strokeWidth=2, col="green") %>%
   dySeries(name="strategy", label="Strategy", strokeWidth=2, col="blue")
 # Plot VTI and VWAP strategy
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
+chart_Series(x=clos_e, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
 add_TA(cum_pnls, on=1, lwd=2, col="blue")
 add_TA(position_s > 0, on=-1,
        col="lightgreen", border="lightgreen")
@@ -2474,16 +3513,16 @@ lamb_da <- 0.01
 # Calculate EWMA prices
 weight_s <- exp(-lamb_da*1:wid_th)
 weight_s <- weight_s/sum(weight_s)
-ew_ma <- stats::filter(cl_ose, filter=weight_s,
+ew_ma <- stats::filter(clos_e, filter=weight_s,
   sides=1, method="convolution")
 ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-ew_ma <- cbind(cl_ose, as.numeric(ew_ma))
+ew_ma <- cbind(clos_e, as.numeric(ew_ma))
 colnames(ew_ma) <- c("VTI", "VTI EWMA")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot EWMA prices with custom line colors
 plot_theme <- chart_theme()
@@ -2501,7 +3540,7 @@ legend("bottomleft", legend=colnames(ew_ma),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Simulating The \protect\emph{EWMA} Crossover Strategy}
+\subsection{Simulating the \protect\emph{EWMA} Crossover Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2516,12 +3555,13 @@ legend("bottomleft", legend=colnames(ew_ma),
       The strategy is therefore always either in a long risk, or in a short risk position.
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Determine dates right after VWAP has crossed prices
-indica_tor <- sign(cl_ose - ew_ma[, 2])
+# Determine trade dates right after VWAP has crossed prices
+indica_tor <- sign(clos_e - ew_ma[, 2])
 trade_dates <- (rutils::diff_it(indica_tor) != 0)
 trade_dates <- which(trade_dates) + 1
+trade_dates <- trade_dates[trade_dates < n_rows]
 # Calculate positions, either: -1, 0, or 1
-position_s <- rep(NA_integer_, NROW(oh_lc))
+position_s <- rep(NA_integer_, n_rows)
 position_s[1] <- 0
 position_s[trade_dates] <- indica_tor[trade_dates-1]
 position_s <- zoo::na.locf(position_s, na.rm=FALSE)
@@ -2562,27 +3602,27 @@ legend("bottomleft", legend=colnames(ew_ma),
       <<echo=TRUE,eval=FALSE>>=
 # Calculate daily profits and losses
 # Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
+pnl_s <- rutils::diff_it(clos_e)*position_s
 # Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
+close_lag <- rutils::lag_it(clos_e)
 pos_lagged <- rutils::lag_it(position_s)
 pnl_s[trade_dates] <- pos_lagged[trade_dates]*
   (op_en[trade_dates] - close_lag[trade_dates])
 # Calculate unrealized pnl for days with trade
 pnl_s[trade_dates] <- pnl_s[trade_dates] +
   position_s[trade_dates]*
-  (cl_ose[trade_dates] - op_en[trade_dates])
+  (clos_e[trade_dates] - op_en[trade_dates])
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 # Cumulative pnls
 cum_pnls <- star_t + cumsum(pnl_s)
-cum_pnls <- cbind(cl_ose, cum_pnls)
+cum_pnls <- cbind(clos_e, cum_pnls)
 colnames(cum_pnls) <- c("VTI", "EWMA PnL")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_pnl.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot EWMA PnL with position shading
 chart_Series(cum_pnls, theme=plot_theme,
@@ -2612,20 +3652,20 @@ legend("top", legend=colnames(cum_pnls),
       \vskip1ex
       The \emph{bid-offer spread} for liquid stocks can be assumed to be about \texttt{10} basis points (bps).
       \vskip1ex
-      The \emph{transaction costs} $c_t$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
+      The \emph{transaction costs} $c^r$ due to the \emph{bid-offer spread} are equal to half the \emph{bid-offer spread} $\delta$ times the absolute value of the traded dollar amount of the \emph{risky asset}:
       \begin{displaymath}
-        c_t = \frac{\delta}{2} \left| \Delta n_t \right| p_t
+        c^r = \frac{\delta}{2} \left| \Delta n_t \right| p_t
       \end{displaymath}
       Where $\Delta n_t$ is the number of shares traded, and $p_t$ is their price.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_strat_transcosts.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Calculate transaction costs
-cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
+cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*clos_e
 # pnl_s <- (pnl_s - cost_s)
 # Plot strategy with transaction costs
 cum_pnls <- star_t + cumsum(pnl_s)
@@ -2642,7 +3682,7 @@ dygraphs::dygraph(cum_pnls, main=paste(sym_bol, "EWMA Strategy With Transaction 
 
 
 %%%%%%%%%%%%%%%
-\subsection{Function for \protect\emph{EWMA} Crossover Strategy}
+\subsection{Backtesting Function for \protect\emph{EWMA} Crossover Strategy}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2654,37 +3694,38 @@ dygraphs::dygraph(cum_pnls, main=paste(sym_bol, "EWMA Strategy With Transaction 
       \vskip1ex
       The function \texttt{simu\_ewma()} returns the \emph{EWMA} strategy positions and returns, in a two-column \emph{xts} time series.
     \column{0.6\textwidth}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1) {
+  n_rows <- NROW(oh_lc)
   # Calculate EWMA prices
   weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
-  cl_ose <- quantmod::Cl(oh_lc)
-  ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1, method="convolution")
+  clos_e <- quantmod::Cl(oh_lc)
+  ew_ma <- stats::filter(clos_e, filter=weight_s, sides=1, method="convolution")
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-  # Determine dates right after EWMA has crossed prices
-  indica_tor <- tre_nd*sign(cl_ose - as.numeric(ew_ma))
+  # Determine trade dates right after EWMA has crossed prices
+  indica_tor <- tre_nd*sign(clos_e - as.numeric(ew_ma))
   trade_dates <- (rutils::diff_it(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
-  trade_dates <- trade_dates[trade_dates < NROW(oh_lc)]
+  trade_dates <- trade_dates[trade_dates < n_rows]
   # Calculate positions, either: -1, 0, or 1
-  position_s <- rep(NA_integer_, NROW(oh_lc))
+  position_s <- rep(NA_integer_, n_rows)
   position_s[1] <- 0
   position_s[trade_dates] <- indica_tor[trade_dates-1]
   position_s <- zoo::na.locf(position_s, na.rm=FALSE)
   op_en <- quantmod::Op(oh_lc)
-  close_lag <- rutils::lag_it(cl_ose)
+  close_lag <- rutils::lag_it(clos_e)
   pos_lagged <- rutils::lag_it(position_s)
   # Calculate daily profits and losses
-  pnl_s <- rutils::diff_it(cl_ose)*position_s
+  pnl_s <- rutils::diff_it(clos_e)*position_s
   pnl_s[trade_dates] <- pos_lagged[trade_dates]*
     (op_en[trade_dates] - close_lag[trade_dates])
   pnl_s[trade_dates] <- pnl_s[trade_dates] +
     position_s[trade_dates]*
-    (cl_ose[trade_dates] - op_en[trade_dates])
+    (clos_e[trade_dates] - op_en[trade_dates])
   # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
+  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*clos_e
   pnl_s <- (pnl_s - cost_s)
   # Calculate strategy returns
   pnl_s <- cbind(position_s, pnl_s)
@@ -2835,7 +3876,7 @@ ewma_trend <- simu_ewma(oh_lc=oh_lc,
   wid_th=wid_th)
 position_s <- ewma_trend[, "positions"]
 pnl_s <- star_t + cumsum(ewma_trend[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL with position shading
 plot_theme$col$line.col <- c("orange", "blue")
@@ -2956,7 +3997,7 @@ ewma_revert <- simu_ewma(oh_lc=oh_lc, bid_offer=0.0,
   wid_th=wid_th, tre_nd=(-1))
 position_s <- ewma_revert[, "positions"]
 pnl_s <- star_t + cumsum(ewma_revert[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
       @
     \column{0.5\textwidth}
@@ -2995,7 +4036,7 @@ trend_ing <- ewma_trend[, "pnls"]
 colnames(trend_ing) <- "trend"
 revert_ing <- ewma_revert[, "pnls"]
 colnames(revert_ing) <- "revert"
-close_rets <- rutils::diff_it(cl_ose)
+close_rets <- rutils::diff_it(clos_e)
 cor(cbind(trend_ing, revert_ing, close_rets))
 # Calculate combined strategy
 com_bined <- trend_ing + revert_ing
@@ -3044,7 +4085,7 @@ re_turns <- cbind(trend_returns, revert_returns)
 avg_returns <- re_turns %*% weight_s
 avg_returns <- xts(avg_returns, order.by=index(re_turns))
 pnl_s <- (star_t + cumsum(avg_returns))
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL without position shading
 plot_theme <- chart_theme()
@@ -3065,7 +4106,7 @@ legend("top", legend=colnames(pnl_s),
 
 
 %%%%%%%%%%%%%%%
-\section{Backtesting Active Investment Strategies}
+\section{Momentum Strategies}
 
 
 %%%%%%%%%%%%%%%
@@ -3106,13 +4147,13 @@ re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Backtesting Framework with Overlapping Aggregations}
+\subsection{depr: Backtesting Framework with Overlapping Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Adapt this verbiage:
+      Done: Adapt this verbiage:
       \vskip1ex
       An interval aggregation can be calculated by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}.
       \vskip1ex
@@ -3149,13 +4190,13 @@ look_backs <- lapply(2:n_rows,
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Performing Overlapping Aggregations}
+\subsection{depr: Performing Overlapping Aggregations}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Adapt this verbiage:
+      Done: Adapt this verbiage:
       \vskip1ex
       An interval aggregation can be calculated by a vector of look-back \emph{intervals} attached at \emph{end points} spanning fixed time \emph{intervals}.
       \vskip1ex
@@ -3322,7 +4363,7 @@ sum(is.na(weight_s))
 pnl_s <- rowSums(weight_s*fu_ture)
 pnl_s <- xts(pnl_s, order.by=in_dex)
 colnames(pnl_s) <- "ewma momentum"
-close_rets <- rutils::diff_it(cl_ose[in_dex])
+close_rets <- rutils::diff_it(clos_e[in_dex])
 cor(cbind(pnl_s, close_rets))
 pnl_s <- star_t + cumsum(pnl_s)
       @
@@ -3331,7 +4372,7 @@ pnl_s <- star_t + cumsum(pnl_s)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the backtest
-chart_Series(x=cl_ose[end_p[-n_rows]],
+chart_Series(x=clos_e[end_p[-n_rows]],
   name="backtest of EWMA strategies", col="orange")
 add_TA(pnl_s, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "EWMA"),
@@ -3405,7 +4446,7 @@ dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=(-(1:1)),eval=FALSE>>=
 # Define backtest functional
 backtest_momentum <- function(re_turns,
@@ -3469,7 +4510,7 @@ backtest_momentum <- function(re_turns,
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_profile.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 source("C:/Develop/lecture_slides/scripts/back_test.R")
 look_backs <- seq(3, 15, by=1)
@@ -3479,7 +4520,7 @@ pro_files <- sapply(look_backs, function(look_back) {
     look_back=look_back, perform_ance=perform_ance)
   last(cumsum(pnl_s))
 })  # end sapply
-x11(width=6, height=4)
+x11(width=6, height=5)
 plot(x=look_backs, y=pro_files, t="l",
   main="Strategy PnL as function of look_back",
   xlab="look_back (months)", ylab="pnl")
@@ -3514,7 +4555,7 @@ colnames(da_ta) <- c("Momentum Strategy", "All_weather")
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_etf_optim.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot the Momentum strategy and benchmark
 dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
@@ -3561,7 +4602,7 @@ zoo::plot.zoo(da_ta, xlab=NULL, main="Momentum Weights")
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_weights.png}
-      \vspace{-2em}
+      \vspace{-1em}
   \end{columns}
 \end{block}
 
@@ -3610,7 +4651,7 @@ zoo::plot.zoo(da_ta,
       The \emph{Treynor-Mazuy} test shows that the \emph{momentum} strategy has significant \emph{market timing} skill.
       <<echo=(-(1:3)),eval=FALSE>>=
 # Open x11 for plotting and set parameters to reduce whitespace around plot
-x11(width=6, height=4)
+x11(width=6, height=5)
 par(mar=c(4, 4, 3, 1), oma=c(0, 0, 0, 0))
 # Merton-Henriksson test
 vt_i <- rutils::diff_it(vt_i)/rutils::lag_it(vt_i)
@@ -3659,7 +4700,7 @@ apply(cbind(ret_mom_std, vt_i), 2, function(x)
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_distr.png}
-    \vspace{-2em}
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 hist(ret_mom_std, breaks=30,
@@ -3713,7 +4754,7 @@ weal_th <- xts::xts(weal_th, in_dex)
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_combined.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ETF momentum strategy combined with All-Weather
 dygraphs::dygraph(weal_th, main="ETF Momentum Strategy Combined with All-Weather") %>%
@@ -3767,7 +4808,7 @@ pnl_s <- rowMeans(weight_s*re_turns)
     \column{0.5\textwidth}
     \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/momentum_daily_etf.png}
-    \vspace{-2em}
+    \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Calculate transaction costs
 bid_offer <- 0.001
@@ -3950,25 +4991,27 @@ legend("topleft", legend=colnames(weal_th),
 \end{frame}
 
 
+
 %%%%%%%%%%%%%%%
-\subsection{Portfolio Optimization Strategy}
+\section{Portfolio Optimization Strategies}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization In-sample}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{portfolio optimization} strategy consists of:
-      \setlength{\leftmargini}{1.0em}
-      \begin{enumerate}
-        \item Calculating the maximum Sharpe ratio portfolio weights in the in-sample interval,
-        \item Applying the weights and calculating the portfolio returns in the out-of-sample interval.
-      \end{enumerate}
-      <<echo=TRUE,eval=FALSE>>=
+      The \emph{ETF} portfolio is overweight bond ETFs, for example \emph{TLT} and \emph{VYM}.
+      <<echo=(-(1:1)),eval=FALSE>>=
+library(rutils)
 # Select all the ETF symbols except "VXX", "SVXY" and "MTUM"
 sym_bols <- colnames(rutils::etf_env$re_turns)
 sym_bols <- sym_bols[!(sym_bols %in% c("VXX", "SVXY", "MTUM"))]
 # Extract columns of rutils::etf_env$re_turns and overwrite NA values
 re_turns <- rutils::etf_env$re_turns[, sym_bols]
+n_assets <- NCOL(re_turns)
 # re_turns <- na.omit(re_turns)
 re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
@@ -3976,24 +5019,73 @@ re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 risk_free <- 0.03/252
 ex_cess <- (re_turns - risk_free)
 # Maximum Sharpe weights in-sample interval
-in_verse <- MASS::ginv(cov(ex_cess["/2018"]))
-weight_s <- in_verse %*% colMeans(ex_cess)
+in_verse <- MASS::ginv(cov(re_turns["/2014"]))
+weight_s <- in_verse %*% colMeans(ex_cess["/2014"])
 weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Plot portfolio weights
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+barplot(sort(weight_s), main="Maximum Sharpe Weights", cex.names=0.7)
+# Calculate portfolio returns
+rets_is <- re_turns["/2014"]
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+in_dex <- xts(rowSums(rets_is)/sqrt(n_assets), index(rets_is))
+portf_is <- portf_is*sd(in_dex)/sd(portf_is)
+# Plot cumulative portfolio returns
+weal_th <- cumsum(cbind(portf_is, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="In-sample Optimal Portfolio Returns") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(width=500)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/backtest_portfolio.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_weights_in_sample.png}
+      \includegraphics[width=0.4\paperwidth]{figure/portf_etf_in_sample.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Optimization Strategy for ETFs}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{portfolio optimization} strategy invests in the best performing portfolio in the past \emph{in-sample} interval, expecting that it will continue performing well \emph{out-of-sample}.
+      \vskip1ex
+      The \emph{portfolio optimization} strategy consists of:
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculating the maximum Sharpe ratio portfolio weights in the \emph{in-sample} interval,
+        \item Applying the weights and calculating the portfolio returns in the \emph{out-of-sample} interval.
+      \end{enumerate}
+      The optimal portfolio weights $\mathbf{w}$ are calculated using the past in-sample excess returns $\mu = \mathbf{r} - r_f$ (in excess of the risk-free rate $r_f$):
+      \begin{displaymath}
+        \mathbf{w} = \mathbb{C}^{-1} \mu
+      \end{displaymath}
+      This strategy has performed well for \emph{ETF} portfolios because of the consistent performance of bond ETFs, like \emph{TLT} and \emph{VYM}.
       <<echo=TRUE,eval=FALSE>>=
 # Out-of-sample portfolio returns
-rets_oos <- re_turns["2019/"]
-rets_portf <- xts(rets_oos %*% weight_s, index(rets_oos))
-in_dex <- xts(rowMeans(rets_oos), index(rets_oos))
+rets_os <- re_turns["2015/"]
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(rets_os)/sqrt(n_assets), index(rets_os))
+portf_os <- portf_os*sd(in_dex)/sd(portf_os)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_etf_out_of_sample.png}
+      <<echo=TRUE,eval=FALSE>>=
 # Plot cumulative portfolio returns
-weal_th <- cumsum(cbind(rets_portf, in_dex))
+weal_th <- cumsum(cbind(portf_os, in_dex))
 colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
 dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns") %>%
   dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
-  dyLegend(show="always")
+  dyLegend(width=500)
       @
   \end{columns}
 \end{block}
@@ -4002,53 +5094,50 @@ dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns") %>%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Portfolio Optimization Strategy}
+\subsection{Portfolio Optimization Strategy for Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over the end points:
-      \setlength{\leftmargini}{1.0em}
-      \begin{enumerate}
-        \item Calculate the maximum Sharpe ratio portfolio weights at each end point,
-        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
-      \end{enumerate}
-      The parameters of this strategy are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
+      The \emph{portfolio optimization} strategy for stocks is \emph{overfitted} in the \emph{in-sample} interval.
+      \vskip1ex
+      Therefore the strategy completely fails in the \emph{out-of-sample} interval.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate vector of monthly end points and start points
-end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
-end_p <- end_p[end_p > 2*NCOL(re_turns)]
-n_rows <- NROW(end_p)
-look_back <- 24
-start_p <- c(rep_len(0, look_back-1),
-             end_p[1:(n_rows-look_back+1)])
+load("C:/Develop/lecture_slides/data/sp500_returns.RData")
+# Overwrite NA values in re_turns
+re_turns <- re_turns["2000/"]
+n_assets <- NCOL(re_turns)
+re_turns[1, is.na(re_turns[1, ])] <- 0
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+risk_free <- 0.03/252
+ex_cess <- (re_turns - risk_free)
+rets_is <- re_turns["/2010"]
+rets_os <- re_turns["2011/"]
+# Maximum Sharpe weights in-sample interval
+cov_mat <- cov(rets_is)
+in_verse <- MASS::ginv(cov_mat)
+weight_s <- in_verse %*% colMeans(ex_cess["/2010"])
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/backtest_rolling_portfolio.png}
-      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample.png}
       <<echo=TRUE,eval=FALSE>>=
-# Perform loop over end points
-rets_portf <- lapply(2:n_rows, function(i) {
-    # Subset the ex_cess returns
-    ex_cess <- ex_cess[start_p[i-1]:end_p[i-1], ]
-    in_verse <- MASS::ginv(cov(ex_cess))
-    # Calculate the maximum Sharpe ratio portfolio weights
-    weight_s <- in_verse %*% colMeans(ex_cess)
-    weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
-    # Calculate the out-of-sample portfolio returns
-    re_turns <- re_turns[(end_p[i-1]+1):end_p[i], ]
-    xts(re_turns %*% weight_s, index(re_turns))
-})  # end lapply
-rets_portf <- rutils::do_call(rbind, rets_portf)
-# Plot cumulative strategy returns
-in_dex <- xts(rowMeans(re_turns), index(re_turns))
-weal_th <- cumsum(na.omit(cbind(rets_portf, in_dex*sd(rets_portf)/sd(in_dex))))
-colnames(weal_th) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Out-of-sample Optimal Portfolio Returns for Stocks") %>%
   dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
-  dyLegend(show="always")
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
       @
   \end{columns}
 \end{block}
@@ -4078,9 +5167,9 @@ dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Create rectangular matrix with collinear columns
-re_turns <- matrix(rnorm(10*8), nc=10)
+ran_dom <- matrix(rnorm(10*8), nc=10)
 # Calculate covariance matrix
-cov_mat <- cov(re_turns)
+cov_mat <- cov(ran_dom)
 # Calculate inverse of cov_mat - error
 in_verse <- solve(cov_mat)
 # Calculate regularized inverse of cov_mat
@@ -4107,7 +5196,7 @@ all.equal(in_verse, reg_inverse)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Regularized Inverse of \protect\emph{S\&P500} Covariance Matrix}
+\subsection{Regularized Inverse of the Covariance Matrix}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -4127,12 +5216,8 @@ all.equal(in_verse, reg_inverse)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-load("C:/Develop/lecture_slides/data/sp500_returns.RData")
-# Overwrite NA values in re_turns
-re_turns[1, is.na(re_turns[1, ])] <- 0
-re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 # Calculate in-sample covariance matrix
-cov_mat <- cov(re_turns["/2018"])
+cov_mat <- cov(rets_is)
 ei_gen <- eigen(cov_mat)
 eigen_vec <- ei_gen$vectors
 eigen_val <- ei_gen$values
@@ -4148,38 +5233,38 @@ in_verse <- eigen_vec[, 1:max_eigen] %*%
 
 
 %%%%%%%%%%%%%%%
-\subsection{Optimal Portfolio Weights With Return Shrinkage}
+\subsection{Regularized Portfolio Optimization Strategy for Stocks}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The optimal portfolio weights $\mathbf{w}$ are calculated using the past in-sample returns $\mathbf{r}$:
-      \begin{displaymath}
-        \mathbf{w} = \mathbb{C}_n^{-1} \mathbf{r}
-      \end{displaymath}
-      To further reduce the statistical noise, the individual returns $r_i$ can be \emph{shrunk} to the average portfolio returns $\mathbf{\bar{r}}$:
-      \begin{displaymath}
-        r_i = (1 - \alpha) \, r_i + \alpha \, \mathbf{\bar{r}}
-      \end{displaymath}
-      The parameter $\alpha$ is the \emph{shrinkage} intensity, and it determines the strength of the \emph{shrinkage} of individual returns to their mean.
+      The \emph{out-of-sample} performance of the \emph{portfolio optimization} strategy is greatly improved by regularizing the inverse of the covariance matrix.
       \vskip1ex
-      If $\alpha = 0$ then there is no \emph{shrinkage}, while if $\alpha = 1$ then all the returns are \emph{shrunk} to their common mean: $r_i = \mathbf{\bar{r}}$.
-      \vskip1ex
-      The optimal value of the \emph{shrinkage} intensity $\alpha$ can be determined using \emph{backtesting} (\emph{cross-validation}).
+      The \emph{in-sample} performance is worse because regularization reduces \emph{overfitting}.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate portfolio weights
+weight_s <- in_verse %*% colMeans(ex_cess["/2010"])
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+names(weight_s) <- colnames(re_turns)
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample_reg.png}
       <<echo=TRUE,eval=FALSE>>=
-# In-sample excess returns
-risk_free <- 0.03/252
-ex_cess <- (re_turns["/2018"] - risk_free)
-ex_cess <- colMeans(ex_cess)
-# Shrink the returns to their mean
-al_pha <- 0.7
-ex_cess <- (1 - al_pha)*ex_cess + al_pha*mean(ex_cess)
-# In-sample maximum Sharpe weights
-weight_s <- in_verse %*% ex_cess
-weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Regularized Out-of-sample Optimal Portfolio Returns for Stocks") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
       @
   \end{columns}
 \end{block}
@@ -4188,33 +5273,47 @@ weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
 
 
 %%%%%%%%%%%%%%%
-\subsection{Out-of-Sample \protect\emph{S\&P500} Portfolio Returns}
+\subsection{Optimal Portfolio Weights With Return Shrinkage}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The out-of-sample portfolio returns are equal to the out-of-sample stock returns times the weights.
+      To further reduce the statistical noise, the individual returns $r_i$ can be \emph{shrunk} to the average portfolio returns $\bar{r}$:
+      \begin{displaymath}
+        r_i = (1 - \alpha) \, r_i + \alpha \, \bar{r}
+      \end{displaymath}
+      The parameter $\alpha$ is the \emph{shrinkage} intensity, and it determines the strength of the \emph{shrinkage} of individual returns to their mean.
       \vskip1ex
-      The weights can be scaled to match the volatility of the equally weighted portfolio.
+      If $\alpha = 0$ then there is no \emph{shrinkage}, while if $\alpha = 1$ then all the returns are \emph{shrunk} to their common mean: $r_i = \bar{r}$.
+      \vskip1ex
+      The optimal value of the \emph{shrinkage} intensity $\alpha$ can be determined using \emph{backtesting} (\emph{cross-validation}).
       <<echo=TRUE,eval=FALSE>>=
-# Out-of-sample portfolio returns
-rets_oos <- re_turns["2019/"]
-rets_portf <- xts(rets_oos %*% weight_s, index(rets_oos))
-# Calculate returns on equal weight portfolio
-in_dex <- xts(rowMeans(rets_oos), index(rets_oos))
-# Plot cumulative out-of-sample strategy returns
-weal_th <- cbind(rets_portf, in_dex*sd(rets_portf)/sd(in_dex))
-weal_th <- cumsum(na.omit(weal_th))
-colnames(weal_th) <- c("Strategy", "Equal Weight Portfolio")
-dygraphs::dygraph(weal_th, main="S&P500 Portfolio Optimization Strategy") %>%
-  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
-  dyLegend(show="always")
+# Shrink the in-sample returns to their mean
+rets_mean <- colMeans(rets_is) - risk_free
+al_pha <- 0.7
+rets_mean <- (1 - al_pha)*rets_mean + al_pha*mean(rets_mean)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/backtest_sp500.png}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/portf_stocks_out_of_sample_reg_shink.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate portfolio weights
+weight_s <- in_verse %*% rets_mean
+weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+# Calculate portfolio returns
+portf_is <- xts(rets_is %*% weight_s, index(rets_is))
+portf_os <- xts(rets_os %*% weight_s, index(rets_os))
+# Plot cumulative portfolio returns
+weal_th <- rbind(portf_is, portf_os)
+weal_th <- weal_th*sd(in_dex)/sd(weal_th)
+weal_th <- cumsum(cbind(weal_th, in_dex))
+colnames(weal_th) <- c("Optimal Portfolio", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Out-of-sample Returns for Stocks With Regularization and Shrinkage") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyEvent(index(last(rets_is[, 1])), label="in-sample", strokePattern="solid", color="red") %>%
+  dyLegend(width=500)
       @
   \end{columns}
 \end{block}
@@ -4439,6 +5538,61 @@ arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
 
 
 %%%%%%%%%%%%%%%
+\subsection{Rolling Portfolio Optimization Strategy}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{rolling portfolio optimization} strategy consists of rebalancing a portfolio over the end points:
+      \setlength{\leftmargini}{1.0em}
+      \begin{enumerate}
+        \item Calculate the maximum Sharpe ratio portfolio weights at each end point,
+        \item Apply the weights in the next interval and calculate the out-of-sample portfolio returns.
+      \end{enumerate}
+      The parameters of this strategy are: the rebalancing frequency (annual, monthly, etc.), and the length of look-back interval.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate vector of monthly end points and start points
+end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
+end_p <- end_p[end_p > 2*NCOL(re_turns)]
+n_rows <- NROW(end_p)
+look_back <- 24
+start_p <- c(rep_len(0, look_back-1),
+             end_p[1:(n_rows-look_back+1)])
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/backtest_rolling_portfolio.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Perform loop over end points
+rets_portf <- lapply(2:n_rows, function(i) {
+    # Subset the ex_cess returns
+    ex_cess <- ex_cess[start_p[i-1]:end_p[i-1], ]
+    in_verse <- MASS::ginv(cov(ex_cess))
+    # Calculate the maximum Sharpe ratio portfolio weights
+    weight_s <- in_verse %*% colMeans(ex_cess)
+    weight_s <- drop(weight_s/sqrt(sum(weight_s^2)))
+    # Calculate the out-of-sample portfolio returns
+    re_turns <- re_turns[(end_p[i-1]+1):end_p[i], ]
+    xts(re_turns %*% weight_s, index(re_turns))
+})  # end lapply
+rets_portf <- rutils::do_call(rbind, rets_portf)
+# Plot cumulative strategy returns
+in_dex <- xts(rowSums(re_turns)/sqrt(n_assets), index(re_turns))
+weal_th <- cumsum(na.omit(cbind(rets_portf, in_dex*sd(rets_portf)/sd(in_dex))))
+colnames(weal_th) <- c("Rolling Portfolio Strategy", "Equal Weight Portfolio")
+dygraphs::dygraph(weal_th, main="Rolling Portfolio Optimization Strategy") %>%
+  dyOptions(colors=c("red","blue"), strokeWidth=2) %>%
+  dyLegend(show="always")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Rolling Portfolio Optimization Strategy for \protect\emph{S\&P500}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -4469,7 +5623,7 @@ al_pha <- 0.7 ; max_eigen <- 21
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/backtest_sp500_monthly.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest in Rcpp
 pnl_s <- HighFreq::back_test(typ_e="max_sharpe",
@@ -4504,7 +5658,6 @@ dygraphs::dygraph(weal_th[end_p], main="Rolling S&P500 Portfolio Optimization St
   \begin{columns}[T]
     \column{0.5\textwidth}
       The optimal values of the parameters \texttt{max\_eigen} and $\alpha$ can be determined using \emph{backtesting}.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Perform backtest over alphas
 alpha_s <- seq(from=0.01, to=0.91, by=0.1)

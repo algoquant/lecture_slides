@@ -1,9 +1,17 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=6, fig.height=5)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=6, fig.height=5)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
+
+# Display documentation on function "getwd"
+help(getwd)
+# Equivalent to "help(getwd)"
+?getwd
+
+# Open the hypertext documentation
+help.start()
 
 # Calculate cumulative sum of a vector
 vec_tor <- runif(1e5)
@@ -11,8 +19,8 @@ vec_tor <- runif(1e5)
 cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
-for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+for (i in 2:NROW(cum_sum2))
+  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
@@ -21,8 +29,8 @@ summary(microbenchmark(
   cumsum=cumsum(vec_tor),
   loop_alloc={
     cum_sum2 <- vec_tor
-    for (i in 2:NROW(vec_tor))
-cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
+    for (i in 2:NROW(cum_sum2))
+cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
   },
   loop_nalloc={
     # Doesn't allocate memory to cum_sum3
@@ -33,27 +41,19 @@ cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
   },
   times=10))[, c(1, 4, 5)]
 
-# Display documentation on function "getwd"
-help(getwd)
-# Equivalent to "help(getwd)"
-?getwd
-
-# Open the hypertext documentation
-help.start()
-
 # "<-" and "=" are valid assignment operators
 my_var <- 3
 
-# typing a symbol or expression evaluates it
+# Typing a symbol or expression evaluates it
 my_var
 
-# text in quotes is interpreted as a string
+# Text in quotes is interpreted as a string
 my_var <- "Hello World!"
 
-# typing a symbol or expression evaluates it
+# Typing a symbol or expression evaluates it
 my_var
 
-my_var  # text after hash is treated as comment
+my_var  # Text after hash is treated as comment
 
 getwd()  # Get cwd
 setwd("C:/Develop/R")  # Set cwd
@@ -112,22 +112,22 @@ R.home("etc")  # Get "etc" sub-directory of R_HOME
 getOption("stringsAsFactors")  # Display option
 options("stringsAsFactors")  # Display option
 options(stringsAsFactors=FALSE)  # Set option
-# number of digits printed for numeric values
+# Number of digits printed for numeric values
 options(digits=3)
 # Control exponential scientific notation of print method
 # Positive "scipen" values bias towards fixed notation
-# negative "scipen" values bias towards scientific notation
+# Negative "scipen" values bias towards scientific notation
 options(scipen=100)
-# maximum number of items printed to console
+# Maximum number of items printed to console
 options(max.print=30)
 # Warning levels options
-# negative - warnings are ignored
+# Negative - warnings are ignored
 options(warn=-1)
 # zero - warnings are stored and printed after top-level function has completed
 options(warn=0)
 # One - warnings are printed as they occur
 options(warn=1)
-# two or larger - warnings are turned into errors
+# 2 or larger - warnings are turned into errors
 options(warn=2)
 # Save all options in variable
 op_tions <- options()
@@ -235,32 +235,57 @@ search()  # Get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
 
-library(HighFreq)  # Load package HighFreq
-# ETF symbols
+library(rutils)  # Load package rutils
+# Define ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract and merge all data, subset by sym_bols
-price_s <- rutils::do_call(cbind,
-  lapply(sym_bols, function(sym_bol) {
-    quantmod::Ad(get(sym_bol, envir=rutils::etf_env))
-}))
-# Extract and merge adjusted prices, subset by sym_bols
-price_s <- rutils::do_call(cbind,
+# Extract sym_bols from rutils::etf_env
+price_s <- mget(sym_bols, envir=rutils::etf_env)
+# price_s is a list of xts series
+class(price_s)
+class(price_s[[1]])
+# Extract Close prices
+price_s <- lapply(price_s, quantmod::Cl)
+# Collapse list into time series the hard way
+xts_1 <- cbind(price_s[[1]], price_s[[2]], price_s[[3]], price_s[[4]])
+class(xts_1)
+dim(xts_1)
+# Collapse list into time series using do.call()
+price_s <- do.call(cbind, price_s)
+all.equal(xts_1, price_s)
+class(price_s)
+dim(price_s)
+# Extract and cbind in single step
+price_s <- do.call(cbind, lapply(
+  mget(sym_bols, envir=rutils::etf_env),
+  quantmod::Cl))
+# Or
+# Extract and bind all data, subset by sym_bols
+price_s <- lapply(sym_bols, function(sym_bol) {
+    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
+})  # end lapply
+# Same, but loop over etf_env without anonymous function
+price_s <- do.call(cbind,
   lapply(as.list(rutils::etf_env)[sym_bols],
-   quantmod::Ad))
-# Same, but works only for OHLC series
-price_s <- rutils::do_call(cbind,
-  eapply(rutils::etf_env, quantmod::Ad)[sym_bols])
-# Drop ".Adjusted" from colnames
-colnames(price_s) <- sapply(colnames(price_s),
+   quantmod::Cl))
+# Same, but works only for OHLC series - produces error
+price_s <- do.call(cbind,
+  eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
+
+# Drop ".Close" from colnames
+colnames(price_s) <- unname(sapply(colnames(price_s),
     function(col_name)
-strsplit(col_name, split="[.]")[[1]])[1, ]
-tail(price_s[, 1:2], 3)
+strsplit(col_name, split="[.]")[[1]][1]))
+tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
 # Save xts to csv file
-write.zoo(price_s, file="etf_series.csv", sep=",")
-# Copy price_s into etf_env and save to .RData file
+write.zoo(price_s,
+  file="C:/Develop/lecture_slides/data/etf_series.csv", sep=",")
+# Copy price_s into etf_env
+etf_env$etf_list <- etf_list
+# Or
 assign("price_s", price_s, envir=etf_env)
+# Save to .RData file
 save(etf_env, file="etf_data.RData")
 
 # "trees" is in datasets base package
@@ -324,7 +349,7 @@ curve(expr=sin, type="l", xlim=c(-2*pi, 2*pi),
 xlab="", ylab="", lwd=2, col="orange",
 main="Sine function")
 
-# turn png output off
+# Turn png output off
 dev.off()
 
 #Plot_interactive.R

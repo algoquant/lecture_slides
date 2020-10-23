@@ -1,7 +1,7 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
 options(digits=3)
-options(width=60, dev='pdf')
+options(width=80, dev='pdf')
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
@@ -12,10 +12,10 @@ knit_theme$set(thm)
 # Strings without quotes are variable names
 a  # Variable "a" doesn't exist
 # List elements can have different mode
-list(aa=c('a', 'b'), bb=1:5)
-data.frame(aa=c('a', 'b'), bb=1:2)
-is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
-is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+list(aa=c("a", "b"), bb=1:5)
+data.frame(aa=c("a", "b"), bb=1:2)
+is.atomic(data.frame(aa=c("a", "b"), bb=1:2))
+is.recursive(data.frame(aa=c("a", "b"), bb=1:2))
 
 my_var <- "hello"
 c(typeof(my_var), mode(my_var), class(my_var))
@@ -32,10 +32,10 @@ c(typeof(my_var), mode(my_var), class(my_var))
 my_var <- matrix(runif(10), 2, 5)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-my_var <- list(aa=c('a', 'b'), bb=1:5)
+my_var <- list(aa=c("a", "b"), bb=1:5)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+my_var <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(my_var), mode(my_var), class(my_var))
 
 # A simple vector has no attributes
@@ -77,7 +77,7 @@ c(typeof(my_var), mode(my_var), class(my_var))
 dim(my_var) <- c(5, 2)
 c(typeof(my_var), mode(my_var), class(my_var))
 # Data frames have implicit dim attribute
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+my_var <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(my_var), mode(my_var), class(my_var))
 attributes(my_var)
 dim(my_var)
@@ -98,11 +98,11 @@ c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 c(is.matrix(mat_rix), is.vector(mat_rix))
 as.logical(0:3)  # Explicit coercion to "logical"
 as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, 'a')  # Implicit coercion to "character"
+c(1:3, "a")  # Implicit coercion to "character"
 # Explicit coercion to "numeric"
-as.numeric(c(1:3, 'a'))
+as.numeric(c(1:3, "a"))
 
-"Hello World!"  # type some text
+"Hello World!"  # Type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name
 is.vector(1)  # Single number is a vector
@@ -111,9 +111,9 @@ is.vector("a")  # String is a vector
 # Create vector using c() combine function
 c(1, 2, 3, 4, 5)
 # Create vector using c() combine function
-c('a', 'b', 'c')
+c("a", "b", "c")
 # Create vector using c() combine function
-c(1, 'b', 'c')
+c(1, "b", "c")
 
 str_var <- "Some string"
 str_var
@@ -131,16 +131,16 @@ cat("Enter\\backslash")
 
 str_var1 <- "Hello"  # Define a character string
 str_var2 <- "World!"  # Define a character string
-paste(str_var1, str_var2, sep=' ')  # Concatenate and return value
+paste(str_var1, str_var2, sep=" ")  # Concatenate and return value
 cat(str_var1, str_var2)  # Concatenate and echo to console
-paste('a', 1:4, sep='-')  # Convert, recycle and concatenate
+paste("a", 1:4, sep="-")  # Convert, recycle and concatenate
 paste(c("a1", "a2", "a3"), collapse="+")  # Collapse vector to string
 paste(list("a1", "a2", "a3"), collapse="+")
 paste("Today is", Sys.time())  # Coerce and concatenate strings
 paste("Today is", format(Sys.time(), "%B-%d-%Y"))
-strsplit("Hello World", split='r')  # Split string
-strsplit("Hello.World", split='[.]')  # Split string
-strsplit("Hello.World", split='.', fixed=TRUE)  # Split string
+strsplit("Hello World", split="r")  # Split string
+strsplit("Hello.World", split="[.]")  # Split string
+strsplit("Hello.World", split=".", fixed=TRUE)  # Split string
 substring("Hello World", 3, 6)  # Extract characters from 3 to 6
 
 gsub("is", "XX", "is this gratis?")  # Replace "is" with "XX"
@@ -164,7 +164,7 @@ c(FALSE, TRUE, TRUE)
 # Extract second and third elements
 vec_tor[c(FALSE, TRUE, TRUE)]
 letters[5:10]  # Vector of letters
-c('a', letters[5:10])  # Combine two vectors of letters
+c("a", letters[5:10])  # Combine two vectors of letters
 
 0:10  # Vector of integers from 0 to 10
 vector()  # Create empty vector
@@ -204,7 +204,7 @@ names(vec_tor) <- c("pie","eulery","gammy")  # Rename elements
 vec_tor
 unname(vec_tor)  # Remove names attribute
 letters[5:10]  # Vector of letters
-c('a', letters[5:10])  # Combine two vectors of letters
+c("a", letters[5:10])  # Combine two vectors of letters
 # Create named vector
 structure(sample(1:5), names=paste0("el", 1:5))
 
@@ -238,7 +238,7 @@ vec_tor[vec_tor > 0.5]  # Filter elements > 0.5
 which(vec_tor > 0.5)  # Index of elements > 0.5
 
 # Create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fac_tor <- factor(c("b", "c", "d", "a", "c", "b"))
 fac_tor
 fac_tor[3]
 attributes(fac_tor)  # Get factor attributes
@@ -257,7 +257,7 @@ table(fac_tor)
 # Get contingency table using sapply
 sapply(levels(fac_tor),
  function(le_vel) {
-   sum(fac_tor==le_vel)
+   sum(le_vel == fac_tor)
  })  # end sapply
 
 library(microbenchmark)
@@ -307,26 +307,27 @@ summary(microbenchmark(
     cut(x=vec_tor, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-# Calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
+# Calculate VTI percentage returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Plot histogram
+x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-histo_gram <- hist(dax_rets, breaks=30,
+histo_gram <- hist(re_turns, breaks=100,
   main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
   xlab="", ylab="", freq=FALSE)
 
 # Draw kernel density of histogram
-lines(density(dax_rets), col='red', lwd=2)
+lines(density(re_turns), col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(dax_rets),
-  sd=sd(dax_rets)), add=TRUE, type="l",
+curve(expr=dnorm(x, mean=mean(re_turns),
+  sd=sd(re_turns)), add=TRUE, type="l",
   lwd=2, col="blue")
-title(main="DAX return distribution", line=0)
+title(main="VTI Return Distribution", line=0)
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c(colnames(EuStockMarkets)[1], "Normal"),
+  leg=c("VTI", "Normal"), bty="n",
   lwd=6, bg="white", col=c("red", "blue"))
-# total area under histogram
+# Total area under histogram
 diff(histo_gram$breaks) %*% histo_gram$density
 
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
@@ -352,7 +353,7 @@ class(mat_rix)  # Get class attribute
 rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
 colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
 mat_rix
-mat_rix["row2", "col3"]  # third element from second row
+mat_rix["row2", "col3"]  # Third element from second row
 names(mat_rix)  # Get the names attribute
 dimnames(mat_rix)  # Get dimnames attribute
 attributes(mat_rix)  # Get matrix attributes
@@ -369,14 +370,14 @@ class(mat_rix[1, , drop=FALSE])
 is.matrix(mat_rix[1, , drop=FALSE]); is.vector(mat_rix[1, , drop=FALSE])
 
 # Create a list with two elements
-lis_t <- list(c('a', 'b'), 1:4)
+lis_t <- list(c("a", "b"), 1:4)
 lis_t
 c(typeof(lis_t), mode(lis_t), class(lis_t))
 # Lists are also vectors
 c(is.vector(lis_t), is.list(lis_t))
 NROW(lis_t)
 # Create named list
-lis_t <- list(first=c('a', 'b'), second=1:4)
+lis_t <- list(first=c("a", "b"), second=1:4)
 lis_t
 names(lis_t)
 unlist(lis_t)
@@ -384,11 +385,11 @@ unlist(lis_t)
 lis_t[2]  # Extract second element as sublist
 lis_t[[2]]  # Extract second element
 lis_t[[2]][3]  # Extract third element of second element
-lis_t[[c(2, 3)]]  # third element of second element
+lis_t[[c(2, 3)]]  # Third element of second element
 lis_t$second  # Extract second element
 lis_t$s  # Extract second element - partial name matching
-lis_t$second[3]  # third element of second element
-lis_t <- list()  # empty list
+lis_t$second[3]  # Third element of second element
+lis_t <- list()  # Empty list
 lis_t$a <- 1
 lis_t[2] <- 2
 lis_t
@@ -398,8 +399,8 @@ as.list(c(1,2,3))
 list(c(1,2,3))
 
 data_frame <- data.frame(  # Create a data frame
-                type=c('rose', 'daisy', 'tulip'),
-                color=c('red', 'white', 'yellow'),
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
                 price=c(1.5, 0.5, 1.0)
               )  # end data.frame
 data_frame
@@ -418,31 +419,30 @@ data_frame[[3]]  # Extract third column as vector
 data_frame[3]  # Extract third column as data frame
 data_frame[, 3, drop=FALSE]  # Extract third column as data frame
 data_frame[[3]][2]  # Second element from third column
-data_frame$price[2]  # Second element from 'price' column
+data_frame$price[2]  # Second element from "price" column
 is.data.frame(data_frame[[3]]); is.vector(data_frame[[3]])
 data_frame[2, ]  # Extract second row
-data_frame[2, ][3]  # third element from second column
-data_frame[2, 3]  # third element from second column
+data_frame[2, ][3]  # Third element from second column
+data_frame[2, 3]  # Third element from second column
 unlist(data_frame[2, ])  # Coerce to vector
 is.data.frame(data_frame[2, ]); is.vector(data_frame[2, ])
 
 data_frame <- data.frame(  # Create a data frame
-                type=c('rose', 'daisy', 'tulip'),
-                color=c('red', 'white', 'yellow'),
+                type=c("rose", "daisy", "tulip"),
+                color=c("red", "white", "yellow"),
                 price=c(1.5, 0.5, 1.0),
-                row.names=c('flower1', 'flower2', 'flower3'),
-                stringsAsFactors=FALSE
+                row.names=c("flower1", "flower2", "flower3")
               )  # end data.frame
 data_frame
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
 # Set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
 options("stringsAsFactors")
 default.stringsAsFactors()
+options(stringsAsFactors=FALSE)
 
 str(data_frame)  # Display the object structure
-dim(cars)  # the cars data frame has 50 rows
+dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
 
@@ -472,8 +472,8 @@ data_frame[order(data_frame$price), ]
 # Sort data_frame on color
 data_frame[order(data_frame$color), ]
 # Read the Examples for sort()
-order(c(2, 1:4))  # there's a tie
-order(c(2, 1:4), 1:5)  # there's a tie
+order(c(2, 1:4))  # There's a tie
+order(c(2, 1:4), 1:5)  # There's a tie
 
 as.matrix(data_frame)
 vec_tor <- sample(9)
@@ -545,8 +545,8 @@ rm(list=ls())
 as.numeric(c(1:3, "a"))  # NA from coercion
 0/0  # NaN from ambiguous math
 1/0  # Inf from divide by zero
-is.na(c(NA, NaN, 0/0, 1/0))  # test for NA
-is.nan(c(NA, NaN, 0/0, 1/0))  # test for NaN
+is.na(c(NA, NaN, 0/0, 1/0))  # Test for NA
+is.nan(c(NA, NaN, 0/0, 1/0))  # Test for NaN
 NA*1:4  # Create vector of Nas
 # Create vector with some NA values
 da_ta <- c(1, 2, NA, 4, NA, 5)

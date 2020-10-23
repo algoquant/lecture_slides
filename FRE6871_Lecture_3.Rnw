@@ -4,8 +4,8 @@
 % Set global chunk options
 <<knitr_setup,include=FALSE,cache=FALSE>>=
 library(knitr)
-opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='scriptsize', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
+opts_chunk$set(prompt=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(width=80, dev='pdf')
 options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
@@ -78,1474 +78,6 @@ knit_theme$set(thm)
 
 %%%%%%%%%%%%%%%
 \maketitle
-
-
-%%%%%%%%%%%%%%%
-\section{Optimizing \texttt{R} Code for Speed and Memory Usage}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Benchmarking the Speed of \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{system.time()} calculates the execution time (in seconds) used to evaluate a given expression.
-      \vskip1ex
-      \texttt{system.time()} returns the \emph{"user time"} (execution time of user instructions), the \emph{"system time"} (execution time of operating system calls), and \emph{"elapsed time"} (total execution time, including system latency waiting).
-      \vskip1ex
-      The function \texttt{microbenchmark()} from package \texttt{microbenchmark} calculates and compares the execution time of \texttt{R} expressions (in milliseconds), and is more accurate than \texttt{system.time()}.
-      \vskip1ex
-      The time it takes to execute an expression is not always the same, since it depends on the state of the processor, caching, etc.
-      \vskip1ex
-      \texttt{microbenchmark()} executes the expression many times, and returns the distribution of total execution times.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-va_r <- runif(1e6)
-system.time(va_r^0.5)
-microbenchmark(sqrt(va_r), va_r^0.5, times=10)
-      @
-      The "\texttt{times}" parameter is the number of times the expression is evaluated.
-      \vskip1ex
-      The choice of the "\texttt{times}" parameter is a tradeoff between the time it takes to run \texttt{microbenchmark()}, and the desired accuracy,
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{It's \protect\emph{Always} Important to Write Fast \texttt{R} Code}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      How to write fast \texttt{R} code:
-      \begin{itemize}
-        \item Avoid using \texttt{apply()} and \texttt{for()} loops for large datasets.
-        \item Use \texttt{R} functions which are \emph{compiled} \texttt{C++} code, instead of using interpreted \texttt{R} code.
-        \item Avoid using too many \texttt{R} function calls (every command in \texttt{R} is a function).
-        \item Pre-allocate memory for new objects, instead of appending to them ("growing" them).
-        \item Write \texttt{C++} functions in \emph{Rcpp} and \emph{RcppArmadillo}.
-        \item Use \emph{function methods} directly instead of using \emph{generic functions}.
-        \item Create specialized functions by extracting only the essential \texttt{R} code from \emph{function methods}.
-        \item \emph{Byte-compile} \texttt{R} functions using the \emph{byte compiler} in package \emph{compiler}.
-      \end{itemize}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{image/Jeremy_Clarkson_Linus_Torvalds.jpg}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate cumulative sum of a vector
-vec_tor <- runif(1e5)
-# Use compiled function
-cum_sum <- cumsum(vec_tor)
-# Use for loop
-cum_sum2 <- vec_tor
-for (i in 2:NROW(vec_tor))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
-# Compare the two methods
-all.equal(cum_sum, cum_sum2)
-# Microbenchmark the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  cumsum=cumsum(vec_tor),
-  loop=for (i in 2:NROW(vec_tor))
-    vec_tor[i] <- (vec_tor[i] + vec_tor[i-1]),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Using \protect\emph{Compiled} \texttt{C++} Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \emph{Compiled} \texttt{C++} functions directly call compiled \texttt{C++} or \texttt{Fortran} code, which performs the calculations and returns the result back to \texttt{R}.
-      \vskip1ex
-      This makes \emph{compiled} \texttt{C++} functions much faster than \emph{interpreted} functions, which have to be parsed by \texttt{R}.
-      \vskip1ex
-      \texttt{sum()} is much faster than \texttt{mean()}, because \texttt{sum()} is a \emph{compiled} function, while \texttt{mean()} is an \emph{interpreted} function.
-      \vskip1ex
-      Given a single argument, \texttt{any()} is equivalent to \texttt{\%in\%}, but is much faster because it's a \emph{compiled} function.
-      \vskip1ex
-      \texttt{\%in\%} is a wrapper for \texttt{match()} defined as follows:\\
-      \texttt{"\%in\%" <- function(x, table) match(x, table, nomatch=0) > 0}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-# sum() is a compiled primitive function
-sum
-# mean() is a generic function
-mean
-va_r <- runif(1e6)
-# sum() is much faster than mean()
-summary(
-  microbenchmark(sum(va_r), mean(va_r), times=10)
-  )[, c(1, 4, 5)]
-# any() is a compiled primitive function
-any
-# any() is much faster than %in% wrapper for match()
-summary(
-  microbenchmark(any(va_r == 1), {1 %in% va_r}, times=10)
-  )[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Writing Fast \texttt{R} Code Without Method Dispatch}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      As a general rule, calling generic functions is slower than directly calling individual methods, because generic functions must execute extra \texttt{R} code for method dispatch.
-      \vskip1ex
-      The generic function \texttt{as.data.frame()} coerces matrices and other objects into data frames.
-      \vskip1ex
-      The method \texttt{as.data.frame.matrix()} coerces only matrices into data frames.
-      \vskip1ex
-      \texttt{as.data.frame.matrix()} is about \texttt{50\%} faster than \texttt{as.data.frame()}, because it skips extra \texttt{R} code in \texttt{as.data.frame()} needed for argument validation, error checking, and method dispatch.
-      \vskip1ex
-      Users can create even faster functions of their own by extracting only the essential \texttt{R} code into their own specialized functions, ignoring \texttt{R} code needed to handle different types of data.
-      \vskip1ex
-      Such specialized functions are faster but less flexible, so they may fail with different types of data.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(microbenchmark)
-mat_rix <- matrix(1:9, ncol=3, # Create matrix
-  dimnames=list(paste0("row", 1:3),
-                paste0("col", 1:3)))
-# Create specialized function
-matrix_to_dframe <- function(mat_rix) {
-  n_cols <- ncol(mat_rix)
-  dframe <- vector("list", n_cols)  # empty vector
-  for (in_dex in 1:n_cols)  # Populate vector
-    dframe <- mat_rix[, in_dex]
-  attr(dframe, "row.names") <-  # Add attributes
-    .set_row_names(NROW(mat_rix))
-  attr(dframe, "class") <- "data.frame"
-  dframe  # Return data frame
-}  # end matrix_to_dframe
-# Compare speed of three methods
-summary(microbenchmark(
-  matrix_to_dframe(mat_rix),
-  as.data.frame.matrix(mat_rix),
-  as.data.frame(mat_rix),
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Using \texttt{apply()} Instead of \texttt{for()} and \texttt{while()} Loops}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.4\textwidth}
-      All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest.
-      \vskip1ex
-      More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so is therefore preferred obver \texttt{for()} loops.
-      \vskip1ex
-      Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions.
-    \column{0.6\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Matrix with 5,000 rows
-mat_rix <- matrix(rnorm(10000), ncol=2)
-# Allocate memory for row sums
-row_sums <- numeric(NROW(mat_rix))
-summary(microbenchmark(
-  row_sums=rowSums(mat_rix),  # end row_sums
-  ap_ply=apply(mat_rix, 1, sum),  # end apply
-  l_apply=lapply(1:NROW(mat_rix), function(in_dex)
-    sum(mat_rix[in_dex, ])),  # end lapply
-  v_apply=vapply(1:NROW(mat_rix), function(in_dex)
-    sum(mat_rix[in_dex, ]),
-    FUN.VALUE=c(sum=0)),  # end vapply
-  s_apply=sapply(1:NROW(mat_rix), function(in_dex)
-    sum(mat_rix[in_dex, ])),  # end sapply
-  for_loop=for (i in 1:NROW(mat_rix)) {
-    row_sums[i] <- sum(mat_rix[i,])
-  },  # end for
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Increasing Speed of Loops by Pre-allocating Memory}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \texttt{R} performs automatic memory management as users assign values to objects.
-      \vskip1ex
-      \texttt{R} doesn't require allocating the full memory for vectors or lists, and allows appending new data to existing objects ("growing" them).
-      \vskip1ex
-      For example, \texttt{R} allows assigning a value to a vector element that doesn't exist yet.
-      \vskip1ex
-      This forces \texttt{R} to allocate additional memory for that element, which carries a small speed penalty.
-      \vskip1ex
-      But when data is appended to an object using the functions \texttt{c()}, \texttt{append()}, \texttt{cbind()}, or \texttt{rbind()}, then \texttt{R} allocates memory for the whole new object and copies all the existing values, which is very memory intensive and slow.
-      \vskip1ex
-      It is therefore preferable to pre-allocate memory for large objects before performing loops.
-      \vskip1ex
-      The function \texttt{numeric(k)} returns a numeric vector of zeros of length \texttt{k}, while \texttt{numeric(0)} returns an empty (zero length) numeric vector (not to be confused with a \texttt{NULL} object).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
-summary(microbenchmark(
-# Allocate full memory for cumulative sum
-  for_loop={cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# Allocate zero memory for cumulative sum
-  grow_vec={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-# Add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
-    }},  # end for
-# Allocate zero memory for cumulative sum
-  com_bine={cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-# Add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
-    }},  # end for
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{Byte Compilation} of \texttt{R} Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{byte code compiler} translates \texttt{R} expressions into a simpler set of commands called \emph{bytecode}, which can be interpreted much faster by a \emph{byte code interpreter}.
-      \vskip1ex
-      \emph{Byte-compilation} eliminates many routine interpreter operations, and typically speeds up processing by about $2$ to \texttt{5} times.
-      \vskip1ex
-      The package \texttt{compiler} (included in \texttt{R}) contains functions for \emph{byte-compilation}.
-      \vskip1ex
-      The function \texttt{compiler::cmpfun()} performs \emph{byte-compilation} of a function.
-      \vskip1ex
-      When a function is passed into some functionals (like \texttt{microbenchmark()}) it is automatically \emph{byte-compiled} \emph{just-in-time} (JIT), so that when it's run the second time it runs faster.
-      \vskip1ex
-      The function \texttt{compiler::enableJIT()} enables or disables automatic \emph{JIT byte-compilation}.
-      \vskip1ex
-      \emph{JIT} is disabled if the \texttt{level} argument is equal to $0$, with greater \texttt{level} values forcing more extensive compilation.
-      \vskip1ex
-      The default \emph{JIT} \texttt{level} is $3$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-        <<echo=TRUE,eval=FALSE>>=
-# Disable JIT
-jit_level <- compiler::enableJIT(0)
-# Create inefficient function
-my_mean <- function(x) {
-  out_put <- 0; n_elem <- NROW(x)
-  for(it in 1:n_elem)
-    out_put <- out_put + x[it]/n_elem
-  out_put
-}  # end my_mean
-# Byte-compile function and inspect it
-mymean_comp <- compiler::cmpfun(my_mean)
-mymean_comp
-# Test function
-vec_tor <- runif(1e3)
-all.equal(mean(vec_tor), mymean_comp(vec_tor), my_mean(vec_tor))
-# microbenchmark byte-compile function
-summary(microbenchmark(
-  mean(vec_tor),
-  mymean_comp(vec_tor),
-  my_mean(vec_tor),
-  times=10))[, c(1, 4, 5)]
-# Create another inefficient function
-sapply2 <- function(x, FUN, ...) {
-  out_put <- vector(length=NROW(x))
-  for (it in seq_along(x))
-    out_put[it] <- FUN(x[it], ...)
-  out_put
-}  # end sapply2
-sapply2_comp <- compiler::cmpfun(sapply2)
-all.equal(sqrt(vec_tor),
-          sapply2(vec_tor, sqrt),
-          sapply2_comp(vec_tor, sqrt))
-summary(microbenchmark(
-  sqrt(vec_tor),
-  sapply2_comp(vec_tor, sqrt),
-  sapply2(vec_tor, sqrt),
-  times=10))[, c(1, 4, 5)]
-# enable JIT
-compiler::enableJIT(jit_level)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Parallel Computing}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing in \texttt{R}}
-\begin{frame}[t]{\subsecname}
-\vspace{-1em}
-
-\begin{block}{Parallel Computing in \texttt{R}}
-      Parallel computing means splitting a computing task into separate sub-tasks, and then simultaneously computing the sub-tasks on several computers or CPU cores.
-      \vskip1ex
-      There are many different packages that allow parallel computing in \texttt{R}, most importantly package \emph{parallel}, and packages \texttt{foreach}, \texttt{doParallel}, and related packages:\\
-      \hskip1em\url{http://cran.r-project.org/web/views/HighPerformanceComputing.html}\\
-      \hskip1em\url{http://blog.revolutionanalytics.com/high-performance-computing/}\\
-      \hskip1em\url{http://gforge.se/2015/02/how-to-go-parallel-in-r-basics-tips/}\\
-\end{block}
-
-\begin{block}{\texttt{R} Base Package \emph{parallel}}
-  The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs,
-  \vskip1ex
-  The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.\\
-  \hskip1em\url{http://adv-r.had.co.nz/Profiling.html\#parallelise}\\
-  \hskip1em\url{https://github.com/tobigithub/R-parallel/wiki/R-parallel-package-overview}\\
-\end{block}
-
-\begin{block}{Packages \texttt{foreach}, \texttt{doParallel}, and Related Packages}
-      \hskip1em\url{http://blog.revolutionanalytics.com/2015/10/updates-to-the-foreach-package-and-its-friends.html}\\
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing Using Package \protect\emph{parallel}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{parallel} provides functions for parallel computing using multiple cores of CPUs.
-      \vskip1ex
-      The package \emph{parallel} is part of the standard \texttt{R} distribution, so it doesn't need to be installed.
-      \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Get short description
-packageDescription("parallel")
-# Load help page
-help(package="parallel")
-# list all objects in "parallel"
-ls("package:parallel")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Performing Parallel Loops Using Package \protect\emph{parallel}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Some computing tasks naturally lend themselves to parallel computing, like for example performing loops.
-      \vskip1ex
-      Different functions from package \emph{parallel} need to be called depending on the operating system (\emph{Windows}, \emph{Mac-OSX}, or \emph{Linux}).
-      \vskip1ex
-      The function \texttt{mclapply()} performs apply loops (similar to \texttt{lapply()}) using parallel computing on several CPU cores under \emph{Mac-OSX} or \emph{Linux}.
-      \vskip1ex
-      Under \emph{Windows}, a cluster of \texttt{R} processes (one per each CPU core) need to be started first, by calling the function \texttt{makeCluster()}.
-      \vskip1ex
-      \emph{Mac-OSX} and \emph{Linux} don't require calling the function \texttt{makeCluster()}.
-      \vskip1ex
-      The function \texttt{parLapply()} is similar to \texttt{lapply()}, and performs apply loops under \emph{Windows}, using parallel computing on several CPU cores.
-      \vskip1ex
-      The function \texttt{stopCluster()} stops the \texttt{R} processes running on several CPU cores.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate number of available cores
-n_cores <- detectCores() - 1
-# Define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# Perform parallel loop under Mac-OSX or Linux
-paw_s <- mclapply(1:10, paws, mc.cores=n_cores,
-                sleep_time=0.01)
-# Initialize compute cluster under Windows
-clus_ter <- makeCluster(n_cores)
-# Perform parallel loop under Windows
-paw_s <- parLapply(clus_ter, 1:10, paws,
-                 sleep_time=0.01)
-library(microbenchmark)  # Load package microbenchmark
-# Compare speed of lapply versus parallel computing
-summary(microbenchmark(
-  l_apply=lapply(1:10, paws, sleep_time=0.01),
-  parl_apply=
-    parLapply(clus_ter, 1:10, paws, sleep_time=0.01),
-  times=10)
-)[, c(1, 4, 5)]
-# Stop R processes over cluster under Windows
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Computing Overhead of Parallel Computing}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Parallel computing requires additional resources and time for distributing the computing tasks and collecting the output, which produces a computing overhead.
-      \vskip1ex
-      Therefore parallel computing can actually be slower for small computations, or for computations that can't be naturally separated into sub-tasks.
-      <<echo=(-(1:10)),eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate number of available cores
-n_cores <- detectCores() - 1
-# Initialize compute cluster under Windows
-clus_ter <- makeCluster(n_cores)
-# Define function that pauses execution
-paws <- function(x, sleep_time) {
-  Sys.sleep(sleep_time)
-  x
-}  # end paws
-# Compare speed of lapply with parallel computing
-iter_ations <- 3:10
-compute_times <- sapply(iter_ations,
-  function(max_iterations, sleep_time) {
-    out_put <- summary(microbenchmark(
-      lapply=lapply(1:max_iterations, paws,
-                    sleep_time=sleep_time),
-      parallel=parLapply(clus_ter, 1:max_iterations,
-              paws, sleep_time=sleep_time),
-      times=10))[, c(1, 4)]
-    structure(out_put[, 2],
-              names=as.vector(out_put[, 1]))
-    }, sleep_time=0.01)
-compute_times <- t(compute_times)
-rownames(compute_times) <- iter_ations
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/parallel_plot.png}\\
-      \vspace{-1em}
-      <<parallel_plot,echo=(-(1:1)),eval=FALSE>>=
-library(parallel)  # Load package parallel
-plot(x=rownames(compute_times),
-     y=compute_times[, "lapply"],
-     type="l", lwd=2, col="blue",
-     main="Compute times",
-     xlab="number of iterations in loop", ylab="",
-     ylim=c(0, max(compute_times[, "lapply"])))
-lines(x=rownames(compute_times),
-      y=compute_times[, "parallel"], lwd=2, col="green")
-legend(x="topleft", legend=colnames(compute_times),
-       inset=0.1, cex=1.0, bg="white",
-       lwd=2, lty=1, col=c("blue", "green"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Parallel Computing Over Matrices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Very often we need to perform time consuming calculations over columns of matrices.
-      \vskip1ex
-      The function \texttt{parCapply()} performs an apply loop over columns of matrices using parallel computing on several CPU cores.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate number of available cores
-n_cores <- detectCores() - 1
-# Initialize compute cluster under Windows
-clus_ter <- makeCluster(n_cores)
-# Define large matrix
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
-# Define aggregation function over column of matrix
-agg_regate <- function(col_umn) {
-  out_put <- 0
-  for (in_dex in 1:NROW(col_umn))
-    out_put <- out_put + col_umn[in_dex]
-  out_put
-}  # end agg_regate
-# Perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ter, mat_rix, agg_regate)
-# Compare speed of apply with parallel computing
-summary(microbenchmark(
-  ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ter, mat_rix, agg_regate),
-  times=10)
-)[, c(1, 4, 5)]
-# Stop R processes over cluster under Windows
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Initializing Parallel Clusters Under \protect\emph{Windows}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under \emph{Windows} the child processes in the parallel compute cluster don't inherit data and objects from their parent process.
-      \vskip1ex
-      Therefore the required data must be either passed into \texttt{parLapply()} via the dots \texttt{"..."} argument, or by calling the function \texttt{clusterExport()}.
-      \vskip1ex
-      Objects from packages must be either referenced using the double-colon operator \texttt{"::"}, or the packages must be loaded in the child processes.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=(-(1:5)),eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate number of available cores
-n_cores <- detectCores() - 1
-# Initialize compute cluster under Windows
-clus_ter <- makeCluster(n_cores)
-ba_se <- 2
-# Fails because child processes don't know ba_se:
-parLapply(clus_ter, 2:4,
-          function(exponent) ba_se^exponent)
-# ba_se passed to child via dots ... argument:
-parLapply(clus_ter, 2:4,
-          function(exponent, ba_se) ba_se^exponent,
-          ba_se=ba_se)
-# ba_se passed to child via clusterExport:
-clusterExport(clus_ter, "ba_se")
-parLapply(clus_ter, 2:4,
-          function(exponent) ba_se^exponent)
-# Fails because child processes don't know zoo::index():
-parSapply(clus_ter, c("VTI", "IEF", "DBC"),
-          function(sym_bol)
-            NROW(index(get(sym_bol, envir=rutils::etf_env))))
-# zoo function referenced using "::" in child process:
-parSapply(clus_ter, c("VTI", "IEF", "DBC"),
-          function(sym_bol)
-            NROW(zoo::index(get(sym_bol, envir=rutils::etf_env))))
-# Package zoo loaded in child process:
-parSapply(clus_ter, c("VTI", "IEF", "DBC"),
-          function(sym_bol) {
-            stopifnot("package:zoo" %in% search() || require("zoo", quietly=TRUE))
-            NROW(index(get(sym_bol, envir=rutils::etf_env)))
-          })  # end parSapply
-# Stop R processes over cluster under Windows
-stopCluster(clus_ter)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Reproducible Parallel Simulations Under \protect\emph{Windows}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Simulations use pseudo-random number generators, and in order to perform reproducible results, they must set the \emph{seed} value, so that the number generators produce the same sequence of pseudo-random numbers.
-      \vskip1ex
-      The function \texttt{set.seed()} initializes the random number generator by specifying the \emph{seed} value, so that the number generator produces the same sequence of numbers for a given \emph{seed} value.
-      \vskip1ex
-      But under \emph{Windows} \texttt{set.seed()} doesn't initialize the random number generators of child processes, and they don't produce the same sequence of numbers.
-      \vskip1ex
-      The function \texttt{clusterSetRNGStream()} initializes the random number generators of child processes under \emph{Windows}.
-      \vskip1ex
-      The function \texttt{set.seed()} does initialize the random number generators of child processes under \emph{Mac-OSX} and \emph{Linux}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-library(parallel)  # Load package parallel
-# Calculate number of available cores
-n_cores <- detectCores() - 1
-# Initialize compute cluster under Windows
-clus_ter <- makeCluster(n_cores)
-# Set seed for cluster under Windows
-# Doesn't work: set.seed(1121)
-clusterSetRNGStream(clus_ter, 1121)
-# Perform parallel loop under Windows
-out_put <- parLapply(clus_ter, 1:70, rnorm, n=100)
-sum(unlist(out_put))
-# Stop R processes over cluster under Windows
-stopCluster(clus_ter)
-# Perform parallel loop under Mac-OSX or Linux
-out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Credit Portfolio Models}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Single-period Defaults}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Consider a portfolio of credit assets (bonds or loans) over a single period of time.
-      \vskip1ex
-      At the end of the period, some of the assets default, while the rest don't.
-      \vskip1ex
-      The default probabilities are equal to $p_i$.
-      \vskip1ex
-      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$.
-      \vskip1ex
-      Default occurs if $u_i$ is less than the default probability $p_i$:
-      \begin{displaymath}
-        u_i < p_i
-      \end{displaymath}
-      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
-      \vskip1ex
-      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{for()} loops.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate random default probabilities
-n_assets <- 100
-def_probs <- runif(n_assets, max=0.2)
-mean(def_probs)
-# Calculate number of defaults
-uni_form <- runif(n_assets)
-sum(uni_form < def_probs)
-# Simulate average number of defaults
-n_simu <- 1000
-de_faults <- numeric(n_simu)
-# Simulate using for() loop (inefficient way)
-for (i in 1:n_simu) {  # Perform loop
-  uni_form <- runif(n_assets)
-  de_faults[i] <- sum(uni_form < def_probs)
-}  # end for
-# Calculate average number of defaults
-mean(de_faults)
-# Simulate using vectorized functions  (efficient way)
-uni_form <- matrix(runif(n_simu*n_assets),
-                   ncol=n_simu)
-sum(uni_form < def_probs)/n_simu
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Asset Values and Default Thresholds}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables.
-      \vskip1ex
-      These asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, but may be thought of as related to the balance of company assets minus its liabilities.
-      \vskip1ex
-      Default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
-      \begin{displaymath}
-        a_i < t_i
-      \end{displaymath}
-      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative standard normal distribution.
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_def_threshold.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot Standard Normal distribution
-curve(expr=dnorm(x),
-      type="l", xlim=c(-4, 4),
-      xlab="asset value", ylab="", lwd=2,
-      col="blue", main="Distribution of Asset Values")
-abline(v=qnorm(0.025), col="red", lwd=2)
-text(x=qnorm(0.025)-0.1, y=0.15,
-       labels="default threshold",
-       lwd=2, srt=90, pos=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vasicek Model of Correlated Asset Values}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$:
-      \begin{displaymath}
-        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
-      \end{displaymath}
-      Where $\rho$ is the correlation between asset values.
-      \vskip1ex
-      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $\phi(0, 1)$.
-      \vskip1ex
-      The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor.
-      \vskip1ex
-      The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for credit risk:\\
-\hskip1em\url{http://bis2information.org/content/Vasicek_model}\\
-\hskip1em\url{https://www.bis.org/bcbs/basel3.htm}\\
-\hskip1em\url{https://www.bis.org/bcbs/irbriskweight.pdf}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define correlation parameters
-rh_o <- 0.2
-rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
-n_assets <- 5 ; n_simu <- 10000
-# Calculate vector of systematic factors
-system_atic <- rnorm(n_simu)
-# Simulate asset values using vectorized functions (efficient way)
-asset_s <- rho_sqrt*system_atic +
-  rho_sqrtm*rnorm(n_simu*n_assets)
-dim(asset_s) <- c(n_simu, n_assets)
-# Calculate correlations between asset values
-cor(asset_s)
-# Simulate asset values using for() loop (inefficient way)
-# allocate matrix of assets
-asset_s <- matrix(nr=n_simu, nc=n_assets)
-# Simulate asset values using for() loop
-for (i in 1:n_simu) {  # Perform loop
-  asset_s[i, ] <-
-    rho_sqrt*system_atic[i] +
-    rho_sqrtm*rnorm(n_assets)
-}  # end for
-cor(asset_s)
-# benchmark the speed of the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  for_loop={for (i in 1:n_simu) {
-    rho_sqrt*system_atic[i] +
-    rho_sqrtm*rnorm(n_assets)}},
-  vector_ized={rho_sqrt*system_atic +
-              rho_sqrtm*rnorm(n_simu*n_assets)},
-  times=10))[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Vasicek Model of Correlated Defaults}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Under the \emph{Vasicek} model, default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
-      \begin{align*}
-        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i \\
-        a_i < t_i
-      \end{align*}
-      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession.
-      \vskip1ex
-      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults.
-      \vskip1ex
-      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults.
-      \vskip1ex
-      This way the \emph{Vasicek} model introduces a correlation among defaults.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate random default probabilities
-n_assets <- 5
-def_probs <- runif(n_assets, max=0.2)
-mean(def_probs)
-# Calculate default thresholds
-def_thresh <- qnorm(def_probs)
-# Calculate number of defaults using vectorized functions (efficient way)
-# Calculate vector of number of defaults
-de_faults <-
-  colSums(t(t(asset_s) < def_thresh))
-de_faults / n_simu
-def_probs
-# Calculate number of defaults using for() loop (inefficient way)
-# allocate matrix of de_faults
-de_faults <- matrix(nr=n_simu, nc=n_assets)
-# Simulate asset values using for() loop
-for (i in 1:n_simu) {  # Perform loop
-  de_faults[i, ] <-
-    (asset_s[i, ] < def_thresh)
-}  # end for
-colSums(de_faults) / n_simu
-def_probs
-# Calculate correlations between defaults
-cor(de_faults)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Asset Correlation and Default Correlation}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events.
-      \vskip1ex
-      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values}.
-      \vskip1ex
-      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well.
-      \vskip1ex
-      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk.
-      \vskip1ex
-      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions.
-      \vskip1ex
-      Default correlations are usually much lower than the corresponding asset correlations.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define default probabilities
-n_assets <- 2
-def_prob <- 0.2
-def_thresh <- qnorm(def_prob)
-# Define correlation parameters
-rh_o <- 0.2
-rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
-# Calculate vector of systematic factors
-n_simu <- 1000
-system_atic <- rnorm(n_simu)
-# Simulate asset values using vectorized functions
-asset_s <- rho_sqrt*system_atic +
-  rho_sqrtm*rnorm(n_simu*n_assets)
-dim(asset_s) <- c(n_simu, n_assets)
-# Calculate number of defaults using vectorized functions
-de_faults <- t(t(asset_s) < def_thresh)
-# Calculate correlations between defaults
-cor(de_faults)
-# Calculate average number of defaults and compare to def_prob
-colSums(de_faults) / n_simu
-def_prob
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Cumulative Defaults Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=\Phi^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
-      \begin{displaymath}
-        p(s) = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
-      \end{displaymath}
-      The cumulative probability $P(x)$ for the percentage \texttt{x} of portfolio defaults (the portfolio cumulative default distribution) is equal to:
-      \begin{displaymath}
-        P(x) = \Phi(\frac{{\sqrt{1-\rho}} \Phi^{-1}(x) - t}{\sqrt{\rho}})
-      \end{displaymath}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define cumulative default probability function
-def_cumdistr <- function(x, def_thresh=(-2), rh_o=0.2)
-  pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
-def_cumdistr(x=0.2, def_thresh=qnorm(def_prob), rh_o=rh_o)
-# Plot cumulative default probability function
-def_prob <- 0.4; def_thresh <- qnorm(def_prob)
-curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.05),
-      xlim=c(0, 0.999), lwd=3,
-      xlab="percent default", ylab="probability",
-      col="green", main="Cumulative Default Probabilities")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cum_def.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot default distribution with higher correlation
-curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.2),
-      xlim=c(0, 0.999), add=TRUE, lwd=3,
-      col="blue", main="")
-# Add legend
-legend(x="topleft",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
-# Add unconditional default probability
-abline(v=def_prob, col="red", lwd=3)
-text(x=def_prob, y=0.0,
-       labels="default probability",
-       lwd=2, srt=90, pos=4)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Defaults Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The probability density $f(x)$ of portfolio defaults is equal to the derivative of the cumulative default distribution:
-      \begin{multline*}
-        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(x) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(x)^2)}
-      \end{multline*}
-      <<echo=TRUE,eval=FALSE>>=
-# Define default probability density function
-def_distr <- function(x, def_thresh=(-2), rh_o=0.2)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
-  def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
-# Define parameters
-rh_o <- 0.2 ; rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
-def_prob <- 0.3; def_thresh <- qnorm(def_prob)
-def_distr(0.03, def_thresh=def_thresh, rh_o=rh_o)
-# Plot probability distribution of defaults
-curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
-      xlim=c(0, 1.0), lwd=3,
-      xlab="percentage of defaults", ylab="density",
-      col="green", main="Distribution of Defaults")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_def.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot default distribution with higher correlation
-curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.3),
-      xlab="default percentage", ylab="",
-      add=TRUE, lwd=3, col="blue", main="")
-# Add legend
-legend(x="topright",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
-# Add unconditional default probability
-abline(v=def_prob, col="red", lwd=3)
-text(x=def_prob, y=2,
-       labels="default probability",
-       lwd=2, srt=90, pos=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Defaults Under Extreme Correlations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the correlation $\rho$ is close to \emph{zero}, then the asset values $a_i$ are independent from each other, and defaults are also independent, so that the percentage of portfolio defaults is very close to the default probability $p$.
-      \vskip1ex
-      In that case, the probability density of portfolio defaults is very narrow and is centered on the default probability $p$.
-      \vskip1ex
-      If the correlation $\rho$ is close to \emph{one}, then the asset values $a_i$ are almost the same, and defaults occur at the same time, so that the percentage of portfolio defaults is either \emph{zero} or \emph{one}.
-      \vskip1ex
-      In that case, the probability density of portfolio defaults becomes \emph{bimodal}, with two peaks around  \emph{zero} and \emph{one}.
-      <<echo=TRUE,eval=FALSE>>=
-# Plot default distribution with low correlation
-curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.01),
-      xlab="default percentage", ylab="", lwd=2,
-      col="green", main="Distribution of Defaults")
-# Plot default distribution with high correlation
-curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
-      xlab="percentage of defaults", ylab="density",
-      add=TRUE, lwd=2, n=10001, col="blue", main="")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_high_corr.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add legend
-legend(x="top",
-       legend=c("high correlation", "low correlation"),
-       title=NULL, inset=0.1, cex=0.8, bg="white",
-       bty="n", lwd=6, lty=1, col=c("blue", "green"))
-# Add unconditional default probability
-abline(v=0.1, col="red", lwd=2)
-text(x=0.1, y=10, lwd=2, pos=4,
-       labels="default probability")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Numerical Integration of Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval.
-      \vskip1ex
-      Additional parameters can be passed to the integrated function through the dots \texttt{"..."} argument of the function \texttt{integrate()}.
-      \vskip1ex
-      The function \texttt{integrate()} accepts the integration limits \texttt{-Inf} and \texttt{Inf} equal to minus and plus infinity.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Get help for integrate()
-?integrate
-# Calculate slowly converging integral
-func_tion <- function(x) {1/((x+1)*sqrt(x))}
-integrate(func_tion, lower=0, upper=10)
-integrate(func_tion, lower=0, upper=Inf)
-# Integrate function with parameter lamb_da
-func_tion <- function(x, lamb_da=1) {
-  exp(-x*lamb_da)
-}  # end func_tion
-integrate(func_tion, lower=0, upper=Inf)
-integrate(func_tion, lower=0, upper=Inf,
-          lamb_da=2)
-# Cumulative probability over normal distribution
-pnorm(-2)
-integrate(dnorm, low=2, up=Inf)
-str(dnorm)
-pnorm(-1)
-integrate(dnorm, low=2, up=Inf, mean=1)
-# Expected value over normal distribution
-integrate(function(x) x*dnorm(x),
-          low=2, up=Inf)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Loss Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The expected loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity):
-      \begin{displaymath}
-        EL = \sum_{i=1}^{n} p_i LGD_i
-      \end{displaymath}
-      If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
-      \begin{multline*}
-        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(\frac{x}{LGD}))^2}
-      \end{multline*}
-      <<echo=TRUE,eval=FALSE>>=
-rh_o <- 0.1; l_gd <- 0.4
-# Define Vasicek loss distribution function
-loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
-  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
-integrate(loss_distr, low=0, up=l_gd,
-  def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_loss_distr.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot probability distribution of losses
-def_prob <- 0.05; def_thresh <- qnorm(def_prob)
-curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 0.06),
-      xlab="loss percentage", ylab="density", lwd=3,
-      col="orange", main="Distribution of Losses")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
-       lwd=2, srt=90, pos=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Portfolio Value at Risk}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$.
-      \vskip1ex
-      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution}.
-      <<echo=TRUE,eval=FALSE>>=
-# Add lines for unexpected loss
-abline(v=0.04, col="blue", lwd=3)
-arrows(x0=0.02, y0=35, x1=0.04, y1=35,
-       code=3, lwd=3, cex=0.5)
-text(x=0.03, y=36, labels="unexpected loss",
-     lwd=2, pos=3)
-# Add lines for VaR
-abline(v=0.055, col="red", lwd=3)
-arrows(x0=0.0, y0=25, x1=0.055, y1=25,
-       code=3, lwd=3, cex=0.5)
-text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
-text(x=0.055-0.001, y=10, labels="VaR",
-       lwd=2, srt=90, pos=3)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_var.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Conditional Value at Risk}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Conditional Value at Risk (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$:
-      \begin{displaymath}
-        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^{\alpha} {\mathrm{VaR}(p) \, \mathrm{d}p} = \frac{1}{\alpha} \int_{\mathrm{VaR}}^{LGD} {x \, f(x) \, \mathrm{d}x}
-      \end{displaymath}
-      The Conditional Value at Risk is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}).
-      <<echo=TRUE,eval=FALSE>>=
-va_r <- 0.04; var_max <- 4*l_gd*def_prob
-# Calculate CVaR
-c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
-  low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
-c_var <- c_var/integrate(loss_distr, low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
-# Plot probability distribution of losses
-curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
-      type="l", xlim=c(0, 0.06),
-      xlab="loss percentage", ylab="density", lwd=3,
-      col="orange", main="Conditional Value at Risk")
-# Add line for expected loss
-abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
-       lwd=2, srt=90, pos=3)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_cvar.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add lines for VaR
-abline(v=va_r, col="red", lwd=3)
-text(x=va_r-0.001, y=10, labels="VaR",
-       lwd=2, srt=90, pos=3)
-# Add shading for CVaR
-var_s <- seq(va_r, var_max, length=100)
-dens_ity <- sapply(var_s, loss_distr,
-  def_thresh=def_thresh, rh_o=rh_o)
-# Draw shaded polygon
-polygon(c(va_r, var_s, var_max), density=20,
-  c(-1, dens_ity, -1), col="red", border=NA)
-text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Value at Risk Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$.
-      \vskip1ex
-      The \emph{quantile} of the loss distribution (the \emph{VaR}), for a given a confidence level $\alpha$, is given by the inverse of the cumulative loss distribution:
-      \begin{displaymath}
-        VaR(\alpha) = LGD \cdot \Phi(\frac{{\sqrt{\rho}} \Phi^{-1}(\alpha) + t}{\sqrt{1-\rho}})
-      \end{displaymath}
-      <<echo=TRUE,eval=FALSE>>=
-# VaR (quantile of the loss distribution)
-var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
-  l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
-var_func(x=0.99, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
-# Plot VaR
-curve(expr=var_func(x, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
-      type="l", xlim=c(0, 0.999),
-      xlab="confidence level", ylab="VaR", lwd=3,
-      col="orange", main="VaR versus Confidence Level")
-# Add line for expected loss
-abline(h=l_gd*def_prob, col="red", lwd=3)
-text(x=0.2, y=l_gd*def_prob, labels="expected loss",
-     lwd=2, pos=3)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Value at Risk and Confidence Levels}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function.
-      <<echo=TRUE,eval=FALSE>>=
-# Integrate loss_distr() over full range
-integrate(loss_distr, low=0.0, up=l_gd,
-          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
-# Calculate expected losses using loss_distr()
-integrate(function(x, ...) x*loss_distr(x, ...),
-          low=0.0, up=l_gd,
-          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
-# Calculate confidence levels corresponding to VaR values
-var_s <- seq(0.07, 0.12, 0.001)
-level_s <- sapply(var_s, function(va_r, ...) {
-  integrate(loss_distr, low=va_r, up=l_gd, ...)
-}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
-level_s <- cbind(as.numeric(t(level_s)[, 1]), var_s)
-colnames(level_s) <- c("level_s", "VaRs")
-# Calculate 95% confidence level VaR value
-level_s[
-  match(TRUE, level_s[, "level_s"] < 0.05), "VaRs"]
-plot(x=1-level_s[, "level_s"],
-     y=level_s[, "VaRs"], lwd=2,
-     xlab="Confidence Levels", ylab="VaRs",
-     t="l", main="VaR Values and Confidence Levels")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_conf.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Conditional Value at Risk Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate CVaR values
-cvar_s <- sapply(var_s, function(va_r, ...) {
-  integrate(function(x, ...) x*loss_distr(x, ...),
-            low=va_r, up=l_gd, ...)
-}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
-level_s <- cbind(level_s, as.numeric(t(cvar_s)[, 1]))
-colnames(level_s)[3] <- "CVaRs"
-# Divide CVaR by confidence level
-level_s[, "CVaRs"] <-
-  level_s[, "CVaRs"]/level_s[, "level_s"]
-# Calculate 95% confidence level CVaR value
-level_s[match(TRUE,
-  level_s[, "level_s"] < 0.05), "CVaRs"]
-# Plot CVaRs
-plot(x=1-level_s[, "level_s"],
-     y=level_s[, "CVaRs"],
-     t="l", col="red", lwd=2,
-     ylim=range(level_s[, c("VaRs", "CVaRs")]),
-     xlab="Confidence Levels", ylab="CVaRs",
-     main="CVaR Values and Confidence Levels")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_levels.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add VaRs
-lines(x=1-level_s[, "level_s"],
-      y=level_s[, "VaRs"], lwd=2)
-# Add legend
-legend(x="topleft", legend=c("CVaRs", "VaRs"),
-       title="default probability = 5%
-correlation = 10%
-loss given default = 40%",
-       inset=0.1, cex=0.8, bg="white", bty="n",
-       lwd=6, lty=1, col=c("red", "black"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model.
-      \vskip1ex
-      In that case the portfolio losses and \emph{VaR} must be simulated.
-      <<echo=TRUE,eval=FALSE>>=
-# Define model parameters
-n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
-# Define correlation parameters
-rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
-# Calculate default probabilities and thresholds
-set.seed(1121)
-def_probs <- runif(n_assets, max=0.2)
-def_thresh <- qnorm(def_probs)
-# Calculate vector of systematic factors
-system_atic <- rnorm(n_simu)
-# Simulate losses under Vasicek model
-asset_s <-
-  matrix(rnorm(n_simu*n_assets), ncol=n_simu)
-asset_s <-
-  t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
-loss_es <-
-  l_gd*colSums(asset_s < def_thresh)/n_assets
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_simu.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate VaRs
-level_s <- seq(0.93, 0.99, 0.01)
-var_s <- quantile(loss_es, probs=level_s)
-plot(x=level_s, y=var_s, t="l", lwd=2,
-     xlab="Confidence Levels", ylab="VaRs",
-     main="Simulated VaR and Confidence Levels")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}.
-      \vskip1ex
-      The function \texttt{table()} calculates the frequency distribution of categorical data.
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate CVaRs
-cvar_s <- sapply(var_s, function(va_r) {
-  mean(loss_es[loss_es >=va_r])
-})  # end sapply
-cvar_s <- cbind(cvar_s, var_s)
-# Alternative CVaR calculation using frequency table
-# first calculate frequency table of loss_es
-# ta_ble <- table(loss_es)/n_simu
-# Calculate CVaRs from frequency table
-# Cvar_s <- sapply(var_s, function(va_r) {
-#   tai_l <- ta_ble[names(ta_ble) > va_r]
-#   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
-# })  # end sapply
-# Plot CVaRs
-plot(x=level_s, y=cvar_s[, "cvar_s"],
-     t="l", col="red", lwd=2,
-     ylim=range(cvar_s),
-     xlab="Confidence Levels", ylab="CVaRs",
-     main="Simulated CVaR and Confidence Levels")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add VaRs
-lines(x=level_s, y=cvar_s[, "var_s"], lwd=2)
-# Add legend
-legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
-       title=NULL, inset=0.05, cex=0.8, bg="white",
-       lwd=6, lty=1, col=c("red", "black"))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 
@@ -1788,9 +320,9 @@ inputPanel(
 )  # end inputPanel
       @
     \column{0.5\textwidth}
-      \vspace{-2em}
+      \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_shiny.pdf}
-      \vspace{-5em}
+      \vspace{-3em}
       <<echo=TRUE,eval=FALSE>>=
 renderPlot({
   # Calculate EWMA prices
@@ -1808,6 +340,900 @@ renderPlot({
          inset=0.1, bg="white", lty=1, lwd=2,
          col=plot_theme$col$line.col, bty="n")
 })  # end renderPlot
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Credit Portfolio Models}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Single-period Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Consider a portfolio of credit assets (bonds or loans) over a single period of time.
+      \vskip1ex
+      At the end of the period, some of the assets default, while the rest don't.
+      \vskip1ex
+      The default probabilities are equal to $p_i$.
+      \vskip1ex
+      Individual defaults can be simulated by comparing the probabilities $p_i$ with the uniform random numbers $u_i$.
+      \vskip1ex
+      Default occurs if $u_i$ is less than the default probability $p_i$:
+      \begin{displaymath}
+        u_i < p_i
+      \end{displaymath}
+      Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
+      \vskip1ex
+      Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{for()} loops.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random default probabilities
+n_assets <- 100
+def_probs <- runif(n_assets, max=0.2)
+mean(def_probs)
+# Calculate number of defaults
+uni_form <- runif(n_assets)
+sum(uni_form < def_probs)
+# Simulate average number of defaults
+n_simu <- 1000
+de_faults <- numeric(n_simu)
+# Simulate using for() loop (inefficient way)
+for (i in 1:n_simu) {  # Perform loop
+  uni_form <- runif(n_assets)
+  de_faults[i] <- sum(uni_form < def_probs)
+}  # end for
+# Calculate average number of defaults
+mean(de_faults)
+# Simulate using vectorized functions  (efficient way)
+uni_form <- matrix(runif(n_simu*n_assets), ncol=n_simu)
+sum(uni_form < def_probs)/n_simu
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Values and Default Thresholds}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Defaults can also be simulated using normally distributed variables $a_i$ called \emph{asset values}, instead of uniformly distributed variables.
+      \vskip1ex
+      These asset values are mathematical variables, which can have negative values, so they are not related to actual company asset values, but may be thought of as related to the balance of company assets minus its liabilities.
+      \vskip1ex
+      Default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{displaymath}
+        a_i < t_i
+      \end{displaymath}
+      The default threshold is equal to $t_i = \Phi^{-1}(p_i)$, where $p_i$ is the default probability, and $\Phi()$ is the cumulative standard normal distribution.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_def_threshold.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot Standard Normal distribution
+curve(expr=dnorm(x),
+      type="l", xlim=c(-4, 4),
+      xlab="asset value", ylab="", lwd=2,
+      col="blue", main="Distribution of Asset Values")
+abline(v=qnorm(0.025), col="red", lwd=2)
+text(x=qnorm(0.025)-0.1, y=0.15,
+       labels="default threshold",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Asset Values}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} single factor model, the asset value $a_i$ is equal to the sum of a \emph{systematic} factor $s$, plus an \emph{idiosyncratic} factor $z_i$:
+      \begin{displaymath}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i
+      \end{displaymath}
+      Where $\rho$ is the correlation between asset values.
+      \vskip1ex
+      The variables $s$, $z_i$, and $a_i$ all follow the Standard Normal distribution $\phi(0, 1)$.
+      \vskip1ex
+      The \emph{Vasicek} model resembles the \emph{CAPM} model, with the asset value (not the asset returns) equal to the sum of a \emph{systematic} factor plus an \emph{idiosyncratic} factor.
+      \vskip1ex
+      The Bank for International Settlements (BIS) uses the \emph{Vasicek} model as part of its regulatory capital requirements for credit risk:\\
+\hskip1em\url{http://bis2information.org/content/Vasicek_model}\\
+\hskip1em\url{https://www.bis.org/bcbs/basel3.htm}\\
+\hskip1em\url{https://www.bis.org/bcbs/irbriskweight.pdf}
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+n_assets <- 5 ; n_simu <- 10000
+# Calculate vector of systematic factors
+system_atic <- rnorm(n_simu)
+# Simulate asset values using vectorized functions (efficient way)
+asset_s <- rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_s) <- c(n_simu, n_assets)
+# Calculate correlations between asset values
+cor(asset_s)
+# Simulate asset values using for() loop (inefficient way)
+# allocate matrix of assets
+asset_s <- matrix(nr=n_simu, nc=n_assets)
+# Simulate asset values using for() loop
+for (i in 1:n_simu) {  # Perform loop
+  asset_s[i, ] <- rho_sqrt*system_atic[i] + rho_sqrtm*rnorm(n_assets)
+}  # end for
+cor(asset_s)
+# benchmark the speed of the two methods
+library(microbenchmark)
+summary(microbenchmark(
+  for_loop={for (i in 1:n_simu) {
+    rho_sqrt*system_atic[i] + rho_sqrtm*rnorm(n_assets)}},
+  vector_ized={rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)},
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Vasicek Model of Correlated Defaults}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Under the \emph{Vasicek} model, default occurs if the \emph{asset value} $a_i$ is less than the \emph{default threshold} $t_i$:
+      \begin{align*}
+        a_i = \sqrt{\rho} s + \sqrt{1-\rho} z_i \\
+        a_i < t_i
+      \end{align*}
+      The \emph{systematic} factor $s$ may be considered to represent the state of the macro economy, with positive values representing an economic expansion, and negative values representing an economic recession.
+      \vskip1ex
+      When the value of the \emph{systematic} factor $s$ is positive, then the asset values will all tend to be bigger as well, which will produce fewer defaults.
+      \vskip1ex
+      But when the \emph{systematic} factor is negative, then the asset values will tend to be smaller, which will produce more defaults.
+      \vskip1ex
+      This way the \emph{Vasicek} model introduces a correlation among defaults.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate random default probabilities
+n_assets <- 5
+def_probs <- runif(n_assets, max=0.2)
+mean(def_probs)
+# Calculate default thresholds
+def_thresh <- qnorm(def_probs)
+# Calculate number of defaults using vectorized functions (efficient way)
+# Calculate vector of number of defaults
+rowMeans(t(asset_s) < def_thresh)
+def_probs
+# Calculate number of defaults using for() loop (inefficient way)
+# allocate matrix of de_faults
+de_faults <- matrix(nr=n_simu, nc=n_assets)
+# Simulate asset values using for() loop
+for (i in 1:n_simu) {  # Perform loop
+  de_faults[i, ] <- (asset_s[i, ] < def_thresh)
+}  # end for
+colSums(de_faults) / n_simu
+def_probs
+# Calculate correlations between defaults
+cor(de_faults)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Asset Correlation and Default Correlation}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Default correlation is defined as the correlation between the \texttt{Boolean} vectors of default events.
+      \vskip1ex
+      The \emph{Vasicek} model introduces correlation among default events, through the correlation of \emph{asset values}.
+      \vskip1ex
+      If \emph{asset values} have a positive correlation, then the defaults among credits are clustered together, and if one credit defaults then the other credits are more likely to default as well.
+      \vskip1ex
+      Empirical studies have found that the asset correlation $\rho$ can vary between \texttt{5\%} to \texttt{20\%}, depending on the default risk.
+      \vskip1ex
+      Credits with higher default risk tend to also have higher asset correlation, since they are more  sensitive to the economic conditions.
+      \vskip1ex
+      Default correlations are usually much lower than the corresponding asset correlations.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define default probabilities
+n_assets <- 2
+def_prob <- 0.2
+def_thresh <- qnorm(def_prob)
+# Define correlation parameters
+rh_o <- 0.2
+rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+# Calculate vector of systematic factors
+n_simu <- 1000
+system_atic <- rnorm(n_simu)
+# Simulate asset values using vectorized functions
+asset_s <- rho_sqrt*system_atic + rho_sqrtm*rnorm(n_simu*n_assets)
+dim(asset_s) <- c(n_simu, n_assets)
+# Calculate number of defaults using vectorized functions
+de_faults <- t(t(asset_s) < def_thresh)
+# Calculate correlations between defaults
+cor(de_faults)
+# Calculate average number of defaults and compare to def_prob
+colSums(de_faults) / n_simu
+def_prob
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Cumulative Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If all the default probabilities are the same $p_i=p$, then the default threshold is equal to $t=\Phi^{-1}(p)$, and the conditional default probability $p(s)$, given the systematic factor $s$, is equal to:
+      \begin{displaymath}
+        p(s) = \Phi(\frac{t - \sqrt{\rho} s}{\sqrt{1-\rho}})
+      \end{displaymath}
+      The cumulative probability $P(x)$ for the percentage \texttt{x} of portfolio defaults (the portfolio cumulative default distribution) is equal to:
+      \begin{displaymath}
+        P(x) = \Phi(\frac{{\sqrt{1-\rho}} \Phi^{-1}(x) - t}{\sqrt{\rho}})
+      \end{displaymath}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define cumulative default probability function
+def_cumdistr <- function(x, def_thresh=(-2), rh_o=0.2)
+  pnorm((sqrt(1-rh_o)*qnorm(x) - def_thresh)/sqrt(rh_o))
+def_cumdistr(x=0.2, def_thresh=qnorm(def_prob), rh_o=rh_o)
+# Plot cumulative default probability function
+def_prob <- 0.4; def_thresh <- qnorm(def_prob)
+curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.05),
+      xlim=c(0, 0.999), lwd=3,
+      xlab="percent default", ylab="probability",
+      col="green", main="Cumulative Default Probabilities")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cum_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with higher correlation
+curve(expr=def_cumdistr(x, def_thresh=def_thresh, rh_o=0.2),
+      xlim=c(0, 0.999), add=TRUE, lwd=3,
+      col="blue", main="")
+# Add legend
+legend(x="topleft",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=def_prob, col="red", lwd=3)
+text(x=def_prob, y=0.0,
+       labels="default probability",
+       lwd=2, srt=90, pos=4)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The probability density $f(x)$ of portfolio defaults is equal to the derivative of the cumulative default distribution:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{\sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \, \Phi^{-1}(x) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(x)^2)}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+# Define default probability density function
+def_distr <- function(x, def_thresh=(-2), rh_o=0.2)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x) -
+  def_thresh)^2/(2*rh_o) + qnorm(x)^2/2)
+# Define parameters
+rh_o <- 0.2 ; rho_sqrt <- sqrt(rh_o) ; rho_sqrtm <- sqrt(1-rh_o)
+def_prob <- 0.3; def_thresh <- qnorm(def_prob)
+def_distr(0.03, def_thresh=def_thresh, rh_o=rh_o)
+# Plot probability distribution of defaults
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.1),
+      xlim=c(0, 1.0), lwd=3,
+      xlab="percentage of defaults", ylab="density",
+      col="green", main="Distribution of Defaults")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_def.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with higher correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.3),
+      xlab="default percentage", ylab="",
+      add=TRUE, lwd=3, col="blue", main="")
+# Add legend
+legend(x="topright",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=def_prob, col="red", lwd=3)
+text(x=def_prob, y=2,
+       labels="default probability",
+       lwd=2, srt=90, pos=2)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Defaults Under Extreme Correlations}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the correlation $\rho$ is close to \emph{zero}, then the asset values $a_i$ are independent from each other, and defaults are also independent, so that the percentage of portfolio defaults is very close to the default probability $p$.
+      \vskip1ex
+      In that case, the probability density of portfolio defaults is very narrow and is centered on the default probability $p$.
+      \vskip1ex
+      If the correlation $\rho$ is close to \emph{one}, then the asset values $a_i$ are almost the same, and defaults occur at the same time, so that the percentage of portfolio defaults is either \emph{zero} or \emph{one}.
+      \vskip1ex
+      In that case, the probability density of portfolio defaults becomes \emph{bimodal}, with two peaks around  \emph{zero} and \emph{one}.
+      <<echo=TRUE,eval=FALSE>>=
+# Plot default distribution with low correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.01),
+      xlab="default percentage", ylab="", lwd=2,
+      col="green", main="Distribution of Defaults")
+# Plot default distribution with high correlation
+curve(expr=def_distr(x, def_thresh=def_thresh, rh_o=0.99),
+      xlab="percentage of defaults", ylab="density",
+      add=TRUE, lwd=2, n=10001, col="blue", main="")
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_high_corr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add legend
+legend(x="top",
+       legend=c("high correlation", "low correlation"),
+       title=NULL, inset=0.1, cex=0.8, bg="white",
+       bty="n", lwd=6, lty=1, col=c("blue", "green"))
+# Add unconditional default probability
+abline(v=0.1, col="red", lwd=2)
+text(x=0.1, y=10, lwd=2, pos=4,
+       labels="default probability")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Numerical Integration of Functions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{integrate()} performs numerical integration of a function of a single variable, i.e. it calculates a definite integral over an integration interval.
+      \vskip1ex
+      Additional parameters can be passed to the integrated function through the dots \texttt{"..."} argument of the function \texttt{integrate()}.
+      \vskip1ex
+      The function \texttt{integrate()} accepts the integration limits \texttt{-Inf} and \texttt{Inf} equal to minus and plus infinity.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Get help for integrate()
+?integrate
+# Calculate slowly converging integral
+func_tion <- function(x) {1/((x+1)*sqrt(x))}
+integrate(func_tion, lower=0, upper=10)
+integrate(func_tion, lower=0, upper=Inf)
+# Integrate function with parameter lamb_da
+func_tion <- function(x, lamb_da=1) {
+  exp(-x*lamb_da)
+}  # end func_tion
+integrate(func_tion, lower=0, upper=Inf)
+integrate(func_tion, lower=0, upper=Inf,
+          lamb_da=2)
+# Cumulative probability over normal distribution
+pnorm(-2)
+integrate(dnorm, low=2, up=Inf)
+str(dnorm)
+pnorm(-1)
+integrate(dnorm, low=2, up=Inf, mean=1)
+# Expected value over normal distribution
+integrate(function(x) x*dnorm(x),
+          low=2, up=Inf)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Loss Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The expected loss (\emph{EL}) of a credit portfolio is equal to the sum of default probabilities ($p_i$) multiplied by the loss given default (\emph{LGD}, also known as the loss severity):
+      \begin{displaymath}
+        EL = \sum_{i=1}^{n} p_i LGD_i
+      \end{displaymath}
+      If the \emph{LGD} amounts are all the same, then the \emph{portfolio loss distribution} can be obtained from the \emph{default distribution}, adjusted for the \emph{LGD}:
+      \begin{multline*}
+        \hspace{-1.7em}f(x) = \frac{\sqrt{1-\rho}}{LGD \sqrt{\rho}} \exp(-\frac{1}{2 \rho} ({\sqrt{1-\rho}} \Phi^{-1}(\frac{x}{LGD}) - t)^2 + \\ \frac{1}{2} {\Phi^{-1}(\frac{x}{LGD}))^2}
+      \end{multline*}
+      <<echo=TRUE,eval=FALSE>>=
+rh_o <- 0.1; l_gd <- 0.4
+# Define Vasicek loss distribution function
+loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
+integrate(loss_distr, low=0, up=l_gd,
+  def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_loss_distr.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot probability distribution of losses
+def_prob <- 0.05; def_thresh <- qnorm(def_prob)
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 0.06),
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Distribution of Losses")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Collateralized Debt Obligations (\protect\emph{CDOs})}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Collateralized Debt Obligations (cash \emph{CDOs}) are securities (bonds) collateralized by other debt assets.
+      \vskip1ex
+      The \emph{CDO} assets can be debt instruments like bonds, loans, and mortgages.
+      \vskip1ex
+      The \emph{CDO} liabilities are \emph{CDO} tranches, which receive cashflows from the \emph{CDO} assets, and are exposed to their defaults.
+      \vskip1ex
+      \emph{CDO} tranches have an attachment point (subordination, i.e. the percentage of asset default losses at which the tranche starts absorbing those losses), and a detachment point when the tranche is wiped out (suffers \texttt{100\%} losses).
+      \vskip1ex
+      The \emph{equity tranche} is the most junior tranche, and is the first to absorb default losses.
+      \vskip1ex
+      The \emph{mezzanine tranches} are senior to the \emph{equity tranche} and absorb losses ony after the \emph{equity tranche} is wiped out.
+      \vskip1ex
+      The \emph{senior tranche} is the most senior tranche, and is the last to absorb losses.
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/CDO2.jpg}
+      \vskip1ex
+      \vskip1ex
+      \includegraphics[width=0.5\paperwidth]{figure/CDO.jpg}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{CDO} Tranche Losses}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Single-tranche (synthetic) \emph{CDOs} are credit default swaps which reference credit portfolios.
+      \vskip1ex
+      The expected loss \emph{EL} on a \emph{CDO} tranche is:
+      \begin{displaymath}
+        EL = \frac{1}{d - a} \int_{a}^{d} {(x-a) \, f(x) \, \mathrm{d}x} + \int_{d}^{LGD} {f(x) \, \mathrm{d}x}
+      \end{displaymath}
+      Where $f(x)$ is the density of portfolio losses, and \emph{a} and \emph{d} are the tranche attachment (subordination) and detachment points.
+      \vskip1ex
+      The difference $(d-a)$ is the tranche \emph{thickness}, so that $EL$ is the expected loss as a percentage of the tranche notional.
+      \vskip1ex
+      A single-tranche \emph{CDO} can be thought of as a short option spread on the asset defaults, struck at the attachment and detachment points.
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define cumulative default probability function
+cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
+  pnorm((sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)/sqrt(rh_o))
+# Define Vasicek loss distribution function
+# (vectorized version with error handling for x)
+loss_distr <- function(x, def_thresh=-2, rh_o=0.1, l_gd=0.4) {
+  q_norm <- ifelse(x/l_gd < 0.999, qnorm(x/l_gd), 3.1)
+  sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*q_norm - def_thresh)^2/(2*rh_o) + q_norm^2/2)/l_gd
+}  # end loss_distr
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/cdo_tranche.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+def_prob <- 0.2; def_thresh <- qnorm(def_prob)
+rh_o <- 0.1; l_gd <- 0.4
+at_tach <- 0.15; de_tach <- 0.2
+# Expected tranche loss is sum of two terms
+tranche_loss <-
+  # Loss between at_tach and de_tach
+  integrate(function(x, at_tach) (x-at_tach)*loss_distr(x,
+      def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
+      low=at_tach, up=de_tach, at_tach=at_tach)$value / (de_tach-at_tach) +
+  # Loss in excess of de_tach
+        (1-cum_loss(x=de_tach, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd))
+# Plot probability distribution of losses
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 3*l_gd*def_prob),
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="CDO Tranche Losses")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=4, labels="expected loss",
+       lwd=2, srt=90, pos=3)
+# Add lines for attach and detach
+abline(v=at_tach, col="blue", lwd=3)
+text(x=at_tach-0.001, y=4, labels="attach",
+       lwd=2, srt=90, pos=3)
+abline(v=de_tach, col="green", lwd=3)
+text(x=de_tach-0.001, y=4, labels="detach",
+       lwd=2, srt=90, pos=3)
+# Add shading for CDO tranche
+var_s <- seq(at_tach, de_tach, length=100)
+densi_ty <- sapply(var_s, loss_distr,
+  def_thresh=def_thresh, rh_o=rh_o)
+# Draw shaded polygon
+polygon(c(at_tach, var_s, de_tach), density=20,
+  c(-1, densi_ty, -1), col="red", border=NA)
+text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Portfolio Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$.
+      \vskip1ex
+      A loss exceeding the \emph{EL} is called the Unexpected Loss (\emph{UL}), and can be calculated from the \emph{portfolio loss distribution}.
+      <<echo=TRUE,eval=FALSE>>=
+# Add lines for unexpected loss
+abline(v=0.04, col="blue", lwd=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35,
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss",
+     lwd=2, pos=3)
+# Add lines for VaR
+abline(v=0.055, col="red", lwd=3)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25,
+       code=3, lwd=3, cex=0.5)
+text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Conditional Value at Risk} (\emph{CVaR}) is equal to the average of the \emph{VaR} for confidence levels less than a given confidence level $\alpha$:
+      \begin{displaymath}
+        \mathrm{CVaR} = \frac{1}{\alpha} \int_{0}^{\alpha} {\mathrm{VaR}(p) \, \mathrm{d}p} = \frac{1}{\alpha} \int_{\mathrm{VaR}}^{LGD} {x \, f(x) \, \mathrm{d}x}
+      \end{displaymath}
+      The \emph{Conditional Value at Risk} is also called the Expected Shortfall (\emph{ES}), or Expected Tail Loss (\emph{ETL}).
+      <<echo=TRUE,eval=FALSE>>=
+va_r <- 0.04; var_max <- 4*l_gd*def_prob
+# Calculate CVaR
+c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
+  low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
+c_var <- c_var/integrate(loss_distr, low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
+# Plot probability distribution of losses
+curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
+      type="l", xlim=c(0, 0.06),
+      xlab="loss percentage", ylab="density", lwd=3,
+      col="orange", main="Conditional Value at Risk")
+# Add line for expected loss
+abline(v=l_gd*def_prob, col="red", lwd=3)
+text(x=l_gd*def_prob-0.001, y=10, labels="expected loss", lwd=2, srt=90, pos=3)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_distr_cvar.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add lines for VaR
+abline(v=va_r, col="red", lwd=3)
+text(x=va_r-0.001, y=10, labels="VaR",
+       lwd=2, srt=90, pos=3)
+# Add shading for CVaR
+var_s <- seq(va_r, var_max, length=100)
+densi_ty <- sapply(var_s, loss_distr,
+  def_thresh=def_thresh, rh_o=rh_o)
+# Draw shaded polygon
+polygon(c(va_r, var_s, var_max), density=20,
+  c(-1, densi_ty, -1), col="red", border=NA)
+text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Value at Risk (\emph{VaR}) measures extreme portfolio loss (but not the worst possible loss), defined as the \emph{quantile} of the loss distribution, corresponding to a given confidence level $\alpha$.
+      \vskip1ex
+      The \emph{quantile} of the loss distribution (the \emph{VaR}), for a given a confidence level $\alpha$, is given by the inverse of the cumulative loss distribution:
+      \begin{displaymath}
+        VaR(\alpha) = LGD \cdot \Phi(\frac{{\sqrt{\rho}} \Phi^{-1}(\alpha) + t}{\sqrt{1-\rho}})
+      \end{displaymath}
+      <<echo=TRUE,eval=FALSE>>=
+# VaR (quantile of the loss distribution)
+var_func <- function(x, def_thresh=qnorm(0.1), rh_o=0.1, l_gd=0.4)
+  l_gd*pnorm((sqrt(rh_o)*qnorm(x) + def_thresh)/sqrt(1-rh_o))
+var_func(x=0.99, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Plot VaR
+curve(expr=var_func(x, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd),
+      type="l", xlim=c(0, 0.999), xlab="confidence level", ylab="VaR", lwd=3,
+      col="orange", main="VaR versus Confidence Level")
+# Add line for expected loss
+abline(h=l_gd*def_prob, col="red", lwd=3)
+text(x=0.2, y=l_gd*def_prob, labels="expected loss", lwd=2, pos=3)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Value at Risk and Confidence Levels}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The confidence levels of \emph{VaR} values can also be calculated by integrating over the tail of the loss density function.
+      <<echo=TRUE,eval=FALSE>>=
+# Integrate loss_distr() over full range
+integrate(loss_distr, low=0.0, up=l_gd,
+          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Calculate expected losses using loss_distr()
+integrate(function(x, ...) x*loss_distr(x, ...),
+          low=0.0, up=l_gd,
+          def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)
+# Calculate confidence levels corresponding to VaR values
+var_s <- seq(0.07, 0.12, 0.001)
+level_s <- sapply(var_s, function(va_r, ...) {
+  integrate(loss_distr, low=va_r, up=l_gd, ...)
+}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
+level_s <- cbind(as.numeric(t(level_s)[, 1]), var_s)
+colnames(level_s) <- c("level_s", "VaRs")
+# Calculate 95% confidence level VaR value
+level_s[match(TRUE, level_s[, "level_s"] < 0.05), "VaRs"]
+plot(x=1-level_s[, "level_s"],
+     y=level_s[, "VaRs"], lwd=2,
+     xlab="Confidence Levels", ylab="VaRs",
+     t="l", main="VaR Values and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_conf.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Conditional Value at Risk Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} values can be calculated by integrating over the tail of the loss density function.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate CVaR values
+cvar_s <- sapply(var_s, function(va_r, ...) {
+  integrate(function(x, ...) x*loss_distr(x, ...),
+            low=va_r, up=l_gd, ...)
+}, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)  # end sapply
+level_s <- cbind(level_s, as.numeric(t(cvar_s)[, 1]))
+colnames(level_s)[3] <- "CVaRs"
+# Divide CVaR by confidence level
+level_s[, "CVaRs"] <- level_s[, "CVaRs"]/level_s[, "level_s"]
+# Calculate 95% confidence level CVaR value
+level_s[match(TRUE,
+  level_s[, "level_s"] < 0.05), "CVaRs"]
+# Plot CVaRs
+plot(x=1-level_s[, "level_s"],
+     y=level_s[, "CVaRs"],
+     t="l", col="red", lwd=2,
+     ylim=range(level_s[, c("VaRs", "CVaRs")]),
+     xlab="Confidence Levels", ylab="CVaRs",
+     main="CVaR Values and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_levels.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add VaRs
+lines(x=1-level_s[, "level_s"], y=level_s[, "VaRs"], lwd=2)
+# Add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"),
+       title="default probability = 5%
+correlation = 10%
+loss given default = 40%",
+       inset=0.1, cex=0.8, bg="white", bty="n",
+       lwd=6, lty=1, col=c("red", "black"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{VaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the default probabilities $p_i$ are not all the same, then there's no formula for the \emph{portfolio loss distribution} under the Vasicek Model.
+      \vskip1ex
+      In that case the portfolio losses and \emph{VaR} must be simulated.
+      <<echo=TRUE,eval=FALSE>>=
+# Define model parameters
+n_assets <- 300; n_simu <- 1000; l_gd <- 0.4
+# Define correlation parameters
+rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
+# Calculate default probabilities and thresholds
+set.seed(1121)
+def_probs <- runif(n_assets, max=0.2)
+def_thresh <- qnorm(def_probs)
+# Calculate vector of systematic factors
+system_atic <- rnorm(n_simu)
+# Simulate losses under Vasicek model
+asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
+asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
+loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_var_simu.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VaRs
+level_s <- seq(0.93, 0.99, 0.01)
+var_s <- quantile(loss_es, probs=level_s)
+plot(x=level_s, y=var_s, t="l", lwd=2,
+     xlab="Confidence Levels", ylab="VaRs",
+     main="Simulated VaR and Confidence Levels")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating \protect\emph{CVaR} Under the Vasicek Model}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{CVaR} can be calculated from the frequency of tail losses in excess of the \emph{VaR}.
+      \vskip1ex
+      The function \texttt{table()} calculates the frequency distribution of categorical data.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate CVaRs
+cvar_s <- sapply(var_s, function(va_r) {
+  mean(loss_es[loss_es >= va_r])
+})  # end sapply
+cvar_s <- cbind(cvar_s, var_s)
+# Alternative CVaR calculation using frequency table
+# first calculate frequency table of loss_es
+# ta_ble <- table(loss_es)/n_simu
+# Calculate CVaRs from frequency table
+# Cvar_s <- sapply(var_s, function(va_r) {
+#   tai_l <- ta_ble[names(ta_ble) > va_r]
+#   tai_l %*% as.numeric(names(tai_l)) / sum(tai_l)
+# })  # end sapply
+# Plot CVaRs
+plot(x=level_s, y=cvar_s[, "cvar_s"],
+     t="l", col="red", lwd=2,
+     ylim=range(cvar_s),
+     xlab="Confidence Levels", ylab="CVaRs",
+     main="Simulated CVaR and Confidence Levels")
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/vasicek_cvar_simu.png}
+    \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add VaRs
+lines(x=level_s, y=cvar_s[, "var_s"], lwd=2)
+# Add legend
+legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
+       title=NULL, inset=0.05, cex=0.8, bg="white",
+       lwd=6, lty=1, col=c("red", "black"))
       @
   \end{columns}
 \end{block}
