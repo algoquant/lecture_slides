@@ -2266,31 +2266,7 @@ tail(SPY)
       \emph{TAQ} data stored in \texttt{.csv} files can be very large, so it's better to read it using the function \texttt{data.table::fread()} which is much faster than the function \texttt{read.csv()}.
       \vskip1ex
       Each \emph{trade} or \emph{quote} contributes a \emph{tick} (row) of data, and the number of ticks can be very large (hundred of thousands per day, or more).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Read TAQ trade data from csv file
-ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
-# Inspect the TAQ data
-ta_q
-class(ta_q)
-sapply(ta_q, class)
-# Number of ticks per second
-NROW(ta_q)/(6.5*3600)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Coercing \protect\emph{TAQ} Data to \texttt{xts} Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
+      \vskip1ex
       The function \texttt{strptime()} coerces \texttt{character} strings representing the date and time into \texttt{POSIXlt} \emph{date-time} objects.
       \vskip1ex
       The argument \texttt{format="\%H:\%M:\%OS"} allows the parsing of fractional seconds, for example \texttt{"15:59:59.989847074"}.
@@ -2299,14 +2275,22 @@ NROW(ta_q)/(6.5*3600)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+library(rutils)
+# Read TAQ trade data from csv file
+ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
+# Inspect the TAQ data
+ta_q
+class(ta_q)
+colnames(ta_q)
+sapply(ta_q, class)
+sym_bol <- ta_q$SYM_ROOT[1]
 # Create date-time index
 in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
-class(in_dex)
-last(in_dex)
 # Coerce date-time index to POSIXlt
 in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
 class(in_dex)
 # Display more significant digits
+# options("digits")
 options(digits=20, digits.secs=10)
 last(in_dex)
 unclass(last(in_dex))
@@ -2317,11 +2301,13 @@ class(in_dex)
 last(in_dex)
 unclass(last(in_dex))
 as.numeric(last(in_dex))
-# Coerce trade ticks to xts series
-x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
-sym_bol <- ta_q$SYM_ROOT[1]
-colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
-save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+# Calculate the number of ticks per second
+n_secs <- as.numeric(last(in_dex)) - as.numeric(first(in_dex))
+NROW(ta_q)/(6.5*3600)
+# Select TAQ data columns
+ta_q <- ta_q[, .(price=PRICE, volume=SIZE)]
+# Add date-time index
+ta_q <- cbind(index=in_dex, ta_q)
       @
   \end{columns}
 \end{block}
@@ -2345,20 +2331,23 @@ save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
       The \emph{bid-ask bounce} is the bouncing of traded prices between the bid and ask prices.
       \vskip1ex
       The \emph{bid-ask bounce} creates an illusion of rapidly changing prices, while in fact the mid price is constant.
-      <<echo=TRUE,eval=FALSE>>=
-# Plot in x11 window
-x11(width=6, height=4)
-par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
-quantmod::chart_Series(x=x_ts[, 1], 
-  name="XLK Trade Ticks for 2020-03-16")
-# Plot dygraph
-dygraphs::dygraph(x_ts[, 1], 
-  main="XLK Trade Ticks for 2020-03-16")
-      @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_dygraph.png}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
+      % \vspace{-1em}
+      % \includegraphics[width=0.45\paperwidth]{figure/hf_stocks_bounce.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce trade ticks to xts series
+x_ts <- xts::xts(ta_q[, .(price, volume)], ta_q$index)
+colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
+save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+# Plot dygraph
+dygraphs::dygraph(x_ts$XLK.Close, 
+  main="XLK Trade Ticks for 2020-03-16")
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close, 
+  name="XLK Trade Ticks for 2020-03-16")
+      @
   \end{columns}
 \end{block}
 
@@ -2372,45 +2361,143 @@ dygraphs::dygraph(x_ts[, 1],
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Most of the \emph{trade} ticks are \emph{odd lots} with a small volume of less than $100$ shares.
+      Most of the trade ticks are \emph{odd lots} with a small volume of less than $100$ shares.
       \vskip1ex
       The \emph{odd lot} ticks are often removed to reduce the size of the \emph{TAQ} data.
       \vskip1ex
       Selecting only the large lot trades reduces microstructure noise (price jumps, bid-ask bounce) in high frequency data.
       <<echo=TRUE,eval=FALSE>>=
-# Select only the large lots greater than 100
+# Select the large lots greater than 100
 dim(ta_q)
-ta_q <- ta_q[ta_q$SIZE > 100]
-dim(ta_q)
+big_ticks <- ta_q[ta_q$volume > 100]
+dim(big_ticks)
 # Number of large lot ticks per second
-NROW(ta_q)/(6.5*3600)
+NROW(big_ticks)/(6.5*3600)
 # Save trade ticks with large lots
-data.table::fwrite(ta_q, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
-# Create date-time index
-in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
-in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
-in_dex <- as.POSIXct(in_dex)
+data.table::fwrite(big_ticks, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
 # Coerce trade prices to xts
-x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+x_ts <- xts::xts(big_ticks[, .(price, volume)], big_ticks$index)
 colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_biglots_dygraph.png}
       <<echo=TRUE,eval=FALSE>>=
-# Plot the large lots
-x11(width=6, height=4)
-par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
-quantmod::chart_Series(x=x_ts[, 1], 
-  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
-# Plot dygraph
-dygraphs::dygraph(x_ts[, 1], 
+# Plot dygraph of the large lots
+dygraphs::dygraph(x_ts$XLK.Close, 
   main="XLK Trade Ticks for 2020-03-16 (large lots only)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close, 
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
       @
   \end{columns}
 \end{block}
 
 \end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Removing Microstructure Noise From High Frequency Data}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Microstructure noise can be removed from high frequency data by using a \emph{Hampel filter}.
+      \vskip1ex
+      The \emph{z-scores} are equal to the prices minus the median prices, divided by the median absolute deviation (\emph{MAD}) of prices:
+      \begin{displaymath}
+        z_i = (p_i - \operatorname{median}(\mathbf{p})) / \operatorname{MAD}
+      \end{displaymath}
+      If the \emph{z-score} exceeds the \emph{threshold value} then it's classified as an \emph{outlier} (jump in prices).
+      <<echo=TRUE,eval=FALSE>>=
+# Apply centered Hampel filter to remove price jumps
+win_dow <- 111
+half_window <- win_dow %/% 2
+medi_an <- TTR::runMedian(ta_q$price, n=win_dow)
+medi_an <- rutils::lag_it(medi_an, lagg=-half_window, pad_zeros=FALSE)
+ma_d <- TTR::runMAD(ta_q$price, n=win_dow)
+ma_d <- rutils::lag_it(ma_d, lagg=-half_window, pad_zeros=FALSE)
+ma_d[1:half_window] <- 1
+ma_d[ma_d == 0] <- 1
+# Calculate Z-scores
+z_scores <- (ta_q$price - medi_an)/ma_d
+z_scores[is.na(z_scores)] <- 0
+z_scores[!is.finite(z_scores)] <- 0
+sum(is.na(z_scores))
+sum(!is.finite(z_scores))
+range(z_scores)
+mad(z_scores)
+hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_good_ticks_dygraph.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Remove price jumps with large z-scores
+thresh_old <- 3
+bad_ticks <- (abs(z_scores) > thresh_old)
+good_ticks <- ta_q[!bad_ticks]
+# Calculate number of price jumps
+sum(bad_ticks)/NROW(z_scores)
+# Coerce trade prices to xts
+x_ts <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+# Plot dygraph of the clean lots
+dygraphs::dygraph(x_ts$XLK.Close, 
+  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close, 
+  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Aggregating \protect\emph{TAQ} Data to \protect\emph{OHLC}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{data table} columns can be \emph{aggregated} over categories (factors) defined by one or more columns passed to the \texttt{"by"} argument.
+      \vskip1ex
+      Multiple \emph{data table} columns can be referenced by passing a list of names specified by the dot \texttt{.()} operator.
+      \vskip1ex
+      The function \texttt{round.POSIXt()} rounds date-time objects to seconds, minutes, hours, days, months or years.
+      \vskip1ex
+      The function \texttt{as.POSIXct()} coerces objects to class \texttt{POSIXct}.
+      <<echo=TRUE,eval=FALSE>>=
+# Round time index to seconds
+good_ticks[, index := as.POSIXct(round.POSIXt(index, "secs"))]
+# Aggregate to OHLC by seconds
+oh_lc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+# Round time index to minutes
+good_ticks[, index := as.POSIXct(round.POSIXt(index, "mins"))]
+# Aggregate to OHLC by minutes
+oh_lc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_trade_ticks_ohlc.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Coerce OHLC prices to xts
+x_ts <- xts::xts(oh_lc[, -"index"], oh_lc$index)
+# Plot dygraph of the OHLC prices
+dygraphs::dygraph(x_ts[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
+  dyCandlestick()
+# Plot the OHLC prices
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts, TA="add_Vo()", 
+  name="XLK Trade Ticks for 2020-03-16 (OHLC)")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
 
 
 %%%%%%%%%%%%%%%
