@@ -2766,16 +2766,17 @@ library(rutils)  # Load package rutils
 # SPY percentage returns
 oh_lc <- HighFreq::SPY
 clos_e <- quantmod::Cl(oh_lc)
-re_turns <- rutils::diff_it(clos_e)/rutils::lag_it(clos_e)
+re_turns <- rutils::diff_it(clos_e)/rutils::lag_it(clos_e, pad_zeros=FALSE)
 colnames(re_turns) <- "SPY"
+n_rows <- NROW(re_turns)
 # Standardize raw returns to make later comparisons
-ret_std <- re_turns/sd(re_turns)
+re_turns <- re_turns/sd(re_turns)
 # Calculate moments and perform normality test
 sapply(c(sd=2, skew=3, kurt=4), 
-  function(x) sum(ret_std^x)/NROW(ret_std))
+  function(x) sum(re_turns^x)/n_rows)
 tseries::jarque.bera.test(re_turns)
 # Fit SPY returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(ret_std, densfun="t", df=2)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
       @
@@ -2786,16 +2787,16 @@ scal_e <- optim_fit$estimate[2]
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
-histo_gram <- hist(ret_std, col="lightgrey", mgp=c(2, 1, 0),
+histo_gram <- hist(re_turns, col="lightgrey", mgp=c(2, 1, 0),
   xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
   breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
-# lines(density(ret_std, bw=0.2), lwd=3, col="blue")
+# lines(density(re_turns, bw=0.2), lwd=3, col="blue")
 # Plot t-distribution function
 curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
       type="l", lwd=3, col="red", add=TRUE)
 # Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(ret_std),
-  sd=sd(ret_std)), add=TRUE, lwd=3, col="blue")
+curve(expr=dnorm(x, mean=mean(re_turns),
+  sd=sd(re_turns)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("t-distr", "normal"),
@@ -2826,13 +2827,13 @@ returns_hourly <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
 returns_hourly <- returns_hourly/sd(returns_hourly)
 # Daily SPY percentage returns
 price_s <- Cl(xts::to.period(x=oh_lc, period="days"))
-returns_daily <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
+returns_daily <- rutils::diff_it(price_s)/rutils::lag_it(price_s, pad_zeros=FALSE)
 returns_daily <- returns_daily/sd(returns_daily)
 # Calculate moments
-sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily), 
+sapply(list(minutely=re_turns, hourly=returns_hourly, daily=returns_daily), 
        function(rets) {
          sapply(c(sd=2, skew=3, kurt=4), 
-                function(x) sum(rets^x)/NROW(rets))
+                function(x) sum(rets^x)/n_rows)
 })  # end sapply
       @
     \column{0.5\textwidth}
@@ -2842,7 +2843,7 @@ sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(ret_std, bw=0.4), xlim=c(-3, 3), 
+plot(density(re_turns, bw=0.4), xlim=c(-3, 3), 
      lwd=3, mgp=c(2, 1, 0), col="blue", 
      xlab="returns (standardized)", ylab="frequency", 
      main="Density of High Frequency SPY Returns")
@@ -3084,23 +3085,23 @@ mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
       The scaled returns have a smaller \emph{skewness} and \emph{kurtosis}, and they also have even higher autocorrelations than unscaled returns.
       <<echo=TRUE,eval=FALSE>>=
 # Scale returns using volume (volume clock)
-ret_scaled <- ifelse(vol_ume>0, 
-  re_turns/vol_ume^0.5, 0)
-# Calculate moments
-sapply(list(ret_std=ret_std, ret_scaled=ret_scaled), 
-  function(rets) {
-    sapply(c(skew=3, kurt=4), 
-           function(x) sum((rets/sd(rets))^x)/NROW(rets))
+ret_scaled <- ifelse(vol_ume>0, re_turns/vol_ume^0.5, 0)
+ret_scaled <- ret_scaled/sd(ret_scaled)
+# Calculate moments of scaled returns
+n_rows <- NROW(re_turns)
+sapply(list(re_turns=re_turns, ret_scaled=ret_scaled), 
+  function(rets) {sapply(c(skew=3, kurt=4), 
+           function(x) sum((rets/sd(rets))^x)/n_rows)
 })  # end sapply
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.45\paperwidth]{figure/hf_scaled.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
+      <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(ret_std), xlim=c(-3, 3), 
+plot(density(re_turns), xlim=c(-3, 3), 
      lwd=3, mgp=c(2, 1, 0), col="blue", 
      xlab="returns (standardized)", ylab="frequency", 
      main="Density of Volume-scaled High Frequency SPY Returns")
@@ -3110,12 +3111,6 @@ curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 legend("topright", inset=0.05, bty="n",
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
-# Plot the partial autocorrelations
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-pacf(ret_scaled, lag=10, mgp=c(2, 1, 0), 
-  xlab="lag", ylab="partial autocorrelation", main="")
-title("Partial Autocorrelations of Volume-scaled High Frequency SPY Returns", line=1)
       @
   \end{columns}
 \end{block}
@@ -3138,11 +3133,11 @@ title("Partial Autocorrelations of Volume-scaled High Frequency SPY Returns", li
       \vskip1ex
       The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
       \vskip1ex
-      For \emph{minutely} SPY returns, the \emph{Ljung-Box} statistic is large and its \emph{p}-value is very small, so we can conclude that it has statistically significant autocorrelations.
+      For \emph{minutely} \emph{SPY} returns, the \emph{Ljung-Box} statistic is large and its \emph{p}-value is very small, so we can conclude that it has statistically significant autocorrelations.
       \vskip1ex
-      For \emph{scaled minutely} SPY returns, the \emph{Ljung-Box} statistic is even larger, so its autocorrelations are even more statistically significant.
+      For \emph{scaled minutely} \emph{SPY} returns, the \emph{Ljung-Box} statistic is even larger, so its autocorrelations are even more statistically significant.
       \vskip1ex
-      SPY returns aggregated to longer time intervals are less autocorrelated.
+      \emph{SPY} returns aggregated to longer time intervals are less autocorrelated.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
@@ -3151,12 +3146,12 @@ Box.test(re_turns, lag=10, type="Ljung")
 # Ljung-Box test for daily SPY returns
 Box.test(returns_daily, lag=10, type="Ljung")
 # Ljung-Box test statistics for scaled SPY returns
-sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),  
+sapply(list(re_turns=re_turns, ret_scaled=ret_scaled),  
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
 # Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily), 
+sapply(list(minutely=re_turns, hourly=returns_hourly, daily=returns_daily), 
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
@@ -3177,22 +3172,25 @@ sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      High frequency returns have statistically significant negative autocorrelations.
+      High frequency minutely \emph{SPY} returns have statistically significant negative autocorrelations.
       \vskip1ex
-      SPY returns \emph{scaled} by the trading volumes have even greater negative autocorrelations.
+      \emph{SPY} returns \emph{scaled} by the trading volumes have even more significant negative autocorrelations.
       <<echo=TRUE,eval=FALSE>>=
 # Set plot parameters
 x11(width=6, height=8)
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
 # Plot the partial autocorrelations of minutely SPY returns
-pacf(as.numeric(re_turns), lag=10,
+pa_cf <- pacf(as.numeric(re_turns), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Minutely SPY Returns", line=1)
 # Plot the partial autocorrelations of scaled SPY returns
-pacf(as.numeric(ret_scaled), lag=10,
+pacf_scaled <- pacf(as.numeric(ret_scaled), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Scaled SPY Returns", line=1)
+# Calculate the sums of partial autocorrelations
+sum(pa_cf$acf)
+sum(pacf_scaled$acf)
       @
     \column{0.5\textwidth}
       \vspace{-1em}

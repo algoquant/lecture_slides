@@ -214,20 +214,20 @@ boxplot(x=diff(log(EuStockMarkets)))
     \column{0.5\textwidth}
       The estimators of moments of a probability distribution are given by:
       \vskip1ex
-      Sample mean: $\bar{x}=\frac{1}{n} \sum_{i=1}^n x_i$
+      Sample mean: $\bar{x} = \frac{1}{n} \sum_{i=1}^n x_i$
       \vskip1ex
-      Sample variance: $\hat\sigma^2=\frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
+      Sample variance: $\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^n (x_i-\bar{x})^2$
       \vskip1ex
       With their expected values equal to the population mean and standard deviation:\\
-      $\mathbb{E}[\bar{x}]=\mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma]=\sigma$
+      $\mathbb{E}[\bar{x}] = \mu$ \hskip0.5em and \hskip0.5em $\mathbb{E}[\hat\sigma] = \sigma$
       \vskip1ex
       The sample skewness (third moment):
       \begin{displaymath}
-        \varsigma=\frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
+        \varsigma = \frac{n}{(n-1)(n-2)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^3
       \end{displaymath}
       The sample kurtosis (fourth moment):
       \begin{displaymath}
-        \kappa=\frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
+        \kappa = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
       \end{displaymath}
       The normal distribution has zero skewness and kurtosis equal to 3.
       \vskip1ex
@@ -2514,9 +2514,9 @@ re_turns[1] <- 0
     \column{0.5\textwidth}
       The estimated volatility $\sigma$ scales as the \emph{power} of the length of the aggregation time interval $\Delta t$:
       \begin{displaymath}
-        \sigma \propto {\Delta t} ^ H
+        \frac{\sigma_t}{\sigma} = {\Delta t} ^ H
       \end{displaymath}
-      Where \texttt{H} is the \emph{Hurst} exponent.
+      Where \texttt{H} is the \emph{Hurst} exponent, $\sigma$ is the return volatility, and $\sigma_t$ is the volatility of the aggregated returns.
       \vskip1ex
       If returns follow \emph{Brownian motion} then the volatility scales as the \emph{square root} of the length of the aggregation interval (\texttt{H = 0.5}).
       \vskip1ex
@@ -2529,7 +2529,7 @@ re_turns[1] <- 0
       \vspace{-1em}
         <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # Load HighFreq
-# Daily OHLC SPY prices
+# Minutely OHLC SPY prices aggregated to daily prices
 SPY_daily <-
   rutils::to_period(oh_lc=HighFreq::SPY, period="days")
 # Daily SPY volatility from daily returns
@@ -2563,7 +2563,12 @@ sqrt(6.5*60)*60*sd(re_turns)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Hurst exponent} $H$ can be calculated by regressing the volatility against the aggregation intervals.
+      For a single aggregation interval, the \emph{Hurst exponent} \texttt{H} is equal to:
+      \begin{displaymath}
+        H = \frac{\log{\sigma_t} - \log{\sigma}}{\log{\Delta t}}
+      \end{displaymath}
+      \vskip1ex
+      For a vector of aggregation intervals, the \emph{Hurst exponent} \texttt{H} can be calculated by regressing the volatility against the aggregation intervals.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate SPY prices adjusted for overnight jumps
 price_s <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
@@ -2574,8 +2579,7 @@ price_s <- cumsum(re_turns)
 # Calculate volatilities for vector of aggregation intervals
 interval_s <- round(seq.int(from=3, to=30, length.out=9)^2)
 vol_s <- sapply(interval_s, function(inter_val) {
-  end_p <- rutils::calc_endpoints(price_s,
-    inter_val=inter_val)
+  end_p <- rutils::calc_endpoints(price_s, inter_val=inter_val)
   sd(rutils::diff_it(price_s[end_p]))
 })  # end sapply
 vol_log <- log(vol_s)
@@ -2655,7 +2659,7 @@ mean(r_s)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{Rescaled Range} $RS_{\Delta t}$ is proportional to the length of the aggregation interval $\Delta t$ raised to the power of the \emph{Hurst exponent} $H$:
+      The \emph{Rescaled Range} $RS_{\Delta t}$ is proportional to the length of the aggregation interval $\Delta t$ raised to the power of the \emph{Hurst exponent} \texttt{H}:
       \begin{displaymath}
         RS_{\Delta t} \propto {\Delta t}^H
       \end{displaymath}
