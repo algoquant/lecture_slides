@@ -62,7 +62,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Risk Analysis and Model Construction]{Risk Analysis and Model Construction}
-\subtitle{FRE6871 \& FRE7241, Fall 2020}
+\subtitle{FRE6871 \& FRE7241, Spring 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -85,6 +85,71 @@ knit_theme$set(thm)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Kernel Density of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The kernel density is proportional to the number of data points close to a given point.
+      \vskip1ex
+      The kernel density is analogous to a histogram, but it provides more detailed information about the distribution of the data.
+      \vskip1ex
+      The kernel $K(x)$ is a symmetric function which decreases with the distance $x$.
+      \vskip1ex
+      The kernel density $d_i$ of a data sample $r_i$ is equal to the sum over the kernel function $K(x)$:
+      \begin{displaymath}
+        d_i = \sum_{j=1}^n {K(r_i - r_j)}
+      \end{displaymath}
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
+      \vskip1ex
+      The function \texttt{density()} returns a vector of densities at equally spaced points, not for the original data points.
+      \vskip1ex
+      The function \texttt{approx()} interpolates a vector of data into another vector.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
+re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- drop(coredata(na.omit(re_turns)))
+n_rows <- NROW(re_turns)
+# Mean and standard deviation of returns
+c(mean(re_turns), sd(re_turns))
+# Calculate the MAD of returns 10 points apart
+re_turns <- sort(re_turns)
+b_w <- 10*mad(rutils::diff_it(re_turns, lagg=10))
+# Calculate the kernel density
+den_sity <- sapply(1:n_rows, function(i_d) {
+  sum(dnorm(re_turns-re_turns[i_d], sd=b_w))
+})  # end sapply
+ma_d <- mad(re_turns)
+plot(re_turns, den_sity, xlim=c(-5*ma_d, 5*ma_d), 
+     t="l", col="blue", lwd=3, 
+     xlab="returns", ylab="density",
+     main="Density of VTI Returns")
+# Calculate the kernel density using density()
+den_sity <- density(re_turns, bw=b_w)
+NROW(den_sity$y)
+x11(width=6, height=5)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d), 
+     xlab="returns", ylab="density",
+     col="blue", lwd=3, main="Density of VTI Returns")
+# Interpolate the den_sity vector into re_turns
+den_sity <- approx(den_sity$x, den_sity$y, xout=re_turns)
+all.equal(den_sity$x, re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d), 
+     xlab="returns", ylab="density",
+     t="l", col="blue", lwd=3, 
+     main="Density of VTI Returns")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Distribution of Asset Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -97,7 +162,46 @@ knit_theme$set(thm)
       \vskip1ex
       The parameter \texttt{breaks} is the number of cells of the histogram.
       \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density.
+      The function \texttt{lines()} draws a line through specified points.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hist_vti_dens.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot histogram
+histo_gram <- hist(re_turns, breaks=100, freq=FALSE,
+  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="", 
+  main="VTI Return Distribution")
+# Draw kernel density of histogram
+lines(den_sity, col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+      add=TRUE, lwd=2, col="blue")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c("VTI", "Normal"), bty="n",
+       lwd=6, bg="white", col=c("red", "blue"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{depr: Distribution of Asset Returns}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Asset returns are usually not normally distributed and they exhibit \emph{leptokurtosis} (large kurtosis, or fat tails).
+      \vskip1ex
+      The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} is the number of cells of the histogram.
+      \vskip1ex
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
       \vskip1ex
       The function \texttt{lines()} draws a line through specified points.
       <<echo=TRUE,eval=FALSE>>=
@@ -109,14 +213,15 @@ c(mean(re_turns), sd(re_turns))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/hist_vti.png}
+      \includegraphics[width=0.45\paperwidth]{figure/hist_vti.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+ma_d <- mad(re_turns)
 histo_gram <- hist(re_turns, breaks=100, 
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04), 
+  main="", xlim=c(-5*ma_d, 5*ma_d), 
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
 lines(density(re_turns), col="red", lwd=2)
@@ -229,9 +334,9 @@ boxplot(x=diff(log(EuStockMarkets)))
       \begin{displaymath}
         \kappa = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum_{i=1}^n (\frac{x_i-\bar{x}}{\hat\sigma})^4
       \end{displaymath}
-      The normal distribution has zero skewness and kurtosis equal to 3.
+      The normal distribution has skewness equal to $0$ and kurtosis equal to $3$.
       \vskip1ex
-      Stock returns typically have negative skewness and kurtosis much greater than 3.
+      Stock returns typically have negative skewness and kurtosis much greater than $3$.
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
@@ -660,7 +765,7 @@ legend("topright", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Fat Tails of Asset Returns}
+\subsection{Leptokurtosis Fat Tails of Asset Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -672,16 +777,15 @@ legend("topright", inset=0.05, bty="n",
       \end{displaymath}
       This is because a normal variable can be thought of as the sum of a large number of independent binomial variables of equal size.
       \vskip1ex
-      So large values are produced only when all the contributing binomial variables are of the same sign, which is very improbable.
+      So large values are produced only when all the contributing binomial variables are of the same sign, which is very improbable, so it produces extremely low tail probabilities (thin tails), 
       \vskip1ex
-      This produces extremely low tail probabilities (thin tails), but the probabilities of large negative asset returns decreases much slower, close to that of the negative power of the returns (fat tails).
+      But in reality, the probability of large negative asset returns decreases much slower, as the negative power of the returns (fat tails).
       \vskip1ex
       The probability under Student's \emph{t-distribution} decreases as a power for large values of $x$:
       \begin{displaymath}
         f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (as \, {\left| x \right|} \to \infty)
       \end{displaymath}
       This is because a \emph{t-variable} can be thought of as the sum of normal variables with different volatilities (different sizes).
-
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/t_dist_tail_rets.png}
       \vspace{-2em}
@@ -702,6 +806,76 @@ curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)), add=TRUE, lwd=4, col=
 # Add legend
 legend("topleft", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft (move to Hurst slides?): Asset Returns in Trading Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The time-dependent volatility of asset returns (\emph{heteroskedasticity}) produces their fat tails (\emph{leptokurtosis}).
+      \vskip1ex
+      Higher levels of volatility coincide with higher \emph{trading volumes}.
+      \vskip1ex
+      If asset returns were measured at fixed intervals of \emph{trading volumes} (\emph{trading time} instead of clock time), then the volatility would be lower and less time-dependent.
+      \vskip1ex
+      The asset returns can be adjusted to \emph{trading time} by dividing them by the \emph{trading volume}, to obtain scaled returns over equal trading volumes.
+      \vskip1ex
+      The scaled returns have a smaller \emph{skewness} and \emph{kurtosis} than unscaled returns.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate VTI returns and volume
+oh_lc <- HighFreq::SPY
+oh_lc <- rutils::etf_env$VTI
+price_s <- drop(coredata(quantmod::Cl(oh_lc)))
+re_turns <- rutils::diff_it(log(price_s))
+vol_ume <- drop(coredata(quantmod::Vo(oh_lc)))
+# Calculate moving average volume
+look_back <- 121
+volume_roll <- HighFreq::roll_vec(vol_ume, look_back=look_back)/look_back
+dygraphs::dygraph(xts(volume_roll, index(oh_lc)), 
+  main="Moving Average VTI Volume") %>%
+  dySeries(strokeWidth=3, col="blue")
+# Scale returns using volume (volume clock)
+# rets_scaled <- sqrt(volume_roll)*re_turns/sqrt(vol_ume)
+rets_scaled <- ifelse(vol_ume > 0, volume_roll*re_turns/vol_ume, 0)
+rets_scaled <- sd(re_turns)*rets_scaled/sd(rets_scaled)
+
+
+# rets_scaled <- ifelse(vol_ume > 1e4, re_turns/vol_ume, 0)
+# Calculate moments of scaled returns
+# n_rows <- NROW(re_turns)
+# sapply(list(re_turns=re_turns, rets_scaled=rets_scaled), 
+#   function(rets) {sapply(c(skew=3, kurt=4), 
+#            function(x) sum((rets/sd(rets))^x)/n_rows)
+# })  # end sapply
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/hf_scaled.png}
+      <<echo=TRUE,eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+ma_d <- mad(re_turns)
+# b_w <- mad(rutils::diff_it(re_turns))
+plot(density(re_turns, bw=ma_d/10), xlim=c(-5*ma_d, 5*ma_d), 
+     lwd=3, mgp=c(2, 1, 0), col="blue", 
+     xlab="returns (standardized)", ylab="frequency", 
+     main="Density of Volume-scaled VTI Returns")
+lines(density(rets_scaled, bw=ma_d/10), lwd=3, col="red")
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)), 
+      add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
       @
   \end{columns}
@@ -735,6 +909,50 @@ legend("topleft", inset=0.05, bty="n",
         f(x) \propto {\left| x \right|}^{-(\nu+1)} \qquad (with \; \nu > 1)
       \end{displaymath}
       Tend to the \emph{standard normal} distribution $\phi(0, 1)$.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# Fit t-dist into VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
+# Perform Kolmogorov-Smirnov test on VTI returns
+da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
+ks.test(as.numeric(re_turns), da_ta)
+      @
   \end{columns}
 \end{block}
 
@@ -782,50 +1000,6 @@ lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
-      \begin{displaymath}
-        D = \sup_i | P(x_i) - P(y_i) |
-      \end{displaymath}
-      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
-      \vskip1ex
-      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
-optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-# Perform Kolmogorov-Smirnov test on VTI returns
-da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), da_ta)
       @
   \end{columns}
 \end{block}
@@ -1302,7 +1476,7 @@ charts.PerformanceSummary(ham_1,
       \vskip1ex
       The function \texttt{hist()} calculates and plots a histogram, and returns its data \emph{invisibly}.
       \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density.
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
       <<echo=(-(1:2)),eval=FALSE>>=
 x11(width=6, height=4)
 par(mar=c(3, 2, 1, 0), oma=c(0, 0, 0, 0))
@@ -1434,15 +1608,15 @@ all.equal(c_var,
     \column{0.5\textwidth}
       The function \texttt{table.Stats()} from package \emph{PerformanceAnalytics} calculates a data frame of statistics of the return distributions.
       <<echo=TRUE,eval=FALSE>>=
-# Calculate the Sharpe ratio
-risk_return <- table.Stats(rutils::etf_env$re_turns)
+# Calculate the risk-return statistics
+risk_return <- PerformanceAnalytics::table.Stats(rutils::etf_env$re_turns)
 class(risk_return)
-all.equal(risk_return, rutils::etf_env$risk_return)
 # Transpose the data frame
 risk_return <- as.data.frame(t(risk_return))
 # Remove VIX etf data
 risk_return <- risk_return[-match(c("VXX", "SVXY"), rownames(risk_return)), ]
 # Plot scatterplot
+x11(width=6, height=5)
 plot(Kurtosis ~ Skewness, data=risk_return,
      ylim=c(1, max(risk_return$Kurtosis)),
      main="Kurtosis vs Skewness")
@@ -1469,9 +1643,8 @@ text(x=risk_return$Skewness, y=risk_return$Kurtosis,
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 risk_return <- rutils::etf_env$risk_return
-risk_return <- as.data.frame(t(risk_return))
 # Add skew_kurt column
-risk_return$skew_kurt <-
+risk_return$skew_kurt <- 
   risk_return$Skewness/risk_return$Kurtosis
 # Sort on skew_kurt
 risk_return <- risk_return[order(risk_return$skew_kurt,
@@ -1479,7 +1652,7 @@ risk_return <- risk_return[order(risk_return$skew_kurt,
       @
     \column{0.55\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=TRUE, size="tiny">>=
+      <<echo=TRUE,eval=TRUE,size="tiny">>=
 # Add names column
 risk_return$Name <- rutils::etf_env$etf_list[rownames(risk_return), ]$Name
 knitr::kable(risk_return[, c("Name", "Skewness", "Kurtosis")])
@@ -1895,44 +2068,55 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
 
 
 %%%%%%%%%%%%%%%
-\subsection{Estimating Rolling Variance Using \texttt{sapply()}}
+\subsection{Estimating the Rolling Variance of Asset Returns}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Heteroskedasticity} refers to statistical distributions whose variance changes with time.
+      The variance of asset returns exhibits \emph{heteroskedasticity}, i.e. it changes over time.
       \vskip1ex
-      Empirical \emph{time series} of returns are \emph{heteroskedastic} because their variance changes with time.
-      \vskip1ex
-      The rolling realized variance of a \emph{time series} is a vector given by the estimator:
+      The rolling variance of returns is given by:
       \begin{flalign*}
         \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
         \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
       \end{flalign*}
-      Where \texttt{k} is the \emph{look-back interval} for performing aggregations over the past.
+      Where \texttt{k} is the \emph{look-back interval} equal to the number of data points 
+      for performing aggregations over the past.
       \vskip1ex
-      It's not possible to calculate the rolling variance in \texttt{R} using vectorized functions, so it must be calculated using an \texttt{apply()} loop.
+      It's also possible to calculate the rolling variance in \texttt{R} using vectorized functions, without using an \texttt{apply()} loop.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+n_rows <- NROW(re_turns)
 # Define end points
-end_p <- 0:NROW(re_turns)
-n_rows <- NROW(end_p)
-look_back <- 51
-# start_p are multi-period lag of end_p
-start_p <- c(rep_len(0, look_back - 1),
-    end_p[1:(n_rows- look_back + 1)])
-# Calculate realized VTI variance in sapply() loop
-vari_ance <- sapply(2:n_rows, function(in_dex) {
+end_p <- 1:NROW(re_turns)
+# Start points are multi-period lag of end_p
+look_back <- 11
+start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+# Calculate rolling variance in sapply() loop - takes very long
+vari_ance <- sapply(1:n_rows, function(in_dex) {
   ret_s <- re_turns[start_p[in_dex]:end_p[in_dex]]
   sum((ret_s - mean(ret_s))^2)
 }) / (look_back-1)  # end sapply
+# Use only vectorized functions
+rolling_rets <- cumsum(re_turns)
+rolling_rets <- (rolling_rets - 
+  c(rep_len(0, look_back), rolling_rets[1:(n_rows-look_back)]))
+rolling_rets2 <- cumsum(re_turns^2)
+rolling_rets2 <- (rolling_rets2 - 
+  c(rep_len(0, look_back), rolling_rets2[1:(n_rows-look_back)]))
+vari_ance2 <- (rolling_rets2 - rolling_rets^2/look_back)/(look_back-1)
+all.equal(vari_ance[-(1:look_back)], as.numeric(vari_ance2)[-(1:look_back)])
+# Same, using package rutils
+rolling_rets <- rutils::roll_sum(re_turns, look_back=look_back)
+rolling_rets2 <- rutils::roll_sum(re_turns^2, look_back=look_back)
+vari_ance2 <- (rolling_rets2 - rolling_rets^2/look_back)/(look_back-1)
+# Coerce vari_ance into xts
 tail(vari_ance)
 class(vari_ance)
-# Coerce vari_ance into xts
 vari_ance <- xts(vari_ance, order.by=index(re_turns))
 colnames(vari_ance) <- "VTI.variance"
 head(vari_ance)
@@ -2530,8 +2714,7 @@ re_turns[1] <- 0
         <<echo=(-(1:1)),eval=FALSE>>=
 library(HighFreq)  # Load HighFreq
 # Minutely OHLC SPY prices aggregated to daily prices
-SPY_daily <-
-  rutils::to_period(oh_lc=HighFreq::SPY, period="days")
+SPY_daily <- rutils::to_period(oh_lc=HighFreq::SPY, period="days")
 # Daily SPY volatility from daily returns
 sd(rutils::diff_it(log(SPY_daily[, 4])))
 # Minutely SPY returns (unit per minute)

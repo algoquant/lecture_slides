@@ -72,7 +72,7 @@ animation::saveHTML(expr=eval(ex_pr),
 library(shiny)
 library(quantmod)
 inter_val <- 31
-cl_ose <- quantmod::Cl(rutils::etf_env$VTI)
+clos_e <- quantmod::Cl(rutils::etf_env$VTI)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
 # ```
@@ -87,9 +87,9 @@ renderPlot({
   lamb_da <- input$lamb_da
   weight_s <- exp(-lamb_da*1:inter_val)
   weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(cl_ose, filter=weight_s, sides=1)
+  ew_ma <- filter(clos_e, filter=weight_s, sides=1)
   ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
-  ew_ma <- xts(cbind(cl_ose, ew_ma), order.by=index(cl_ose))
+  ew_ma <- xts(cbind(clos_e, ew_ma), order.by=index(clos_e))
   colnames(ew_ma) <- c("VTI", "VTI EWMA")
   # Plot EWMA prices
   ch_ob <- chart_Series(ew_ma, theme=plot_theme, name="EWMA prices")

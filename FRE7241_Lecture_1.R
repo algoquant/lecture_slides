@@ -108,8 +108,7 @@ xts_2 <- do.call(cbind,
 
 # Drop ".Close" from colnames
 colnames(price_s) <- unname(sapply(colnames(price_s),
-    function(col_name)
-strsplit(col_name, split="[.]")[[1]][1]))
+    function(col_name) strsplit(col_name, split="[.]")[[1]][1]))
 tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
@@ -461,8 +460,7 @@ vec_rnorm(n=2, mean=me_ans)
 vector1 <- sin(0.25*pi*1:20)
 vector2 <- cos(0.25*pi*1:20)
 # Create third vector using 'ifelse'
-vector3 <- ifelse(vector1 > vector2,
-          vector1, vector2)
+vector3 <- ifelse(vector1 > vector2, vector1, vector2)
 # cbind all three together
 vector3 <- cbind(vector1, vector2, vector3)
 colnames(vector3)[3] <- "Max"
@@ -647,13 +645,13 @@ mean(da_ta)
 # Sample standard deviation - MC estimate
 sd(da_ta)
 # Monte Carlo estimate of cumulative probability
-da_ta <- sort(da_ta)
 pnorm(1)
-sum(da_ta<1)/n_rows
+sum(da_ta < 1)/n_rows
 # Monte Carlo estimate of quantile
-conf_level <- 0.99
+conf_level <- 0.98
 qnorm(conf_level)
 cut_off <- conf_level*n_rows
+da_ta <- sort(da_ta)
 da_ta[cut_off]
 quantile(da_ta, probs=conf_level)
 # Analyze the source code of quantile()
@@ -673,11 +671,9 @@ n_rows <- 1000  # Number of simulation steps
 pa_th <- numeric(n_rows)  # Allocate path vector
 pa_th[1] <- 0  # Initialize path
 in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) &&
- (pa_th[in_dex - 1] < bar_rier)) {
+while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
 # Simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
+  pa_th[in_dex] <- pa_th[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # Advance in_dex
 }  # end while
 # Fill remaining pa_th after it crosses bar_rier
@@ -688,8 +684,7 @@ ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+title(main="Brownian motion crossing a barrier level", line=0.5)
 
 x11(width=6, height=5)
 par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -702,18 +697,204 @@ pa_th <- cumsum(rnorm(n_rows))
 cro_ss <- which(pa_th > bar_rier)
 # Fill remaining pa_th after it crosses bar_rier
 if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):n_rows] <-
-    pa_th[cro_ss[1]]
+  pa_th[(cro_ss[1]+1):n_rows] <- pa_th[cro_ss[1]]
 }  # end if
 # Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-     start=c(2011, 1))
+ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
 # Create plot with horizontal line
 plot(ts_path, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
 abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+title(main="Brownian motion crossing a barrier level", line=0.5)
+
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 1000
+# Simulate geometric Brownian motion
+re_turns <- sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l", xlab="time", ylab="prices",
+     main="geometric Brownian motion")
+
+# Simulate geometric Brownian motion
+sigma_r <- 0.01/sqrt(48)
+dri_ft <- 0.0
+n_rows <- 1e4
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=n_rows, by="30 min")
+price_s <- exp(cumsum(sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2))
+price_s <- xts(price_s, order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=n_rows, replace=TRUE))
+# Aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>% dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
+
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+  type="l", lwd=2, xlim=c(0, 3),
+  xlab="", ylab="", col=col_ors[in_dex],
+  add=as.logical(in_dex-1))
+}  # end for
+
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+ paste("sigma", sig_mas, sep="="),
+ cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+ col=col_ors)
+
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI ETF
+sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmar_2 <- sigma_r^2
+n_rows <- NROW(rutils::etf_env$VTI)
+# Standard deviation of log-normal prices
+sqrt(n_rows)*sigma_r
+
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigmar_2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
+xlab="Number of days", ylab="Skewness", col="blue",
+main="Skewness of Log-normal Prices
+as a Function of Time")
+
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigma_r*sqrt(x)/2),
+xlim=c(1, n_rows), lwd=3,
+xlab="Number of days", ylab="Probability", col="blue",
+main="Probability That Random Log-normal Price
+Will be Lower Than the Mean Price")
+
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 5000
+path_s <- 10
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Create xts time series
+price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# Plot xts time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 10000
+path_s <- 100
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# Create xts time series of percentage of paths below the expected value
+per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+   xlab=NA, ylab=NA, col="blue")
+
+# Load S&P500 stock prices
+load("C:/Develop/lecture_slides/data/sp500.RData")
+ls(sp500_env)
+# Extract closing prices
+price_s <- eapply(sp500_env, quantmod::Cl)
+# Flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# Carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# Rename and normalize columns
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
+         order.by=index(price_s))
+# Calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# Select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+
+# Plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+   xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+ legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+
+# Calculate average of valid stock prices
+val_id <- (price_s != 1)  # Valid stocks
+n_stocks <- rowSums(val_id)
+n_stocks[1] <- NCOL(price_s)
+in_dex <- rowSums(price_s * val_id) / n_stocks
+# Calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
+# Create xts time series of average stock prices
+in_dex <- xts(in_dex, order.by=index(price_s))
+
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+# Plot xts time series of average stock prices
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
+   xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# Plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+   main="Percentage of S&P500 stock prices below the average price",
+   xlab=NA, ylab=NA, col="blue")
+
+# Define Brownian motion parameters
+sig_ma <- 1.0  # Volatility
+dri_ft <- 0.0  # Drift
+n_rows <- 1000  # Number of simulation steps
+n_simu <- 100  # Number of simulations
+# Simulate multiple paths of Brownian motion
+set.seed(1121)
+path_s <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
+path_s <- matrix(path_s, nc=n_simu)
+path_s <- matrixStats::colCumsums(path_s)
+# Final distribution of paths
+mean(path_s[n_rows, ]) ; sd(path_s[n_rows, ])
+# Calculate option payout
+strik_e <- 50  # Strike price
+pay_outs <- (path_s[n_rows, ] - strik_e)
+sum(pay_outs[pay_outs > 0])/n_simu
+# Calculate probability of crossing a barrier
+bar_rier <- 50
+cross_ed <- colSums(path_s > bar_rier) > 0
+sum(cross_ed)/n_simu
+
+# Plot in window
+x11(width=6, height=5)
+par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+# Select and plot full range of paths
+or_der <- order(path_s[n_rows, ])
+in_dex <- or_der[seq(1, 100, 9)]
+zoo::plot.zoo(path_s[, in_dex], main="Paths of Brownian Motion",
+  xlab="time steps", ylab=NA, plot.type="single")
+abline(h=strik_e, col="red", lwd=3)
+text(x=(n_rows-60), y=strik_e, labels="strike price", pos=3, cex=1)
 
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
@@ -734,11 +915,9 @@ sd(da_ta)/sqrt(n_rows)
 sd(boot_data[, "mean"])
 # Standard error of median from bootstrap
 sd(boot_data[, "median"])
-plot(density(boot_data[, "median"]),
-     lwd=2, xlab="estimate of median",
+plot(density(boot_data[, "median"]), lwd=2, xlab="estimate of median",
      main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_data[, "median"]),
- lwd=2, col="red")
+abline(v=mean(boot_data[, "median"]), lwd=2, col="red")
 
 set.seed(1121)  # Reset random number generator
 n_rows <- 1000
@@ -747,8 +926,7 @@ da_ta <- rnorm(n_rows)
 boot_data <- sapply(1:10000, function(x) {
   # sampl_e from Standard Normal Distribution
   sampl_e <- rnorm(n_rows)
-  c(mean=mean(sampl_e),
-    median=median(sampl_e))
+  c(mean=mean(sampl_e), median=median(sampl_e))
 })  # end sapply
 boot_data[, 1:3]
 # Standard error from formula
@@ -823,7 +1001,21 @@ boot_data <- rutils::do_call(rbind, boot_data)
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 
-# Sample from time series of ETF returns
+# Calculate time series of VTI returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Sample from VTI returns
+sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
+c(sd=sd(sampl_e), mad=mad(sampl_e))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3),
+  sample = sample(1e3),
+  times=10))[, c(1, 4, 5)]
+
+# Sample from time series of VTI returns
 re_turns <- rutils::etf_env$re_turns[, "VTI"]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
@@ -867,7 +1059,7 @@ bar_rier <- 1.5*max(price_s)
 sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
 # Calculate prices from percentage returns
 sampl_e <- star_t*exp(cumsum(sampl_e))
-# Calculate statistic
+# Calculate if prices crossed barrier
 sum(sampl_e > bar_rier) > 0
 
 library(parallel)  # Load package parallel
@@ -882,7 +1074,7 @@ boot_data <- parLapply(clus_ter, 1:n_boot,
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
     # Calculate prices from percentage returns
     sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate statistic
+    # Calculate if prices crossed barrier
     sum(sampl_e > bar_rier) > 0
   }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
@@ -890,7 +1082,7 @@ boot_data <- mclapply(1:n_boot, function(x) {
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
     # Calculate prices from percentage returns
     sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate statistic
+    # Calculate if prices crossed barrier
     sum(sampl_e > bar_rier) > 0
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
@@ -981,10 +1173,8 @@ lwd=3, col="red")
 abline(v=0, lwd=3, col="blue", lty="dashed")
 abline(v=1, lwd=3, col="red", lty="dashed")
 arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
- code=2, angle=20,
- length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda),
-     pos=3, cex=2)
+ code=2, angle=20, length=grid::unit(0.2, "cm"))
+text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
 
 set.seed(1121) # Reset random number generator
 # Sample from Standard Normal Distribution
@@ -996,7 +1186,7 @@ pnorm(-quan_tile)
 integrate(dnorm, low=quan_tile, up=Inf)
 sum(da_ta > quan_tile)/n_rows
 # Generate importance sample
-lamb_da <- 1.5
+lamb_da <- 1.5  # tilt parameter
 data_tilt <- da_ta + lamb_da
 # Cumulative probability from importance sample
 sum(data_tilt > quan_tile)/n_rows
@@ -1062,6 +1252,41 @@ boot_data <- sapply(1:1000, function(x) {
 }) # end sapply
 apply(boot_data, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
+
+# Define Brownian motion parameters
+sig_ma <- 1.0  # Volatility
+dri_ft <- 0.0  # Drift
+n_rows <- 100  # Number of simulation steps
+n_simu <- 10000  # Number of simulations
+# Calculate matrix of normal variables
+set.seed(1121)
+da_ta <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
+da_ta <- matrix(da_ta, nc=n_simu)
+# Simulate paths of Brownian motion
+path_s <- matrixStats::colCumsums(da_ta)
+# Tilt the da_ta
+lamb_da <- 0.04  # tilt parameter
+data_tilt <- da_ta + lamb_da
+paths_tilt <- matrixStats::colCumsums(data_tilt)
+# Calculate path weights
+weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+path_weights <- matrixStats::colProds(weight_s)
+# Or
+path_weights <- exp(-lamb_da*colSums(data_tilt) + n_rows*lamb_da^2/2)
+# Calculate option payout using standard MC
+strik_e <- 10  # Strike price
+pay_outs <- (path_s[n_rows, ] - strik_e)
+sum(pay_outs[pay_outs > 0])/n_simu
+# Calculate option payout using importance sampling
+pay_outs <- (paths_tilt[n_rows, ] - strik_e)
+sum((path_weights*pay_outs)[pay_outs > 0])/n_simu
+# Calculate crossing probability using standard MC
+bar_rier <- 10
+cross_ed <- colSums(path_s > bar_rier) > 0
+sum(cross_ed)/n_simu
+# Calculate crossing probability using importance sampling
+cross_ed <- colSums(paths_tilt > bar_rier) > 0
+sum(path_weights*cross_ed)/n_simu
 
 # Binomial sample
 n_rows <- 1000

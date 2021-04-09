@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
-options(width=60, dev='pdf')
-options(digits=3)
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 # Display documentation on function "getwd"
 help(getwd)
 # Equivalent to "help(getwd)"
@@ -474,27 +467,27 @@ summary(microbenchmark(
     cut(x=vec_tor, breaks=c(3, 5, 7)),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-# Calculate DAX percentage returns
-dax_rets <- diff(log(EuStockMarkets[, 1]))
+# Calculate VTI percentage returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Plot histogram
+x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
-histo_gram <- hist(dax_rets, breaks=30,
+histo_gram <- hist(re_turns, breaks=100,
   main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
   xlab="", ylab="", freq=FALSE)
 
 # Draw kernel density of histogram
-lines(density(dax_rets), col='red', lwd=2)
-# add density of normal distribution
-curve(expr=dnorm(x, mean=mean(dax_rets),
-  sd=sd(dax_rets)), add=TRUE, type="l",
-  lwd=2, col="blue")
-title(main="DAX return distribution", line=0)
-# add legend
+lines(density(re_turns), col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+add=TRUE, type="l", lwd=2, col="blue")
+title(main="VTI Return Distribution", line=0)
+# Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
-  leg=c(colnames(EuStockMarkets)[1], "Normal"),
+  leg=c("VTI", "Normal"), bty="n",
   lwd=6, bg="white", col=c("red", "blue"))
-# total area under histogram
-diff(histo_gram$breaks) %*% histo_gram$density
+# Total area under histogram
+sum(diff(histo_gram$breaks) * histo_gram$density)
 
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
 mat_rix  # by default matrices are constructed column-wise
@@ -712,71 +705,6 @@ get("my_var1", envir=test_env)
 mget(ls(test_env), envir=test_env)
 # delete environment
 rm(test_env)
-
-rm(list=ls())  # delete all objects
-# Convert string to symbol
-as.symbol("some_string")
-# The "name" class is synonymous with a symbol
-class(as.symbol("some_string"))
-# Symbols are created during assignments
-sym_bol <- 2
-# Evaluate symbol (same as typing it)
-eval(sym_bol)
-# Convert string into a symbol and evaluate it
-eval(as.symbol("sym_bol"))
-# Convert string into unevaluated expression
-ex_pression <- parse(text="ne_w <- sym_bol")
-ex_pression
-class(ex_pression)
-ls()
-eval(ex_pression)  # evaluate expression
-ls()  # expression evaluation created new object
-ne_w
-
-# Create the expression "1+1"
-quote(1+1)
-# Evaluate the expression "1+1"
-eval(quote(1+1))
-# Create an expression containing several commands
-ex_pression <- quote({x <- 1; y <- 2; x+y})
-ex_pression
-# Evaluate all the commands in the expression
-eval(ex_pression)
-ls()
-# Return an expression without evaluating it
-ne_w <- 2*sym_bol
-ex_pression <- quote(sym_bol + ne_w)
-ex_pression
-eval(ex_pression)  # evaluate expression
-# Substitute objects in an expression
-ex_pression <- substitute(sym_bol + ne_w,
-              env=list(sym_bol=1, ne_w=2))
-ex_pression
-eval(ex_pression)  # evaluate expression
-# get_input() substitutes its formal argument with the actual argument
-get_input <- function(in_put) {
-  substitute(in_put)
-}  # end get_input
-my_var <- 2
-get_input(my_var)
-eval(get_input(my_var))
-
-# Define symbol
-my_var <- 10
-# Convert symbol value into string
-deparse(my_var)
-# Convert symbol into string without evaluating it
-deparse(quote(my_var))
-# Substitute object with value from named list
-sym_bol <- 2
-deparse(substitute(sym_bol + my_var,
-       env=list(my_var=2)))
-# Create string with name of input argument
-get_name <- function(in_put) {
-  names(in_put) <- deparse(substitute(in_put))
-  in_put
-}  # end get_name
-get_name(my_var)
 
 rm(list=ls())
 # expressions enclosed in parenthesis are less ambiguous
@@ -1054,7 +982,7 @@ test_func <- function(first_arg, second_arg) {
 
 test_func(3, 2)  # error - glob_var doesn't exist yet!
 glob_var <- 10  # Create glob_var
-test_func(3, 2)  # now works
+test_func(3, 2)  # Now works
 
 # Define function that returns NULL for non-numeric argument
 test_func <- function(in_put) {
@@ -1092,8 +1020,8 @@ test_func(first_arg=3, second_arg=2)  # Bind by name
 test_func(first=3, second=2)  # Partial name binding
 test_func(3, 2)  # Bind by position
 test_func(second_arg=2, 3)  # mixed binding
-test_func(3, 2, 1)  # too many arguments
-test_func(2)  # not enough arguments
+test_func(3, 2, 1)  # Too many arguments
+test_func(2)  # Not enough arguments
 
 # Function "paste" has two arguments with default values
 str(paste)
@@ -1114,21 +1042,20 @@ test_func("some_val")  # Invalid string
 
 # DAX percentage returns
 re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
-# Calc_skew() calculates skew of time series of returns
+# calc_skew() calculates skew of time series of returns
 # Default is normal time series
-calc_skew <- function(se_ries=rnorm(1000)) {
-  # number of observations
-  len_gth <- NROW(se_ries)
-  # normalize se_ries
-  se_ries <-
-    (se_ries - mean(se_ries))/sd(se_ries)
+calc_skew <- function(re_turns=rnorm(1000)) {
+  # Number of observations
+  n_rows <- NROW(re_turns)
+  # Standardize re_turns
+  re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
   # Calculate skew - last statement automatically returned
-  len_gth*sum(se_ries^3)/((len_gth-1)*(len_gth-2))
+  n_rows*sum(re_turns^3)/((n_rows-1)*(n_rows-2))
 }  # end calc_skew
 
 # Calculate skew of DAX returns
 # Bind arguments by name
-calc_skew(se_ries=re_turns)
+calc_skew(re_turns=re_turns)
 # Bind arguments by position
 calc_skew(re_turns)
 # Use default value of arguments
@@ -1136,12 +1063,11 @@ calc_skew()
 
 str(plot)  # Dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put,
- ", dots=", paste(..., sep=", "))
+  paste0("in_put=", in_put, ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
 bind_dots(2, in_put=1, 3)  # "in_put" bound by name
-bind_dots(1, 2, 3, foo=10)  # named argument bound to dots
+bind_dots(1, 2, 3, foo=10)  # Named argument bound to dots
 bind_dots <- function(arg1, arg2, ...) {
   arg1 + 2*arg2 + sum(...)
 }  # end bind_dots
@@ -1165,180 +1091,295 @@ bind_dots <- function(..., in_put=10) {
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" not bound, but has default
 
-library(quantmod)
-car_s <- mtcars[sample(NROW(mtcars), 10), ]
-# Plot scatterplot horsepower vs miles per gallon
-plot(car_s[, "hp"], car_s[, "mpg"],
-     xlab="horsepower", ylab="miles per gallon",
-     main="miles per gallon vs horsepower")
-# Add a solid red point (pch=16) for the last car
-points(x=car_s[NROW(car_s), "hp"],
- y=car_s[NROW(car_s), "mpg"],
- col="red", pch=16)
-# Add labels with the car names
-text(x=car_s[, "hp"], y=car_s[, "mpg"],
-     labels=rownames(car_s[, ]),
-     pos=1, cex=0.8)
-# Labels using wordcloud, to prevent overlaps
-library(wordcloud)
-textplot(x=car_s[, "hp"], y=car_s[, "mpg"],
-   words=rownames(car_s))
+# Wrapper for mean() with default na.rm=TRUE
+my_mean <- function(x, na.rm=TRUE, ...) {
+  mean(x=x, na.rm=na.rm, ...)
+}  # end my_mean
+foo <- sample(c(1:10, NA, rep(0.1, t=5)))
+mean(c(foo, NA))
+mean(c(foo, NA), na.rm=TRUE)
+my_mean(c(foo, NA))
+my_mean(c(foo, NA), trim=0.4)  # Pass extra argument
+# Wrapper for saving data into default directory
+save_data <- function(...,
+              file=stop("error: no file name"),
+              my_dir="C:/Develop/data") {
+# Create file path
+  file <- file.path(my_dir, file)
+  save(..., file=file)
+}  # end save_data
+foo <- 1:10
+save_data(foo, file="scratch.RData")
+save_data(foo, file="scratch.RData", my_dir="C:/Develop")
+# Wrapper for testing negative arguments
+stop_if_neg <- function(in_put) {
+  if (!is.numeric(in_put) || in_put<0)
+    stop("argument not numeric or negative")
+}  # end stop_if_neg
+# Wrapper for sqrt()
+my_sqrt <- function(in_put) {
+  stop_if_neg(in_put)
+  sqrt(in_put)
+}  # end my_sqrt
+my_sqrt(2)
+my_sqrt(-2)
+my_sqrt(NA)
 
-# Plot the tree Height
-plot(trees[, "Height"],
-     type="l",
-     lwd=2,
-     col="blue",
-     main="Tree heights and volumes",
-     xlab="tree number", ylab="",
-     ylim=c(min(trees[, c("Height", "Volume")]),
-      max(trees[, c("Height", "Volume")])))
-# Plot the tree Volume
-lines(trees[, "Volume"], lwd=2, col="green")
-# Add legend
-legend(x="left", legend=c("Height", "Volume"),
- inset=0.1, cex=1.0, bg="white", bty="n",
- lwd=2, lty=1, col=c("blue", "green"))
+# Recursive function sums its argument list
+sum_dots <- function(in_put, ...) {
+  if (missing(...)) {  # Check if dots are empty
+    return(in_put)  # just one argument left
+  } else {
+    in_put + sum_dots(...)  # Sum remaining arguments
+  }  # end if
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
+# Recursive function sums its argument list
+sum_dots <- function(in_put, ...) {
+  if (NROW(list(...)) == 0) {  # Check if dots are empty
+    return(in_put)  # just one argument left
+  } else {
+    in_put + sum_dots(...)  # Sum remaining arguments
+  }  # end if
+}  # end sum_dots
+sum_dots(1, 2, 3, 4)
 
-x_var <- seq(-2*pi, 2*pi, len=100)  # x values
+fibo_nacci <- function(len_gth) {
+  if (len_gth > 2) {
+    fib_seq <- fibo_nacci(len_gth-1)  # Recursion
+    c(fib_seq, sum(tail(fib_seq, 2)))  # Return this
+  } else {
+    c(0, 1)  # Initialize and return
+  }
+}  # end fibo_nacci
+fibo_nacci(10)
+tail(fibo_nacci(9), 2)
 
-# open Windows graphics device
-x11(width=11, height=7, title="simple plot")
+# Show the function code
+plot.default
+# Display function
+getAnywhere(plot.default)
 
-# Plot a sine function using basic line plot
-plot(x=x_var, y=sin(x_var), xlab="x-val",
-     ylab="y-val", type="l", lwd=2, col="red")
-# Add a cosine function
-lines(x=x_var, y=cos(x_var), lwd=2, col="blue")
-# Add title
-title(main="sine and cosine functions", line=0.1)
-# Add legend
-legend(x="topright", legend=c("sine", "cosine"),
- title="legend", inset=0.1, cex=1.0, bg="white",
- lwd=2, lty=1, bty="n", col=c("red", "blue"))
-graphics.off()  # Close all graphics devices
+rm(list=ls())
+glob_var <- 1  # Define a global variable
+ls(environment())  # Get all variables in environment
+func_env <- function() {  # Explore function environments
+  loc_var <- 1  # Define a local variable
+  cat('objects in evaluation environment:\t',
+      ls(environment()), '\n')
+  cat('objects in enclosing environment:\t',
+      ls(parent.env(environment())), '\n')
+  cat('this is the enclosing environment:')
+  parent.env(environment())  # Return enclosing environment
+}  # end func_env
+func_env()
 
-par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-3, 3),
-xlab="", ylab="", lwd=2, col="blue")
-# Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-lwd=2, col="red")
+environment(func_env)
+environment(print)  # Package namespace is the enclosure
 
-# Add title
-title(main="Normal probability distribution functions",
-line=0.1)
-# Add legend
-legend(x="topright", legend=c("Normal", "shifted"),
- title="legend", inset=0.05, cex=0.8, bg="white",
- lwd=2, lty=1, bty="n", col=c("blue", "red"))
+setwd("C:/Develop/lecture_slides/data")
+rm(list=ls())  # Remove all objects
+ls()  # List objects
+# Load objects from file (side effect)
+load(file="my_data.RData")
+ls()  # List objects
+glob_var <- 1  # Define a global variable
+# Explore function scope and side effects
+side_effect <- function() {
+  cat("global glob_var:\t", glob_var, "\n")
+# Define local "glob_var" variable
+  glob_var <- 10
+# Re-define the global "glob_var"
+  glob_var <<- 2
+  cat("local glob_var:\t", glob_var, "\n")
+}  # end side_effect
+side_effect()
+# Global variable was modified as side effect
+glob_var
 
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-library(zoo)  # Load zoo
-load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
-zoo_series <- window(zoo_stx[, "AdjClose"],
-   start=as.Date("2013-01-01"),
-   end=as.Date("2013-12-31"))
-# extract time index and monthly dates
-in_dex <- index(zoo_series)
-# Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
-# tick locations at beginning of month
-tick_s <- in_dex[match(unique(month_ly), month_ly)]
-# tick_s <- as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
-# first plot zoo without "x" axis
-plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
-# Add "x" axis with monthly ticks
-axis(side=1, at=tick_s,
- labels=format(tick_s, "%b-%y"), tcl=-0.7)
-# Add vertical lines
-abline(v=tick_s, col="grey", lwd=0.5)
-# Plot zoo using base plotting functions
-plot(as.vector(zoo_series), xaxt="n",
- xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
-a_t <- match(tick_s, in_dex)
-# a_t <- seq_along(in_dex)[in_dex %in% tick_s]
-# Add "x" axis with monthly ticks
-axis(side=1, at=a_t,
- labels=format(tick_s, "%b-%y"), tcl=-0.7)
-abline(v=a_t, col="grey", lwd=0.5)
+# Create functional that accepts a function as input argument
+func_tional <- function(func_name) {
+# Calculates statistic on random numbers
+  set.seed(1)
+  func_name(runif(1e4))  # Apply the function name
+}  # end func_tional
+func_tional(mean)
+func_tional(sd)
 
-library(zoo)  # Load zoo
-load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
-# extract time index and monthly dates
-in_dex <- index(zoo_stx)
-# Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
-# benchmark two methods of calculating tick locations
-library(microbenchmark)
-summary(microbenchmark(
-m_atch=
-  in_dex[match(unique(month_ly), month_ly)],
-t_apply=
-  as.Date(tapply(X=in_dex,
-                 INDEX=month_ly, FUN=min)),
-times=10)
-  )[, c(1, 4, 5)]
+# Func_tional accepts function name and additional argument
+func_tional <- function(func_name, in_put) {
+# Produce function name from argument
+  func_name <- match.fun(func_name)
+# Execute function call
+  func_name(in_put)
+}  # end func_tional
+func_tional(sqrt, 4)
+# String also works because match.fun() converts it to a function
+func_tional("sqrt", 4)
+str(sum)  # Sum() accepts multiple arguments
+# Func_tional can't accept indefinite number of arguments
+func_tional(sum, 1, 2, 3)
 
-load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
-# Set plot margines
-par(mar=c(3, 3, 3, 3), oma=c(0, 0, 0, 0))
-par(las=1)  # Set text printing to horizontal
-Plot with two y-axes - plot first time series
-zoo::plot.zoo(zoo_stxeur[, 1], lwd=2, xlab=NA, ylab=NA)
-par(new=TRUE)  # Allow new plot on same chart
-# Plot second time series without y-axis
-zoo::plot.zoo(zoo_stxeur[, 2], xlab=NA, ylab=NA,
-     lwd=2, yaxt="n", col="red")
-# Plot second y-axis on right
-axis(side=4, col="red")
-# Add axis labels
-col_names <- colnames(zoo_stxeur)
-mtext(col_names[1], side=2, adj=-0.5)
-mtext(col_names[2], side=4, adj=1.5, col="red")
-# Add title and legend
-title(main=paste0(col_names, collapse=" and "),
-line=0.5)
-legend("top", legend=col_names,
-  bg="white", lty=1, lwd=6,
-  col=c("black", "red"), bty="n")
+# Func_tional accepts function name and dots '...' argument
+func_tional <- function(func_name, ...) {
+  func_name <- match.fun(func_name)
+  func_name(...)  # Execute function call
+}  # end func_tional
+func_tional(sum, 1, 2, 3)
+func_tional(sum, 1, 2, NA, 4, 5)
+func_tional(sum, 1, 2, NA, 4, 5, na.rm=TRUE)
+# Function with three arguments and dots '...' arguments
+my_func <- function(in_put, param1, param2, ...) {
+  c(input=in_put, param1=param1, param2=param2,
+dots=c(...))
+}  # end my_func
+my_func(1, 2, 3, param2=4, param1=5)
+func_tional(my_func, 1, 2, 3, param2=4, param1=5)
+func_tional(my_func, 1, 2, 3, 4, 5)
 
-Slightly different method using par("usr")
-par(las=1)  # Set text printing to horizontal
-zoo::plot.zoo(zoo_stxeur[, 1], xlab=NA, ylab=NA, lwd=2)
-# Set range of "y" coordinates for second axis
-par(usr=c(par("usr")[1:2], range(zoo_stxeur[,2])))
-lines(zoo_stxeur[, 2], col="red", lwd=2)  # Second plot
-axis(side=4, col="red")  # Second y-axis on right
-# Add axis labels
-mtext(col_names[1], side=2, adj=-0.5)
-mtext(col_names[2], side=4, adj=1.5, col="red")
-# Add title and legend
-title(main=paste0(col_names, collapse=" and "),
-line=0.5)
-legend("top", legend=col_names,
-  bg="white", lty=1, lwd=6,
-  col=c("black", "red"), bty="n")
+# Simple anonymous function
+(function(x) (x + 3)) (10)
 
-graph_params <- par()  # get existing parameters
-par("mar")  # get plot margins
-par(mar=c(2, 1, 2, 1))  # Set plot margins
-par(oma=c(1, 1, 1, 1))  # Set outer margins
-par(mgp=c(2, 1, 0))  # Set title and label margins
-par(cex.lab=0.8,  # Set font scales
-    cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(las=1)  # Set axis labels to horizontal
-par(ask=TRUE)  # Pause, ask before plotting
-par(mfrow=c(2, 2))  # Plot on 2x2 grid by rows
-for (i in 1:4) {  # Plot 4 panels
-  barplot(sample(1:6), main=paste("panel", i),
-    col=rainbow(6), border=NA, axes=FALSE)
-  box()
-}  # end for
-par(ask=FALSE)  # Restore automatic plotting
-par(new=TRUE)  # Allow new plot on same chart
-par(graph_params)  # Restore original parameters
+# Anonymous function passed to func_tional
+func_tional(func_name=(function(x) (x + 3)), 5)
+# Anonymous function is default value
+func_tional <-
+  function(..., func_name=function(x, y, z) {x+y+z}) {
+    func_name <- match.fun(func_name)
+    func_name(...)  # Execute function call
+}  # end func_tional
+func_tional(2, 3, 4)  # Use default func_name
+func_tional(2, 3, 4, 5)
+# Func_name bound by name
+func_tional(func_name=sum, 2, 3, 4, 5)
+# Pass anonymous function to func_name
+func_tional(func_name=function(x, y, z) {x*y*z},
+    2, 3, 4)
+
+str(sum)  # Sum() accepts multiple arguments
+# Sum() can't accept list of arguments
+sum(list(1, 2, 3))
+str(do.call)  # "what" argument is a function
+# Do.call passes list elements into "sum" individually
+do.call(sum, list(1, 2, 3))
+do.call(sum, list(1, 2, NA, 3))
+do.call(sum, list(1, 2, NA, 3, na.rm=TRUE))
+# Func_tional() accepts list with function name and arguments
+func_tional <- function(list_arg) {
+# Produce function name from argument
+  func_name <- match.fun(list_arg[[1]])
+# Execute function call uing do.call()
+  do.call(func_name, list_arg[-1])
+}  # end func_tional
+arg_list <- list("sum", 1, 2, 3)
+func_tional(arg_list)
+# Do_call() performs same operation as do.call()
+all.equal(
+  do.call(sum, list(1, 2, NA, 3, na.rm=TRUE)),
+  rutils::do_call(sum, list(1, 2, NA, 3), na.rm=TRUE))
+
+rm(list=ls())
+str(apply)  # Get list of arguments
+# Create a matrix
+mat_rix <- matrix(6:1, nrow=2, ncol=3)
+mat_rix
+# Sum the rows and columns
+row_sums <- apply(mat_rix, 1, sum)
+col_sums <- apply(mat_rix, 2, sum)
+mat_rix <- cbind(c(sum(row_sums), row_sums),
+          rbind(col_sums, mat_rix))
+dimnames(mat_rix) <- list(c("col_sums", "row1", "row2"),
+                 c("row_sums", "col1", "col2", "col3"))
+mat_rix
+
+str(apply)  # Get list of arguments
+mat_rix <- matrix(sample(12), nrow=3, ncol=4)  # Create a matrix
+mat_rix
+apply(mat_rix, 2, sort)  # Sort matrix columns
+apply(mat_rix, 2, sort, decreasing=TRUE)  # Sort decreasing order
+
+mat_rix[2, 2] <- NA  # Introduce NA value
+mat_rix
+# Calculate median of columns
+apply(mat_rix, 2, median)
+# Calculate median of columns with na.rm=TRUE
+apply(mat_rix, 2, median, na.rm=TRUE)
+
+rm(list=ls())
+# DAX percentage returns
+re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
+library(moments)  # Load package moments
+str(moment)  # Get list of arguments
+# Apply moment function
+moment(x=re_turns, order=3)
+# 4x1 matrix of moment orders
+moment_orders <- as.matrix(1:4)
+# Anonymous function allows looping over function parameters
+apply(X=moment_orders, MARGIN=1,
+      FUN=function(moment_order) {
+  moment(x=re_turns, order=moment_order)
+}  # end anonymous function
+      )  # end apply
+
+# Another way of passing parameters into moment() function
+apply(X=moment_orders, MARGIN=1, FUN=moment,
+      x=re_turns)
+
+# Function with three arguments
+my_func <- function(arg1, arg2, arg3) {
+  c(arg1=arg1, arg2=arg2, arg3=arg3)
+}  # end my_func
+my_func(1, 2, 3)
+da_ta <- as.matrix(1:4)
+# Pass da_ta to arg1
+apply(X=da_ta, MAR=1, FUN=my_func, arg2=2, arg3=3)
+# Pass da_ta to arg2
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg3=3)
+# Pass da_ta to arg3
+apply(X=da_ta, MAR=1, FUN=my_func, arg1=1, arg2=2)
+
+# Vector of means of numeric columns
+sapply(iris[, -5], mean)
+# List of means of numeric columns
+lapply(iris[, -5], mean)
+# Lapply using anonymous function
+unlist(lapply(iris,
+      function(col_umn) {
+        if (is.numeric(col_umn)) mean(col_umn)
+      }  # end anonymous function
+      )  # end lapply
+       )  # end unlist
+unlist(sapply(iris, function(col_umn) {
+  if (is.numeric(col_umn)) mean(col_umn)}))
+
+sapply(6:10, sqrt)  # Sapply on vector
+sapply(list(6, 7, 8, 9, 10), sqrt)  # Sapply on list
+
+# Calculate means of iris data frame columns
+sapply(iris, mean)  # Returns NA for Species
+
+# Create a matrix
+mat_rix <- matrix(sample(100), ncol=4)
+# Calculate column means using apply
+apply(mat_rix, 2, mean)
+
+# Calculate column means using sapply, with anonymous function
+sapply(1:NCOL(mat_rix),
+       function(col_index) {  # Anonymous function
+ mean(mat_rix[, col_index])
+  }  # end anonymous function
+)  # end sapply
+
+# Vectors form columns of matrix returned by sapply
+sapply(2:4, function(num) c(el1=num, el2=2*num))
+# Vectors of different lengths returned as list
+sapply(2:4, function(num) 1:num)
+# vapply is similar to sapply
+vapply(2:4, function(num) c(el1=num, el2=2*num),
+       FUN.VALUE=c(row1=0, row2=0))
+# vapply produces an error if it can't simplify
+vapply(2:4, function(num) 1:num,
+       FUN.VALUE=c(row1=0, row2=0))
 
 x_var <- seq(-5, 7, length=100)
 y_var <- dnorm(x_var, mean=1.0, sd=2.0)

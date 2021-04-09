@@ -75,12 +75,12 @@ sym_bol <- "VTI"
 # oh_lc <- rutils::etf_env$VTI
 oh_lc <- get(sym_bol, rutils::etf_env)
 op_en <- quantmod::Op(oh_lc)
-cl_ose <- quantmod::Cl(oh_lc)
+clos_e <- quantmod::Cl(oh_lc)
 vol_ume <- quantmod::Vo(oh_lc)
-star_t <- as.numeric(cl_ose[1])
+star_t <- as.numeric(clos_e[1])
 # Define aggregation interval and calculate VWAP
 look_back <- 200
-v_wap <- rutils::roll_sum(x_ts=cl_ose*vol_ume,
+v_wap <- rutils::roll_sum(x_ts=clos_e*vol_ume,
   look_back=look_back)
 volume_roll <- rutils::roll_sum(x_ts=vol_ume,
   look_back=look_back)
@@ -89,7 +89,7 @@ v_wap[is.na(v_wap)] <- 0
 
 # Plot prices and VWAP
 x11(width=6, height=5)
-chart_Series(x=cl_ose,
+chart_Series(x=clos_e,
   name="VTI prices and VWAP", col="orange")
 add_TA(v_wap, on=1, lwd=2, col="blue")
 legend("top", legend=c("VTI", "VWAP"),
@@ -97,11 +97,11 @@ legend("top", legend=c("VTI", "VWAP"),
   col=c("orange", "blue"), bty="n")
 
 # Calculate VWAP indicator
-indica_tor <- sign(cl_ose - v_wap)
+indica_tor <- sign(clos_e - v_wap)
 # Calculate positions as lagged indicator
 position_s <- rutils::lag_it(indica_tor)
 # Calculate daily profits and losses of strategy
-re_turns <- rutils::diff_it(cl_ose)
+re_turns <- rutils::diff_it(clos_e)
 pnl_s <- re_turns*position_s
 cum_pnls <- star_t + cumsum(pnl_s)
 # Annualized Sharpe ratio of VWAP strategy
@@ -109,7 +109,7 @@ sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 # Annualized Sharpe ratio of VTI
 sqrt(252)*sum(re_turns)/sd(re_turns)/NROW(pnl_s)
 # Plot prices and VWAP
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI", col="orange")
+chart_Series(x=clos_e, name="VWAP Crossover Strategy for VTI", col="orange")
 add_TA(cum_pnls, on=1, lwd=2, col="blue")
 add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
@@ -120,7 +120,7 @@ legend("top", legend=c(sym_bol, "VWAP strategy"),
  col=c("orange", "blue"), bty="n")
 
 # Plot prices and VWAP
-da_ta <- cbind(cl_ose, cum_pnls, v_wap)
+da_ta <- cbind(clos_e, cum_pnls, v_wap)
 colnames(da_ta) <- c(sym_bol, "strategy", "vwap")
 dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy")) %>%
   dyAxis("y", label=sym_bol, independentTicks=TRUE) %>%
@@ -133,7 +133,7 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy")) %>%
 lagg <- 2
 indic_sum <- roll::roll_sum(indica_tor, width=lagg)
 indic_sum[1:lagg] <- 0
-position_s <- rep(NA_integer_, NROW(cl_ose))
+position_s <- rep(NA_integer_, NROW(clos_e))
 position_s[1] <- 0
 position_s <- ifelse(indic_sum == lagg, 1, position_s)
 position_s <- ifelse(indic_sum == (-lagg), -1, position_s)
@@ -162,15 +162,15 @@ position_s <- zoo::na.locf(position_s, na.rm=FALSE)
 position_s <- xts(position_s, order.by=index(oh_lc))
 pos_lagged <- rutils::lag_it(position_s)
 # Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
+pnl_s <- rutils::diff_it(clos_e)*position_s
 # Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
+close_lag <- rutils::lag_it(clos_e)
 pnl_s[trade_dates] <- pos_lagged[trade_dates]*
   (op_en[trade_dates] - close_lag[trade_dates])
 # Calculate unrealized pnl for days with trade
 pnl_s[trade_dates] <- pnl_s[trade_dates] +
   position_s[trade_dates]*
-  (cl_ose[trade_dates] - op_en[trade_dates])
+  (clos_e[trade_dates] - op_en[trade_dates])
 cum_pnls_open <- star_t + cumsum(pnl_s)
 # Annualized Sharpe ratio of VWAP strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
@@ -184,7 +184,7 @@ dygraphs::dygraph(da_ta, main=paste(sym_bol, "VWAP Strategy on Open")) %>%
   dySeries(name="strategy_open", label="Strategy on Open", strokeWidth=2, col="green") %>%
   dySeries(name="strategy", label="Strategy", strokeWidth=2, col="blue")
 # Plot VTI and VWAP strategy
-chart_Series(x=cl_ose, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
+chart_Series(x=clos_e, name="VWAP Crossover Strategy for VTI Trade at Open Price", col="orange")
 add_TA(cum_pnls, on=1, lwd=2, col="blue")
 add_TA(position_s > 0, on=-1,
  col="lightgreen", border="lightgreen")
@@ -200,10 +200,10 @@ lamb_da <- 0.01
 # Calculate EWMA prices
 weight_s <- exp(-lamb_da*1:wid_th)
 weight_s <- weight_s/sum(weight_s)
-ew_ma <- stats::filter(cl_ose, filter=weight_s,
+ew_ma <- stats::filter(clos_e, filter=weight_s,
   sides=1, method="convolution")
 ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-ew_ma <- cbind(cl_ose, as.numeric(ew_ma))
+ew_ma <- cbind(clos_e, as.numeric(ew_ma))
 colnames(ew_ma) <- c("VTI", "VTI EWMA")
 
 # Plot EWMA prices with custom line colors
@@ -216,7 +216,7 @@ legend("bottomleft", legend=colnames(ew_ma),
  col=plot_theme$col$line.col, bty="n")
 
 # Determine dates right after VWAP has crossed prices
-indica_tor <- sign(cl_ose - ew_ma[, 2])
+indica_tor <- sign(clos_e - ew_ma[, 2])
 trade_dates <- (rutils::diff_it(indica_tor) != 0)
 trade_dates <- which(trade_dates) + 1
 # Calculate positions, either: -1, 0, or 1
@@ -239,21 +239,21 @@ legend("bottomleft", legend=colnames(ew_ma),
 
 # Calculate daily profits and losses
 # Calculate pnl for days without trade
-pnl_s <- rutils::diff_it(cl_ose)*position_s
+pnl_s <- rutils::diff_it(clos_e)*position_s
 # Calculate realized pnl for days with trade
-close_lag <- rutils::lag_it(cl_ose)
+close_lag <- rutils::lag_it(clos_e)
 pos_lagged <- rutils::lag_it(position_s)
 pnl_s[trade_dates] <- pos_lagged[trade_dates]*
   (op_en[trade_dates] - close_lag[trade_dates])
 # Calculate unrealized pnl for days with trade
 pnl_s[trade_dates] <- pnl_s[trade_dates] +
   position_s[trade_dates]*
-  (cl_ose[trade_dates] - op_en[trade_dates])
+  (clos_e[trade_dates] - op_en[trade_dates])
 # Annualized Sharpe ratio of EWMA strategy
 sqrt(252)*sum(pnl_s)/sd(pnl_s)/NROW(pnl_s)
 # Cumulative pnls
 cum_pnls <- star_t + cumsum(pnl_s)
-cum_pnls <- cbind(cl_ose, cum_pnls)
+cum_pnls <- cbind(clos_e, cum_pnls)
 colnames(cum_pnls) <- c("VTI", "EWMA PnL")
 
 # Plot EWMA PnL with position shading
@@ -270,7 +270,7 @@ legend("top", legend=colnames(cum_pnls),
 # bid_offer equal to 10 bps for liquid ETFs
 bid_offer <- 0.001
 # Calculate transaction costs
-cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
+cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*clos_e
 # pnl_s <- (pnl_s - cost_s)
 # Plot strategy with transaction costs
 cum_pnls <- star_t + cumsum(pnl_s)
@@ -284,11 +284,11 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
   # Calculate EWMA prices
   weight_s <- exp(-lamb_da*1:wid_th)
   weight_s <- weight_s/sum(weight_s)
-  cl_ose <- quantmod::Cl(oh_lc)
-  ew_ma <- stats::filter(cl_ose, filter=weight_s, sides=1, method="convolution")
+  clos_e <- quantmod::Cl(oh_lc)
+  ew_ma <- stats::filter(clos_e, filter=weight_s, sides=1, method="convolution")
   ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
   # Determine dates right after EWMA has crossed prices
-  indica_tor <- tre_nd*sign(cl_ose - as.numeric(ew_ma))
+  indica_tor <- tre_nd*sign(clos_e - as.numeric(ew_ma))
   trade_dates <- (rutils::diff_it(indica_tor) != 0)
   trade_dates <- which(trade_dates) + 1
   trade_dates <- trade_dates[trade_dates < NROW(oh_lc)]
@@ -298,17 +298,17 @@ simu_ewma <- function(oh_lc, lamb_da=0.01, wid_th=251, bid_offer=0.001, tre_nd=1
   position_s[trade_dates] <- indica_tor[trade_dates-1]
   position_s <- zoo::na.locf(position_s, na.rm=FALSE)
   op_en <- quantmod::Op(oh_lc)
-  close_lag <- rutils::lag_it(cl_ose)
+  close_lag <- rutils::lag_it(clos_e)
   pos_lagged <- rutils::lag_it(position_s)
   # Calculate daily profits and losses
-  pnl_s <- rutils::diff_it(cl_ose)*position_s
+  pnl_s <- rutils::diff_it(clos_e)*position_s
   pnl_s[trade_dates] <- pos_lagged[trade_dates]*
     (op_en[trade_dates] - close_lag[trade_dates])
   pnl_s[trade_dates] <- pnl_s[trade_dates] +
     position_s[trade_dates]*
-    (cl_ose[trade_dates] - op_en[trade_dates])
+    (clos_e[trade_dates] - op_en[trade_dates])
   # Calculate transaction costs
-  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*cl_ose
+  cost_s <- 0.5*bid_offer*abs(pos_lagged - position_s)*clos_e
   pnl_s <- (pnl_s - cost_s)
   # Calculate strategy returns
   pnl_s <- cbind(position_s, pnl_s)
@@ -377,7 +377,7 @@ ewma_trend <- simu_ewma(oh_lc=oh_lc,
   wid_th=wid_th)
 position_s <- ewma_trend[, "positions"]
 pnl_s <- star_t + cumsum(ewma_trend[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL with position shading
 plot_theme$col$line.col <- c("orange", "blue")
@@ -429,7 +429,7 @@ ewma_revert <- simu_ewma(oh_lc=oh_lc, bid_offer=0.0,
   wid_th=wid_th, tre_nd=(-1))
 position_s <- ewma_revert[, "positions"]
 pnl_s <- star_t + cumsum(ewma_revert[, "pnls"])
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 
 # Plot EWMA PnL with position shading
@@ -449,7 +449,7 @@ trend_ing <- ewma_trend[, "pnls"]
 colnames(trend_ing) <- "trend"
 revert_ing <- ewma_revert[, "pnls"]
 colnames(revert_ing) <- "revert"
-close_rets <- rutils::diff_it(cl_ose)
+close_rets <- rutils::diff_it(clos_e)
 cor(cbind(trend_ing, revert_ing, close_rets))
 # Calculate combined strategy
 com_bined <- trend_ing + revert_ing
@@ -477,7 +477,7 @@ re_turns <- cbind(trend_returns, revert_returns)
 avg_returns <- re_turns %*% weight_s
 avg_returns <- xts(avg_returns, order.by=index(re_turns))
 pnl_s <- (star_t + cumsum(avg_returns))
-pnl_s <- cbind(cl_ose, pnl_s)
+pnl_s <- cbind(clos_e, pnl_s)
 colnames(pnl_s) <- c("VTI", "EWMA PnL")
 # Plot EWMA PnL without position shading
 plot_theme <- chart_theme()

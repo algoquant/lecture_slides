@@ -58,7 +58,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Graphics and Plotting]{Graphics and Plotting}
-\subtitle{FRE6871 \& FRE7241, Fall 2020}
+\subtitle{FRE6871 \& FRE7241, Spring 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -1095,7 +1095,7 @@ barplot(pois_table, col="lightgrey",
       \vskip1ex
       If the argument \texttt{freq} is \texttt{TRUE} then the frequencies (counts) are plotted, and if it's \texttt{FALSE} then the probability density is plotted (with total area equal to $1$).
       \vskip1ex
-      The function \texttt{density()} calculates a kernel estimate of the probability density.
+      The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
       \vskip1ex
       The function \texttt{lines()} draws a line through specified points.
       <<poisbarplot,echo=TRUE,eval=FALSE,fig.show="hide">>=
@@ -1397,20 +1397,275 @@ animation::saveHTML(expr=eval(ex_pr),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Interactive Charts Using Package \protect\emph{shiny}}
+\subsection{Package \protect\emph{shiny} for Creating Interactive Applications}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The package \emph{shiny} creates interactive charts that display the outputs of live models running in \texttt{R}.
+      The package \emph{shiny} creates interactive applications running in \texttt{R}, with their outputs presented as live visualizations.
+      \vskip1ex
+      \emph{Shiny} allows changing the model parameters, recalculating the model, and displaying the resulting outputs as plots and charts.
+      \vskip1ex
+      A \emph{shiny app} is a file with \emph{shiny} commands and \texttt{R} code. 
+      \vskip1ex
+      The \emph{shiny} code consists of a \emph{shiny interface} and a \emph{shiny server}.
+      \vskip1ex
+      The \emph{shiny interface} contains widgets for data input and an area for plotting.
+      \vskip1ex
+      The \emph{shiny server} contains the \texttt{R} model code and the plotting code.
+      \vskip1ex
+      The function \texttt{shiny::fluidPage()} creates a GUI layout for the user inputs of model parameters and an area for plots and charts.
+      \vskip1ex
+      The function \texttt{shiny::renderPlot()} renders a plot from the outputs of a live model.
+      <<echo=TRUE,eval=FALSE>>=
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      % \includegraphics[width=0.3\paperwidth]{figure/shiny_simple.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## App setup code that runs only once at startup. 
+n_data <- 1e4
+std_dev <- 1.0
+
+## Define the user interface
+inter_face <- shiny::fluidPage(
+  # Create numeric input for the number of data points.
+  numericInput('n_data', "Number of data points:", value=n_data),
+  # Create slider input for the standard deviation parameter.
+  sliderInput("std_dev", label="Standard deviation:",
+              min=0.1, max=3.0, value=std_dev, step=0.1),
+  # Render plot in a panel.
+  plotOutput("plo_t", height=300, width=500)
+)  # end user interface
+
+## Define the server function
+ser_ver <- function(input, output) {
+  output$plo_t <- shiny::renderPlot({
+    # Simulate the data
+    da_ta <- rnorm(input$n_data, sd=input$std_dev)
+    # Plot the data
+    par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
+    hist(da_ta, xlim=c(-4, 4), main="Histogram of Random Data")
+  })  # end renderPlot
+}  # end ser_ver
+
+# Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+      @
+      \vspace{-1em}
+      The function \texttt{shiny::shinyApp()} creates a \texttt{shiny app} from a \emph{shiny interface} and a \emph{shiny server}.
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Running Shiny Apps in \protect\emph{RStudio}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      A \emph{shiny app} can be run by pressing the "Run App" button in \emph{RStudio}.
+      \vskip1ex
+      When the \emph{shiny app} is run, the \emph{shiny} commands are translated into \emph{JavaScript} code, which creates a graphical user interface (GUI) with buttons, sliders, and boxes for data input, and also with the output plots and charts.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/shiny_simple.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Positioning and Sizing Widgets Within the Shiny GUI}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{shiny::fluidRow()} and \texttt{shiny::column()} allow positioning and sizing widgets within the \emph{shiny} GUI.
+      <<echo=TRUE,eval=FALSE>>=
+## Create elements of the user interface
+inter_face <- shiny::fluidPage(
+  titlePanel("VWAP Moving Average"),
+  # Create single row of widgets with two slider inputs
+  fluidRow(
+    # Input stock symbol
+    column(width=3, selectInput("sym_bol", label="Symbol",
+                                choices=sym_bols, selected=sym_bol)),
+    # Input look-back interval
+    column(width=3, sliderInput("look_back", label="Lookback interval",
+                                min=1, max=150, value=11, step=1))
+  ),  # end fluidRow
+  # Create output plot panel
+  mainPanel(dygraphs::dygraphOutput("dy_graph"), width=12)
+)  # end fluidPage interface
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/shiny_vwap.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shiny Apps With Reactive Expressions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} allows specifying reactive expressions which are evaluated only when their input data is updated.  
+      \vskip1ex
+      Reactive expressions avoid performing unnecessary calculations.
+      \vskip1ex
+      If the reactive expression is invalidated (recalculated), then other expressions that depend on its output are also recalculated. 
+      \vskip1ex
+      This way calculations cascade through the expressions that depend on each other.
+      \vskip1ex
+      The function \texttt{shiny::reactive()} transforms an expression into a reactive expression.
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+  # Get the close and volume data in a reactive environment
+  clos_e <- shiny::reactive({
+    # Get the data
+    oh_lc <- get(input$sym_bol, data_env)
+    clos_e <- log(quantmod::Cl(oh_lc))
+    vol_ume <- quantmod::Vo(oh_lc)
+    # Return the data
+    cbind(clos_e, vol_ume)
+  })  # end reactive code
+  
+  # Calculate the VWAP indicator in a reactive environment
+  v_wap <- shiny::reactive({
+    # Get model parameters from input argument
+    look_back <- input$look_back
+    # Calculate the VWAP indicator
+    clos_e <- clos_e()[, 1]
+    vol_ume <- clos_e()[, 2]
+    v_wap <- HighFreq::roll_sum(se_ries=clos_e*vol_ume, look_back=look_back)
+    volume_rolling <- HighFreq::roll_sum(se_ries=vol_ume, look_back=look_back)
+    v_wap <- v_wap/volume_rolling
+    v_wap[is.na(v_wap)] <- 0
+    # Return the plot data
+    da_ta <- cbind(clos_e, v_wap)
+    colnames(da_ta) <- c(input$sym_bol, "VWAP")
+    da_ta
+  })  # end reactive code
+  
+  # Return the dygraph plot to output argument
+  output$dy_graph <- dygraphs::renderDygraph({
+    col_names <- colnames(v_wap())
+    dygraphs::dygraph(v_wap(), main=paste(col_names[1], "VWAP")) %>%
+      dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+      dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+      dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
+      dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+  })  # end output plot
+})  # end server code
+
+## Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Reactive Event Handlers}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Event handlers are functions which evaluate expressions when an event occurs (like a button press).
+      \vskip1ex
+      The functions \texttt{shiny::observeEvent()} and \texttt{shiny::eventReactive()} are event handlers.
+      \vskip1ex
+      The function \texttt{shiny::eventReactive()} returns a value, while \texttt{shiny::observeEvent()} produces a side-effect, without returning a value.
+      \vskip1ex
+      The function \texttt{shiny::reactiveValues()} creates a list for storing reactive values, which can be updated by event handlers. 
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+
+  # Create an empty list of reactive values.
+  value_s <- reactiveValues()
+  
+  # Get input parameters from the user interface.
+  n_rows <- reactive({
+    # Add n_rows to list of reactive values.
+    value_s$n_rows <- input$n_rows
+    input$n_rows
+  })  # end reactive code
+  
+  # Broadcast a message to the console when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    cat("Input button pressed\n")
+  })  # end observeEvent
+  
+  # Send the data when the button is pressed.
+  da_ta <- eventReactive(eventExpr=input$but_ton, valueExpr={
+    # eventReactive() executes on input$but_ton, but not on n_rows() or input$n_rows.
+    cat("Sending", n_rows(), "rows of data\n")
+    da_ta <- head(mtcars, input$n_rows)
+    value_s$mpg <- mean(da_ta$mpg)
+    da_ta
+  })  # end eventReactive
+  #   da_ta
+  
+  # Draw table of the data when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    da_ta <- da_ta()
+    cat("Received", value_s$n_rows, "rows of data\n")
+    cat("Average mpg = ", value_s$mpg, "\n")
+    cat("Drawing table\n")
+    output$tabl_e <- renderTable(da_ta) 
+  })  # end observeEvent
+  
+})  # end server code
+
+## Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Interactive Plots Using Markdown and \protect\emph{shiny}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} creates interactive plots that display the outputs of live models running in \texttt{R}.
       \vskip1ex
       The function \texttt{inputPanel()} creates a panel for user input of model parameters.
       \vskip1ex
       The function \texttt{renderPlot()} renders a plot from the outputs of a live model running in \texttt{R}.
       \vskip1ex
       To create a shiny chart, you can first create an \texttt{.Rmd} file, embed the \emph{shiny} code in an \texttt{R} chunk, and then compile the \texttt{.Rmd} file into an \emph{html} document, using the \emph{knitr} package.
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # R startup chunk
 # ```{r setup, include=FALSE}

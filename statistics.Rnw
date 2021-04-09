@@ -61,7 +61,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Probability and Statistics]{Probability and Statistics}
-\subtitle{FRE6871 \& FRE7241, Fall 2020}
+\subtitle{FRE6871 \& FRE7241, Spring 2021}
 % \subject{Getting Started With R}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
@@ -264,13 +264,13 @@ as.numeric(runif(20) < 0.5)  # Slower
     \column{0.5\textwidth}
       A \emph{sample} is a subset of elements taken from a set of data elements.
       \vskip1ex
-      The function \texttt{sample()} produces a random sample form a vector of data elements.
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
       \vskip1ex
       By default the \emph{size} of the sample (the \texttt{size} argument) is equal to the number of elements in the data vector.
       \vskip1ex
       So the call \texttt{sample(da\_ta)} produces a random permutation of all the elements of \texttt{da\_ta}.
       \vskip1ex
-      If \texttt{replace=TRUE}, then \texttt{sample()} produces samples with replacement.
+      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
       \vskip1ex
       \emph{Monte Carlo} simulation consists of generating random samples from a given probability distribution.
       \vskip1ex
@@ -1239,42 +1239,6 @@ legend("topright", inset=0.05, bty="n",
 
 
 %%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots, x_n\}$ and $\{y_1, \ldots, y_n\}$ were obtained from the same probability distribution.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
-      \begin{displaymath}
-        D = \sup_i | P(x_i) - P(y_i) |
-      \end{displaymath}
-      The function \texttt{ks.test()} calculates the \emph{Kolmogorov-Smirnov} statistic and its \emph{p}-value.
-      \vskip1ex
-      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
-      \vskip1ex
-      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a given probability distribution.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# KS-test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS-test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS-test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS-test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{The \protect\emph{Shapiro-Wilk} Test of Normality}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1300,6 +1264,7 @@ ks.test(rnorm(100), rnorm(100, mean=1.0))
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
 # Calculate VTI percentage returns
+library(rutils)
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Reset output digits
 dig_its <- options(digits=5)
@@ -1310,7 +1275,7 @@ shapiro.test(as.numeric(re_turns))
 # Shapiro-Wilk test for uniform distribution
 shapiro.test(runif(NROW(re_turns)))
 # Restore output digits
-options(digits=dig_its)
+options(digits=dig_its$digits)
       @
   \end{columns}
 \end{block}
@@ -1352,6 +1317,155 @@ jarque.bera.test(rnorm(NROW(re_turns)))
 jarque.bera.test(re_turns)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(re_turns)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Kolmogorov-Smirnov} Test for Probability Distributions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{Kolmogorov-Smirnov} test is designed to test the \emph{null hypothesis} that two samples: $\{x_1, \ldots , x_n\}$ and $\{y_1, \ldots , y_n\}$ were obtained from the same probability distribution.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} statistic is the maximum difference between two empirical cumulative distribution functions (cumulative frequencies):
+      \begin{displaymath}
+        D = \sup_i | P(x_i) - P(y_i) |
+      \end{displaymath}
+      The function \texttt{ks.test()} performs the \emph{Kolmogorov-Smirnov} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The second argument is either a \texttt{numeric} vector of data values, or a name of a cumulative distribution function.
+      \vskip1ex
+      The \emph{Kolmogorov-Smirnov} test can be used as a \emph{goodness of fit} test, to test if a set of observations fits a probability distribution.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# Fit t-dist into VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
+# Perform Kolmogorov-Smirnov test on VTI returns
+da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
+ks.test(as.numeric(re_turns), da_ta)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{\protect\emph{Chi-squared} Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $z_1, \ldots , z_k$ be independent standard \emph{Normal} random variables.
+      \vskip1ex
+      Then the random variable $X = \sum_{i=1}^k z_i^2$ is distributed according to the \emph{Chi-squared} distribution with $k$ degrees of freedom: $X \sim \chi_k^2$, and its probability density function is given by:
+      \begin{displaymath}
+        f(x) = \frac{x^{k/2-1}\,e^{-x/2}}{2^{k/2}\, \Gamma(k/2)}
+      \end{displaymath}
+      \vskip1ex
+      The \emph{Chi-squared} distribution with $k$ degrees of freedom has mean equal to $k$ and variance equal to $2k$.
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
+col_ors <- c("red", "black", "blue", "green")
+for (in_dex in 1:4) {
+  curve(expr=dchisq(x, df=deg_free[in_dex]),
+        xlim=c(0, 20), ylim=c(0, 0.3),
+        xlab="", ylab="", col=col_ors[in_dex],
+        lwd=2, add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/chisq_dist_mult.png}\\
+      \vspace{-1em}
+        <<echo=TRUE,eval=FALSE>>=
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=1, col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Chi-squared} Test for the Goodness of Fit}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \emph{Goodness of Fit} tests are designed to test if a set of observations fits an assumed theoretical probability distribution.
+      \vskip1ex
+      The \emph{Chi-squared} test tests if a frequency of counts fits the specified distribution.
+      \vskip1ex
+      The \emph{Chi-squared} statistic is the sum of squared differences between the observed frequencies $o_i$ and the theoretical frequencies $p_i$:
+      \begin{displaymath}
+        \chi^2 = N \sum_{i=1}^{n} {\frac{(o_i - p_i )^2}{p_i}}
+      \end{displaymath}
+      Where $N$ is the total number of observations.
+      \vskip1ex
+      The \emph{null hypothesis} is that the observed frequencies are consistent with the theoretical distribution.
+      \vskip1ex
+      The function \texttt{chisq.test()} performs the \emph{Chi-squared} test and returns the statistic and its \emph{p}-value \emph{invisibly}.
+      \vskip1ex
+      The parameter \texttt{breaks} in the function \texttt{hist()} should be chosen large enough to capture the shape of the frequency distribution.
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Observed frequencies from random normal data
+histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts
+# Theoretical frequencies
+freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+# Perform Chi-squared test for normal data
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+# Return p-value
+chisq_test <- chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+chisq_test$p.value
+# Observed frequencies from shifted normal data
+histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts/sum(histo_gram$counts)
+# Theoretical frequencies
+freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+# Perform Chi-squared test for shifted normal data
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+# Calculate histogram of VTI returns
+histo_gram <- hist(re_turns, breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts
+# Calculate cumulative probabilities and then difference them
+freq_t <- pt((histo_gram$breaks-lo_cation)/scal_e, df=2)
+freq_t <- rutils::diff_it(freq_t)
+# Perform Chi-squared test for VTI returns
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
       @
   \end{columns}
 \end{block}

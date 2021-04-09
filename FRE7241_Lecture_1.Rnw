@@ -60,12 +60,12 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[FRE7241 Lecture\#1]{FRE7241 Algorithmic Portfolio Management}
-\subtitle{Lecture\#1, Fall 2020}
+\subtitle{Lecture\#1, Spring 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{September 8, 2020}
+\date{March 30, 2021}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -116,7 +116,7 @@ knit_theme$set(thm)
 \vspace{-2em}
 
 \begin{block}{Course Description}
-The course will apply the \texttt{R} programming language to \emph{momentum trading}, \emph{statistical arbitrage} (pairs trading), and other active portfolio management strategies.  The course will implement volatility and price \emph{forecasting models}, asset pricing and \emph{factor models}, and \emph{portfolio optimization}.  The course will apply \emph{machine learning} techniques, such as \emph{backtesting} (cross-validation) and \emph{parameter regularization} (shrinkage).
+The course will apply the \texttt{R} programming language to \emph{trend following}, \emph{momentum trading}, \emph{statistical arbitrage} (pairs trading), and other active portfolio management strategies.  The course will implement volatility and price \emph{forecasting models}, asset pricing and \emph{factor models}, and \emph{portfolio optimization}.  The course will apply \emph{machine learning} techniques, such as \emph{parameter regularization} (shrinkage), \emph{bagging} and \emph{backtesting} (cross-validation).
 \end{block}
 \pause
 
@@ -159,7 +159,7 @@ Homeworks will also include reading assignments designed to help prepare for tes
 \pause
 
 \begin{block}{Graduate Assistant}
-The graduate assistant (GA) will be Jed Lu \href{mailto:jl9445@nyu.edu}{jl9445@nyu.edu}.\\
+The graduate assistant (GA) will be Sumit Sethi \href{mailto:sumit.sethi@nyu.edu}{sumit.sethi@nyu.edu}.\\
 The GA will answer questions during office hours, or via \emph{NYU Classes} forums, not via emails.  Please send emails regarding lecture matters from \emph{NYU Classes} (not personal emails).
 \end{block}
 
@@ -280,6 +280,8 @@ Many textbooks can be downloaded in electronic format from the
   \item \href{http://www.nr.com/}{\emph{Numerical Recipes in \texttt{C++}}} by William Press, Saul Teukolsky, William Vetterling, and Brian Flannery, is a great reference for linear algebra and numerical methods, implemented in working \texttt{C++} code.
   % \fullcite{numrecipesbook}
   \item The books \href{http://www.statmethods.net/}{\emph{\texttt{R} in Action}} by Robert Kabacoff and \href{http://www.jaredlander.com/r-for-everyone/}{\emph{\texttt{R} for Everyone}} by Jared Lander, are good introductions to \texttt{R} and to statistical models.
+  \item \href{https://smile.amazon.com/hz/wishlist/genericItemsPage/1C3R818RWTWNW}{\emph{Quant Finance books}} by Jerzy Pawlowski.
+  \item \href{https://smile.amazon.com/hz/wishlist/genericItemsPage/1R44X8846DX3N}{\emph{Quant Trading books}} by Jerzy Pawlowski.
   % \fullcite{kabacoffbook}
   % \fullcite{landerbook}
 \end{itemize}
@@ -703,8 +705,8 @@ vec_tor <- runif(1e5)
 cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
-for (i in 2:NROW(cum_sum2))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
@@ -713,15 +715,15 @@ summary(microbenchmark(
   cumsum=cumsum(vec_tor),
   loop_alloc={
     cum_sum2 <- vec_tor
-    for (i in 2:NROW(cum_sum2))
-      cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+    for (i in 2:NROW(vec_tor))
+      cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
   },
   loop_nalloc={
     # Doesn't allocate memory to cum_sum3
     cum_sum3 <- vec_tor[1]
-    for (i in 2:NROW(cum_sum3))
+    for (i in 2:NROW(vec_tor))
       # This command adds an extra element to cum_sum3
-      cum_sum3[i] <- (cum_sum3[i] + cum_sum3[i-1])
+      cum_sum3[i] <- (vec_tor[i] + cum_sum3[i-1])
   },
   times=10))[, c(1, 4, 5)]
       @
@@ -907,6 +909,7 @@ search()  # Get search path for R objects
 detach(my_list)
 head(trees)  # "trees" is in datasets base package
       @
+      \vspace{-1em}
       \begin{block}{\color{red}{Rule of Thumb}}
         Be very careful with using \texttt{attach()}.
         \vskip1ex
@@ -924,7 +927,7 @@ head(trees)  # "trees" is in datasets base package
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Time series can be extracted from an \emph{environment} by coercing it into a \texttt{list}, and then subsetting and merging it into an \emph{xts} using the function \texttt{do.call()}.
       \vskip1ex
       A list of \emph{xts} can be flattened into a single \emph{xts} using the function \texttt{do.call()}.
@@ -936,19 +939,20 @@ head(trees)  # "trees" is in datasets base package
       The extractor (accessor) functions \texttt{Cl()}, \texttt{Vo()}, etc., from package \emph{quantmod}, extract columns from \emph{OHLC} data.
       \vskip1ex
       The function \texttt{eapply()} is similar to \texttt{lapply()}, and applies a function to objects in an \emph{environment}, and returns a list.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Define ETF symbols
 sym_bols <- c("VTI", "VEU", "IEF", "VNQ")
-# Extract and bind all data, subset by sym_bols
-price_s <- lapply(sym_bols, function(sym_bol) {
-    quantmod::Cl(get(sym_bol, envir=rutils::etf_env))
-})  # end lapply
-# price_s is a list of time series
+# Extract sym_bols from rutils::etf_env
+price_s <- mget(sym_bols, envir=rutils::etf_env)
+# price_s is a list of xts series
 class(price_s)
 class(price_s[[1]])
+tail(price_s[[1]])
+# Extract Close prices
+price_s <- lapply(price_s, quantmod::Cl)
 # Collapse list into time series the hard way
 xts_1 <- cbind(price_s[[1]], price_s[[2]], price_s[[3]], price_s[[4]])
 class(xts_1)
@@ -982,7 +986,7 @@ xts_2 <- do.call(cbind,
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       Time series columns can be renamed, and then saved into \texttt{.csv} files.
       \vskip1ex
       The function \texttt{strsplit()} splits the elements of a character vector.
@@ -994,13 +998,19 @@ xts_2 <- do.call(cbind,
       The function \texttt{assign()} assigns a value to an object in a specified \emph{environment}, by referencing it using a character string (name).
       \vskip1ex
       The function \texttt{save()} writes objects to compressed binary \texttt{.RData} files.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Drop ".Close" from colnames
+# Column names end with ".Close"
+colnames(price_s)
+strsplit(colnames(price_s), split="[.]")
+do.call(rbind, strsplit(colnames(price_s), split="[.]"))
+do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
+# Drop ".Close" from column names
+colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
+# Or
 colnames(price_s) <- unname(sapply(colnames(price_s),
-    function(col_name) 
-      strsplit(col_name, split="[.]")[[1]][1]))
+    function(col_name) strsplit(col_name, split="[.]")[[1]][1]))
 tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
@@ -1634,13 +1644,13 @@ microbenchmark(
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
-    \column{0.4\textwidth}
+    \column{0.5\textwidth}
       All the different \texttt{R} loops have similar speed, with \texttt{apply()} the fastest, then \texttt{vapply()}, \texttt{lapply()} and \texttt{sapply()} slightly slower, and \texttt{for()} loops the slowest.
       \vskip1ex
       More importantly, the \texttt{apply()} syntax is more readable and concise, and fits the functional language paradigm of \texttt{R},  so it's preferred over \texttt{for()} loops.
       \vskip1ex
       Both \texttt{vapply()} and \texttt{lapply()} are \emph{compiled} (\emph{primitive}) functions, and therefore can be faster than other \texttt{apply()} functions.
-    \column{0.6\textwidth}
+    \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Matrix with 5,000 rows
@@ -2010,10 +2020,8 @@ my_fun(in_put=1:3, pa_ram=2)
 # "pa_ram" is vectorized
 my_fun(in_put=10, pa_ram=2:4)
 # Define vectors of parameters of rnorm()
-std_devs <-
-  structure(1:3, names=paste0("sd=", 1:3))
-me_ans <-
-  structure(-1:1, names=paste0("mean=", -1:1))
+std_devs <- structure(1:3, names=paste0("sd=", 1:3))
+me_ans <- structure(-1:1, names=paste0("mean=", -1:1))
 # "sd" argument of rnorm() isn't vectorized
 rnorm(1, sd=std_devs)
 # "mean" argument of rnorm() isn't vectorized
@@ -2183,8 +2191,7 @@ vec_rnorm(n=2, mean=me_ans)
 vector1 <- sin(0.25*pi*1:20)
 vector2 <- cos(0.25*pi*1:20)
 # Create third vector using 'ifelse'
-vector3 <- ifelse(vector1 > vector2,
-                  vector1, vector2)
+vector3 <- ifelse(vector1 > vector2, vector1, vector2)
 # cbind all three together
 vector3 <- cbind(vector1, vector2, vector3)
 colnames(vector3)[3] <- "Max"
@@ -2578,7 +2585,7 @@ out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
 
 
 %%%%%%%%%%%%%%%
-\section{Simulation}
+\section{Time Series of Asset Prices}
 
 
 %%%%%%%%%%%%%%%
@@ -2611,13 +2618,13 @@ mean(da_ta)
 # Sample standard deviation - MC estimate
 sd(da_ta)
 # Monte Carlo estimate of cumulative probability
-da_ta <- sort(da_ta)
 pnorm(1)
-sum(da_ta<1)/n_rows
+sum(da_ta < 1)/n_rows
 # Monte Carlo estimate of quantile
-conf_level <- 0.99
+conf_level <- 0.98
 qnorm(conf_level)
 cut_off <- conf_level*n_rows
+da_ta <- sort(da_ta)
 da_ta[cut_off]
 quantile(da_ta, probs=conf_level)
 # Analyze the source code of quantile()
@@ -2645,35 +2652,31 @@ summary(microbenchmark(
       \texttt{while()} loops are often used in simulations, when the number of required loops is unknown in advance.
       \vskip1ex
       Below is an example of a simulation of the path of \emph{Brownian Motion} crossing a barrier level.
-      \vspace{-1em}
-        <<simu_while,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+        <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
 pa_th <- numeric(n_rows)  # Allocate path vector
 pa_th[1] <- 0  # Initialize path
 in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) &&
-         (pa_th[in_dex - 1] < bar_rier)) {
+while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
 # Simulate next step
-  pa_th[in_dex] <-
-    pa_th[in_dex - 1] + rnorm(1)
+  pa_th[in_dex] <- pa_th[in_dex - 1] + rnorm(1)
   in_dex <- in_dex + 1  # Advance in_dex
 }  # end while
 # Fill remaining pa_th after it crosses bar_rier
 if (in_dex <= n_rows)
   pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       @
     \column{0.5\textwidth}
+      \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
   \end{columns}
 \end{block}
@@ -2691,10 +2694,7 @@ title(main="Brownian motion crossing a barrier level",
       Simulations in \texttt{R} can be accelerated by pre-computing a vector of random numbers, instead of generatng them one at a time in a loop.
       \vskip1ex
       Vectors of random numbers allow using \emph{vectorized} functions, instead of inefficient (slow) \texttt{while()} loops.
-      \vspace{-1em}
-        <<simu_vector,eval=FALSE,echo=(-(1:3)),fig.show='hide'>>=
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+        <<echo=TRUE,eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
@@ -2704,25 +2704,466 @@ pa_th <- cumsum(rnorm(n_rows))
 cro_ss <- which(pa_th > bar_rier)
 # Fill remaining pa_th after it crosses bar_rier
 if (NROW(cro_ss)>0) {
-  pa_th[(cro_ss[1]+1):n_rows] <-
-    pa_th[cro_ss[1]]
+  pa_th[(cro_ss[1]+1):n_rows] <- pa_th[cro_ss[1]]
 }  # end if
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365,
-             start=c(2011, 1))
-# Create plot with horizontal line
-plot(ts_path, type="l", col="black",
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/simu_brown_barrier.png}
-      The trade-off between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
+      The tradeoff between speed and memory usage: more memory may be used than necessary, since the simulation may stop before all the pre-computed random numbers are used up.
       \vskip1ex
       But the simulation is much faster because the path is simulated using \emph{vectorized} functions,
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{p_t}$ follow \emph{Brownian motion}:
+      \begin{displaymath}
+        r_t \mathrm{d} t = \mathrm{d} \log{p_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
+      \end{displaymath}
+      Then asset prices $p_t$ follow \emph{Geometric Brownian motion} (GBM):
+      \begin{displaymath}
+        \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
+      \end{displaymath}
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Wiener process}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      \vskip1ex
+      The solution of \emph{Geometric Brownian motion} is equal to:
+      \begin{displaymath}
+        p_t = p_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
+      \end{displaymath}
+      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (according to Ito's lemma).
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom.png}
+      \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 1000
+# Simulate geometric Brownian motion
+re_turns <- sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2
+price_s <- exp(cumsum(re_turns))
+plot(price_s, type="l", xlab="time", ylab="prices",
+     main="geometric Brownian motion")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Simulating Random \protect\emph{OHLC} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Random \emph{OHLC} prices are useful for testing financial models.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample()} with \texttt{replace=TRUE} selects samples with replacement (the default is \texttt{replace=FALSE}).
+      <<echo=TRUE,eval=FALSE>>=
+# Simulate geometric Brownian motion
+sigma_r <- 0.01/sqrt(48)
+dri_ft <- 0.0
+n_rows <- 1e4
+in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+  length.out=n_rows, by="30 min")
+price_s <- exp(cumsum(sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2))
+price_s <- xts(price_s, order.by=in_dex)
+price_s <- cbind(price_s,
+  volume=sample(x=10*(2:18), size=n_rows, replace=TRUE))
+# Aggregate to daily OHLC data
+oh_lc <- xts::to.daily(price_s)
+quantmod::chart_Series(oh_lc, name="random prices")
+# dygraphs candlestick plot using pipes syntax
+library(dygraphs)
+dygraphs::dygraph(oh_lc[, 1:4]) %>% dyCandlestick()
+# dygraphs candlestick plot without using pipes syntax
+dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/random_ohlc.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The \protect\emph{Log-normal} Probability Distribution}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
+      \begin{displaymath}
+        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
+      \end{displaymath}
+      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
+      <<echo=TRUE,eval=FALSE>>=
+# Standard deviations of log-normal distribution
+sig_mas <- c(0.5, 1, 1.5)
+# Create plot colors
+col_ors <- c("black", "red", "blue")
+# Plot all curves
+for (in_dex in 1:NROW(sig_mas)) {
+  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
+        type="l", lwd=2, xlim=c(0, 3), 
+        xlab="", ylab="", col=col_ors[in_dex], 
+        add=as.logical(in_dex-1))
+}  # end for
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Add title and legend
+title(main="Log-normal Distributions", line=0.5)
+legend("topright", inset=0.05, title="Sigmas",
+       paste("sigma", sig_mas, sep="="),
+       cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
+       col=col_ors)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vskip1ex
+      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
+      \vskip1ex
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
+      \vskip1ex
+      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)
+par(mar=c(4, 4, 3, 1))
+# Return volatility of VTI ETF
+sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
+sigmar_2 <- sigma_r^2
+n_rows <- NROW(rutils::etf_env$VTI)
+# Standard deviation of log-normal prices
+sqrt(n_rows)*sigma_r
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_skew.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Skewness of log-normal prices
+skew_ness <- function(t) {
+  ex_p <- exp(t*sigmar_2)
+  (ex_p + 2)*sqrt(ex_p - 1)
+}  # end skew_ness
+curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Skewness", col="blue",
+      main="Skewness of Log-normal Prices
+      as a Function of Time")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
+      \vskip1ex
+      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
+      \vskip1ex
+      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
+      \vskip1ex
+      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/log_norm_prob.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Probability that random log-normal price will be lower than the mean price
+curve(expr=pnorm(sigma_r*sqrt(x)/2),
+      xlim=c(1, n_rows), lwd=3,
+      xlab="Number of days", ylab="Probability", col="blue",
+      main="Probability That Random Log-normal Price
+      Will be Lower Than the Mean Price")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 5000
+path_s <- 10
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Create xts time series
+price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
+# Plot xts time series
+col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_paths.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Paths of Geometric Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
+      \vskip1ex
+      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
+      <<echo=TRUE,eval=FALSE>>=
+# Define daily volatility and growth rate
+sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 10000
+path_s <- 100
+# Simulate multiple paths of geometric Brownian motion
+price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
+    dri_ft - sigma_r^2/2, nc=path_s)
+price_s <- exp(matrixStats::colCumsums(price_s))
+# Calculate percentage of paths below the expected value
+per_centage <- rowSums(price_s < 1.0) / path_s
+# Create xts time series of percentage of paths below the expected value
+per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
+# Plot xts time series of percentage of paths below the expected value
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(per_centage, main="Percentage of GBM paths below mean",
+         xlab=NA, ylab=NA, col="blue")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_percent.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Time Evolution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Stock prices evolve over time similar to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
+      <<echo=TRUE,eval=FALSE>>=
+# Load S&P500 stock prices
+load("C:/Develop/lecture_slides/data/sp500.RData")
+ls(sp500_env)
+# Extract closing prices
+price_s <- eapply(sp500_env, quantmod::Cl)
+# Flatten price_s into a single xts series
+price_s <- rutils::do_call(cbind, price_s)
+# Carry forward and backward non-NA prices
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
+sum(is.na(price_s))
+# Drop ".Close" from column names
+colnames(price_s[, 1:4])
+do.call(rbind, strsplit(colnames(price_s[, 1:4]), 
+                        split="[.]"))[, 1]
+colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), 
+                                             split="[.]"))[, 1]
+# Or
+colnames(price_s) <- sapply(colnames(price_s),
+  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+# Normalize columns
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])), 
+               order.by=index(price_s))
+# Calculate permution index for sorting the lowest to highest final price_s
+or_der <- order(price_s[NROW(price_s), ])
+# Select a few symbols
+sym_bols <- colnames(price_s)[or_der]
+sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
+      @
+    \column{0.5\textwidth}
+    \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stock_index_paths.png}
+    \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot xts time series of price_s
+col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
+col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
+         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
+legend(x="topleft", inset=0.05, cex=0.8,
+       legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Distribution of Stock Prices}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
+      \vskip1ex
+      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
+      \vskip1ex
+      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
+      \vskip1ex
+      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate average of valid stock prices
+val_id <- (price_s != 1)  # Valid stocks
+n_stocks <- rowSums(val_id)
+n_stocks[1] <- NCOL(price_s)
+in_dex <- rowSums(price_s * val_id) / n_stocks
+# Calculate percentage of stock prices below the average price
+per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
+# Create xts time series of average stock prices
+in_dex <- xts(in_dex, order.by=index(price_s))
+      @
+    \column{0.5\textwidth}
+    % \vspace{-1em}
+    %   \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices.png}
+    % \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=4)
+par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
+# Plot xts time series of average stock prices
+plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
+         xlab=NA, ylab=NA, col="blue")
+# Create xts time series of percentage of stock prices below the average price
+per_centage <- xts(per_centage, order.by=index(price_s))
+# Plot percentage of stock prices below the average price
+plot.zoo(per_centage[-(1:2),],
+         main="Percentage of S&P500 stock prices below the average price",
+         xlab=NA, ylab=NA, col="blue")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%
+\section{Simulation}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Estimating the Statistics of Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The statistics of Brownian motion can be estimated by simulating multiple paths.
+      \vskip1ex
+      An example of a statistic is the expected value of Brownian motion at a fixed time horizon,  which is the option payout for the strike price $k$: $\mathbb{E}[(p_t - k)_{+}]$.
+      \vskip1ex
+      Another statistic is the probability of Brownian motion crossing a boundary (barrier) $b$: $\mathbb{E}[\mathbbm{1}(p_t - b)]$.
+      <<echo=TRUE,eval=FALSE>>=
+# Define Brownian motion parameters
+sig_ma <- 1.0  # Volatility
+dri_ft <- 0.0  # Drift
+n_rows <- 1000  # Number of simulation steps
+n_simu <- 100  # Number of simulations
+# Simulate multiple paths of Brownian motion
+set.seed(1121)
+path_s <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
+path_s <- matrix(path_s, nc=n_simu)
+path_s <- matrixStats::colCumsums(path_s)
+# Final distribution of paths
+mean(path_s[n_rows, ]) ; sd(path_s[n_rows, ])
+# Calculate option payout
+strik_e <- 50  # Strike price
+pay_outs <- (path_s[n_rows, ] - strik_e)
+sum(pay_outs[pay_outs > 0])/n_simu
+# Calculate probability of crossing a barrier
+bar_rier <- 50
+cross_ed <- colSums(path_s > bar_rier) > 0
+sum(cross_ed)/n_simu
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/simu_brown_multiple.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot in window
+x11(width=6, height=5)
+par(mar=c(4, 3, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+# Select and plot full range of paths
+or_der <- order(path_s[n_rows, ])
+in_dex <- or_der[seq(1, 100, 9)]
+zoo::plot.zoo(path_s[, in_dex], main="Paths of Brownian Motion",
+  xlab="time steps", ylab=NA, plot.type="single")
+abline(h=strik_e, col="red", lwd=3)
+text(x=(n_rows-60), y=strik_e, labels="strike price", pos=3, cex=1)
+      @
   \end{columns}
 \end{block}
 
@@ -2761,7 +3202,7 @@ boot_data <- t(boot_data)
       \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/boot_median.png}
-      \vspace{-2em}
+      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 boot_data[1:3, ]
 # Standard error from formula
@@ -2770,11 +3211,9 @@ sd(da_ta)/sqrt(n_rows)
 sd(boot_data[, "mean"])
 # Standard error of median from bootstrap
 sd(boot_data[, "median"])
-plot(density(boot_data[, "median"]),
-     lwd=2, xlab="estimate of median",
+plot(density(boot_data[, "median"]), lwd=2, xlab="estimate of median",
      main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_data[, "median"]),
-       lwd=2, col="red")
+abline(v=mean(boot_data[, "median"]), lwd=2, col="red")
       @
   \end{columns}
 \end{block}
@@ -2789,7 +3228,7 @@ abline(v=mean(boot_data[, "median"]),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Bootstrapping is performed when it's not possible to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
+      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
       \vskip1ex
       But if the data consists of simulated random numbers then we can easily simulate another set of these random numbers, instead of sampling from the existing data.
       \vskip1ex
@@ -2804,8 +3243,7 @@ da_ta <- rnorm(n_rows)
 boot_data <- sapply(1:10000, function(x) {
   # sampl_e from Standard Normal Distribution
   sampl_e <- rnorm(n_rows)
-  c(mean=mean(sampl_e),
-    median=median(sampl_e))
+  c(mean=mean(sampl_e), median=median(sampl_e))
 })  # end sapply
 boot_data[, 1:3]
 # Standard error from formula
@@ -2947,6 +3385,49 @@ apply(boot_data, MARGIN=2, function(x)
 
 
 %%%%%%%%%%%%%%%
+\subsection{Resampling From Empirical Datasets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
+      \vskip1ex
+      Resampling is usually performed with replacement, so that each draw is independent from the others.
+      \vskip1ex
+      Resampling is performed when it's not possible or convenient to obtain another set of empirical data.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
+      \vskip1ex
+      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
+      \vskip1ex
+      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate time series of VTI returns
+re_turns <- rutils::etf_env$re_turns[, "VTI"]
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Sample from VTI returns
+sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
+c(sd=sd(sampl_e), mad=mad(sampl_e))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3), 
+  sample = sample(1e3), 
+  times=10))[, c(1, 4, 5)]
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
 \subsection{Bootstrapping From Empirical Datasets}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2967,7 +3448,7 @@ apply(boot_data, MARGIN=2, function(x)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Sample from time series of ETF returns
+# Sample from time series of VTI returns
 re_turns <- rutils::etf_env$re_turns[, "VTI"]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
@@ -3030,7 +3511,7 @@ bar_rier <- 1.5*max(price_s)
 sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
 # Calculate prices from percentage returns
 sampl_e <- star_t*exp(cumsum(sampl_e))
-# Calculate statistic
+# Calculate if prices crossed barrier
 sum(sampl_e > bar_rier) > 0
       @
     \column{0.5\textwidth}
@@ -3048,7 +3529,7 @@ boot_data <- parLapply(clus_ter, 1:n_boot,
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
     # Calculate prices from percentage returns
     sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate statistic
+    # Calculate if prices crossed barrier
     sum(sampl_e > bar_rier) > 0
   }, re_turns=re_turns, n_rows=n_rows)  # end parLapply
 # Perform parallel bootstrap under Mac-OSX or Linux
@@ -3056,7 +3537,7 @@ boot_data <- mclapply(1:n_boot, function(x) {
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
     # Calculate prices from percentage returns
     sampl_e <- star_t*exp(cumsum(sampl_e))
-    # Calculate statistic
+    # Calculate if prices crossed barrier
     sum(sampl_e > bar_rier) > 0
   }, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster under Windows
@@ -3207,12 +3688,13 @@ sqrt(2)*sd(boot_data)
       \end{displaymath}
       Where $p(x)$ is the probability density, $p(x, \lambda)$ is the tilted density, and $\lambda$ is the tilt parameter.
       \vskip1ex
-      For the \emph{Normal} distribution $\phi(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}$, exponential tilting is equivalent to shifting the distribution by $\lambda$:
+      For the \emph{Normal} distribution $\phi(x) = \frac{\exp(-x^2/2)}{\sqrt{2\pi}}$, exponential tilting is equivalent to shifting the distribution by $\lambda$: $x \rightarrow x + \lambda$.
       \begin{align*}
         \phi(x, \lambda) = \frac{\exp(\lambda x) \exp(-x^2/2)}{\int _{-\infty}^{\infty} {\exp(\lambda x) \exp(-x^2/2)} dx} = \\
-        \frac{\exp(-(x - \lambda)^2/2)}{\sqrt{2\pi}} = \\
+        \frac{\exp(-(x - \lambda)^2/2)}{\sqrt{2\pi}} = 
         \exp(x \lambda - \lambda^2/2) \cdot \phi(x, \lambda = 0)
       \end{align*}
+      Shifting the random variable $x \rightarrow x + \lambda$ is equivalent to multiplying the distribution by the weight factor: $\exp(x \lambda - \lambda^2/2)$.
     \column{0.5\textwidth}
       \vspace{-1em}
       \includegraphics[width=0.5\paperwidth]{figure/norm_dist_shifted.png}\\
@@ -3231,10 +3713,8 @@ curve(expr=dnorm(x, mean=1), add=TRUE,
 abline(v=0, lwd=3, col="blue", lty="dashed")
 abline(v=1, lwd=3, col="red", lty="dashed")
 arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
-       code=2, angle=20,
-       length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda),
-     pos=3, cex=2)
+       code=2, angle=20, length=grid::unit(0.2, "cm"))
+text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
       @
   \end{columns}
 \end{block}
@@ -3249,17 +3729,17 @@ text(x=0.3, 0.1, labels=bquote(lambda),
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Importance sampling} is a \emph{variance reduction} technique used for simulating rare events more accurately.
+      \emph{Importance sampling} is a \emph{variance reduction} technique for simulating rare events more accurately.
       \vskip1ex
       The \emph{variance} of an estimate produced by simulation decreases with the number of events which contribute to the estimate: $\sigma^2 \propto \frac{1}{n}$.
       \vskip1ex
-      \emph{Importance sampling} simulates rare events more frequently by \emph{tilting} the probability distribution, so that more events contribute to the simulation estimate.
+      \emph{Importance sampling} simulates rare events more frequently by \emph{tilting} the probability distribution, so that more events contribute to the estimate.
       \vskip1ex
-      The simulation outputs are then weighted (multiplied) to compensate for the tilting of the probability.
+      In standard Monte Carlo simulation, the simulated data points have equal probabilities.
       \vskip1ex
-      The weights are equal to the ratio of the base probability distribution divided by the tilted distribution.
+      But in \emph{importance sampling}, the simulated data must be weighted (multiplied) to compensate for the tilting of the probability.
       \vskip1ex
-      For the \emph{Normal} distribution the weights are equal to:
+      The tilt weights are equal to the ratio of the base probability distribution divided by the tilted distribution, which for the \emph{Normal} distribution are equal to:
       \begin{displaymath}
         w_x = \exp(-x \lambda + \lambda^2/2)
       \end{displaymath}
@@ -3276,7 +3756,7 @@ pnorm(-quan_tile)
 integrate(dnorm, low=quan_tile, up=Inf)
 sum(da_ta > quan_tile)/n_rows
 # Generate importance sample
-lamb_da <- 1.5
+lamb_da <- 1.5  # tilt parameter
 data_tilt <- da_ta + lamb_da
 # Cumulative probability from importance sample
 sum(data_tilt > quan_tile)/n_rows
@@ -3342,7 +3822,8 @@ boot_data <- sapply(1:1000, function(x) {
   data_tilt <- da_ta + lamb_da
   weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
   cum_prob <- cumsum(rev(weight_s))/n_rows
-  im_port <- data_tilt[n_rows - findInterval(1-conf_level, cum_prob)]
+  im_port <- data_tilt[n_rows - 
+    findInterval(1-conf_level, cum_prob)]
   c(naive_mc=na_ive, importance=im_port)
 }) # end sapply
 apply(boot_data, MARGIN=1,
@@ -3392,6 +3873,67 @@ boot_data <- sapply(1:1000, function(x) {
 }) # end sapply
 apply(boot_data, MARGIN=1,
   function(x) c(mean=mean(x), sd=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Importance Sampling of Brownian Motion}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The statistics that depend on extreme paths of Brownian motion can be simulated more accurately using \emph{importance sampling}. 
+      \vskip1ex
+      The normally distributed variables $x_i$ are shifted by the tilt parameter $\lambda$ to obtain the importance sample variables $x^{tilt}_i$: $x^{tilt}_i = x_i + \lambda$.
+      \vskip1ex
+      The Brownian paths $p_t$ are equal to the cumulative sums of the tilted variables $x^{tilt}_i$: $p_t = \sum_{i=1}^t x^{tilt}_i$.
+      \vskip1ex
+      Each tilted Brownian path has an associated weight factor equal to the product: $\prod_{i=1}^t \exp(- x^{tilt}_i \lambda + \lambda^2/2)$.
+      \vskip1ex
+      To compensate for the probability tilting, the statistics derived from the tilted Brownian paths must be multiplied by their weight factors.
+      \vskip1ex
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Define Brownian motion parameters
+sig_ma <- 1.0  # Volatility
+dri_ft <- 0.0  # Drift
+n_rows <- 100  # Number of simulation steps
+n_simu <- 10000  # Number of simulations
+# Calculate matrix of normal variables
+set.seed(1121)
+da_ta <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
+da_ta <- matrix(da_ta, nc=n_simu)
+# Simulate paths of Brownian motion
+path_s <- matrixStats::colCumsums(da_ta)
+# Tilt the da_ta
+lamb_da <- 0.04  # tilt parameter
+data_tilt <- da_ta + lamb_da
+paths_tilt <- matrixStats::colCumsums(data_tilt)
+# Calculate path weights
+weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+path_weights <- matrixStats::colProds(weight_s)
+# Or
+path_weights <- exp(-lamb_da*colSums(data_tilt) + n_rows*lamb_da^2/2)
+# Calculate option payout using standard MC
+strik_e <- 10  # Strike price
+pay_outs <- (path_s[n_rows, ] - strik_e)
+sum(pay_outs[pay_outs > 0])/n_simu
+# Calculate option payout using importance sampling
+pay_outs <- (paths_tilt[n_rows, ] - strik_e)
+sum((path_weights*pay_outs)[pay_outs > 0])/n_simu
+# Calculate crossing probability using standard MC
+bar_rier <- 10
+cross_ed <- colSums(path_s > bar_rier) > 0
+sum(cross_ed)/n_simu
+# Calculate crossing probability using importance sampling
+cross_ed <- colSums(paths_tilt > bar_rier) > 0
+sum(path_weights*cross_ed)/n_simu
       @
   \end{columns}
 \end{block}
@@ -3464,14 +4006,19 @@ apply(boot_data, MARGIN=1,
 # Initialize random number generator
 set.seed(1121)
 # Define explanatory and response variables
-de_sign <- rnorm(100, mean=2)
+predic_tor <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- (-3 + de_sign + noise)
-de_sign <- cbind(res_ponse, de_sign)
-# Calculate beta regression coefficient
-cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
+res_ponse <- (-3 + predic_tor + noise)
+de_sign <- cbind(res_ponse, predic_tor)
+# Calculate alpha and beta regression coefficients
+be_ta <- cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
+al_pha <- mean(de_sign[, 1]) - be_ta*mean(de_sign[, 2])
+x11(width=6, height=5)
+plot(res_ponse ~ predic_tor, data=de_sign)
+abline(a=al_pha, b=be_ta, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
-boot_data <- sapply(1:100, function(x) {
+n_boot <- 100
+boot_data <- sapply(1:n_boot, function(x) {
   sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
   de_sign <- de_sign[sampl_e, ]
   cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
