@@ -70,7 +70,7 @@ knit_theme$set(thm)
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
-\date{April 22, 2021}
+\date{April 13, 2021}
 % \date{\today}
 % \pgfdeclareimage[height=0.5cm]{university-logo}{engineering_long_white}
 % \logo{\pgfuseimage{engineering_long_white}}
@@ -108,7 +108,7 @@ knit_theme$set(thm)
       \end{displaymath}
       A time series of \emph{z-scores} over past data can be calculated using a rolling look-back window.
       <<echo=TRUE,eval=FALSE>>=
-price_s <- rutils::etf_env$VTI[, 4]
+price_s <- na.omit(rutils::etf_env$price_s$VTI)
 # Define look-back window and a half window
 win_dow <- 11
 # Calculate time series of medians
@@ -195,29 +195,29 @@ range(z_scores)
       \vskip1ex
       We can add jumps to the data to test the performance of the classifier.
       \vskip1ex
-      The null hypothesis is that all the prices are good data points.
+      Let the \emph{null hypothesis} be that the given price is a good data point.
       \vskip1ex
-      A positive result corresponds to rejecting the null hypothesis, while a negative result corresponds to accepting the null hypothesis.
+      A positive result corresponds to rejecting the \emph{null hypothesis}, while a negative result corresponds to accepting the \emph{null hypothesis}.
       \vskip1ex
       The classifications are subject to two different types of errors: \emph{type I} and \emph{type II} errors.
       \vskip1ex
-      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} null hypothesis (i.e. a "false positive"), for example, when the data is good, but it's classified as bad.
+      A \emph{type I} error is the incorrect rejection of a \texttt{TRUE} \emph{null hypothesis} (i.e. a "false positive"), for example, when the data is good, but it's classified as bad.
       \vskip1ex
-      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} null hypothesis (i.e. a "false negative"), for example, when the data is bad, but it's classified as good.
+      A \emph{type II} error is the incorrect acceptance of a \texttt{FALSE} \emph{null hypothesis} (i.e. a "false negative"), for example, when the data is bad, but it's classified as good.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define threshold value
+# Define discrimination threshold value
 thresh_old <- 3
 # Calculate number of prices classified as bad data
-ba_d <- (abs(z_scores) > thresh_old)
-sum(ba_d)
+is_bad <- (abs(z_scores) > thresh_old)
+sum(is_bad)
 # Add 200 random price jumps into price_s
 set.seed(1121)
 n_bad <- 200
-jump_s <- logical(NROW(price_s))
-jump_s[sample(x=NROW(jump_s), size=n_bad)] <- TRUE
-price_s[jump_s] <- price_s[jump_s]*
+is_jump <- logical(NROW(price_s))
+is_jump[sample(x=NROW(is_jump), size=n_bad)] <- TRUE
+price_s[is_jump] <- price_s[is_jump]*
   sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
 # Plot prices and medians
 dygraphs::dygraph(cbind(price_s, medi_an), main="VTI median") %>%
@@ -228,8 +228,8 @@ ma_d <- TTR::runMAD(price_s, n=win_dow)
 z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 # Calculate number of prices classified as bad data
-ba_d <- (abs(z_scores) > thresh_old)
-sum(ba_d)
+is_bad <- (abs(z_scores) > thresh_old)
+sum(is_bad)
       @
   \end{columns}
 \end{block}
@@ -238,36 +238,16 @@ sum(ba_d)
 
 
 %%%%%%%%%%%%%%%
-\subsection{Confusion Matrix of a Classification Model}
+\subsection{Confusion Matrix of a Binary Classification Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The confusion matrix summarizes the performance of a classification model on a set of test data for which the true values are known.
+      A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
       \vskip1ex
-      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} null hypothesis cases that are correctly classified as \texttt{FALSE}.
+      The confusion matrix summarizes the performance of a classification model on a set of test data for which the actual values of the \emph{null hypothesis} are known.
       \vskip1ex
-      The \emph{false negative} rate is the fraction of \texttt{FALSE} null hypothesis cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
-      \vskip1ex
-      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
-      \vskip1ex
-      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} null hypothesis cases that are correctly classified as \texttt{TRUE}.
-      \vskip1ex
-      The \emph{false positive} rate is the fraction of \texttt{TRUE} null hypothesis cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
-      \vskip1ex
-      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate confusion matrix
-table(jump_s, ba_d)
-sum(ba_d)
-# FALSE positive (type I error)
-sum(jump_s & !ba_d)
-# FALSE negative (type II error)
-sum(!jump_s & ba_d)
-      @
       \newcommand\MyBox[2]{
         \fbox{\lower0.75cm
           \vbox to 1.2cm{\vfil
@@ -277,13 +257,37 @@ sum(!jump_s & ba_d)
       }
       \renewcommand\arraystretch{0.3}
       \setlength\tabcolsep{0pt}
+      {\tiny
       \begin{tabular}{c >{\bfseries}r @{\hspace{0.5em}}c @{\hspace{0.4em}}c @{\hspace{0.5em}}l}
       \multirow{10}{*}{\parbox{0.5cm}{\bfseries Actual}} &
       & \multicolumn{2}{c}{\bfseries Forecast} & \\
-      & & \bfseries FALSE & \bfseries TRUE \\
-      & FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
-      & TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
-      \end{tabular}
+      & & \bfseries Null is FALSE & \bfseries Null is TRUE \\
+      & Null is FALSE & \MyBox{True Positive}{(sensitivity)} & \MyBox{False Negative}{(type II error)} \\[2.4em]
+      & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
+      \end{tabular}}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate confusion matrix
+table(actual=!is_jump, forecast=!is_bad)
+sum(is_bad)
+# FALSE positive (type I error)
+sum(!is_jump & is_bad)
+# FALSE negative (type II error)
+sum(is_jump & !is_bad)
+      @
+    \column{0.5\textwidth}
+      Let the \emph{null hypothesis} be that the given price is a good data point.
+      \vskip1ex
+      The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
+      \vskip1ex
+      The \emph{false negative} rate is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{TRUE} (\emph{type II} error).
+      \vskip1ex
+      The sum of the \emph{true positive} plus the \emph{false negative} rate is equal to $1$.
+      \vskip1ex
+      The \emph{true negative} rate (known as the \emph{specificity}) is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are correctly classified as \texttt{TRUE}.
+      \vskip1ex
+      The \emph{false positive} rate is the fraction of \texttt{TRUE} \emph{null hypothesis} cases that are incorrectly classified as \texttt{FALSE} (\emph{type I} error).
+      \vskip1ex
+      The sum of the \emph{true negative} plus the \emph{false positive} rate is equal to $1$.
   \end{columns}
 \end{block}
 
@@ -297,27 +301,26 @@ sum(!jump_s & ba_d)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The ROC curve is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
+      The \emph{ROC curve} is the plot of the \emph{true positive} rate, as a function of the \emph{false positive} rate, and illustrates the performance of a binary classifier.
       \vskip1ex
-      The area under the ROC curve (AUC) is a measure of the performance of a binary classification model.
-      \vspace{-1em}
+      The \emph{area under the ROC curve} (AUC) is a measure of the performance of a binary classification model.
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of thresh_old
-con_fuse <- function(res_ponse, z_scores, thresh_old) {
-    confu_sion <- table(res_ponse, (abs(z_scores) > thresh_old))
+con_fuse <- function(actu_al, z_scores, thresh_old) {
+    confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(jump_s, z_scores, thresh_old=thresh_old)
+con_fuse(is_jump, z_scores, thresh_old=thresh_old)
 # Define vector of thresholds
 threshold_s <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  res_ponse=jump_s,
-  z_scores=z_scores)  # end sapply
+  actu_al=is_jump, z_scores=z_scores)  # end sapply
 error_rates <- t(error_rates)
-error_rates <- rbind(c(0, 1), error_rates)
-error_rates <- rbind(error_rates, c(1, 0))
+rownames(error_rates) <- threshold_s
+error_rates <- rbind(c(1, 0), error_rates)
+error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
@@ -347,1243 +350,86 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
 
 
 %%%%%%%%%%%%%%%
-\section{Time Series of Asset Prices}
+\section{Publishing Interactive Documents}
 
 
 %%%%%%%%%%%%%%%
-\subsection{Geometric Brownian Motion}
+\subsection{Dynamic Documents Using \protect\emph{R markdown}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      If the percentage asset returns $r_t \mathrm{d} t = \mathrm{d} \log{P_t}$ follow \emph{Brownian motion}:
-      \begin{displaymath}
-        r_t \mathrm{d} t = \mathrm{d} \log{P_t} = ( \mu - \frac{\sigma^2}{2} ) \mathrm{d}t + \sigma \, \mathrm{d} W_t
-      \end{displaymath}
-      Then asset prices $P_t$ follow \emph{Geometric Brownian motion} (GBM):
-      \begin{displaymath}
-        \mathrm{d} P_t = \mu P_t \mathrm{d}t + \sigma \, P_t \mathrm{d} W_t
-      \end{displaymath}
-      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
       \vskip1ex
-      The solution of \emph{Geometric Brownian motion} is equal to:
-      \begin{displaymath}
-        P_t = P_0 \exp[( \mu - \frac{\sigma^2}{2} ) t + \sigma \, W_t]
-      \end{displaymath}
-      The convexity correction: $-\frac{\sigma^2}{2}$ ensures that the growth rate of prices is equal to $\mu$, (in accordance with Ito's lemma).
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/brown_geom.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 1000
-# Simulate geometric Brownian motion
-re_turns <- sigma_r*rnorm(n_rows) +
-  dri_ft - sigma_r^2/2
-price_s <- exp(cumsum(re_turns))
-plot(price_s, type="l",
-     xlab="periods", ylab="prices",
-     main="geometric Brownian motion")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Random \protect\emph{OHLC} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Random \emph{OHLC} prices are useful for testing financial models.
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate geometric Brownian motion
-sigma_r <- 0.01/sqrt(48)
-dri_ft <- 0.0
-n_rows <- 1e4
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
-  length.out=n_rows, by="30 min")
-price_s <- xts(exp(cumsum(sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2)),
-  order.by=in_dex)
-price_s <- cbind(price_s,
-  volume=sample(x=10*(2:18), size=n_rows, replace=TRUE))
-# Aggregate to daily OHLC data
-oh_lc <- xts::to.daily(price_s)
-quantmod::chart_Series(oh_lc, name="random prices")
-# dygraphs candlestick plot using pipes syntax
-library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>%
-  dyCandlestick()
-# dygraphs candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/random_ohlc.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The \protect\emph{Log-normal} Probability Distribution}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If \texttt{x} follows the \emph{Normal} distribution $\phi(x, \mu, \sigma)$, then the exponential of \texttt{x}: $y = e^x$ follows the \emph{Log-normal} distribution $\log\phi()$:
-      \begin{displaymath}
-        \log\phi(y, \mu, \sigma) = \frac{\exp(-(\log{y} - \mu)^2/2 \sigma^2)}{y \sigma \, \sqrt{2 \pi}}
-      \end{displaymath}
-      With mean equal to: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$, and median equal to: $\tilde{y} = \exp(\mu)$
-      <<echo=TRUE,eval=FALSE>>=
-# Standard deviations of log-normal distribution
-sig_mas <- c(0.5, 1, 1.5)
-# Create plot colors
-col_ors <- c("black", "red", "blue")
-# Plot all curves
-for (in_dex in 1:NROW(sig_mas)) {
-  curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-        type="l", xlim=c(0, 3), lwd=2,
-        xlab="", ylab="", col=col_ors[in_dex],
-        add=as.logical(in_dex-1))
-}  # end for
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/log_norm_dist.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Add title and legend
-title(main="Log-normal Distributions", line=0.5)
-legend("topright", inset=0.05, title="Sigmas",
-       paste("sigma", sig_mas, sep="="),
-       cex=0.8, lwd=2, lty=rep(1, NROW(sig_mas)),
-       col=col_ors)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Standard Deviation of \protect\emph{Log-normal} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
+      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
       \vskip1ex
-      If percentage asset returns are \emph{normally} distributed and follow \emph{Brownian motion}, then asset prices follow \emph{Geometric Brownian motion}, and they are \emph{Log-normally} distributed at every point in time.
-      \vskip1ex
-      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
-      \vskip1ex
-      The \emph{Log-normal} distribution has a strong positive skewness (third moment) equal to: $\varsigma = \mathbb{E}[(y - \mathbb{E}[y])^3] = (e^{\sigma^2} + 2) \sqrt{e^{\sigma^2} - 1}$
-      \vskip1ex
-      For large standard deviation, the skewness increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(4, 4, 3, 1))
-# Return volatility of VTI ETF
-sigma_r <- sd(rutils::diff_it(log(rutils::etf_env$VTI[, 4])))
-sigmar_2 <- sigma_r^2
-n_rows <- NROW(rutils::etf_env$VTI)
-# Standard deviation of log-normal prices
-sqrt(n_rows)*sigma_r
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/log_norm_skew.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Skewness of log-normal prices
-skew_ness <- function(t) {
-  ex_p <- exp(t*sigmar_2)
-  (ex_p + 2)*sqrt(ex_p - 1)
-}  # end skew_ness
-curve(expr=skew_ness, xlim=c(1, n_rows), lwd=3,
-      xlab="Number of days", ylab="Skewness", col="blue",
-      main="Skewness of Log-normal Prices
-      as a Function of Time")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{The Mean and Median of \protect\emph{Log-normal} Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The mean of the \emph{Log-normal} distribution: $\bar{y} = \mathbb{E}[y] = \exp(\mu + \sigma^2/2)$ is greater than its median, which is equal to: $\tilde{y} = \exp(\mu)$.
-      \vskip1ex
-      So if stock prices follow \emph{Geometric Brownian motion} and are distributed \emph{log-normally}, then a stock selected at random will have a high probability of havng a lower price than the mean expected price.
-      \vskip1ex
-      The cumulative \emph{Log-normal} probability distribution is equal to $\operatorname{F}(x) = \Phi(\frac{\log{y}-\mu}{\sigma})$, where $\Phi()$ is the cumulative standard normal distribution.
-      \vskip1ex
-      So the probability that the price of a randomly selected stock will be lower than the mean price is equal to $\operatorname{F}(\bar{y}) = \Phi(\sigma/2)$.
-      \vskip1ex
-      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index.
-      \vskip1ex
-      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/log_norm_prob.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Probability that random log-normal price will be lower than the mean price
-curve(expr=pnorm(sigma_r*sqrt(x)/2),
-      xlim=c(1, n_rows), lwd=3,
-      xlab="Number of days", ylab="Probability", col="blue",
-      main="Probability That Random Log-normal Price
-      Will be Lower Than the Mean Price")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Paths of Geometric Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The standard deviation of \emph{log-normal} prices is equal to the return volatility $\sigma_r$ times the square root of time: $\sigma = \sigma_r \sqrt{t}$.
-      \vskip1ex
-      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
-      <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 5000
-path_s <- 10
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Create xts time series
-price_s <- xts(price_s, order.by=seq.Date(Sys.Date()-NROW(price_s)+1, Sys.Date(), by=1))
-# Plot xts time series
-col_ors <- colorRampPalette(c("red", "blue"))(NCOL(price_s))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), ]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s, main="Multiple paths of geometric Brownian motion",
-         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_paths.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Paths of Geometric Brownian Motion}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Prices following \emph{Geometric Brownian motion} have a large positive skewness, so that the expected value of prices is skewed by a few paths with very high prices, while the prices of the majority of paths are below their expected value.
-      \vskip1ex
-      For large standard deviation, the skewness $\varsigma$ increases exponentially with the standard deviation and with time: $\varsigma \propto e^{1.5 \sigma^2} = e^{1.5 t \sigma^2_r}$
-      <<echo=TRUE,eval=FALSE>>=
-# Define daily volatility and growth rate
-sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 10000
-path_s <- 100
-# Simulate multiple paths of geometric Brownian motion
-price_s <- matrix(sigma_r*rnorm(path_s*n_rows) +
-    dri_ft - sigma_r^2/2, nc=path_s)
-price_s <- exp(matrixStats::colCumsums(price_s))
-# Calculate percentage of paths below the expected value
-per_centage <- rowSums(price_s < 1.0) / path_s
-# Create xts time series of percentage of paths below the expected value
-per_centage <- xts(per_centage, order.by=seq.Date(Sys.Date()-NROW(per_centage)+1, Sys.Date(), by=1))
-# Plot xts time series of percentage of paths below the expected value
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(per_centage, main="Percentage of GBM paths below mean",
-         xlab=NA, ylab=NA, col="blue")
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/brown_geom_percent.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Time Evolution of Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Stock prices evolve in time similarly to \emph{Geometric Brownian motion}, and they also exhibit a very skewed distribution of prices.
-      <<echo=TRUE,eval=FALSE>>=
-# Load S&P500 stock prices
-load("C:/Develop/lecture_slides/data/sp500.RData")
-ls(sp500_env)
-# Extract closing prices
-price_s <- eapply(sp500_env, quantmod::Cl)
-# Flatten price_s into a single xts series
-price_s <- rutils::do_call(cbind, price_s)
-# Carry forward and backward non-NA prices
-price_s <- xts:::na.locf.xts(price_s)
-price_s <- xts:::na.locf.xts(price_s, fromLast=TRUE)
-sum(is.na(price_s))
-# Rename and normalize columns
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
-price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
-               order.by=index(price_s))
-# Calculate permution index for sorting the lowest to highest final price_s
-or_der <- order(price_s[NROW(price_s), ])
-# Select a few symbols
-sym_bols <- colnames(price_s)[or_der]
-sym_bols <- sym_bols[seq.int(from=1, to=(NROW(sym_bols)-1), length.out=20)]
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stock_index_paths.png}
-    \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot xts time series of price_s
-col_ors <- colorRampPalette(c("red", "blue"))(NROW(sym_bols))
-col_ors <- col_ors[order(order(price_s[NROW(price_s), sym_bols]))]
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot.zoo(price_s[, sym_bols], main="20 S&P500 stock prices (normalized)",
-         xlab=NA, ylab=NA, plot.type="single", col=col_ors)
-legend(x="topleft", inset=0.05, cex=0.8,
-       legend=rev(sym_bols), col=rev(col_ors), lwd=6, lty=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Distribution of Stock Prices}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Usually, a small number of stocks in an index reach very high prices, while the prices of the majority of stocks remain below the index price (the average price of the index portfolio).
-      \vskip1ex
-      For example, the current prices of almost \texttt{80\%} of the S\&P500 constituent stocks from \texttt{1990} are now below the average price of that portfolio.
-      \vskip1ex
-      Therefore an investor without skill, who selects stocks at random, has a high probability of underperforming the index, because they will most likely miss selecting the best performing stocks.
-      \vskip1ex
-      Performing as well as the index requires \emph{significant} investment skill, while outperforming the index requires \emph{exceptional} investment skill.
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate average of valid stock prices
-val_id <- (price_s != 1)  # valid stocks
-n_stocks <- rowSums(val_id)
-n_stocks[1] <- NCOL(price_s)
-in_dex <- rowSums(price_s * val_id) / n_stocks
-# Calculate percentage of stock prices below the average price
-per_centage <- rowSums((price_s < in_dex) & val_id) / n_stocks
-# Create xts time series of average stock prices
-in_dex <- xts(in_dex, order.by=index(price_s))
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-    %   \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices.png}
-    % \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stock_index_prices_percent.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(3, 3, 2, 2), oma=c(0, 0, 0, 0))
-# Plot xts time series of average stock prices
-plot.zoo(in_dex, main="Average S&P500 stock prices (normalized from 1990)",
-         xlab=NA, ylab=NA, col="blue")
-# Create xts time series of percentage of stock prices below the average price
-per_centage <- xts(per_centage, order.by=index(price_s))
-# Plot percentage of stock prices below the average price
-plot.zoo(per_centage[-(1:2),],
-         main="Percentage of S&P500 stock prices below the average price",
-         xlab=NA, ylab=NA, col="blue")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%
-\section{Time Series Modeling}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation Function of Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The estimator of \emph{autocorrelation} of a time series is equal to:
-      \begin{displaymath}
-        \rho_k = \frac{\sum_{i=k+1}^n (x_i-\bar{x})(x_{i-k}-\bar{x})}{(n-k) \, \sigma^2}
-      \end{displaymath}
-      The \emph{autocorrelation function} (\emph{ACF}) is the vector of autocorrelation coefficients.
-      \vskip1ex
-      The function \texttt{stats::acf()} calculates and plots the autocorrelation function of a time series.
-      \vskip1ex
-      The function \texttt{stats::acf()} has the drawback that it plots the lag zero autocorrelation (which is simply equal to $1$).
-      \vskip1ex
-      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
-        <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(3, 3, 1, 3), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
-re_turns <- diff(log(as.numeric(EuStockMarkets[, 1])))
-# Plot autocorrelations using stats::acf()
-stats::acf(re_turns, lag=10, main="")
-title(main="ACF of DAX Returns", line=-1)
-# Two-tailed 95% confidence interval
-qnorm(0.975)/sqrt(NROW(re_turns))
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_dax.png}\\
-      The \emph{DAX} time series of returns does not appear to have statistically significant autocorrelations.
-      \vskip1ex
-      The horizontal dashed lines are two-tailed confidence intervals of the autocorrelation estimator at \texttt{95\%} significance level: $\frac{\Phi^{-1}(0.975)}{\sqrt{n}}$.
-      \vskip1ex
-      But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Ljung-Box Test for Autocorrelations of Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Ljung-Box} test, tests if the autocorrelations of a time series are \emph{statistically significant}.
-      \vskip1ex
-      The \emph{null hypothesis} of the \emph{Ljung-Box} test is that the autocorrelations are equal to zero.
-      \vskip1ex
-      The test statistic is:
-      \begin{displaymath}
-        Q = n(n+2) \sum_{k=1}^{maxlag} \frac{{\hat\rho}_k^2}{n-k}
-      \end{displaymath}
-      Where \texttt{n} is the sample size, and the ${\hat\rho}_k$ are sample autocorrelations.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic follows the \emph{chi-squared} distribution with \emph{maxlag} degrees of freedom.
-      \vskip1ex
-      The \emph{Ljung-Box} statistic is small for time series that have \emph{statistically insignificant} autocorrelations.
-      \vskip1ex
-      The function \texttt{Box.test()} calculates the \emph{Ljung-Box} test and returns the test statistic and its p-value.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Ljung-Box test for DAX returns
-# 'lag' is the number of autocorrelation coefficients
-Box.test(re_turns, lag=10, type="Ljung")
-library(Ecdat)  # Load Ecdat
-macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-macro_diff <- na.omit(diff(macro_zoo))
-# Changes in 3 month T-bill rate are autocorrelated
-Box.test(macro_diff[, "3mTbill"], lag=10, type="Ljung")
-# Changes in unemployment rate are autocorrelated
-Box.test(macro_diff[, "unemprate"], lag=10, type="Ljung")
-      @
-      The \emph{p}-value for \emph{DAX} returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that \emph{DAX} returns are \emph{not} autocorrelated.
-      \vskip1ex
-      The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Improved Autocorrelation Function}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{acf()} has the drawback that it plots the lag zero autocorrelation (which is simply equal to $1$).
-      \vskip1ex
-      Inspection of the data returned by \texttt{acf()} shows how to omit the lag zero autocorrelation.
-      \vskip1ex
-      The function \texttt{acf()} returns the \emph{ACF} data invisibly, i.e. the return value can be assigned to a variable, but otherwise it isn't automatically printed to the console.
-      \vskip1ex
-      The function \texttt{rutils::plot\_acf()} from package \emph{rutils} is a wrapper for \texttt{acf()}, and it omits the lag zero autocorrelation.
-      <<echo=TRUE,eval=FALSE>>=
-# Get the ACF data returned invisibly
-acf_data <- acf(re_turns, plot=FALSE)
-summary(acf_data)
-# Print the ACF data
-print(acf_data)
-dim(acf_data$acf)
-dim(acf_data$lag)
-head(acf_data$acf)
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-plot_acf <- function(x_ts, lagg=10,
-                     plo_t=TRUE,
-                     xlab="Lag", ylab="",
-                     main="", ...) {
-  # Calculate the ACF without a plot
-  acf_data <- acf(x=x_ts, lag.max=lagg, plot=FALSE, ...)
-  # Remove first element of ACF data
-  acf_data$acf <- array(data=acf_data$acf[-1],
-    dim=c((dim(acf_data$acf)[1]-1), 1, 1))
-  acf_data$lag <- array(data=acf_data$lag[-1],
-    dim=c((dim(acf_data$lag)[1]-1), 1, 1))
-  # Plot ACF
-  if (plo_t) {
-    ci <- qnorm((1+0.95)/2)*sqrt(1/NROW(x_ts))
-    ylim <- c(min(-ci, range(acf_data$acf[-1])),
-              max(ci, range(acf_data$acf[-1])))
-    plot(acf_data, xlab=xlab, ylab=ylab,
-         ylim=ylim, main="", ci=0)
-    title(main=main, line=0.5)
-    abline(h=c(-ci, ci), col="blue", lty=2)
-  }
-  # Return the ACF data invisibly
-  invisible(acf_data)
-}  # end plot_acf
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of \protect\emph{DAX} Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{DAX} time series of returns does not appear to have statistically significant autocorrelations.
-      \vskip1ex
-      But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
-        <<echo=(-(1:2)),eval=FALSE>>=
-library(rutils)  # Load package rutils
-par(mar=c(5,0,1,2), oma=c(1,2,1,0), mgp=c(2,1,0), cex.lab=0.8, cex.axis=1.0, cex.main=0.8, cex.sub=0.5)
-# Improved autocorrelation function
-rutils::plot_acf(re_turns, lag=10, main="")
-title(main="acf of DAX returns", line=-1)
-# Ljung-Box test for DAX returns
-Box.test(re_turns, lag=10, type="Ljung")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/dax_acf-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Squared \protect\emph{DAX} Returns}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Squared random returns are not autocorrelated.
-      \vskip1ex
-      But squared \emph{DAX} returns do have statistically significant autocorrelations.
-      \vskip1ex
-      The autocorrelations of squared asset returns are a very important feature.
-      <<dax_squared_acf,echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=7)
-par(mar=c(1, 1, 1, 1), oma=c(1, 1, 0, 1), mgp=c(0, 0.5, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-# Autocorrelation of squared random returns
-rutils::plot_acf(rnorm(NROW(re_turns))^2, lag=10, main="")
-title(main="ACF of Squared Random Returns", line=-1)
-# Autocorrelation of squared DAX returns
-rutils::plot_acf(re_turns^2, lag=10, main="")
-title(main="ACF of Squared DAX Returns", line=-1)
-# Ljung-Box test for squared DAX returns
-Box.test(re_turns^2, lag=10, type="Ljung")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/dax_squared_acf.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{U.S. Macroeconomic Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The package \emph{Ecdat} contains the \texttt{Macrodat} U.S. macroeconomic data.
-      \vskip1ex
-      \texttt{"lhur"} is the unemployment rate (average of months in quarter).
-      \vskip1ex
-      \texttt{"fygm3"} 3 month treasury bill interest rate (last month in quarter)
-      <<macro_data,echo=(-(1:1)),eval=FALSE,fig.show='hide'>>=
-library(rutils)  # Load package rutils
-library(Ecdat)  # Load Ecdat
-colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # Coerce to "zoo"
-          Macrodat[, c("lhur", "fygm3")])
-colnames(macro_zoo) <- c("unemprate", "3mTbill")
-# ggplot2 in multiple panes
-autoplot(  # Generic ggplot2 for "zoo"
-  object=macro_zoo, main="US Macro",
-  facets=Series ~ .) + # end autoplot
-  xlab("") +
-theme(  # modify plot theme
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank()
-)  # end theme
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/macro_data-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation of Econometric Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Most econometric data displays a high degree of autocorrelation.
-      \vskip1ex
-      But the time series of asset returns display very low autocorrelations.
-      <<macro_corr,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-macro_diff <- na.omit(diff(macro_zoo))
-rutils::plot_acf(coredata(macro_diff[, "unemprate"]),
-  lag=10, main="quarterly unemployment rate")
-rutils::plot_acf(coredata(macro_diff[, "3mTbill"]),
-  lag=10, main="3 month T-bill EOQ")
-      @
-      The function \texttt{zoo::coredata()} extracts the underlying numeric data from a complex data object.
-    \column{0.5\textwidth}
-      \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/macro_corr-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Filtering Time Series Using Function \texttt{filter()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{filter()} applies a linear filter to time series, vectors, and matrices, and returns a time series of class \texttt{"ts"}.
-      \vskip1ex
-      The function \texttt{filter()} with the argument \texttt{method="convolution"} calculates the \emph{convolution} of the vector $r_i$ with the filter $\varphi_i$:
-      \begin{displaymath}
-        f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
-      \end{displaymath}
-      Where $f_i$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Extract time series of DAX prices
-da_x <- EuStockMarkets[, 1]
-# Apply convolution filter over past values (sides=1)
-co_eff <- c(0.1, 0.39, 0.5)
-filter_ed <- filter(da_x, filter=co_eff, 
-                    method="convolution", sides=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Fast Filtering Using Compiled Functions}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{filter()} is very fast because it calculates the filter by calling compiled \texttt{C++} functions.
-      \vskip1ex
-      \texttt{filter()} with \texttt{method="convolution"} calls the function \texttt{stats:::C\_cfilter} to calculate the \emph{convolution}. 
-      \vskip1ex
-      \texttt{filter()} with \texttt{method="recursive"} calculates a \emph{recursive} filter over the vector of random \emph{innovations} $\xi_i$ as follows:
-      \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
-      \end{displaymath}
-      Where $r_i$ is the filtered output vector, and $\varphi_i$ are the filter coefficients.
-      \vskip1ex
-      The \emph{recursive} filter describes an \emph{AR(p)} process, which is a special case of an \emph{ARIMA} process.
-      \vskip1ex
-      \texttt{filter()} with \texttt{method="recursive"} calls the function \texttt{stats:::C\_rfilter} to calculate the \emph{recursive filter}. 
-      \vskip1ex
-      Filtering can be performed even faster by directly calling the compiled \texttt{C++} functions.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Inspect the R code of the function filter()
-filter
-# Get information about C_cfilter()
-getAnywhere(C_cfilter)
-# Filter over past values (sides=1)
-filter_ed <- filter(da_x, filter=co_eff, 
-                    method="convolution", sides=1)
-# Filter using C_cfilter() compiled C++ function directly
-filter_fast <- .Call(stats:::C_cfilter, da_x, filter=co_eff, 
-                     sides=1, circular=FALSE)
-all.equal(as.numeric(filter_ed), filter_fast, 
-          check.attributes=FALSE)
-# Benchmark speed of the two methods
-library(microbenchmark)
-summary(microbenchmark(
-  fast_filter=.Call(stats:::C_cfilter, da_x, filter=co_eff, sides=1, circular=FALSE),
-  R_filter=filter(da_x, filter=co_eff, method="convolution", sides=1)
-  ), times=10)[, c(1, 4, 5)]
-# Simulate ARIMA using filter()
-in_nov <- rnorm(NROW(EuStockMarkets))
-ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
-# Get information about C_rfilter()
-getAnywhere(C_rfilter)
-# Filter using C_rfilter() compiled C++ function directly
-arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff, 
-                    double(NROW(co_eff) + NROW(in_nov)))
-all.equal(as.numeric(ari_ma), arima_fast[-(1:3)], check.attributes=FALSE)
-# Benchmark speed of the two methods
-summary(microbenchmark(
-  fast_filter=.Call(stats:::C_rfilter, in_nov, co_eff, double(NROW(co_eff) + NROW(in_nov))),
-  R_filter=filter(x=in_nov, filter=co_eff, method="recursive")
-  ), times=10)[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Plotting Filtered Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<dax_filter,eval=FALSE,fig.width=6,fig.height=5,fig.show='hide'>>=
-library(rutils)  # Load package rutils
-library(ggplot2)  # Load ggplot2
-library(gridExtra)  # Load gridExtra
-# Coerce to zoo and merge the time series
-filter_ed <- cbind(as.zoo(da_x),
-                  as.zoo(filter_ed))
-colnames(filter_ed) <- c("DAX", "DAX filtered")
-autoplot(  # Plot ggplot2
-    window(filter_ed, start=1997, end=1998), 
-    main="Filtered DAX", facets=NULL) +  # end autoplot
-xlab("") + ylab("") +
-theme(  # modify plot theme
-    legend.position=c(0.1, 0.5),
-    plot.title=element_text(vjust=-2.0),
-    plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-    plot.background=element_blank(),
-    axis.text.y=element_blank()
-    )  # end theme
-# end ggplot2
-      @
-    \column{0.5\textwidth}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/dax_filter-1}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelation Function of Filtered Time Series}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Filtering a time series creates autocorrelations.
-      <<echo=TRUE,eval=FALSE>>=
-# Open plot window
-x11(width=6, height=7)
-# Set plot parameters
-par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), 
-    cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-# Set two plot panels
-par(mfrow=c(2,1))
-# Calculate DAX returns
-re_turns <- na.omit(diff(log(filter_ed)))
-# Plot ACF of DAX returns
-rutils::plot_acf(re_turns[, 1], lag=10, xlab="")
-title(main="ACF of DAX filtered Returns", line=-1)
-# Plot ACF of DAX returns
-rutils::plot_acf(re_turns[, 2], lag=10, xlab="")
-title(main="ACF of DAX Filtered", line=-1)
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_dax_filter.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autoregressive \protect\emph{ARIMA} Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \emph{autoregressive} process \emph{AR(p)} of order \emph{p} for a time series $r_i$ is defined as:
-      \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
-      \end{displaymath}
-      Where $\varphi_i$ are the \emph{AR} coefficients, and $\xi_i$ are random normal \emph{innovations} with zero mean and unit variance.
-      \vskip1ex
-      The \emph{AR(p)} process is a special case of an \emph{ARIMA} process, and is simply called an \emph{AR} process.
-      \vskip1ex
-      If the \emph{AR(p)} process is stationary then the time series $r_i$ is mean reverting to zero.
-      \vskip1ex
-      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes, with the \texttt{"model"} argument accepting a \texttt{list} of \emph{AR} coefficients $\varphi_i$.
-    <<echo=(-(1:2)),eval=FALSE>>=
-# Simulate AR processes
-set.seed(1121)  # Reset random numbers
-in_dex <- Sys.Date() + 0:728  # Two year daily series
-ari_ma <- xts(  # AR time series of returns
-  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
-  order.by=in_dex)
-ari_ma <- cbind(ari_ma, cumsum(ari_ma))
-colnames(ari_ma) <- c("AR returns", "AR prices")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      % \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_process.png}
-      \vspace{-3em}
-    <<echo=(-(1:2)),eval=FALSE>>=
-library(ggplot2)  # Load ggplot2
-library(gridExtra)  # Load gridExtra
-autoplot(object=ari_ma, # ggplot AR process
-     facets="Series ~ .",
-     main="Autoregressive process (phi=0.2)") +
-  facet_grid("Series ~ .", scales="free_y") +
-  xlab("") + ylab("") +
-theme(legend.position=c(0.1, 0.5),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Examples of Autoregressive Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The speed of mean reversion of an \emph{AR(1)} process depends on the \emph{AR} coefficient $\varphi_1$, with a negative coefficient producing faster mean reversion, and a positive coefficient producing stronger diversion.
-      \vskip1ex
-      A positive coefficient $\varphi_1$ produces a diversion away from the mean, so that the time series $r_i$ wanders away from the mean for longer periods of time.
-      <<echo=TRUE,eval=FALSE>>=
-ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
-# Create three AR time series
-ari_ma <- sapply(ar_coeff, function(phi) {
-  set.seed(1121)  # Reset random numbers
-  arima.sim(n=NROW(in_dex), model=list(ar=phi))
-})  # end sapply
-colnames(ari_ma) <- paste("autocorr", ar_coeff)
-plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
-# Or plot using ggplot
-ari_ma <- xts(x=ari_ma, order.by=in_dex)
-library(ggplot)
-autoplot(ari_ma, main="AR(1) prices",
-         facets=Series ~ .) +
-    facet_grid(Series ~ ., scales="free_y") +
-xlab("") +
-theme(
-  legend.position=c(0.1, 0.5),
-  plot.title=element_text(vjust=-2.0),
-  plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
-  plot.background=element_blank(),
-  axis.text.y=element_blank())
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_processes.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Autoregressive Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      An \emph{autoregressive} process \emph{AR(p)}:
-      \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i
-      \end{displaymath}
-      Can be simulated by using an explicit recursive loop in \texttt{R}.
-      \vskip1ex
-      \emph{AR} processes can also be simulated by using the function \texttt{filter()} directly, with the argument \texttt{method="recursive"}.
-      \vskip1ex
-      The function \texttt{filter()} applies a linear filter to a vector, and returns a time series of class \texttt{"ts"}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Define AR(3) coefficients and innovations
-co_eff <- c(0.1, 0.39, 0.5)
-n_rows <- 1e2
-set.seed(1121); in_nov <- rnorm(n_rows)
-# Simulate AR process using recursive loop in R
-ari_ma <- numeric(NROW(in_nov))
-ari_ma[1] <- in_nov[1]
-ari_ma[2] <- co_eff[1]*ari_ma[1] + in_nov[2]
-ari_ma[3] <- co_eff[1]*ari_ma[2] + co_eff[2]*ari_ma[1] + in_nov[3]
-for (it in 4:NROW(ari_ma)) {
-  ari_ma[it] <- ari_ma[(it-1):(it-3)] %*% co_eff + in_nov[it]
-}  # End for
-# Simulate AR process using filter()
-arima_faster <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-class(arima_faster)
-all.equal(ari_ma, as.numeric(arima_faster))
-# Fast simulation of AR process using C_rfilter()
-arima_fastest <- .Call(stats:::C_rfilter, in_nov, co_eff, 
-                       double(NROW(co_eff) + NROW(in_nov)))[-(1:3)]
-all.equal(ari_ma, arima_fastest)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Simulating Autoregressive Processes Using \texttt{arima.sim()}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{arima.sim()} simulates \emph{ARIMA} processes by calling the function \texttt{filter()}.
-      \vskip1ex
-      \emph{ARIMA} processes can also be simulated by using the function \texttt{filter()} directly, with the argument \texttt{method="recursive"}.
-      \vskip1ex
-      Simulating stationary \emph{autoregressive} processes requires a \emph{warmup period}, to allow the process to reach its stationary state.
-      \vskip1ex
-      The required length of the \emph{warmup period} depends on the smallest root of the characteristic equation, with a longer \emph{warmup period} needed for smaller roots, that are closer to $1$.
-      \vskip1ex
-      The \emph{rule of thumb} (heuristic rule, guideline) is for the \emph{warmup period} to be equal to \texttt{6} divided  by the logarithm of the smallest characteristic root plus the number of \emph{AR} coefficients: $\frac{6}{\log(minroot)} + \operatorname{numcoeff}$
-    \column{0.5\textwidth}
-      \vspace{-1em}
-    <<echo=TRUE,eval=FALSE>>=
-# Calculate modulus of roots of characteristic equation
-root_s <- Mod(polyroot(c(1, -co_eff)))
-# Calculate warmup period
-warm_up <- NROW(co_eff) + ceiling(6/log(min(root_s)))
-set.seed(1121)
-n_rows <- 1e4
-in_nov <- rnorm(n_rows + warm_up)
-# Simulate ARIMA using arima.sim()
-ari_ma <- arima.sim(n=n_rows,
-  model=list(ar=co_eff),
-  start.innov=in_nov[1:warm_up],
-  innov=in_nov[(warm_up+1):NROW(in_nov)])
-# Simulate AR process using filter()
-arima_fast <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-all.equal(arima_fast[-(1:warm_up)],
-  as.numeric(ari_ma))
-# Benchmark the speed of the three methods of simulating ARIMA
-library(microbenchmark)
-summary(microbenchmark(
-  filter=filter(x=in_nov, filter=co_eff, method="recursive"),
-  arima_sim=arima.sim(n=n_rows,
-                      model=list(ar=co_eff),
-                      start.innov=in_nov[1:warm_up],
-                      innov=in_nov[(warm_up+1):NROW(in_nov)]),
-  arima_loop={for (it in 4:NROW(ari_ma)) {
-  ari_ma[it] <- ari_ma[(it-1):(it-3)] %*% co_eff + in_nov[it]}}
-  ), times=10)[, c(1, 4, 5)]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Stationary Processes and Unit-root Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      A process is \emph{stationary} if its probability distribution does not change with time, which means that it has constant mean and variance.
-      \vskip1ex
-      The \emph{autoregressive} process \emph{AR(p)}:
-      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i$
-      \vskip1ex
-      Has the following characteristic equation:
-      $1 - \varphi_1 z - \varphi_2 z^2 - \ldots - \varphi_p z^p = 0$
-      \vskip1ex
-      An autoregressive process is stationary only if the absolute values of all the roots of its characteristic equation are greater than $1$.
-      \vskip1ex
-      If the sum of the autoregressive coefficients is equal to $1$: $\sum_{i=1}^p \varphi_i = 1$, then the process has a root equal to $1$ (it has a \emph{unit root}), so it's not stationary.
-      \vskip1ex
-      Non-stationary processes with unit roots are called \emph{unit-root} processes.
-      \vskip1ex
-      A simple example of a \emph{unit-root} process is the process:
-      $p_i = p_{i-1} + \xi_i$,
-      which is called a \emph{Wiener process}.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/stat_unit_root-1}
-      \vspace{-2em}
-      <<echo=(-(1:3)),eval=FALSE>>=
-library(rutils)  # Load rutils
-library(ggplot2)  # Load ggplot2
-set.seed(1121)  # Initialize random number generator
-rand_walk <- cumsum(zoo(matrix(rnorm(3*100), ncol=3),
-                  order.by=(Sys.Date()+0:99)))
-colnames(rand_walk) <- paste("rand_walk", 1:3, sep="_")
-plot.zoo(rand_walk, main="Random walks",
-     xlab="", ylab="", plot.type="single",
-     col=c("black", "red", "blue"))
-# Add legend
-legend(x="topleft", legend=colnames(rand_walk),
-       col=c("black", "red", "blue"), lty=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Integrated and Unit-root Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The cumulative sum of a given process is called its \emph{integrated} process.
-      \vskip1ex
-      For example, asset prices follow an \emph{integrated} process with respect to asset returns: $p_n = {\sum_{i=1}^n r_i}$.
-      \vskip1ex
-      If returns follow an \emph{AR(p)} process:
-      $r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p} + \xi_i$
-      \vskip1ex
-      Then asset prices follow the process:
-      $p_i = (1 + \varphi_1) p_{i-1} + (\varphi_2 - \varphi_1) p_{i-2} + \ldots + (\varphi_p - \varphi_{p-1}) p_{i-p} - \varphi_p p_{i-p-1} + \xi_i$
-      \vskip1ex
-      The sum of the coefficients of the price process is equal to $1$, so it has a \emph{unit root} for all values of the $\varphi_i$ coefficients.
-      \vskip1ex
-      The \emph{integrated} process of an \emph{AR(p)} process is always a \emph{unit root} process.
-    \column{0.5\textwidth}
-      In particular, if returns follow an \emph{AR(1)} process: $r_i = \varphi r_{i-1} + \xi_i$. 
-      \vskip1ex
-      Then asset prices follow the process: $p_i = (1 + \varphi) p_{i-1} - \varphi p_{i-2} + \xi_i$
-      \vskip1ex
-      Which is a \emph{unit root} process for all values of $\varphi$, because the sum of its coefficients is equal to $1$.
-      \vskip1ex
-      If $\varphi = 0$ then the above process is a \emph{Wiener process} (random walk).
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate arima with large AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=n_rows, model=list(ar=0.99))
-tseries::adf.test(ari_ma)
-# Integrated series has unit root
-tseries::adf.test(cumsum(ari_ma))
-# Simulate arima with negative AR coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=n_rows, model=list(ar=-0.99))
-tseries::adf.test(ari_ma)
-# Integrated series has unit root
-tseries::adf.test(cumsum(ari_ma))
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Dickey-Fuller Test for Unit Roots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Dickey-Fuller} and \emph{Augmented Dickey-Fuller} tests are designed to test the \emph{null hypothesis} that a time series process has a \emph{unit root}.
-      \vskip1ex
-      The \emph{Augmented Dickey-Fuller} (\emph{ADF}) test fits a regression model to determine if the price time series $p_i$ exhibits mean reversion:
-      \begin{displaymath}
-        r_i = \gamma p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \xi_i
-      \end{displaymath}
-      where $p_i = p_{i-1} + r_i$, so that:
-      \begin{displaymath}
-        p_i = (1 + \gamma) p_{i-1} + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \xi_i
-      \end{displaymath}
-      If the mean reversion parameter $\gamma$ is negative: $\gamma < 0$, then the time series $p_i$ exhibits mean reversion and has no \emph{unit root}.
-      \vskip1ex
-      The \emph{null hypothesis} is that the price process has a unit root ($\gamma = 0$, no mean reversion), while the alternative hypothesis is that the price process is stationary ($\gamma < 0$, mean reversion).
-      \vskip1ex
-      The \emph{ADF} test statistic is equal to the \emph{t}-value of the $\gamma$ parameter: $t_{\gamma} = \hat\gamma / SE_{\gamma}$ (which follows a distribution different from the \texttt{t}-distribution).
-    \column{0.5\textwidth}
-      The function \texttt{tseries::adf.test()} performs the \emph{ADF} test.
-      \vskip1ex
-      If the number of lags in the regression is zero: $p = 0$ then the \emph{ADF} test becomes the standard \emph{Dickey-Fuller} test: $r_i = \gamma p_{i-1} + \xi_i$.
-      \vskip1ex
-      Common practice is to perform the \emph{ADF} test with a small number of lags, and if the residuals are correlated, then to increase the number of lags until the correlations are no longer significant.
-      <<echo=TRUE,eval=FALSE>>=
-n_rows <- 1e3
-# Perform ADF test for AR(1) with small coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=n_rows, model=list(ar=0.01))
-tseries::adf.test(ari_ma)
-# Perform ADF test for AR(1) with large coefficient
-set.seed(1121)
-ari_ma <- arima.sim(n=n_rows, model=list(ar=0.99))
-tseries::adf.test(ari_ma)
-# Perform ADF test with lag = 1
-tseries::adf.test(ari_ma, k=1)
-# Perform Dickey-Fuller test
-tseries::adf.test(ari_ma, k=0)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Power of the Dickey-Fuller Test for Unit Roots}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ADF} test has low \emph{power} (aka \emph{sensitivity} - the ability to correctly identify positive cases as positive), causing it to produce \emph{false negatives} (\emph{type II} errors).
-      \vskip1ex
-      Therefore the \emph{ADF} test often requires a lot of data to identify a \emph{unit root} process correctly.
-      \vskip1ex
-      The function \texttt{tseries::adf.test()} assumes that the data is \emph{normally distributed}, which may underestimate the standard errors of the parameters, and produce \emph{false positives} (\emph{type I} errors) by incorrectly rejecting the null hypothesis of a unit root process.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/adf_tests.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate AR(1) process with different coefficients
-coeff_s <- seq(0.99, 0.999, 0.001)
-in_nov <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
-adf_test <- sapply(coeff_s, function(co_eff) {
-  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
-  ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
-  c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
-})  # end sapply
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=coeff_s, y=adf_test["pval", ], main="ADF p-val Versus AR Coefficient",
-     xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
-plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat Versus AR Coefficient",
-     xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Engle-Granger Two-step Procedure for Cointegration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ADF} test can be applied to test for the cointegration of time series of prices.
-      \vskip1ex
-      The Engle-Granger two-step procedure for two time series consists of:
+      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
       \begin{itemize}
-        \item Performing a regression to calculate the cointegrating factor $\beta$,
-        \item Applying the \emph{ADF} test to the residuals of the regression to determine that they don't have a unit root (they are mean-reverting).
+        \item A \emph{YAML} header,
+        \item Text in \emph{R Markdown} code format,
+        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
+        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
       \end{itemize}
-      The regression of prices is not statistically valid because they are not normally distributed.
+      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
     \column{0.5\textwidth}
       \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate XLB and XLE prices
-price_s <- na.omit(rutils::etf_env$price_s[, c("XLB", "XLE")])
-xl_b <- drop(zoo::coredata(price_s$XLB))
-xl_e <- drop(zoo::coredata(price_s$XLE))
-# Calculate regression coefficients of XLB ~ XLE
-be_ta <- cov(xl_b, xl_e)/var(xl_e)
-al_pha <- (mean(xl_b) - be_ta*mean(xl_e))
-# Calculate regression residuals
-fit_ted <- (al_pha + be_ta*xl_e)
-residual_s <- (xl_b - fit_ted)
-# Perform ADF test on residuals
-tseries::adf.test(residual_s, k=1)
-      @
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+---
+title: "My First R Markdown Document"
+author: Jerzy Pawlowski
+date: '`r format(Sys.time(), "%m/%d/%Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install package quantmod if it can't be loaded successfully
+if (!require("quantmod"))
+  install.packages("quantmod")
+```
+
+### R Markdown
+This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
+
+One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
+
+You can read more about publishing documents using *R* here:
+https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
+
+You can read more about using *R* to create *HTML* documents with interactive plots here:
+https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
+
+Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
+
+Example of an *R* code chunk:
+```{r cars}
+summary(cars)
+```
+
+### Plots in *R Markdown* documents
+
+Plots can also be embeded, for example:
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Math formulas in *R Markdown* documents
+Math formulas can also be embeded in *R Markdown* documents.
+
+For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
+Or display formulas (the Cauchy-Schwarz inequality):
+
+$$
+  \left( \sum_{k=1}^n a_k b_k \right)^2
+  \leq
+  \left( \sum_{k=1}^n a_k^2 \right)
+  \left( \sum_{k=1}^n b_k^2 \right)
+$$
+
+    \end{lstlisting}
   \end{columns}
 \end{block}
 
@@ -1591,131 +437,65 @@ tseries::adf.test(residual_s, k=1)
 
 
 %%%%%%%%%%%%%%%
-\subsection{The Variance of Unit-root Processes}
+\subsection{Package \protect\emph{shiny} for Creating Interactive Applications}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{AR(1)} process:
-      $r_i = \varphi r_{i-1} + \xi_i$
-      has the following characteristic equation:
-      $1 - \varphi z = 0$,
-      with a root equal to:
-      $z = 1 / \varphi$
+      The package \emph{shiny} creates interactive applications running in \texttt{R}, with their outputs presented as live visualizations.
       \vskip1ex
-      If $\varphi = 1$, then the characteristic equation has a \emph{unit root} (and therefore it isn't stationary), and the process follows:
-      $r_i = r_{i-1} + \xi_i$
+      \emph{Shiny} allows changing the model parameters, recalculating the model, and displaying the resulting outputs as plots and charts.
       \vskip1ex
-      The above is called a \emph{Wiener process}, and it's an example of a \emph{unit-root} process.
+      A \emph{shiny app} is a file with \emph{shiny} commands and \texttt{R} code. 
       \vskip1ex
-      The expected value of the \emph{AR(1)} process $r_i = \varphi r_{i-1} + \xi_i$ is equal to zero: $\mathbb{E}[r_i] = \frac{\mathbb{E}[\xi_i]}{1 - \varphi} = 0$.
+      The \emph{shiny} code consists of a \emph{shiny interface} and a \emph{shiny server}.
       \vskip1ex
-      And its variance is equal to: $\sigma^2 = \mathbb{E}[r_i^2] = \frac{\sigma_{\xi}^2}{1 - \varphi^2}$.
+      The \emph{shiny interface} contains widgets for data input and an area for plotting.
       \vskip1ex
-      If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process isn't stationary.
+      The \emph{shiny server} contains the \texttt{R} model code and the plotting code.
       \vskip1ex
-      The variance of the \emph{Wiener process} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma_i^2 = \mathbb{E}[r_i^2] = i \sigma_{\xi}^2$
+      The function \texttt{shiny::fluidPage()} creates a GUI layout for the user inputs of model parameters and an area for plots and charts.
+      \vskip1ex
+      The function \texttt{shiny::renderPlot()} renders a plot from the outputs of a live model.
+      <<echo=TRUE,eval=FALSE>>=
+      @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/brownian_var.png}
-      \vspace{-2em}
-      <<echo=TRUE,eval=FALSE>>=
-# Simulate random walks using apply() loops
-set.seed(1121)  # Initialize random number generator
-rand_walks <- matrix(rnorm(1000*100), ncol=1000)
-rand_walks <- apply(rand_walks, 2, cumsum)
-vari_ance <- apply(rand_walks, 1, var)
-# Simulate random walks using vectorized functions
-set.seed(1121)  # Initialize random number generator
-rand_walks <- matrixStats::colCumsums(matrix(rnorm(1000*100), ncol=1000))
-vari_ance <- matrixStats::rowVars(rand_walks)
-par(mar=c(5, 3, 2, 2), oma=c(0, 0, 0, 0))
-plot(vari_ance, xlab="time steps", ylab="",
-     t="l", col="blue", lwd=2,
-     main="Variance of Random Walk")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Autocorrelations of Autoregressive \protect\emph{AR} Processes}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The autocorrelation $\rho_i$ of an \emph{AR(1)} process (defined as $r_i = \varphi r_{i-1} + \xi_i$), satisfies the recursive equation: $\rho_i = \varphi \rho_{i-1}$, with $\rho_1 = \varphi$.
-      \vskip1ex
-      Therefore \emph{AR(1)} processes have exponentially decaying autocorrelations: $\rho_i = \varphi^i$.
-      \vskip1ex
-      The \emph{AR(1)} process can be solved recursively:
-      \begin{align*}
-        r_1 &= \xi_1 \\
-        r_2 &= \varphi r_1 + \xi_2 = \xi_2 + \varphi \xi_1 \\
-        r_3 &= \xi_3 + \varphi \xi_2 + \varphi^2 \xi_1 \\
-        r_4 &= \xi_4 + \varphi \xi_3 + \varphi^2 \xi_2 + \varphi^3 \xi_1
-      \end{align*}
-      Therefore the \emph{AR(1)} process can be expressed as a \emph{moving average} (\emph{MA}) of the \emph{innovations} $\xi_i$: $r_i = \sum_{i=1}^n {\varphi^{i-1} \xi_i}$.
-      \vskip1ex
-      If $\varphi < 1.0$ then the influence of the innovation $\xi_i$ decays exponentially.
-      \vskip1ex
-      If $\varphi = 1.0$ then the influence of the random innovations $\xi_i$ persists indefinitely, so that the variance of $r_i$ increases linearly with time.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_acf.png}
-      An \emph{AR(1)} process has an exponentially decaying \emph{ACF}.
-      % \vspace{-1em}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
-# Simulate AR(1) process
-ari_ma <- arima.sim(n=1e3, model=list(ar=0.8))
-# ACF of AR(1) process
-ac_f <- rutils::plot_acf(ari_ma, lag=10, xlab="", ylab="",
-  main="Autocorrelations of AR(1) process")
-ac_f$acf[1:5]
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Partial Autocorrelations}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      If two random variables are both correlated to a third variable, then they are indirectly correlated with each other.
-      \vskip1ex
-      The indirect correlation can be removed by defining new variables with no correlation to the third variable.
-      \vskip1ex
-      The \emph{partial correlation} is the correlation after the correlations to the common variables are removed.
-      \vskip1ex
-      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(1)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
-      \begin{align*}
-        \varrho_1 &= \rho_1 \\
-        \varrho_2 &= \rho_2 - \varrho_1 \rho_1 \\
-        \varrho_3 &= \rho_3 - \varrho_1 \rho_2 - \varrho_2 \rho_1
-      \end{align*}
-      The function \texttt{pacf()} calculates and plots the \emph{partial autocorrelations}, but it performs regressions instead of using the Durbin-Levinson algorithm.
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf.png}
+      % \includegraphics[width=0.3\paperwidth]{figure/shiny_simple.png}
       % \vspace{-2em}
-      An \emph{AR(1)} process has an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} at lag one.
       <<echo=TRUE,eval=FALSE>>=
-# PACF of AR(1) process
-pac_f <- pacf(ari_ma, lag=10, xlab="", ylab="", main="")
-title("Partial autocorrelations of AR(1) process", line=1)
-pac_f <- drop(pac_f$acf)
-pac_f[1:5]
+## App setup code that runs only once at startup. 
+n_data <- 1e4
+std_dev <- 1.0
+
+## Define the user interface
+inter_face <- shiny::fluidPage(
+  # Create numeric input for the number of data points.
+  numericInput('n_data', "Number of data points:", value=n_data),
+  # Create slider input for the standard deviation parameter.
+  sliderInput("std_dev", label="Standard deviation:",
+              min=0.1, max=3.0, value=std_dev, step=0.1),
+  # Render plot in a panel.
+  plotOutput("plo_t", height=300, width=500)
+)  # end user interface
+
+## Define the server function
+ser_ver <- function(input, output) {
+  output$plo_t <- shiny::renderPlot({
+    # Simulate the data
+    da_ta <- rnorm(input$n_data, sd=input$std_dev)
+    # Plot the data
+    par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
+    hist(da_ta, xlim=c(-4, 4), main="Histogram of Random Data")
+  })  # end renderPlot
+}  # end ser_ver
+
+# Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
       @
+      \vspace{-1em}
+      The function \texttt{shiny::shinyApp()} creates a \texttt{shiny app} from a \emph{shiny interface} and a \emph{shiny server}.
   \end{columns}
 \end{block}
 
@@ -1723,40 +503,121 @@ pac_f[1:5]
 
 
 %%%%%%%%%%%%%%%
-\subsection{Partial Autocorrelations of \protect\emph{AR(1)} Processes}
+\subsection{Running Shiny Apps in \protect\emph{RStudio}}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An autocorrelation of lag $1$ induces higher order autocorrelations of lag \texttt{2, 3, ...}, which may obscure the true higher order autocorrelations.
+      A \emph{shiny app} can be run by pressing the "Run App" button in \emph{RStudio}.
       \vskip1ex
-      A linear combination of the time series and its own lag can be created, such that its lag $1$ autocorrelation is zero.
-      \vskip1ex
-      The lag $2$ autocorrelation of this new series is called the \emph{partial autocorrelation} of lag $2$, and represents the true second order autocorrelation.
-      \vskip1ex
-      The \emph{partial autocorrelation} of lag \texttt{k} is the autocorrelation of lag \texttt{k}, after all the autocorrelations of lag \texttt{1, ..., k-1} have been removed.
-      \vskip1ex
-      The \emph{partial autocorrelations} $\varrho_i$ of an \emph{AR(1)} process can be computed recursively from the autocorrelations $\rho_i$ using the Durbin-Levinson algorithm:
-      \begin{displaymath}
-        \varrho_k = \rho_k - \sum_{i=1}^{k-1} {\varrho_i \rho_{k-i}}
-      \end{displaymath}
+      When the \emph{shiny app} is run, the \emph{shiny} commands are translated into \emph{JavaScript} code, which creates a graphical user interface (GUI) with buttons, sliders, and boxes for data input, and also with the output plots and charts.
     \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/shiny_simple.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Positioning and Sizing Widgets Within the Shiny GUI}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The functions \texttt{shiny::fluidRow()} and \texttt{shiny::column()} allow positioning and sizing widgets within the \emph{shiny} GUI.
       <<echo=TRUE,eval=FALSE>>=
-# Compute pacf recursively from acf
-ac_f <- rutils::plot_acf(ari_ma, lag=10, plo_t=FALSE)
-ac_f <- drop(ac_f$acf)
-pac_f <- numeric(3)
-pac_f[1] <- ac_f[1]
-pac_f[2] <- ac_f[2] - ac_f[1]^2
-pac_f[3] <- ac_f[3] - pac_f[2]*ac_f[1] - ac_f[2]*pac_f[1]
-# Compute pacf recursively in a loop
-pac_f <- numeric(NROW(ac_f))
-pac_f[1] <- ac_f[1]
-for (it in 2:NROW(pac_f)) {
-  pac_f[it] <- ac_f[it] - pac_f[1:(it-1)] %*% ac_f[(it-1):1]
-}  # end for
+## Create elements of the user interface
+inter_face <- shiny::fluidPage(
+  titlePanel("VWAP Moving Average"),
+  # Create single row of widgets with two slider inputs
+  fluidRow(
+    # Input stock symbol
+    column(width=3, selectInput("sym_bol", label="Symbol",
+                                choices=sym_bols, selected=sym_bol)),
+    # Input look-back interval
+    column(width=3, sliderInput("look_back", label="Lookback interval",
+                                min=1, max=150, value=11, step=1))
+  ),  # end fluidRow
+  # Create output plot panel
+  mainPanel(dygraphs::dygraphOutput("dy_graph"), width=12)
+)  # end fluidPage interface
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/shiny_vwap.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Shiny Apps With Reactive Expressions}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The package \emph{shiny} allows specifying reactive expressions which are evaluated only when their input data is updated.  
+      \vskip1ex
+      Reactive expressions avoid performing unnecessary calculations.
+      \vskip1ex
+      If the reactive expression is invalidated (recalculated), then other expressions that depend on its output are also recalculated. 
+      \vskip1ex
+      This way calculations cascade through the expressions that depend on each other.
+      \vskip1ex
+      The function \texttt{shiny::reactive()} transforms an expression into a reactive expression.
+    \column{0.5\textwidth}
+      \vspace{-2em}
+      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+  # Get the close and volume data in a reactive environment
+  clos_e <- shiny::reactive({
+    # Get the data
+    oh_lc <- get(input$sym_bol, data_env)
+    clos_e <- log(quantmod::Cl(oh_lc))
+    vol_ume <- quantmod::Vo(oh_lc)
+    # Return the data
+    cbind(clos_e, vol_ume)
+  })  # end reactive code
+  
+  # Calculate the VWAP indicator in a reactive environment
+  v_wap <- shiny::reactive({
+    # Get model parameters from input argument
+    look_back <- input$look_back
+    # Calculate the VWAP indicator
+    clos_e <- clos_e()[, 1]
+    vol_ume <- clos_e()[, 2]
+    v_wap <- HighFreq::roll_sum(se_ries=clos_e*vol_ume, look_back=look_back)
+    volume_rolling <- HighFreq::roll_sum(se_ries=vol_ume, look_back=look_back)
+    v_wap <- v_wap/volume_rolling
+    v_wap[is.na(v_wap)] <- 0
+    # Return the plot data
+    da_ta <- cbind(clos_e, v_wap)
+    colnames(da_ta) <- c(input$sym_bol, "VWAP")
+    da_ta
+  })  # end reactive code
+  
+  # Return the dygraph plot to output argument
+  output$dy_graph <- dygraphs::renderDygraph({
+    col_names <- colnames(v_wap())
+    dygraphs::dygraph(v_wap(), main=paste(col_names[1], "VWAP")) %>%
+      dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+      dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+      dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
+      dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+  })  # end output plot
+})  # end server code
+
+## Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
       @
   \end{columns}
 \end{block}
@@ -1765,32 +626,66 @@ for (it in 2:NROW(pac_f)) {
 
 
 %%%%%%%%%%%%%%%
-\subsection{Higher Order Autocorrelations}
+\subsection{Reactive Event Handlers}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      An \emph{AR}(3) process of order \emph{three} is defined by the formula:
-      \begin{displaymath}
-        r_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \varphi_3 r_{i-3} + \xi_i
-      \end{displaymath}
-      Autoregressive processes \emph{AR(p)} of order \emph{p} have an exponentially decaying \emph{ACF} and a non-zero \emph{PACF} up to lag \emph{p}.
-      <<ar_pacf,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-par(mfrow=c(2,1))  # Set plot panels
-# Simulate AR process of returns
-ari_ma <- arima.sim(n=1e3, model=list(ar=c(0.1, 0.5, 0.1)))
-# ACF of AR(3) process
-rutils::plot_acf(ari_ma, lag=10, xlab="", ylab="",
-         main="ACF of AR(3) process")
-# PACF of AR(3) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(3) process")
-      @
+      Event handlers are functions which evaluate expressions when an event occurs (like a button press).
+      \vskip1ex
+      The functions \texttt{shiny::observeEvent()} and \texttt{shiny::eventReactive()} are event handlers.
+      \vskip1ex
+      The function \texttt{shiny::eventReactive()} returns a value, while \texttt{shiny::observeEvent()} produces a side-effect, without returning a value.
+      \vskip1ex
+      The function \texttt{shiny::reactiveValues()} creates a list for storing reactive values, which can be updated by event handlers. 
     \column{0.5\textwidth}
       \vspace{-2em}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_pacf-1}
+      % \includegraphics[width=0.4\paperwidth]{figure/shiny_vwap.png}
+      % \vspace{-2em}
+      <<echo=TRUE,eval=FALSE>>=
+## Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+
+  # Create an empty list of reactive values.
+  value_s <- reactiveValues()
+  
+  # Get input parameters from the user interface.
+  n_rows <- reactive({
+    # Add n_rows to list of reactive values.
+    value_s$n_rows <- input$n_rows
+    input$n_rows
+  })  # end reactive code
+  
+  # Broadcast a message to the console when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    cat("Input button pressed\n")
+  })  # end observeEvent
+  
+  # Send the data when the button is pressed.
+  da_ta <- eventReactive(eventExpr=input$but_ton, valueExpr={
+    # eventReactive() executes on input$but_ton, but not on n_rows() or input$n_rows.
+    cat("Sending", n_rows(), "rows of data\n")
+    da_ta <- head(mtcars, input$n_rows)
+    value_s$mpg <- mean(da_ta$mpg)
+    da_ta
+  })  # end eventReactive
+  #   da_ta
+  
+  # Draw table of the data when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    da_ta <- da_ta()
+    cat("Received", value_s$n_rows, "rows of data\n")
+    cat("Average mpg = ", value_s$mpg, "\n")
+    cat("Drawing table\n")
+    output$tabl_e <- renderTable(da_ta) 
+  })  # end observeEvent
+  
+})  # end server code
+
+## Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+      @
   \end{columns}
 \end{block}
 

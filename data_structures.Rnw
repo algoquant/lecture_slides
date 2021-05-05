@@ -1214,8 +1214,10 @@ names(lis_t)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-as.list(c(1,2,3))
-list(c(1,2,3))
+# Convert vector elements to list elements
+as.list(1:3)
+# Convert whole vector to single list element
+list(1:3)
       @
   \end{columns}
 \end{block}
@@ -1524,10 +1526,8 @@ summary(microbenchmark(
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
+  as_list=as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=lapply(seq_along(mat_rix[1, ]),
            function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
       @
@@ -1699,7 +1699,7 @@ sum(!is.na(da_ta))  # Count non-NA values
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Airquality data has some NAs
+# airquality data has some NAs
 head(airquality)
 dim(airquality)
 # Number of NA elements
@@ -1722,9 +1722,13 @@ head(airquality[!complete.cases(airquality), ])
     \column{0.5\textwidth}
       Rows containing bad data may be either removed or replaced with an estimated value.
       \vskip1ex
-      Bad data can be replaced with the most recent prior values (carry forward good data).
+      The function \texttt{stats::na.omit()} removes individual \texttt{NA} values from vectors, and it also removes whole rows of data containing \texttt{NA} values from matrices and data frames.
       \vskip1ex
-      The function \texttt{na.locf()} from package \emph{zoo} replaces \texttt{NA} values with the most recent non-\texttt{NA} values prior to it.
+      Bad data can also be replaced with the most recent prior values (carry forward good data).
+      \vskip1ex
+      The function \texttt{zoo::na.locf()} replaces \texttt{NA} values with the most recent non-\texttt{NA} values prior to it (\emph{locf} stands for \emph{last observation carry forward}).
+      \vskip1ex
+      Copying the last non-\texttt{NA} values forward causes less data loss than removing whole rows of data.
       \vskip1ex
       The function \texttt{na.locf()} with argument \texttt{fromLast=TRUE} replaces \texttt{NA} values with non-\texttt{NA} values in reverse order, starting from the end.
     \column{0.5\textwidth}
@@ -1738,11 +1742,16 @@ zoo::na.locf(vec_tor)
 # Remove rows containing NAs
 good_air <- airquality[complete.cases(airquality), ]
 dim(good_air)
-head(good_air)  # NAs removed
+# NAs removed
+head(good_air)
+# Another way of removing NAs
+fresh_air <- na.omit(airquality)
+all.equal(fresh_air, good_air, check.attributes=FALSE)
 # Replace NAs
 good_air <- zoo::na.locf(airquality)
 dim(good_air)
-head(good_air)  # NAs replaced
+# NAs replaced
+head(good_air)
       @
   \end{columns}
 \end{block}

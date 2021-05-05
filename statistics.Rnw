@@ -1841,19 +1841,26 @@ sd(da_ta)
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: The \protect\emph{Wilcoxon Signed Rank} Test for Distribution Similarity}
+\subsection{The \protect\emph{Wilcoxon Signed Rank} Test for Distribution Symmetry}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Let $\{x_1, \ldots, x_n\}$ and $\{y_1, \ldots, y_n\}$ be two samples of data, which form pairs of observations: $\{x_1, y_1\}, \ldots, \{x_n, y_n\}$.
+      The \emph{null hypothesis} of the \emph{Wilcoxon Signed Rank} test is that the data sample is symmetric about a given location.
       \vskip1ex
-      The \emph{null hypothesis} of the \emph{Wilcoxon Signed Rank} test is that the two data samples, $x_i$ and $y_i$, were obtained from \emph{similar} probability distributions.
+      The \emph{null hypothesis} is rejected if the data sample is not centered on the given location or if it's skewed.
+      \vskip1ex
+      For a single sample of data, the \emph{Wilcoxon Signed Rank} test tests if the distribution is symmetric about its location.
       \vskip1ex
       For \emph{symmetric} distributions, the \emph{Wilcoxon} test only requires that the distributions have equal \emph{medians}, but they can have different \emph{standard deviations}.
+      and shapes (skewness)
       \vskip1ex
       But for \emph{skewed} distributions, the \emph{Wilcoxon} test requires that the distributions be the same.
+      \vskip1ex
+      The \emph{Wilcoxon Signed Rank} test is a nonparametric generalization of the Student's t-test.
+      \vskip1ex
+      The \emph{null hypothesis} of the \emph{Wilcoxon Signed Rank} test is that the two data samples, $x_i$ and $y_i$, were obtained from \emph{similar} probability distributions.
       \vskip1ex
       The function \texttt{wilcox.test()} with parameter \texttt{paired=TRUE} calculates the \emph{Wilcoxon Signed Rank} test statistic and its \emph{p}-value.
       \vskip1ex
@@ -1861,22 +1868,43 @@ sd(da_ta)
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# VTI returns
-re_turns <- as.numeric(na.omit(
-  rutils::etf_env$re_turns[, "VTI"]))
-# Wilcoxon test for normal distribution
-da_ta <- rnorm(NROW(re_turns), sd=100)
-wilcox.test(da_ta)
-# Skewed distribution with mean=0
-mean(re_turns); median(re_turns)
-wilcox.test(re_turns-mean(re_turns))
-# Same as
-wilcox.test(re_turns-mean(re_turns), 
-  rep(0, NROW(re_turns)), paired=TRUE)
-# Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns))
-# Normal samples with different standard deviations
 n_rows <- 1e3
+# Wilcoxon test for normal distribution
+nor_mal <- rnorm(n_rows)
+wilcox.test(nor_mal)
+wilcox.test(nor_mal+1)
+# Skewed distribution with median=0
+log_norm <- exp(nor_mal)
+# log_norm <- rlnorm(n_rows, sdlog=1)
+mean(log_norm); median(log_norm)
+# Skewed distribution with median!=0
+wilcox.test(log_norm)
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal), 
+            paired=TRUE)
+
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+
+# Skewed distribution with mean=0
+mean(log_norm); median(log_norm)
+wilcox.test(log_norm-median(log_norm))
+# Same as
+wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal), 
+            paired=TRUE)
+# Normal samples with different standard deviations
 sample1 <- rnorm(n_rows, sd=1)
 sample2 <- rnorm(n_rows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
@@ -1894,6 +1922,8 @@ wilcox.test(sample1, sample2, paired=TRUE)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
+      Let $\{x_1, \ldots, x_n\}$ and $\{y_1, \ldots, y_n\}$ be two samples of data, which form pairs of observations: $\{x_1, y_1\}, \ldots, \{x_n, y_n\}$.
+      \vskip1ex
       The \emph{W} statistic of the \emph{Wilcoxon Signed Rank} test is equal to the sum of the ranks of the absolute differences $r_i = \operatorname{rank}(|x_i - y_i|)$, weighted by their signs:
       \begin{displaymath}
         W = \sum_{i=1}^n \operatorname{sgn}(x_i - y_i) r_i
@@ -1906,19 +1936,173 @@ wilcox.test(sample1, sample2, paired=TRUE)
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Wilcoxon test for random data around 0
-da_ta <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(da_ta)
+un_if <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(un_if)
 # Calculate V statistic of Wilcoxon test
 wil_cox$statistic
-sum(rank(abs(da_ta))[da_ta>0])
+sum(rank(abs(un_if))[un_if>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
+sum(sign(un_if)*rank(abs(un_if)))
 # Two sets of normal data
 sample1 <- rnorm(n_rows)
 sample2 <- rnorm(n_rows, mean=0.1)
 # Wilcoxon test
-wil_cox <- wilcox.test(sample1, sample2, 
-                       paired=TRUE)
+wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
+wil_cox$statistic
+# Calculate V statistic of Wilcoxon test
+da_ta <- (sample1 - sample2)
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The Distribution of the \protect\emph{W} Statistic}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{W} statistic follows a distribution without a simple formula, which converges to the normal distribution for large sample size $n$, with an expected value equal to $0$ and a variance equal to $\frac{n(n+1)(2n+1)}{6}$.
+        <<echo=TRUE,eval=FALSE>>=
+# Calculate distributon of Wilcoxon W statistic
+wilcox_w <- sapply(1:1e3, function(x) {
+  da_ta <- (runif(n_rows) - 0.5)
+  sum(sign(da_ta)*rank(abs(da_ta)))
+})  # end sapply
+wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
+var(wilcox_w)
+      @
+      <<echo=(-(1:2)),eval=FALSE>>=
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+hist(wilcox_w, col="lightgrey",
+     xlab="returns", breaks=50, xlim=c(-3, 3),
+     ylab="frequency", freq=FALSE,
+     main="Wilcoxon W Statistic Histogram")
+lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
+curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+       leg=c("W density", "Normal"),
+       lwd=6, lty=1, col=c("red", "blue"))
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/wilcoxon_hist.png}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The \protect\emph{Wilcoxon Signed Rank} Two-Sample Test}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \emph{null hypothesis} of the \emph{Wilcoxon Signed Rank} test is that the two data samples, $x_i$ and $y_i$, were obtained from \emph{similar} probability distributions.
+      \vskip1ex
+      Fix?\\
+      For \emph{symmetric} distributions, the \emph{Wilcoxon} test only requires that the distributions have equal \emph{medians}, but they can have different \emph{standard deviations}.
+      and shapes (skewness)
+      \vskip1ex
+      Fix?\\
+      But for \emph{skewed} distributions, the \emph{Wilcoxon} test requires that the distributions be the same.
+      \vskip1ex
+      The \emph{Wilcoxon Signed Rank} test is a nonparametric generalization of the Student's t-test.
+      \vskip1ex
+      The function \texttt{wilcox.test()} with parameter \texttt{paired=TRUE} calculates the \emph{Wilcoxon Signed Rank} test statistic and its \emph{p}-value.
+      \vskip1ex
+      If a single argument is passed into \texttt{wilcox.test()} then it tests if the data has zero \emph{median}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+n_rows <- 1e3
+# Wilcoxon test for normal distribution
+nor_mal <- rnorm(n_rows)
+wilcox.test(nor_mal)
+wilcox.test(nor_mal+1)
+# Skewed distribution with median=0
+log_norm <- rlnorm(n_rows, sdlog=1)
+mean(log_norm); median(log_norm)
+# Skewed distribution with median!=0
+wilcox.test(log_norm)
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal), 
+            paired=TRUE)
+
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+
+# Skewed distribution with mean=0
+mean(log_norm); median(log_norm)
+wilcox.test(log_norm-median(log_norm))
+# Same as
+wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal), 
+            paired=TRUE)
+# Normal samples with different standard deviations
+sample1 <- rnorm(n_rows, sd=1)
+sample2 <- rnorm(n_rows, sd=10)
+wilcox.test(sample1, sample2, paired=TRUE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: The \protect\emph{W} Statistic of the \protect\emph{Wilcoxon Signed Rank} Two-Sample Test}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Let $\{x_1, \ldots, x_n\}$ and $\{y_1, \ldots, y_n\}$ be two samples of data, which form pairs of observations: $\{x_1, y_1\}, \ldots, \{x_n, y_n\}$.
+      \vskip1ex
+      The \emph{W} statistic of the \emph{Wilcoxon Signed Rank} test is equal to the sum of the ranks of the absolute differences $r_i = \operatorname{rank}(|x_i - y_i|)$, weighted by their signs:
+      \begin{displaymath}
+        W = \sum_{i=1}^n \operatorname{sgn}(x_i - y_i) r_i
+      \end{displaymath}
+      The function \texttt{wilcox.test()} returns the \emph{V} statistic, not the the \emph{W} statistic:       \begin{displaymath}
+        V = \sum_{i=1}^n \operatorname{H}(x_i - y_i) r_i
+      \end{displaymath}
+      Where $\operatorname{H}(x) = 1$ if $x > 0$, and $0$ otherwise.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Wilcoxon test for random data around 0
+un_if <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(un_if)
+# Calculate V statistic of Wilcoxon test
+wil_cox$statistic
+sum(rank(abs(un_if))[un_if>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(un_if)*rank(abs(un_if)))
+# Two sets of normal data
+sample1 <- rnorm(n_rows)
+sample2 <- rnorm(n_rows, mean=0.1)
+# Wilcoxon test
+wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
 wil_cox$statistic
 # Calculate V statistic of Wilcoxon test
 da_ta <- (sample1 - sample2)
@@ -2047,7 +2231,7 @@ sample1 <- da_ta[in_dex]
 sample2 <- da_ta[-in_dex]
 
 # Or
-in_dex <- sample(1:NROW(re_turns), size=NROW(re_turns)/2)
+in_dex <- sample(1:n_rows, size=n_rows/2)
 sample1 <- re_turns[in_dex]
 sample2 <- (-re_turns[-in_dex])
 
@@ -2067,7 +2251,7 @@ hist(sample1)
 
 
 # Mann-Whitney test for normal distribution
-da_ta <- rnorm(NROW(re_turns), sd=100)
+da_ta <- rnorm(n_rows, sd=100)
 wilcox.test(da_ta, paired=FALSE)
 # Skewed distribution with mean=0
 mean(re_turns); median(re_turns)
@@ -2081,7 +2265,7 @@ wilcox.test(re_turns-median(re_turns),
             da_ta, paired=FALSE)
 
 
-sample1 <- sample(re_turns, size=NROW(re_turns))
+sample1 <- sample(re_turns, size=n_rows)
 sample2 <- (-sample1)
 sample1 <- (sample1-median(sample1))
 sample2 <- (sample2-median(sample2))
@@ -2106,8 +2290,8 @@ wilcox.test(re_turns-mean(re_turns),
 
 foo <- sapply(1:100, function(x) {
   # Data samples
-  sample1 <- sample(re_turns, size=NROW(re_turns)/2)
-  sample2 <- sample(-re_turns, size=NROW(re_turns)/2)
+  sample1 <- sample(re_turns, size=n_rows/2)
+  sample2 <- sample(-re_turns, size=n_rows/2)
   sample1 <- (sample1-median(sample1))
   sample2 <- (sample2-median(sample2))
   # Mann-Whitney-Wilcoxon rank sum test
@@ -2120,7 +2304,7 @@ mean(re_turns); median(re_turns)
 wilcox.test(re_turns-mean(re_turns))
 # Same as
 wilcox.test(re_turns-mean(re_turns), 
-            rep(0, NROW(re_turns)), 
+            rep(0, n_rows), 
             paired=TRUE)
 # Skewed distribution with median=0
 wilcox.test(re_turns-median(re_turns))

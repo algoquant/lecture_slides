@@ -60,50 +60,55 @@ data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
                 color=c("red", "white", "yellow"),
                 price=c(1.5, 0.5, 1.0),
-                row.names=c("flower1", "flower2", "flower3"),
-                stringsAsFactors=FALSE
+                row.names=c("flower1", "flower2", "flower3")
               )  # end data.frame
 data_frame
 class(data_frame$type)  # Get column class
 class(data_frame$price)  # Get column class
 # Set option to not coerce character vectors to factors
-options(stringsAsFactors=FALSE)
 options("stringsAsFactors")
 default.stringsAsFactors()
+options(stringsAsFactors=FALSE)
 
 str(data_frame)  # Display the object structure
 dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
 
-# Create a named vector
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# Create a named vector of student scores
+score_s <- sample(round(runif(5, min=1, max=10), digits=2))
+names(score_s) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
 # Sort the vector into ascending order
-sort(stu_dents)
+sort(score_s)
 # Calculate index to sort into ascending order
-order(stu_dents)
+order(score_s)
 # Sort the vector into ascending order
-stu_dents[order(stu_dents)]
+score_s[order(score_s)]
 # Calculate the sorted (ordered) vector
-sort_ed <- stu_dents[order(stu_dents)]
+sort_ed <- score_s[order(score_s)]
 # Calculate index to sort into unsorted (original) order
-order(order(stu_dents))
-sort_ed[order(order(stu_dents))]
-stu_dents
-# Create a data frame of stu_dents and their ranks
-ra_nks <- c("first", "second", "third", "fourth", "fifth")
-data.frame(students=stu_dents,
-  rank=ra_nks[order(order(stu_dents))])
-# Permute data_frame of flowers on price column
-order(data_frame$price)
-# Sort data_frame on price
-data_frame[order(data_frame$price), ]
-# Sort data_frame on color
-data_frame[order(data_frame$color), ]
-# Read the Examples for sort()
+order(order(score_s))
+sort_ed[order(order(score_s))]
+score_s
+# Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
 order(c(2, 1:4), 1:5)  # There's a tie
+
+# Permutation index on price column
+order(data_frame$price)
+# Sort data_frame on price column
+data_frame[order(data_frame$price), ]
+# Sort data_frame on color column
+data_frame[order(data_frame$color), ]
+# Create a vector of student ranks
+ra_nks <- c("first", "second", "third", "fourth", "fifth")
+ra_nks <- rev(ra_nks)
+# Reverse sort the student ranks according to students
+ra_nks[order(order(score_s))]
+# Create a data frame of students and their ranks
+ros_ter <- data.frame(score=score_s, 
+  rank=ra_nks[order(order(score_s))])
+ros_ter
 
 as.matrix(data_frame)
 vec_tor <- sample(9)
@@ -186,7 +191,6 @@ mean(da_ta, na.rm=TRUE)  # remove NAs from input data
 da_ta[!is.na(da_ta)]  # Delete the NA values
 sum(!is.na(da_ta))  # Count non-NA values
 
-rm(list=ls())
 # Airquality data has some NAs
 head(airquality)
 dim(airquality)
@@ -197,29 +201,34 @@ sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
 
-rm(list=ls())
-# Remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# Replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
 # Create vector containing NA values
 vec_tor <- sample(22)
 vec_tor[sample(NROW(vec_tor), 4)] <- NA
 # Replace NA values with the most recent non-NA values
 zoo::na.locf(vec_tor)
+# Remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+# NAs removed
+head(good_air)
+# Another way of removing NAs
+fresh_air <- na.omit(airquality)
+all.equal(fresh_air, good_air, check.attributes=FALSE)
+# Replace NAs
+good_air <- zoo::na.locf(airquality)
+dim(good_air)
+# NAs replaced
+head(good_air)
+
 # Replace NAs in xts time series
+library(rutils)  # load package rutils
 se_ries <- rutils::etf_env$price_s[, 1]
-head(se_ries)
+head(se_ries, 3)
 sum(is.na(se_ries))
-library(quantmod)
 series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
+head(series_xts, 3)
 library(microbenchmark)
 summary(microbenchmark(
   zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),
@@ -263,9 +272,9 @@ rbind(li_st[[1]], li_st[[2]], li_st[[3]])
 do.call(rbind, li_st)
 # Create numeric list
 li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # returns single column matrix
-do.call(cbind, li_st)  # returns single row matrix
-# recycling rule applied
+do.call(rbind, li_st)  # Returns single column matrix
+do.call(cbind, li_st)  # Returns single row matrix
+# Recycling rule applied
 do.call(cbind, list(1:2, 3:5))
 # NULL element is skipped
 do.call(cbind, list(1, NULL, 3, 4))
@@ -278,7 +287,7 @@ mat_rix <- do.call(rbind, list_vectors)
 dim(mat_rix)
 do_call_rbind <- function(li_st) {
   while (NROW(li_st) > 1) {
-# index of odd list elements
+# Index of odd list elements
     odd_index <- seq(from=1, to=NROW(li_st), by=2)
 # Bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
@@ -314,6 +323,7 @@ str(split_iris, max.level=1)
 names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
+all.equal(set_osa, split_iris$setosa)
 
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
@@ -329,32 +339,26 @@ sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars,
-    FUN=mean)
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
 # Or: aggregate() using data frame syntax
-aggregate(x=mtcars$mpg,
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 # Or: using name for mpg
-aggregate(x=list(mpg=mtcars$mpg),
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
-aggregate(x=mtcars,
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
-with(mtcars,
-     tapply(X=mpg, INDEX=cyl, FUN=mean))
+with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
 # Function sapply() instead of tapply()
 with(mtcars,
      sapply(sort(unique(cyl)), function(x) {
  structure(mean(mpg[x==cyl]), names=x)
- }, USE.NAMES=TRUE))  # end with
+     }, USE.NAMES=TRUE))  # end with
 
 # Function by() instead of tapply()
-with(mtcars,
-     by(data=mpg, INDICES=cyl, FUN=mean))
+with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
 
 # Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
@@ -363,7 +367,7 @@ data_cars <- sapply(split_cars,
         }  # end anonymous function
         )  # end sapply
 data_cars  # sapply() produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
+data_cars <- lapply(split_cars,  # Now same using lapply
         function(x) {
           c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
         }  # end anonymous function
@@ -378,9 +382,9 @@ panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt",
                    header=TRUE, sep="\t")
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
-# number of companies in each Industry
+# Number of companies in each Industry
 sapply(split_panel, NROW)
-# number of Sectors that each Industry belongs to
+# Number of Sectors that each Industry belongs to
 sapply(split_panel, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
@@ -388,11 +392,11 @@ sapply(split_panel, function(x) {
 aggregate(formula=(Sector ~ Industry),
   data=panel_data, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry),
-  data=panel_data, FUN=unique)
+aggregate(formula=(Sector ~ Industry), data=panel_data,
+    FUN=unique)
 # Or
-with(panel_data, aggregate(x=Sector,
-  by=list(Industry), FUN=unique))
+with(panel_data, aggregate(x=Sector, by=list(Industry),
+                     FUN=unique))
 # Or
 with(panel_data, sapply(levels(Industry),
   function(x) {
@@ -401,7 +405,7 @@ with(panel_data, sapply(levels(Industry),
 
 # Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
-# number of companies in each Sector
+# Number of companies in each Sector
 sapply(split_panel, NROW)
 # Industries belonging to each Sector (jagged array)
 sec_ind <- sapply(split_panel,
@@ -430,521 +434,271 @@ with(panel_data,
   sapply(split(ROE, Industry), mean))
 # Average, min, and max ROE in each Industry
 t(with(panel_data,
-  sapply(split(ROE, Industry),
-    FUN=function(x)
-c(mean=mean(x), max=max(x), min=min(x)))))
+  sapply(split(ROE, Industry), FUN=function(x)
+c(mean=mean(x), max=max(x), min=min(x)))  # end sapply
+  ))  # end with
 # Split panel_data based on Industry column
-split_panel <- split(panel_data,
-  panel_data$Industry)
+split_panel <- split(panel_data, panel_data$Industry)
 # Average ROE and EPS in each Industry
 t(sapply(split_panel, FUN=function(x)
   c(mean_roe=mean(x$ROE),
     mean_eps=mean(x$EPS.EXCLUDE.EI))))
 # Or: split panel_data based on Industry column
-split_panel <-
-  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
+split_panel <- split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   panel_data$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel,
-  FUN=function(x) sapply(x, mean)))
+t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
-  by=list(panel_data$Industry),
-  FUN=mean)
+  by=list(panel_data$Industry), FUN=mean)
 
-# ?options  # Get info on global options
-getOption("warn")  # Global option for "warn"
-options("warn")  # Global option for "warn"
-getOption("error")  # Global option for "error"
-sqrt_safe <- function(in_put) {
-# returns its argument
-  if (in_put<0) {
-    warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
-  } else {
-    sqrt(in_put)
-  }  # end if
-}  # end sqrt_safe
-sqrt_safe(5)
-sqrt_safe(-1)
-options(warn=-1)
-sqrt_safe(-1)
-options(warn=0)
-sqrt_safe()
-options(warn=1)
-sqrt_safe()
-options(warn=3)
-sqrt_safe()
-
-# Function vali_date validates its arguments
-vali_date <- function(in_put=NULL) {
-# Check if argument is valid and return double
-  if (is.null(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-# vali_date validates arguments using missing()
-vali_date <- function(in_put) {
-# Check if argument is valid and return double
-  if (missing(in_put)) {
-    return("vali_date: in_put is missing")
-  } else if (is.numeric(in_put)) {
-    2*in_put
-  } else cat("vali_date: in_put is not numeric")
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-
-# vali_date() validates its arguments and assertions
-vali_date <- function(in_put) {
-# Check if argument is valid and return double
-  if (missing(in_put)) {
-    stop("vali_date: in_put is missing")
-  } else if (!is.numeric(in_put)) {
-    cat("in_put =", in_put, "\n")
-    stop("vali_date: in_put is not numeric")
-  } else 2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date("a")
-vali_date()
-
-# Print the call stack
-traceback()
-
-vali_date <- function(in_put) {
-# Check argument using long form '&&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date(3)
-vali_date()
-vali_date("a")
-vali_date <- function(in_put) {
-# Check argument using logical '&' operator
-  stopifnot(!missing(in_put) & is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()
-vali_date("a")
-
-# sum_two() returns the sum of its two arguments
-sum_two <- function(in_put1, in_put2) {  # Even more robust
-# Check if at least one argument is not missing
-  stopifnot(!missing(in_put1) &&
-        !missing(in_put2))
-# Check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-is.numeric(in_put2)) {
-    in_put1 + in_put2  # Both valid
-  } else if (is.numeric(in_put1)) {
-    cat("in_put2 is not numeric\n")
-    in_put1  # in_put1 is valid
-  } else if (is.numeric(in_put2)) {
-    cat("in_put1 is not numeric\n")
-    in_put2  # in_put2 is valid
-  } else {
-    stop("none of the arguments are numeric")
-  }
-}  # end sum_two
-sum_two(1, 2)
-sum_two(5, 'a')
-sum_two('a', 5)
-sum_two('a', 'b')
-sum_two()
-
-# Flag "vali_date" for debugging
-debug(vali_date)
-# Calling "vali_date" starts debugger
-vali_date(3)
-# unflag "vali_date" for debugging
-undebug(vali_date)
-
-vali_date <- function(in_put) {
-  browser()  # Pause and invoke browser
-# Check argument using long form '&&' operator
-  stopifnot(!missing(in_put) &&
-        is.numeric(in_put))
-  2*in_put
-}  # end vali_date
-vali_date()  # invokes debugger
-options("error")  # Show default NULL "error" option
-options(error=recover)  # Set "error" option to "recover"
-options(error=NULL)  # Set back to default "error" option
-
-str(tryCatch)  # Get arguments of tryCatch()
-tryCatch(  # Without error handler
-  {  # Evaluate expressions
-    num_var <- 101  # Assign
-    stop('my error')  # Produce error
-  },
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-tryCatch(  # With error handler
-  {  # Evaluate expressions
-    num_var <- 101  # Assign
-    stop('my error')  # Produce error
-  },
-  # Error handler captures error condition
-  error=function(error_cond) {
-    print(paste("error handler: ", error_cond))
-  },  # end error handler
-  # Warning handler captures warning condition
-  warning=function(warning_cond) {
-    print(paste("warning handler: ", warning_cond))
-  },  # end warning handler
-  finally=print(paste("num_var=", num_var))
-)  # end tryCatch
-
-rm(list=ls())
-# Apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
-    stopifnot(num_var != 3)  # Check for error
-    # Broadcast message to console
-    cat("(cat) num_var =", num_var, "\n")
-    # return a value
-    paste("(return) num_var =", num_var)
-  }  # end anonymous function
-)  # end apply
-
-# Apply loop with tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
-    tryCatch(  # With error handler
-{  # Body
-  stopifnot(num_var != 3)  # Check for error
-  # Broadcast message to console
-  cat("(cat) num_var =", num_var, "\t")
-  # return a value
-  paste("(return) num_var =", num_var)
-},
-# Error handler captures error condition
-error=function(error_cond)
-  paste("handler: ", error_cond),
-finally=print(paste("(finally) num_var =", num_var))
-    )  # end tryCatch
-  }  # end anonymous function
-)  # end apply
-
-cat("Enter\ttab")  # Cat() interprets backslash escape sequences
-print("Enter\ttab")
-
-my_text <- print("hello")
-my_text  # Print() returns its argument
-
-# Create string
-my_text <- "Title: My Text\nSome numbers: 1,2,3,...\nRprofile files contain code executed at R startup,\n"
-
-cat(my_text, file="mytext.txt")  # Write to text file
-
-cat("Title: My Text",  # Write several lines to text file
-    "Some numbers: 1,2,3,...",
-    "Rprofile files contain code executed at R startup,",
-    file="mytext.txt", sep="\n")
-
-save(my_text, file="mytext.RData")  # Write to binary file
-
-print(pi)
-print(pi, digits=10)
-getOption("digits")
-foo <- 12
-bar <- "months"
-sprintf("There are %i %s in the year", foo, bar)
-
-# Read text from file
-scan(file="mytext.txt", what=character(), sep="\n")
-
-# Read lines from file
-readLines(con="mytext.txt")
-
-# Read text from console
-in_put <- readline("Enter a number: ")
-class(in_put)
-# Coerce to numeric
-in_put <- as.numeric(in_put)
-
-# Read text from file and display in editor:
-# file.show("mytext.txt")
-# file.show("mytext.txt", pager="")
-
-setwd("C:/Develop/lecture_slides/data")
-data_frame <- data.frame(type=c("rose", "daisy", "tulip"), color=c("red", "white", "yellow"), price=c(1.5, 0.5, 1.0), row.names=c("flower1", "flower2", "flower3"))  # end data.frame
-mat_rix <- matrix(sample(1:12), ncol=3, dimnames=list(NULL, c("col1", "col2", "col3")))
-rownames(mat_rix) <- paste("row", 1:NROW(mat_rix), sep="")
-# Write data frame to text file, and then read it back
-write.table(data_frame, file="florist.txt")
-data_read <- read.table(file="florist.txt")
-data_read  # A data frame
-
-# Write matrix to text file, and then read it back
-write.table(mat_rix, file="matrix.txt")
-mat_read <- read.table(file="matrix.txt")
-mat_read  # write.table() coerced matrix to data frame
-class(mat_read)
-# Coerce from data frame back to matrix
-mat_read <- as.matrix(mat_read)
-class(mat_read)
-
-setwd("C:/Develop/lecture_slides/data")
-data_frame <- data.frame(small=c(3, 5), medium=c(9, 11), large=c(15, 13))
-data_frame <- read.table("mydata.txt", header=TRUE)
-data_frame <- read.table("clipboard", header=TRUE)
-
-write.table(x=data_frame, file="clipboard", sep="\t")
-
-# Wrapper function for copying data frame from clipboard into R
-# by default, data is tab delimited, with a header
-read_clip <- function(file="clipboard", sep="\t",
-              header=TRUE, ...) {
-  read.table(file=file, sep=sep, header=header, ...)
-}  # end read_clip
-
-data_frame <- read_clip()
-
-# Wrapper function for copying data frame from R into clipboard
-# by default, data is tab delimited, with a header
-write_clip <- function(data, row.names=FALSE,
-               col.names=TRUE, ...) {
-  write.table(x=data, file="clipboard", sep="\t",
-      row.names=row.names, col.names=col.names, ...)
-}  # end write_clip
-
-write_clip(data=data_frame)
-
-# Launch spreadsheet-style data editor
-data_frame <- edit(data_frame)
-
-# Write data frame to CSV file, and then read it back
-write.csv(data_frame, file="florist.csv")
-data_read <- read.csv(file="florist.csv",
-                 stringsAsFactors=FALSE)
-data_read  # the row names are read in as extra column
-# Restore row names
-rownames(data_read) <- data_read[, 1]
-data_read <- data_read[, -1]  # Remove extra column
-data_read
-# Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv", row.names=1)
-data_read
-
-# Write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # A data frame without row names
-
-# Write matrix to csv file, and then read it back
-write.csv(mat_rix, file="matrix.csv")
-mat_read <- read.csv(file="matrix.csv", row.names=1)
-mat_read  # Read.csv() reads matrix as data frame
-class(mat_read)
-mat_read <- as.matrix(mat_read)  # Coerce to matrix
-identical(mat_rix, mat_read)
-write.csv(mat_rix, row.names=FALSE,
-    file="matrix_ex_rows.csv")
-mat_read <- read.csv(file="matrix_ex_rows.csv")
-mat_read <- as.matrix(mat_read)
-mat_read  # A matrix without row names
-
-setwd("C:/Develop/lecture_slides/data")
-library(MASS)  # Load package "MASS"
-# Write to CSV file by row - it's very SLOW!!!
-MASS::write.matrix(mat_rix,
-  file="matrix.csv", sep=",")
-# Read using scan() and skip first line with colnames
-mat_read <- scan(file="matrix.csv",
-  sep=",", skip=1, what=numeric())
-# Read colnames
-col_names <- readLines(con="matrix.csv", n=1)
-col_names  # this is a string!
-# Convert to char vector
-col_names <- strsplit(col_names,
-  s=",")[[1]]
-mat_read  # mat_read is a vector, not matrix!
-# Coerce by row to matrix
-mat_read <- matrix(mat_read,
-  ncol=NROW(col_names), byrow=TRUE)
-# Restore colnames
-colnames(mat_read) <- col_names
-mat_read
-# Scan() is a little faster than read.csv()
-library(microbenchmark)
-summary(microbenchmark(
-  read_csv=read.csv("matrix.csv"),
-  scan=scan(file="matrix.csv", sep=",",
-    skip=1, what=numeric()),
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-
-# Read data from a csv file, including row names
-mat_rix <- read.csv(file="matrix_bad.csv",
-  row.names=1, stringsAsFactors=FALSE)
-mat_rix
-class(mat_rix)
-# Columns with bad data are character or factor
-sapply(mat_rix, class)
-# Copy row names
-row_names <- row.names(mat_rix)
-# sapply loop over columns and coerce to numeric
-mat_rix <- sapply(mat_rix, as.numeric)
-# Restore row names
-row.names(mat_rix) <- row_names
-# Replace NAs with zero
-mat_rix[is.na(mat_rix)] <- 0
-# matrix without NAs
-mat_rix
-
-setwd("C:/Develop/lecture_slides/data")
-rm(list=ls())
-set.seed(1121)  # Reset random number generator
-library(zoo)  # Load package zoo
-# Create zoo with Date index
-in_dex <- seq(from=as.Date("2013-06-15"),
-        by="day", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to text file, and then read it back
-write.zoo(zoo_series, file="zoo_series.txt")
-zoo_read <- read.zoo("zoo_series.txt")  # Read it back
-all.equal(zoo_read, zoo_series)
-# Perform the same using write.table() and read.table()
-# First coerce zoo_series into data frame
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(in_dex, data_frame)
-# Write zoo_series to text file using write.table
-write.table(data_frame, file="zoo_series.txt",
-      row.names=FALSE, col.names=FALSE)
-# Read data frame from file
-zoo_read <- read.table(file="zoo_series.txt",
-                 stringsAsFactors=FALSE)
-sapply(zoo_read, class)  # A data frame
-# Coerce data frame into zoo_series
-zoo_read <- zoo::zoo(
-  drop(as.matrix(zoo_read[, -1])),
-  order.by=as.Date(zoo_read[, 1]))
-all.equal(zoo_read, zoo_series)
-
-library(zoo)  # Load package zoo
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-    sep=",", col.names=TRUE)
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=TRUE, sep=",", drop=FALSE)
-all.equal(zoo_series, drop(zoo_read))
-
-set.seed(1121)  # Reset random number generator
-# Create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"),
-        by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
-head(zoo_series, 3)
-# Write zoo series to CSV file, and then read it back
-write.zoo(zoo_series, file="zoo_series.csv",
-    sep=",", col.names=TRUE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv")
-all.equal(zoo_series, zoo_read)
-# Coerce to xts series
-x_ts <- xts::as.xts(zoo_read)
-class(x_ts); head(x_ts, 3)
-# Coerce zoo series into data frame with custom date format
-data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"), data_frame)
-head(data_frame, 3)
-# Write zoo series to csv file using write.table
-write.table(data_frame, file="zoo_series.csv",
-      sep=",", row.names=FALSE, col.names=FALSE)
-# Read from CSV file using read.csv.zoo()
-zoo_read <- read.zoo(file="zoo_series.csv",
-  header=FALSE, sep=",", FUN=as.POSIXct,
-  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-# Or using read.csv.zoo()
-zoo_read <- read.csv.zoo(file="zoo_series.csv",
-  header=FALSE,  format="%m-%d-%Y %H:%M:%S", tz="America/New_York")
-head(zoo_read, 3)
-all.equal(zoo_series, zoo_read)
-
-# Read time series from CSV file, with numeric date-time
-zoo_read <- read.table(file="C:/Develop/lecture_slides/data/es_ohlc.csv",
-  header=TRUE, sep=",")
-# A data frame
-class(zoo_read)
-sapply(zoo_read, class)
-# Coerce data frame into xts series
-zoo_read <- xts::xts(as.matrix(zoo_read[, -1]),
-  order.by=as.POSIXct.numeric(zoo_read[, 1], tz="America/New_York", origin="1970-01-01"))
-# An xts series
-class(zoo_read)
-head(zoo_read, 3)
-
-rm(list=ls())  # Remove all objects
-var1 <- 1; var2 <- 2
-ls()  # List all objects
-ls()[1]  # List first object
-args(save)  # List arguments of save function
-# Save "var1" to a binary file using string argument
-save("var1", file="my_data.RData")
-# Save "var1" to a binary file using object name
-save(var1, file="my_data.RData")
-# Save multiple objects
-save(var1, var2, file="my_data.RData")
-# Save first object in list by passing to "..." argument
-# ls()[1] is not evaluated
-save(ls()[1], file="my_data.RData")
-# Save first object in list by passing to "list" argument
-save(list=ls()[1], file="my_data.RData")
-# Save whole list by passing it to the "list" argument
-save(list=ls(), file="my_data.RData")
-
-rm(list=ls())  # Remove all objects
-# Load objects from file
-load_ed <- load(file="my_data.RData")
-load_ed  # vector of loaded objects
-ls()  # List objects
-# Assign new values to objects in  global environment
-sapply(load_ed, function(sym_bol) {
-  assign(sym_bol, runif(1), envir=globalenv())
-})  # end sapply
-ls()  # List objects
-# Assign new values to objects using for loop
-for (sym_bol in load_ed) {
-  assign(sym_bol, runif(1))
+par(oma=c(1, 1, 1, 1), mar=c(2, 1, 1, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+lamb_da <- c(0.5, 1, 1.5)
+col_ors <- c("red", "blue", "green")
+# Plot three curves in loop
+for (in_dex in 1:3) {
+  curve(expr=plogis(x, scale=lamb_da[in_dex]),
+xlim=c(-4, 4), type="l", xlab="", ylab="", lwd=4,
+col=col_ors[in_dex], add=(in_dex>1))
 }  # end for
-ls()  # List objects
-# Save vector of objects
-save(list=load_ed, file="my_data.RData")
-# Remove only loaded objects
-rm(list=load_ed)
-# Remove the object "load_ed"
-rm(load_ed)
 
-sink("sinkdata.txt")# Redirect text output to file
+# Add title
+title(main="Logistic function", line=0.5)
+# Add legend
+legend("topleft", title="Scale parameters",
+       paste("lambda", lamb_da, sep="="),
+       inset=0.05, cex=0.8, lwd=6, bty="n",
+       lty=1, col=col_ors)
 
-cat("Redirect text output from R\n")
-print(runif(10))
-cat("\nEnd data\nbye\n")
+set.seed(1121)
+# Simulate overlapping scores data
+sample1 <- runif(100, max=0.6)
+sample2 <- runif(100, min=0.4)
+# Perform Wilcoxon test for mean
+wilcox.test(sample1, sample2)
+# Combine scores and add categorical variable
+predic_tor <- c(sample1, sample2)
+res_ponse <- c(logical(100), !logical(100))
+# Perform logit regression
+g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
+class(g_lm)
+summary(g_lm)
 
-sink()  # turn redirect off
+x11(width=7, height=5)
+par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
+or_der <- order(predic_tor)
+plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
+     main="Category Densities and Logistic Function",
+     type="l", lwd=4, col="orange", xlab="score", ylab="density")
+den_sity <- density(predic_tor[res_ponse])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="red")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(1, 0, 0, 0.2), border=NA)
+den_sity <- density(predic_tor[!res_ponse])
+den_sity$y <- den_sity$y/max(den_sity$y)
+lines(den_sity, col="blue")
+polygon(c(min(den_sity$x), den_sity$x, max(den_sity$x)), c(min(den_sity$y), den_sity$y, min(den_sity$y)), col=rgb(0, 0, 1, 0.2), border=NA)
+# Add legend
+legend(x="top", cex=1.0, bty="n", lty=c(1, NA, NA),
+ lwd=c(6, NA, NA), pch=c(NA, 15, 15),
+ legend=c("logistic fit", "TRUE", "FALSE"),
+ col=c("orange", "red", "blue"),
+ text.col=c("black", "red", "blue"))
 
-pdf("Rgraph.pdf", width=7, height=4)  # Redirect graphics to pdf file
+library(ISLR)  # Load package ISLR
+# get documentation for package tseries
+packageDescription("ISLR")  # get short description
 
-cat("Redirect data from R into pdf file\n")
-my_var <- seq(-2*pi, 2*pi, len=100)
-plot(x=my_var, y=sin(my_var), main="Sine wave",
-   xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+help(package="ISLR")  # Load help page
 
-dev.off()  # turn pdf output off
+library(ISLR)  # Load package ISLR
 
-png("r_plot.png")  # Redirect graphics output to png file
+data(package="ISLR")  # list all datasets in ISLR
 
-cat("Redirect graphics from R into png file\n")
-plot(x=my_var, y=sin(my_var), main="Sine wave",
- xlab="", ylab="", type="l", lwd=2, col="red")
-cat("\nEnd data\nbye\n")
+ls("package:ISLR")  # list all objects in ISLR
 
-dev.off()  # turn png output off
+detach("package:ISLR")  # Remove ISLR from search path
+
+# Coerce the student and default columns into Boolean
+Default <- ISLR::Default
+Default$default <- (Default$default == "Yes")
+Default$student <- (Default$student == "Yes")
+colnames(Default)[1:2] <- c("de_fault", "stu_dent")
+attach(Default)  # Attach Default to search path
+# Explore credit default data
+summary(Default)
+sapply(Default, class)
+dim(Default); head(Default)
+
+# Plot data points for non-defaulters
+x11(width=6, height=5)
+x_lim <- range(balance); y_lim <- range(income)
+plot(income ~ balance,
+     main="Default Dataset from Package ISLR",
+     xlim=x_lim, ylim=y_lim, pch=4, col="blue",
+     data=Default[!de_fault, ])
+# Plot data points for defaulters
+points(income ~ balance, pch=4, lwd=2, col="red",
+ data=Default[de_fault, ])
+# Add legend
+legend(x="topright", bty="n",
+ legend=c("non-defaulters", "defaulters"),
+ col=c("blue", "red"), lty=1, lwd=6, pch=4)
+
+# Wilcoxon test for balance predictor
+wilcox.test(balance[de_fault], balance[!de_fault])
+# Wilcoxon test for income predictor
+wilcox.test(income[de_fault], income[!de_fault])
+
+x11(width=6, height=5)
+par(mfrow=c(1,2))  # Set plot panels
+# Balance boxplot
+boxplot(formula=balance ~ de_fault,
+  col="lightgrey", main="balance", xlab="Default")
+# Income boxplot
+boxplot(formula=income ~ de_fault,
+  col="lightgrey", main="income", xlab="Default")
+
+# Fit logistic regression model
+g_lm <- glm(de_fault ~ balance, family=binomial(logit))
+class(g_lm)
+summary(g_lm)
+
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
+plot(x=balance, y=de_fault,
+     main="Logistic Regression of Credit Defaults",
+     col="orange", xlab="credit balance", ylab="defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=g_lm$fitted.values[or_der], col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n", lwd=6,
+ legend=c("defaults", "logit fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
+
+# Calculate cumulative defaults
+to_tal <- sum(de_fault)
+default_s <- sapply(balance, function(lim_it) {
+    sum(de_fault[balance <= lim_it])
+})  # end sapply
+# Perform logit regression
+g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
+  family=binomial(logit))
+summary(g_lm)
+
+plot(x=balance, y=default_s/to_tal, col="orange", lwd=1,
+     main="Cumulative Defaults Versus Balance",
+     xlab="credit balance", ylab="cumulative defaults")
+or_der <- order(balance)
+lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
+col="blue", lwd=3)
+legend(x="topleft", inset=0.1, bty="n",
+ legend=c("cumulative defaults", "fitted values"),
+ col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+
+# Fit multifactor logistic regression model
+col_names <- colnames(Default)
+for_mula <- as.formula(paste(col_names[1],
+  paste(col_names[-1], collapse="+"), sep=" ~ "))
+for_mula
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
+summary(g_lm)
+
+# Calculate cumulative defaults
+cum_defaults <- sapply(balance, function(lim_it) {
+c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
+  non_student=sum(de_fault[!stu_dent & (balance <= lim_it)]))
+})  # end sapply
+total_defaults <- c(student=sum(stu_dent & de_fault),
+      stu_dent=sum(!stu_dent & de_fault))
+cum_defaults <- t(cum_defaults / total_defaults)
+
+# Plot cumulative defaults
+par(mfrow=c(1,2))  # Set plot panels
+or_der <- order(balance)
+plot(x=balance[or_der], y=cum_defaults[or_der, 1],
+     col="red", t="l", lwd=2, xlab="credit balance", ylab="",
+     main="Cumulative defaults of\n students and non-students")
+lines(x=balance[or_der], y=cum_defaults[or_der, 2], col="blue", lwd=2)
+legend(x="topleft", bty="n",
+ legend=c("students", "non-students"),
+ col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
+# Balance boxplot for student factor
+boxplot(formula=balance ~ !stu_dent,
+  col="lightgrey", main="balance", xlab="Student")
+
+# Perform in-sample forecast from logistic regression model
+forecast_s <- predict(g_lm, type="response")
+all.equal(g_lm$fitted.values, forecast_s)
+# Define discrimination threshold value
+thresh_old <- 0.7
+# Calculate confusion matrix in-sample
+table(actual=de_fault, forecast=(forecast_s > thresh_old))
+# Fit logistic regression over training data
+set.seed(1121)  # Reset random number generator
+n_rows <- NROW(Default)
+da_ta <- sample.int(n=n_rows, size=n_rows/2)
+train_data <- Default[da_ta, ]
+g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
+# Forecast over test data out-of-sample
+test_data <- Default[-da_ta, ]
+forecast_s <- predict(g_lm, newdata=test_data, type="response")
+# Calculate confusion matrix out-of-sample
+table(actual=test_data$de_fault, 
+forecast=(forecast_s > thresh_old))
+
+# Fit logit model and forecast in-sample
+g_lm <- glm(for_mula, data=Default, family=binomial(logit))
+forecast_s <- predict(g_lm, type="response")
+# Calculate FALSE positive (type I error)
+sum(de_fault & (forecast_s < thresh_old))
+# Calculate FALSE negative (type II error)
+sum(!de_fault & (forecast_s > thresh_old))
+
+# Calculate confusion matrix
+confu_sion <- table(actual=de_fault, 
+  forecast=(forecast_s > thresh_old))
+confu_sion
+# Calculate FALSE positive and FALSE negative rates
+confu_sion <- confu_sion / rowSums(confu_sion)
+c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+detach(Default)
+# Below is an unsuccessful attempt to draw confusion matrix using xtable
+confusion_matrix <- matrix(c("| true positive \\\\ (sensitivity)", "| false negative \\\\ (type II error)", "| false positive \\\\ (type I error)", "| true negative \\\\ (specificity)"), nc=2)
+dimnames(confusion_matrix) <- list(forecast=c("FALSE", "TRUE"),
+                             actual=c("FALSE", "TRUE"))
+print(xtable::xtable(confusion_matrix,
+caption="Confusion Matrix"),
+caption.placement="top",
+comment=FALSE, size="scriptsize",
+include.rownames=TRUE,
+include.colnames=TRUE)
+# end unsuccessful attempt to draw confusion table using xtable
+
+# Confusion matrix as function of thresh_old
+con_fuse <- function(actu_al, forecast_s, thresh_old) {
+    confu_sion <- table(actu_al, (forecast_s > thresh_old))
+    confu_sion <- confu_sion / rowSums(confu_sion)
+    c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
+  }  # end con_fuse
+con_fuse(test_data$de_fault, forecast_s, thresh_old=thresh_old)
+# Define vector of discrimination thresholds
+threshold_s <- seq(0.01, 0.95, by=0.01)^2
+# Calculate error rates
+error_rates <- sapply(threshold_s, con_fuse,
+  actu_al=(test_data$de_fault), forecast_s=forecast_s)  # end sapply
+error_rates <- t(error_rates)
+rownames(error_rates) <- threshold_s
+error_rates <- rbind(c(0, 1), error_rates)
+error_rates <- rbind(error_rates, c(1, 0))
+# Calculate area under ROC curve (AUC)
+true_pos <- (1 - error_rates[, "typeII"])
+true_pos <- (true_pos + rutils::lag_it(true_pos))/2
+false_pos <- rutils::diff_it(error_rates[, "typeI"])
+abs(sum(true_pos*false_pos))
+
+# Plot ROC Curve for Defaults
+x11(width=6, height=6)
+plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
+     main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
+abline(a=0.0, b=1.0, lwd=3, col="orange")

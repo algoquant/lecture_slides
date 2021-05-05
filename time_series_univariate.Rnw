@@ -137,9 +137,9 @@ detach("package:tseries")  # Remove tseries from search path
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Get start and end dates
-in_dex <- time(ts_stx_adj)
-e_nd <- in_dex[NROW(in_dex)]
-st_art <- round((4*e_nd + in_dex[1])/5)
+date_s <- time(ts_stx_adj)
+e_nd <- date_s[NROW(date_s)]
+st_art <- round((4*e_nd + date_s[1])/5)
 # Plot using plotOHLC
 plotOHLC(window(ts_stx_adj,
                 start=st_art,
@@ -366,7 +366,7 @@ title(main="MSFT Close Prices", line=-1)
         \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
         \item \texttt{getFinancials()} for downloading financial statements,
         \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
+        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
         \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
         \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
         \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
@@ -447,11 +447,9 @@ chartSeries(etf_env$VTI["2014-11"],
       <<echo=(-(1:1)),eval=FALSE>>=
 library(quantmod)
 # Plot OHLC candlechart with volume
-chartSeries(etf_env$VTI["2008-11/2009-04"],
-            name="VTI")
+chartSeries(etf_env$VTI["2008-11/2009-04"], name="VTI")
 # Redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02",
-        theme=chartTheme("white"))
+reChart(subset="2009-02", theme=chartTheme("white"))
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -706,7 +704,7 @@ ch_ob <- chart_Series(x=oh_lc, theme=plot_theme, plot=FALSE)
 y_lim <- ch_ob$get_ylim()
 y_lim[[2]] <- structure(range(quantmod::Cl(oh_lc)) + c(-1, 1),
   fixed=TRUE)
-# modify plot object to reduce y-axis range
+# Modify plot object to reduce y-axis range
 ch_ob$set_ylim(y_lim)  # use setter function
 # Render the plot
 plot(ch_ob)
@@ -732,11 +730,9 @@ plot(ch_ob)
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)
 # Calculate VTI and XLF volume-weighted average price
-v_wap <-
-  TTR::VWAP(price=quantmod::Cl(rutils::etf_env$VTI),
+v_wap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$VTI),
             volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
-XLF_vwap <-
-  TTR::VWAP(price=quantmod::Cl(rutils::etf_env$XLF),
+XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$XLF),
             volume=quantmod::Vo(rutils::etf_env$XLF), n=10)
 # Open graphics device, and define
 # Plot area with two horizontal panels
@@ -744,13 +740,11 @@ x11(); par(mfrow=c(2, 1))
 ch_ob <- chart_Series(  # Plot in top panel
   x=etf_env$VTI["2009-02/2009-04"],
   name="VTI", plot=FALSE)
-add_TA(v_wap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
-ch_ob <- chart_Series(  # Plot in bottom panel
-  x=etf_env$XLF["2009-02/2009-04"],
+add_TA(v_wap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+# Plot in bottom panel
+ch_ob <- chart_Series(x=etf_env$XLF["2009-02/2009-04"],
   name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"],
-       lwd=2, on=1, col='blue')
+add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
       @
     \column{0.5\textwidth}
     \vspace{-1em}
@@ -771,28 +765,34 @@ add_TA(XLF_vwap["2009-02/2009-04"],
       The function \texttt{dygraph()} from package \emph{dygraphs} creates interactive plots for \emph{xts} time series.
       \vskip1ex
       The function \texttt{dyCandlestick()} creates a \emph{candlestick} plot object for \emph{OHLC} data, and uses the first four columns to plot \emph{candlesticks}, and it plots any additional columns as lines.
+      \vskip1ex
+      The function \texttt{dyOptions()} adds options (like colors, etc.) to a \emph{dygraph} plot.
       <<echo=TRUE,eval=FALSE>>=
 library(dygraphs)
 # Calculate volume-weighted average price
 oh_lc <- rutils::etf_env$VTI
-v_wap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
+v_wap <- TTR::VWAP(price=quantmod::Cl(oh_lc),
     volume=quantmod::Vo(oh_lc), n=20)
-# Add VWAP to OHLC  data
-oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-               v_wap)["2009-02/2009-04"]
+# Add VWAP to OHLC data
+da_ta <- cbind(oh_lc[, 1:4], v_wap)["2009-01/2009-04"]
 # Create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc)
+dy_graph <- dygraphs::dygraph(da_ta)
+# Increase line width and color
+dy_graph <- dygraphs::dyOptions(dy_graph, 
+  colors="red", strokeWidth=3)
 # Convert dygraphs object to candlestick plot
 dy_graph <- dygraphs::dyCandlestick(dy_graph)
 # Render candlestick plot
 dy_graph
 # Candlestick plot using pipes syntax
-dygraphs::dygraph(oh_lc) %>% dyCandlestick()
+dygraphs::dygraph(da_ta) %>% dyCandlestick() %>% 
+  dyOptions(colors="red", strokeWidth=3)
 # Candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
+dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(da_ta), 
+  colors="red", strokeWidth=3))
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}\\
+      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick.png}
       Each \emph{candlestick} displays one period of data, and consists of a box representing the \emph{Open} and \emph{Close} prices, and a vertical line representing the \emph{High} and \emph{Low} prices.
       \vskip1ex
       The color of the box signifies whether the \emph{Close} price was higher or lower than the \emph{Open},
@@ -810,31 +810,28 @@ dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
   \begin{columns}[T]
     \column{0.5\textwidth}
       The function \texttt{dyShading()} adds shading to a \emph{dygraphs} plot object.
+      \vskip1ex
+      The function \texttt{dyShading()} requires a vector of dates for shading.
       <<echo=TRUE,eval=FALSE>>=
 # Create candlestick plot with background shading
-in_dex <- index(oh_lc)
-in_dic <- rutils::diff_it(oh_lc[, 4] > oh_lc[, "VWAP"])
-in_dic <- rbind(cbind(which(in_dic==1), 1),
-  cbind(which(in_dic==(-1)), -1))
-in_dic <- in_dic[order(in_dic[, 1]), ]
-in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
-  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
-in_dic <- data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
-# Create dygraph object
-dy_graph <- dygraphs::dygraph(oh_lc) %>%
-  dyCandlestick()
+in_dic <- (Cl(da_ta) > da_ta[, "VWAP"])
+whi_ch <- which(rutils::diff_it(in_dic) != 0)
+in_dic <- rbind(first(in_dic), in_dic[whi_ch, ], last(in_dic))
+date_s <- index(in_dic)
+in_dic <- ifelse(drop(coredata(in_dic)), "lightgreen", "antiquewhite")
+# Create dygraph object without rendering it
+dy_graph <- dygraphs::dygraph(da_ta) %>% dyCandlestick() %>% 
+  dyOptions(colors="red", strokeWidth=3)
 # Add shading
 for (i in 1:(NROW(in_dic)-1)) {
-  if (in_dic[i, 2] == 1)
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
-  else
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
+    dy_graph <- dy_graph %>% 
+      dyShading(from=date_s[i], to=date_s[i+1], color=in_dic[i])
 }  # end for
-# Render dygraph
+# Render the dygraph object
 dy_graph
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}\\
+      \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_candlestick_shaded.png}
   \end{columns}
 \end{block}
 
@@ -854,18 +851,17 @@ dy_graph
       <<echo=TRUE,eval=FALSE>>=
 library(dygraphs)
 # Prepare VTI and IEF prices
-price_s <- cbind(Ad(rutils::etf_env$VTI),
-                 Ad(rutils::etf_env$IEF))
+price_s <- cbind(Cl(rutils::etf_env$VTI), Cl(rutils::etf_env$IEF))
 price_s <- na.omit(price_s)
 col_names <- rutils::get_name(colnames(price_s))
 colnames(price_s) <- col_names
 # dygraphs plot with two y-axes
 library(dygraphs)
 dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis(name="y", label="VTI", independentTicks=TRUE) %>%
-  dyAxis(name="y2", label="IEF", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", strokeWidth=2, col="red") %>%
-  dySeries(name="IEF", axis="y2", strokeWidth=2, col="blue")
+  dyAxis(name="y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis(name="y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="blue")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth, height=0.35\paperwidth]{figure/dygraphs_2yaxis.png}
@@ -893,8 +889,8 @@ par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 zoo::plot.zoo(price_s[, 1], lwd=2, col="orange",
               xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-in_dex <- pretty(index(price_s))
-axis(side=1, at=in_dex, labels=format(in_dex, "%b-%d-%y"))
+date_s <- pretty(index(price_s))
+axis(side=1, at=date_s, labels=format(date_s, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
 zoo::plot.zoo(price_s[, 2], xlab=NA, ylab=NA,
@@ -937,7 +933,7 @@ package \emph{quantmod}
         \item \texttt{getSymbols()} for downloading data from external sources (\emph{Yahoo}, \emph{FRED}, etc.),
         \item \texttt{getFinancials()} for downloading financial statements,
         \item \texttt{adjustOHLC()} for adjusting \emph{OHLC} data,
-        \item \texttt{Op()}, \texttt{Ad()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
+        \item \texttt{Op()}, \texttt{Cl()}, \texttt{Vo()}, etc. for extracting \emph{OHLC} data columns,
         \item \texttt{periodReturn()}, \texttt{dailyReturn()}, etc. for calculating periodic returns,
         \item \texttt{chartSeries()} for candlestick plots of \emph{OHLC} data,
         \item \texttt{addBBands()}, \texttt{addMA()}, \texttt{addVo()}, etc. for adding technical indicators (Moving Averages, Bollinger Bands) and volume data to a plot,
@@ -1166,10 +1162,10 @@ plot(price_s, type="l", xlab="time", ylab="prices",
 sigma_r <- 0.01/sqrt(48)
 dri_ft <- 0.0
 n_rows <- 1e4
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+date_s <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=n_rows, by="30 min")
 price_s <- exp(cumsum(sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2))
-price_s <- xts(price_s, order.by=in_dex)
+price_s <- xts(price_s, order.by=date_s)
 price_s <- cbind(price_s,
   volume=sample(x=10*(2:18), size=n_rows, replace=TRUE))
 # Aggregate to daily OHLC data
@@ -1209,8 +1205,8 @@ col_ors <- c("black", "red", "blue")
 # Plot all curves
 for (in_dex in 1:NROW(sig_mas)) {
   curve(expr=dlnorm(x, sdlog=sig_mas[in_dex]),
-        type="l", lwd=2, xlim=c(0, 3), 
-        xlab="", ylab="", col=col_ors[in_dex], 
+        type="l", lwd=2, xlim=c(0, 3),
+        xlab="", ylab="", col=col_ors[in_dex],
         add=as.logical(in_dex-1))
 }  # end for
       @
@@ -1406,15 +1402,12 @@ price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
 # Drop ".Close" from column names
 colnames(price_s[, 1:4])
-do.call(rbind, strsplit(colnames(price_s[, 1:4]), 
-                        split="[.]"))[, 1]
-colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), 
-                                             split="[.]"))[, 1]
+colnames(price_s) <- rutils::get_name(colnames(price_s))
 # Or
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+# colnames(price_s) <- do.call(rbind,
+#   strsplit(colnames(price_s), split="[.]"))[, 1]
 # Normalize columns
-price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])), 
+price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
                order.by=index(price_s))
 # Calculate permution index for sorting the lowest to highest final price_s
 or_der <- order(price_s[NROW(price_s), ])
@@ -1575,7 +1568,7 @@ re_turns <- rutils::etf_env$re_turns[, c("VTI", "XLF")]
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # De-mean (center) and scale the returns
-re_turns <- apply(re_turns, MARGIN=2, 
+re_turns <- apply(re_turns, MARGIN=2,
   function(x) (x-mean(x))/sd(x))
 apply(re_turns, MARGIN=2, sd)
 # Calculate the correlation
@@ -1684,10 +1677,8 @@ head(acf_data$acf)
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-plot_acf <- function(x_ts, lagg=10,
-                     plo_t=TRUE,
-                     xlab="Lag", ylab="",
-                     main="", ...) {
+plot_acf <- function(x_ts, lagg=10, plo_t=TRUE,
+                     xlab="Lag", ylab="", main="", ...) {
   # Calculate the ACF without a plot
   acf_data <- acf(x=x_ts, lag.max=lagg, plot=FALSE, ...)
   # Remove first element of ACF data
@@ -1704,7 +1695,7 @@ plot_acf <- function(x_ts, lagg=10,
          ylim=ylim, main="", ci=0)
     title(main=main, line=0.5)
     abline(h=c(-ci, ci), col="blue", lty=2)
-  }
+  }  # end if
   # Return the ACF data invisibly
   invisible(acf_data)
 }  # end plot_acf
@@ -1791,15 +1782,15 @@ Box.test(re_turns^2, lag=10, type="Ljung")
 library(rutils)  # Load package rutils
 library(Ecdat)  # Load Ecdat
 colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # Coerce to "zoo"
-          Macrodat[, c("lhur", "fygm3")])
+# Coerce to "zoo"
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macro_zoo) <- c("unemprate", "3mTbill")
 # ggplot2 in multiple panes
 autoplot(  # Generic ggplot2 for "zoo"
   object=macro_zoo, main="US Macro",
   facets=Series ~ .) + # end autoplot
   xlab("") +
-theme(  # modify plot theme
+theme(  # Modify plot theme
   legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
   plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
@@ -1867,7 +1858,7 @@ price_s <- na.omit(rutils::etf_env$price_s$VTI)
 n_rows <- NROW(price_s)
 # Apply convolution filter over past values (sides=1)
 co_eff <- c(0.1, 0.39, 0.5); n_coeff <- NROW(co_eff)
-filter_ed <- filter(price_s, filter=co_eff, 
+filter_ed <- filter(price_s, filter=co_eff,
                     method="convolution", sides=1)
       @
   \end{columns}
@@ -1885,7 +1876,7 @@ filter_ed <- filter(price_s, filter=co_eff,
     \column{0.5\textwidth}
       The function \texttt{filter()} is very fast because it calculates the filter by calling compiled \texttt{C++} functions.
       \vskip1ex
-      \texttt{filter()} with \texttt{method="convolution"} calls the function \texttt{stats:::C\_cfilter} to calculate the \emph{convolution}. 
+      \texttt{filter()} with \texttt{method="convolution"} calls the function \texttt{stats:::C\_cfilter} to calculate the \emph{convolution}.
       \vskip1ex
       \texttt{filter()} with \texttt{method="recursive"} calculates a \emph{recursive} filter over the vector of random \emph{innovations} $\xi_i$ as follows:
       \begin{displaymath}
@@ -1895,7 +1886,7 @@ filter_ed <- filter(price_s, filter=co_eff,
       \vskip1ex
       The \emph{recursive} filter describes an \emph{AR(p)} process, which is a special case of an \emph{ARIMA} process.
       \vskip1ex
-      \texttt{filter()} with \texttt{method="recursive"} calls the function \texttt{stats:::C\_rfilter} to calculate the \emph{recursive filter}. 
+      \texttt{filter()} with \texttt{method="recursive"} calls the function \texttt{stats:::C\_rfilter} to calculate the \emph{recursive filter}.
       \vskip1ex
       Filtering can be performed even faster by directly calling the compiled \texttt{C++} functions.
     \column{0.5\textwidth}
@@ -1906,12 +1897,12 @@ filter
 # Get information about C_cfilter()
 getAnywhere(C_cfilter)
 # Filter over past values (sides=1)
-filter_ed <- filter(price_s, filter=co_eff, 
+filter_ed <- filter(price_s, filter=co_eff,
                     method="convolution", sides=1)
 # Filter using C_cfilter() compiled C++ function directly
-filter_fast <- .Call(stats:::C_cfilter, price_s, filter=co_eff, 
+filter_fast <- .Call(stats:::C_cfilter, price_s, filter=co_eff,
                      sides=1, circular=FALSE)
-all.equal(as.numeric(filter_ed), filter_fast, 
+all.equal(as.numeric(filter_ed), filter_fast,
           check.attributes=FALSE)
 # Benchmark speed of the two methods
 library(microbenchmark)
@@ -1925,7 +1916,7 @@ ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
 # Get information about C_rfilter()
 getAnywhere(C_rfilter)
 # Filter using C_rfilter() compiled C++ function directly
-arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff,
                     double(n_coeff + n_rows))
 all.equal(as.numeric(ari_ma), arima_fast[-(1:n_coeff)], check.attributes=FALSE)
 # Benchmark speed of the two methods
@@ -1956,10 +1947,10 @@ library(gridExtra)  # Load gridExtra
 filter_ed <- cbind(price_s, as.numeric(filter_ed))
 colnames(filter_ed) <- c("VTI", "VTI filtered")
 # Plot ggplot2
-autoplot(filter_ed["2008/2010"], 
+autoplot(filter_ed["2008/2010"],
     main="Filtered VTI", facets=NULL) +  # end autoplot
 xlab("") + ylab("") +
-theme(  # modify plot theme
+theme(  # Modify plot theme
     legend.position=c(0.1, 0.5),
     plot.title=element_text(vjust=-2.0),
     plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
@@ -1989,7 +1980,7 @@ theme(  # modify plot theme
 # Open plot window
 x11(width=6, height=7)
 # Set plot parameters
-par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0), 
+par(oma=c(1, 1, 0, 1), mar=c(1, 1, 1, 1), mgp=c(0, 0.5, 0),
     cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Set two plot panels
 par(mfrow=c(2,1))
@@ -2032,10 +2023,10 @@ title(main="ACF of VTI Filtered Returns", line=-1)
     <<echo=(-(1:2)),eval=FALSE>>=
 # Simulate AR processes
 set.seed(1121)  # Reset random numbers
-in_dex <- Sys.Date() + 0:728  # Two year daily series
-ari_ma <- xts(  # AR time series of returns
-  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
-  order.by=in_dex)
+date_s <- Sys.Date() + 0:728  # Two year daily series
+# AR time series of returns
+ari_ma <- xts(x=arima.sim(n=NROW(date_s), model=list(ar=0.2)), 
+              order.by=date_s)
 ari_ma <- cbind(ari_ma, cumsum(ari_ma))
 colnames(ari_ma) <- c("AR returns", "AR prices")
       @
@@ -2077,12 +2068,12 @@ ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 # Create three AR time series
 ari_ma <- sapply(ar_coeff, function(phi) {
   set.seed(1121)  # Reset random numbers
-  arima.sim(n=NROW(in_dex), model=list(ar=phi))
+  arima.sim(n=NROW(date_s), model=list(ar=phi))
 })  # end sapply
 colnames(ari_ma) <- paste("autocorr", ar_coeff)
 plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
 # Or plot using ggplot
-ari_ma <- xts(x=ari_ma, order.by=in_dex)
+ari_ma <- xts(x=ari_ma, order.by=date_s)
 library(ggplot)
 autoplot(ari_ma, main="AR(1) prices",
          facets=Series ~ .) +
@@ -2142,7 +2133,7 @@ arima_faster <- filter(x=in_nov,
 class(arima_faster)
 all.equal(ari_ma, as.numeric(arima_faster))
 # Fast simulation of AR process using C_rfilter()
-arima_fastest <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+arima_fastest <- .Call(stats:::C_rfilter, in_nov, co_eff,
                        double(NROW(co_eff) + NROW(in_nov)))[-(1:3)]
 all.equal(ari_ma, arima_fastest)
       @
@@ -2184,10 +2175,8 @@ ari_ma <- arima.sim(n=n_rows,
   start.innov=in_nov[1:warm_up],
   innov=in_nov[(warm_up+1):NROW(in_nov)])
 # Simulate AR process using filter()
-arima_fast <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-all.equal(arima_fast[-(1:warm_up)],
-  as.numeric(ari_ma))
+arima_fast <- filter(x=in_nov, filter=co_eff, method="recursive")
+all.equal(arima_fast[-(1:warm_up)], as.numeric(ari_ma))
 # Benchmark the speed of the three methods of simulating AR process
 library(microbenchmark)
 summary(microbenchmark(
@@ -2275,7 +2264,7 @@ legend(x="topleft", legend=colnames(rand_walk),
       \vskip1ex
       The \emph{integrated} process of an \emph{AR(p)} process is always a \emph{unit root} process.
     \column{0.5\textwidth}
-      In particular, if returns follow an \emph{AR(1)} process: $r_i = \varphi r_{i-1} + \xi_i$. 
+      In particular, if returns follow an \emph{AR(1)} process: $r_i = \varphi r_{i-1} + \xi_i$.
       \vskip1ex
       Then asset prices follow the process: $p_i = (1 + \varphi) p_{i-1} - \varphi p_{i-2} + \xi_i$
       \vskip1ex
@@ -2685,8 +2674,7 @@ ari_ma <- arima.sim(n=1e3, model=list(ar=c(0.1, 0.5, 0.1)))
 rutils::plot_acf(ari_ma, lag=10, xlab="", ylab="",
          main="ACF of AR(3) process")
 # PACF of AR(3) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(3) process")
+pacf(ari_ma, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
       @
     \column{0.5\textwidth}
       \vspace{-2em}
@@ -2730,7 +2718,7 @@ co_eff <- c(0.1, 0.39, 0.5); n_coeff <- NROW(co_eff)
 set.seed(1121); in_nov <- rnorm(n_rows)
 # ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
 # Simulate AR process using C_rfilter()
-ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
   double(n_rows + n_coeff))[-(1:n_coeff)]
 # Fit AR model using ar.ols()
 ar_fit <- ar.ols(ari_ma, order.max=n_coeff, aic=FALSE)
@@ -2784,7 +2772,7 @@ n_rows <- 1e3
 co_eff <- c(0.1, 0.39, 0.5); n_coeff <- NROW(co_eff)
 # Simulate AR process using C_rfilter()
 set.seed(1121); in_nov <- rnorm(n_rows)
-ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
   double(n_rows + n_coeff))[-(1:n_coeff)]
 
 
@@ -3045,9 +3033,9 @@ set.seed(1121); in_nov <- rnorm(n_rows)
 ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
 ari_ma <- as.numeric(ari_ma)
 # Simulate AR process using C_rfilter()
-arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+arima_fast <- .Call(stats:::C_rfilter, in_nov, co_eff,
   double(n_rows + n_coeff))
-all.equal(ari_ma, arima_fast[-(1:n_coeff)], 
+all.equal(ari_ma, arima_fast[-(1:n_coeff)],
   check.attributes=FALSE)
       @
       The one step ahead \emph{forecast} $f_i$ is equal to the \emph{convolution} of the time series $r_i$ with the \emph{AR(p)} coefficients:
@@ -3055,7 +3043,7 @@ all.equal(ari_ma, arima_fast[-(1:n_coeff)],
         f_i = \varphi_1 r_{i-1} + \varphi_2 r_{i-2} + \ldots + \varphi_p r_{i-p}
       \end{displaymath}
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/ar_forecast.png}
+      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Forecast AR(3) process using loop in R
@@ -3106,13 +3094,13 @@ filter_fast <- filter(x=ari_ma, sides=1,
   filter=co_eff, method="convolution")
 filter_fast <- as.numeric(filter_fast)
 # Compare excluding warmup period
-all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))], 
+all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))],
           check.attributes=FALSE)
 # Filter using C_cfilter() compiled C++ function directly
-filter_fast <- .Call(stats:::C_cfilter, ari_ma, filter=co_eff, 
+filter_fast <- .Call(stats:::C_cfilter, ari_ma, filter=co_eff,
                      sides=1, circular=FALSE)
 # Compare excluding warmup period
-all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))], 
+all.equal(forecast_s[-(1:n_coeff)], filter_fast[-(1:(n_coeff-1))],
           check.attributes=FALSE)
 # Define predictor matrix for forecasting
 predic_tor <- sapply(0:(n_coeff-1), function(lagg) {
@@ -3197,7 +3185,7 @@ all.equal(pre_dict$pred[[1]], fore_cast)
 residual_s <- (ari_ma - forecast_s[-NROW(forecast_s)])
 # Compare residuals with innovations
 all.equal(in_nov, residual_s, check.attributes=FALSE)
-plot(residual_s, t="l", lwd=3, xlab="", ylab="", 
+plot(residual_s, t="l", lwd=3, xlab="", ylab="",
      main="ARIMA Forecast Errors")
       @
   \end{columns}
@@ -3330,7 +3318,7 @@ n_rows <- 1e3
 co_eff <- c(0.5, 0.0, 0.0); n_coeff <- NROW(co_eff)
 set.seed(1121); in_nov <- rnorm(n_rows)
 # Simulate AR process using C_rfilter()
-ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff, 
+ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
   double(n_rows + n_coeff))[-(1:n_coeff)]
 # Define order of the AR(p) forecasting model
 or_der <- 5
@@ -3490,12 +3478,11 @@ back_test(ari_ma, or_der=5, look_back=100)
       The two \emph{meta-parameters} can be chosen by minimizing the \emph{MSE} of the model forecasts in a \emph{backtest} simulation.
       <<echo=TRUE,eval=FALSE>>=
 look_backs <- seq(20, 200, 20)
-back_tests <- sapply(look_backs, back_test, 
-              se_ries=ari_ma, or_der=or_der)
+back_tests <- sapply(look_backs, back_test, se_ries=ari_ma, or_der=or_der)
 back_tests <- t(back_tests)
 rownames(back_tests) <- look_backs
 # Plot forecasting series with legend
-plot(x=look_backs, y=back_tests[, 1], 
+plot(x=look_backs, y=back_tests[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model")
       @

@@ -1,10 +1,3 @@
-library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
-options(digits=3)
-options(width=80, dev='pdf')
-thm <- knit_theme$get("acid")
-knit_theme$set(thm)
-
 library(PortfolioAnalytics)
 # Use ETF returns from package rutils
 library(rutils)
@@ -496,25 +489,25 @@ in_dex <- round(conf_level*NROW(re_turns))
 va_r <- sort_ed[in_dex]
 c_var <- mean(sort_ed[1:in_dex])
 # Plot histogram of VTI returns
+min_var <- (-0.05)
 histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=100, xlim=c(-0.05, 0.01),
-  ylab="frequency", freq=FALSE,
-  main="VTI returns histogram")
+  xlab="returns", breaks=100, xlim=c(min_var, 0.01),
+  ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
+
+# Plot density of losses
 densi_ty <- density(re_turns, adjust=1.5)
 lines(densi_ty, lwd=3, col="blue")
-
 # Add line for VaR
 abline(v=va_r, col="red", lwd=3)
-text(x=va_r, y=20, labels="VaR",
-     lwd=2, srt=90, pos=2)
+y_max <- max(densi_ty$y)
+text(x=va_r, y=2*y_max/3, labels="VaR", lwd=2, pos=2)
 # Add shading for CVaR
-var_max <- -0.06
-rang_e <- (densi_ty$x < va_r) & (densi_ty$x > var_max)
+rang_e <- (densi_ty$x < va_r) & (densi_ty$x > min_var)
 polygon(
-  c(var_max, densi_ty$x[rang_e], va_r),
+  c(min_var, densi_ty$x[rang_e], va_r),
   c(0, densi_ty$y[rang_e], 0),
   col=rgb(1, 0, 0,0.5), border=NA)
-text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
+text(x=1.5*va_r, y=y_max/7, labels="CVaR", lwd=2, pos=2)
 
 library(rutils)  # Load rutils
 library(Rglpk)
@@ -1480,23 +1473,23 @@ integrate(dnorm, low=2, up=Inf, mean=1)
 # Expected value over normal distribution
 integrate(function(x) x*dnorm(x), low=2, up=Inf)
 
+# Vasicek model parameters
 rh_o <- 0.1; l_gd <- 0.4
+def_prob <- 0.05; def_thresh <- qnorm(def_prob)
 # Define Vasicek loss distribution function
 loss_distr <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
   sqrt((1-rh_o)/rh_o)*exp(-(sqrt(1-rh_o)*qnorm(x/l_gd) - def_thresh)^2/(2*rh_o) + qnorm(x/l_gd)^2/2)/l_gd
-integrate(loss_distr, low=0, up=l_gd,
-  def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
+integrate(loss_distr, low=0, up=l_gd, def_thresh=(-2), rh_o=rh_o, l_gd=l_gd)
 
 # Plot probability distribution of losses
-def_prob <- 0.05; def_thresh <- qnorm(def_prob)
+x11(width=6, height=5)
 curve(expr=loss_distr(x, def_thresh=def_thresh, rh_o=rh_o),
 type="l", xlim=c(0, 0.06),
 xlab="loss percentage", ylab="density", lwd=3,
-col="orange", main="Distribution of Losses")
+col="blue", main="Portfolio Loss Density")
 # Add line for expected loss
 abline(v=l_gd*def_prob, col="red", lwd=3)
-text(x=l_gd*def_prob-0.001, y=10, labels="expected loss",
- lwd=2, srt=90, pos=3)
+text(x=l_gd*def_prob-0.001, y=35, labels="expected loss", lwd=3, pos=4)
 
 # Define cumulative default probability function
 cum_loss <- function(x, def_thresh=(-2), rh_o=0.2, l_gd=0.4)
@@ -1546,19 +1539,15 @@ text(x=0.5*(at_tach+de_tach), y=0, labels="CDO tranche", cex=0.9, lwd=2, pos=3)
 
 # Add lines for unexpected loss
 abline(v=0.04, col="blue", lwd=3)
-arrows(x0=0.02, y0=35, x1=0.04, y1=35,
- code=3, lwd=3, cex=0.5)
-text(x=0.03, y=36, labels="unexpected loss",
-     lwd=2, pos=3)
+arrows(x0=0.02, y0=35, x1=0.04, y1=35, code=3, lwd=3, cex=0.5)
+text(x=0.03, y=36, labels="unexpected loss", lwd=2, pos=3)
 # Add lines for VaR
 abline(v=0.055, col="red", lwd=3)
-arrows(x0=0.0, y0=25, x1=0.055, y1=25,
- code=3, lwd=3, cex=0.5)
+arrows(x0=0.0, y0=25, x1=0.055, y1=25, code=3, lwd=3, cex=0.5)
 text(x=0.03, y=26, labels="VaR", lwd=2, pos=3)
-text(x=0.055-0.001, y=10, labels="VaR",
- lwd=2, srt=90, pos=3)
+text(x=0.055-0.001, y=10, labels="VaR", lwd=2, srt=90, pos=3)
 
-va_r <- 0.04; var_max <- 4*l_gd*def_prob
+va_r <- 0.04; min_var <- 4*l_gd*def_prob
 # Calculate CVaR
 c_var <- integrate(function(x, ...) x*loss_distr(x, ...),
   low=va_r, up=l_gd, def_thresh=def_thresh, rh_o=rh_o, l_gd=l_gd)$value
@@ -1577,11 +1566,11 @@ abline(v=va_r, col="red", lwd=3)
 text(x=va_r-0.001, y=10, labels="VaR",
  lwd=2, srt=90, pos=3)
 # Add shading for CVaR
-var_s <- seq(va_r, var_max, length=100)
+var_s <- seq(va_r, min_var, length=100)
 densi_ty <- sapply(var_s, loss_distr,
   def_thresh=def_thresh, rh_o=rh_o)
 # Draw shaded polygon
-polygon(c(va_r, var_s, var_max), density=20,
+polygon(c(va_r, var_s, min_var), density=20,
   c(-1, densi_ty, -1), col="red", border=NA)
 text(x=va_r+0.005, y=0, labels="CVaR", lwd=2, pos=3)
 
@@ -1656,14 +1645,48 @@ rh_o <- 0.2; rho_sqrt <- sqrt(rh_o); rho_sqrtm <- sqrt(1-rh_o)
 set.seed(1121)
 def_probs <- runif(n_assets, max=0.2)
 def_thresh <- qnorm(def_probs)
-# Calculate vector of systematic factors
-system_atic <- rnorm(n_simu)
 # Simulate losses under Vasicek model
+system_atic <- rnorm(n_simu)
 asset_s <- matrix(rnorm(n_simu*n_assets), ncol=n_simu)
 asset_s <- t(rho_sqrt*system_atic + t(rho_sqrtm*asset_s))
 loss_es <- l_gd*colSums(asset_s < def_thresh)/n_assets
 
-# Calculate VaRs
+# Calculate VaR from confidence level
+conf_level <- 0.95
+va_r <- quantile(loss_es, conf_level)
+# Calculate the CVaR as the mean losses in excess of VaR
+c_var <- mean(loss_es[loss_es > va_r])
+# Plot the density of portfolio losses
+x11(width=6, height=5)
+densi_ty <- density(loss_es)
+plot(densi_ty, xlab="loss percentage", ylab="density",
+     lwd=3, col="blue", main="Portfolio Loss Distribution")
+# Add vertical line for expected loss
+expected_loss <- l_gd*mean(def_probs)
+abline(v=expected_loss, col="red", lwd=3)
+x_max <- max(densi_ty$x); y_max <- max(densi_ty$y)
+text(x=expected_loss, y=(6*y_max/7), labels="expected loss",
+     lwd=2, pos=4)
+# Add vertical line for VaR
+abline(v=va_r, col="red", lwd=3)
+text(x=va_r, y=4*y_max/5, labels="VaR", lwd=2, pos=4)
+
+# Draw shaded polygon for CVaR
+in_dex <- (densi_ty$x > va_r)
+x_var <- c(min(densi_ty$x[in_dex]), densi_ty$x[in_dex], max(densi_ty$x))
+polygon(x_var, c(-1, densi_ty$y[in_dex], -1), col="red", border=NA, density=10)
+# Add text for CVaR
+text(x=5*va_r/4, y=(y_max/7), labels="CVaR", lwd=2, pos=4)
+# Add text with data
+text(x_max, y_max, labels=paste0(
+ "Expected Loss = ", format(100*expected_loss, digits=3), "%", "\n",
+ "Loss severity = ", format(100*l_gd, digits=3), "%", "\n",
+ "Correlation = ", format(100*rh_o, digits=3), "%", "\n",
+ "VaR = ", format(100*va_r, digits=3), "%", "\n",
+ "CVaR = ", format(100*c_var, digits=3), "%"),
+     adj=c(1, 1), cex=0.8, lwd=2)
+
+# Calculate VaRs from confidence levels
 level_s <- seq(0.93, 0.99, 0.01)
 var_s <- quantile(loss_es, probs=level_s)
 plot(x=level_s, y=var_s, t="l", lwd=2,
@@ -1780,16 +1803,17 @@ std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
 std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+std_error_var_scaled <- std_error_var[2, ]/std_error_var[1, ]
+std_error_cvar_scaled <- std_error_cvar[2, ]/std_error_cvar[1, ]
 
 # Plot the standard errors of VaRs and CVaRs
+x11(width=6, height=5)
 plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+  y=std_error_cvar_scaled, t="l", col="red", lwd=2,
+  ylim=range(c(std_error_var_scaled, std_error_cvar_scaled)),
   xlab="confidence level", ylab="standard error",
   main="Scaled standard errors of CVaR and VaR")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
+lines(x=colnames(std_error_var), y=std_error_var_scaled, lwd=2)
 legend(x="topleft", legend=c("CVaRs", "VaRs"), bty="n",
  title=NULL, inset=0.05, cex=0.8, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
@@ -1835,23 +1859,42 @@ boot_data <- mclapply(rep(l_gd, n_boot),
 boot_data <- rutils::do_call(rbind, boot_data)
 stopCluster(clus_ter)  # Stop R processes over cluster
 # Calculate vectors of standard errors of VaR and CVaR from boot_data data
-std_error_var <- apply(boot_data[, 1:7], MARGIN=2,
+std_error_var_param <- apply(boot_data[, 1:7], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
-std_error_cvar <- apply(boot_data[, 8:14], MARGIN=2,
+std_error_cvar_param <- apply(boot_data[, 8:14], MARGIN=2,
     function(x) c(mean=mean(x), sd=sd(x)))
+
+# Plot the standard errors of VaRs under uncertain default probabilities
+x11(width=6, height=5)
+plot(x=colnames(std_error_var),
+  y=std_error_var[2, ], t="l", lwd=3,
+  ylim=range(c(std_error_var[2, ], std_error_var_param[2, ])),
+  xlab="confidence level", ylab="standard error",
+  main="Standard Errors of VaR
+  with Uncertain Default Probabilities")
+lines(x=colnames(std_error_var), y=std_error_var_param[2, ],
+col="red", lwd=3)
+legend(x=0.95, y=0.02, bty="n",
+ legend=c("VaR Fixed Def Probs", "VaR Random Def Probs"),
+ title=NULL, inset=0.05, cex=1.0, bg="white",
+ lwd=6, lty=1, col=c("black", "red"))
+
 # Scale the standard errors of VaRs and CVaRs
-std_error_var[2, ] <- std_error_var[2, ]/std_error_var[1, ]
-std_error_cvar[2, ] <- std_error_cvar[2, ]/std_error_cvar[1, ]
+std_error_var_scaled <- std_error_var_param[2, ]/
+  std_error_var_param[1, ]
+std_error_cvar_scaled <- std_error_cvar_param[2, ]/
+  std_error_cvar_param[1, ]
 
 # Plot the standard errors of VaRs and CVaRs
-plot(x=colnames(std_error_cvar),
-  y=std_error_cvar[2, ], t="l", col="red", lwd=2,
-  ylim=range(c(std_error_var[2, ], std_error_cvar[2, ])),
+x11(width=6, height=5)
+plot(x=colnames(std_error_cvar_param),
+  y=std_error_cvar_scaled, t="l", col="red", lwd=3,
+  ylim=range(c(std_error_var_scaled, std_error_cvar_scaled)),
   xlab="confidence level", ylab="standard error",
-  main="Standard Errors of CVaR and VaR
+  main="Relative Standard Errors of VaR and CVaR
   with Uncertain Default Probabilities")
-lines(x=colnames(std_error_var), y=std_error_var[2, ], lwd=2)
-legend(x="topright", legend=c("CVaRs", "VaRs"), bty="n",
+lines(x=names(std_error_var_scaled), y=std_error_var_scaled, lwd=3)
+legend(x="topright", legend=c("CVaR", "VaR"), bty="n",
  title=NULL, inset=0.05, cex=1.0, bg="white",
  lwd=6, lty=1, col=c("red", "black"))
 

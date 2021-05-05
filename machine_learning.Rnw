@@ -287,8 +287,7 @@ barplot(ei_gen$values, las=3, xlab="", ylab="",
 mat_rix <- matrix(rnorm(50), nc=5)
 s_vd <- svd(mat_rix)
 # Recompose mat_rix from SVD mat_rices
-all.equal(mat_rix,
-  s_vd$u %*% (s_vd$d*t(s_vd$v)))
+all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
 # Columns of U and V are orthonormal
 round(t(s_vd$u) %*% s_vd$u, 4)
 round(t(s_vd$v) %*% s_vd$v, 4)
@@ -488,8 +487,7 @@ s_vd <- svd(mat_rix)
 # Incorrect inverse from SVD because of zero singular values
 svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
 # Verify inverse property of mat_rix
-all.equal(mat_rix,
-  mat_rix %*% svd_inverse %*% mat_rix)
+all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2112,7 +2110,7 @@ dim(foo)
 mod_el <- lm(paste(names(foo), collapse=" ~ "), data=foo)
 model_sum <- summary(mod_el)
 model_sum
-dwtest(mod_el)
+lmtest::dwtest(mod_el)
 
 # Filter over non-overlapping periods
 bar <- names(foo)
@@ -2136,7 +2134,7 @@ model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dw_test <- dwtest(mod_el)
+dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
       @
       \vspace{-2em}
@@ -2287,9 +2285,9 @@ plot(fit_sd, type="l", lwd=3, col="blue",
       The fitted values for different realizations of random noise can be calculated using the influence matrix.
         <<echo=TRUE,eval=FALSE>>=
 # Calculate response without random noise for univariate regression,
-# equal to weighted sum over columns of de_sign
-weight_s <- c(-1, 1)
-res_ponse <- de_sign %*% weight_s
+# equal to weighted sum over columns of de_sign.
+beta_s <- c(-1, 1)
+res_ponse <- de_sign %*% beta_s
 # Perform loop over different realizations of random noise
 fit_ted <- lapply(1:50, function(it) {
   # Add random noise to response
@@ -2494,7 +2492,7 @@ model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dw_test <- dwtest(mod_el)
+dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
       @
       \vspace{-2em}
@@ -2814,10 +2812,10 @@ all.equal(fitted_zm,
       The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
       \vskip1ex
       But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests.
-        <<echo=(-(1:1)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 library(lmtest)  # Load lmtest
-de_sign <- data.frame(  # Design matrix
-  de_sign=1:30, omit_var=sin(0.2*1:30))
+# Define design matrix
+de_sign <- data.frame(de_sign=1:30, omit_var=sin(0.2*1:30))
 # Response depends on both predictors
 res_ponse <- with(de_sign,
           0.2*de_sign + omit_var + 0.2*rnorm(30))
@@ -2827,7 +2825,7 @@ model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dwtest(mod_el)$p.value
+lmtest::dwtest(mod_el)
       @
       \vspace{-2em}
         <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
@@ -3661,15 +3659,15 @@ legend("topleft", title="Scale parameters",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{Linear} regression isn't suitable when the response variable is categorical data (\texttt{factor}).
+      \emph{Linear} regression isn't suitable when the response variable is discrete data (like \texttt{factors} or \texttt{integers}).
       \vskip1ex
-      But \emph{logistic} regression (\emph{logit}) can be used to model data with a categorical response variable.
+      But \emph{logistic} regression (\emph{logit}) can be used to model data with a discrete response variable.
       \vskip1ex
       The function \texttt{glm()} fits generalized linear models, including \emph{logistic} regressions.
       \vskip1ex
-      \texttt{glm()} can fit two different types of response variables: categorical data (\texttt{factors}) from individual observations, or counts of categorical data (\texttt{integers}) from groups of observations.
+      \texttt{glm()} can fit categorical data (\texttt{factors}) from individual observations, and frequencies of categorical data (\texttt{integers}) from groups of observations.
       \vskip1ex
-      The family object \texttt{binomial(logit)} specifies a binomial distribution of residuals.
+      The parameter \texttt{family=binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
       <<echo=(-(1:1)),eval=FALSE>>=
 set.seed(1121)
 # Simulate overlapping scores data
@@ -3687,10 +3685,10 @@ summary(g_lm)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/logistic_density.png}
+      \includegraphics[width=0.45\paperwidth]{figure/logistic_density.png}
       \vspace{-1em}
       <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=7, height=5)
+x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
 plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
@@ -3763,14 +3761,16 @@ detach("package:ISLR")  # Remove ISLR from search path
       \vskip1ex
       The \texttt{Default} data frame contains two columns of categorical data (\texttt{factors}): \texttt{default} and \texttt{student}, and two columns of numerical data: \texttt{balance} and \texttt{income}.
       \vskip1ex
-      The \texttt{default} and \texttt{student} columns can be converted to \texttt{Boolean} values, with \texttt{TRUE} if \texttt{default == "No"} and \texttt{student == "No"}, and \texttt{FALSE} otherwise.
+      The columns \texttt{default} and \texttt{student} contain factor data, and they can be converted to \texttt{Boolean} values, with \texttt{TRUE} if \texttt{default == "Yes"} and \texttt{student == "Yes"}, and \texttt{FALSE} otherwise.
+      \vskip1ex
+      This avoids implicit coercion by the function \texttt{glm()}.
     \column{0.5\textwidth}
       <<echo=TRUE,eval=TRUE>>=
 # Coerce the student and default columns into Boolean
 Default <- ISLR::Default
-Default$default <- (Default$default == "No")
-Default$student <- (Default$student == "No")
-colnames(Default)[1:2] <- c("not_default", "not_student")
+Default$default <- (Default$default == "Yes")
+Default$student <- (Default$student == "Yes")
+colnames(Default)[1:2] <- c("de_fault", "stu_dent")
 attach(Default)  # Attach Default to search path
 # Explore credit default data
 summary(Default)
@@ -3797,22 +3797,22 @@ dim(Default); head(Default)
       But there is very little difference in \texttt{income} between the \texttt{default = TRUE} versus \texttt{default = FALSE} data points.
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/islr_default_data.png}
+      \includegraphics[width=0.45\paperwidth]{figure/islr_default_data.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot data points for non-defaulters
+x11(width=6, height=5)
 x_lim <- range(balance); y_lim <- range(income)
 plot(income ~ balance,
      main="Default Dataset from Package ISLR",
      xlim=x_lim, ylim=y_lim, pch=4, col="blue",
-     data=Default[not_default, ])
+     data=Default[!de_fault, ])
 # Plot data points for defaulters
 points(income ~ balance, pch=4, lwd=2, col="red",
-       data=Default[!not_default, ])
+       data=Default[de_fault, ])
 # Add legend
-legend(x="topright", bty="n",
-       legend=c("non-defaulters", "defaulters"),
-       col=c("blue", "red"), lty=1, lwd=6, pch=4)
+legend(x="topright", legend=c("non-defaulters", "defaulters"),
+       bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
       @
   \end{columns}
 \end{block}
@@ -3840,9 +3840,9 @@ legend(x="topright", bty="n",
       The \emph{Wilcoxon} test shows that the \texttt{balance} column provides a strong separation between defaulters and non-defaulters, but the \texttt{income} column doesn't.
       <<echo=TRUE,eval=FALSE>>=
 # Wilcoxon test for balance predictor
-wilcox.test(balance[not_default], balance[!not_default])
+wilcox.test(balance[de_fault], balance[!de_fault])
 # Wilcoxon test for income predictor
-wilcox.test(income[not_default], income[!not_default])
+wilcox.test(income[de_fault], income[!de_fault])
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -3852,11 +3852,11 @@ wilcox.test(income[not_default], income[!not_default])
 x11(width=6, height=5)
 par(mfrow=c(1,2))  # Set plot panels
 # Balance boxplot
-boxplot(formula=balance ~ not_default,
-        col="lightgrey", main="balance", xlab="No default")
+boxplot(formula=balance ~ de_fault,
+        col="lightgrey", main="balance", xlab="Default")
 # Income boxplot
-boxplot(formula=income ~ not_default,
-        col="lightgrey", main="income", xlab="No default")
+boxplot(formula=income ~ de_fault,
+        col="lightgrey", main="income", xlab="Default")
       @
   \end{columns}
 \end{block}
@@ -3873,14 +3873,12 @@ boxplot(formula=income ~ not_default,
     \column{0.5\textwidth}
       The \texttt{balance} column can be used to calculate the probability of default using \emph{logistic} regression.
       \vskip1ex
-      The residuals in \emph{logistic} regression are the differences betweeen the actual response values ($0$ and $1$), and the calculated probabilities of default.
+      The residuals are the differences betweeen the actual response values ($0$ and $1$), and the calculated probabilities of default.
       \vskip1ex
-      The \emph{logit} residuals are not normally distributed, so the data is fitted using the \emph{maximum-likelihood} method, instead of least squares.
-      \vskip1ex
-      The family object \texttt{binomial(logit)} specifies a binomial distribution of residuals in the \emph{logistic} regression model.
-      <<echo=TRUE,eval=FALSE>>=
+      The residuals are not normally distributed, so the data is fitted using the \emph{maximum-likelihood} method, instead of least squares.
+      <<echo=TRUE,eval=TRUE>>=
 # Fit logistic regression model
-g_lm <- glm(!not_default ~ balance, family=binomial(logit))
+g_lm <- glm(de_fault ~ balance, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
       @
@@ -3891,7 +3889,7 @@ summary(g_lm)
       <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=balance, y=!not_default,
+plot(x=balance, y=de_fault,
      main="Logistic Regression of Credit Defaults", 
      col="orange", xlab="credit balance", ylab="defaults")
 or_der <- order(balance)
@@ -3920,9 +3918,9 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
       These two different ways of specifying the \emph{logistic} regression are related, but they are not equivalent, because they have different error terms.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
-to_tal <- sum(!not_default)
+to_tal <- sum(de_fault)
 default_s <- sapply(balance, function(lim_it) {
-    sum(!not_default[balance <= lim_it])
+    sum(de_fault[balance <= lim_it])
 })  # end sapply
 # Perform logit regression
 g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
@@ -3943,6 +3941,54 @@ lines(x=balance[or_der], y=g_lm$fitted.values[or_der],
 legend(x="topleft", inset=0.1, bty="n",
        legend=c("cumulative defaults", "fitted values"),
        col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Modeling Credit Defaults Using Student Status}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The \texttt{stu\_dent} column can be used to calculate the probability of default using \emph{logistic} regression.
+      \vskip1ex
+      Persons who are students are more likely to default because students have higher credit balances.
+      <<echo=TRUE,eval=TRUE>>=
+# Fit logistic regression model
+g_lm <- glm(de_fault ~ stu_dent, family=binomial(logit))
+summary(g_lm)
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.5\paperwidth]{figure/islr_logistic_reg.png}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+x11(width=6, height=5)
+par(mfrow=c(1,2))  # Set plot panels
+# Balance boxplot
+boxplot(formula=balance ~ de_fault,
+        col="lightgrey", main="balance", xlab="Default")
+
+
+# Plot data points for non-students
+x11(width=6, height=5)
+x_lim <- range(balance); y_lim <- range(income)
+plot(income ~ balance,
+     main="Default Dataset from Package ISLR",
+     xlim=x_lim, ylim=y_lim, pch=4, col="blue",
+     data=Default[!stu_dent, ])
+# Plot data points for students
+points(income ~ balance, pch=4, lwd=2, col="red",
+       data=Default[stu_dent, ])
+# Add legend
+legend(x="topright", bty="n",
+       legend=c("non-students", "students"),
+       col=c("blue", "red"), lty=1, lwd=6, pch=4)
       @
   \end{columns}
 \end{block}
@@ -4002,11 +4048,11 @@ summary(g_lm)
       <<echo=TRUE,eval=FALSE>>=
 # Calculate cumulative defaults
 cum_defaults <- sapply(balance, function(lim_it) {
-c(student=sum(!not_default[!not_student & (balance <= lim_it)]),
-  non_student=sum(!not_default[not_student & (balance <= lim_it)]))
+c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
+  non_student=sum(de_fault[!stu_dent & (balance <= lim_it)]))
 })  # end sapply
-total_defaults <- c(student=sum(!not_student & !not_default), 
-            not_student=sum(not_student & !not_default))
+total_defaults <- c(student=sum(stu_dent & de_fault), 
+            stu_dent=sum(!stu_dent & de_fault))
 cum_defaults <- t(cum_defaults / total_defaults)
       @
     \column{0.5\textwidth}
@@ -4025,8 +4071,8 @@ legend(x="topleft", bty="n",
        legend=c("students", "non-students"),
        col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
 # Balance boxplot for student factor
-boxplot(formula=balance ~ not_student,
-        col="lightgrey", main="balance", xlab="Not student")
+boxplot(formula=balance ~ !stu_dent,
+        col="lightgrey", main="balance", xlab="Student")
       @
   \end{columns}
 \end{block}
@@ -4047,7 +4093,7 @@ boxplot(formula=balance ~ not_student,
       \vskip1ex
       The \texttt{Boolean} forecasts are obtained by comparing the \emph{forecast probabilities} with a \emph{discrimination threshold}.
       \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
       \vskip1ex
       If the \emph{forecast probability} is greater than the \emph{discrimination threshold}, then the forecast is that the subject will not default and that the \emph{null hypothesis} is \texttt{TRUE}.
       \vskip1ex
@@ -4061,19 +4107,19 @@ all.equal(g_lm$fitted.values, forecast_s)
 # Define discrimination threshold value
 thresh_old <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=not_default, forecast=(forecast_s > thresh_old))
+table(actual=!de_fault, forecast=(forecast_s < thresh_old))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
-n_rows <- NROW(not_default)
-da_ta <- sample.int(n=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
+n_rows <- NROW(Default)
+sampl_e <- sample.int(n=n_rows, size=n_rows/2)
+train_data <- Default[sampl_e, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
 # Forecast over test data out-of-sample
-test_data <- Default[-da_ta, ]
+test_data <- Default[-sampl_e, ]
 forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=test_data$not_default, 
-      forecast=(forecast_s > thresh_old))
+table(actual=!test_data$de_fault, 
+      forecast=(forecast_s < thresh_old))
       @
   \end{columns}
 \end{block}
@@ -4090,7 +4136,7 @@ table(actual=test_data$not_default,
     \column{0.5\textwidth}
       A \emph{binary classification model} categorizes cases based on its forecasts whether the \emph{null hypothesis} is \texttt{TRUE} or \texttt{FALSE}.
       \vskip1ex
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
       \vskip1ex
       A \emph{positive} result corresponds to rejecting the null hypothesis, while a \emph{negative} result corresponds to accepting the null hypothesis.
       \vskip1ex
@@ -4102,13 +4148,14 @@ table(actual=test_data$not_default,
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=TRUE>>=
-# Fit logit model and forecast in-sample
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-forecast_s <- predict(g_lm, type="response")
+# Calculate confusion matrix out-of-sample
+confu_sion <- table(actual=!test_data$de_fault, 
+      forecast=(forecast_s < thresh_old))
+confu_sion
 # Calculate FALSE positive (type I error)
-sum(not_default & (forecast_s < thresh_old))
+sum(!test_data$de_fault & (forecast_s > thresh_old))
 # Calculate FALSE negative (type II error)
-sum(!not_default & (forecast_s > thresh_old))
+sum(test_data$de_fault & (forecast_s < thresh_old))
       @
   \end{columns}
 \end{block}
@@ -4143,10 +4190,6 @@ sum(!not_default & (forecast_s > thresh_old))
       & Null is TRUE & \MyBox{False Positive}{(type I error)} & \MyBox{True Negative}{(specificity)}
       \end{tabular}}
       <<echo=TRUE,eval=TRUE>>=
-# Calculate confusion matrix
-confu_sion <- table(actual=not_default, 
-  forecast=(forecast_s > thresh_old))
-confu_sion
 # Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
@@ -4166,7 +4209,7 @@ print(xtable::xtable(confusion_matrix,
 # end unsuccessful attempt to draw confusion table using xtable
       @
     \column{0.5\textwidth}
-      Let the \emph{null hypothesis} be that the subject will not default: \texttt{not\_default = TRUE}.
+      Let the \emph{null hypothesis} be that the subject will not default: \texttt{de\_fault = FALSE}.
       \vskip1ex
       The \emph{true positive} rate (known as the \emph{sensitivity}) is the fraction of \texttt{FALSE} \emph{null hypothesis} cases that are correctly classified as \texttt{FALSE}.
       \vskip1ex
@@ -4198,16 +4241,16 @@ print(xtable::xtable(confusion_matrix,
       <<echo=TRUE,eval=FALSE>>=
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, forecast_s, thresh_old) {
-    confu_sion <- table(actu_al, (forecast_s > thresh_old))
+    confu_sion <- table(actu_al, (forecast_s < thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$not_default, forecast_s, thresh_old=thresh_old)
+con_fuse(!test_data$de_fault, forecast_s, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
-threshold_s <- seq(0.01, 0.95, by=0.01)^2
+threshold_s <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=(test_data$not_default), forecast_s=forecast_s)  # end sapply
+  actu_al=!test_data$de_fault, forecast_s=forecast_s)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
@@ -4220,10 +4263,11 @@ abs(sum(true_pos*false_pos))
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/islr_defaults_roc.png}
+      \includegraphics[width=0.4\paperwidth]{figure/islr_defaults_roc.png}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Plot ROC Curve for Defaults
+x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
@@ -4252,7 +4296,7 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
       \vskip1ex
       The \texttt{Boolean} forecasts are obtained by comparing the forecast probabilities with a discrimination threshold.
       \vskip1ex
-      The \emph{null hypothesis} is that \texttt{not\_default = TRUE}.
+      The \emph{null hypothesis} is that \texttt{de\_fault = FALSE}.
       \vskip1ex
       A positive result corresponds to rejecting the null hypothesis, while a negative result corresponds to accepting the null hypothesis.
       \vskip1ex
@@ -4264,77 +4308,6 @@ abline(a=0.0, b=1.0, lwd=3, col="orange")
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Define explanatory (design) and response data
-res_ponse <- ISLR::Default[, 1]
-de_sign <- ISLR::Default[, -1]
-head(de_sign)
-class(de_sign)
-sapply(de_sign, class)
-# Coerce factor to numerical
-de_sign[, 1] <- as.numeric(de_sign[, 1])
-# Standardize the design data
-de_sign <- sapply(de_sign, scale)
-head(de_sign)
-class(de_sign)
-apply(de_sign, 2, class)
-
-# Define training test data
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=1:NROW(de_sign), size=NROW(de_sign)/2)
-da_ta <- cbind(res_ponse, de_sign)
-train_data <- da_ta[da_ta, ]
-test_data <- da_ta[-da_ta, ]
-
-foo <- knn(train=train_data[, -1], test=test_data[, -1], cl=train_data[, 1], k=1)
-
-# wippp
-
-# Response equals linear form plus random noise
-
-def_ault <- ISLR::Default
-head(def_ault)
-
-
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
-test_data <- Default[-da_ta, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-thresh_old <- 0.7
-
-
-# Fit full logistic regression model
-for_mula <- as.formula(paste(col_names[1],
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-forecast_s <- predict(g_lm, type="response")
-forecast_s[1:6]
-all.equal(g_lm$fitted.values, forecast_s)
-# Discrimination threshold
-thresh_old <- 0.7
-# Calculate confusion matrix
-table(not_default=default, (forecast_s > thresh_old))
-sum(default)
-# Fit logistic regression over training data
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
-# Forecast over test data
-test_data <- Default[-da_ta, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-
-# Calculate confusion matrix
-
-table(actual=not_default, forecast=(forecast_s > thresh_old))
-# FALSE positive (type I error)
-sum(!test_data$default & (forecast_s > thresh_old))
-# FALSE negative (type II error)
-sum(test_data$default & (forecast_s > thresh_old))
-detach(Default)
       @
   \end{columns}
 \end{block}

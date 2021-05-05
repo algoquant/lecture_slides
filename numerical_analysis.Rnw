@@ -748,27 +748,29 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
+vec_tor <- rnorm(5000)
 summary(microbenchmark(
+# Compiled C++ function
+  cpp = cumsum(vec_tor),  # end for
 # Allocate full memory for cumulative sum
-  for_loop = {cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  for_loop = {cum_sum <- numeric(NROW(vec_tor))
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   grow_vec = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   com_bine = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
+      cum_sum <- c(cum_sum, vec_tor[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
       @
@@ -1156,27 +1158,27 @@ summary(microbenchmark(
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-big_vector <- rnorm(5000)
+vec_tor <- rnorm(5000)
 summary(microbenchmark(
 # Allocate full memory for cumulative sum
-  for_loop = {cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  for_loop = {cum_sum <- numeric(NROW(vec_tor))
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   grow_vec = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   com_bine = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
+      cum_sum <- c(cum_sum, vec_tor[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
       @
@@ -1302,12 +1304,10 @@ library(microbenchmark)
 str(pmax)
 # Calculate row maximums two different ways
 summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
+  p_max=do.call(pmax.int,
       lapply(seq_along(mat_rix[1, ]),
         function(in_dex) mat_rix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(mat_rix[, 1]),
+  l_apply=unlist(lapply(seq_along(mat_rix[, 1]),
         function(in_dex) max(mat_rix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
       @
@@ -1918,7 +1918,7 @@ n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
 clus_ter <- makeCluster(n_cores)
 # Calculate matrix of random data
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+mat_rix <- matrix(rnorm(1e5), ncol=100)
 # Define aggregation function over column of matrix
 agg_regate <- function(col_umn) {
   out_put <- 0
@@ -1927,13 +1927,11 @@ agg_regate <- function(col_umn) {
   out_put
 }  # end agg_regate
 # Perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ter, mat_rix, agg_regate)
+agg_regations <- parCapply(clus_ter, mat_rix, agg_regate)
 # Compare speed of apply with parallel computing
 summary(microbenchmark(
   ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ter, mat_rix, agg_regate),
+  parl_apply=parCapply(clus_ter, mat_rix, agg_regate),
   times=10)
 )[, c(1, 4, 5)]
 # Stop R processes over cluster under Windows
@@ -2241,42 +2239,41 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Resampling From Empirical Datasets}
+\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
+      The \emph{bootstrap} procedure uses \emph{Monte Carlo} simulation to generate a distribution of estimator values.
       \vskip1ex
-      Resampling is usually performed with replacement, so that each draw is independent from the others.
+      The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set.
       \vskip1ex
-      Resampling is performed when it's not possible or convenient to obtain another set of empirical data.
+      If the original data consists of simulated random numbers then we simply simulate another set of these random numbers.
       \vskip1ex
-      The function \texttt{sample()} selects a random sample from a vector of data elements.
-      \vskip1ex
-      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
-      \vskip1ex
-      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
-      \vskip1ex
-      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
-    \column{0.5\textwidth}
+      The \emph{bootstrapped} datasets are used to recalculate the estimator many times, to provide a distribution of the estimator and its standard error.
+      \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# Calculate time series of VTI returns
-library(rutils)
-re_turns <- rutils::etf_env$re_turns$VTI
-re_turns <- na.omit(re_turns)
-n_rows <- NROW(re_turns)
-# Sample from VTI returns
-sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-c(sd=sd(sampl_e), mad=mad(sampl_e))
-# sample.int() is a little faster than sample()
-library(microbenchmark)
-summary(microbenchmark(
-  sample.int = sample.int(1e3), 
-  sample = sample(1e3), 
-  times=10))[, c(1, 4, 5)]
+# Sample from Standard Normal Distribution
+n_rows <- 1000; da_ta <- rnorm(n_rows)
+# Sample mean and standard deviation
+mean(da_ta); sd(da_ta)
+# Bootstrap of sample mean and median
+n_boot <- 10000
+boot_data <- sapply(1:n_boot, function(x) {
+  # Sample from Standard Normal Distribution
+  sampl_e <- rnorm(n_rows)
+  c(mean=mean(sampl_e), median=median(sampl_e))
+})  # end sapply
+boot_data[, 1:3]
+boot_data <- t(boot_data)
+# Standard error from formula
+sd(da_ta)/sqrt(n_rows)
+# Standard error of mean from bootstrap
+sd(boot_data[, "mean"])
+# Standard error of median from bootstrap
+sd(boot_data[, "median"])
       @
   \end{columns}
 \end{block}
@@ -2285,7 +2282,7 @@ summary(microbenchmark(
 
 
 %%%%%%%%%%%%%%%
-\subsection{Standard Errors of Estimators Using Bootstrap Simulation}
+\subsection{The Distribution of Estimators Using Bootstrap Simulation}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2295,78 +2292,24 @@ summary(microbenchmark(
       \vskip1ex
       The \emph{bootstrap} procedure generates new data by randomly sampling with replacement from the observed (empirical) data set.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
+      The \emph{bootstrapped} dataset is used to recalculate the estimator many times.
       \vskip1ex
       The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
       \vskip1ex
       The function \texttt{density()} calculates a kernel estimate of the probability density for a sample of data.
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000; da_ta <- rnorm(n_rows)
-# Sample mean and standard deviation
-mean(da_ta); sd(da_ta)
-# Bootstrap of sample mean and median
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  c(mean=mean(sampl_e), median=median(sampl_e))
-})  # end sapply
-boot_data <- t(boot_data)
-      @
       \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/boot_median.png}
-      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/boot_median.png}
       <<echo=TRUE,eval=FALSE>>=
-boot_data[1:3, ]
-# Standard error from formula
-sd(da_ta)/sqrt(n_rows)
-# Standard error of mean from bootstrap
-sd(boot_data[, "mean"])
-# Standard error of median from bootstrap
-sd(boot_data[, "median"])
-plot(density(boot_data[, "median"]), lwd=2, xlab="estimate of median",
-     main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_data[, "median"]), lwd=2, col="red")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Bootstrapping From Random Data}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
-      \vskip1ex
-      But if the data consists of simulated random numbers then we can easily simulate another set of these random numbers, instead of sampling from the existing data.
-      \vskip1ex
-      The numbers won't be the same as before, but they will be statistically equivalent in the limit of many bootstrap simulations.
-      \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-set.seed(1121)  # Reset random number generator
-n_rows <- 1000
-# Bootstrap of sample mean and median
-n_boot <- 10000
-boot_data <- sapply(1:n_boot, function(x) {
-  # Sample from Standard Normal Distribution
-  sampl_e <- rnorm(n_rows)
-  c(mean=mean(sampl_e), median=median(sampl_e))
-})  # end sapply
-boot_data[, 1:3]
-# Standard error from formula
-1/sqrt(n_rows)
-# Standard error of mean from bootstrap
-sd(boot_data["mean", ])
-# Standard error of median from bootstrap
-sd(boot_data["median", ])
+# Plot the densities of the bootstrap data
+x11(width=6, height=5)
+plot(density(boot_data[, "mean"]), lwd=3, xlab="Estimator Value",
+     main="Distribution of Bootstrapped Mean and Median", col="green")
+lines(density(boot_data[, "median"]), lwd=3, col="blue")
+abline(v=mean(boot_data[, "mean"]), lwd=2, col="red")
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+       leg=c("mean", "median"), bty="n",
+       lwd=6, bg="white", col=c("green", "blue"))
       @
   \end{columns}
 \end{block}
@@ -2394,9 +2337,7 @@ set.seed(1121)  # Reset random number generator
 n_rows <- 1000
 # Bootstrap of sample mean and median
 n_boot <- 100
-boot_data <- sapply(1:n_boot, function(x) {
-  median(rnorm(n_rows))
-})  # end sapply
+boot_data <- sapply(1:n_boot, function(x) median(rnorm(n_rows)))
 # Perform vectorized bootstrap
 set.seed(1121)  # Reset random number generator
 # Calculate matrix of random data
@@ -2406,12 +2347,8 @@ all.equal(boot_data, boot_vec)
 # Compare speed of loops with vectorized R code
 library(microbenchmark)
 summary(microbenchmark(
-  loop = {
-    sapply(1:n_boot, function(x) {
-      median(rnorm(n_rows))
-    })  # end sapply
-  },
-  vector_ized = {
+  loop = sapply(1:n_boot, function(x) median(rnorm(n_rows))),
+  cpp = {
     sampl_e <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
     Rfast::colMedians(sampl_e)
     },
@@ -2454,18 +2391,17 @@ clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
-da_ta <- rnorm(n_rows)
 # Bootstrap mean and median under Windows
 n_boot <- 10000
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, da_ta, n_rows) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  sampl_e <- rnorm(n_rows)
   c(mean=mean(sampl_e), median=median(sampl_e))
   }, da_ta=da_ta, n_rows=n_rows)  # end parLapply
 # Bootstrap mean and median under Mac-OSX or Linux
 boot_data <- mclapply(1:n_boot,
   function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  sampl_e <- rnorm(n_rows)
   c(mean=mean(sampl_e), median=median(sampl_e))
   }, mc.cores=n_cores)  # end mclapply
 boot_data <- rutils::do_call(rbind, boot_data)
@@ -2507,14 +2443,13 @@ stopCluster(clus_ter)  # Stop R processes over cluster under Windows
       <<echo=TRUE,eval=FALSE>>=
 n_rows <- 1000
 da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
+sd(da_ta); mad(da_ta)
 median(abs(da_ta - median(da_ta)))
 median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
 n_boot <- 10000
 boot_data <- sapply(1:n_boot, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  sampl_e <- rnorm(n_rows)
   c(sd=sd(sampl_e), mad=mad(sampl_e))
 })  # end sapply
 boot_data <- t(boot_data)
@@ -2530,19 +2465,63 @@ n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+    sampl_e <- rnorm(n_rows)
     c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, da_ta=da_ta)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
 boot_data <- mclapply(1:n_boot, function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
+  sampl_e <- rnorm(n_rows)
+  c(sd=sd(sampl_e), mad=mad(sampl_e))
+}, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x) 
   c(mean=mean(x), std_error=sd(x)))
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Resampling From Empirical Datasets}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      Resampling is randomly selecting data from an existing dataset, to create a new dataset with similar properties to the existing dataset.
+      \vskip1ex
+      Resampling is usually performed with replacement, so that each draw is independent from the others.
+      \vskip1ex
+      Resampling is performed when it's not possible or convenient to obtain another set of empirical data, so we simulate a new data set by randomly sampling from the existing data.
+      \vskip1ex
+      The function \texttt{sample()} selects a random sample from a vector of data elements.
+      \vskip1ex
+      The function \texttt{sample.int()} is a \emph{method} that selects a random sample of \emph{integers}.
+      \vskip1ex
+      The function \texttt{sample.int()} with argument \texttt{replace=TRUE} selects a sample with replacement (the \emph{integers} can repeat).
+      \vskip1ex
+      The function \texttt{sample.int()} is a little faster than \texttt{sample()}.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate time series of VTI returns
+library(rutils)
+re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Sample from VTI returns
+sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
+c(sd=sd(sampl_e), mad=mad(sampl_e))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3), 
+  sample = sample(1e3), 
+  times=10))[, c(1, 4, 5)]
       @
   \end{columns}
 \end{block}
@@ -2563,7 +2542,7 @@ apply(boot_data, MARGIN=2, function(x)
       \vskip1ex
       Resampling produces a new \emph{bootstrapped} dataset with similar properties to the existing dataset.
       \vskip1ex
-      The \emph{bootstrapped} dataset is used to re-calculate the estimator many times, producing a vector of values.
+      The \emph{bootstrapped} dataset is used to recalculate the estimator many times.
       \vskip1ex
       The \emph{bootstrapped} estimator values are then used to calculate the probability distribution of the estimator and its standard error.
       \vskip1ex
@@ -2997,8 +2976,7 @@ curve(expr=dnorm, xlim=c(-3, 4),
       main="Shifted Normal distribution function",
       xlab="", ylab="", lwd=3, col="blue")
 # Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-      lwd=3, col="red")
+curve(expr=dnorm(x, mean=1), add=TRUE, lwd=3, col="red")
 # Add vertical dashed lines
 abline(v=0, lwd=3, col="blue", lty="dashed")
 abline(v=1, lwd=3, col="red", lty="dashed")
@@ -3497,7 +3475,7 @@ title(main="Objective Function", line=-1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
       \vskip1ex
       \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
       <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
@@ -3505,23 +3483,21 @@ library(rgl)  # Load rgl
 # Define function of two variables
 sur_face <- function(x, y) y*sin(x)
 # Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
         col="green", axes=FALSE)
 # Draw 3d surface plot of matrix
 x_lim <- seq(from=-5, to=5, by=0.1)
 y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-        xlab="x", ylab="y", zlab="sur_face",
-        col="green")
+rgl::persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+        xlab="x", ylab="y", zlab="sur_face", col="green")
 # Save current view to png file
 rgl.snapshot("surface_plot.png")
 # Define function of two variables and two parameters
 sur_face <- function(x, y, par_1=1, par_2=1)
   sin(par_1*x)*sin(par_2*y)
 # Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE,
-        par_1=1, par_2=2)
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+        col="green", axes=FALSE, par_1=1, par_2=2)
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/rgl_surf3d.png}
@@ -3615,18 +3591,16 @@ object_ive <- function(pa_r, da_ta) {
   sum(2*log(pa_r[2]) +
     ((da_ta - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
-# Vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, da_ta)
-    object_ive(c(mean, sd), da_ta),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd,
-        vec_objective, da_ta=da_ta)
-objective_min <- which(  # grid search
+objective_grid <- sapply(par_mean, function(m) {
+  sapply(par_sd, function(sd) {
+    object_ive(c(m, sd), da_ta)
+  })  # end sapply
+})  # end sapply
+# Perform grid search for minimum
+objective_min <- which(
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
 objective_min
@@ -3635,6 +3609,14 @@ par_sd[objective_min[2]]  # sd
 objective_grid[objective_min]
 objective_grid[(objective_min[, 1] + -1:1),
                (objective_min[, 2] + -1:1)]
+# Or create parameter grid using function outer()
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, da_ta)
+    object_ive(c(mean, sd), da_ta),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+objective_grid <- outer(par_mean, par_sd,
+        vec_objective, da_ta=da_ta)
       @
   \end{columns}
 \end{block}
@@ -3655,7 +3637,7 @@ objective_grid[(objective_min[, 1] + -1:1),
       \vskip1ex
       \texttt{persp()} belongs to the base \texttt{graphics} package, and doesn't create interactive plots.
       \vskip1ex
-      The function \texttt{persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
       \vskip1ex
       \texttt{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
       <<optim_objective,echo=(-(1:1)),eval=FALSE,fig.width=10,fig.height=10,fig.show='hide'>>=
@@ -3667,8 +3649,8 @@ persp(z=-objective_grid,
       main="objective function")
 # Interactive perspective plot of log-likelihood function
 library(rgl)  # Load package rgl
-par3d(cex=2.0)  # Scale text by factor of 2
-persp3d(z=-objective_grid, zlab="objective",
+rgl::par3d(cex=2.0)  # Scale text by factor of 2
+rgl::persp3d(z=-objective_grid, zlab="objective",
         col="green", main="objective function")
       @
     \column{0.5\textwidth}
@@ -3688,8 +3670,7 @@ persp3d(z=-objective_grid, zlab="objective",
     \column{0.5\textwidth}
       The function \texttt{optim()} performs optimization of an objective function.
       \vskip1ex
-      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization,
-\vspace{-2em}
+      The function \texttt{fitdistr()} from package \emph{MASS} fits a univariate distribution to a sample of data, by performing \emph{maximum likelihood} optimization.
       <<echo=TRUE,eval=FALSE>>=
 # Initial parameters
 par_init <- c(mean=0, sd=1)
@@ -3706,9 +3687,6 @@ optim_fit$par
 optim_fit <- MASS::fitdistr(da_ta, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
-      @
-\vspace{-2em}
-      <<optim_basic,echo=TRUE,eval=FALSE,fig.width=5,fig.height=5,fig.show='hide'>>=
 # Plot histogram
 histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
@@ -3816,10 +3794,8 @@ histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {
-  pa_r["weight"] *
-    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
-  (1-pa_r["weight"]) *
-    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
+  pa_r["weight"]*dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"])*dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
 }  # end fit_func
 curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
       type="l", lwd=2, col="red")
@@ -4951,8 +4927,8 @@ using namespace arma;
 
 arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
                     const arma::mat& re_turns, // Portfolio returns
-                    const arma::uvec& start_points,
-                    const arma::uvec& end_points,
+                    const arma::uvec& start_p,
+                    const arma::uvec& end_p,
                     const std::string& typ_e = "max_sharpe",
                     const arma::uword& max_eigen = 1,
                     const double& pro_b = 0.1,
@@ -4964,15 +4940,15 @@ arma::mat back_test(const arma::mat& ex_cess, // Portfolio excess returns
   arma::vec weights_past = zeros(re_turns.n_cols);
   arma::vec weight_s(re_turns.n_cols);
 
-  // Perform loop over the end_points
-  for (arma::uword it=1; it < end_points.size(); it++) {
+  // Perform loop over the end_p
+  for (arma::uword it=1; it < end_p.size(); it++) {
     // cout << "it: " << it << endl;
     // Calculate portfolio weights
-    weight_s = co_eff*calc_weights(ex_cess.rows(start_points(it-1), end_points(it-1)), typ_e, max_eigen, pro_b, al_pha, scal_e);
+    weight_s = co_eff*calc_weights(ex_cess.rows(start_p(it-1), end_p(it-1)), typ_e, max_eigen, pro_b, al_pha, scal_e);
     // Calculate out-of-sample returns
-    pnl_s.subvec(end_points(it-1)+1, end_points(it)) = re_turns.rows(end_points(it-1)+1, end_points(it))*weight_s;
+    pnl_s.subvec(end_p(it-1)+1, end_p(it)) = re_turns.rows(end_p(it-1)+1, end_p(it))*weight_s;
     // Add transaction costs
-    pnl_s.row(end_points(it-1)+1) -= bid_offer*sum(abs(weight_s - weights_past))/2;
+    pnl_s.row(end_p(it-1)+1) -= bid_offer*sum(abs(weight_s - weights_past))/2;
     weights_past = weight_s;
   }  // end for
   // Return the strategy returns

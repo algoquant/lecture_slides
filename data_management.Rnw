@@ -424,8 +424,7 @@ col_names  # this is a string!
 col_names <- strsplit(col_names, split=",")[[1]]
 mat_read  # mat_read is a vector, not matrix!
 # Coerce by row to matrix
-mat_read <- matrix(mat_read,
-  ncol=NROW(col_names), byrow=TRUE)
+mat_read <- matrix(mat_read, ncol=NROW(col_names), byrow=TRUE)
 # Restore colnames
 colnames(mat_read) <- col_names
 mat_read
@@ -507,9 +506,9 @@ rm(list=ls())
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo with Date index
-in_dex <- seq(from=as.Date("2013-06-15"), by="day",
+date_s <- seq(from=as.Date("2013-06-15"), by="day",
               length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
 head(zoo_series, 3)
 # Write zoo series to text file, and then read it back
 write.zoo(zoo_series, file="zoo_series.txt")
@@ -518,7 +517,7 @@ all.equal(zoo_read, zoo_series)
 # Perform the same using write.table() and read.table()
 # First coerce zoo_series into data frame
 data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(in_dex, data_frame)
+data_frame <- cbind(date_s, data_frame)
 # Write zoo_series to text file using write.table
 write.table(data_frame, file="zoo_series.txt",
             row.names=FALSE, col.names=FALSE)
@@ -593,9 +592,9 @@ all.equal(zoo_series, drop(zoo_read))
       <<echo=(-(1:1)),eval=FALSE>>=
 set.seed(1121)  # Reset random number generator
 # Create zoo with POSIXct date-time index
-in_dex <- seq(from=as.POSIXct("2013-06-15"),
+date_s <- seq(from=as.POSIXct("2013-06-15"),
               by="hour", length.out=100)
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
 head(zoo_series, 3)
 # Write zoo series to CSV file, and then read it back
 write.zoo(zoo_series, file="zoo_series.csv",
@@ -608,7 +607,7 @@ x_ts <- xts::as.xts(zoo_read)
 class(x_ts); head(x_ts, 3)
 # Coerce zoo series into data frame with custom date format
 data_frame <- as.data.frame(zoo_series)
-data_frame <- cbind(format(in_dex, "%m-%d-%Y %H:%M:%S"),
+data_frame <- cbind(format(date_s, "%m-%d-%Y %H:%M:%S"),
                     data_frame)
 head(data_frame, 3)
 # Write zoo series to csv file using write.table
@@ -2141,11 +2140,10 @@ strsplit(colnames(price_s), split="[.]")
 do.call(rbind, strsplit(colnames(price_s), split="[.]"))
 do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
 # Drop ".Close" from colnames
-colnames(price_s) <- do.call(rbind,
-  strsplit(colnames(price_s), split="[.]"))[, 1]
+colnames(price_s) <- rutils::get_name(colnames(price_s))
 # Or
-colnames(price_s) <- unname(sapply(colnames(price_s),
-    function(col_name) strsplit(col_name, split="[.]")[[1]][1]))
+# colnames(price_s) <- do.call(rbind,
+#   strsplit(colnames(price_s), split="[.]"))[, 1]
 tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
@@ -2382,11 +2380,10 @@ strsplit(colnames(sp500_env$LOW), split="[.]")
 do.call(cbind, strsplit(colnames(sp500_env$LOW), split="[.]"))
 do.call(cbind, strsplit(colnames(sp500_env$LOW), split="[.]"))[2, ]
 # Extract proper names from column names
-name_s <- sapply(strsplit(colnames(sp500_env$LOW), split="[.]"),
-         function(col_name) col_name[2])
+name_s <- rutils::get_name(colnames(sp500_env$LOW), field=2)
 # Or
-name_s <- do.call(cbind, strsplit(colnames(sp500_env$LOW),
-                                  split="[.]"))[2, ]
+# name_s <- do.call(rbind, strsplit(colnames(sp500_env$LOW),
+#                                   split="[.]"))[, 2]
 # Rename "LOW" colnames to "LOWES"
 colnames(sp500_env$LOW) <- paste("LO_WES", name_s, sep=".")
 sp500_env$LOWES <- sp500_env$LOW
@@ -2511,7 +2508,8 @@ file_names <- Sys.glob(paste0(dir_name, "*.csv"))
 sp500_env <- new.env()
 for (file_name in file_names) {
   x_ts <- xts::as.xts(zoo::read.csv.zoo(file_name))
-  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
+  sym_bol <- rutils::get_name(colnames(x_ts)[1])
+  # sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
   assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
 # Or using fread()
@@ -2519,7 +2517,7 @@ for (file_name in file_names) {
   x_ts <- data.table::fread(file_name)
   data.table::setDF(x_ts)
   x_ts <- xts::xts(x_ts[, -1], as.Date(x_ts[, 1]))
-  sym_bol <- strsplit(colnames(x_ts), split="[.]")[[1]][1]
+  sym_bol <- rutils::get_name(colnames(x_ts)[1])
   assign(sym_bol, x_ts, envir=sp500_env)
 }  # end for
 @
@@ -2682,18 +2680,19 @@ chart_Series(x=etf_env$DJIA["2016/"],
 # Calculate prices from OHLC data of the S&P500 stocks
 price_s <- eapply(sp500_env, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
-# Carry forward and backward non-NA prices
-sum(is.na(price_s))
+# Carry forward non-NA prices
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
-price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 # Get first column name
 colnames(price_s[, 1])
 rutils::get_name(colnames(price_s[, 1]))
 # Modify column names
-col_names <- unname(sapply(colnames(price_s), rutils::get_name))
-colnames(price_s) <- col_names
+colnames(price_s) <- rutils::get_name(colnames(price_s))
+# Or
+# colnames(price_s) <- do.call(rbind,
+#   strsplit(colnames(price_s), split="[.]"))[, 1]
 # Calculate percentage returns
-re_turns <- rutils::diff_it(log(price_s))
+re_turns <- xts::diff.xts(price_s)/
+  rutils::lag_it(price_s, pad_zeros=FALSE)
 # Select a random sample of 100 prices and returns
 set.seed(1121)
 sam_ple <- sample(NCOL(re_turns), s=100, replace=FALSE)

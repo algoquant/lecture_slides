@@ -1,31 +1,143 @@
 library(rutils)
-# Calculate a vector of daily VTI close-to-close log returns
-clos_e <- log(quantmod::Cl(rutils::etf_env$VTI))
-re_turns <- rutils::diff_it(clos_e)
+# Calculate a vector of daily VTI log returns
+price_s <- log(quantmod::Cl(rutils::etf_env$VTI))
+re_turns <- rutils::diff_it(price_s)
 re_turns <- as.numeric(re_turns)
 n_rows <- NROW(re_turns)
 # Define predictor matrix for forecasting
-or_der <- 5
-de_sign <- sapply(1:or_der, rutils::lag_it, in_put=re_turns)
-de_sign <- cbind(rep(1, n_rows), de_sign)
-colnames(de_sign) <- paste0("pred_", 1:NCOL(de_sign))
-# Add response equal to re_turns
-de_sign <- cbind(re_turns, de_sign)
-colnames(de_sign)[1] <- "response"
-# Specify length of look-back interval
-look_back <- 100
-# Invert the predictor matrix
-rang_e <- (n_rows-look_back):(n_rows-1)
-design_inv <- MASS::ginv(de_sign[rang_e, -1])
-# Calculate fitted coefficients
-coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
-# Calculate forecast of re_turns
-drop(de_sign[n_rows, -1] %*% coeff_fit)
+order_max <- 10
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse)
+  # Calculate in-sample forecasts of re_turns
+  drop(predic_tor[, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns - x)^2), cor=cor(re_turns, x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1],
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of In-sample AR(p) Forecasting Model for VTI")
+
+in_sample <- 1:(n_rows %/% 2)
+out_of_sample <- (n_rows %/% 2 + 1):n_rows
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns[out_of_sample] - x)^2), cor=cor(re_turns[out_of_sample], x))
+})  # end sapply
+back_tests <- t(back_tests)
+rownames(back_tests) <- names(forecast_s)
+# Plot forecasting series with legend
+plot(x=2:NCOL(predic_tor), y=back_tests[, 1],
+  xlab="AR(p) order", ylab="MSE", type="l", lwd=2,
+  main="MSE of Out-of-sample AR(p) Forecasting Model for VTI")
+
+# Define predictor matrix for forecasting
+order_max <- 5  # Define maximum order parameter
+predic_tor <- sapply(1:order_max, rutils::lag_it, in_put=re_turns)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+res_ponse <- re_turns
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s,
+  main="Autoregressive Strategies Performance With Different Order Parameters")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>%
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
+}  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
+
+# Define predictor as a rolling sum
+look_back <- 5
+predic_tor <- rutils::roll_sum(re_turns, look_back=look_back)
+# Shift the res_ponse forward into out-of-sample
+res_ponse <- rutils::lag_it(predic_tor, lagg=(-look_back))
+# Define predictor matrix for forecasting
+predic_tor <- sapply(1+look_back*(0:order_max), rutils::lag_it,
+               in_put=predic_tor)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+colnames(predic_tor) <- paste0("pred_", 1:NCOL(predic_tor))
+# Calculate forecasts as function of or_der
+forecast_s <- lapply(2:NCOL(predic_tor), function(or_der) {
+  # Calculate fitted coefficients
+  in_verse <- MASS::ginv(predic_tor[in_sample, 1:or_der])
+  coeff_fit <- drop(in_verse %*% res_ponse[in_sample])
+  # Calculate out-of-sample forecasts of re_turns
+  drop(predic_tor[out_of_sample, 1:or_der] %*% coeff_fit)
+})  # end lapply
+names(forecast_s) <- paste0("p=", 2:NCOL(predic_tor))
+
+# Calculate out-of-sample PnLs
+pnl_s <- sapply(forecast_s, function(x) {
+  cumsum(sign(x)*re_turns[out_of_sample])
+})  # end sapply
+colnames(pnl_s) <- names(forecast_s)
+pnl_s <- xts::xts(pnl_s, index(price_s[out_of_sample]))
+# Create dygraph object
+dy_graph <- dygraphs::dygraph(pnl_s,
+  main="Autoregressive Strategies With Rolling Sum Predictor")
+# Add time series
+color_s <- colorRampPalette(c("blue", "red"))(NCOL(pnl_s))
+col_names <- colnames(pnl_s)
+for (i in 1:NROW(col_names)) {
+  dy_graph <- dy_graph %>%
+    dySeries(label=col_names[i], col=color_s[i], strokeWidth=2)
+}  # end for
+# Add legend
+dy_graph <- dy_graph %>% dyLegend(width=500)
+# Render dygraph
+dy_graph
 
 # Perform rolling forecasting
 forecast_s <- sapply(look_back:n_rows, function(now) {
   # Define rolling look-back range
   star_t <- max(1, now-look_back)
+  # Or expanding look-back range
+  # star_t <- 1
   rang_e <- star_t:(now-1)
   # Invert the predictor matrix
   design_inv <- MASS::ginv(de_sign[rang_e, -1])
@@ -42,8 +154,6 @@ mean((re_turns - forecast_s)^2)
 # Correlation
 cor(forecast_s, re_turns)
 # Plot forecasting series with legend
-x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 plot(re_turns[(n_rows-look_back):n_rows], xlab="", ylab="", type="l", lwd=2,
   main="Rolling Forecasting Using AR(5) Model")
 lines(forecast_s[(n_rows-look_back):n_rows], col="orange", lwd=2)
@@ -52,17 +162,18 @@ legend(x="topright", legend=c("re_turns", "forecasts"),
  cex=0.9, bg="white", bty="n")
 
 # Define backtesting function
-back_test <- function(se_ries, or_der=5, look_back=100) {
-  n_rows <- NROW(se_ries)
+back_test <- function(res_ponse, predic_tor=res_ponse,
+                or_der=5, look_back=100, is_rolling=TRUE) {
+  n_rows <- NROW(res_ponse)
   # Define predictor matrix for forecasting
-  de_sign <- sapply(1:or_der, rutils::lag_it, in_put=se_ries)
+  de_sign <- sapply(1:or_der, rutils::lag_it, in_put=predic_tor)
   de_sign <- cbind(rep(1, n_rows), de_sign)
   # Add response equal to series
-  de_sign <- cbind(se_ries, de_sign)
+  de_sign <- cbind(res_ponse, de_sign)
   # Perform rolling forecasting
   forecast_s <- sapply(look_back:n_rows, function(now) {
     # Define rolling look-back range
-    star_t <- max(1, now-look_back)
+    star_t <- max(1, is_rolling*(now-look_back))
     rang_e <- star_t:(now-1)
     # Invert the predictor matrix
     design_inv <- MASS::ginv(de_sign[rang_e, -1])
@@ -73,80 +184,94 @@ back_test <- function(se_ries, or_der=5, look_back=100) {
   })  # end sapply
   # Add warmup period
   forecast_s <- c(numeric(look_back-1), forecast_s)
-  c(mse=mean((se_ries - forecast_s)^2), cor=cor(forecast_s, se_ries))
+  forecast_s
 }  # end back_test
 # Apply the backtesting function
-back_test(re_turns, or_der=5, look_back=100)
+forecast_s <- back_test(re_turns, or_der=5, look_back=100)
+c(mse=mean((re_turns - forecast_s)^2), cor=cor(re_turns, forecast_s))
 
-look_backs <- seq(20, 300, 20)
-back_tests <- sapply(look_backs, back_test,
-        se_ries=re_turns, or_der=or_der)
+look_backs <- seq(20, 600, 40)
+forecast_s <- lapply(look_backs, back_test,
+        res_ponse=re_turns, predic_tor=re_turns, or_der=or_der)
+names(forecast_s) <- look_backs
+back_tests <- sapply(forecast_s, function(x) {
+  c(mse=mean((re_turns - x)^2), cor=cor(re_turns, x))
+})  # end sapply
 back_tests <- t(back_tests)
-rownames(back_tests) <- look_backs
+rownames(back_tests) <- names(forecast_s)
 # Plot forecasting series with legend
 plot(x=look_backs, y=back_tests[, 1],
   xlab="look-back", ylab="MSE", type="l", lwd=2,
   main="MSE of AR(5) Forecasting Model for VTI")
 
-look_back <- 300
-# Perform rolling forecasting
-forecast_s <- sapply(look_back:n_rows, function(now) {
-  # Define rolling look-back range
-  star_t <- max(1, now-look_back)
-  rang_e <- star_t:(now-1)
-  # Invert the predictor matrix
-  design_inv <- MASS::ginv(de_sign[rang_e, -1])
-  # Calculate fitted coefficients
-  coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
-  # Calculate forecast
-  drop(de_sign[now, -1] %*% coeff_fit)
-})  # end sapply
-# Add warmup period
-forecast_s <- c(numeric(look_back-1), forecast_s)
+# Select forecasts for longest look_back
+look_back <- max(look_backs)
+forecasts_max <- forecast_s[[as.character(look_back)]]
+# Calculate PnLs
+pnl_s <- cumsum(forecasts_max*re_turns)/sd(forecasts_max)
+# Calculate PnLs for binary forecasts
+pnls_binary <- cumsum(sign(forecasts_max)*re_turns)
 
 # Plot the cumulative strategy returns
-da_ta <- cbind(cumsum(forecast_s*re_turns)/sd(forecast_s),
-         cumsum(sign(forecast_s)*re_turns))
-da_ta <- xts::xts(da_ta, index(clos_e))
-col_names <- c("AR_Strategy", "AR_Strategy_trimmed")
+da_ta <- cbind(pnl_s, pnls_binary)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR_Strategy", "AR_Strategy_Binary")
 colnames(da_ta) <- col_names
 dygraphs::dygraph(da_ta, main="Autoregressive Strategies") %>%
   dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
   dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
   dyLegend(width=500)
 
-# Trim the re_turns
+# Calculate PnLs for or_der=5
+forecast_s <- back_test(re_turns, or_der=5, look_back=look_back)
+pnls_5 <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for or_der=3
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back)
+pnls_3 <- cumsum(sign(forecast_s)*re_turns)
+
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnls_5, pnls_3)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(5)_Strategy", "AR(3)_Strategy")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Autoregressive Strategies for Different Order Parameters") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+
+# Calculate PnLs for rolling look-back
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=TRUE)
+pnls_rolling <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for expanding look-back
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnls_expanding <- cumsum(sign(forecast_s)*re_turns)
+
+# Plot the cumulative strategy returns
+da_ta <- cbind(pnls_rolling, pnls_expanding)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(3)_Rolling", "AR(3)_Expanding")
+colnames(da_ta) <- col_names
+dygraphs::dygraph(da_ta, main="Autoregressive Strategies for Expanding Look-back Interval") %>%
+  dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
+  dySeries(name=col_names[2], label=col_names[2], col="red", strokeWidth=2) %>%
+  dyLegend(width=500)
+
+# Cap the re_turns
 cut_off <- 0.03
 capp_ed <- ifelse(re_turns > cut_off, cut_off, re_turns)
 capp_ed <- ifelse(capp_ed < (-cut_off), -cut_off, capp_ed)
-# Define predictor matrix for forecasting
-de_sign <- sapply(1:or_der, rutils::lag_it, in_put=re_turns)
-de_sign <- cbind(rep(1, n_rows), de_sign)
-colnames(de_sign) <- paste0("pred_", 1:NCOL(de_sign))
-# Add response equal to capp_ed
-de_sign <- cbind(capp_ed, de_sign)
-colnames(de_sign)[1] <- "response"
+# Calculate PnLs for re_turns
+forecast_s <- back_test(re_turns, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnl_s <- cumsum(sign(forecast_s)*re_turns)
+# Calculate PnLs for capped re_turns
+forecast_s <- back_test(capp_ed, or_der=3, look_back=look_back, is_rolling=FALSE)
+pnls_capped <- cumsum(sign(forecast_s)*re_turns)
 
-# Perform rolling forecasting
-look_back <- 600
-forecast_s <- sapply(look_back:n_rows, function(now) {
-  # Define expanding look-back range
-  star_t <- 1
-  rang_e <- star_t:(now-1)
-  # Invert the predictor matrix
-  design_inv <- MASS::ginv(de_sign[rang_e, -1])
-  # Calculate fitted coefficients
-  coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
-  # Calculate forecast
-  drop(de_sign[now, -1] %*% coeff_fit)
-})  # end sapply
-# Add warmup period
-forecast_s <- c(numeric(look_back-1), forecast_s)
 # Plot the cumulative strategy returns
-da_ta <- cbind(cumsum(forecast_s*re_turns)/sd(forecast_s),
-         cumsum(sign(forecast_s)*re_turns))
-da_ta <- xts::xts(da_ta, index(clos_e))
-col_names <- c("AR_Strategy", "AR_Strategy_trimmed")
+da_ta <- cbind(pnl_s, pnls_capped)
+da_ta <- xts::xts(da_ta, index(price_s))
+col_names <- c("AR(3)_Rolling", "AR(3)_Expanding")
+col_names <- c("AR_Strategy", "AR_Strategy_Capped")
 colnames(da_ta) <- col_names
 dygraphs::dygraph(da_ta, main="Improved Autoregressive Strategies") %>%
   dySeries(name=col_names[1], label=col_names[1], col="blue", strokeWidth=2) %>%
@@ -163,8 +288,7 @@ re_turns[1, is.na(re_turns[1, ])] <- 0
 re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 
 # Define end of month end points
-end_p <- rutils::calc_endpoints(re_turns,
-          inter_val="months")
+end_p <- rutils::calc_endpoints(re_turns, inter_val="months")
 n_rows <- NROW(end_p)
 # start points equal end points lagged by 12-month look-back interval
 look_back <- 12
@@ -173,15 +297,13 @@ start_p <- c(rep_len(0, look_back-1),
 # Calculate matrix of look-back intervals
 look_backs <- cbind(start_p, end_p)
 # Calculate matrix of look-forward intervals
-look_fwds <- cbind(end_p + 1,
-  rutils::lag_it(end_p, -1))
+look_fwds <- cbind(end_p + 1, rutils::lag_it(end_p, -1))
 look_fwds[n_rows, 1] <- end_p[n_rows]
 # Inspect the intervals
 tail(cbind(look_backs, look_fwds))
 
 # Define performance function as Sharpe ratio
-perform_ance <- function(re_turns)
-  sum(re_turns)/sd(re_turns)
+perform_ance <- function(re_turns) sum(re_turns)/sd(re_turns)
 # Calculate past performance over look-back intervals
 pas_t <- apply(look_backs, 1, function(ep) {
   sapply(re_turns[ep[1]:ep[2]], perform_ance)
@@ -218,14 +340,14 @@ weal_th <- cumprod(1 + pnl_s)
 cost_s <- 0.5*bid_offer*weal_th*
   rowSums(abs(rutils::diff_it(weight_s)))
 weal_th <- cumsum(pnl_s - cost_s)
-in_dex <- index(re_turns[end_p])
-weal_th <- xts::xts(weal_th, in_dex)
+date_s <- index(re_turns[end_p])
+weal_th <- xts::xts(weal_th, date_s)
 
 # Define all-weather benchmark
 weights_aw <- c(0.30, 0.55, 0.15)
 ret_aw <- re_turns %*% weights_aw
 wealth_aw <- cumsum(ret_aw)
-wealth_aw <- xts::xts(wealth_aw[end_p], in_dex)
+wealth_aw <- xts::xts(wealth_aw[end_p], date_s)
 # Plot the Momentum strategy and benchmark
 da_ta <- cbind(weal_th, wealth_aw)
 colnames(da_ta) <- c("Momentum Strategy", "Benchmark")
@@ -303,7 +425,7 @@ dygraphs::dygraph(da_ta, main="Momentum Strategy") %>%
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("orange", "blue")
-chart_Series(da_ta, theme=plot_theme, lwd=2,
+quantmod::chart_Series(da_ta, theme=plot_theme, lwd=2,
        name="Momentum PnL")
 legend("topleft", legend=colnames(da_ta),
   inset=0.1, bg="white", lty=1, lwd=6,
@@ -311,7 +433,7 @@ legend("topleft", legend=colnames(da_ta),
 
 # Plot the momentum portfolio weights
 weight_s <- pnl_s[, -1]
-vt_i <- rutils::etf_env$price_s$VTI[in_dex]
+vt_i <- rutils::etf_env$price_s$VTI[date_s]
 da_ta <- cbind(vt_i, weight_s)
 da_ta <- na.omit(da_ta)
 colnames(da_ta)[2:NCOL(pnl_s)] <- paste0(colnames(weight_s), "_weight")
@@ -322,9 +444,9 @@ betas_etf <- sapply(re_turns, function(x)
   cov(re_turns$VTI, x)/var(x))
 # Betas equal weights times ETF betas
 beta_s <- weight_s %*% betas_etf
-beta_s <- xts(beta_s, order.by=in_dex)
+beta_s <- xts(beta_s, order.by=date_s)
 colnames(beta_s) <- "momentum_beta"
-da_ta <- cbind(beta_s, rutils::etf_env$VTI[in_dex, 4])
+da_ta <- cbind(beta_s, rutils::etf_env$VTI[date_s, 4])
 zoo::plot.zoo(da_ta,
   oma = c(3, 1, 3, 0), mar = c(0, 4, 0, 1),
   main="betas & VTI", xlab="")
@@ -382,16 +504,16 @@ cor(da_ta)
 weal_th <- apply(da_ta, MARGIN=2,
   function(x) {cumsum(x)}
 )  # end apply
-weal_th <- xts::xts(weal_th, in_dex)
+weal_th <- xts::xts(weal_th, date_s)
 
 # Plot ETF momentum strategy combined with All-Weather
 dygraphs::dygraph(weal_th, main="ETF Momentum Strategy Combined with All-Weather") %>%
   dyOptions(colors=c("green", "blue", "red"), strokeWidth=2) %>%
-  dyLegend(show="always")
+  dyLegend(show="always", width=500)
 # Or
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("green", "blue", "red")
-chart_Series(da_ta, theme=plot_theme,
+quantmod::chart_Series(da_ta, theme=plot_theme,
        name="ETF Momentum Strategy Combined with All-Weather")
 legend("topleft", legend=colnames(da_ta),
   inset=0.1, bg="white", lty=1, lwd=6,
@@ -437,11 +559,13 @@ momentum_daily <- function(re_turns, look_back=252, bid_offer=0.001, tre_nd=1, .
   # Calculate rolling variance
   vari_ance <- roll::roll_var(re_turns, width=look_back)
   vari_ance <- zoo::na.locf(vari_ance, na.rm=FALSE)
-  vari_ance[is.na(vari_ance)] <- 0
+  # vari_ance[is.na(vari_ance)] <- 0
+  vari_ance[vari_ance <= 0] <- 1
   # Calculate rolling Sharpe
   pas_t <- roll::roll_mean(re_turns, width=look_back)
+  pas_t[1:look_back, ] <- 1
   weight_s <- pas_t/sqrt(vari_ance)
-  weight_s[vari_ance == 0] <- 0
+  # weight_s[vari_ance == 0] <- 0
   weight_s[1:look_back, ] <- 1
   weight_s <- weight_s/sqrt(rowSums(weight_s^2))
   weight_s[is.na(weight_s)] <- 0
@@ -469,7 +593,7 @@ tail(weal_th)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-chart_Series(weal_th,
+quantmod::chart_Series(weal_th,
   theme=plot_theme, name="Cumulative Returns of Daily ETF Momentum Strategies")
 legend("bottomleft", legend=colnames(weal_th),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
@@ -489,7 +613,7 @@ weal_th <- xts(weal_th, index(re_turns))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-chart_Series(weal_th,
+quantmod::chart_Series(weal_th,
   theme=plot_theme, name="Cumulative Returns of S&P500 Momentum Strategies")
 legend("bottomleft", legend=colnames(weal_th),
   inset=0.02, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
@@ -506,7 +630,7 @@ weal_th <- xts(weal_th, index(price_s))
 plot_theme <- chart_theme()
 plot_theme$col$line.col <-
   colorRampPalette(c("blue", "red"))(NCOL(weal_th))
-chart_Series(weal_th,
+quantmod::chart_Series(weal_th,
   theme=plot_theme, name="Cumulative Returns of S&P500 Mean Reverting Strategies")
 legend("topleft", legend=colnames(weal_th),
   inset=0.05, bg="white", cex=0.7, lwd=rep(6, NCOL(re_turns)),
@@ -531,8 +655,7 @@ re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 re_turns <- na.omit(re_turns)
 mean_rets <- colMeans(re_turns)
 # Specify weight constraints
-constraint_s <- matrix(c(rep(1, n_weights),
-                 1, 1, 0),
+constraint_s <- matrix(c(rep(1, n_weights), 1, 1, 0),
                  nc=n_weights, byrow=TRUE)
 direction_s <- c("==", "<=")
 rh_s <- c(1, 0)
@@ -573,11 +696,9 @@ f_mat <- matrix(c(
   t(mean_rets) %*% cov_inv %*% u_nit,
   t(mean_rets) %*% cov_inv %*% mean_rets), nc=2)
 # Solve for the Lagrange multipliers
-multipli_ers <-
-  solve(a=f_mat, b=c(2, 2*tar_get))
+mult_s <- solve(a=f_mat, b=c(2, 2*tar_get))
 # Calculate weights
-weight_s <- drop(0.5*cov_inv %*%
-  cbind(u_nit, mean_rets) %*% multipli_ers)
+weight_s <- drop(0.5*cov_inv %*% cbind(u_nit, mean_rets) %*% mult_s)
 # Calculate constraints
 all.equal(1, sum(weight_s))
 all.equal(tar_get, sum(mean_rets*weight_s))
@@ -908,25 +1029,25 @@ in_dex <- round(conf_level*NROW(re_turns))
 va_r <- sort_ed[in_dex]
 c_var <- mean(sort_ed[1:in_dex])
 # Plot histogram of VTI returns
+min_var <- (-0.05)
 histo_gram <- hist(re_turns, col="lightgrey",
-  xlab="returns", breaks=100, xlim=c(-0.05, 0.01),
-  ylab="frequency", freq=FALSE,
-  main="VTI returns histogram")
+  xlab="returns", breaks=100, xlim=c(min_var, 0.01),
+  ylab="frequency", freq=FALSE, main="VTI Returns Histogram")
+
+# Plot density of losses
 densi_ty <- density(re_turns, adjust=1.5)
 lines(densi_ty, lwd=3, col="blue")
-
 # Add line for VaR
 abline(v=va_r, col="red", lwd=3)
-text(x=va_r, y=20, labels="VaR",
-     lwd=2, srt=90, pos=2)
+y_max <- max(densi_ty$y)
+text(x=va_r, y=2*y_max/3, labels="VaR", lwd=2, pos=2)
 # Add shading for CVaR
-var_max <- -0.06
-rang_e <- (densi_ty$x < va_r) & (densi_ty$x > var_max)
+rang_e <- (densi_ty$x < va_r) & (densi_ty$x > min_var)
 polygon(
-  c(var_max, densi_ty$x[rang_e], va_r),
+  c(min_var, densi_ty$x[rang_e], va_r),
   c(0, densi_ty$y[rang_e], 0),
   col=rgb(1, 0, 0,0.5), border=NA)
-text(x=va_r, y=3, labels="CVaR", lwd=2, pos=2)
+text(x=1.5*va_r, y=y_max/7, labels="CVaR", lwd=2, pos=2)
 
 library(rutils)  # Load rutils
 library(Rglpk)
@@ -1017,8 +1138,7 @@ text(x=op_tim[1], y=op_tim[2],
 
 # Vectorize function with respect to all weights
 vec_object <- Vectorize(
-  FUN=function(w1, w2, w3)
-    object_ive(c(w1, w2, w3)),
+  FUN=function(w1, w2, w3) object_ive(c(w1, w2, w3)),
   vectorize.args=c("w2", "w3"))  # end Vectorize
 # Calculate objective on 2-d (w2 x w3) parameter grid
 w2 <- seq(-3, 7, length=50)
@@ -1037,8 +1157,7 @@ library(rgl)
 rgl::persp3d(z=-grid_object, zlab="objective",
   col="green", main="objective function")
 rgl::persp3d(
-  x=function(w2, w3)
-    -vec_object(w1=1, w2, w3),
+  x=function(w2, w3) {-vec_object(w1=1, w2, w3)},
   xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
 
@@ -1198,6 +1317,5 @@ op_tim <- DEoptim::DEoptim(fn=object_ive,
   lamb_da=lamb_da,
   al_pha=al_pha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
-weight_s <-
-  op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
+weight_s <- op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
 names(weight_s) <- colnames(re_turns)

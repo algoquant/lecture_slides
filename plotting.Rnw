@@ -304,8 +304,7 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 curve(expr=dnorm, xlim=c(-3, 3),
       xlab="", ylab="", lwd=2, col="blue")
 # Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-      lwd=2, col="red")
+curve(expr=dnorm(x, mean=1), add=TRUE,lwd=2, col="red")
 
 # Add title
 title(main="Normal probability distribution functions",
@@ -339,27 +338,25 @@ zoo_series <- window(zoo_stx[, "AdjClose"],
        start=as.Date("2013-01-01"),
        end=as.Date("2013-12-31"))
 # extract time index and monthly dates
-in_dex <- index(zoo_series)
+date_s <- index(zoo_series)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
+month_ly <- as.yearmon(date_s)
 # tick locations at beginning of month
-tick_s <- in_dex[match(unique(month_ly), month_ly)]
-# tick_s <- as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
+tick_s <- date_s[match(unique(month_ly), month_ly)]
+# tick_s <- as.Date(tapply(X=date_s, INDEX=month_ly, FUN=min))
 # first plot zoo without "x" axis
 plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
 # Add "x" axis with monthly ticks
-axis(side=1, at=tick_s,
-     labels=format(tick_s, "%b-%y"), tcl=-0.7)
+axis(side=1, at=tick_s, labels=format(tick_s, "%b-%y"), tcl=-0.7)
 # Add vertical lines
 abline(v=tick_s, col="grey", lwd=0.5)
 # Plot zoo using base plotting functions
 plot(as.vector(zoo_series), xaxt="n",
      xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
-a_t <- match(tick_s, in_dex)
-# a_t <- seq_along(in_dex)[in_dex %in% tick_s]
+a_t <- match(tick_s, date_s)
+# a_t <- seq_along(date_s)[date_s %in% tick_s]
 # Add "x" axis with monthly ticks
-axis(side=1, at=a_t,
-     labels=format(tick_s, "%b-%y"), tcl=-0.7)
+axis(side=1, at=a_t, labels=format(tick_s, "%b-%y"), tcl=-0.7)
 abline(v=a_t, col="grey", lwd=0.5)
       @
     \column{0.5\textwidth}
@@ -370,17 +367,15 @@ abline(v=a_t, col="grey", lwd=0.5)
 library(zoo)  # Load zoo
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
-in_dex <- index(zoo_stx)
+date_s <- index(zoo_stx)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
+month_ly <- as.yearmon(date_s)
 # benchmark two methods of calculating tick locations
 library(microbenchmark)
 summary(microbenchmark(
-    m_atch=
-      in_dex[match(unique(month_ly), month_ly)],
-    t_apply=
-      as.Date(tapply(X=in_dex,
-                     INDEX=month_ly, FUN=min)),
+    m_atch=date_s[match(unique(month_ly), month_ly)],
+    t_apply=as.Date(tapply(X=date_s,
+        INDEX=month_ly, FUN=min)),
     times=10)
   )[, c(1, 4, 5)]
       @
@@ -981,15 +976,13 @@ legend("topright", inset=0.05, bty="n",
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Define Pareto function
-pare_to <- function(x, al_pha) 
-  al_pha*x^(-al_pha-1)
+pare_to <- function(x, al_pha) al_pha*x^(-al_pha-1)
 col_ors <- c("red", "blue", "green")
 alpha_s <- c(1.0, 2.0, 3.0)
 for (in_dex in 1:3) {  # Plot three curves
   curve(expr=pare_to(x, alpha_s[in_dex]),
-  xlim=c(1, 2), ylim=c(0.0, 3.5),
-  xlab="", ylab="", lwd=3, col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
+  xlim=c(1, 2), ylim=c(0.0, 3.5), xlab="", ylab="", 
+  lwd=3, col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
 # Add title and legend
 title(main="Pareto Distributions", line=0.5)
@@ -1165,118 +1158,6 @@ boxplot(formula=mpg ~ cyl, data=mtcars,
 
 
 %%%%%%%%%%%%%%%
-\subsection{Dynamic Documents Using \protect\emph{R markdown}}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
-      \vskip1ex
-      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
-      \vskip1ex
-      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
-      \begin{itemize}
-        \item A \emph{YAML} header,
-        \item Text in \emph{R Markdown} code format,
-        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
-        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
-      \end{itemize}
-      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
----
-title: "My First R Markdown Document"
-author: Jerzy Pawlowski
-date: '`r format(Sys.time(), "%m/%d/%Y")`'
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-# install package quantmod if it can't be loaded successfully
-if (!require("quantmod"))
-  install.packages("quantmod")
-```
-
-### R Markdown
-This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
-
-One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
-
-You can read more about publishing documents using *R* here:
-https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
-
-You can read more about using *R* to create *HTML* documents with interactive plots here:
-https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
-
-Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
-
-Example of an *R* code chunk:
-```{r cars}
-summary(cars)
-```
-
-### Plots in *R Markdown* documents
-
-Plots can also be embeded, for example:
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-### Math formulas in *R Markdown* documents
-Math formulas can also be embeded in *R Markdown* documents.
-
-For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
-Or display formulas (the Cauchy-Schwarz inequality):
-
-$$
-  \left( \sum_{k=1}^n a_k b_k \right)^2
-  \leq
-  \left( \sum_{k=1}^n a_k^2 \right)
-  \left( \sum_{k=1}^n b_k^2 \right)
-$$
-
-    \end{lstlisting}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: Online \protect\emph{markdown} Tutorials}
-\begin{frame}[fragile,t]{\subsecname}
-
-\begin{block}{Datacamp Interactive Courses}
-  Datacamp introduction to \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/courses/introduction-to-r/}
-  \vskip1ex
-  Datacamp list of free courses:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses}
-  \vskip1ex
-  Datacamp basic statistics in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/basic-statistics}
-  \vskip1ex
-  Datacamp computational finance in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/computational-finance-and-financial-econometrics-with-r}
-  \vskip1ex
-  Datacamp machine learning in \texttt{R}:
-  \hskip1em\url{https://www.datacamp.com/community/open-courses/kaggle-r-tutorial-on-machine-learning}
-\end{block}
-
-\begin{block}{Try \texttt{R}}
-  Interactive \texttt{R} tutorial, but rather basic:
-  \hskip1em\url{http://tryr.codeschool.com/}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Plotting Using Expression Objects}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -1391,6 +1272,118 @@ animation::saveHTML(expr=eval(ex_pr),
   description="Chi-squared Distributions")  # end saveHTML
       @
   \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Dynamic Documents Using \protect\emph{R markdown}}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \href{https://daringfireball.net/projects/markdown/}{\emph{markdown}} is a simple markup language designed for creating documents in different formats, including \emph{pdf} and \emph{html}.
+      \vskip1ex
+      \href{https://rmarkdown.rstudio.com}{\emph{R Markdown}} is a modified version of \emph{markdown}, which allows creating documents containing \emph{math formulas} and \texttt{R} code embedded in them.
+      \vskip1ex
+      An \emph{R Markdown} document (with extension \texttt{.Rmd}) contains:
+      \begin{itemize}
+        \item A \emph{YAML} header,
+        \item Text in \emph{R Markdown} code format,
+        \item Math formulas (equations), delimited using either single "\$" symbols (for inline formulas), or double "\$\$" symbols (for display formulas),
+        \item \texttt{R} code chunks, delimited using either single "`" backtick symbols (for inline code), or triple "```" backtick symbols (for display code).
+      \end{itemize}
+      The packages \emph{rmarkdown} and \emph{knitr} compile \texttt{R} documents into either \emph{pdf}, \emph{html}, or \emph{MS Word} documents.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \begin{lstlisting}[language=R,basicstyle=\tiny\ttfamily\bfseries,backgroundcolor=\color{anti_flashwhite},showstringspaces=FALSE]
+---
+title: "My First R Markdown Document"
+author: Jerzy Pawlowski
+date: '`r format(Sys.time(), "%m/%d/%Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install package quantmod if it can't be loaded successfully
+if (!require("quantmod"))
+  install.packages("quantmod")
+```
+
+### R Markdown
+This is an *R Markdown* document. Markdown is a simple formatting syntax for authoring *HTML*, *pdf*, and *MS Word* documents. For more details on using *R Markdown* see <http://rmarkdown.rstudio.com>.
+
+One of the advantages of writing documents *R Markdown* is that they can be compiled into *HTML* documents, which can incorporate interactive plots,
+
+You can read more about publishing documents using *R* here:
+https://algoquant.github.io/r,/markdown/2016/07/02/Publishing-documents-in-R/
+
+You can read more about using *R* to create *HTML* documents with interactive plots here:
+https://algoquant.github.io/2016/07/05/Interactive-Plots-in-R/
+
+Clicking the **Knit** button in *RStudio*, compiles the *R Markdown* document, including embedded *math formulas* and *R* code chunks, into output documents.
+
+Example of an *R* code chunk:
+```{r cars}
+summary(cars)
+```
+
+### Plots in *R Markdown* documents
+
+Plots can also be embedded, for example:
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+### Math formulas in *R Markdown* documents
+Math formulas can also be embedded in *R Markdown* documents.
+
+For example inline formulas: $\frac{2}{3}$, $\sqrt{b^2 - 4ac}$, and $\hat{\lambda}=1.02$.
+Or display formulas (the Cauchy-Schwarz inequality):
+
+$$
+  \left( \sum_{k=1}^n a_k b_k \right)^2
+  \leq
+  \left( \sum_{k=1}^n a_k^2 \right)
+  \left( \sum_{k=1}^n b_k^2 \right)
+$$
+
+    \end{lstlisting}
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{draft: Online \protect\emph{markdown} Tutorials}
+\begin{frame}[fragile,t]{\subsecname}
+
+\begin{block}{Datacamp Interactive Courses}
+  Datacamp introduction to \texttt{R}:
+  \hskip1em\url{https://www.datacamp.com/courses/introduction-to-r/}
+  \vskip1ex
+  Datacamp list of free courses:
+  \hskip1em\url{https://www.datacamp.com/community/open-courses}
+  \vskip1ex
+  Datacamp basic statistics in \texttt{R}:
+  \hskip1em\url{https://www.datacamp.com/community/open-courses/basic-statistics}
+  \vskip1ex
+  Datacamp computational finance in \texttt{R}:
+  \hskip1em\url{https://www.datacamp.com/community/open-courses/computational-finance-and-financial-econometrics-with-r}
+  \vskip1ex
+  Datacamp machine learning in \texttt{R}:
+  \hskip1em\url{https://www.datacamp.com/community/open-courses/kaggle-r-tutorial-on-machine-learning}
+\end{block}
+
+\begin{block}{Try \texttt{R}}
+  Interactive \texttt{R} tutorial, but rather basic:
+  \hskip1em\url{http://tryr.codeschool.com/}
 \end{block}
 
 \end{frame}
@@ -1692,7 +1685,7 @@ renderPlot({
   lamb_da <- input$lamb_da
   weight_s <- exp(-lamb_da*1:inter_val)
   weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(clos_e , filter=weight_s, sides=1)
+  ew_ma <- .Call(stats:::C_cfilter, clos_e, filter=weight_s, sides=1, circular=FALSE)
   ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
   ew_ma <- xts(cbind(clos_e , ew_ma), order.by=index(clos_e ))
   colnames(ew_ma) <- c("VTI", "VTI EWMA")
