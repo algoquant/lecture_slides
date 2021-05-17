@@ -66,8 +66,7 @@ par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, 
 curve(expr=dnorm, xlim=c(-3, 3),
 xlab="", ylab="", lwd=2, col="blue")
 # Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-lwd=2, col="red")
+curve(expr=dnorm(x, mean=1), add=TRUE,lwd=2, col="red")
 
 # Add title
 title(main="Normal probability distribution functions",
@@ -84,43 +83,39 @@ zoo_series <- window(zoo_stx[, "AdjClose"],
    start=as.Date("2013-01-01"),
    end=as.Date("2013-12-31"))
 # extract time index and monthly dates
-in_dex <- index(zoo_series)
+date_s <- index(zoo_series)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
+month_ly <- as.yearmon(date_s)
 # tick locations at beginning of month
-tick_s <- in_dex[match(unique(month_ly), month_ly)]
-# tick_s <- as.Date(tapply(X=in_dex, INDEX=month_ly, FUN=min))
+tick_s <- date_s[match(unique(month_ly), month_ly)]
+# tick_s <- as.Date(tapply(X=date_s, INDEX=month_ly, FUN=min))
 # first plot zoo without "x" axis
 plot(zoo_series, xaxt="n", xlab=NA, ylab=NA, main="MSFT stock prices")
 # Add "x" axis with monthly ticks
-axis(side=1, at=tick_s,
- labels=format(tick_s, "%b-%y"), tcl=-0.7)
+axis(side=1, at=tick_s, labels=format(tick_s, "%b-%y"), tcl=-0.7)
 # Add vertical lines
 abline(v=tick_s, col="grey", lwd=0.5)
 # Plot zoo using base plotting functions
 plot(as.vector(zoo_series), xaxt="n",
  xlab=NA, ylab=NA, t="l", main="MSFT stock prices")
-a_t <- match(tick_s, in_dex)
-# a_t <- seq_along(in_dex)[in_dex %in% tick_s]
+a_t <- match(tick_s, date_s)
+# a_t <- seq_along(date_s)[date_s %in% tick_s]
 # Add "x" axis with monthly ticks
-axis(side=1, at=a_t,
- labels=format(tick_s, "%b-%y"), tcl=-0.7)
+axis(side=1, at=a_t, labels=format(tick_s, "%b-%y"), tcl=-0.7)
 abline(v=a_t, col="grey", lwd=0.5)
 
 library(zoo)  # Load zoo
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # extract time index and monthly dates
-in_dex <- index(zoo_stx)
+date_s <- index(zoo_stx)
 # Coerce index to monthly dates
-month_ly <- as.yearmon(in_dex)
+month_ly <- as.yearmon(date_s)
 # benchmark two methods of calculating tick locations
 library(microbenchmark)
 summary(microbenchmark(
-m_atch=
-  in_dex[match(unique(month_ly), month_ly)],
-t_apply=
-  as.Date(tapply(X=in_dex,
-                 INDEX=month_ly, FUN=min)),
+m_atch=date_s[match(unique(month_ly), month_ly)],
+t_apply=as.Date(tapply(X=date_s,
+    INDEX=month_ly, FUN=min)),
 times=10)
   )[, c(1, 4, 5)]
 
@@ -366,15 +361,13 @@ legend("topright", inset=0.05, bty="n",
 x11(width=6, height=5)  # Plot in window
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Define Pareto function
-pare_to <- function(x, al_pha)
-  al_pha*x^(-al_pha-1)
+pare_to <- function(x, al_pha) al_pha*x^(-al_pha-1)
 col_ors <- c("red", "blue", "green")
 alpha_s <- c(1.0, 2.0, 3.0)
 for (in_dex in 1:3) {  # Plot three curves
   curve(expr=pare_to(x, alpha_s[in_dex]),
-  xlim=c(1, 2), ylim=c(0.0, 3.5),
-  xlab="", ylab="", lwd=3, col=col_ors[in_dex],
-  add=as.logical(in_dex-1))
+  xlim=c(1, 2), ylim=c(0.0, 3.5), xlab="", ylab="",
+  lwd=3, col=col_ors[in_dex], add=as.logical(in_dex-1))
 }  # end for
 # Add title and legend
 title(main="Pareto Distributions", line=0.5)
@@ -500,6 +493,138 @@ animation::saveHTML(expr=eval(ex_pr),
   htmlfile="chi_squared.html",
   description="Chi-squared Distributions")  # end saveHTML
 
+NA
+
+App setup code that runs only once at startup.
+n_data <- 1e4
+std_dev <- 1.0
+
+Define the user interface
+inter_face <- shiny::fluidPage(
+  # Create numeric input for the number of data points.
+  numericInput('n_data', "Number of data points:", value=n_data),
+  # Create slider input for the standard deviation parameter.
+  sliderInput("std_dev", label="Standard deviation:",
+        min=0.1, max=3.0, value=std_dev, step=0.1),
+  # Render plot in a panel.
+  plotOutput("plo_t", height=300, width=500)
+)  # end user interface
+
+Define the server function
+ser_ver <- function(input, output) {
+  output$plo_t <- shiny::renderPlot({
+    # Simulate the data
+    da_ta <- rnorm(input$n_data, sd=input$std_dev)
+    # Plot the data
+    par(mar=c(2, 4, 4, 0), oma=c(0, 0, 0, 0))
+    hist(da_ta, xlim=c(-4, 4), main="Histogram of Random Data")
+  })  # end renderPlot
+}  # end ser_ver
+
+# Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+
+Create elements of the user interface
+inter_face <- shiny::fluidPage(
+  titlePanel("VWAP Moving Average"),
+  # Create single row of widgets with two slider inputs
+  fluidRow(
+    # Input stock symbol
+    column(width=3, selectInput("sym_bol", label="Symbol",
+                          choices=sym_bols, selected=sym_bol)),
+    # Input look-back interval
+    column(width=3, sliderInput("look_back", label="Lookback interval",
+                          min=1, max=150, value=11, step=1))
+  ),  # end fluidRow
+  # Create output plot panel
+  mainPanel(dygraphs::dygraphOutput("dy_graph"), width=12)
+)  # end fluidPage interface
+
+Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+  # Get the close and volume data in a reactive environment
+  clos_e <- shiny::reactive({
+    # Get the data
+    oh_lc <- get(input$sym_bol, data_env)
+    clos_e <- log(quantmod::Cl(oh_lc))
+    vol_ume <- quantmod::Vo(oh_lc)
+    # Return the data
+    cbind(clos_e, vol_ume)
+  })  # end reactive code
+
+  # Calculate the VWAP indicator in a reactive environment
+  v_wap <- shiny::reactive({
+    # Get model parameters from input argument
+    look_back <- input$look_back
+    # Calculate the VWAP indicator
+    clos_e <- clos_e()[, 1]
+    vol_ume <- clos_e()[, 2]
+    v_wap <- HighFreq::roll_sum(se_ries=clos_e*vol_ume, look_back=look_back)
+    volume_rolling <- HighFreq::roll_sum(se_ries=vol_ume, look_back=look_back)
+    v_wap <- v_wap/volume_rolling
+    v_wap[is.na(v_wap)] <- 0
+    # Return the plot data
+    da_ta <- cbind(clos_e, v_wap)
+    colnames(da_ta) <- c(input$sym_bol, "VWAP")
+    da_ta
+  })  # end reactive code
+
+  # Return the dygraph plot to output argument
+  output$dy_graph <- dygraphs::renderDygraph({
+    col_names <- colnames(v_wap())
+    dygraphs::dygraph(v_wap(), main=paste(col_names[1], "VWAP")) %>%
+dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+dySeries(name=col_names[1], axis="y", label=col_names[1], strokeWidth=2, col="blue") %>%
+dySeries(name=col_names[2], axis="y2", label=col_names[2], strokeWidth=2, col="red")
+  })  # end output plot
+})  # end server code
+
+Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+
+Define the server function
+ser_ver <- shiny::shinyServer(function(input, output) {
+
+  # Create an empty list of reactive values.
+  value_s <- reactiveValues()
+
+  # Get input parameters from the user interface.
+  n_rows <- reactive({
+    # Add n_rows to list of reactive values.
+    value_s$n_rows <- input$n_rows
+    input$n_rows
+  })  # end reactive code
+
+  # Broadcast a message to the console when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    cat("Input button pressed\n")
+  })  # end observeEvent
+
+  # Send the data when the button is pressed.
+  da_ta <- eventReactive(eventExpr=input$but_ton, valueExpr={
+    # eventReactive() executes on input$but_ton, but not on n_rows() or input$n_rows.
+    cat("Sending", n_rows(), "rows of data\n")
+    da_ta <- head(mtcars, input$n_rows)
+    value_s$mpg <- mean(da_ta$mpg)
+    da_ta
+  })  # end eventReactive
+  #   da_ta
+
+  # Draw table of the data when the button is pressed.
+  observeEvent(eventExpr=input$but_ton, handlerExpr={
+    da_ta <- da_ta()
+    cat("Received", value_s$n_rows, "rows of data\n")
+    cat("Average mpg = ", value_s$mpg, "\n")
+    cat("Drawing table\n")
+    output$tabl_e <- renderTable(da_ta)
+  })  # end observeEvent
+
+})  # end server code
+
+Return a Shiny app object
+shiny::shinyApp(ui=inter_face, server=ser_ver)
+
 # R startup chunk
 # ```{r setup, include=FALSE}
 library(shiny)
@@ -520,7 +645,7 @@ renderPlot({
   lamb_da <- input$lamb_da
   weight_s <- exp(-lamb_da*1:inter_val)
   weight_s <- weight_s/sum(weight_s)
-  ew_ma <- filter(clos_e , filter=weight_s, sides=1)
+  ew_ma <- .Call(stats:::C_cfilter, clos_e, filter=weight_s, sides=1, circular=FALSE)
   ew_ma[1:(inter_val-1)] <- ew_ma[inter_val]
   ew_ma <- xts(cbind(clos_e , ew_ma), order.by=index(clos_e ))
   colnames(ew_ma) <- c("VTI", "VTI EWMA")

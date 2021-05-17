@@ -304,34 +304,37 @@ print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FAL
       \vskip1ex
       It then assigns the data to those objects, without returning them as a function value, as a \emph{side effect}.
       <<echo=TRUE,eval=FALSE>>=
-library(quantmod)  # Load package quantmod
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
-rates_env <- new.env()  # new environment for data
-# Download data for sym_bols into rates_env
+# Create new environment for time series
+rates_env <- new.env()
+# Download time series for sym_bols into rates_env
 quantmod::getSymbols(sym_bols, env=rates_env, src="FRED")
-ls(rates_env)  # List files in rates_env
-# Get class of object in rates_env
-class(get(x=sym_bols[1], envir=rates_env))
-# Another way
-class(rates_env$DGS20)
-colnames(rates_env$DGS20)
-save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
-      @
-    \column{0.5\textwidth}
-    \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/treas_20y_rate.png}
-      <<echo=(-(1:2)),eval=FALSE>>=
-x11(width=6, height=4)
-par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-head(rates_env$DGS20, 3)
+# List files in rates_env
+ls(rates_env)
 # Get class of all objects in rates_env
 sapply(rates_env, class)
 # Get class of all objects in R workspace
-sapply(ls(), function(ob_ject) class(get(ob_ject)))
-# Plot 20-year constant maturity Treasury rate
-chart_Series(rates_env$DGS20["1990/"],
-  name="20-year constant maturity Treasury rate")
+sapply(ls(), function(nam_e) class(get(nam_e)))
+# Save the time series environment into a binary .RData file
+save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/treas_10y_rate.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Get class of time series object DGS10
+class(get(x="DGS10", envir=rates_env))
+# Another way
+class(rates_env$DGS10)
+# Get first 6 rows of time series
+head(rates_env$DGS10)
+# Plot dygraphs of 10-year Treasury rate
+dygraphs::dygraph(rates_env$DGS10, main="10-year Treasury Rate") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+# Plot 10-year constant maturity Treasury rate
+x11(width=6, height=5)
+par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
+chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
       @
   \end{columns}
 \end{block}
@@ -1573,24 +1576,23 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      U.S. companies are required to provide the Securities and Exchange Commission (\href{https://www.sec.gov/}{SEC}) with quarterly \emph{10Q} and annual \emph{10K} filings, which contain fundamental data about the companies.
+      Fundamental company data is obtained from financial statements provided to government agencies and from earnings statements provided to investors.
       \vskip1ex
-      The \emph{SEC} filings are publicly available online through the \href{https://www.sec.gov/edgar.shtml}{\emph{EDGAR}} database, and they are compiled into premium (license fee) databases by vendors such as \href{http://www.compustat.com/}{\emph{Compustat}} and \href{http://www.factset.com/}{\emph{FactSet}}.
+      U.S. companies are required to provide quarterly \emph{10Q} reports and annual \emph{10K} reports to the \emph{Securities and Exchange Commission} (\href{https://www.sec.gov/}{\emph{SEC}}).
+      \vskip1ex
+      The \emph{10Q} and \emph{10K} reports are publicly available on the \href{https://www.sec.gov/edgar.shtml}{\emph{SEC EDGAR}} website.
+      \vskip1ex
+      The data provided by \href{https://www.sec.gov/edgar.shtml}{\emph{EDGAR}} only goes back to the year $2009$, because the \href{https://www.sec.gov/}{\emph{SEC}} did not mandate electronic filing before then.
+      \vskip1ex
+      The data from the \emph{10Q} and \emph{10K} reports is compiled by vendors such as \href{http://www.compustat.com/}{\emph{Compustat}} and \href{http://www.factset.com/}{\emph{FactSet}}, into premium databases.
+      \vskip1ex
+      There are also free databases of fundamental company data, from providers such as \href{https://simfin.com/}{\emph{SimFin}}, \href{http://usfundamentals.com/}{\emph{usfundamentals}}, and \href{https://www.quandl.com/}{\emph{Quandl}}.
+    \column{0.5\textwidth}
+      \href{https://wrds-www.wharton.upenn.edu/}{\emph{WRDS}} redistributes fundamental company data from \href{http://www.compustat.com/}{\emph{Compustat}}, \href{http://www.capitaliq.com}{\emph{S\&P Capital IQ}}, \href{https://www.thomsonreuters.com/en.html}{\emph{Thomson Reuters}}, \href{http://www.factset.com/}{\emph{FactSet}}, \href{https://ihsmarkit.com/index.html}{\emph{Markit}}, etc.
       \vskip1ex
       There are occasional gaps in the quarterly data, because companies are not required to file quarterly reports on dates when they're also filing annual reports.
       \vskip1ex
-      Data from the \emph{10Q}, \emph{10K}, and other \emph{SEC} filings are compiled by vendors such as \href{http://www.compustat.com/}{\emph{Compustat}} and \href{http://www.factset.com/}{\emph{FactSet}}, into premium databases.
-      \vskip1ex
-      \href{https://wrds-www.wharton.upenn.edu/}{\emph{WRDS}} redistributes fundamental company data from \href{http://www.compustat.com/}{\emph{Compustat}}, \href{http://www.capitaliq.com}{\emph{S\&P Capital IQ}}, \href{https://www.thomsonreuters.com/en.html}{\emph{Thomson Reuters}}, \href{http://www.factset.com/}{\emph{FactSet}}, \href{https://ihsmarkit.com/index.html}{\emph{Markit}}, etc.
-    \column{0.5\textwidth}
-      There are also free databases of fundamental company data, from providers such as \href{https://simfin.com/}{SimFin}, \href{http://usfundamentals.com/}{Linelane}, and the
-      \href{https://www.quandl.com/data/RAYMOND-Raymond}{\emph{RAYMOND}} database on \href{https://www.quandl.com/}{\emph{Quandl}}.
-      \vskip1ex
-      \href{https://www.quandl.com/data/RAYMOND-Raymond}{\emph{RAYMOND}} is a free \href{https://www.quandl.com/}{\emph{Quandl}} database of harmonized stock fundamentals, based on the \emph{SEC} database, but it has several limitations.
-      \vskip1ex
       The report harmonization procedure fails when companies change their accounting treatment from year to year.
-      \vskip1ex
-      The data only goes back to $2009$, because the \emph{SEC} did not mandate electronic filing before then.
       \vskip1ex
       \href{https://www.quandl.com/}{\emph{Quandl}} has written \href{https://blog.quandl.com/api-for-stock-data\#SEC-Indicators-Legend}{a review} of both premium and free sources of fundamental company data.
   \end{columns}
@@ -2187,10 +2189,10 @@ plot(quantmod::Cl(sp500_env$MSFT))
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      \emph{SEC} is a free database of stock fundamentals extracted from SEC and (but not harmonized),\\
+      \href{https://www.sec.gov/}{\emph{SEC}} is a free database of stock fundamentals extracted from SEC and (but not harmonized),\\
       \hskip1em\url{https://www.quandl.com/data/SEC}
       \vskip1ex
-      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \emph{SEC} database,\\
+      \emph{RAYMOND} is a free database of harmonized stock fundamentals, based on the \href{https://www.sec.gov/}{\emph{SEC}} database,\\
       \hskip1em\url{https://www.quandl.com/data/RAYMOND}
       \hskip1em\url{https://www.quandl.com/data/RAYMOND?keyword=aapl}
       \vskip1ex

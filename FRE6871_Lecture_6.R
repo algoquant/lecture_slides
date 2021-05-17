@@ -102,7 +102,6 @@ data_frame[order(data_frame$price), ]
 data_frame[order(data_frame$color), ]
 # Create a vector of student ranks
 ra_nks <- c("first", "second", "third", "fourth", "fifth")
-ra_nks <- rev(ra_nks)
 # Reverse sort the student ranks according to students
 ra_nks[order(order(score_s))]
 # Create a data frame of students and their ranks
@@ -484,7 +483,7 @@ g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
 
-x11(width=7, height=5)
+x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
 plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
@@ -541,9 +540,8 @@ plot(income ~ balance,
 points(income ~ balance, pch=4, lwd=2, col="red",
  data=Default[de_fault, ])
 # Add legend
-legend(x="topright", bty="n",
- legend=c("non-defaulters", "defaulters"),
- col=c("blue", "red"), lty=1, lwd=6, pch=4)
+legend(x="topright", legend=c("non-defaulters", "defaulters"),
+ bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
 
 # Wilcoxon test for balance predictor
 wilcox.test(balance[de_fault], balance[!de_fault])
@@ -632,32 +630,29 @@ all.equal(g_lm$fitted.values, forecast_s)
 # Define discrimination threshold value
 thresh_old <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=de_fault, forecast=(forecast_s > thresh_old))
+table(actual=!de_fault, forecast=(forecast_s < thresh_old))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
 n_rows <- NROW(Default)
-da_ta <- sample.int(n=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
+sampl_e <- sample.int(n=n_rows, size=n_rows/2)
+train_data <- Default[sampl_e, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
 # Forecast over test data out-of-sample
-test_data <- Default[-da_ta, ]
+test_data <- Default[-sampl_e, ]
 forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=test_data$de_fault, 
-forecast=(forecast_s > thresh_old))
+table(actual=!test_data$de_fault, 
+forecast=(forecast_s < thresh_old))
 
-# Fit logit model and forecast in-sample
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-forecast_s <- predict(g_lm, type="response")
-# Calculate FALSE positive (type I error)
-sum(de_fault & (forecast_s < thresh_old))
-# Calculate FALSE negative (type II error)
-sum(!de_fault & (forecast_s > thresh_old))
-
-# Calculate confusion matrix
-confu_sion <- table(actual=de_fault, 
-  forecast=(forecast_s > thresh_old))
+# Calculate confusion matrix out-of-sample
+confu_sion <- table(actual=!test_data$de_fault, 
+forecast=(forecast_s < thresh_old))
 confu_sion
+# Calculate FALSE positive (type I error)
+sum(!test_data$de_fault & (forecast_s > thresh_old))
+# Calculate FALSE negative (type II error)
+sum(test_data$de_fault & (forecast_s < thresh_old))
+
 # Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
@@ -676,20 +671,20 @@ include.colnames=TRUE)
 
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, forecast_s, thresh_old) {
-    confu_sion <- table(actu_al, (forecast_s > thresh_old))
+    confu_sion <- table(actu_al, (forecast_s < thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$de_fault, forecast_s, thresh_old=thresh_old)
+con_fuse(!test_data$de_fault, forecast_s, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
-threshold_s <- seq(0.01, 0.95, by=0.01)^2
+threshold_s <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=(test_data$de_fault), forecast_s=forecast_s)  # end sapply
+  actu_al=!test_data$de_fault, forecast_s=forecast_s)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
-error_rates <- rbind(c(0, 1), error_rates)
-error_rates <- rbind(error_rates, c(1, 0))
+error_rates <- rbind(c(1, 0), error_rates)
+error_rates <- rbind(error_rates, c(0, 1))
 # Calculate area under ROC curve (AUC)
 true_pos <- (1 - error_rates[, "typeII"])
 true_pos <- (true_pos + rutils::lag_it(true_pos))/2
@@ -697,7 +692,7 @@ false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
 # Plot ROC Curve for Defaults
-x11(width=6, height=6)
+x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")

@@ -29,7 +29,7 @@ vec_tor <- c(2, 4, 6)
 if (is.matrix(vec_tor) && (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
-# no short-circuit so fails (produces an error)
+# No short-circuit so fails (produces an error)
 if (is.matrix(vec_tor) & (vec_tor[2, 3] > 0)) {
   vec_tor[2, 3] <- 1
 }
@@ -46,7 +46,7 @@ num_var==2
 identical(num_var, 2)
 
 identical(num_var, NULL)
-# this doesn't work:
+# This doesn't work:
 # num_var==NULL
 is.null(num_var)
 
@@ -58,7 +58,7 @@ identical(vec_tor, 2)
 num_ber <- 1.0 + 2*sqrt(.Machine$double.eps)
 all.equal(num_ber, 1.0)
 
-# info machine precision of computer R is running on
+# Info machine precision of computer R is running on
 # ?.Machine
 # Machine precision
 .Machine$double.eps
@@ -71,8 +71,7 @@ match(5, vec_tor)
 (1:NROW(vec_tor))[vec_tor == 5]
 which(vec_tor < 5)
 # Find indices of TRUE elements of Boolean matrix
-which((mat_rix == 5)|(mat_rix == 6),
-arr.ind=TRUE)
+which((mat_rix == 5)|(mat_rix == 6), arr.ind=TRUE)
 # Equivalent but slower than above
 arrayInd(which((mat_rix == 5)|(mat_rix == 6)),
    dim(mat_rix), dimnames(mat_rix))
@@ -113,12 +112,12 @@ str(findInterval)
 # Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
-# no exact match
+# No exact match
 findInterval(x=6, vec=c(3, 5, 7))
 match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
+# Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
-# return only indices of inside intervals
+# Return only indices of inside intervals
 findInterval(x=1:8, vec=c(3, 5, 7),
        all.inside=TRUE)
 # Make rightmost interval inclusive
@@ -141,13 +140,13 @@ x  # x exists outside the function
 my_var <- 1  # Create new object
 assign(x="my_var", value=2)  # Assign value to existing object
 my_var
-rm(my_var)  # remove my_var
+rm(my_var)  # Remove my_var
 assign(x="my_var", value=3)  # Create new object from name
 my_var
 # Create new object in new environment
 new_env <- new.env()  # Create new environment
 assign("my_var", 3, envir=new_env)  # Assign value to name
-ls(new_env)  # list objects in "new_env"
+ls(new_env)  # List objects in "new_env"
 new_env$my_var
 rm(list=ls())  # delete all objects
 sym_bol <- "my_var"  # define symbol containing string "my_var"
@@ -177,18 +176,18 @@ test_env <- new.env()
 assign("my_var1", 2, envir=test_env)
 # Create new object using $ string referencing
 test_env$my_var2 <- 1
-# list objects in new environment
+# List objects in new environment
 ls(test_env)
-# reference an object by name
+# Reference an object by name
 test_env$my_var1
-# reference an object by string name using get
+# Reference an object by string name using get
 get("my_var1", envir=test_env)
-# retrieve and assign value to object
+# Retrieve and assign value to object
 assign("my_var1",
        2*get("my_var1", envir=test_env),
        envir=test_env)
 get("my_var1", envir=test_env)
-# return all objects in an environment
+# Return all objects in an environment
 mget(ls(test_env), envir=test_env)
 # delete environment
 rm(test_env)
@@ -290,7 +289,7 @@ summary(microbenchmark(
 rm(list=ls())
 num_var1 <- 1
 
-if (num_var1) {  # numeric zero is FALSE, all other numbers are TRUE
+if (num_var1) {  # Numeric zero is FALSE, all other numbers are TRUE
   num_var2 <- 4
 } else if (num_var1 == 0) {  # 'else if' together on same line
   num_var2 <- 0
@@ -327,11 +326,11 @@ for (in_dex in vec_tor) {ex_pressions}
 
 rm(list=ls())
 color_list <- list("red", "white", "blue")
-# loop over list
+# Loop over list
 for (some_color in color_list) {
   print(some_color)
 }  # end for
-# loop over vector
+# Loop over vector
 for (in_dex in 1:3) {
   print(color_list[[in_dex]])
 }  # end for
@@ -345,7 +344,7 @@ while (in_dex < 4) {
 }  # end while
 
 vec_tor <- integer(7)
-# loop over a vector and overwrite it
+# Loop over a vector and overwrite it
 for (i in seq_along(vec_tor)) {
   cat("Changing element:", i, "\n")
   vec_tor[i] <- i^2
@@ -372,8 +371,8 @@ rm(list=ls())
 # fib_seq <- numeric()  # zero length numeric vector
 # Pre-allocate vector instead of "growing" it
 fib_seq <- numeric(10)
-fib_seq[1] <- 0  # initialize
-fib_seq[2] <- 1  # initialize
+fib_seq[1] <- 0  # Initialize
+fib_seq[2] <- 1  # Initialize
 for (i in 3:10) {  # Perform recurrence loop
   fib_seq[i] <- fib_seq[i-1] + fib_seq[i-2]
 }  # end for
@@ -420,13 +419,13 @@ mat_rix == 5  # Element-wise comparison
 
 mat_rix <- 1:6  # Create a vector
 class(mat_rix)  # Get its class
-# is it vector or matrix?
+# Is it vector or matrix?
 c(is.vector(mat_rix), is.matrix(mat_rix))
 structure(mat_rix, dim=c(2, 3))  # Matrix object
 # Adding dimension attribute coerces into matrix
 dim(mat_rix) <- c(2, 3)
 class(mat_rix)  # Get its class
-# is it vector or matrix?
+# Is it vector or matrix?
 c(is.vector(mat_rix), is.matrix(mat_rix))
 # Assign dimnames attribute
 dimnames(mat_rix) <- list(rows=c("row1", "row2"),
@@ -451,29 +450,42 @@ cbind(vector1, vector2)
 rbind(vector1, vector2)
 # Extend to four elements
 vector2 <- c(vector2, 7)
-# recycling rule applied
+# Recycling rule applied
 cbind(vector1, vector2)
 # Another example of recycling rule
 1:6 + c(10, 20)
 
-# replicate a single element
+# Replicate a single element
 rep("a", 5)
-# replicate the whole vector several times
+# Replicate the whole vector several times
 rep(c("a", "b"), 5)
 rep(c("a", "b"), times=5)
-# replicate the first element, then the second, etc.
+# Replicate the first element, then the second, etc.
 rep(c("a", "b"), each=5)
-# replicate to specified length
+# Replicate to specified length
 rep(c("a", "b"), length.out=5)
 
 # define vector and matrix
 vector1 <- c(2, 4, 3)
 mat_rix <- matrix(sample(1:12), ncol=3)
-# Multiply matrix by vector column-wise
-vector1 * mat_rix
-mat_rix * vector1
-# Multiply matrix by vector row-wise
-t(vector1 * t(mat_rix))
+# Multiply columns of matrix by vector
+vector1*mat_rix
+# Or
+mat_rix*vector1
+# Multiply rows of matrix by vector
+t(vector1*t(mat_rix))
+# Multiply rows of matrix by vector - transpose is very slow
+pro_duct <- lapply(1:NCOL(mat_rix), 
+  function(x) vector1[x]*mat_rix[, x])
+do.call(cbind, pro_duct)
+library(microbenchmark)
+summary(microbenchmark(
+  trans=t(vector1*t(mat_rix)),
+  lapp={
+    pro_duct <- lapply(1:NCOL(mat_rix), function(x) vector1[x]*mat_rix[, x])
+    do.call(cbind, pro_duct)
+  },
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 vector1
 vector2 <- 6:4  # define vector
@@ -513,12 +525,10 @@ summary(microbenchmark(
 
 # define named vectors
 vector1 <- sample(1:4)
-names(vector1) <-
-  paste0("row", 1:4, "=", vector1)
+names(vector1) <- paste0("row", 1:4, "=", vector1)
 vector1
 vector2 <- sample(1:3)
-names(vector2) <-
-  paste0("col", 1:3, "=", vector2)
+names(vector2) <- paste0("col", 1:3, "=", vector2)
 vector2
 # Calculate outer product of two vectors
 mat_rix <- outer(vector1, vector2)
@@ -538,9 +548,9 @@ rbind(li_st[[1]], li_st[[2]], li_st[[3]])
 do.call(rbind, li_st)
 # Create numeric list
 li_st <- list(1, 2, 3, 4)
-do.call(rbind, li_st)  # returns single column matrix
-do.call(cbind, li_st)  # returns single row matrix
-# recycling rule applied
+do.call(rbind, li_st)  # Returns single column matrix
+do.call(cbind, li_st)  # Returns single row matrix
+# Recycling rule applied
 do.call(cbind, list(1:2, 3:5))
 # NULL element is skipped
 do.call(cbind, list(1, NULL, 3, 4))
@@ -553,7 +563,7 @@ mat_rix <- do.call(rbind, list_vectors)
 dim(mat_rix)
 do_call_rbind <- function(li_st) {
   while (NROW(li_st) > 1) {
-# index of odd list elements
+# Index of odd list elements
     odd_index <- seq(from=1, to=NROW(li_st), by=2)
 # Bind odd and even elements, and divide li_st by half
     li_st <- lapply(odd_index, function(in_dex) {
@@ -589,6 +599,7 @@ str(split_iris, max.level=1)
 names(split_iris)
 dim(split_iris$setosa)
 head(split_iris$setosa, 2)
+all.equal(set_osa, split_iris$setosa)
 
 unique(mtcars$cyl)  # cyl has three unique values
 # Split mpg column based on number of cylinders
@@ -604,32 +615,24 @@ sapply(split(mtcars$mpg, mtcars$cyl), mean)
 # Same but using with()
 with(mtcars, sapply(split(mpg, cyl), mean))
 # Or: aggregate() using formula syntax
-aggregate(formula=(mpg ~ cyl), data=mtcars,
-    FUN=mean)
+aggregate(formula=(mpg ~ cyl), data=mtcars, FUN=mean)
 # Or: aggregate() using data frame syntax
-aggregate(x=mtcars$mpg,
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars$mpg, by=list(cyl=mtcars$cyl), FUN=mean)
 # Or: using name for mpg
-aggregate(x=list(mpg=mtcars$mpg),
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=list(mpg=mtcars$mpg), by=list(cyl=mtcars$cyl), FUN=mean)
 # Aggregate() all columns
-aggregate(x=mtcars,
-  by=list(cyl=mtcars$cyl), FUN=mean)
+aggregate(x=mtcars, by=list(cyl=mtcars$cyl), FUN=mean)
 
 # Mean mpg for each cylinder group
 tapply(X=mtcars$mpg, INDEX=mtcars$cyl, FUN=mean)
 # using with() environment
-with(mtcars,
-     tapply(X=mpg, INDEX=cyl, FUN=mean))
+with(mtcars, tapply(X=mpg, INDEX=cyl, FUN=mean))
 # Function sapply() instead of tapply()
-with(mtcars,
-     sapply(sort(unique(cyl)), function(x) {
+with(mtcars, sapply(sort(unique(cyl)), function(x) {
  structure(mean(mpg[x==cyl]), names=x)
- }, USE.NAMES=TRUE))  # end with
-
+     }))  # end with
 # Function by() instead of tapply()
-with(mtcars,
-     by(data=mpg, INDICES=cyl, FUN=mean))
+with(mtcars, by(data=mpg, INDICES=cyl, FUN=mean))
 
 # Get several mpg stats for each cylinder group
 data_cars <- sapply(split_cars,
@@ -638,7 +641,7 @@ data_cars <- sapply(split_cars,
         }  # end anonymous function
         )  # end sapply
 data_cars  # sapply() produces a matrix
-data_cars <- lapply(split_cars,  # now same using lapply
+data_cars <- lapply(split_cars,  # Now same using lapply
         function(x) {
           c(mean=mean(x$mpg), max=max(x$mpg), min=min(x$mpg))
         }  # end anonymous function
@@ -653,9 +656,9 @@ panel_data <- read.table(file="C:/Develop/lecture_slides/data/CRSPpanel.txt",
                    header=TRUE, sep="\t")
 # Split panel_data based on Industry column
 split_panel <- split(panel_data, panel_data$Industry)
-# number of companies in each Industry
+# Number of companies in each Industry
 sapply(split_panel, NROW)
-# number of Sectors that each Industry belongs to
+# Number of Sectors that each Industry belongs to
 sapply(split_panel, function(x) {
   NROW(unique(x$Sector))
 })  # end sapply
@@ -663,11 +666,11 @@ sapply(split_panel, function(x) {
 aggregate(formula=(Sector ~ Industry),
   data=panel_data, FUN=function(x) NROW(unique(x)))
 # Industries and the Sector to which they belong
-aggregate(formula=(Sector ~ Industry),
-  data=panel_data, FUN=unique)
+aggregate(formula=(Sector ~ Industry), data=panel_data,
+    FUN=unique)
 # Or
-with(panel_data, aggregate(x=Sector,
-  by=list(Industry), FUN=unique))
+with(panel_data, aggregate(x=Sector, by=list(Industry),
+                     FUN=unique))
 # Or
 with(panel_data, sapply(levels(Industry),
   function(x) {
@@ -676,7 +679,7 @@ with(panel_data, sapply(levels(Industry),
 
 # Split panel_data based on Sector column
 split_panel <- split(panel_data, panel_data$Sector)
-# number of companies in each Sector
+# Number of companies in each Sector
 sapply(split_panel, NROW)
 # Industries belonging to each Sector (jagged array)
 sec_ind <- sapply(split_panel,
@@ -705,27 +708,23 @@ with(panel_data,
   sapply(split(ROE, Industry), mean))
 # Average, min, and max ROE in each Industry
 t(with(panel_data,
-  sapply(split(ROE, Industry),
-    FUN=function(x)
-c(mean=mean(x), max=max(x), min=min(x)))))
+  sapply(split(ROE, Industry), FUN=function(x)
+c(mean=mean(x), max=max(x), min=min(x)))  # end sapply
+  ))  # end with
 # Split panel_data based on Industry column
-split_panel <- split(panel_data,
-  panel_data$Industry)
+split_panel <- split(panel_data, panel_data$Industry)
 # Average ROE and EPS in each Industry
 t(sapply(split_panel, FUN=function(x)
   c(mean_roe=mean(x$ROE),
     mean_eps=mean(x$EPS.EXCLUDE.EI))))
 # Or: split panel_data based on Industry column
-split_panel <-
-  split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
+split_panel <- split(panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
   panel_data$Industry)
 # Average ROE and EPS in each Industry
-t(sapply(split_panel,
-  FUN=function(x) sapply(x, mean)))
+t(sapply(split_panel, FUN=function(x) sapply(x, mean)))
 # Average ROE and EPS using aggregate()
 aggregate(x=panel_data[, c("ROE", "EPS.EXCLUDE.EI")],
-  by=list(panel_data$Industry),
-  FUN=mean)
+  by=list(panel_data$Industry), FUN=mean)
 
 library(plyr)
 one <- ozone[1, 1, ]
@@ -762,7 +761,7 @@ head(InsectSprays)
 # Split the count column by the spray column.
 count_by_spray <- with(InsectSprays, split(count, spray))
 
-# next apply the statistic to each element of the list. Lets use the mean here.
+# Next apply the statistic to each element of the list. Lets use the mean here.
 mean_by_spray <- lapply(count_by_spray, mean)
 
 # Finally combine the list as a vector
@@ -781,10 +780,10 @@ getOption("warn")  # Global option for "warn"
 options("warn")  # Global option for "warn"
 getOption("error")  # Global option for "error"
 sqrt_safe <- function(in_put) {
-# returns its argument
+# Returns its argument
   if (in_put<0) {
     warning("sqrt_safe: in_put is negative")
-    NULL  # return NULL for negative argument
+    NULL  # Return NULL for negative argument
   } else {
     sqrt(in_put)
   }  # end if
@@ -864,8 +863,7 @@ sum_two <- function(in_put1, in_put2) {  # Even more robust
   stopifnot(!missing(in_put1) &&
         !missing(in_put2))
 # Check if arguments are valid and return sum
-  if (is.numeric(in_put1) &&
-is.numeric(in_put2)) {
+  if (is.numeric(in_put1) && is.numeric(in_put2)) {
     in_put1 + in_put2  # Both valid
   } else if (is.numeric(in_put1)) {
     cat("in_put2 is not numeric\n")
@@ -896,7 +894,7 @@ vali_date <- function(in_put) {
   stopifnot(!missing(in_put) && is.numeric(in_put))
   2*in_put
 }  # end vali_date
-vali_date()  # invokes debugger
+vali_date()  # Invokes debugger
 options("error")  # Show default NULL "error" option
 options(error=recover)  # Set "error" option to "recover"
 options(error=NULL)  # Set back to default "error" option
@@ -926,13 +924,12 @@ tryCatch(  # With error handler
   finally=print(paste("num_var=", num_var))
 )  # end tryCatch
 
-rm(list=ls())
 # Apply loop without tryCatch
-apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
-    stopifnot(num_var != 3)  # Check for error
+apply(matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(!(num_var = 3))  # Check for error
     # Broadcast message to console
     cat("(cat) num_var =", num_var, "\n")
-    # return a value
+    # Return a value
     paste("(return) num_var =", num_var)
   }  # end anonymous function
 )  # end apply
@@ -944,7 +941,7 @@ apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
   stopifnot(num_var != 3)  # Check for error
   # Broadcast message to console
   cat("(cat) num_var =", num_var, "\t")
-  # return a value
+  # Return a value
   paste("(return) num_var =", num_var)
 },
 # Error handler captures error condition

@@ -363,23 +363,19 @@ legend("topright", inset=0.05, bty="n",
        cex=0.8, lwd=6, lty=1,
        col=c("black", "red"))
 
-# KS-test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS-test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS-test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS-test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-
 # Calculate VTI percentage returns
+library(rutils)
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+# Reset output digits
+dig_its <- options(digits=5)
 # Shapiro-Wilk test for normal distribution
 shapiro.test(rnorm(NROW(re_turns)))
 # Shapiro-Wilk test for VTI returns
-shapiro.test(re_turns)
+shapiro.test(as.numeric(re_turns))
 # Shapiro-Wilk test for uniform distribution
 shapiro.test(runif(NROW(re_turns)))
+# Restore output digits
+options(digits=dig_its$digits)
 
 library(tseries)  # Load package tseries
 # Jarque-Bera test for normal distribution
@@ -388,6 +384,70 @@ jarque.bera.test(rnorm(NROW(re_turns)))
 jarque.bera.test(re_turns)
 # Jarque-Bera test for uniform distribution
 jarque.bera.test(runif(NROW(re_turns)))
+
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# Fit t-dist into VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
+# Perform Kolmogorov-Smirnov test on VTI returns
+da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
+ks.test(as.numeric(re_turns), da_ta)
+
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Degrees of freedom
+deg_free <- c(2, 5, 8, 11)
+# Plot four curves in loop
+col_ors <- c("red", "black", "blue", "green")
+for (in_dex in 1:4) {
+  curve(expr=dchisq(x, df=deg_free[in_dex]),
+  xlim=c(0, 20), ylim=c(0, 0.3),
+  xlab="", ylab="", col=col_ors[in_dex],
+  lwd=2, add=as.logical(in_dex-1))
+}  # end for
+
+# Add title
+title(main="Chi-squared Distributions", line=0.5)
+# Add legend
+lab_els <- paste("df", deg_free, sep="=")
+legend("topright", inset=0.05, bty="n",
+       title="Degrees of freedom", lab_els,
+       cex=0.8, lwd=6, lty=1, col=col_ors)
+
+# Observed frequencies from random normal data
+histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts
+# Theoretical frequencies
+freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+# Perform Chi-squared test for normal data
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+# Return p-value
+chisq_test <- chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+chisq_test$p.value
+# Observed frequencies from shifted normal data
+histo_gram <- hist(rnorm(1e3, mean=2), breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts/sum(histo_gram$counts)
+# Theoretical frequencies
+freq_t <- rutils::diff_it(pnorm(histo_gram$breaks))
+# Perform Chi-squared test for shifted normal data
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
+# Calculate histogram of VTI returns
+histo_gram <- hist(re_turns, breaks=100, plot=FALSE)
+freq_o <- histo_gram$counts
+# Calculate cumulative probabilities and then difference them
+freq_t <- pt((histo_gram$breaks-lo_cation)/scal_e, df=2)
+freq_t <- rutils::diff_it(freq_t)
+# Perform Chi-squared test for VTI returns
+chisq.test(x=freq_o, p=freq_t, rescale.p=TRUE, simulate.p.value=TRUE)
 
 # Sort a vector into ascending order
 da_ta <- round(runif(7), 3)
@@ -541,40 +601,140 @@ mean(da_ta)
 # Sample standard deviation
 sd(da_ta)
 
-# VTI returns
-re_turns <- as.numeric(na.omit(
-  rutils::etf_env$re_turns[, "VTI"]))
-# Wilcoxon test for normal distribution
-da_ta <- rnorm(NROW(re_turns), sd=100)
-wilcox.test(da_ta)
-# Skewed distribution with mean=0
-mean(re_turns); median(re_turns)
-wilcox.test(re_turns-mean(re_turns))
-# Same as
-wilcox.test(re_turns-mean(re_turns),
-  rep(0, NROW(re_turns)), paired=TRUE)
-# Skewed distribution with median=0
-wilcox.test(re_turns-median(re_turns))
-# Normal samples with different standard deviations
 n_rows <- 1e3
+# Wilcoxon test for normal distribution
+nor_mal <- rnorm(n_rows)
+wilcox.test(nor_mal)
+wilcox.test(nor_mal+1)
+# Skewed distribution with median=0
+log_norm <- exp(nor_mal)
+# log_norm <- rlnorm(n_rows, sdlog=1)
+mean(log_norm); median(log_norm)
+# Skewed distribution with median!=0
+wilcox.test(log_norm)
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+      paired=TRUE)
+
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+
+# Skewed distribution with mean=0
+mean(log_norm); median(log_norm)
+wilcox.test(log_norm-median(log_norm))
+# Same as
+wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+      paired=TRUE)
+# Normal samples with different standard deviations
 sample1 <- rnorm(n_rows, sd=1)
 sample2 <- rnorm(n_rows, sd=10)
 wilcox.test(sample1, sample2, paired=TRUE)
 
 # Wilcoxon test for random data around 0
-da_ta <- (runif(n_rows) - 0.5)
-wil_cox <- wilcox.test(da_ta)
+un_if <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(un_if)
 # Calculate V statistic of Wilcoxon test
 wil_cox$statistic
-sum(rank(abs(da_ta))[da_ta>0])
+sum(rank(abs(un_if))[un_if>0])
 # Calculate W statistic of Wilcoxon test
-sum(sign(da_ta)*rank(abs(da_ta)))
+sum(sign(un_if)*rank(abs(un_if)))
 # Two sets of normal data
 sample1 <- rnorm(n_rows)
 sample2 <- rnorm(n_rows, mean=0.1)
 # Wilcoxon test
-wil_cox <- wilcox.test(sample1, sample2,
-                 paired=TRUE)
+wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
+wil_cox$statistic
+# Calculate V statistic of Wilcoxon test
+da_ta <- (sample1 - sample2)
+sum(rank(abs(da_ta))[da_ta>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(da_ta)*rank(abs(da_ta)))
+
+# Calculate distributon of Wilcoxon W statistic
+wilcox_w <- sapply(1:1e3, function(x) {
+  da_ta <- (runif(n_rows) - 0.5)
+  sum(sign(da_ta)*rank(abs(da_ta)))
+})  # end sapply
+wilcox_w <- wilcox_w/sqrt(n_rows*(n_rows+1)*(2*n_rows+1)/6)
+var(wilcox_w)
+x11(width=6, height=5)  # Plot in window
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+hist(wilcox_w, col="lightgrey",
+     xlab="returns", breaks=50, xlim=c(-3, 3),
+     ylab="frequency", freq=FALSE,
+     main="Wilcoxon W Statistic Histogram")
+lines(density(wilcox_w, bw=0.4), lwd=3, col="red")
+curve(expr=dnorm, add=TRUE, lwd=3, col="blue")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+ leg=c("W density", "Normal"),
+ lwd=6, lty=1, col=c("red", "blue"))
+
+n_rows <- 1e3
+# Wilcoxon test for normal distribution
+nor_mal <- rnorm(n_rows)
+wilcox.test(nor_mal)
+wilcox.test(nor_mal+1)
+# Skewed distribution with median=0
+log_norm <- rlnorm(n_rows, sdlog=1)
+mean(log_norm); median(log_norm)
+# Skewed distribution with median!=0
+wilcox.test(log_norm)
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+      paired=TRUE)
+
+# Skewed distribution with median=0
+wilcox.test(log_norm-median(log_norm))
+
+
+# Skewed distribution with mean=0
+mean(log_norm); median(log_norm)
+wilcox.test(log_norm-median(log_norm))
+# Same as
+wilcox.test(log_norm-median(log_norm), rep(0, n_rows), paired=TRUE)
+
+# Skewed distributions with median!=0
+wilcox.test(log_norm, nor_mal, paired=TRUE)
+# Two distributions with median=0
+wilcox.test(log_norm-median(log_norm), nor_mal-median(nor_mal),
+      paired=TRUE)
+# Normal samples with different standard deviations
+sample1 <- rnorm(n_rows, sd=1)
+sample2 <- rnorm(n_rows, sd=10)
+wilcox.test(sample1, sample2, paired=TRUE)
+
+# Wilcoxon test for random data around 0
+un_if <- (runif(n_rows) - 0.5)
+wil_cox <- wilcox.test(un_if)
+# Calculate V statistic of Wilcoxon test
+wil_cox$statistic
+sum(rank(abs(un_if))[un_if>0])
+# Calculate W statistic of Wilcoxon test
+sum(sign(un_if)*rank(abs(un_if)))
+# Two sets of normal data
+sample1 <- rnorm(n_rows)
+sample2 <- rnorm(n_rows, mean=0.1)
+# Wilcoxon test
+wil_cox <- wilcox.test(sample1, sample2, paired=TRUE)
 wil_cox$statistic
 # Calculate V statistic of Wilcoxon test
 da_ta <- (sample1 - sample2)
@@ -626,7 +786,7 @@ sample1 <- da_ta[in_dex]
 sample2 <- da_ta[-in_dex]
 
 # Or
-in_dex <- sample(1:NROW(re_turns), size=NROW(re_turns)/2)
+in_dex <- sample(1:n_rows, size=n_rows/2)
 sample1 <- re_turns[in_dex]
 sample2 <- (-re_turns[-in_dex])
 
@@ -646,7 +806,7 @@ hist(sample1)
 
 
 # Mann-Whitney test for normal distribution
-da_ta <- rnorm(NROW(re_turns), sd=100)
+da_ta <- rnorm(n_rows, sd=100)
 wilcox.test(da_ta, paired=FALSE)
 # Skewed distribution with mean=0
 mean(re_turns); median(re_turns)
@@ -660,7 +820,7 @@ wilcox.test(re_turns-median(re_turns),
       da_ta, paired=FALSE)
 
 
-sample1 <- sample(re_turns, size=NROW(re_turns))
+sample1 <- sample(re_turns, size=n_rows)
 sample2 <- (-sample1)
 sample1 <- (sample1-median(sample1))
 sample2 <- (sample2-median(sample2))
@@ -685,8 +845,8 @@ wilcox.test(re_turns-mean(re_turns),
 
 foo <- sapply(1:100, function(x) {
   # Data samples
-  sample1 <- sample(re_turns, size=NROW(re_turns)/2)
-  sample2 <- sample(-re_turns, size=NROW(re_turns)/2)
+  sample1 <- sample(re_turns, size=n_rows/2)
+  sample2 <- sample(-re_turns, size=n_rows/2)
   sample1 <- (sample1-median(sample1))
   sample2 <- (sample2-median(sample2))
   # Mann-Whitney-Wilcoxon rank sum test
@@ -699,7 +859,7 @@ mean(re_turns); median(re_turns)
 wilcox.test(re_turns-mean(re_turns))
 # Same as
 wilcox.test(re_turns-mean(re_turns),
-      rep(0, NROW(re_turns)),
+      rep(0, n_rows),
       paired=TRUE)
 # Skewed distribution with median=0
 wilcox.test(re_turns-median(re_turns))

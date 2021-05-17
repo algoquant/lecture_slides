@@ -44,8 +44,7 @@ barplot(ei_gen$values, las=3, xlab="", ylab="",
 mat_rix <- matrix(rnorm(50), nc=5)
 s_vd <- svd(mat_rix)
 # Recompose mat_rix from SVD mat_rices
-all.equal(mat_rix,
-  s_vd$u %*% (s_vd$d*t(s_vd$v)))
+all.equal(mat_rix, s_vd$u %*% (s_vd$d*t(s_vd$v)))
 # Columns of U and V are orthonormal
 round(t(s_vd$u) %*% s_vd$u, 4)
 round(t(s_vd$v) %*% s_vd$v, 4)
@@ -137,8 +136,7 @@ s_vd <- svd(mat_rix)
 # Incorrect inverse from SVD because of zero singular values
 svd_inverse <- s_vd$v %*% (t(s_vd$u) / s_vd$d)
 # Verify inverse property of mat_rix
-all.equal(mat_rix,
-  mat_rix %*% svd_inverse %*% mat_rix)
+all.equal(mat_rix, mat_rix %*% svd_inverse %*% mat_rix)
 
 # Set tolerance for determining zero singular values
 to_l <- sqrt(.Machine$double.eps)
@@ -794,7 +792,7 @@ dim(foo)
 mod_el <- lm(paste(names(foo), collapse=" ~ "), data=foo)
 model_sum <- summary(mod_el)
 model_sum
-dwtest(mod_el)
+lmtest::dwtest(mod_el)
 
 # Filter over non-overlapping periods
 bar <- names(foo)
@@ -818,7 +816,7 @@ model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dw_test <- dwtest(mod_el)
+dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
 
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -866,9 +864,9 @@ plot(fit_sd, type="l", lwd=3, col="blue",
      main="Standard Deviations of Fitted Values\nin Univariate Regression")
 
 # Calculate response without random noise for univariate regression,
-# equal to weighted sum over columns of de_sign
-weight_s <- c(-1, 1)
-res_ponse <- de_sign %*% weight_s
+# equal to weighted sum over columns of de_sign.
+beta_s <- c(-1, 1)
+res_ponse <- de_sign %*% beta_s
 # Perform loop over different realizations of random noise
 fit_ted <- lapply(1:50, function(it) {
   # Add random noise to response
@@ -979,7 +977,7 @@ model_sum <- summary(mod_el)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dw_test <- dwtest(mod_el)
+dw_test <- lmtest::dwtest(mod_el)
 c(dw_test$statistic[[1]], dw_test$p.value)
 
 par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
@@ -990,18 +988,16 @@ title(main="Spurious Regression", line=-1)
 abline(mod_el, lwd=2, col="red")
 plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
 
-set.seed(1121)  # initialize random number generator
 # Define design matrix
 n_rows <- 100
 n_cols <- 5
-de_sign <- sapply(rep(n_rows, n_cols), rnorm)
+set.seed(1121)  # initialize random number generator
+de_sign <- matrix(rnorm(n_rows*n_cols), ncol=n_cols)
 # Add column names
 colnames(de_sign) <- paste0("col", 1:n_cols)
-# Plot design matrix
-# matplot(de_sign, type="l", lty="solid", lwd=3)
 # Define the design weights
 weight_s <- sample(3:(n_cols+2))
-# Response equals linear form plus random noise
+# Response equals weighted de_sign plus random noise
 noise <- rnorm(n_rows, sd=5)
 res_ponse <- (-1 + de_sign %*% weight_s + noise)
 
@@ -1013,10 +1009,9 @@ design_zm <- t(t(de_sign) - colMeans(de_sign))
 # de_sign <- apply(de_sign, 2, function(x) (x-mean(x)))
 response_zm <- res_ponse - mean(res_ponse)
 # Calculate the regression coefficients
-beta_s <- MASS::ginv(design_zm) %*% response_zm
+beta_s <- drop(MASS::ginv(design_zm) %*% response_zm)
 # Calculate the regression alpha
-al_pha <- mean(res_ponse) -
-  sum(colSums(de_sign)*drop(beta_s))/n_rows
+al_pha <- mean(res_ponse) - sum(colSums(de_sign)*beta_s)/n_rows
 # Compare with coefficients from lm()
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
 # Compare with actual coefficients
@@ -1078,25 +1073,26 @@ all.equal(fitted_zm,
   check.attributes=FALSE)
 
 library(lmtest)  # Load lmtest
-de_sign <- data.frame(  # Design matrix
-  de_sign=1:30, omit_var=sin(0.2*1:30))
+# Define design matrix
+ex_plan <- 1:30
+omit_var <- sin(0.2*1:30)
 # Response depends on both predictors
-res_ponse <- with(de_sign,
-  0.2*de_sign + omit_var + 0.2*rnorm(30))
+res_p <- 0.2*ex_plan + omit_var + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
-mod_el <- lm(res_ponse ~ de_sign, data=de_sign)
-model_sum <- summary(mod_el)
+model_ovb <- lm(res_p ~ ex_plan)
+model_sum <- summary(model_ovb)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-dwtest(mod_el)$p.value
-
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+lmtest::dwtest(model_ovb)
+# Plot the regression diagnostic plots
+x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
-plot(for_mula, data=de_sign)
-abline(mod_el, lwd=2, col="red")
-title(main="OVB Regression", line=-1)
-plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+plot(res_p ~ ex_plan)
+abline(model_ovb, lwd=2, col="red")
+title(main="Omitted Variable Regression", line=-1)
+plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
 
 # Regression model summary
 model_sum <- summary(mod_el)
@@ -1347,7 +1343,7 @@ g_lm <- glm(res_ponse ~ predic_tor, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
 
-x11(width=7, height=5)
+x11(width=6, height=5)
 par(mar=c(3, 3, 2, 2), mgp=c(2, 1, 0), oma=c(0, 0, 0, 0))
 or_der <- order(predic_tor)
 plot(x=predic_tor[or_der], y=g_lm$fitted.values[or_der],
@@ -1384,51 +1380,52 @@ detach("package:ISLR")  # Remove ISLR from search path
 
 # Coerce the student and default columns into Boolean
 Default <- ISLR::Default
-Default$default <- (Default$default == "No")
-Default$student <- (Default$student == "No")
-colnames(Default)[1:2] <- c("not_default", "not_student")
+Default$default <- (Default$default == "Yes")
+Default$student <- (Default$student == "Yes")
+colnames(Default)[1:2] <- c("de_fault", "stu_dent")
 attach(Default)  # Attach Default to search path
 # Explore credit default data
 summary(Default)
 sapply(Default, class)
-dim(Default); head(Default)
+dim(Default)
+head(Default)
 
 # Plot data points for non-defaulters
+x11(width=6, height=5)
 x_lim <- range(balance); y_lim <- range(income)
 plot(income ~ balance,
      main="Default Dataset from Package ISLR",
      xlim=x_lim, ylim=y_lim, pch=4, col="blue",
-     data=Default[not_default, ])
+     data=Default[!de_fault, ])
 # Plot data points for defaulters
 points(income ~ balance, pch=4, lwd=2, col="red",
- data=Default[!not_default, ])
+ data=Default[de_fault, ])
 # Add legend
-legend(x="topright", bty="n",
- legend=c("non-defaulters", "defaulters"),
- col=c("blue", "red"), lty=1, lwd=6, pch=4)
+legend(x="topright", legend=c("non-defaulters", "defaulters"),
+ bty="n", col=c("blue", "red"), lty=1, lwd=6, pch=4)
 
 # Wilcoxon test for balance predictor
-wilcox.test(balance[not_default], balance[!not_default])
+wilcox.test(balance[de_fault], balance[!de_fault])
 # Wilcoxon test for income predictor
-wilcox.test(income[not_default], income[!not_default])
+wilcox.test(income[de_fault], income[!de_fault])
 
-x11()
+x11(width=6, height=5)
 par(mfrow=c(1,2))  # Set plot panels
 # Balance boxplot
-boxplot(formula=balance ~ not_default,
-  col="lightgrey", main="balance", xlab="No default")
-# income boxplot
-boxplot(formula=income ~ not_default,
-  col="lightgrey", main="income", xlab="No default")
+boxplot(formula=balance ~ de_fault,
+  col="lightgrey", main="balance", xlab="Default")
+# Income boxplot
+boxplot(formula=income ~ de_fault,
+  col="lightgrey", main="income", xlab="Default")
 
 # Fit logistic regression model
-g_lm <- glm(!not_default ~ balance, family=binomial(logit))
+g_lm <- glm(de_fault ~ balance, family=binomial(logit))
 class(g_lm)
 summary(g_lm)
 
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 2), oma=c(0, 0, 0, 0), mgp=c(2.5, 1, 0))
-plot(x=balance, y=!not_default,
+plot(x=balance, y=de_fault,
      main="Logistic Regression of Credit Defaults",
      col="orange", xlab="credit balance", ylab="defaults")
 or_der <- order(balance)
@@ -1438,9 +1435,9 @@ legend(x="topleft", inset=0.1, bty="n", lwd=6,
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA))
 
 # Calculate cumulative defaults
-to_tal <- sum(!not_default)
+to_tal <- sum(de_fault)
 default_s <- sapply(balance, function(lim_it) {
-    sum(!not_default[balance <= lim_it])
+    sum(de_fault[balance <= lim_it])
 })  # end sapply
 # Perform logit regression
 g_lm <- glm(cbind(default_s, to_tal-default_s) ~ balance,
@@ -1457,6 +1454,32 @@ legend(x="topleft", inset=0.1, bty="n",
  legend=c("cumulative defaults", "fitted values"),
  col=c("orange", "blue"), lty=c(NA, 1), pch=c(1, NA), lwd=6)
 
+# Fit logistic regression model
+g_lm <- glm(de_fault ~ stu_dent, family=binomial(logit))
+summary(g_lm)
+
+x11(width=6, height=5)
+par(mfrow=c(1,2))  # Set plot panels
+# Balance boxplot
+boxplot(formula=balance ~ de_fault,
+  col="lightgrey", main="balance", xlab="Default")
+
+
+# Plot data points for non-students
+x11(width=6, height=5)
+x_lim <- range(balance); y_lim <- range(income)
+plot(income ~ balance,
+     main="Default Dataset from Package ISLR",
+     xlim=x_lim, ylim=y_lim, pch=4, col="blue",
+     data=Default[!stu_dent, ])
+# Plot data points for students
+points(income ~ balance, pch=4, lwd=2, col="red",
+ data=Default[stu_dent, ])
+# Add legend
+legend(x="topright", bty="n",
+ legend=c("non-students", "students"),
+ col=c("blue", "red"), lty=1, lwd=6, pch=4)
+
 # Fit multifactor logistic regression model
 col_names <- colnames(Default)
 for_mula <- as.formula(paste(col_names[1],
@@ -1467,11 +1490,11 @@ summary(g_lm)
 
 # Calculate cumulative defaults
 cum_defaults <- sapply(balance, function(lim_it) {
-c(student=sum(!not_default[!not_student & (balance <= lim_it)]),
-  non_student=sum(!not_default[not_student & (balance <= lim_it)]))
+c(student=sum(de_fault[stu_dent & (balance <= lim_it)]),
+  non_student=sum(de_fault[!stu_dent & (balance <= lim_it)]))
 })  # end sapply
-total_defaults <- c(student=sum(!not_student & !not_default),
-      not_student=sum(not_student & !not_default))
+total_defaults <- c(student=sum(stu_dent & de_fault),
+      stu_dent=sum(!stu_dent & de_fault))
 cum_defaults <- t(cum_defaults / total_defaults)
 
 # Plot cumulative defaults
@@ -1485,8 +1508,8 @@ legend(x="topleft", bty="n",
  legend=c("students", "non-students"),
  col=c("red", "blue"), text.col=c("red", "blue"), lwd=3)
 # Balance boxplot for student factor
-boxplot(formula=balance ~ not_student,
-  col="lightgrey", main="balance", xlab="Not student")
+boxplot(formula=balance ~ !stu_dent,
+  col="lightgrey", main="balance", xlab="Student")
 
 # Perform in-sample forecast from logistic regression model
 forecast_s <- predict(g_lm, type="response")
@@ -1494,32 +1517,29 @@ all.equal(g_lm$fitted.values, forecast_s)
 # Define discrimination threshold value
 thresh_old <- 0.7
 # Calculate confusion matrix in-sample
-table(actual=not_default, forecast=(forecast_s > thresh_old))
+table(actual=!de_fault, forecast=(forecast_s < thresh_old))
 # Fit logistic regression over training data
 set.seed(1121)  # Reset random number generator
-n_rows <- NROW(not_default)
-da_ta <- sample.int(n=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
+n_rows <- NROW(Default)
+sampl_e <- sample.int(n=n_rows, size=n_rows/2)
+train_data <- Default[sampl_e, ]
 g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
 # Forecast over test data out-of-sample
-test_data <- Default[-da_ta, ]
+test_data <- Default[-sampl_e, ]
 forecast_s <- predict(g_lm, newdata=test_data, type="response")
 # Calculate confusion matrix out-of-sample
-table(actual=test_data$not_default, 
-forecast=(forecast_s > thresh_old))
+table(actual=!test_data$de_fault, 
+forecast=(forecast_s < thresh_old))
 
-# Fit logit model and forecast in-sample
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-forecast_s <- predict(g_lm, type="response")
-# Calculate FALSE positive (type I error)
-sum(not_default & (forecast_s < thresh_old))
-# Calculate FALSE negative (type II error)
-sum(!not_default & (forecast_s > thresh_old))
-
-# Calculate confusion matrix
-confu_sion <- table(actual=not_default, 
-  forecast=(forecast_s > thresh_old))
+# Calculate confusion matrix out-of-sample
+confu_sion <- table(actual=!test_data$de_fault, 
+forecast=(forecast_s < thresh_old))
 confu_sion
+# Calculate FALSE positive (type I error)
+sum(!test_data$de_fault & (forecast_s > thresh_old))
+# Calculate FALSE negative (type II error)
+sum(test_data$de_fault & (forecast_s < thresh_old))
+
 # Calculate FALSE positive and FALSE negative rates
 confu_sion <- confu_sion / rowSums(confu_sion)
 c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
@@ -1538,16 +1558,16 @@ include.colnames=TRUE)
 
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, forecast_s, thresh_old) {
-    confu_sion <- table(actu_al, (forecast_s > thresh_old))
+    confu_sion <- table(actu_al, (forecast_s < thresh_old))
     confu_sion <- confu_sion / rowSums(confu_sion)
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
-con_fuse(test_data$not_default, forecast_s, thresh_old=thresh_old)
+con_fuse(!test_data$de_fault, forecast_s, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
-threshold_s <- seq(0.01, 0.95, by=0.01)^2
+threshold_s <- seq(0.05, 0.95, by=0.05)^2
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
-  actu_al=(test_data$not_default), forecast_s=forecast_s)  # end sapply
+  actu_al=!test_data$de_fault, forecast_s=forecast_s)  # end sapply
 error_rates <- t(error_rates)
 rownames(error_rates) <- threshold_s
 error_rates <- rbind(c(1, 0), error_rates)
@@ -1559,125 +1579,14 @@ false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
 # Plot ROC Curve for Defaults
+x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      main="ROC Curve for Defaults", type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
 
-# Define explanatory (design) and response data
-res_ponse <- ISLR::Default[, 1]
-de_sign <- ISLR::Default[, -1]
-head(de_sign)
-class(de_sign)
-sapply(de_sign, class)
-# Coerce factor to numerical
-de_sign[, 1] <- as.numeric(de_sign[, 1])
-# Standardize the design data
-de_sign <- sapply(de_sign, scale)
-head(de_sign)
-class(de_sign)
-apply(de_sign, 2, class)
+NA
 
-# Define training test data
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=1:NROW(de_sign), size=NROW(de_sign)/2)
-da_ta <- cbind(res_ponse, de_sign)
-train_data <- da_ta[da_ta, ]
-test_data <- da_ta[-da_ta, ]
+NA
 
-foo <- knn(train=train_data[, -1], test=test_data[, -1], cl=train_data[, 1], k=1)
-
-# wippp
-
-# Response equals linear form plus random noise
-
-def_ault <- ISLR::Default
-head(def_ault)
-
-
-col_names <- colnames(Default)
-for_mula <- as.formula(paste(col_names[1], paste(col_names[-1], collapse="+"), sep=" ~ "))
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
-test_data <- Default[-da_ta, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-thresh_old <- 0.7
-
-
-# Fit full logistic regression model
-for_mula <- as.formula(paste(col_names[1],
-  paste(col_names[-1], collapse="+"), sep=" ~ "))
-g_lm <- glm(for_mula, data=Default, family=binomial(logit))
-forecast_s <- predict(g_lm, type="response")
-forecast_s[1:6]
-all.equal(g_lm$fitted.values, forecast_s)
-# Discrimination threshold
-thresh_old <- 0.7
-# Calculate confusion matrix
-table(not_default=default, (forecast_s > thresh_old))
-sum(default)
-# Fit logistic regression over training data
-set.seed(1121)  # Reset random number generator
-da_ta <- sample(x=n_rows, size=n_rows/2)
-train_data <- Default[da_ta, ]
-g_lm <- glm(for_mula, data=train_data, family=binomial(logit))
-# Forecast over test data
-test_data <- Default[-da_ta, ]
-forecast_s <- predict(g_lm, newdata=test_data, type="response")
-
-# Calculate confusion matrix
-
-table(actual=not_default, forecast=(forecast_s > thresh_old))
-# FALSE positive (type I error)
-sum(!test_data$default & (forecast_s > thresh_old))
-# FALSE negative (type II error)
-sum(test_data$default & (forecast_s > thresh_old))
-detach(Default)
-
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-pa_th <- numeric(n_rows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
-# Simulate next step
-  pa_th[in_dex] <- pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # Advance in_dex
-}  # end while
-# Fill remaining pa_th after it crosses bar_rier
-if (in_dex <= n_rows)
-  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",  # Create plot
-     lty="solid", xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")  # Add horizontal line
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-
-par(oma=c(1, 1, 1, 1), mgp=c(2, 1, 0), mar=c(5, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # Reset random number generator
-bar_rier <- 20  # Barrier level
-n_rows <- 1000  # Number of simulation steps
-pa_th <- numeric(n_rows)  # Allocate path vector
-pa_th[1] <- 0  # Initialize path
-in_dex <- 2  # Initialize simulation index
-while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
-# Simulate next step
-  pa_th[in_dex] <- pa_th[in_dex - 1] + rnorm(1)
-  in_dex <- in_dex + 1  # Advance in_dex
-}  # end while
-# Fill remaining pa_th after it crosses bar_rier
-if (in_dex <= n_rows)
-  pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",  # Create plot
-     lty="solid", xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")  # Add horizontal line
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
+NA

@@ -1,3 +1,10 @@
+library(knitr)
+opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+options(digits=3)
+options(width=80, dev='pdf')
+thm <- knit_theme$get("acid")
+knit_theme$set(thm)
+
 library(PortfolioAnalytics)
 # Use ETF returns from package rutils
 library(rutils)
@@ -87,8 +94,7 @@ re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
 re_turns <- na.omit(re_turns)
 mean_rets <- colMeans(re_turns)
 # Specify weight constraints
-constraint_s <- matrix(c(rep(1, n_weights),
-                 1, 1, 0),
+constraint_s <- matrix(c(rep(1, n_weights), 1, 1, 0),
                  nc=n_weights, byrow=TRUE)
 direction_s <- c("==", "<=")
 rh_s <- c(1, 0)
@@ -129,11 +135,9 @@ f_mat <- matrix(c(
   t(mean_rets) %*% cov_inv %*% u_nit,
   t(mean_rets) %*% cov_inv %*% mean_rets), nc=2)
 # Solve for the Lagrange multipliers
-multipli_ers <-
-  solve(a=f_mat, b=c(2, 2*tar_get))
+mult_s <- solve(a=f_mat, b=c(2, 2*tar_get))
 # Calculate weights
-weight_s <- drop(0.5*cov_inv %*%
-  cbind(u_nit, mean_rets) %*% multipli_ers)
+weight_s <- drop(0.5*cov_inv %*% cbind(u_nit, mean_rets) %*% mult_s)
 # Calculate constraints
 all.equal(1, sum(weight_s))
 all.equal(tar_get, sum(mean_rets*weight_s))
@@ -150,12 +154,10 @@ all.equal(var(portf_rets), drop(t(uu) %*% f_inv %*% uu))
 weight_s <- drop(cov_inv %*% u_nit /
   drop(t(u_nit) %*% cov_inv %*% u_nit))
 portf_rets <- drop(re_turns %*% weight_s)
-v_rets <-
-  drop(t(u_nit) %*% cov_inv %*% mean_rets /
+v_rets <- drop(t(u_nit) %*% cov_inv %*% mean_rets /
   t(u_nit) %*% cov_inv %*% u_nit)
 all.equal(mean(portf_rets), v_rets)
-var_min <-
-  drop(1/t(u_nit) %*% cov_inv %*% u_nit)
+var_min <- drop(1/t(u_nit) %*% cov_inv %*% u_nit)
 all.equal(var(portf_rets), var_min)
 
 # Calculate efficient frontier
@@ -224,8 +226,7 @@ weights_maxsharpe <- weight_s
 library(quantmod)
 # Calculate minimum variance weights
 weight_s <- cov_inv %*% u_nit
-weights_minvar <-
-  weight_s / drop(t(u_nit) %*% weight_s)
+weights_minvar <- weight_s/drop(t(u_nit) %*% weight_s)
 # Calculate optimal portfolio returns
 optim_rets <- xts(
   x=cbind(exp(cumsum(re_turns %*% weights_maxsharpe)),
@@ -598,8 +599,7 @@ text(x=op_tim[1], y=op_tim[2],
 
 # Vectorize function with respect to all weights
 vec_object <- Vectorize(
-  FUN=function(w1, w2, w3)
-    object_ive(c(w1, w2, w3)),
+  FUN=function(w1, w2, w3) object_ive(c(w1, w2, w3)),
   vectorize.args=c("w2", "w3"))  # end Vectorize
 # Calculate objective on 2-d (w2 x w3) parameter grid
 w2 <- seq(-3, 7, length=50)
@@ -618,8 +618,7 @@ library(rgl)
 rgl::persp3d(z=-grid_object, zlab="objective",
   col="green", main="objective function")
 rgl::persp3d(
-  x=function(w2, w3)
-    -vec_object(w1=1, w2, w3),
+  x=function(w2, w3) {-vec_object(w1=1, w2, w3)},
   xlim=c(-3, 7), ylim=c(-5, 5),
   col="green", axes=FALSE)
 
@@ -849,8 +848,7 @@ op_tim <- DEoptim::DEoptim(fn=object_ive,
   lamb_da=lamb_da,
   al_pha=al_pha,
   control=list(trace=FALSE, itermax=100, parallelType=1))
-weight_s <-
-  op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
+weight_s <- op_tim$optim$bestmem/sum(abs(op_tim$optim$bestmem))
 names(weight_s) <- colnames(re_turns)
 
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
@@ -880,13 +878,11 @@ library(rutils)
 portf_names <- c("VTI", "IEF", "DBC", "XLF",
   "VNQ", "XLP", "XLV", "XLU", "XLB", "XLE")
 # Initial portfolio to equal weights
-portf_init <- rep(1/NROW(portf_names),
-            NROW(portf_names))
+portf_init <- rep(1/NROW(portf_names), NROW(portf_names))
 # named vector
 names(portf_init) <- portf_names
 # Create portfolio object
-portf_init <- portfolio.spec(
-  assets=portf_init)
+portf_init <- portfolio.spec(assets=portf_init)
 
 library(PortfolioAnalytics)
 # Add constraints

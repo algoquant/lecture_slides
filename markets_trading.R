@@ -5,30 +5,147 @@ options(digits=3)
 thm <- knit_theme$get("acid")
 knit_theme$set(thm)
 
+# Load S&P500 constituent stock prices
+load("C:/Develop/lecture_slides/data/sp500.RData")
+price_s <- eapply(sp500_env, quantmod::Cl)
+price_s <- rutils::do_call(cbind, price_s)
+# Carry forward non-NA prices
+price_s <- zoo::na.locf(price_s, na.rm=FALSE)
+# Drop ".Close" from column names
+colnames(price_s[, 1:4])
+colnames(price_s) <- rutils::get_name(colnames(price_s))
+# Or
+# colnames(price_s) <- do.call(rbind,
+#   strsplit(colnames(price_s), split="[.]"))[, 1]
+# Calculate percentage returns of the S&P500 constituent stocks
+# re_turns <- xts::diff.xts(log(price_s))
+re_turns <- xts::diff.xts(price_s)/
+  rutils::lag_it(price_s, pad_zeros=FALSE)
+set.seed(1121)
+sam_ple <- sample(NCOL(re_turns), s=100, replace=FALSE)
+prices_100 <- price_s[, sam_ple]
+returns_100 <- re_turns[, sam_ple]
+save(price_s, prices_100,
+  file="C:/Develop/lecture_slides/data/sp500_prices.RData")
+save(re_turns, returns_100,
+  file="C:/Develop/lecture_slides/data/sp500_returns.RData")
+
+# Calculate number of constituents without prices
+da_ta <- rowSums(is.na(price_s))
+da_ta <- xts::xts(da_ta, order.by=index(price_s))
+dygraphs::dygraph(da_ta, main="Number of S&P 500 Constituents Without Prices") %>%
+  dyOptions(colors="blue", strokeWidth=2) %>%
+  dyAxis("y", valueRange=c(0, 300))
+
+# Calculate price weighted index of constituent
+n_cols <- NCOL(price_s)
+in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
+colnames(in_dex) <- "index"
+# Combine index with VTI
+da_ta <- cbind(in_dex[index(etf_env$VTI)], etf_env$VTI[, 4])
+col_names <- c("index", "VTI")
+colnames(da_ta) <- col_names
+# Plot index with VTI
+dygraphs::dygraph(da_ta,
+  main="S&P 500 Price-weighted Index and VTI") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="red") %>%
+  dySeries(name=col_names[2], axis="y2", col="blue")
+
+# Select ETF symbols for asset allocation
+sym_bols <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
+  "XLV", "XLI", "XLB", "XLK", "XLU", "VYM", "IVW", "IWB", "IWD",
+  "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
+  "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
+# Read etf database into data frame
+etf_list <- read.csv(file="C:/Develop/lecture_slides/data/etf_list.csv")
+rownames(etf_list) <- etf_list$Symbol
+# Select from etf_list only those ETF's in sym_bols
+etf_list <- etf_list[sym_bols, ]
+# Shorten names
+etf_names <- sapply(etf_list$Name, function(name) {
+  name_split <- strsplit(name, split=" ")[[1]]
+  name_split <- name_split[c(-1, -NROW(name_split))]
+  name_match <- match("Select", name_split)
+  if (!is.na(name_match))
+    name_split <- name_split[-name_match]
+  paste(name_split, collapse=" ")
+})  # end sapply
+etf_list$Name <- etf_names
+etf_list["IEF", "Name"] <- "10 year Treasury Bond Fund"
+etf_list["TLT", "Name"] <- "20 plus year Treasury Bond Fund"
+etf_list["XLY", "Name"] <- "Consumer Discr. Sector Fund"
+etf_list["EEM", "Name"] <- "Emerging Market Stock Fund"
+etf_list["MTUM", "Name"] <- "Momentum Factor Fund"
+etf_list["SVXY", "Name"] <- "Short VIX Futures"
+etf_list["VXX", "Name"] <- "Long VIX Futures"
+etf_list["DBC", "Name"] <- "Commodity Futures Fund"
+etf_list["USO", "Name"] <- "WTI Oil Futures Fund"
+etf_list["GLD", "Name"] <- "Physical Gold Fund"
+
+print(xtable::xtable(etf_list), comment=FALSE, size="tiny", include.rownames=FALSE)
+
 # Symbols for constant maturity Treasury rates
 sym_bols <- c("DGS1", "DGS2", "DGS5", "DGS10", "DGS20", "DGS30")
-library(quantmod)  # Load package quantmod
-rates_env <- new.env()  # new environment for data
-# Download data for sym_bols into rates_env
-getSymbols(sym_bols, env=rates_env, src="FRED")
-ls(rates_env)  # List files in rates_env
-# Get class of object in rates_env
-class(get(x=sym_bols[1], envir=rates_env))
-# Another way
-class(rates_env$DGS20)
-colnames(rates_env$DGS20)
-save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
-
-x11(width=6, height=4)
-par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
-head(rates_env$DGS20, 3)
+# Create new environment for time series
+rates_env <- new.env()
+# Download time series for sym_bols into rates_env
+quantmod::getSymbols(sym_bols, env=rates_env, src="FRED")
+# List files in rates_env
+ls(rates_env)
 # Get class of all objects in rates_env
 sapply(rates_env, class)
 # Get class of all objects in R workspace
-sapply(ls(), function(ob_ject) class(get(ob_ject)))
-# Plot 20-year constant maturity Treasury rate
-chart_Series(rates_env$DGS20["1990/"],
-  name="20-year constant maturity Treasury rate")
+sapply(ls(), function(nam_e) class(get(nam_e)))
+# Save the time series environment into a binary .RData file
+save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
+
+# Get class of time series object DGS10
+class(get(x="DGS10", envir=rates_env))
+# Another way
+class(rates_env$DGS10)
+# Get first 6 rows of time series
+head(rates_env$DGS10)
+# Plot dygraphs of 10-year Treasury rate
+dygraphs::dygraph(rates_env$DGS10, main="10-year Treasury Rate") %>%
+  dyOptions(colors="blue", strokeWidth=2)
+# Plot 10-year constant maturity Treasury rate
+x11(width=6, height=5)
+par(mar=c(2, 2, 0, 0), oma=c(0, 0, 0, 0))
+chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
+
+# Load constant maturity Treasury rates
+load(file="C:/Develop/lecture_slides/data/rates_data.RData")
+# Get most recent yield curve
+yc_2021 <- eapply(rates_env, xts::last)
+class(yc_2021)
+yc_2021 <- do.call(cbind, yc_2021)
+# Check if 2020-03-25 is not a holiday
+weekdays(as.Date("2020-03-25"))
+# Get yield curve from 2020-03-25
+yc_2020 <- eapply(rates_env, function(x) x[as.Date("2020-03-25")])
+yc_2020 <- do.call(cbind, yc_2020)
+# Combine the yield curves
+rate_s <- c(yc_2020, yc_2021)
+# Rename columns and rows, sort columns, and transpose into matrix
+colnames(rate_s) <- substr(colnames(rate_s), start=4, stop=11)
+rate_s <- rate_s[, order(as.numeric(colnames(rate_s)))]
+colnames(rate_s) <- paste0(colnames(rate_s), "yr")
+rate_s <- t(rate_s)
+colnames(rate_s) <- substr(colnames(rate_s), start=1, stop=4)
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
+# Plot using matplot()
+col_ors <- c("blue", "red")
+matplot(rate_s, main="Yield Curves in 2020 and 2021", xaxt="n", lwd=3, lty=1,
+  type="l", xlab="maturity", ylab="yield", col=col_ors)
+# Add x-axis
+axis(1, seq_along(rownames(rate_s)), rownames(rate_s))
+# Add legend
+legend("topleft", legend=colnames(rate_s),
+ col=col_ors, lty=1, lwd=6, inset=0.05, cex=1.0)
 
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -71,11 +188,12 @@ rate_s <- mget(sym_bols, envir=rates_env)
 rate_s <- rutils::do_call(cbind, rate_s)
 rate_s <- zoo::na.locf(rate_s, na.rm=FALSE)
 rate_s <- zoo::na.locf(rate_s, fromLast=TRUE)
-# Calculate daily rates changes
+# Calculate daily percentage rates changes
 re_turns <- rutils::diff_it(log(rate_s))
-# Standardize (de-mean and scale) the returns
-re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
+# De-mean the returns
+re_turns <- lapply(re_turns, function(x) {x - mean(x)})
 re_turns <- rutils::do_call(cbind, re_turns)
+sapply(re_turns, mean)
 # Covariance and Correlation matrices of Treasury rates
 cov_mat <- cov(re_turns)
 cor_mat <- cor(re_turns)
@@ -103,11 +221,12 @@ names(weight_s) <- sym_bols
 # Objective function equal to minus portfolio variance
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s*weight_s))^2
+  -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s*weight_s))^2
 }  # end object_ive
 # Objective for equal weight portfolio
 object_ive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
+library(microbenchmark)
 summary(microbenchmark(
   trans_pose=t(re_turns) %*% re_turns,
   s_um=sum(re_turns*re_turns),
@@ -118,11 +237,11 @@ op_tim <- optim(par=weight_s,
   fn=object_ive,
   re_turns=re_turns,
   method="L-BFGS-B",
-  upper=rep(1.0, n_weights),
-  lower=rep(-1.0, n_weights))
+  upper=rep(5.0, n_weights),
+  lower=rep(-5.0, n_weights))
 # Optimal weights and maximum variance
 weights_1 <- op_tim$par
--object_ive(weights_1, re_turns)
+object_ive(weights_1, re_turns)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -134,7 +253,7 @@ pc_1 <- drop(re_turns %*% weights_1)
 # Redefine objective function
 object_ive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
-  -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2 +
+  -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s^2))^2 +
     1e7*sum(weights_1*weight_s)^2
 }  # end object_ive
 # Find second principal component weights
@@ -142,8 +261,8 @@ op_tim <- optim(par=weight_s,
              fn=object_ive,
              re_turns=re_turns,
              method="L-BFGS-B",
-             upper=rep(1.0, n_weights),
-             lower=rep(-1.0, n_weights))
+             upper=rep(5.0, n_weights),
+             lower=rep(-5.0, n_weights))
 
 # pc2 weights and returns
 weights_2 <- op_tim$par
@@ -153,17 +272,17 @@ sum(pc_1*pc_2)
 barplot(weights_2, names.arg=names(weights_2),
   xlab="", ylab="", main="Second Principal Component Loadings")
 
-ei_gen <- eigen(cor_mat)
+ei_gen <- eigen(cov_mat)
 ei_gen$vectors
 # Compare with optimization
-all.equal(sum(diag(cor_mat)), sum(ei_gen$values))
+all.equal(sum(diag(cov_mat)), sum(ei_gen$values))
 all.equal(abs(ei_gen$vectors[, 1]), abs(weights_1), check.attributes=FALSE)
 all.equal(abs(ei_gen$vectors[, 2]), abs(weights_2), check.attributes=FALSE)
 all.equal(ei_gen$values[1], var(pc_1), check.attributes=FALSE)
 all.equal(ei_gen$values[2], var(pc_2), check.attributes=FALSE)
-# Eigenvalue equations
-(cor_mat %*% weights_1) / weights_1 / var(pc_1)
-(cor_mat %*% weights_2) / weights_2 / var(pc_2)
+# Eigenvalue equations are satisfied approximately
+(cov_mat %*% weights_1) / weights_1 / var(pc_1)
+(cov_mat %*% weights_2) / weights_2 / var(pc_2)
 # Plot eigenvalues
 barplot(ei_gen$values, names.arg=paste0("PC", 1:n_weights),
   las=3, xlab="", ylab="", main="Principal Component Variances")
@@ -204,11 +323,18 @@ for (or_der in 1:NCOL(pc_a$rotation)) {
   title(paste0("PC", or_der), line=-2.0, col.main="red")
 }  # end for
 
-# Calculate products of principal component time series
-round(t(pc_a$x) %*% pc_a$x, 2)
+# Standardize (de-mean and scale) the returns
+re_turns <- lapply(re_turns, function(x) {(x - mean(x))/sd(x)})
+re_turns <- rutils::do_call(cbind, re_turns)
+sapply(re_turns, mean)
+sapply(re_turns, sd)
 # Calculate principal component time series
-pca_ts <- xts(re_turns %*% pc_a$rotation,
-          order.by=index(re_turns))
+pca_ts <- re_turns %*% pc_a$rotation
+all.equal(pc_a$x, pca_ts, check.attributes=FALSE)
+# Calculate products of principal component time series
+round(t(pca_ts) %*% pca_ts, 2)
+# Coerce to xts time series
+pca_ts <- xts(pca_ts, order.by=index(re_turns))
 pca_ts <- cumsum(pca_ts)
 # Plot principal component time series in multiple panels
 par(mfrow=c(3,2))
@@ -223,12 +349,15 @@ for (or_der in 1:NCOL(pca_ts)) {
 pca_rets <- re_turns %*% pc_a$rotation
 sol_ved <- pca_rets %*% solve(pc_a$rotation)
 all.equal(coredata(re_turns), sol_ved)
+
 # Invert first 3 principal component time series
 sol_ved <- pca_rets[, 1:3] %*% solve(pc_a$rotation)[1:3, ]
 sol_ved <- xts::xts(sol_ved, zoo::index(re_turns))
 sol_ved <- cumsum(sol_ved)
 cum_returns <- cumsum(re_turns)
 # Plot the solved returns
+par(mfrow=c(3,2))
+par(mar=c(2, 2, 0, 1), oma=c(0, 0, 0, 0))
 for (sym_bol in sym_bols) {
   plot.zoo(cbind(cum_returns[, sym_bol], sol_ved[, sym_bol]),
     plot.type="single", col=c("black", "blue"), xlab="", ylab="")
@@ -592,13 +721,13 @@ sym_bol <- sp500_table$co_tic[match(oh_lc$gvkey[1], sp500_table$gvkey)]
 adj_fact <- drop(oh_lc[, "ajexdi"])
 tr_fact <- drop(oh_lc[, "trfd"])
 # Extract index of dates
-in_dex <- drop(oh_lc[, "datadate"])
-in_dex <- lubridate::ymd(in_dex)
+date_s <- drop(oh_lc[, "datadate"])
+date_s <- lubridate::ymd(date_s)
 # Select only OHLCV data columns
 oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
 colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
-oh_lc <- xts::xts(oh_lc, in_dex)
+oh_lc <- xts::xts(oh_lc, date_s)
 # Fill the missing (NA) Open prices
 is_na <- is.na(oh_lc[, 1])
 oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
@@ -617,13 +746,13 @@ format_ohlc <- function(oh_lc, environ_ment) {
   tr_fact <- drop(oh_lc[, "trfd"])
   tr_fact <- ifelse(is.na(tr_fact), 1, tr_fact)
   # Extract dates index
-  in_dex <- drop(oh_lc[, "datadate"])
-  in_dex <- lubridate::ymd(in_dex)
+  date_s <- drop(oh_lc[, "datadate"])
+  date_s <- lubridate::ymd(date_s)
   # Select only OHLCV data
   oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
   colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
   # Coerce to xts series
-  oh_lc <- xts::xts(oh_lc, in_dex)
+  oh_lc <- xts::xts(oh_lc, date_s)
   # Fill NA prices
   is_na <- is.na(oh_lc[, 1])
   oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
@@ -748,13 +877,13 @@ sym_bol <- oh_lc[1, "TICKER"]
 # Adjustment factor
 adj_fact <- drop(oh_lc[, "CFACPR"])
 # Extract dates index
-in_dex <- drop(oh_lc[, "date"])
-in_dex <- lubridate::ymd(in_dex)
+date_s <- drop(oh_lc[, "date"])
+date_s <- lubridate::ymd(date_s)
 # Select only OHLCV data
 oh_lc <- oh_lc[, c("OPENPRC", "ASKHI", "BIDLO", "PRC", "VOL")]
 colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
-oh_lc <- xts::xts(oh_lc, in_dex)
+oh_lc <- xts::xts(oh_lc, date_s)
 # Fill missing Open NA prices
 is_na <- is.na(oh_lc[, 1])
 oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
@@ -775,13 +904,13 @@ sym_bol <- oh_lc[1, "tic"]
 adj_fact <- drop(oh_lc[, "ajexdi"])
 tr_fact <- drop(oh_lc[, "trfd"])
 # Extract dates index
-in_dex <- drop(oh_lc[, "datadate"])
-in_dex <- lubridate::ymd(in_dex)
+date_s <- drop(oh_lc[, "datadate"])
+date_s <- lubridate::ymd(date_s)
 # Select only OHLCV data
 oh_lc <- oh_lc[, c("prcod", "prchd", "prcld", "prccd", "cshtrd")]
 colnames(oh_lc) <- paste(sym_bol, c("Open", "High", "Low", "Close", "Volume"), sep=".")
 # Coerce to xts series
-oh_lc <- xts::xts(oh_lc, in_dex)
+oh_lc <- xts::xts(oh_lc, date_s)
 # Fill missing Open NA prices
 is_na <- is.na(oh_lc[, 1])
 oh_lc[is_na, 1] <- (oh_lc[is_na, 2] + oh_lc[is_na, 3])/2
@@ -809,72 +938,126 @@ head(SPY_TAQ)
 head(SPY)
 tail(SPY)
 
+library(rutils)
 # Read TAQ trade data from csv file
 ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
 # Inspect the TAQ data
 ta_q
 class(ta_q)
+colnames(ta_q)
 sapply(ta_q, class)
-# Number of ticks per second
-NROW(ta_q)/(6.5*3600)
-
-# Create date-time index
-in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
-class(in_dex)
-last(in_dex)
-# Coerce date-time index to POSIXlt
-in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
-class(in_dex)
-# Display more significant digits
-options(digits=20, digits.secs=10)
-last(in_dex)
-unclass(last(in_dex))
-as.numeric(last(in_dex))
-# Coerce date-time index to POSIXct
-in_dex <- as.POSIXct(in_dex)
-class(in_dex)
-last(in_dex)
-unclass(last(in_dex))
-as.numeric(last(in_dex))
-# Coerce trade ticks to xts series
-x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
 sym_bol <- ta_q$SYM_ROOT[1]
+# Create date-time index
+date_s <- paste(ta_q$DATE, ta_q$TIME_M)
+# Coerce date-time index to POSIXlt
+date_s <- strptime(date_s, "%Y%m%d %H:%M:%OS")
+class(date_s)
+# Display more significant digits
+# options("digits")
+options(digits=20, digits.secs=10)
+last(date_s)
+unclass(last(date_s))
+as.numeric(last(date_s))
+# Coerce date-time index to POSIXct
+date_s <- as.POSIXct(date_s)
+class(date_s)
+last(date_s)
+unclass(last(date_s))
+as.numeric(last(date_s))
+# Calculate the number of ticks per second
+n_secs <- as.numeric(last(date_s)) - as.numeric(first(date_s))
+NROW(ta_q)/(6.5*3600)
+# Select TAQ data columns
+ta_q <- ta_q[, .(price=PRICE, volume=SIZE)]
+# Add date-time index
+ta_q <- cbind(index=date_s, ta_q)
+
+# Coerce trade ticks to xts series
+x_ts <- xts::xts(ta_q[, .(price, volume)], ta_q$index)
 colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
 save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
-
-# Plot in x11 window
-x11(width=6, height=4)
-par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
-quantmod::chart_Series(x=x_ts[, 1],
-  name="XLK Trade Ticks for 2020-03-16")
 # Plot dygraph
-dygraphs::dygraph(x_ts[, 1],
+dygraphs::dygraph(x_ts$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
+# Plot in x11 window
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16")
 
-# Select only the large lots greater than 100
+# Select the large lots greater than 100
 dim(ta_q)
-ta_q <- ta_q[ta_q$SIZE > 100]
-dim(ta_q)
+big_ticks <- ta_q[ta_q$volume > 100]
+dim(big_ticks)
 # Number of large lot ticks per second
-NROW(ta_q)/(6.5*3600)
+NROW(big_ticks)/(6.5*3600)
 # Save trade ticks with large lots
-data.table::fwrite(ta_q, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
-# Create date-time index
-in_dex <- paste(ta_q$DATE, ta_q$TIME_M)
-in_dex <- strptime(in_dex, "%Y%m%d %H:%M:%OS")
-in_dex <- as.POSIXct(in_dex)
+data.table::fwrite(big_ticks, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
 # Coerce trade prices to xts
-x_ts <- xts::xts(cbind(ta_q$PRICE, ta_q$SIZE), in_dex)
+x_ts <- xts::xts(big_ticks[, .(price, volume)], big_ticks$index)
 colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
 
-# Plot the large lots
-x11(width=6, height=4)
-par(mar=c(4, 4, 4, 1), oma=c(0, 0, 0, 0))
-quantmod::chart_Series(x=x_ts[, 1],
-  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
-# Plot dygraph
-dygraphs::dygraph(x_ts[, 1],
+# Plot dygraph of the large lots
+dygraphs::dygraph(x_ts$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16 (large lots only)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16 (large lots only)")
+
+# Apply centered Hampel filter to remove price jumps
+win_dow <- 111
+half_window <- win_dow %/% 2
+medi_an <- TTR::runMedian(ta_q$price, n=win_dow)
+medi_an <- rutils::lag_it(medi_an, lagg=-half_window, pad_zeros=FALSE)
+ma_d <- TTR::runMAD(ta_q$price, n=win_dow)
+ma_d <- rutils::lag_it(ma_d, lagg=-half_window, pad_zeros=FALSE)
+ma_d[1:half_window] <- 1
+ma_d[ma_d == 0] <- 1
+# Calculate Z-scores
+z_scores <- (ta_q$price - medi_an)/ma_d
+z_scores[is.na(z_scores)] <- 0
+z_scores[!is.finite(z_scores)] <- 0
+sum(is.na(z_scores))
+sum(!is.finite(z_scores))
+range(z_scores)
+mad(z_scores)
+hist(z_scores, breaks=2000, xlim=c(-5*mad(z_scores), 5*mad(z_scores)))
+
+# Remove price jumps with large z-scores
+thresh_old <- 3
+bad_ticks <- (abs(z_scores) > thresh_old)
+good_ticks <- ta_q[!bad_ticks]
+# Calculate number of price jumps
+sum(bad_ticks)/NROW(z_scores)
+# Coerce trade prices to xts
+x_ts <- xts::xts(good_ticks[, .(price, volume)], good_ticks$index)
+colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
+# Plot dygraph of the clean lots
+dygraphs::dygraph(x_ts$XLK.Close,
+  main="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+# Plot the large lots
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts$XLK.Close,
+  name="XLK Trade Ticks for 2020-03-16 (Hampel filtered)")
+
+# Round time index to seconds
+good_ticks[, index := as.POSIXct(round.POSIXt(index, "secs"))]
+# Aggregate to OHLC by seconds
+oh_lc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+# Round time index to minutes
+good_ticks[, index := as.POSIXct(round.POSIXt(index, "mins"))]
+# Aggregate to OHLC by minutes
+oh_lc <- good_ticks[, .(open=first(price), high=max(price), low=min(price), close=last(price), volume=sum(volume)), by=index]
+
+# Coerce OHLC prices to xts
+x_ts <- xts::xts(oh_lc[, -"index"], oh_lc$index)
+# Plot dygraph of the OHLC prices
+dygraphs::dygraph(x_ts[, -5], main="XLK Trade Ticks for 2020-03-16 (OHLC)") %>%
+  dyCandlestick()
+# Plot the OHLC prices
+x11(width=6, height=5)
+quantmod::chart_Series(x=x_ts, TA="add_Vo()",
+  name="XLK Trade Ticks for 2020-03-16 (OHLC)")
 
 options(width=200)
 # Load package HighFreq
@@ -960,62 +1143,63 @@ head(SPY)
 library(rutils)  # Load package rutils
 # SPY percentage returns
 oh_lc <- HighFreq::SPY
-clos_e <- quantmod::Cl(oh_lc)
-re_turns <- rutils::diff_it(clos_e)/rutils::lag_it(clos_e)
+n_rows <- NROW(oh_lc)
+clos_e <- log(quantmod::Cl(oh_lc))
+re_turns <- rutils::diff_it(clos_e)
 colnames(re_turns) <- "SPY"
 # Standardize raw returns to make later comparisons
-ret_std <- re_turns/sd(re_turns)
+re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
 # Calculate moments and perform normality test
-sapply(c(sd=2, skew=3, kurt=4),
-  function(x) sum(ret_std^x)/NROW(ret_std))
+sapply(c(var=2, skew=3, kurt=4),
+  function(x) sum(re_turns^x)/n_rows)
 tseries::jarque.bera.test(re_turns)
 # Fit SPY returns using MASS::fitdistr()
-optim_fit <- MASS::fitdistr(ret_std, densfun="t", df=2)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
 lo_cation <- optim_fit$estimate[1]
 scal_e <- optim_fit$estimate[2]
 
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot histogram of SPY returns
-histo_gram <- hist(ret_std, col="lightgrey", mgp=c(2, 1, 0),
+histo_gram <- hist(re_turns, col="lightgrey", mgp=c(2, 1, 0),
   xlab="returns (standardized)", ylab="frequency", xlim=c(-3, 3),
   breaks=1e3, freq=FALSE, main="Distribution of High Frequency SPY Returns")
-# lines(density(ret_std, bw=0.2), lwd=3, col="blue")
+# lines(density(re_turns, bw=0.2), lwd=3, col="blue")
 # Plot t-distribution function
 curve(expr=dt((x-lo_cation)/scal_e, df=2)/scal_e,
 type="l", lwd=3, col="red", add=TRUE)
 # Plot the Normal probability distribution
-curve(expr=dnorm(x, mean=mean(ret_std),
-  sd=sd(ret_std)), add=TRUE, lwd=3, col="blue")
+curve(expr=dnorm(x, mean=mean(re_turns),
+  sd=sd(re_turns)), add=TRUE, lwd=3, col="blue")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("t-distr", "normal"),
   lwd=6, lty=1, col=c("red", "blue"))
 
 # Hourly SPY percentage returns
-price_s <- Cl(xts::to.period(x=oh_lc, period="hours"))
-returns_hourly <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
-returns_hourly <- returns_hourly/sd(returns_hourly)
+clos_e <- log(Cl(xts::to.period(x=oh_lc, period="hours")))
+hour_ly <- rutils::diff_it(clos_e)
+hour_ly <- (hour_ly - mean(hour_ly))/sd(hour_ly)
 # Daily SPY percentage returns
-price_s <- Cl(xts::to.period(x=oh_lc, period="days"))
-returns_daily <- rutils::diff_it(price_s)/rutils::lag_it(price_s)
-returns_daily <- returns_daily/sd(returns_daily)
+clos_e <- log(Cl(xts::to.period(x=oh_lc, period="days")))
+dai_ly <- rutils::diff_it(clos_e)
+dai_ly <- (dai_ly - mean(dai_ly))/sd(dai_ly)
 # Calculate moments
-sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
+sapply(list(minutely=re_turns, hourly=hour_ly, daily=dai_ly),
  function(rets) {
-   sapply(c(sd=2, skew=3, kurt=4),
-          function(x) sum(rets^x)/NROW(rets))
+   sapply(c(var=2, skew=3, kurt=4),
+          function(x) mean(rets^x))
 })  # end sapply
 
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(ret_std, bw=0.4), xlim=c(-3, 3),
+plot(density(re_turns, bw=0.4), xlim=c(-3, 3),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of High Frequency SPY Returns")
-lines(density(returns_hourly, bw=0.4), lwd=3, col="green")
-lines(density(returns_daily, bw=0.4), lwd=3, col="red")
+lines(density(hour_ly, bw=0.4), lwd=3, col="green")
+lines(density(dai_ly, bw=0.4), lwd=3, col="red")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("minutely", "hourly", "daily"),
@@ -1024,27 +1208,30 @@ legend("topright", inset=0.05, bty="n",
 # Calculate rolling volatility of SPY returns
 ret_2013 <- re_turns["2013-11-11/2013-11-15"]
 # Calculate rolling volatility
-look_back <- 10
+look_back <- 11
 end_p <- seq_along(ret_2013)
 start_p <- c(rep_len(1, look_back-1),
   end_p[1:(NROW(end_p)-look_back+1)])
+end_p[end_p < look_back] <- look_back
 vol_rolling <- sapply(seq_along(end_p),
   function(it) sd(ret_2013[start_p[it]:end_p[it]]))
 vol_rolling <- xts::xts(vol_rolling, index(ret_2013))
 # Extract time intervals of SPY returns
-interval_s <- c(60, diff(xts::.index(re_turns)))
-head(interval_s)
-table(interval_s)
+in_dex <- c(60, diff(xts::.index(ret_2013)))
+head(in_dex)
+table(in_dex)
 # Scale SPY returns by time intervals
-re_turns <- 60*re_turns/interval_s
-ret_2013 <- re_turns["2013-11-11/2013-11-15"]
+ret_2013 <- 60*ret_2013/in_dex
 # Calculate scaled rolling volatility
 vol_scaled <- sapply(seq_along(end_p),
   function(it) sd(ret_2013[start_p[it]:end_p[it]]))
 vol_rolling <- cbind(vol_rolling, vol_scaled)
 vol_rolling <- na.omit(vol_rolling)
+sum(is.na(vol_rolling))
+sapply(vol_rolling, range)
 
 # Plot rolling volatility
+x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("blue", "red")
 chart_Series(vol_rolling, theme=plot_theme,
@@ -1099,7 +1286,7 @@ mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2,
 look_back <- 60
 vol_2013 <- vol_ume["2013"]
 ret_2013 <- re_turns["2013"]
-# Define end_points with beginning stub
+# Define end points with beginning stub
 n_rows <- NROW(ret_2013)
 n_agg <- n_rows %/% look_back
 end_p <- n_rows-look_back*n_agg + (0:n_agg)*look_back
@@ -1124,46 +1311,40 @@ abline(mod_el, lwd=3, col="red")
 mtext(paste("beta =", round(coef(mod_el)[2], 3)), cex=1.2, lwd=3, side=2, las=2, adj=(-0.5), padj=(-7))
 
 # Scale returns using volume (volume clock)
-ret_scaled <- ifelse(vol_ume>0,
-  re_turns/vol_ume^0.5, 0)
-# Calculate moments
-sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),
-  function(rets) {
-    sapply(c(skew=3, kurt=4),
-     function(x) sum((rets/sd(rets))^x)/NROW(rets))
+rets_scaled <- ifelse(vol_ume > 1e4, re_turns/vol_ume, 0)
+rets_scaled <- rets_scaled/sd(rets_scaled)
+# Calculate moments of scaled returns
+n_rows <- NROW(re_turns)
+sapply(list(re_turns=re_turns, rets_scaled=rets_scaled),
+  function(rets) {sapply(c(skew=3, kurt=4),
+     function(x) sum((rets/sd(rets))^x)/n_rows)
 })  # end sapply
 
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
 # Plot densities of SPY returns
-plot(density(ret_std), xlim=c(-3, 3),
+plot(density(re_turns), xlim=c(-3, 3),
      lwd=3, mgp=c(2, 1, 0), col="blue",
      xlab="returns (standardized)", ylab="frequency",
      main="Density of Volume-scaled High Frequency SPY Returns")
-lines(density(ret_scaled/sd(ret_scaled), bw=0.4), lwd=3, col="red")
+lines(density(rets_scaled, bw=0.4), lwd=3, col="red")
 curve(expr=dnorm, add=TRUE, lwd=3, col="green")
 # Add legend
 legend("topright", inset=0.05, bty="n",
   leg=c("minutely", "scaled", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
-# Plot the partial autocorrelations
-x11(width=6, height=5)
-par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
-pacf(ret_scaled, lag=10, mgp=c(2, 1, 0),
-  xlab="lag", ylab="partial autocorrelation", main="")
-title("Partial Autocorrelations of Volume-scaled High Frequency SPY Returns", line=1)
 
 # Ljung-Box test for minutely SPY returns
 Box.test(re_turns, lag=10, type="Ljung")
 # Ljung-Box test for daily SPY returns
-Box.test(returns_daily, lag=10, type="Ljung")
+Box.test(dai_ly, lag=10, type="Ljung")
 # Ljung-Box test statistics for scaled SPY returns
-sapply(list(ret_std=ret_std, ret_scaled=ret_scaled),
+sapply(list(re_turns=re_turns, rets_scaled=rets_scaled),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
 # Ljung-Box test statistics for aggregated SPY returns
-sapply(list(minutely=ret_std, hourly=returns_hourly, daily=returns_daily),
+sapply(list(minutely=re_turns, hourly=hour_ly, daily=dai_ly),
   function(rets) {
     Box.test(rets, lag=10, type="Ljung")$statistic
 })  # end sapply
@@ -1173,13 +1354,16 @@ x11(width=6, height=8)
 par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
 layout(matrix(c(1, 2), ncol=1), widths=c(6, 6), heights=c(4, 4))
 # Plot the partial autocorrelations of minutely SPY returns
-pacf(as.numeric(re_turns), lag=10,
+pa_cf <- pacf(as.numeric(re_turns), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Minutely SPY Returns", line=1)
 # Plot the partial autocorrelations of scaled SPY returns
-pacf(as.numeric(ret_scaled), lag=10,
+pacf_scaled <- pacf(as.numeric(rets_scaled), lag=10,
      xlab="lag", ylab="partial autocorrelation", main="")
 title("Partial Autocorrelations of Scaled SPY Returns", line=1)
+# Calculate the sums of partial autocorrelations
+sum(pa_cf$acf)
+sum(pacf_scaled$acf)
 
 # Calculate market illiquidity
 liquidi_ty <- sqrt(volume_daily)/vol_daily
@@ -1194,12 +1378,12 @@ chart_Series(vol_daily["2010"],
   theme=plot_theme, name="SPY Volatility in 2010")
 
 # Calculate intraday time index with hours and minutes
-in_dex <- format(zoo::index(re_turns), "%H:%M")
+date_s <- format(zoo::index(re_turns), "%H:%M")
 # Aggregate the mean volume
-volume_agg <- tapply(X=vol_ume, INDEX=in_dex, FUN=mean)
+volume_agg <- tapply(X=vol_ume, INDEX=date_s, FUN=mean)
 volume_agg <- drop(volume_agg)
 # Aggregate the mean volatility
-vol_agg <- tapply(X=re_turns^2, INDEX=in_dex, FUN=mean)
+vol_agg <- tapply(X=re_turns^2, INDEX=date_s, FUN=mean)
 vol_agg <- sqrt(drop(vol_agg))
 # Coerce to xts
 intra_day <- as.POSIXct(paste(Sys.Date(), names(volume_agg)))
@@ -1330,24 +1514,18 @@ chart_Series(
   name=paste(sym_bol, "contrarian skew strategy pnl"))
 
 # vwap plot
-vwap_short <-
-  v_wap(x_ts=SPY, win_dow=70)
-vwap_long <-
-  v_wap(x_ts=SPY, win_dow=225)
+vwap_short <- v_wap(x_ts=SPY, win_dow=70)
+vwap_long <- v_wap(x_ts=SPY, win_dow=225)
 vwap_diff <- vwap_short - vwap_long
 colnames(vwap_diff) <- paste0(sym_bol, ".vwap")
 inter_val <- "2010-05-05/2010-05-07"
-invisible(
-  chart_Series(x=Cl(SPY[inter_val]),
+invisible(chart_Series(x=Cl(SPY[inter_val]),
          name=paste(sym_bol, "plus VWAP")))
-invisible(
-  add_TA(vwap_short[inter_val],
+invisible(add_TA(vwap_short[inter_val],
    on=1, col="red", lwd=2))
-invisible(
-  add_TA(vwap_long[inter_val],
+invisible(add_TA(vwap_long[inter_val],
    on=1, col="blue", lwd=2))
-invisible(
-  add_TA(vwap_diff[inter_val] > 0, on=-1,
+invisible(add_TA(vwap_diff[inter_val] > 0, on=-1,
    col="lightgreen", border="lightgreen"))
 add_TA(vwap_diff[inter_val] < 0, on=-1,
  col="lightgrey", border="lightgrey")
@@ -1375,7 +1553,7 @@ plot(for_mula, data=cbind(re_turns[, 1], lag_vwap)[inter_val],
      cex=0.6, xlab="skew", ylab="rets")
 abline(mod_el, col="blue", lwd=2)
 
-# momentum trading strategy
+# Trend following trading strategy
 # Cumulative PnL
 cumu_pnl <- cumsum(sign(lag_vwap)*re_turns[, 1])
 # Calculate frequency of trades
@@ -1386,7 +1564,7 @@ bid_offer*sum(abs(sign(vwap_diff)-sign(lag_vwap)))
 
 chart_Series(
   cumu_pnl[endpoints(cumu_pnl, on="hours"), ],
-  name=paste(sym_bol, "VWAP momentum strategy pnl"))
+  name=paste(sym_bol, "VWAP Trend Following Strategy PnL"))
 
 library(rutils)  # Load package rutils
 # Daily Hurst exponents

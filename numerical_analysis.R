@@ -95,6 +95,54 @@ integrate(dnorm, low=2, up=Inf, mean=1)
 integrate(function(x) x*dnorm(x),
     low=2, up=Inf)
 
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
+re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- drop(coredata(na.omit(re_turns)))
+n_rows <- NROW(re_turns)
+# Mean and standard deviation of returns
+c(mean(re_turns), sd(re_turns))
+# Calculate the MAD of returns 10 points apart
+re_turns <- sort(re_turns)
+b_w <- 10*mad(rutils::diff_it(re_turns, lagg=10))
+# Calculate the kernel density
+den_sity <- sapply(1:n_rows, function(i_d) {
+  sum(dnorm(re_turns-re_turns[i_d], sd=b_w))
+})  # end sapply
+ma_d <- mad(re_turns)
+plot(re_turns, den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     t="l", col="blue", lwd=3,
+     xlab="returns", ylab="density",
+     main="Density of VTI Returns")
+# Calculate the kernel density using density()
+den_sity <- density(re_turns, bw=b_w)
+NROW(den_sity$y)
+x11(width=6, height=5)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     col="blue", lwd=3, main="Density of VTI Returns")
+# Interpolate the den_sity vector into re_turns
+den_sity <- approx(den_sity$x, den_sity$y, xout=re_turns)
+all.equal(den_sity$x, re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     t="l", col="blue", lwd=3,
+     main="Density of VTI Returns")
+
+# Plot histogram
+histo_gram <- hist(re_turns, breaks=100, freq=FALSE,
+  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="",
+  main="VTI Return Distribution")
+# Draw kernel density of histogram
+lines(den_sity, col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+add=TRUE, type="l", lwd=2, col="blue")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+ leg=c("VTI", "Normal"), bty="n",
+ lwd=6, bg="white", col=c("red", "blue"))
+
 # Get size of an object
 vec_tor <- runif(1e6)
 object.size(vec_tor)
@@ -198,7 +246,7 @@ summary(microbenchmark(
   as.data.frame(mat_rix),
   times=10))[, c(1, 4, 5)]
 
-# Matrix with 5,000 rows
+# Calculate matrix of random data with 5,000 rows
 mat_rix <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
 row_sums <- numeric(NROW(mat_rix))
@@ -217,27 +265,29 @@ summary(microbenchmark(
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-big_vector <- rnorm(5000)
+vec_tor <- rnorm(5000)
 summary(microbenchmark(
+# Compiled C++ function
+  cpp = cumsum(vec_tor),  # end for
 # Allocate full memory for cumulative sum
-  for_loop = {cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  for_loop = {cum_sum <- numeric(NROW(vec_tor))
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   grow_vec = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   com_bine = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
+      cum_sum <- c(cum_sum, vec_tor[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
 
@@ -300,7 +350,7 @@ profvis::profvis({
   mod_el <- lm(price ~ carat, data=ggplot2::diamonds)
   abline(mod_el, col="red")
 })  # end profvis
-# Four methods of calculating matrix column means
+# Four methods of calculating column means of matrix
 mat_rix <- matrix(rnorm(1e5), ncol=5e4)
 profvis::profvis({
   mean_s <- apply(mat_rix, 2, mean)
@@ -328,8 +378,8 @@ vec_tor <- runif(1e5)
 cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
-for (i in 2:NROW(cum_sum2))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
@@ -338,8 +388,8 @@ summary(microbenchmark(
   cumsum=cumsum(vec_tor),
   loop_alloc={
     cum_sum2 <- vec_tor
-    for (i in 2:NROW(cum_sum2))
-cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+    for (i in 2:NROW(vec_tor))
+cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
   },
   loop_nalloc={
     # Doesn't allocate memory to cum_sum3
@@ -361,7 +411,7 @@ microbenchmark(
   sqrt = sqrt(vec_tor),
   times=10)
 
-# Matrix with 5,000 rows
+# Calculate matrix of random data with 5,000 rows
 mat_rix <- matrix(rnorm(10000), ncol=2)
 # Allocate memory for row sums
 row_sums <- numeric(NROW(mat_rix))
@@ -380,27 +430,27 @@ summary(microbenchmark(
   },  # end for
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-big_vector <- rnorm(5000)
+vec_tor <- rnorm(5000)
 summary(microbenchmark(
 # Allocate full memory for cumulative sum
-  for_loop = {cum_sum <- numeric(NROW(big_vector))
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+  for_loop = {cum_sum <- numeric(NROW(vec_tor))
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   grow_vec = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum[i] <- cum_sum[i-1] + big_vector[i]
+      cum_sum[i] <- cum_sum[i-1] + vec_tor[i]
     }},  # end for
 # Allocate zero memory for cumulative sum
   com_bine = {cum_sum <- numeric(0)
-    cum_sum[1] <- big_vector[1]
-    for (i in 2:NROW(big_vector)) {
+    cum_sum[1] <- vec_tor[1]
+    for (i in 2:NROW(vec_tor)) {
 # Add new element to "cum_sum" ("grow" it)
-      cum_sum <- c(cum_sum, big_vector[i])
+      cum_sum <- c(cum_sum, vec_tor[i])
     }},  # end for
   times=10))[, c(1, 4, 5)]
 
@@ -429,7 +479,7 @@ summary(microbenchmark(
   vec_torized = cumsum(big_vector),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
-# Matrix with 5,000 rows
+# Calculate matrix of random data with 5,000 rows
 mat_rix <- matrix(rnorm(10000), ncol=2)
 # Calculate row sums two different ways
 all.equal(rowSums(mat_rix),
@@ -443,12 +493,10 @@ library(microbenchmark)
 str(pmax)
 # Calculate row maximums two different ways
 summary(microbenchmark(
-  p_max=
-    do.call(pmax.int,
+  p_max=do.call(pmax.int,
 lapply(seq_along(mat_rix[1, ]),
   function(in_dex) mat_rix[, in_dex])),
-  l_apply=unlist(
-    lapply(seq_along(mat_rix[, 1]),
+  l_apply=unlist(lapply(seq_along(mat_rix[, 1]),
   function(in_dex) max(mat_rix[in_dex, ]))),
   times=10))[, c(1, 4, 5)]
 
@@ -472,6 +520,7 @@ library(Rfast)  # Load package Rfast
 # Benchmark speed of calculating ranks
 vec_tor <- 1e3
 all.equal(rank(vec_tor), Rfast::Rank(vec_tor))
+library(microbenchmark)
 summary(microbenchmark(
   Rcode = rank(vec_tor),
   Rfast = Rfast::Rank(vec_tor),
@@ -512,10 +561,8 @@ my_fun(in_put=1:3, pa_ram=2)
 # "pa_ram" is vectorized
 my_fun(in_put=10, pa_ram=2:4)
 # Define vectors of parameters of rnorm()
-std_devs <-
-  structure(1:3, names=paste0("sd=", 1:3))
-me_ans <-
-  structure(-1:1, names=paste0("mean=", -1:1))
+std_devs <- structure(1:3, names=paste0("sd=", 1:3))
+me_ans <- structure(-1:1, names=paste0("mean=", -1:1))
 # "sd" argument of rnorm() isn't vectorized
 rnorm(1, sd=std_devs)
 # "mean" argument of rnorm() isn't vectorized
@@ -681,8 +728,8 @@ library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1
 # Initialize compute cluster under Windows
 clus_ter <- makeCluster(n_cores)
-# Define large matrix
-mat_rix <- matrix(rnorm(7*10^5), ncol=7)
+# Calculate matrix of random data
+mat_rix <- matrix(rnorm(1e5), ncol=100)
 # Define aggregation function over column of matrix
 agg_regate <- function(col_umn) {
   out_put <- 0
@@ -691,13 +738,11 @@ agg_regate <- function(col_umn) {
   out_put
 }  # end agg_regate
 # Perform parallel aggregations over columns of matrix
-agg_regations <-
-  parCapply(clus_ter, mat_rix, agg_regate)
+agg_regations <- parCapply(clus_ter, mat_rix, agg_regate)
 # Compare speed of apply with parallel computing
 summary(microbenchmark(
   ap_ply=apply(mat_rix, MARGIN=2, agg_regate),
-  parl_apply=
-    parCapply(clus_ter, mat_rix, agg_regate),
+  parl_apply=parCapply(clus_ter, mat_rix, agg_regate),
   times=10)
 )[, c(1, 4, 5)]
 # Stop R processes over cluster under Windows
@@ -754,35 +799,6 @@ stopCluster(clus_ter)
 out_put <- mclapply(1:10, rnorm, mc.cores=n_cores, n=100)
 
 set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Sample mean - MC estimate
-mean(da_ta)
-# Sample standard deviation - MC estimate
-sd(da_ta)
-# Monte Carlo estimate of cumulative probability
-pnorm(1)
-sum(da_ta < 1)/n_rows
-# Monte Carlo estimate of quantile
-conf_level <- 0.98
-qnorm(conf_level)
-cut_off <- conf_level*n_rows
-da_ta <- sort(da_ta)
-da_ta[cut_off]
-quantile(da_ta, probs=conf_level)
-# Analyze the source code of quantile()
-stats:::quantile.default
-# Microbenchmark quantile
-library(microbenchmark)
-summary(microbenchmark(
-  monte_carlo = da_ta[cut_off],
-  quan_tile = quantile(da_ta, probs=conf_level),
-  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
-
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
-set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
 pa_th <- numeric(n_rows)  # Allocate path vector
@@ -796,16 +812,14 @@ while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
 # Fill remaining pa_th after it crosses bar_rier
 if (in_dex <= n_rows)
   pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level",
-      line=0.5)
-
+# Plot the Brownian motion
 x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+
 set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
@@ -817,13 +831,13 @@ cro_ss <- which(pa_th > bar_rier)
 if (NROW(cro_ss)>0) {
   pa_th[(cro_ss[1]+1):n_rows] <- pa_th[cro_ss[1]]
 }  # end if
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-# Create plot with horizontal line
-plot(ts_path, type="l", col="black",
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", line=0.5)
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
 
 # Define Brownian motion parameters
 sig_ma <- 1.0  # Volatility
@@ -857,59 +871,83 @@ zoo::plot.zoo(path_s[, in_dex], main="Paths of Brownian Motion",
 abline(h=strik_e, col="red", lwd=3)
 text(x=(n_rows-60), y=strik_e, labels="strike price", pos=3, cex=1)
 
-# Calculate time series of VTI returns
-re_turns <- rutils::etf_env$re_turns[, "VTI"]
-re_turns <- na.omit(re_turns)
-n_rows <- NROW(re_turns)
-# Sample from VTI returns
-sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
-c(sd=sd(sampl_e), mad=mad(sampl_e))
-# sample.int() is a little faster than sample()
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Sample mean - MC estimate
+mean(da_ta)
+# Sample standard deviation - MC estimate
+sd(da_ta)
+# Monte Carlo estimate of cumulative probability
+pnorm(1)
+sum(da_ta < 1)/n_rows
+# Monte Carlo estimate of quantile
+conf_level <- 0.98
+qnorm(conf_level)  # Exact value
+cut_off <- conf_level*n_rows
+da_ta <- sort(da_ta)
+da_ta[cut_off]  # Naive Monte Carlo value
+quantile(da_ta, probs=conf_level)
+# Analyze the source code of quantile()
+stats:::quantile.default
+# Microbenchmark quantile
 library(microbenchmark)
 summary(microbenchmark(
-  sample.int = sample.int(1e3),
-  sample = sample(1e3),
-  times=10))[, c(1, 4, 5)]
+  monte_carlo = da_ta[cut_off],
+  quan_tile = quantile(da_ta, probs=conf_level),
+  times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
-set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000; da_ta <- rnorm(n_rows)
 # Sample mean and standard deviation
 mean(da_ta); sd(da_ta)
 # Bootstrap of sample mean and median
-boot_data <- sapply(1:10000, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+n_boot <- 10000
+boot_data <- sapply(1:n_boot, function(x) {
+  # Sample from Standard Normal Distribution
+  sampl_e <- rnorm(n_rows)
   c(mean=mean(sampl_e), median=median(sampl_e))
 })  # end sapply
+boot_data[, 1:3]
 boot_data <- t(boot_data)
-
-boot_data[1:3, ]
 # Standard error from formula
 sd(da_ta)/sqrt(n_rows)
 # Standard error of mean from bootstrap
 sd(boot_data[, "mean"])
 # Standard error of median from bootstrap
 sd(boot_data[, "median"])
-plot(density(boot_data[, "median"]), lwd=2, xlab="estimate of median",
-     main="Distribution of Bootstrapped Median")
-abline(v=mean(boot_data[, "median"]), lwd=2, col="red")
+
+# Plot the densities of the bootstrap data
+x11(width=6, height=5)
+plot(density(boot_data[, "mean"]), lwd=3, xlab="Estimator Value",
+     main="Distribution of Bootstrapped Mean and Median", col="green")
+lines(density(boot_data[, "median"]), lwd=3, col="blue")
+abline(v=mean(boot_data[, "mean"]), lwd=2, col="red")
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+ leg=c("mean", "median"), bty="n",
+ lwd=6, bg="white", col=c("green", "blue"))
 
 set.seed(1121)  # Reset random number generator
 n_rows <- 1000
-da_ta <- rnorm(n_rows)
 # Bootstrap of sample mean and median
-boot_data <- sapply(1:10000, function(x) {
-  # sampl_e from Standard Normal Distribution
-  sampl_e <- rnorm(n_rows)
-  c(mean=mean(sampl_e), median=median(sampl_e))
-})  # end sapply
-boot_data[, 1:3]
-# Standard error from formula
-sd(da_ta)/sqrt(n_rows)
-# Standard error of mean from bootstrap
-sd(boot_data["mean", ])
-# Standard error of median from bootstrap
-sd(boot_data["median", ])
+n_boot <- 100
+boot_data <- sapply(1:n_boot, function(x) median(rnorm(n_rows)))
+# Perform vectorized bootstrap
+set.seed(1121)  # Reset random number generator
+# Calculate matrix of random data
+sampl_e <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
+boot_vec <- Rfast::colMedians(sampl_e)
+all.equal(boot_data, boot_vec)
+# Compare speed of loops with vectorized R code
+library(microbenchmark)
+summary(microbenchmark(
+  loop = sapply(1:n_boot, function(x) median(rnorm(n_rows))),
+  cpp = {
+    sampl_e <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
+    Rfast::colMedians(sampl_e)
+    },
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
@@ -917,17 +955,17 @@ clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
 n_rows <- 1000
-da_ta <- rnorm(n_rows)
 # Bootstrap mean and median under Windows
-boot_data <- parLapply(clus_ter, 1:10000,
+n_boot <- 10000
+boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, da_ta, n_rows) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  sampl_e <- rnorm(n_rows)
   c(mean=mean(sampl_e), median=median(sampl_e))
   }, da_ta=da_ta, n_rows=n_rows)  # end parLapply
 # Bootstrap mean and median under Mac-OSX or Linux
-boot_data <- mclapply(1:10000,
+boot_data <- mclapply(1:n_boot,
   function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  sampl_e <- rnorm(n_rows)
   c(mean=mean(sampl_e), median=median(sampl_e))
   }, mc.cores=n_cores)  # end mclapply
 boot_data <- rutils::do_call(rbind, boot_data)
@@ -940,13 +978,13 @@ stopCluster(clus_ter)  # Stop R processes over cluster under Windows
 
 n_rows <- 1000
 da_ta <- rnorm(n_rows)
-sd(da_ta)
-mad(da_ta)
+sd(da_ta); mad(da_ta)
 median(abs(da_ta - median(da_ta)))
 median(abs(da_ta - median(da_ta)))/qnorm(0.75)
 # Bootstrap of sd and mad estimators
-boot_data <- sapply(1:10000, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+n_boot <- 10000
+boot_data <- sapply(1:n_boot, function(x) {
+  sampl_e <- rnorm(n_rows)
   c(sd=sd(sampl_e), mad=mad(sampl_e))
 })  # end sapply
 boot_data <- t(boot_data)
@@ -960,24 +998,40 @@ apply(boot_data, MARGIN=2, function(x)
 library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster
-boot_data <- parLapply(clus_ter, 1:10000,
+boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, da_ta) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+    sampl_e <- rnorm(n_rows)
     c(sd=sd(sampl_e), mad=mad(sampl_e))
   }, da_ta=da_ta)  # end parLapply
 # Parallel bootstrap under Mac-OSX or Linux
-boot_data <- mclapply(1:10000, function(x) {
-    sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-    c(sd=sd(sampl_e), mad=mad(sampl_e))
-  }, mc.cores=n_cores)  # end mclapply
+boot_data <- mclapply(1:n_boot, function(x) {
+  sampl_e <- rnorm(n_rows)
+  c(sd=sd(sampl_e), mad=mad(sampl_e))
+}, mc.cores=n_cores)  # end mclapply
 stopCluster(clus_ter)  # Stop R processes over cluster
 boot_data <- rutils::do_call(rbind, boot_data)
 # Means and standard errors from bootstrap
 apply(boot_data, MARGIN=2, function(x)
   c(mean=mean(x), std_error=sd(x)))
 
+# Calculate time series of VTI returns
+library(rutils)
+re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- na.omit(re_turns)
+n_rows <- NROW(re_turns)
+# Sample from VTI returns
+sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
+c(sd=sd(sampl_e), mad=mad(sampl_e))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3),
+  sample = sample(1e3),
+  times=10))[, c(1, 4, 5)]
+
 # Sample from time series of VTI returns
-re_turns <- rutils::etf_env$re_turns[, "VTI"]
+library(rutils)
+re_turns <- rutils::etf_env$re_turns$VTI
 re_turns <- na.omit(re_turns)
 n_rows <- NROW(re_turns)
 # Bootstrap sd and MAD under Windows
@@ -985,7 +1039,7 @@ library(parallel)  # Load package parallel
 n_cores <- detectCores() - 1  # Number of cores
 clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
-n_boot <- 1e4
+n_boot <- 10000
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, re_turns, n_rows) {
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
@@ -1008,6 +1062,7 @@ std_errors
 std_errors[2, ]/std_errors[1, ]
 
 # Calculate percentage returns from VTI prices
+library(rutils)
 price_s <- quantmod::Cl(rutils::etf_env$VTI)
 star_t <- as.numeric(price_s[1, ])
 re_turns <- rutils::diff_it(log(price_s))
@@ -1029,7 +1084,7 @@ clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 # Perform parallel bootstrap under Windows
 clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
 clusterExport(clus_ter, c("star_t", "bar_rier"))
-n_boot <- 1e4
+n_boot <- 10000
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, re_turns, n_rows) {
     sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
@@ -1052,6 +1107,7 @@ boot_data <- rutils::do_call(rbind, boot_data)
 sum(boot_data)/n_boot
 
 # Calculate percentage returns from VTI prices
+library(rutils)
 oh_lc <- rutils::etf_env$VTI
 price_s <- as.numeric(oh_lc[, 4])
 star_t <- price_s[1]
@@ -1076,7 +1132,7 @@ clus_ter <- makeCluster(n_cores)  # Initialize compute cluster under Windows
 # Perform parallel bootstrap under Windows
 clusterSetRNGStream(clus_ter, 1121)  # Reset random number generator in all cores
 clusterExport(clus_ter, c("star_t", "bar_rier", "ohlc_diff"))
-n_boot <- 1e4
+n_boot <- 10000
 boot_data <- parLapply(clus_ter, 1:n_boot,
   function(x, re_turns, n_rows) {
     # Calculate OHLC prices from percentage returns
@@ -1102,230 +1158,22 @@ boot_data <- rutils::do_call(rbind, boot_data)
 # Calculate frequency of crossing barrier
 sum(boot_data)/n_boot
 
-set.seed(1121)  # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Estimate the 95% quantile
-boot_data <- sapply(1:10000, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  quantile(sampl_e, 0.95)
-})  # end sapply
-sd(boot_data)
-# Estimate the 95% quantile using antithetic sampling
-boot_data <- sapply(1:10000, function(x) {
-  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
-  quantile(c(sampl_e, -sampl_e), 0.95)
-})  # end sapply
-# Standard error of quantile from bootstrap
-sd(boot_data)
-sqrt(2)*sd(boot_data)
-
-x11(width=6, height=5)
-par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
-# Plot a Normal probability distribution
-curve(expr=dnorm, xlim=c(-3, 4),
-main="Shifted Normal distribution function",
-xlab="", ylab="", lwd=3, col="blue")
-# Add shifted Normal probability distribution
-curve(expr=dnorm(x, mean=1), add=TRUE,
-lwd=3, col="red")
-# Add vertical dashed lines
-abline(v=0, lwd=3, col="blue", lty="dashed")
-abline(v=1, lwd=3, col="red", lty="dashed")
-arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
- code=2, angle=20, length=grid::unit(0.2, "cm"))
-text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
-
-set.seed(1121) # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-# Cumulative probability from Naive Monte Carlo
-quan_tile <- 2
-pnorm(-quan_tile)
-integrate(dnorm, low=quan_tile, up=Inf)
-sum(da_ta > quan_tile)/n_rows
-# Generate importance sample
-lamb_da <- 1.5  # tilt parameter
-data_tilt <- da_ta + lamb_da
-# Cumulative probability from importance sample
-sum(data_tilt > quan_tile)/n_rows
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-sum((data_tilt > quan_tile)*weight_s)/n_rows
-# Bootstrap of standard errors of cumulative probability
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  na_ive <- sum(da_ta > quan_tile)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  im_port <- sum((da_ta > quan_tile)*weight_s)/n_rows
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-
-# Quantile from Naive Monte Carlo
-conf_level <- 0.98
-qnorm(conf_level)
-da_ta <- sort(da_ta)
-quantile(da_ta, probs=conf_level)
-cut_off <- conf_level*n_rows
-da_ta[cut_off]
-# Importance sample weights
-data_tilt <- da_ta + lamb_da
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-# Cumulative probabilities using importance sample
-cum_prob <- cumsum(rev(weight_s))/n_rows
-# Quantile from importance sample
-data_tilt[n_rows - findInterval(1-conf_level, cum_prob)]
-# Bootstrap of standard errors of quantile
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- sort(rnorm(n_rows))
-  na_ive <- da_ta[cut_off]
-  data_tilt <- da_ta + lamb_da
-  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-  cum_prob <- cumsum(rev(weight_s))/n_rows
-  im_port <- data_tilt[n_rows - findInterval(1-conf_level, cum_prob)]
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-
-# CVaR from Naive Monte Carlo
-va_r <- da_ta[cut_off]
-cva_r <- sum((da_ta > va_r)*da_ta)/sum((da_ta > va_r))
-# Quantile from importance sample
-va_r <- data_tilt[n_rows - findInterval(1-conf_level, cum_prob)]
-# CVaR from integration
-integrate(function(x) x*dnorm(x), low=va_r, up=Inf)$value/(1-pnorm(va_r))
-# Bootstrap of standard errors of expected value
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- sort(rnorm(n_rows))
-  va_r <- da_ta[cut_off]
-  na_ive <- sum((da_ta > va_r)*da_ta)/sum((da_ta > va_r))
-  data_tilt <- da_ta + lamb_da
-  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-  cum_prob <- cumsum(rev(weight_s))/n_rows
-  va_r <- data_tilt[n_rows - findInterval(1-conf_level, cum_prob)]
-  im_port <- sum((da_ta > va_r)*da_ta)/sum((da_ta > va_r))
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-
-set.seed(1121) # Reset random number generator
-# Sample from Standard Normal Distribution
-n_rows <- 1000
-da_ta <- rnorm(n_rows)
-da_ta <- sort(da_ta)
-# Monte Carlo cumulative probability
-pnorm(-2)
-integrate(dnorm, low=2, up=Inf)
-sum(da_ta > 2)/n_rows
-# Generate importance sample
-lamb_da <- 1.5
-data_tilt <- da_ta + lamb_da
-# Importance cumulative probability
-sum(data_tilt > 2)/n_rows
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-sum((data_tilt > 2)*weight_s)/n_rows
-# Bootstrap of standard errors of cumulative probability
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  na_ive <- sum(da_ta > 2)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  im_port <- sum((da_ta > 2)*weight_s)/n_rows
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-# Monte Carlo expected value
-integrate(function(x) x*dnorm(x), low=2, up=Inf)
-sum((da_ta > 2)*da_ta)/n_rows
-# Importance expected value
-sum((data_tilt > 2)*data_tilt)/n_rows
-sum((data_tilt > 2)*data_tilt*weight_s)/n_rows
-# Bootstrap of standard errors of expected value
-boot_data <- sapply(1:1000, function(x) {
-  da_ta <- rnorm(n_rows)
-  na_ive <- sum((da_ta > 2)*da_ta)/n_rows
-  da_ta <- (da_ta + lamb_da)
-  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
-  im_port <- sum((da_ta > 2)*da_ta*weight_s)/n_rows
-  c(naive_mc=na_ive, importance=im_port)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-
-# Define Brownian motion parameters
-sig_ma <- 1.0  # Volatility
-dri_ft <- 0.0  # Drift
-n_rows <- 100  # Number of simulation steps
-n_simu <- 10000  # Number of simulations
-# Calculate matrix of normal variables
-set.seed(1121)
-da_ta <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
-da_ta <- matrix(da_ta, nc=n_simu)
-# Simulate paths of Brownian motion
-path_s <- matrixStats::colCumsums(da_ta)
-# Tilt the da_ta
-lamb_da <- 0.04  # tilt parameter
-data_tilt <- da_ta + lamb_da
-paths_tilt <- matrixStats::colCumsums(data_tilt)
-# Calculate path weights
-weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
-path_weights <- matrixStats::colProds(weight_s)
-# Or
-path_weights <- exp(-lamb_da*colSums(data_tilt) + n_rows*lamb_da^2/2)
-# Calculate option payout using standard MC
-strik_e <- 10  # Strike price
-pay_outs <- (path_s[n_rows, ] - strik_e)
-sum(pay_outs[pay_outs > 0])/n_simu
-# Calculate option payout using importance sampling
-pay_outs <- (paths_tilt[n_rows, ] - strik_e)
-sum((path_weights*pay_outs)[pay_outs > 0])/n_simu
-# Calculate crossing probability using standard MC
-bar_rier <- 10
-cross_ed <- colSums(path_s > bar_rier) > 0
-sum(cross_ed)/n_simu
-# Calculate crossing probability using importance sampling
-cross_ed <- colSums(paths_tilt > bar_rier) > 0
-sum(path_weights*cross_ed)/n_simu
-
-# Binomial sample
-n_rows <- 1000
-pro_b <- 0.1
-da_ta <- rbinom(n=n_rows, size=1, pro_b)
-head(da_ta, 33)
-fre_q <- sum(da_ta)/n_rows
-# Tilted binomial sample
-lamb_da <- 5
-p_tilted <- lamb_da*pro_b/(1 + pro_b*(lamb_da - 1))
-weigh_t <- (1 + pro_b*(lamb_da - 1))/lamb_da
-da_ta <- rbinom(n=n_rows, size=1, p_tilted)
-head(da_ta, 33)
-weigh_t*sum(da_ta)/n_rows
-# Bootstrap of standard errors
-boot_data <- sapply(1:1000, function(x) {
-  c(naive_mc=sum(rbinom(n=n_rows, size=1, pro_b))/n_rows,
-    importance=weigh_t*sum(rbinom(n=n_rows, size=1, p_tilted))/n_rows)
-}) # end sapply
-apply(boot_data, MARGIN=1,
-  function(x) c(mean=mean(x), sd=sd(x)))
-
 # Initialize random number generator
 set.seed(1121)
 # Define explanatory and response variables
-de_sign <- rnorm(100, mean=2)
+predic_tor <- rnorm(100, mean=2)
 noise <- rnorm(100)
-res_ponse <- (-3 + de_sign + noise)
-de_sign <- cbind(res_ponse, de_sign)
-# Calculate beta regression coefficient
-cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
+res_ponse <- (-3 + predic_tor + noise)
+de_sign <- cbind(res_ponse, predic_tor)
+# Calculate alpha and beta regression coefficients
+be_ta <- cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
+al_pha <- mean(de_sign[, 1]) - be_ta*mean(de_sign[, 2])
+x11(width=6, height=5)
+plot(res_ponse ~ predic_tor, data=de_sign)
+abline(a=al_pha, b=be_ta, lwd=3, col="blue")
 # Bootstrap of beta regression coefficient
-boot_data <- sapply(1:100, function(x) {
+n_boot <- 100
+boot_data <- sapply(1:n_boot, function(x) {
   sampl_e <- sample.int(NROW(de_sign), replace=TRUE)
   de_sign <- de_sign[sampl_e, ]
   cov(de_sign[, 1], de_sign[, 2])/var(de_sign[, 2])
@@ -1336,8 +1184,7 @@ par(oma=c(1, 2, 1, 0), mgp=c(2, 1, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=
 # Mean and standard error of beta regression coefficient
 c(mean=mean(boot_data), std_error=sd(boot_data))
 # Plot density of bootstrapped beta coefficients
-plot(density(boot_data),
-     lwd=2, xlab="Regression slopes",
+plot(density(boot_data), lwd=2, xlab="Regression slopes",
      main="Bootstrapped Regression Slopes")
 # Add line for expected value
 abline(v=mean(boot_data), lwd=2, col="red")
@@ -1377,6 +1224,284 @@ abline(v=mean(boot_data), lwd=2, col="red")
 text(x=mean(boot_data)-0.01, y=1.0, labels="expected value",
      lwd=2, srt=90, pos=3)
 
+set.seed(1121)  # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Estimate the 95% quantile
+n_boot <- 10000
+boot_data <- sapply(1:n_boot, function(x) {
+  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  quantile(sampl_e, 0.95)
+})  # end sapply
+sd(boot_data)
+# Estimate the 95% quantile using antithetic sampling
+boot_data <- sapply(1:n_boot, function(x) {
+  sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
+  quantile(c(sampl_e, -sampl_e), 0.95)
+})  # end sapply
+# Standard error of quantile from bootstrap
+sd(boot_data)
+sqrt(2)*sd(boot_data)
+
+x11(width=6, height=5)
+par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
+# Plot a Normal probability distribution
+curve(expr=dnorm, xlim=c(-3, 4),
+main="Shifted Normal distribution function",
+xlab="", ylab="", lwd=3, col="blue")
+# Add shifted Normal probability distribution
+curve(expr=dnorm(x, mean=1), add=TRUE, lwd=3, col="red")
+# Add vertical dashed lines
+abline(v=0, lwd=3, col="blue", lty="dashed")
+abline(v=1, lwd=3, col="red", lty="dashed")
+arrows(x0=0, y0=0.1, x1=1, y1=0.1, lwd=3,
+ code=2, angle=20, length=grid::unit(0.2, "cm"))
+text(x=0.3, 0.1, labels=bquote(lambda), pos=3, cex=2)
+
+set.seed(1121) # Reset random number generator
+# Sample from Standard Normal Distribution
+n_rows <- 1000
+da_ta <- rnorm(n_rows)
+# Cumulative probability from formula
+quan_tile <- (-2)
+pnorm(quan_tile)
+integrate(dnorm, lower=-Inf, upper=quan_tile)
+# Cumulative probability from Naive Monte Carlo
+sum(da_ta < quan_tile)/n_rows
+# Generate importance sample
+lamb_da <- (-1.5)  # Tilt parameter
+data_tilt <- da_ta + lamb_da  # Tilt the random numbers
+# Cumulative probability from importance sample
+sum(data_tilt < quan_tile)/n_rows
+weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+sum((data_tilt < quan_tile)*weight_s)/n_rows
+# Bootstrap of standard errors of cumulative probability
+n_boot <- 1000
+boot_data <- sapply(1:n_boot, function(x) {
+  da_ta <- rnorm(n_rows)
+  na_ive <- sum(da_ta < quan_tile)/n_rows
+  da_ta <- (da_ta + lamb_da)
+  weight_s <- exp(-lamb_da*da_ta + lamb_da^2/2)
+  im_port <- sum((da_ta < quan_tile)*weight_s)/n_rows
+  c(naive_mc=na_ive, importance=im_port)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+  function(x) c(mean=mean(x), sd=sd(x)))
+
+# Quantile from Naive Monte Carlo
+conf_level <- 0.02
+qnorm(conf_level)  # Exact value
+da_ta <- sort(da_ta)
+cut_off <- n_rows*conf_level
+da_ta[cut_off]  # Naive Monte Carlo value
+# Importance sample weights
+data_tilt <- da_ta + lamb_da  # Tilt the random numbers
+weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+# Cumulative probabilities using importance sample
+cum_prob <- cumsum(weight_s)/n_rows
+# Quantile from importance sample
+data_tilt[findInterval(conf_level, cum_prob)]
+# Bootstrap of standard errors of quantile
+n_boot <- 1000
+boot_data <- sapply(1:n_boot, function(x) {
+  da_ta <- sort(rnorm(n_rows))
+  na_ive <- da_ta[cut_off]
+  data_tilt <- da_ta + lamb_da
+  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+  cum_prob <- cumsum(weight_s)/n_rows
+  im_port <- data_tilt[findInterval(conf_level, cum_prob)]
+  c(naive_mc=na_ive, importance=im_port)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+  function(x) c(mean=mean(x), sd=sd(x)))
+
+# CVaR from Naive Monte Carlo
+va_r <- da_ta[cut_off]
+sum((da_ta < va_r)*da_ta)/sum((da_ta < va_r))
+# CVaR from importance sample
+va_r <- data_tilt[findInterval(conf_level, cum_prob)]
+sum((data_tilt < va_r)*data_tilt*weight_s)/sum((data_tilt < va_r)*weight_s)
+# CVaR from integration
+integrate(function(x) x*dnorm(x), low=-Inf, up=va_r)$value/pnorm(va_r)
+# Bootstrap of standard errors of expected value
+n_boot <- 1000
+boot_data <- sapply(1:n_boot, function(x) {
+  da_ta <- sort(rnorm(n_rows))
+  va_r <- da_ta[cut_off]
+  na_ive <- sum((da_ta < va_r)*da_ta)/sum((da_ta < va_r))
+  data_tilt <- da_ta + lamb_da
+  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+  cum_prob <- cumsum(weight_s)/n_rows
+  va_r <- data_tilt[findInterval(conf_level, cum_prob)]
+  im_port <- sum((data_tilt < va_r)*data_tilt*weight_s)/sum((data_tilt < va_r)*weight_s)
+  c(naive_mc=na_ive, importance=im_port)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+  function(x) c(mean=mean(x), sd=sd(x)))
+
+# Calculate matrix of random data
+set.seed(1121) # Reset random number generator
+n_rows <- 1000; n_boot <- 100
+da_ta <- matrix(rnorm(n_boot*n_rows), ncol=n_boot)
+da_ta <- Rfast::sort_mat(da_ta)  # Sort the columns
+# Calculate vector of quantiles for tilt parameter
+conf_level <- 0.02; cut_off <- conf_level*n_rows
+calc_quant <- function(lamb_da) {
+  data_tilt <- da_ta + lamb_da  # Tilt the random numbers
+  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+  # Calculate quantiles for columns
+  sapply(1:n_boot, function(boo_t) {
+    cum_prob <- cumsum(weight_s[, boo_t])/n_rows
+    data_tilt[findInterval(conf_level, cum_prob), boo_t]
+  })  # end sapply
+}  # end calc_quant
+
+# Define vector of tilt parameters
+lambda_s <- seq(-3.0, -1.2, by=0.2)
+# Calculate vector of quantiles for tilt parameters
+quantile_s <- sapply(lambda_s, calc_quant)
+# Calculate standard deviations of quantiles for tilt parameters
+std_devs <- apply(quantile_s, MARGIN=2, sd)
+# Calculate the optimal tilt parameter
+lambda_s[which.min(std_devs)]
+# Plot the standard deviations
+x11(width=6, height=5)
+plot(x=lambda_s, y=std_devs,
+     main="Standard Deviations of Simulated Quantiles",
+     xlab="tilt parameter", ylab="standard deviation",
+     type="l", col="blue", lwd=2)
+
+# Extract the density
+da_ta <- den_sity$x
+den_sity <- den_sity$y
+# Importance sample weights
+lamb_da <- (-1.5*sd(da_ta))  # Tilt parameter
+data_tilt <- da_ta + lamb_da  # Tilt the data
+shif_t <- (-findInterval(lamb_da, da_ta))
+# data_tilt <- rutils::lag_it(da_ta, shif_t, pad_zeros=FALSE)  # Tilt the data
+density_tilt <- rutils::lag_it(den_sity, shif_t, pad_zeros=FALSE)  # Tilt the density
+# Interpolate the den_sity vector into re_turns
+density_base <- approx(da_ta, den_sity, xout=data_tilt)
+all.equal(density_base$x, data_tilt)
+
+density_base$y <- na.locf(density_base$y, fromLast=TRUE)
+
+weight_s <- density_base$y/density_tilt
+weight_s <- weight_s/sum(weight_s)
+# Calculate time series of VTI returns
+
+# Estimate of VaR (quantile - extreme loss)
+conf_level <- 0.02; cut_off <- conf_level*n_rows
+# da_ta <- sort(da_ta)
+va_r <- da_ta[cut_off]  # Naive Monte Carlo value
+sd(da_ta)*qnorm(conf_level)  # Assuming normal distribution
+
+# Cumulative probabilities using importance sample
+cum_prob <- cumsum(weight_s)
+# Quantile from importance sample
+va_r <- data_tilt[findInterval(conf_level, cum_prob)]
+# Estimate of CVaR (expected loss)
+cva_r <- sum((da_ta < va_r)*da_ta)/sum((da_ta < va_r))
+
+
+# Estimate of cumulative probability
+pnorm(1)
+sum(da_ta < 1)/n_rows
+
+
+# Generate importance sample
+
+# Sample from VTI returns
+sampl_e <- re_turns[sample.int(n_rows, replace=TRUE)]
+c(sd=sd(sampl_e), mad=mad(sampl_e))
+# sample.int() is a little faster than sample()
+library(microbenchmark)
+summary(microbenchmark(
+  sample.int = sample.int(1e3),
+  sample = sample(1e3),
+  times=10))[, c(1, 4, 5)]
+
+
+# Quantile from Naive Monte Carlo
+conf_level <- 0.98
+qnorm(conf_level)  # Exact value
+da_ta <- sort(da_ta)
+quantile(da_ta, probs=conf_level)
+cut_off <- conf_level*n_rows
+da_ta[cut_off]  # Naive Monte Carlo value
+# Bootstrap of standard errors of quantile
+n_boot <- 1000
+boot_data <- sapply(1:n_boot, function(x) {
+  da_ta <- sort(rnorm(n_rows))
+  na_ive <- da_ta[cut_off]
+  data_tilt <- da_ta + lamb_da
+  weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+  cum_prob <- cumsum(weight_s)/n_rows
+  im_port <- data_tilt[n_rows -
+    findInterval(1-conf_level, cum_prob)]
+  c(naive_mc=na_ive, importance=im_port)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+  function(x) c(mean=mean(x), sd=sd(x)))
+
+# Binomial sample
+n_rows <- 1000
+pro_b <- 0.1
+da_ta <- rbinom(n=n_rows, size=1, pro_b)
+head(da_ta, 33)
+fre_q <- sum(da_ta)/n_rows
+# Tilted binomial sample
+lamb_da <- 5
+p_tilted <- lamb_da*pro_b/(1 + pro_b*(lamb_da - 1))
+weigh_t <- (1 + pro_b*(lamb_da - 1))/lamb_da
+da_ta <- rbinom(n=n_rows, size=1, p_tilted)
+head(da_ta, 33)
+weigh_t*sum(da_ta)/n_rows
+# Bootstrap of standard errors
+n_boot <- 1000
+boot_data <- sapply(1:n_boot, function(x) {
+  c(naive_mc=sum(rbinom(n=n_rows, size=1, pro_b))/n_rows,
+    importance=weigh_t*sum(rbinom(n=n_rows, size=1, p_tilted))/n_rows)
+}) # end sapply
+apply(boot_data, MARGIN=1,
+  function(x) c(mean=mean(x), sd=sd(x)))
+
+# Define Brownian motion parameters
+sig_ma <- 1.0  # Volatility
+dri_ft <- 0.0  # Drift
+n_rows <- 100  # Number of simulation steps
+n_simu <- 10000  # Number of simulations
+# Calculate matrix of normal variables
+set.seed(1121)
+da_ta <- rnorm(n_simu*n_rows, mean=dri_ft, sd=sig_ma)
+da_ta <- matrix(da_ta, nc=n_simu)
+# Simulate paths of Brownian motion
+path_s <- matrixStats::colCumsums(da_ta)
+# Tilt the da_ta
+lamb_da <- 0.04  # Tilt parameter
+data_tilt <- da_ta + lamb_da  # Tilt the random numbers
+paths_tilt <- matrixStats::colCumsums(data_tilt)
+# Calculate path weights
+weight_s <- exp(-lamb_da*data_tilt + lamb_da^2/2)
+path_weights <- matrixStats::colProds(weight_s)
+# Or
+path_weights <- exp(-lamb_da*colSums(data_tilt) + n_rows*lamb_da^2/2)
+# Calculate option payout using standard MC
+strik_e <- 10  # Strike price
+pay_outs <- (path_s[n_rows, ] - strik_e)
+sum(pay_outs[pay_outs > 0])/n_simu
+# Calculate option payout using importance sampling
+pay_outs <- (paths_tilt[n_rows, ] - strik_e)
+sum((path_weights*pay_outs)[pay_outs > 0])/n_simu
+# Calculate crossing probability using standard MC
+bar_rier <- 10
+cross_ed <- colSums(path_s > bar_rier) > 0
+sum(cross_ed)/n_simu
+# Calculate crossing probability using importance sampling
+cross_ed <- colSums(paths_tilt > bar_rier) > 0
+sum(path_weights*cross_ed)/n_simu
+
 options(width=50, dev='pdf')
 str(optimize)
 # Objective function with multiple minima
@@ -1398,23 +1523,21 @@ library(rgl)  # Load rgl
 # Define function of two variables
 sur_face <- function(x, y) y*sin(x)
 # Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
   col="green", axes=FALSE)
 # Draw 3d surface plot of matrix
 x_lim <- seq(from=-5, to=5, by=0.1)
 y_lim <- seq(from=-5, to=5, by=0.1)
-persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-  xlab="x", ylab="y", zlab="sur_face",
-  col="green")
+rgl::persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
+  xlab="x", ylab="y", zlab="sur_face", col="green")
 # Save current view to png file
 rgl.snapshot("surface_plot.png")
 # Define function of two variables and two parameters
 sur_face <- function(x, y, par_1=1, par_2=1)
   sin(par_1*x)*sin(par_2*y)
 # Draw 3d surface plot of function
-persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-  col="green", axes=FALSE,
-  par_1=1, par_2=2)
+rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
+  col="green", axes=FALSE, par_1=1, par_2=2)
 
 # Rastrigin function with vector argument for optimization
 rastri_gin <- function(vec_tor, pa_ram=25){
@@ -1445,18 +1568,16 @@ object_ive <- function(pa_r, da_ta) {
   sum(2*log(pa_r[2]) +
     ((da_ta - pa_r[1])/pa_r[2])^2)
 }  # end object_ive
-# Vectorize objective function
-vec_objective <- Vectorize(
-  FUN=function(mean, sd, da_ta)
-    object_ive(c(mean, sd), da_ta),
-  vectorize.args=c("mean", "sd")
-)  # end Vectorize
 # Objective function on parameter grid
 par_mean <- seq(1, 6, length=50)
 par_sd <- seq(0.5, 3.0, length=50)
-objective_grid <- outer(par_mean, par_sd,
-vec_objective, da_ta=da_ta)
-objective_min <- which(  # grid search
+objective_grid <- sapply(par_mean, function(m) {
+  sapply(par_sd, function(sd) {
+    object_ive(c(m, sd), da_ta)
+  })  # end sapply
+})  # end sapply
+# Perform grid search for minimum
+objective_min <- which(
   objective_grid==min(objective_grid),
   arr.ind=TRUE)
 objective_min
@@ -1465,6 +1586,14 @@ par_sd[objective_min[2]]  # sd
 objective_grid[objective_min]
 objective_grid[(objective_min[, 1] + -1:1),
        (objective_min[, 2] + -1:1)]
+# Or create parameter grid using function outer()
+vec_objective <- Vectorize(
+  FUN=function(mean, sd, da_ta)
+    object_ive(c(mean, sd), da_ta),
+  vectorize.args=c("mean", "sd")
+)  # end Vectorize
+objective_grid <- outer(par_mean, par_sd,
+vec_objective, da_ta=da_ta)
 
 par(cex.lab=2.0, cex.axis=2.0, cex.main=2.0, cex.sub=2.0)
 # Perspective plot of log-likelihood function
@@ -1474,8 +1603,8 @@ border="green", zlab="objective",
 main="objective function")
 # Interactive perspective plot of log-likelihood function
 library(rgl)  # Load package rgl
-par3d(cex=2.0)  # Scale text by factor of 2
-persp3d(z=-objective_grid, zlab="objective",
+rgl::par3d(cex=2.0)  # Scale text by factor of 2
+rgl::persp3d(z=-objective_grid, zlab="objective",
   col="green", main="objective function")
 
 # Initial parameters
@@ -1493,17 +1622,13 @@ optim_fit$par
 optim_fit <- MASS::fitdistr(da_ta, densfun="normal")
 optim_fit$estimate
 optim_fit$sd
-
 # Plot histogram
 histo_gram <- hist(da_ta, plot=FALSE)
-plot(histo_gram, freq=FALSE,
-     main="histogram of sample")
-curve(expr=dnorm(x, mean=optim_fit$par["mean"],
-           sd=optim_fit$par["sd"]),
+plot(histo_gram, freq=FALSE, main="histogram of sample")
+curve(expr=dnorm(x, mean=optim_fit$par["mean"], sd=optim_fit$par["sd"]),
 add=TRUE, type="l", lwd=2, col="red")
 legend("topright", inset=0.0, cex=0.8, title=NULL,
- leg="optimal parameters",
- lwd=2, bg="white", col="red")
+ leg="optimal parameters", lwd=2, bg="white", col="red")
 
 # Sample from mixture of normal distributions
 da_ta <- c(rnorm(100, sd=1.0),
@@ -1555,16 +1680,13 @@ optim_fit <- optim(par=par_init,
       upper=c(1,10,10,10,10),
       lower=c(0,-10,0.2,-10,0.2))
 optim_fit$par
-
 # Plot histogram
 histo_gram <- hist(da_ta, plot=FALSE)
 plot(histo_gram, freq=FALSE,
      main="histogram of sample")
 fit_func <- function(x, pa_r) {
-  pa_r["weight"] *
-    dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
-  (1-pa_r["weight"]) *
-    dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
+  pa_r["weight"]*dnorm(x, mean=pa_r["m1"], sd=pa_r["s1"]) +
+  (1-pa_r["weight"])*dnorm(x, mean=pa_r["m2"], sd=pa_r["s2"])
 }  # end fit_func
 curve(expr=fit_func(x, pa_r=optim_fit$par), add=TRUE,
 type="l", lwd=2, col="red")
@@ -1688,8 +1810,9 @@ summary(microbenchmark(
   times=10))[, c(1, 4, 5)]
 
 # Define Ornstein-Uhlenbeck function in R
-boot_data <- function(da_ta, n_boot=1000) {
-  boot_data <- sapply(1:10000, function(x) {
+n_boot <- 1000
+boot_data <- function(da_ta, n_boot=n_boot) {
+  boot_data <- sapply(1:n_boot, function(x) {
     sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
@@ -1706,7 +1829,7 @@ boot_data <- function(da_ta, n_boot=1000) {
   price_s[1] <- eq_price
   for (i in 2:n_rows) {
     re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
+    price_s[i] <- price_s[i-1] + re_turns[i]
   }  # end for
   price_s
 }  # end boot_data
@@ -1724,7 +1847,7 @@ sim_ou <- function(n_rows=1000, eq_price=5.0,
   price_s[1] <- eq_price
   for (i in 2:n_rows) {
     re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
+    price_s[i] <- price_s[i-1] + re_turns[i]
   }  # end for
   price_s
 }  # end sim_ou
@@ -1746,7 +1869,7 @@ NumericVector sim_ou_rcpp(double eq_price,
   price_s[0] = eq_price;
   for (int it = 1; it < n_rows; it++) {
     re_turns[it] = the_ta*(eq_price - price_s[it-1]) + vol_at*in_nov[it-1];
-    price_s[it] = price_s[it-1] * exp(re_turns[it]);
+    price_s[it] = price_s[it-1] + re_turns[it];
   }  // end for
   return price_s;
 }")  # end cppFunction
@@ -1802,7 +1925,7 @@ summary(microbenchmark(
 
 # Define Ornstein-Uhlenbeck function in R
 boot_data <- function(da_ta, n_boot=1000) {
-  boot_data <- sapply(1:10000, function(x) {
+  boot_data <- sapply(1:n_boot, function(x) {
     sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
@@ -1819,7 +1942,7 @@ boot_data <- function(da_ta, n_boot=1000) {
   price_s[1] <- eq_price
   for (i in 2:n_rows) {
     re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
+    price_s[i] <- price_s[i-1] + re_turns[i]
   }  # end for
   price_s
 }  # end boot_data
@@ -1831,7 +1954,7 @@ ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
 
 # Define Ornstein-Uhlenbeck function in R
 boot_data <- function(da_ta, n_boot=1000) {
-  boot_data <- sapply(1:10000, function(x) {
+  boot_data <- sapply(1:n_boot, function(x) {
     sampl_e <- da_ta[sample.int(n_rows, replace=TRUE)]
     c(sd=sd(sampl_e), mad=mad(sampl_e))
   })  # end sapply
@@ -1848,7 +1971,7 @@ boot_data <- function(da_ta, n_boot=1000) {
   price_s[1] <- eq_price
   for (i in 2:n_rows) {
     re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + vol_at*rnorm(1)
-    price_s[i] <- price_s[i-1] * exp(re_turns[i])
+    price_s[i] <- price_s[i-1] + re_turns[i]
   }  # end for
   price_s
 }  # end boot_data
@@ -1941,7 +2064,7 @@ summary(microbenchmark(
 library(RcppArmadillo)
 # Source Rcpp functions from file
 Rcpp::sourceCpp("C:/Develop/lecture_slides/scripts/calc_weights.cpp")
-# Create random matrix of returns
+# Calculate matrix of random returns
 mat_rix <- matrix(rnorm(300), nc=5)
 # Regularized inverse of covariance matrix
 max_eigen <- 4

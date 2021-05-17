@@ -78,8 +78,8 @@ test_func("second_val")
 test_func("se")  # Partial name binding
 test_func("some_val")  # Invalid string
 
-# DAX percentage returns
-re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
+# VTI percentage returns
+re_turns <- rutils::diff_it(log(Cl(rutils::etf_env$VTI)))
 # calc_skew() calculates skew of time series of returns
 # Default is normal time series
 calc_skew <- function(re_turns=rnorm(1000)) {
@@ -101,8 +101,7 @@ calc_skew()
 
 str(plot)  # Dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put,
- ", dots=", paste(..., sep=", "))
+  paste0("in_put=", in_put, ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
 bind_dots(2, in_put=1, 3)  # "in_put" bound by name
@@ -542,9 +541,8 @@ apply(mat_rix, 2, median)
 # Calculate median of columns with na.rm=TRUE
 apply(mat_rix, 2, median, na.rm=TRUE)
 
-rm(list=ls())
-# DAX percentage returns
-re_turns <- rutils::diff_it(log(EuStockMarkets[, 1]))
+# VTI percentage returns
+re_turns <- rutils::diff_it(log(Cl(rutils::etf_env$VTI)))
 library(moments)  # Load package moments
 str(moment)  # Get list of arguments
 # Apply moment function
@@ -553,14 +551,13 @@ moment(x=re_turns, order=3)
 moment_orders <- as.matrix(1:4)
 # Anonymous function allows looping over function parameters
 apply(X=moment_orders, MARGIN=1,
-      FUN=function(moment_order) {
-  moment(x=re_turns, order=moment_order)
-}  # end anonymous function
-      )  # end apply
+FUN=function(moment_order) {
+    moment(x=re_turns, order=moment_order)
+  }  # end anonymous function
+)  # end apply
 
 # Another way of passing parameters into moment() function
-apply(X=moment_orders, MARGIN=1, FUN=moment,
-      x=re_turns)
+apply(X=moment_orders, MARGIN=1, FUN=moment, x=re_turns)
 
 # Function with three arguments
 my_func <- function(arg1, arg2, arg3) {

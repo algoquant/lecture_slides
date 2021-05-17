@@ -2547,19 +2547,17 @@ plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
         & y_{fit} = \alpha + \mathbb{X} \beta
       \end{flalign*}
       Where $y_{fit}$ are the \emph{fitted values} of the model.
-        <<echo=(-(1:1)),eval=TRUE>>=
-set.seed(1121)  # initialize random number generator
+        <<echo=TRUE,eval=TRUE>>=
 # Define design matrix
 n_rows <- 100
 n_cols <- 5
-de_sign <- sapply(rep(n_rows, n_cols), rnorm)
+set.seed(1121)  # initialize random number generator
+de_sign <- matrix(rnorm(n_rows*n_cols), ncol=n_cols)
 # Add column names
 colnames(de_sign) <- paste0("col", 1:n_cols)
-# Plot design matrix
-# matplot(de_sign, type="l", lty="solid", lwd=3)
 # Define the design weights
 weight_s <- sample(3:(n_cols+2))
-# Response equals linear form plus random noise
+# Response equals weighted de_sign plus random noise
 noise <- rnorm(n_rows, sd=5)
 res_ponse <- (-1 + de_sign %*% weight_s + noise)
       @
@@ -2607,10 +2605,9 @@ design_zm <- t(t(de_sign) - colMeans(de_sign))
 # de_sign <- apply(de_sign, 2, function(x) (x-mean(x)))
 response_zm <- res_ponse - mean(res_ponse)
 # Calculate the regression coefficients
-beta_s <- MASS::ginv(design_zm) %*% response_zm
+beta_s <- drop(MASS::ginv(design_zm) %*% response_zm)
 # Calculate the regression alpha
-al_pha <- mean(res_ponse) -
-  sum(colSums(de_sign)*drop(beta_s))/n_rows
+al_pha <- mean(res_ponse) - sum(colSums(de_sign)*beta_s)/n_rows
 # Compare with coefficients from lm()
 all.equal(coef(mod_el), c(al_pha, beta_s), check.attributes=FALSE)
 # Compare with actual coefficients
@@ -2811,35 +2808,32 @@ all.equal(fitted_zm,
       \vskip1ex
       The parameter estimates are biased, even though the \emph{t}-statistics, \emph{p}-values, and \emph{R}-squared all indicate a statistically significant regression.
       \vskip1ex
-      But the Durbin-Watson test shows residuals are autocorrelated, invalidating other tests.
+      But the Durbin-Watson test shows that the residuals are autocorrelated, which means that the regression coefficients may not be statistically significant (different from zero).
         <<echo=TRUE,eval=FALSE>>=
 library(lmtest)  # Load lmtest
 # Define design matrix
-de_sign <- data.frame(de_sign=1:30, omit_var=sin(0.2*1:30))
+ex_plan <- 1:30
+omit_var <- sin(0.2*1:30)
 # Response depends on both predictors
-res_ponse <- with(de_sign,
-          0.2*de_sign + omit_var + 0.2*rnorm(30))
+res_p <- 0.2*ex_plan + omit_var + 0.2*rnorm(30)
 # Mis-specified regression only one predictor
-mod_el <- lm(res_ponse ~ de_sign, data=de_sign)
-model_sum <- summary(mod_el)
+model_ovb <- lm(res_p ~ ex_plan)
+model_sum <- summary(model_ovb)
 model_sum$coeff
 model_sum$r.squared
 # Durbin-Watson test shows residuals are autocorrelated
-lmtest::dwtest(mod_el)
-      @
-      \vspace{-2em}
-        <<ovb_reg,echo=(-(1:2)),eval=FALSE,fig.height=8,fig.show='hide'>>=
-par(oma=c(15, 1, 1, 1), mgp=c(0, 0.5, 0), mar=c(1, 1, 1, 1), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+lmtest::dwtest(model_ovb)
+# Plot the regression diagnostic plots
+x11(width=5, height=7)
 par(mfrow=c(2,1))  # Set plot panels
-plot(for_mula, data=de_sign)
-abline(mod_el, lwd=2, col="red")
-title(main="OVB Regression", line=-1)
-plot(mod_el, which=2, ask=FALSE)  # Plot just Q-Q
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+plot(res_p ~ ex_plan)
+abline(model_ovb, lwd=2, col="red")
+title(main="Omitted Variable Regression", line=-1)
+plot(model_ovb, which=2, ask=FALSE)  # Plot just Q-Q
       @
     \column{0.5\textwidth}
-      \vspace{-1em}
-      \hspace*{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ovb_reg-1}
+      \includegraphics[width=0.45\paperwidth]{figure/reg_ovb.png}
   \end{columns}
 \end{block}
 
@@ -3775,7 +3769,8 @@ attach(Default)  # Attach Default to search path
 # Explore credit default data
 summary(Default)
 sapply(Default, class)
-dim(Default); head(Default)
+dim(Default)
+head(Default)
       @
   \end{columns}
 \end{block}

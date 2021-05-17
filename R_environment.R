@@ -19,8 +19,8 @@ vec_tor <- runif(1e5)
 cum_sum <- cumsum(vec_tor)
 # Use for loop
 cum_sum2 <- vec_tor
-for (i in 2:NROW(cum_sum2))
-  cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+for (i in 2:NROW(vec_tor))
+  cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
 # Compare the two methods
 all.equal(cum_sum, cum_sum2)
 # Microbenchmark the two methods
@@ -29,8 +29,8 @@ summary(microbenchmark(
   cumsum=cumsum(vec_tor),
   loop_alloc={
     cum_sum2 <- vec_tor
-    for (i in 2:NROW(cum_sum2))
-cum_sum2[i] <- (cum_sum2[i] + cum_sum2[i-1])
+    for (i in 2:NROW(vec_tor))
+cum_sum2[i] <- (vec_tor[i] + cum_sum2[i-1])
   },
   loop_nalloc={
     # Doesn't allocate memory to cum_sum3
@@ -271,7 +271,11 @@ price_s <- do.call(cbind,
 price_s <- do.call(cbind,
   eapply(rutils::etf_env, quantmod::Cl)[sym_bols])
 
-# Drop ".Close" from colnames
+# Drop ".Close" from column names
+colnames(price_s[, 1:4])
+do.call(rbind, strsplit(colnames(price_s[, 1:4]), split="[.]"))[, 1]
+colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
+# Or
 colnames(price_s) <- unname(sapply(colnames(price_s),
     function(col_name)
 strsplit(col_name, split="[.]")[[1]][1]))

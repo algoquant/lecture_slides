@@ -202,26 +202,26 @@ library(zoo)  # Load zoo
 library(RQuantLib)  # Load RQuantLib
 
 # Create daily date series of class "Date"
-in_dex <- Sys.Date() + -5:2
-in_dex
+date_s <- Sys.Date() + -5:2
+date_s
 
 # Create Boolean vector of business days
 is_busday <- isBusinessDay(  # RQuantLib calendar
-  calendar="UnitedStates/GovernmentBond", in_dex)
+  calendar="UnitedStates/GovernmentBond", date_s)
 
 # Create daily series of business days
-bus_index <- in_dex[is_busday]
+bus_index <- date_s[is_busday]
 bus_index
 
 library(zoo)  # Load package zoo
 date_time <- Sys.Date()  # Create date series of class "Date"
-in_dex <- date_time + 0:365  # Daily series over one year
-head(in_dex, 4)  # Print first few dates
-format(head(in_dex, 4), "%m/%d/%Y")  # Print first few dates
+date_s <- date_time + 0:365  # Daily series over one year
+head(date_s, 4)  # Print first few dates
+format(head(date_s, 4), "%m/%d/%Y")  # Print first few dates
 # Create daily date-time series of class "POSIXct"
-in_dex <- seq(Sys.time(), by="days", length.out=365)
-head(in_dex, 4)  # Print first few dates
-format(head(in_dex, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
+date_s <- seq(Sys.time(), by="days", length.out=365)
+head(date_s, 4)  # Print first few dates
+format(head(date_s, 4), "%m/%d/%Y %H:%M:%S")  # Print first few dates
 # Create series of monthly dates of class "zoo"
 monthly_index <- yearmon(2010+0:36/12)
 head(monthly_index, 4)  # Print first few dates
@@ -290,9 +290,8 @@ legend(x=1992, y=8000,
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns
-in_dex <- Sys.Date() + 0:3
-zoo_series <- zoo(rnorm(NROW(in_dex)),
-         order.by=in_dex)
+date_s <- Sys.Date() + 0:3
+zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
 zoo_series
 attributes(zoo_series)
 class(zoo_series)  # Class "zoo"
@@ -311,10 +310,8 @@ cummax(cumsum(zoo_series))
 cummin(cumsum(zoo_series))
 
 library(zoo)  # Load package zoo
-zoo_series <-
-  zoo(as.matrix(cumsum(rnorm(100)), nc=1),
-order.by=seq(from=as.Date("2013-06-15"),
-             by="day", length.out=100))
+zoo_series <- zoo(matrix(cumsum(rnorm(100)), nc=1),
+  order.by=seq(from=as.Date("2013-06-15"), by="day", len=100))
 colnames(zoo_series) <- "zoo_series"
 tail(zoo_series)
 dim(zoo_series)
@@ -333,13 +330,11 @@ lag(zoo_series, -2, na.pad=TRUE)
 set.seed(1121)  # Reset random number generator
 library(zoo)  # Load package zoo
 # Create index of daily dates
-in_dex <- seq(from=as.Date("2014-07-14"),
-            by="day", length.out=1000)
+date_s <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <-
-  exp(cumsum(rnorm(NROW(in_dex))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(date_s))/100))
 # Create zoo series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data, order.by=in_dex)
+zoo_series <- zoo(x=zoo_data, order.by=date_s)
 
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 # Plot using plot.zoo method
@@ -360,19 +355,15 @@ set.seed(1121)  # Reset random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # Load package zoo
 # Create daily date series of class "Date"
-in_dex1 <- seq(Sys.Date(), by="days",
-             length.out=365)
+index1 <- seq(Sys.Date(), by="days", length.out=365)
 # Create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
-           order.by=in_dex1)
+zoo_series1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
-in_dex2 <- seq(Sys.Date()+350, by="days",
-             length.out=365)
-zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
-           order.by=in_dex2)
+index2 <- seq(Sys.Date()+350, by="days", length.out=365)
+zoo_series2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 # rbind the two time series - ts1 supersedes ts2
 zoo_series3 <- rbind(zoo_series1,
-           zoo_series2[zoo::index(zoo_series2) > end(zoo_series1)])
+  zoo_series2[zoo::index(zoo_series2) > end(zoo_series1)])
 # Plot zoo time series of geometric Brownian motion
 plot(exp(cumsum(zoo_series3)/100), xlab="", ylab="")
 # Add vertical lines at stitch point
@@ -381,14 +372,12 @@ abline(v=start(zoo_series2), col="red", lty="dashed")
 title(main="Random Prices", line=-1)  # Add title
 
 # Create daily date series of class "Date"
-in_dex1 <- Sys.Date() + -3:1
+index1 <- Sys.Date() + -3:1
 # Create zoo time series of random returns
-zoo_series1 <- zoo(rnorm(NROW(in_dex1)),
-         order.by=in_dex1)
+zoo_series1 <- zoo(rnorm(NROW(index1)), order.by=index1)
 # Create another zoo time series of random returns
-in_dex2 <- Sys.Date() + -1:3
-zoo_series2 <- zoo(rnorm(NROW(in_dex2)),
-         order.by=in_dex2)
+index2 <- Sys.Date() + -1:3
+zoo_series2 <- zoo(rnorm(NROW(index2)), order.by=index2)
 merge(zoo_series1, zoo_series2)  # union of dates
 # Intersection of dates
 merge(zoo_series1, zoo_series2, all=FALSE)
@@ -424,7 +413,8 @@ se_ries <- rutils::etf_env$price_s[, 1]
 head(se_ries)
 sum(is.na(se_ries))
 library(quantmod)
-series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE, fromLast=TRUE))
+series_zoo <- as.xts(zoo::na.locf(se_ries, na.rm=FALSE,
+                            fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
 library(microbenchmark)
@@ -454,13 +444,11 @@ library(lubridate)  # Load lubridate
 library(zoo)  # Load package zoo
 set.seed(1121)  # Reset random number generator
 # Create index of daily dates
-in_dex <- seq(from=as.Date("2014-07-14"),
-            by="day", length.out=1000)
+date_s <- seq(from=as.Date("2014-07-14"), by="day", length.out=1000)
 # Create vector of geometric Brownian motion
-zoo_data <- exp(cumsum(rnorm(NROW(in_dex))/100))
+zoo_data <- exp(cumsum(rnorm(NROW(date_s))/100))
 # Create zoo time series of geometric Brownian motion
-zoo_series <- zoo(x=zoo_data,
-            order.by=in_dex)
+zoo_series <- zoo(x=zoo_data, order.by=date_s)
 head(zoo_series, 3)  # zoo object
 # as.ts() creates ts object with frequency=1
 ts_series <- as.ts(zoo_series)
@@ -493,19 +481,18 @@ head(zoo_series, 7)  # zoo object
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
 # Create vector of regular dates, including weekends
-in_dex <- seq(from=start(zoo_series),
+date_s <- seq(from=start(zoo_series),
             by="day",
             length.out=NROW(zoo_series))
-zoo::index(zoo_series) <- in_dex
+zoo::index(zoo_series) <- date_s
 ts_series <- as.ts(zoo_series)
 head(ts_series, 7)
 
 set.seed(1121)  # Reset random number generator
 library(xts)  # Load package xts
 # Create xts time series of random returns
-in_dex <- Sys.Date() + 0:3
-x_ts <- xts(rnorm(NROW(in_dex)),
-         order.by=in_dex)
+date_s <- Sys.Date() + 0:3
+x_ts <- xts(rnorm(NROW(date_s)), order.by=date_s)
 names(x_ts) <- "random"
 x_ts
 tail(x_ts, 3)  # Get last few elements

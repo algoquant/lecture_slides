@@ -1,5 +1,5 @@
 library(knitr)
-opts_chunk$set(prompt=TRUE, eval=FALSE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
+opts_chunk$set(prompt=TRUE, eval=TRUE, tidy=FALSE, strip.white=FALSE, comment=NA, highlight=FALSE, message=FALSE, warning=FALSE, size='tiny', fig.width=4, fig.height=4)
 options(digits=3)
 options(width=80, dev='pdf')
 thm <- knit_theme$get("acid")
@@ -55,7 +55,7 @@ structure(0, class="Date")  # "Date" object
 
 my_var <- matrix(runif(10), 2, 5)
 class(my_var)  # Has implicit class
-# but no explicit "class" attribute
+# But no explicit "class" attribute
 attributes(my_var)
 c(typeof(my_var), mode(my_var), class(my_var))
 # Assign explicit "class" attribute
@@ -241,17 +241,25 @@ which(vec_tor > 0.5)  # Index of elements > 0.5
 fac_tor <- factor(c("b", "c", "d", "a", "c", "b"))
 fac_tor
 fac_tor[3]
-attributes(fac_tor)  # Get factor attributes
-levels(fac_tor)  # Get allowed values
-as.numeric(fac_tor)  # Get encoding vector
+# Get factor attributes
+attributes(fac_tor)
+# Get allowed values
+levels(fac_tor)
+# Get encoding vector
+as.numeric(fac_tor)
 is.vector(fac_tor)
-as.factor(1:5)  # Coerce vector to factor
+# Coerce vector to factor
+as.factor(1:5)
 # Coerce factor to character vector
 as.vector(as.factor(1:5))
 
 fac_tor
-levels(fac_tor)  # Get allowed values
-unique(fac_tor)  # Get unique elements
+# Get unique elements
+unique(fac_tor)
+# Get levels attribute of the factor
+levels(fac_tor)
+# Calculate the factor elements from its levels
+levels(fac_tor)[as.numeric(fac_tor)]
 # Get contingency (frequency) table
 table(fac_tor)
 # Get contingency table using sapply
@@ -260,8 +268,8 @@ sapply(levels(fac_tor),
    sum(le_vel == fac_tor)
  })  # end sapply
 
-library(microbenchmark)
-str(findInterval)
+# Display the formal arguments of findInterval
+args(findInterval)
 # Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
@@ -271,21 +279,17 @@ match(6, c(3, 5, 7))
 # Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
 # Return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
 # make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
 
 # Named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-       cold=50, pleasant=60,
-       warm=80, hot=90)
+brea_ks <- c(freezing=0, very_cold=30, cold=50, 
+       pleasant=60, warm=80, hot=90)
 brea_ks
 tempe_ratures <- runif(10, min=10, max=100)
 feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
+  brea_ks[findInterval(x=tempe_ratures, vec=brea_ks)])
 names(tempe_ratures) <- feels_like
 tempe_ratures
 
@@ -312,26 +316,26 @@ re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+ma_d <- mad(re_turns)
 histo_gram <- hist(re_turns, breaks=100,
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
+  main="", xlim=c(-5*ma_d, 5*ma_d),
   xlab="", ylab="", freq=FALSE)
 
 # Draw kernel density of histogram
 lines(density(re_turns), col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(re_turns),
-  sd=sd(re_turns)), add=TRUE, type="l",
-  lwd=2, col="blue")
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)), 
+add=TRUE, type="l", lwd=2, col="blue")
 title(main="VTI Return Distribution", line=0)
 # Add legend
 legend("topright", inset=0.05, cex=0.8, title=NULL,
   leg=c("VTI", "Normal"), bty="n",
   lwd=6, bg="white", col=c("red", "blue"))
 # Total area under histogram
-diff(histo_gram$breaks) %*% histo_gram$density
+sum(diff(histo_gram$breaks) * histo_gram$density)
 
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-mat_rix  # by default matrices are constructed column-wise
+mat_rix  # By default matrices are constructed column-wise
 # Create a matrix row-wise
 matrix(5:10, nrow=2, byrow=TRUE)
 mat_rix[2, 3]  # Extract third element from second row
@@ -395,8 +399,10 @@ lis_t[2] <- 2
 lis_t
 names(lis_t)
 
-as.list(c(1,2,3))
-list(c(1,2,3))
+# Convert vector elements to list elements
+as.list(1:3)
+# Convert whole vector to single list element
+list(1:3)
 
 data_frame <- data.frame(  # Create a data frame
                 type=c("rose", "daisy", "tulip"),
@@ -446,34 +452,40 @@ dim(cars)  # The cars data frame has 50 rows
 head(cars, n=5)  # Get first five rows
 tail(cars, n=5)  # Get last five rows
 
-# Create a named vector
-stu_dents <- sample(round(runif(5, min=1, max=10), digits=2))
-names(stu_dents) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
+# Create a named vector of student scores
+score_s <- sample(round(runif(5, min=1, max=10), digits=2))
+names(score_s) <- c("Angie", "Chris", "Suzie", "Matt", "Liz")
 # Sort the vector into ascending order
-sort(stu_dents)
+sort(score_s)
 # Calculate index to sort into ascending order
-order(stu_dents)
+order(score_s)
 # Sort the vector into ascending order
-stu_dents[order(stu_dents)]
+score_s[order(score_s)]
 # Calculate the sorted (ordered) vector
-sort_ed <- stu_dents[order(stu_dents)]
+sort_ed <- score_s[order(score_s)]
 # Calculate index to sort into unsorted (original) order
-order(order(stu_dents))
-sort_ed[order(order(stu_dents))]
-stu_dents
-# Create a data frame of stu_dents and their ranks
-ra_nks <- c("first", "second", "third", "fourth", "fifth")
-data.frame(students=stu_dents,
-  rank=ra_nks[order(order(stu_dents))])
-# Permute data_frame of flowers on price column
-order(data_frame$price)
-# Sort data_frame on price
-data_frame[order(data_frame$price), ]
-# Sort data_frame on color
-data_frame[order(data_frame$color), ]
-# Read the Examples for sort()
+order(order(score_s))
+sort_ed[order(order(score_s))]
+score_s
+# Examples for sort() with ties
 order(c(2, 1:4))  # There's a tie
 order(c(2, 1:4), 1:5)  # There's a tie
+
+# Create a vector of student ranks
+ra_nks <- c("fifth", "fourth", "third", "second", "first")
+# Reverse sort the student ranks according to students
+ra_nks[order(order(score_s))]
+# Create a data frame of students and their ranks
+ros_ter <- data.frame(score=score_s, 
+  rank=ra_nks[order(order(score_s))])
+ros_ter
+# Permutation index on price column
+order(data_frame$price)
+# Sort data_frame on price column
+data_frame[order(data_frame$price), ]
+# Sort data_frame on color column
+data_frame[order(data_frame$color), ]
+
 
 as.matrix(data_frame)
 vec_tor <- sample(9)
@@ -499,10 +511,8 @@ summary(microbenchmark(
 library(microbenchmark)
 # lapply is faster than coercion function
 summary(microbenchmark(
-  as_list=
-    as.list(as.data.frame.matrix(mat_rix)),
-  l_apply=
-    lapply(seq_along(mat_rix[1, ]),
+  as_list=as.list(as.data.frame.matrix(mat_rix)),
+  l_apply=lapply(seq_along(mat_rix[1, ]),
      function(in_dex) mat_rix[, in_dex]),
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
@@ -556,8 +566,7 @@ mean(da_ta, na.rm=TRUE)  # remove NAs from input data
 da_ta[!is.na(da_ta)]  # Delete the NA values
 sum(!is.na(da_ta))  # Count non-NA values
 
-rm(list=ls())
-# Airquality data has some NAs
+# airquality data has some NAs
 head(airquality)
 dim(airquality)
 # Number of NA elements
@@ -567,29 +576,34 @@ sum(!complete.cases(airquality))
 # Display rows containing NAs
 head(airquality[!complete.cases(airquality), ])
 
-rm(list=ls())
-# Remove rows containing NAs
-good_air <- airquality[complete.cases(airquality), ]
-dim(good_air)
-head(good_air)  # NAs removed
-library(zoo)  # load package zoo
-# Replace NAs
-good_air <- zoo::na.locf(airquality)
-dim(good_air)
-head(good_air)  # NAs replaced
 # Create vector containing NA values
 vec_tor <- sample(22)
 vec_tor[sample(NROW(vec_tor), 4)] <- NA
 # Replace NA values with the most recent non-NA values
 zoo::na.locf(vec_tor)
+# Remove rows containing NAs
+good_air <- airquality[complete.cases(airquality), ]
+dim(good_air)
+# NAs removed
+head(good_air)
+# Another way of removing NAs
+fresh_air <- na.omit(airquality)
+all.equal(fresh_air, good_air, check.attributes=FALSE)
+# Replace NAs
+good_air <- zoo::na.locf(airquality)
+dim(good_air)
+# NAs replaced
+head(good_air)
+
 # Replace NAs in xts time series
+library(rutils)  # load package rutils
 se_ries <- rutils::etf_env$price_s[, 1]
-head(se_ries)
+head(se_ries, 3)
 sum(is.na(se_ries))
-library(quantmod)
 series_zoo <- as.xts(zoo::na.locf(se_ries, fromLast=TRUE))
 series_xts <- xts:::na.locf.xts(se_ries, fromLast=TRUE)
 all.equal(series_zoo, series_xts, check.attributes=FALSE)
+head(series_xts, 3)
 library(microbenchmark)
 summary(microbenchmark(
   zoo=as.xts(zoo::na.locf(se_ries, fromLast=TRUE)),

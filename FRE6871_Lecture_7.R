@@ -1,3 +1,183 @@
+# ?options  # Get info on global options
+getOption("warn")  # Global option for "warn"
+options("warn")  # Global option for "warn"
+getOption("error")  # Global option for "error"
+sqrt_safe <- function(in_put) {
+# Returns its argument
+  if (in_put<0) {
+    warning("sqrt_safe: in_put is negative")
+    NULL  # Return NULL for negative argument
+  } else {
+    sqrt(in_put)
+  }  # end if
+}  # end sqrt_safe
+sqrt_safe(5)
+sqrt_safe(-1)
+options(warn=-1)
+sqrt_safe(-1)
+options(warn=0)
+sqrt_safe()
+options(warn=1)
+sqrt_safe()
+options(warn=3)
+sqrt_safe()
+
+# Function vali_date validates its arguments
+vali_date <- function(in_put=NULL) {
+# Check if argument is valid and return double
+  if (is.null(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+# vali_date validates arguments using missing()
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    return("vali_date: in_put is missing")
+  } else if (is.numeric(in_put)) {
+    2*in_put
+  } else cat("vali_date: in_put is not numeric")
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+
+# vali_date() validates its arguments and assertions
+vali_date <- function(in_put) {
+# Check if argument is valid and return double
+  if (missing(in_put)) {
+    stop("vali_date: in_put is missing")
+  } else if (!is.numeric(in_put)) {
+    cat("in_put =", in_put)
+    stop("vali_date: in_put is not numeric")
+  } else 2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date("a")
+vali_date()
+
+# Print the call stack
+traceback()
+
+vali_date <- function(in_put) {
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) && is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date(3)
+vali_date()
+vali_date("a")
+vali_date <- function(in_put) {
+# Check argument using logical '&' operator
+  stopifnot(!missing(in_put) & is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()
+vali_date("a")
+
+# sum_two() returns the sum of its two arguments
+sum_two <- function(in_put1, in_put2) {  # Even more robust
+# Check if at least one argument is not missing
+  stopifnot(!missing(in_put1) &&
+        !missing(in_put2))
+# Check if arguments are valid and return sum
+  if (is.numeric(in_put1) &&
+is.numeric(in_put2)) {
+    in_put1 + in_put2  # Both valid
+  } else if (is.numeric(in_put1)) {
+    cat("in_put2 is not numeric\n")
+    in_put1  # in_put1 is valid
+  } else if (is.numeric(in_put2)) {
+    cat("in_put1 is not numeric\n")
+    in_put2  # in_put2 is valid
+  } else {
+    stop("none of the arguments are numeric")
+  }
+}  # end sum_two
+sum_two(1, 2)
+sum_two(5, 'a')
+sum_two('a', 5)
+sum_two('a', 'b')
+sum_two()
+
+# Flag "vali_date" for debugging
+debug(vali_date)
+# Calling "vali_date" starts debugger
+vali_date(3)
+# unflag "vali_date" for debugging
+undebug(vali_date)
+
+vali_date <- function(in_put) {
+  browser()  # Pause and invoke debugger
+# Check argument using long form '&&' operator
+  stopifnot(!missing(in_put) && is.numeric(in_put))
+  2*in_put
+}  # end vali_date
+vali_date()  # Invokes debugger
+options("error")  # Show default NULL "error" option
+options(error=recover)  # Set "error" option to "recover"
+options(error=NULL)  # Set back to default "error" option
+
+str(tryCatch)  # Get arguments of tryCatch()
+tryCatch(  # Without error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+tryCatch(  # With error handler
+  {  # Evaluate expressions
+    num_var <- 101  # Assign
+    stop('my error')  # Produce error
+  },
+  # Error handler captures error condition
+  error=function(error_cond) {
+    print(paste("error handler: ", error_cond))
+  },  # end error handler
+  # Warning handler captures warning condition
+  warning=function(warning_cond) {
+    print(paste("warning handler: ", warning_cond))
+  },  # end warning handler
+  finally=print(paste("num_var=", num_var))
+)  # end tryCatch
+
+rm(list=ls())
+# Apply loop without tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    stopifnot(num_var != 3)  # Check for error
+    # Broadcast message to console
+    cat("(cat) num_var =", num_var, "\n")
+    # Return a value
+    paste("(return) num_var =", num_var)
+  }  # end anonymous function
+)  # end apply
+
+# Apply loop with tryCatch
+apply(as.matrix(1:5), 1, function(num_var) {  # Anonymous function
+    tryCatch(  # With error handler
+{  # Body
+  stopifnot(num_var != 3)  # Check for error
+  # Broadcast message to console
+  cat("(cat) num_var =", num_var, "\t")
+  # Return a value
+  paste("(return) num_var =", num_var)
+  num_var
+},
+# Error handler captures error condition
+error=function(error_cond)
+  paste("handler: ", error_cond),
+finally=print(paste("(finally) num_var =", num_var))
+    )  # end tryCatch
+  }  # end anonymous function
+)  # end apply
+
 Sys.Date()  # Get today's date
 as.Date(1e3)  # Coerce numeric into date object
 date_time <- as.Date("2014-07-14")  # "%Y-%m-%d" or "%Y/%m/%d"
@@ -944,6 +1124,7 @@ price_s <- do.call(cbind,
 colnames(price_s) <- unname(sapply(colnames(price_s),
     function(col_name)
 strsplit(col_name, split="[.]")[[1]][1]))
+colnames(price_s) <- do.call(rbind, strsplit(colnames(price_s), split="[.]"))[, 1]
 tail(price_s, 3)
 # Which objects in global environment are class xts?
 unlist(eapply(globalenv(), is.xts))
@@ -1474,7 +1655,7 @@ sheet_s <- lapply(sheet_s, zoo::na.locf, fromLast=TRUE)
 #And export to CSV files
 setwd("C:/Develop/lecture_slides/data")
 # Read data frame, with row names from first column
-data_read <- read.csv(file="florist.csv",
+data_read <- read.csv(file="C:/Develop/lecture_slides/data/florist.csv",
               row.names=1)
 # Subset data frame
 data_read <-

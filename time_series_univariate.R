@@ -21,9 +21,9 @@ detach("package:tseries")  # Remove tseries from search path
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 load(file="C:/Develop/lecture_slides/data/zoo_data.RData")
 # Get start and end dates
-in_dex <- time(ts_stx_adj)
-e_nd <- in_dex[NROW(in_dex)]
-st_art <- round((4*e_nd + in_dex[1])/5)
+date_s <- time(ts_stx_adj)
+e_nd <- date_s[NROW(date_s)]
+st_art <- round((4*e_nd + date_s[1])/5)
 # Plot using plotOHLC
 plotOHLC(window(ts_stx_adj,
           start=st_art,
@@ -138,11 +138,9 @@ chartSeries(etf_env$VTI["2014-11"],
 
 library(quantmod)
 # Plot OHLC candlechart with volume
-chartSeries(etf_env$VTI["2008-11/2009-04"],
-      name="VTI")
+chartSeries(etf_env$VTI["2008-11/2009-04"], name="VTI")
 # Redraw plot only for Feb-2009, with white theme
-reChart(subset="2009-02",
-  theme=chartTheme("white"))
+reChart(subset="2009-02", theme=chartTheme("white"))
 
 library(quantmod)
 # Candlechart with Bollinger Bands
@@ -249,18 +247,16 @@ ch_ob <- chart_Series(x=oh_lc, theme=plot_theme, plot=FALSE)
 y_lim <- ch_ob$get_ylim()
 y_lim[[2]] <- structure(range(quantmod::Cl(oh_lc)) + c(-1, 1),
   fixed=TRUE)
-# modify plot object to reduce y-axis range
+# Modify plot object to reduce y-axis range
 ch_ob$set_ylim(y_lim)  # use setter function
 # Render the plot
 plot(ch_ob)
 
 library(rutils)
 # Calculate VTI and XLF volume-weighted average price
-v_wap <-
-  TTR::VWAP(price=quantmod::Cl(rutils::etf_env$VTI),
+v_wap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$VTI),
       volume=quantmod::Vo(rutils::etf_env$VTI), n=10)
-XLF_vwap <-
-  TTR::VWAP(price=quantmod::Cl(rutils::etf_env$XLF),
+XLF_vwap <- TTR::VWAP(price=quantmod::Cl(rutils::etf_env$XLF),
       volume=quantmod::Vo(rutils::etf_env$XLF), n=10)
 # Open graphics device, and define
 # Plot area with two horizontal panels
@@ -268,69 +264,65 @@ x11(); par(mfrow=c(2, 1))
 ch_ob <- chart_Series(  # Plot in top panel
   x=etf_env$VTI["2009-02/2009-04"],
   name="VTI", plot=FALSE)
-add_TA(v_wap["2009-02/2009-04"],
- lwd=2, on=1, col='blue')
-ch_ob <- chart_Series(  # Plot in bottom panel
-  x=etf_env$XLF["2009-02/2009-04"],
+add_TA(v_wap["2009-02/2009-04"], lwd=2, on=1, col='blue')
+# Plot in bottom panel
+ch_ob <- chart_Series(x=etf_env$XLF["2009-02/2009-04"],
   name="XLF", plot=FALSE)
-add_TA(XLF_vwap["2009-02/2009-04"],
- lwd=2, on=1, col='blue')
+add_TA(XLF_vwap["2009-02/2009-04"], lwd=2, on=1, col='blue')
 
 library(dygraphs)
 # Calculate volume-weighted average price
 oh_lc <- rutils::etf_env$VTI
-v_wap <- TTR::VWAP(price=quantmod::Ad(oh_lc),
+v_wap <- TTR::VWAP(price=quantmod::Cl(oh_lc),
     volume=quantmod::Vo(oh_lc), n=20)
-# Add VWAP to OHLC  data
-oh_lc <- cbind(oh_lc[, c(1:3, 6)],
-         v_wap)["2009-02/2009-04"]
+# Add VWAP to OHLC data
+da_ta <- cbind(oh_lc[, 1:4], v_wap)["2009-01/2009-04"]
 # Create dygraphs object
-dy_graph <- dygraphs::dygraph(oh_lc)
+dy_graph <- dygraphs::dygraph(da_ta)
+# Increase line width and color
+dy_graph <- dygraphs::dyOptions(dy_graph,
+  colors="red", strokeWidth=3)
 # Convert dygraphs object to candlestick plot
 dy_graph <- dygraphs::dyCandlestick(dy_graph)
 # Render candlestick plot
 dy_graph
 # Candlestick plot using pipes syntax
-dygraphs::dygraph(oh_lc) %>% dyCandlestick()
+dygraphs::dygraph(da_ta) %>% dyCandlestick() %>%
+  dyOptions(colors="red", strokeWidth=3)
 # Candlestick plot without using pipes syntax
-dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc))
+dygraphs::dyCandlestick(dygraphs::dyOptions(dygraphs::dygraph(da_ta),
+  colors="red", strokeWidth=3))
 
 # Create candlestick plot with background shading
-in_dex <- index(oh_lc)
-in_dic <- rutils::diff_it(oh_lc[, 4] > oh_lc[, "VWAP"])
-in_dic <- rbind(cbind(which(in_dic==1), 1),
-  cbind(which(in_dic==(-1)), -1))
-in_dic <- in_dic[order(in_dic[, 1]), ]
-in_dic <- rbind(c(1, -in_dic[1, 2]), in_dic,
-  c(NROW(oh_lc), -in_dic[NROW(in_dic), 2]))
-in_dic <- data.frame(in_dex[in_dic[, 1]], in_dic[, 2])
-# Create dygraph object
-dy_graph <- dygraphs::dygraph(oh_lc) %>%
-  dyCandlestick()
+in_dic <- (Cl(da_ta) > da_ta[, "VWAP"])
+whi_ch <- which(rutils::diff_it(in_dic) != 0)
+in_dic <- rbind(first(in_dic), in_dic[whi_ch, ], last(in_dic))
+date_s <- index(in_dic)
+in_dic <- ifelse(drop(coredata(in_dic)), "lightgreen", "antiquewhite")
+# Create dygraph object without rendering it
+dy_graph <- dygraphs::dygraph(da_ta) %>% dyCandlestick() %>%
+  dyOptions(colors="red", strokeWidth=3)
 # Add shading
 for (i in 1:(NROW(in_dic)-1)) {
-  if (in_dic[i, 2] == 1)
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="lightgreen")
-  else
-    dy_graph <- dy_graph %>% dyShading(from=in_dic[i, 1], to=in_dic[i+1, 1], color="antiquewhite")
+    dy_graph <- dy_graph %>%
+dyShading(from=date_s[i], to=date_s[i+1], color=in_dic[i])
 }  # end for
-# Render dygraph
+# Render the dygraph object
 dy_graph
 
 library(dygraphs)
 # Prepare VTI and IEF prices
-price_s <- cbind(Ad(rutils::etf_env$VTI),
-           Ad(rutils::etf_env$IEF))
+price_s <- cbind(Cl(rutils::etf_env$VTI), Cl(rutils::etf_env$IEF))
 price_s <- na.omit(price_s)
 col_names <- rutils::get_name(colnames(price_s))
 colnames(price_s) <- col_names
 # dygraphs plot with two y-axes
 library(dygraphs)
 dygraphs::dygraph(price_s, main=paste(col_names, collapse=" and ")) %>%
-  dyAxis(name="y", label="VTI", independentTicks=TRUE) %>%
-  dyAxis(name="y2", label="IEF", independentTicks=TRUE) %>%
-  dySeries(name="VTI", axis="y", strokeWidth=2, col="red") %>%
-  dySeries(name="IEF", axis="y2", strokeWidth=2, col="blue")
+  dyAxis(name="y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis(name="y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", strokeWidth=2, col="red") %>%
+  dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="blue")
 
 # Open plot window and set plot margins
 x11(width=6, height=5)
@@ -339,8 +331,8 @@ par(mar=c(2, 2, 2, 2), oma=c(1, 1, 1, 1))
 zoo::plot.zoo(price_s[, 1], lwd=2, col="orange",
         xlab=NA, ylab=NA, xaxt="n")
 # Create X-axis date labels and add X-axis
-in_dex <- pretty(index(price_s))
-axis(side=1, at=in_dex, labels=format(in_dex, "%b-%d-%y"))
+date_s <- pretty(index(price_s))
+axis(side=1, at=date_s, labels=format(date_s, "%b-%d-%y"))
 # Plot second time series without y-axis
 par(new=TRUE)  # Allow new line on same plot
 zoo::plot.zoo(price_s[, 2], xlab=NA, ylab=NA,
@@ -396,8 +388,6 @@ summary(microbenchmark(
   quan_tile=quantile(da_ta, probs=conf_level),
   times=100))[, c(1, 4, 5)]  # end microbenchmark summary
 
-x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
@@ -412,15 +402,14 @@ while ((in_dex <= n_rows) && (pa_th[in_dex - 1] < bar_rier)) {
 # Fill remaining pa_th after it crosses bar_rier
 if (in_dex <= n_rows)
   pa_th[in_dex:n_rows] <- pa_th[in_dex - 1]
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-plot(ts_path, type="l", col="black",
-     lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", line=0.5)
-
+# Plot the Brownian motion
 x11(width=6, height=5)
-par(oma=c(1, 1, 1, 1), mar=c(2, 2, 2, 1), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
+     lty="solid", lwd=2, xlab="", ylab="")
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
+
 set.seed(1121)  # Reset random number generator
 bar_rier <- 20  # Barrier level
 n_rows <- 1000  # Number of simulation steps
@@ -432,13 +421,13 @@ cro_ss <- which(pa_th > bar_rier)
 if (NROW(cro_ss)>0) {
   pa_th[(cro_ss[1]+1):n_rows] <- pa_th[cro_ss[1]]
 }  # end if
-# Create daily time series starting 2011
-ts_path <- ts(data=pa_th, frequency=365, start=c(2011, 1))
-# Create plot with horizontal line
-plot(ts_path, type="l", col="black",
+# Plot the Brownian motion
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+plot(pa_th, type="l", col="black",
      lty="solid", lwd=2, xlab="", ylab="")
-abline(h=bar_rier, lwd=2, col="red")
-title(main="Brownian motion crossing a barrier level", line=0.5)
+abline(h=bar_rier, lwd=3, col="red")
+title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
 
 # Define daily volatility and growth rate
 sigma_r <- 0.01; dri_ft <- 0.0; n_rows <- 1000
@@ -452,10 +441,10 @@ plot(price_s, type="l", xlab="time", ylab="prices",
 sigma_r <- 0.01/sqrt(48)
 dri_ft <- 0.0
 n_rows <- 1e4
-in_dex <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
+date_s <- seq(from=as.POSIXct(paste(Sys.Date()-250, "09:30:00")),
   length.out=n_rows, by="30 min")
 price_s <- exp(cumsum(sigma_r*rnorm(n_rows) + dri_ft - sigma_r^2/2))
-price_s <- xts(price_s, order.by=in_dex)
+price_s <- xts(price_s, order.by=date_s)
 price_s <- cbind(price_s,
   volume=sample(x=10*(2:18), size=n_rows, replace=TRUE))
 # Aggregate to daily OHLC data
@@ -463,8 +452,7 @@ oh_lc <- xts::to.daily(price_s)
 quantmod::chart_Series(oh_lc, name="random prices")
 # dygraphs candlestick plot using pipes syntax
 library(dygraphs)
-dygraphs::dygraph(oh_lc[, 1:4]) %>%
-  dyCandlestick()
+dygraphs::dygraph(oh_lc[, 1:4]) %>% dyCandlestick()
 # dygraphs candlestick plot without using pipes syntax
 dygraphs::dyCandlestick(dygraphs::dygraph(oh_lc[, 1:4]))
 
@@ -556,9 +544,13 @@ price_s <- rutils::do_call(cbind, price_s)
 price_s <- zoo::na.locf(price_s, na.rm=FALSE)
 price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 sum(is.na(price_s))
-# Rename and normalize columns
-colnames(price_s) <- sapply(colnames(price_s),
-  function(col_name) strsplit(col_name, split="[.]")[[1]][1])
+# Drop ".Close" from column names
+colnames(price_s[, 1:4])
+colnames(price_s) <- rutils::get_name(colnames(price_s))
+# Or
+# colnames(price_s) <- do.call(rbind,
+#   strsplit(colnames(price_s), split="[.]"))[, 1]
+# Normalize columns
 price_s <- xts(t(t(price_s) / as.numeric(price_s[1, ])),
          order.by=index(price_s))
 # Calculate permution index for sorting the lowest to highest final price_s
@@ -599,8 +591,8 @@ plot.zoo(per_centage[-(1:2),],
    xlab=NA, ylab=NA, col="blue")
 
 x11(width=6, height=5)
-par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(re_turns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
@@ -659,10 +651,8 @@ dim(acf_data$acf)
 dim(acf_data$lag)
 head(acf_data$acf)
 
-plot_acf <- function(x_ts, lagg=10,
-               plo_t=TRUE,
-               xlab="Lag", ylab="",
-               main="", ...) {
+plot_acf <- function(x_ts, lagg=10, plo_t=TRUE,
+               xlab="Lag", ylab="", main="", ...) {
   # Calculate the ACF without a plot
   acf_data <- acf(x=x_ts, lag.max=lagg, plot=FALSE, ...)
   # Remove first element of ACF data
@@ -679,12 +669,13 @@ plot_acf <- function(x_ts, lagg=10,
    ylim=ylim, main="", ci=0)
     title(main=main, line=0.5)
     abline(h=c(-ci, ci), col="blue", lty=2)
-  }
+  }  # end if
   # Return the ACF data invisibly
   invisible(acf_data)
 }  # end plot_acf
 
 # Improved autocorrelation function
+x11(width=6, height=5)
 rutils::plot_acf(re_turns, lag=10, main="")
 title(main="ACF of VTI returns", line=-1)
 # Ljung-Box test for VTI returns
@@ -705,15 +696,15 @@ Box.test(re_turns^2, lag=10, type="Ljung")
 library(rutils)  # Load package rutils
 library(Ecdat)  # Load Ecdat
 colnames(Macrodat)  # United States Macroeconomic Time Series
-macro_zoo <- as.zoo(  # Coerce to "zoo"
-    Macrodat[, c("lhur", "fygm3")])
+# Coerce to "zoo"
+macro_zoo <- as.zoo(Macrodat[, c("lhur", "fygm3")])
 colnames(macro_zoo) <- c("unemprate", "3mTbill")
 # ggplot2 in multiple panes
 autoplot(  # Generic ggplot2 for "zoo"
   object=macro_zoo, main="US Macro",
   facets=Series ~ .) + # end autoplot
   xlab("") +
-theme(  # modify plot theme
+theme(  # Modify plot theme
   legend.position=c(0.1, 0.5),
   plot.title=element_text(vjust=-2.0),
   plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
@@ -780,7 +771,7 @@ colnames(filter_ed) <- c("VTI", "VTI filtered")
 autoplot(filter_ed["2008/2010"],
     main="Filtered VTI", facets=NULL) +  # end autoplot
 xlab("") + ylab("") +
-theme(  # modify plot theme
+theme(  # Modify plot theme
     legend.position=c(0.1, 0.5),
     plot.title=element_text(vjust=-2.0),
     plot.margin=unit(c(-0.5, 0.0, -0.5, 0.0), "cm"),
@@ -807,10 +798,10 @@ title(main="ACF of VTI Filtered Returns", line=-1)
 
 # Simulate AR processes
 set.seed(1121)  # Reset random numbers
-in_dex <- Sys.Date() + 0:728  # Two year daily series
-ari_ma <- xts(  # AR time series of returns
-  x=arima.sim(n=NROW(in_dex), model=list(ar=0.2)),
-  order.by=in_dex)
+date_s <- Sys.Date() + 0:728  # Two year daily series
+# AR time series of returns
+ari_ma <- xts(x=arima.sim(n=NROW(date_s), model=list(ar=0.2)),
+          order.by=date_s)
 ari_ma <- cbind(ari_ma, cumsum(ari_ma))
 colnames(ari_ma) <- c("AR returns", "AR prices")
 
@@ -829,12 +820,12 @@ ar_coeff <- c(-0.9, 0.01, 0.9)  # AR coefficients
 # Create three AR time series
 ari_ma <- sapply(ar_coeff, function(phi) {
   set.seed(1121)  # Reset random numbers
-  arima.sim(n=NROW(in_dex), model=list(ar=phi))
+  arima.sim(n=NROW(date_s), model=list(ar=phi))
 })  # end sapply
 colnames(ari_ma) <- paste("autocorr", ar_coeff)
 plot.zoo(ari_ma, main="AR(1) prices", xlab=NA)
 # Or plot using ggplot
-ari_ma <- xts(x=ari_ma, order.by=in_dex)
+ari_ma <- xts(x=ari_ma, order.by=date_s)
 library(ggplot)
 autoplot(ari_ma, main="AR(1) prices",
    facets=Series ~ .) +
@@ -882,10 +873,8 @@ ari_ma <- arima.sim(n=n_rows,
   start.innov=in_nov[1:warm_up],
   innov=in_nov[(warm_up+1):NROW(in_nov)])
 # Simulate AR process using filter()
-arima_fast <- filter(x=in_nov,
-  filter=co_eff, method="recursive")
-all.equal(arima_fast[-(1:warm_up)],
-  as.numeric(ari_ma))
+arima_fast <- filter(x=in_nov, filter=co_eff, method="recursive")
+all.equal(arima_fast[-(1:warm_up)], as.numeric(ari_ma))
 # Benchmark the speed of the three methods of simulating AR process
 library(microbenchmark)
 summary(microbenchmark(
@@ -924,6 +913,29 @@ tseries::adf.test(ari_ma)
 # Integrated series has unit root
 tseries::adf.test(cumsum(ari_ma))
 
+set.seed(1121); vol_at <- 0.01; in_nov <- vol_at*rnorm(1e4)
+# Simulate AR(1) process with coefficient=1, with unit root
+ari_ma <- filter(x=in_nov, filter=1.0, method="recursive")
+x11(); plot(ari_ma, t="l", main="AR(1) coefficient = 1.0")
+# Perform ADF test with lag = 1
+tseries::adf.test(ari_ma, k=1)
+# Perform standard Dickey-Fuller test
+tseries::adf.test(ari_ma, k=0)
+# Simulate AR(1) with coefficient close to 1, without unit root
+ari_ma <- filter(x=in_nov, filter=0.99, method="recursive")
+x11(); plot(ari_ma, t="l", main="AR(1) coefficient = 0.99")
+tseries::adf.test(ari_ma, k=1)
+# Simulate Ornstein-Uhlenbeck OU process with mean reversion
+eq_price <- 0.0; the_ta <- 0.001
+price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, the_ta=the_ta, in_nov=in_nov)
+x11(); plot(price_s, t="l", main=paste("OU coefficient =", the_ta))
+tseries::adf.test(price_s, k=1)
+# Simulate Ornstein-Uhlenbeck OU process with zero reversion
+the_ta <- 0.0
+price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, the_ta=the_ta, in_nov=in_nov)
+x11(); plot(price_s, t="l", main=paste("OU coefficient =", the_ta))
+tseries::adf.test(price_s, k=1)
+
 n_rows <- 1e3
 # Perform ADF test for AR(1) with small coefficient
 set.seed(1121)
@@ -940,9 +952,9 @@ tseries::adf.test(ari_ma, k=0)
 
 # Simulate AR(1) process with different coefficients
 coeff_s <- seq(0.99, 0.999, 0.001)
-in_nov <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
 adf_test <- sapply(coeff_s, function(co_eff) {
-  ari_ma <- filter(x=in_nov, filter=co_eff, method="recursive")
+  ari_ma <- filter(x=re_turns, filter=co_eff, method="recursive")
   ad_f <- suppressWarnings(tseries::adf.test(ari_ma))
   c(adf_stat=unname(ad_f$statistic), pval=ad_f$p.value)
 })  # end sapply
@@ -952,19 +964,6 @@ plot(x=coeff_s, y=adf_test["pval", ], main="ADF p-val Versus AR Coefficient",
      xlab="AR coefficient", ylab="ADF pval", t="l", col="blue", lwd=2)
 plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat Versus AR Coefficient",
      xlab="AR coefficient", ylab="ADF stat", t="l", col="blue", lwd=2)
-
-# Calculate XLB and XLE prices
-price_s <- na.omit(rutils::etf_env$price_s[, c("XLB", "XLE")])
-xl_b <- drop(zoo::coredata(price_s$XLB))
-xl_e <- drop(zoo::coredata(price_s$XLE))
-# Calculate regression coefficients of XLB ~ XLE
-be_ta <- cov(xl_b, xl_e)/var(xl_e)
-al_pha <- (mean(xl_b) - be_ta*mean(xl_e))
-# Calculate regression residuals
-fit_ted <- (al_pha + be_ta*xl_e)
-residual_s <- (xl_b - fit_ted)
-# Perform ADF test on residuals
-tseries::adf.test(residual_s, k=1)
 
 # Simulate random walks using apply() loops
 set.seed(1121)  # Initialize random number generator
@@ -1017,8 +1016,7 @@ ari_ma <- arima.sim(n=1e3, model=list(ar=c(0.1, 0.5, 0.1)))
 rutils::plot_acf(ari_ma, lag=10, xlab="", ylab="",
    main="ACF of AR(3) process")
 # PACF of AR(3) process
-pacf(ari_ma, lag=10, xlab="", ylab="",
-     main="PACF of AR(3) process")
+pacf(ari_ma, lag=10, xlab="", ylab="", main="PACF of AR(3) process")
 
 # Specify AR process parameters
 n_rows <- 1e3
@@ -1033,19 +1031,8 @@ ar_fit <- ar.ols(ari_ma, order.max=n_coeff, aic=FALSE)
 class(ar_fit)
 is.list(ar_fit)
 drop(ar_fit$ar)
-# Define design matrix with intercept column
-de_sign <- sapply(1:n_coeff, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, n_rows), de_sign)
-# Fit AR model using regression
-design_inv <- MASS::ginv(de_sign)
-coeff_fit <- drop(design_inv %*% ari_ma)
-all.equal(drop(ar_fit$ar), coeff_fit[-1], check.attributes=FALSE)
 # Define design matrix without intercept column
-de_sign <- sapply(1:n_coeff, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:n_coeff, rutils::lag_it, in_put=ari_ma)
 # Fit AR model using regression
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% ari_ma)
@@ -1064,9 +1051,7 @@ ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
 # Calibrate ARIMA model using regression
 # Define design matrix
 ari_ma <- (ari_ma - mean(ari_ma))
-de_sign <- sapply(1:3, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:3, rutils::lag_it, in_put=ari_ma)
 # Calculate de-meaned re_turns matrix
 de_sign <- t(t(de_sign) - colMeans(de_sign))
 design_inv <- MASS::ginv(de_sign)
@@ -1079,7 +1064,7 @@ all.equal(arima_fit$coef, coeff_fit, check.attributes=FALSE)
 fit_ted <- drop(de_sign %*% coeff_fit)
 residual_s <- drop(ari_ma - fit_ted)
 # Variance of residuals
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 # Design matrix squared
 design_2 <- crossprod(de_sign)
 # Calculate covariance matrix of AR coefficients
@@ -1089,15 +1074,12 @@ coeff_fitd <- sqrt(diag(co_var))
 coeff_tvals <- drop(coeff_fit)/coeff_fitd
 
 # Fit AR(5) model into AR(3) process
-de_sign <- sapply(1:5, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, n_rows), de_sign)
+de_sign <- sapply(1:5, rutils::lag_it, in_put=ari_ma)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% ari_ma)
 # Calculate t-values of AR(5) coefficients
 residual_s <- drop(ari_ma - drop(de_sign %*% coeff_fit))
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 co_var <- var_resid*MASS::ginv(crossprod(de_sign))
 coeff_fitd <- sqrt(diag(co_var))
 coeff_tvals <- drop(coeff_fit)/coeff_fitd
@@ -1109,15 +1091,12 @@ library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
-de_sign <- sapply(1:5, function(lagg) {
-  rutils::lag_it(re_turns, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, NROW(re_turns)), de_sign)
+de_sign <- sapply(1:5, rutils::lag_it, in_put=re_turns)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% re_turns)
 # Calculate t-values of AR(5) coefficients
 residual_s <- drop(re_turns - drop(de_sign %*% coeff_fit))
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 co_var <- var_resid*MASS::ginv(crossprod(de_sign))
 coeff_fitd <- sqrt(diag(co_var))
 coeff_tvals <- drop(coeff_fit)/coeff_fitd
@@ -1134,9 +1113,7 @@ forecast::auto.arima(ari_ma, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using regression
 ari_ma <- as.numeric(ari_ma)
 # Define design matrix for ari_ma
-de_sign <- sapply(1:3, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:3, rutils::lag_it, in_put=ari_ma)
 # Generalized inverse of design matrix
 design_inv <- MASS::ginv(de_sign)
 # Regression coefficients with response equal to ari_ma
@@ -1325,7 +1302,6 @@ ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
 or_der <- 5
 # Define predictor matrix for forecasting
 de_sign <- sapply(1:or_der, rutils::lag_it, in_put=ari_ma)
-de_sign <- cbind(rep(1, n_rows), de_sign)
 colnames(de_sign) <- paste0("pred_", 1:NCOL(de_sign))
 # Add response equal to series
 de_sign <- cbind(ari_ma, de_sign)
@@ -1340,65 +1316,94 @@ coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
 # Calculate forecast
 drop(de_sign[n_rows, -1] %*% coeff_fit)
 
+# Calculate a vector of daily VTI log returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+date_s <- index(re_turns)
+re_turns <- as.numeric(re_turns)
+n_rows <- NROW(re_turns)
+# Define predictor as a rolling sum
+n_agg <- 5
+predic_tor <- rutils::roll_sum(re_turns, look_back=n_agg)
+# Shift the res_ponse forward out-of-sample
+res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
+# Define predictor matrix for forecasting
+order_max <- 5
+predic_tor <- sapply(1+n_agg*(0:order_max), rutils::lag_it,
+               in_put=predic_tor)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+# Define de_sign matrix
+de_sign <- cbind(res_ponse, predic_tor)
 # Perform rolling forecasting
-forecast_s <- sapply(look_back:n_rows, function(now) {
-  # Calculate look-back range
-  star_t <- max(1, now-look_back)
-  rang_e <- star_t:(now-1)
+look_back <- 100
+forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
+  # Define rolling look-back range
+  start_p <- max(1, end_p-look_back)
+  # Or expanding look-back range
+  # start_p <- 1
+  rang_e <- start_p:(end_p-1)
   # Invert the predictor matrix
   design_inv <- MASS::ginv(de_sign[rang_e, -1])
   # Calculate fitted coefficients
   coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
   # Calculate forecast
-  drop(de_sign[now, -1] %*% coeff_fit)
+  drop(de_sign[end_p, -1] %*% coeff_fit)
 })  # end sapply
 # Add warmup period
-forecast_s <- c(numeric(look_back-1), forecast_s)
+forecast_s <- c(rep(0, look_back), forecast_s)
 
 # Mean squared error
-mean((ari_ma - forecast_s)^2)
+mean((re_turns - forecast_s)^2)
 # Correlation
-cor(forecast_s, ari_ma)
+cor(forecast_s, re_turns)
 # Plot forecasting series with legend
 x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(ari_ma[(n_rows-look_back):n_rows], xlab="", ylab="", type="l", lwd=2,
-  main="Rolling Forecasting Using AR(5) Model")
-lines(forecast_s[(n_rows-look_back):n_rows], col="orange", lwd=2)
-legend(x="topright", legend=c("series", "forecasts"),
- col=c("black", "orange"), lty=1, lwd=6,
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
+plot(forecast_s[(n_rows-look_back):n_rows], col="red",
+     xlab="", ylab="", type="l", lwd=2,
+     main="Rolling Forecasting Using AR Model")
+lines(re_turns[(n_rows-look_back):n_rows], col="blue", lwd=2)
+legend(x="top", legend=c("re_turns", "forecasts"),
+ col=c("blue", "red"), lty=1, lwd=6,
  cex=0.9, bg="white", bty="n")
 
 # Define backtesting function
-back_test <- function(se_ries, or_der=5, look_back=100) {
-  n_rows <- NROW(se_ries)
+sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
+                or_der=5, look_back=100) {
+  n_rows <- NROW(res_ponse)
+  # Define predictor as a rolling sum
+  predic_tor <- rutils::roll_sum(res_ponse, look_back=n_agg)
+  # Shift the res_ponse forward out-of-sample
+  res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
   # Define predictor matrix for forecasting
-  de_sign <- sapply(1:or_der, rutils::lag_it, in_put=se_ries)
-  de_sign <- cbind(rep(1, n_rows), de_sign)
-  # Add response equal to series
-  de_sign <- cbind(se_ries, de_sign)
+  predic_tor <- sapply(1+n_agg*(0:or_der), rutils::lag_it,
+                 in_put=predic_tor)
+  predic_tor <- cbind(rep(1, n_rows), predic_tor)
+  # Define de_sign matrix
+  de_sign <- cbind(res_ponse, predic_tor)
   # Perform rolling forecasting
-  forecast_s <- sapply(look_back:n_rows, function(now) {
-    # Calculate look-back range
-    star_t <- max(1, now-look_back)
-    rang_e <- star_t:(now-1)
+  forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
+    # Define rolling look-back range
+    start_p <- max(1, end_p-look_back)
+    # Or expanding look-back range
+    # start_p <- 1
+    rang_e <- start_p:(end_p-1)
     # Invert the predictor matrix
     design_inv <- MASS::ginv(de_sign[rang_e, -1])
     # Calculate fitted coefficients
     coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
     # Calculate forecast
-    drop(de_sign[now, -1] %*% coeff_fit)
+    drop(de_sign[end_p, -1] %*% coeff_fit)
   })  # end sapply
   # Add warmup period
-  forecast_s <- c(numeric(look_back-1), forecast_s)
-  c(mse=mean((se_ries - forecast_s)^2), cor=cor(forecast_s, se_ries))
-}  # end back_test
-# Apply the backtesting function
-back_test(ari_ma, or_der=5, look_back=100)
+  forecast_s <- c(rep(0, look_back), forecast_s)
+  rutils::roll_sum(forecast_s, look_back=n_agg)
+}  # end sim_forecasts
+# Simulate the rolling autoregressive forecasts
+forecast_s <- sim_forecasts(re_turns, or_der=5, look_back=100)
+c(mse=mean((re_turns - forecast_s)^2), cor=cor(re_turns, forecast_s))
 
 look_backs <- seq(20, 200, 20)
-back_tests <- sapply(look_backs, back_test,
-        se_ries=ari_ma, or_der=or_der)
+back_tests <- sapply(look_backs, back_test, se_ries=ari_ma, or_der=or_der)
 back_tests <- t(back_tests)
 rownames(back_tests) <- look_backs
 # Plot forecasting series with legend
@@ -1412,11 +1417,13 @@ the_ta <- 0.01; n_rows <- 1000
 drif_t <- the_ta*eq_price
 theta_1 <- 1-the_ta
 # Simulate Ornstein-Uhlenbeck process
-in_nov <- sigma_r*rnorm(n_rows)
+in_nov <- rnorm(n_rows)
+re_turns <- numeric(n_rows)
 price_s <- numeric(n_rows)
-price_s[1] <- in_nov[1]
+price_s[1] <- sigma_r*in_nov[1]
 for (i in 2:n_rows) {
-  price_s[i] <- theta_1*price_s[i-1] + in_nov[i] + drif_t
+  re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + sigma_r*in_nov[i]
+  price_s[i] <- price_s[i-1] + re_turns[i]
 }  # end for
 
 plot(price_s, type="l",
@@ -1476,7 +1483,7 @@ price_s[1] <- eq_price
 set.seed(1121)  # Reset random numbers
 for (i in 2:n_rows) {
   re_turns[i] <- the_ta*(eq_price - price_s[i-1]) + sigma_r*rnorm(1)
-  price_s[i] <- price_s[i-1] * exp(re_turns[i])
+  price_s[i] <- price_s[i-1]*exp(re_turns[i])
 }  # end for
 
 plot(price_s, type="l", xlab="time", ylab="prices",

@@ -7,8 +7,7 @@ knit_theme$set(thm)
 
 library(rutils)
 # Specify formula and perform regression
-mod_el <- lm(XLP ~ VTI, 
-  data=rutils::etf_env$re_turns)
+mod_el <- lm(XLP ~ VTI, data=rutils::etf_env$re_turns)
 # Get regression coefficients
 coef(summary(mod_el))
 # Durbin-Watson test of autocorrelation of residuals
@@ -24,33 +23,30 @@ abline(a=0, b=-1/coef(summary(mod_el))[2, 1],
  lwd=2, col="blue")
 
 library(rutils)  # Load rutils
-re_turns <- na.omit(rutils::etf_env$re_turns)
+re_turns <- rutils::etf_env$re_turns
+symbol_s <- colnames(re_turns)
+symbol_s <- symbol_s[symbol_s != "VTI"]
 # Perform regressions and collect statistics
-etf_reg_stats <- sapply(colnames(re_turns)[-1],
-                  function(etf_name) {
+etf_betas <- sapply(symbol_s, function(sym_bol) {
 # Specify regression formula
-  for_mula <- as.formula(
-    paste(etf_name, "~ VTI"))
+  for_mula <- as.formula(paste(sym_bol, "~ VTI"))
 # Perform regression
   mod_el <- lm(for_mula, data=re_turns)
 # Get regression summary
   model_sum <- summary(mod_el)
 # Collect regression statistics
-  etf_reg_stats <- with(model_sum,
-    c(alpha=coefficients[1, 1],
-p_alpha=coefficients[1, 4],
-beta=coefficients[2, 1],
-p_beta=coefficients[2, 4]))
-  etf_reg_stats <- c(etf_reg_stats,
-         p_dw=lmtest::dwtest(mod_el)$p.value)
-  etf_reg_stats
+  with(model_sum, 
+    c(beta=coefficients[2, 1], 
+p_beta=coefficients[2, 4],
+alpha=coefficients[1, 1], 
+p_alpha=coefficients[1, 4], 
+p_dw=lmtest::dwtest(mod_el)$p.value))
 })  # end sapply
-etf_reg_stats <- t(etf_reg_stats)
+etf_betas <- t(etf_betas)
 # Sort by p_alpha
-etf_reg_stats <- etf_reg_stats[
-  order(etf_reg_stats[, "p_alpha"]), ]
+etf_betas <- etf_betas[order(etf_betas[, "p_alpha"]), ]
 
-etf_reg_stats[, 1:3]
+etf_betas
 
 library(rutils)
 # Specify regression formula
@@ -66,8 +62,8 @@ x11(width=(wid_th <- 6), height=(hei_ght <- 4))
 chart_Series(x=beta_s[, "VTI"],
   name=paste("rolling betas", format(for_mula)))
 # Perform daily rolling beta regressions in parallel
-library(roll)
-beta_s <- roll_lm(x=rutils::etf_env$re_turns[, "VTI"],
+# library(roll)
+beta_s <- roll::roll_lm(x=rutils::etf_env$re_turns[, "VTI"],
             y=rutils::etf_env$re_turns[, "XLP"],
             width=252)$coefficients
 
@@ -79,40 +75,35 @@ summary(microbenchmark(
 FUN=function(de_sign)
 coef(lm(for_mula, data=de_sign))[2],
   by.column=FALSE, align="right"),
-  roll_lm=roll_lm(x=da_ta[, "VTI"],
+  roll_lm=roll::roll_lm(x=da_ta[, "VTI"],
             y=da_ta[, "XLP"],
             width=22)$coefficients,
   times=10))[, c(1, 4, 5)]  # end microbenchmark summary
 
 library(PerformanceAnalytics)
-CAPM.beta(Ra=re_turns[, "XLP"],
-    Rb=re_turns[, "VTI"])
-CAPM.beta.bull(Ra=re_turns[, "XLP"],
-  Rb=re_turns[, "VTI"])
-CAPM.beta.bear(Ra=re_turns[, "XLP"],
-  Rb=re_turns[, "VTI"])
-CAPM.alpha(Ra=re_turns[, "XLP"],
-     Rb=re_turns[, "VTI"])
+# Calculate XLP beta
+CAPM.beta(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP bull beta
+CAPM.beta.bull(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP bear beta
+CAPM.beta.bear(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP alpha
+CAPM.alpha(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
 
 library(PerformanceAnalytics)
-etf_betas <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"],
+etf_betas <- sapply(re_turns[, colnames(re_turns)!="VXX"],
   CAPM.beta, Rb=re_turns[, "VTI"])
-etf_annrets <- sapply(
-  re_turns[, colnames(re_turns)!="VXX"],
+etf_annrets <- sapply(re_turns[, colnames(re_turns)!="VXX"],
   Return.annualized)
 # Plot scatterplot
 plot(etf_annrets ~ etf_betas, xlab="betas",
       ylab="ann. rets", xlim=c(-0.25, 1.6))
-points(x=1, y=etf_annrets["VTI"], col="red",
- lwd=3, pch=21)
+points(x=1, y=etf_annrets["VTI"], col="red", lwd=3, pch=21)
 abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_reg_stats)[1:13]
+label_names <- rownames(etf_betas)[1:13]
 # Add labels
-text(x=1, y=etf_annrets["VTI"], labels="VTI",
-     pos=2)
-text(x=etf_betas[label_names],
-     y=etf_annrets[label_names],
+text(x=1, y=etf_annrets["VTI"], labels="VTI", pos=2)
+text(x=etf_betas[label_names], y=etf_annrets[label_names],
      labels=label_names, pos=2, cex=0.8)
 
 library(PerformanceAnalytics)
@@ -128,7 +119,7 @@ plot(etf_annrets ~ etf_betas, xlab="betas",
 points(x=1, y=etf_annrets["VTI"], col="red",
  lwd=3, pch=21)
 abline(a=0, b=etf_annrets["VTI"])
-label_names <- rownames(etf_reg_stats)[1:13]
+label_names <- rownames(etf_betas)[1:13]
 # Add labels
 text(x=1, y=etf_annrets["VTI"], labels="VTI",
      pos=2)
@@ -137,32 +128,53 @@ text(x=etf_betas[label_names],
      labels=label_names, pos=2, cex=0.8)
 
 library(PerformanceAnalytics)
-TreynorRatio(Ra=re_turns[, "XLP"],
-     Rb=re_turns[, "VTI"])
+# Calculate XLP Treynor ratio
+TreynorRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
+# Calculate XLP Information ratio
+InformationRatio(Ra=re_turns[, "XLP"], Rb=re_turns[, "VTI"])
 
-InformationRatio(Ra=re_turns[, "XLP"],
-     Rb=re_turns[, "VTI"])
+PerformanceAnalytics::table.CAPM(Ra=re_turns[, c("XLP", "XLF")], 
+                           Rb=re_turns[, "VTI"], scale=252)
 
-library(PerformanceAnalytics)
-table.CAPM(Ra=re_turns[, c("XLP", "XLF")],
-     Rb=re_turns[, "VTI"], scale=252)
-
-library(PerformanceAnalytics)
-capm_stats <- PerformanceAnalytics::table.CAPM(Ra=re_turns[, colnames(re_turns)!="VTI"],
+capm_stats <- table.CAPM(Ra=re_turns[, symbol_s],
         Rb=re_turns[, "VTI"], scale=252)
-colnames(capm_stats) <-
-  sapply(colnames(capm_stats),
-  function(str) {strsplit(str, split=" ")[[1]][1]})
-capm_stats <- as.matrix(capm_stats)
+col_names <- strsplit(colnames(capm_stats), split=" ")
+col_names <- do.call(cbind, col_names)[1, ]
+colnames(capm_stats) <- col_names
 capm_stats <- t(capm_stats)
-capm_stats <- capm_stats[
-  order(capm_stats[, "Annualized Alpha"],
-  decreasing=TRUE), ]
+capm_stats <- capm_stats[, -1]
+col_names <- colnames(capm_stats)
+whi_ch <- match(c("Annualized Alpha", "Information Ratio", "Treynor Ratio"), col_names)
+col_names[whi_ch] <- c("Alpha", "Information", "Treynor")
+colnames(capm_stats) <- col_names
+capm_stats <- capm_stats[order(capm_stats[, "Alpha"], decreasing=TRUE), ]
 # Copy capm_stats into etf_env and save to .RData file
-assign("capm_stats", capm_stats, envir=etf_env)
-save(etf_env, file="etf_data.RData")
+etf_env <- rutils::etf_env
+etf_env$capm_stats <- capm_stats
+save(etf_env, file="C:/Develop/lecture_slides/data/etf_data.RData")
 
-capm_stats[, c("Information Ratio", "Annualized Alpha")]
+rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
+
+# Calculate XLB and XLE prices
+price_s <- na.omit(rutils::etf_env$price_s[, c("XLB", "XLE")])
+cor(rutils::diff_it(log(price_s)))
+xl_b <- drop(zoo::coredata(price_s$XLB))
+xl_e <- drop(zoo::coredata(price_s$XLE))
+# Calculate regression coefficients of XLB ~ XLE
+be_ta <- cov(xl_b, xl_e)/var(xl_e)
+al_pha <- (mean(xl_b) - be_ta*mean(xl_e))
+# Calculate regression residuals
+fit_ted <- (al_pha + be_ta*xl_e)
+residual_s <- (xl_b - fit_ted)
+# Perform ADF test on residuals
+tseries::adf.test(residual_s, k=1)
+
+# Plot prices
+dygraphs::dygraph(price_s, main="XLB and XLE Prices") %>%
+  dyOptions(colors=c("blue", "red"))
+# Plot cointegration residuals
+residual_s <- xts::xts(residual_s, index(price_s))
+dygraphs::dygraph(residual_s, main="XLB and XLE Cointegration Residuals")
 
 # Load S&P500 constituent stock prices
 load("C:/Develop/lecture_slides/data/sp500_prices.RData")

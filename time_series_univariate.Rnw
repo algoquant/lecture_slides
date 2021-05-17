@@ -1119,7 +1119,7 @@ title(main="Brownian Motion Crossing a Barrier Level", line=0.5)
       \begin{displaymath}
         \mathrm{d} p_t = \mu p_t \mathrm{d}t + \sigma \, p_t \mathrm{d} W_t
       \end{displaymath}
-      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Wiener process}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      Where $\sigma$ is the volatility of asset returns, and $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
       \vskip1ex
       The solution of \emph{Geometric Brownian motion} is equal to:
       \begin{displaymath}
@@ -1505,12 +1505,10 @@ plot.zoo(per_centage[-(1:2),],
       The function \texttt{stats::acf()} calculates and plots the autocorrelation function of a time series.
       \vskip1ex
       The function \texttt{stats::acf()} has the drawback that it plots the lag zero autocorrelation (which is simply equal to $1$).
-      \vskip1ex
-      The function \texttt{as.numeric()} coerces complex data objects into \texttt{numeric} vectors, and removes all their \emph{attributes}.
-        <<echo=(-(1:2)),eval=FALSE>>=
+        <<echo=TRUE,eval=FALSE>>=
 x11(width=6, height=5)
-par(mar=c(3, 2, 1, 1), oma=c(0, 0, 0, 0), mgp=c(2, 0.5, 0))
-re_turns <- as.numeric(na.omit(rutils::etf_env$re_turns$VTI))
+par(mar=c(3, 2, 1, 1), oma=c(1, 0, 0, 0))
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Plot autocorrelations using stats::acf()
 stats::acf(re_turns, lag=10, xlab="lag", main="")
 title(main="ACF of VTI Returns", line=-1)
@@ -1641,7 +1639,7 @@ Box.test(macro_diff[, "3mTbill"], lag=10, type="Ljung")
 # Changes in unemployment rate are autocorrelated
 Box.test(macro_diff[, "unemprate"], lag=10, type="Ljung")
       @
-      The \emph{p}-value for \emph{VTI} returns is large, and we conclude that the \emph{null hypothesis} is \texttt{TRUE}, and that \emph{VTI} returns are \emph{not} autocorrelated.
+      The \emph{p}-value for \emph{VTI} returns is small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that \emph{VTI} returns have some small autocorrelations.
       \vskip1ex
       The \emph{p}-value for changes in econometric data is extremely small, and we conclude that the \emph{null hypothesis} is \texttt{FALSE}, and that econometric data \emph{are} autocorrelated.
   \end{columns}
@@ -1713,11 +1711,12 @@ plot_acf <- function(x_ts, lagg=10, plo_t=TRUE,
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{VTI} time series of returns does not appear to have statistically significant autocorrelations.
+      The \emph{VTI} returns appear to have some small, yet significant negative autocorrelations at \texttt{lag=1}.
       \vskip1ex
       But the visual inspection of the \emph{ACF} plot alone is not enough to test whether autocorrelations are statistically significant or not.
         <<echo=TRUE,eval=FALSE>>=
 # Improved autocorrelation function
+x11(width=6, height=5)
 rutils::plot_acf(re_turns, lag=10, main="")
 title(main="ACF of VTI returns", line=-1)
 # Ljung-Box test for VTI returns
@@ -1725,7 +1724,7 @@ Box.test(re_turns, lag=10, type="Ljung")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/acf_vti_bis.png}
+      \includegraphics[width=0.45\paperwidth]{figure/acf_vti_bis.png}
   \end{columns}
 \end{block}
 
@@ -2216,7 +2215,7 @@ summary(microbenchmark(
       \vskip1ex
       Non-stationary processes with unit roots are called \emph{unit-root} processes.
       \vskip1ex
-      A simple example of a \emph{unit-root} process is the \emph{Wiener process}:
+      A simple example of a \emph{unit-root} process is the \emph{Brownian Motion}:
       $p_i = p_{i-1} + \xi_i$
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -2270,7 +2269,7 @@ legend(x="topleft", legend=colnames(rand_walk),
       \vskip1ex
       Which is a \emph{unit root} process for all values of $\varphi$, because the sum of its coefficients is equal to $1$.
       \vskip1ex
-      If $\varphi = 0$ then the above process is a \emph{Wiener process} (random walk).
+      If $\varphi = 0$ then the above process is a \emph{Brownian Motion} (random walk).
       <<echo=TRUE,eval=FALSE>>=
 # Simulate arima with large AR coefficient
 set.seed(1121)
@@ -2441,43 +2440,6 @@ plot(x=coeff_s, y=adf_test["adf_stat", ], main="ADF Stat Versus AR Coefficient",
 
 
 %%%%%%%%%%%%%%%
-\subsection{Engle-Granger Two-step Procedure for Cointegration}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{ADF} test can be applied to test for the cointegration of time series of prices.
-      \vskip1ex
-      The Engle-Granger two-step procedure for two time series consists of:
-      \begin{itemize}
-        \item Performing a regression to calculate the cointegrating factor $\beta$,
-        \item Applying the \emph{ADF} test to the residuals of the regression to determine that they don't have a unit root (they are mean-reverting).
-      \end{itemize}
-      The regression of prices is not statistically valid because they are not normally distributed.
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate XLB and XLE prices
-price_s <- na.omit(rutils::etf_env$price_s[, c("XLB", "XLE")])
-xl_b <- drop(zoo::coredata(price_s$XLB))
-xl_e <- drop(zoo::coredata(price_s$XLE))
-# Calculate regression coefficients of XLB ~ XLE
-be_ta <- cov(xl_b, xl_e)/var(xl_e)
-al_pha <- (mean(xl_b) - be_ta*mean(xl_e))
-# Calculate regression residuals
-fit_ted <- (al_pha + be_ta*xl_e)
-residual_s <- (xl_b - fit_ted)
-# Perform ADF test on residuals
-tseries::adf.test(residual_s, k=1)
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{The Variance of Unit-root Processes}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -2494,7 +2456,7 @@ tseries::adf.test(residual_s, k=1)
       If $\varphi = 1$, then the characteristic equation has a \emph{unit root} (and therefore it isn't \emph{stationary}), and the process follows:
       $r_i = r_{i-1} + \xi_i$
       \vskip1ex
-      The above is called a \emph{Wiener process}, and it's an example of a \emph{unit-root} process.
+      The above is called a \emph{Brownian Motion}, and it's an example of a \emph{unit-root} process.
       \vskip1ex
       The expected value of the \emph{AR(1)} process $r_i = \varphi r_{i-1} + \xi_i$ is equal to zero: $\mathbb{E}[r_i] = \frac{\mathbb{E}[\xi_i]}{1 - \varphi} = 0$.
       \vskip1ex
@@ -2502,7 +2464,7 @@ tseries::adf.test(residual_s, k=1)
       \vskip1ex
       If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process isn't \emph{stationary}.
       \vskip1ex
-      The variance of the \emph{Wiener process} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma_i^2 = \mathbb{E}[r_i^2] = i \sigma_{\xi}^2$
+      The variance of the \emph{Brownian Motion} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma_i^2 = \mathbb{E}[r_i^2] = i \sigma_{\xi}^2$
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
@@ -2725,19 +2687,8 @@ ar_fit <- ar.ols(ari_ma, order.max=n_coeff, aic=FALSE)
 class(ar_fit)
 is.list(ar_fit)
 drop(ar_fit$ar)
-# Define design matrix with intercept column
-de_sign <- sapply(1:n_coeff, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, n_rows), de_sign)
-# Fit AR model using regression
-design_inv <- MASS::ginv(de_sign)
-coeff_fit <- drop(design_inv %*% ari_ma)
-all.equal(drop(ar_fit$ar), coeff_fit[-1], check.attributes=FALSE)
 # Define design matrix without intercept column
-de_sign <- sapply(1:n_coeff, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:n_coeff, rutils::lag_it, in_put=ari_ma)
 # Fit AR model using regression
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% ari_ma)
@@ -2780,9 +2731,7 @@ ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
 # Calibrate ARIMA model using regression
 # Define design matrix
 ari_ma <- (ari_ma - mean(ari_ma))
-de_sign <- sapply(1:3, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:3, rutils::lag_it, in_put=ari_ma)
 # Calculate de-meaned re_turns matrix
 de_sign <- t(t(de_sign) - colMeans(de_sign))
 design_inv <- MASS::ginv(de_sign)
@@ -2814,7 +2763,7 @@ all.equal(arima_fit$coef, coeff_fit, check.attributes=FALSE)
 fit_ted <- drop(de_sign %*% coeff_fit)
 residual_s <- drop(ari_ma - fit_ted)
 # Variance of residuals
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 # Design matrix squared
 design_2 <- crossprod(de_sign)
 # Calculate covariance matrix of AR coefficients
@@ -2851,15 +2800,12 @@ coeff_tvals <- drop(coeff_fit)/coeff_fitd
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Fit AR(5) model into AR(3) process
-de_sign <- sapply(1:5, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, n_rows), de_sign)
+de_sign <- sapply(1:5, rutils::lag_it, in_put=ari_ma)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% ari_ma)
 # Calculate t-values of AR(5) coefficients
 residual_s <- drop(ari_ma - drop(de_sign %*% coeff_fit))
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 co_var <- var_resid*MASS::ginv(crossprod(de_sign))
 coeff_fitd <- sqrt(diag(co_var))
 coeff_tvals <- drop(coeff_fit)/coeff_fitd
@@ -2871,15 +2817,12 @@ library(forecast)  # Load forecast
 arima_fit <- forecast::auto.arima(ari_ma, max.p=5, max.q=0, max.d=0)
 # Fit AR(5) model into VTI returns
 re_turns <- drop(zoo::coredata(na.omit(rutils::etf_env$re_turns$VTI)))
-de_sign <- sapply(1:5, function(lagg) {
-  rutils::lag_it(re_turns, lagg=lagg)
-})  # end sapply
-de_sign <- cbind(rep(1, NROW(re_turns)), de_sign)
+de_sign <- sapply(1:5, rutils::lag_it, in_put=re_turns)
 design_inv <- MASS::ginv(de_sign)
 coeff_fit <- drop(design_inv %*% re_turns)
 # Calculate t-values of AR(5) coefficients
 residual_s <- drop(re_turns - drop(de_sign %*% coeff_fit))
-var_resid <- sum(residual_s^2)/(n_rows - NROW(coeff_fit))
+var_resid <- sum(residual_s^2)/(n_rows-NROW(coeff_fit))
 co_var <- var_resid*MASS::ginv(crossprod(de_sign))
 coeff_fitd <- sqrt(diag(co_var))
 coeff_tvals <- drop(coeff_fit)/coeff_fitd
@@ -2933,9 +2876,7 @@ forecast::auto.arima(ari_ma, max.p=3, max.q=0, max.d=0)
 # Calibrate ARIMA model using regression
 ari_ma <- as.numeric(ari_ma)
 # Define design matrix for ari_ma
-de_sign <- sapply(1:3, function(lagg) {
-  rutils::lag_it(ari_ma, lagg=lagg)
-})  # end sapply
+de_sign <- sapply(1:3, rutils::lag_it, in_put=ari_ma)
 # Generalized inverse of design matrix
 design_inv <- MASS::ginv(de_sign)
 # Regression coefficients with response equal to ari_ma
@@ -3324,7 +3265,6 @@ ari_ma <- .Call(stats:::C_rfilter, in_nov, co_eff,
 or_der <- 5
 # Define predictor matrix for forecasting
 de_sign <- sapply(1:or_der, rutils::lag_it, in_put=ari_ma)
-de_sign <- cbind(rep(1, n_rows), de_sign)
 colnames(de_sign) <- paste0("pred_", 1:NCOL(de_sign))
 # Add response equal to series
 de_sign <- cbind(ari_ma, de_sign)
@@ -3354,28 +3294,50 @@ drop(de_sign[n_rows, -1] %*% coeff_fit)
     \column{0.5\textwidth}
       \emph{Backtesting} is the simulation of a model on historical data to test its forecasting accuracy.
       \vskip1ex
-      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over a \emph{rolling look-back interval}.
+      The autoregressive forecasting model can be \emph{backtested} by calculating forecasts over either a \emph{rolling} or an \emph{expanding} look-back interval.
+      \vskip1ex
+      If the start date is fixed at the first row then the look-back interval is \emph{expanding}.
       \vskip1ex
       The coefficients of the \emph{AR(p)} process are fitted to past data, and then applied to calculating out-of-sample forecasts.
       \vskip1ex
-      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the model fitting procedure: the order $p$ of the \emph{AR(p)} model and the length of the look-back interval (\texttt{look\_back}).
+      The \emph{backtesting} procedure allows determining the optimal \emph{meta-parameters} of the forecasting model: the order $p$ of the \emph{AR(p)} model and the length of look-back interval (\texttt{look\_back}).
     \column{0.5\textwidth}
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
+# Calculate a vector of daily VTI log returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+date_s <- index(re_turns)
+re_turns <- as.numeric(re_turns)
+n_rows <- NROW(re_turns)
+# Define predictor as a rolling sum
+n_agg <- 5
+predic_tor <- rutils::roll_sum(re_turns, look_back=n_agg)
+# Shift the res_ponse forward out-of-sample
+res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
+# Define predictor matrix for forecasting
+order_max <- 5
+predic_tor <- sapply(1+n_agg*(0:order_max), rutils::lag_it,
+                     in_put=predic_tor)
+predic_tor <- cbind(rep(1, n_rows), predic_tor)
+# Define de_sign matrix
+de_sign <- cbind(res_ponse, predic_tor)
 # Perform rolling forecasting
-forecast_s <- sapply(look_back:n_rows, function(now) {
-  # Calculate look-back range
-  star_t <- max(1, now-look_back)
-  rang_e <- star_t:(now-1)
+look_back <- 100
+forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
+  # Define rolling look-back range
+  start_p <- max(1, end_p-look_back)
+  # Or expanding look-back range
+  # start_p <- 1
+  rang_e <- start_p:(end_p-1)
   # Invert the predictor matrix
   design_inv <- MASS::ginv(de_sign[rang_e, -1])
   # Calculate fitted coefficients
   coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
   # Calculate forecast
-  drop(de_sign[now, -1] %*% coeff_fit)
+  drop(de_sign[end_p, -1] %*% coeff_fit)
 })  # end sapply
 # Add warmup period
-forecast_s <- c(numeric(look_back-1), forecast_s)
+forecast_s <- c(rep(0, look_back), forecast_s)
       @
   \end{columns}
 \end{block}
@@ -3396,24 +3358,25 @@ forecast_s <- c(numeric(look_back-1), forecast_s)
       \begin{displaymath}
         \operatorname{MSE} = \frac{1}{n} \sum_{i=1}^n (r_i - f_i)^2
       \end{displaymath}
+    \column{0.5\textwidth}
       \vspace{-1em}
+      \includegraphics[width=0.4\paperwidth]{figure/ar_forecast_resid.png}
       <<echo=TRUE,eval=FALSE>>=
 # Mean squared error
-mean((ari_ma - forecast_s)^2)
+mean((re_turns - forecast_s)^2)
 # Correlation
-cor(forecast_s, ari_ma)
+cor(forecast_s, re_turns)
 # Plot forecasting series with legend
 x11(width=6, height=5)
-par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
-plot(ari_ma[(n_rows-look_back):n_rows], xlab="", ylab="", type="l", lwd=2,
-  main="Rolling Forecasting Using AR(5) Model")
-lines(forecast_s[(n_rows-look_back):n_rows], col="orange", lwd=2)
-legend(x="topright", legend=c("series", "forecasts"),
-       col=c("black", "orange"), lty=1, lwd=6,
+par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
+plot(forecast_s[(n_rows-look_back):n_rows], col="red", 
+     xlab="", ylab="", type="l", lwd=2,
+     main="Rolling Forecasting Using AR Model")
+lines(re_turns[(n_rows-look_back):n_rows], col="blue", lwd=2)
+legend(x="top", legend=c("re_turns", "forecasts"),
+       col=c("blue", "red"), lty=1, lwd=6,
        cex=0.9, bg="white", bty="n")
       @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.45\paperwidth]{figure/ar_forecast_resid.png}
   \end{columns}
 \end{block}
 
@@ -3432,31 +3395,40 @@ legend(x="topright", legend=c("series", "forecasts"),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define backtesting function
-back_test <- function(se_ries, or_der=5, look_back=100) {
-  n_rows <- NROW(se_ries)
+sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
+                      or_der=5, look_back=100) {
+  n_rows <- NROW(res_ponse)
+  # Define predictor as a rolling sum
+  predic_tor <- rutils::roll_sum(res_ponse, look_back=n_agg)
+  # Shift the res_ponse forward out-of-sample
+  res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
   # Define predictor matrix for forecasting
-  de_sign <- sapply(1:or_der, rutils::lag_it, in_put=se_ries)
-  de_sign <- cbind(rep(1, n_rows), de_sign)
-  # Add response equal to series
-  de_sign <- cbind(se_ries, de_sign)
+  predic_tor <- sapply(1+n_agg*(0:or_der), rutils::lag_it,
+                       in_put=predic_tor)
+  predic_tor <- cbind(rep(1, n_rows), predic_tor)
+  # Define de_sign matrix
+  de_sign <- cbind(res_ponse, predic_tor)
   # Perform rolling forecasting
-  forecast_s <- sapply(look_back:n_rows, function(now) {
-    # Calculate look-back range
-    star_t <- max(1, now-look_back)
-    rang_e <- star_t:(now-1)
+  forecast_s <- sapply((look_back+1):n_rows, function(end_p) {
+    # Define rolling look-back range
+    start_p <- max(1, end_p-look_back)
+    # Or expanding look-back range
+    # start_p <- 1
+    rang_e <- start_p:(end_p-1)
     # Invert the predictor matrix
     design_inv <- MASS::ginv(de_sign[rang_e, -1])
     # Calculate fitted coefficients
     coeff_fit <- drop(design_inv %*% de_sign[rang_e, 1])
     # Calculate forecast
-    drop(de_sign[now, -1] %*% coeff_fit)
+    drop(de_sign[end_p, -1] %*% coeff_fit)
   })  # end sapply
   # Add warmup period
-  forecast_s <- c(numeric(look_back-1), forecast_s)
-  c(mse=mean((se_ries - forecast_s)^2), cor=cor(forecast_s, se_ries))
-}  # end back_test
-# Apply the backtesting function
-back_test(ari_ma, or_der=5, look_back=100)
+  forecast_s <- c(rep(0, look_back), forecast_s)
+  rutils::roll_sum(forecast_s, look_back=n_agg)
+}  # end sim_forecasts
+# Simulate the rolling autoregressive forecasts
+forecast_s <- sim_forecasts(re_turns, or_der=5, look_back=100)
+c(mse=mean((re_turns - forecast_s)^2), cor=cor(re_turns, forecast_s))
       @
   \end{columns}
 \end{block}
@@ -3548,7 +3520,7 @@ for (i in 2:n_rows) {
       \begin{displaymath}
         \mathrm{d} p_t = \theta \, (\mu - p_t) \, \mathrm{d} t + \sigma \, \mathrm{d} W_t
       \end{displaymath}
-      Where $W_t$ is a \emph{Wiener process}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
+      Where $W_t$ is a \emph{Brownian Motion}, with $\mathrm{d} W_t$ following the standard normal distribution $\phi(0, \sqrt{\mathrm{d}t})$.
       \vskip1ex
       The solution of the \emph{Ornstein-Uhlenbeck} process is given by:
       \begin{displaymath}

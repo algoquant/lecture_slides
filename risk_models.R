@@ -7,6 +7,54 @@ knit_theme$set(thm)
 
 library(rutils)  # Load package rutils
 # Calculate VTI percentage returns
+re_turns <- rutils::etf_env$re_turns$VTI
+re_turns <- drop(coredata(na.omit(re_turns)))
+n_rows <- NROW(re_turns)
+# Mean and standard deviation of returns
+c(mean(re_turns), sd(re_turns))
+# Calculate the MAD of returns 10 points apart
+re_turns <- sort(re_turns)
+b_w <- 10*mad(rutils::diff_it(re_turns, lagg=10))
+# Calculate the kernel density
+den_sity <- sapply(1:n_rows, function(i_d) {
+  sum(dnorm(re_turns-re_turns[i_d], sd=b_w))
+})  # end sapply
+ma_d <- mad(re_turns)
+plot(re_turns, den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     t="l", col="blue", lwd=3,
+     xlab="returns", ylab="density",
+     main="Density of VTI Returns")
+# Calculate the kernel density using density()
+den_sity <- density(re_turns, bw=b_w)
+NROW(den_sity$y)
+x11(width=6, height=5)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     col="blue", lwd=3, main="Density of VTI Returns")
+# Interpolate the den_sity vector into re_turns
+den_sity <- approx(den_sity$x, den_sity$y, xout=re_turns)
+all.equal(den_sity$x, re_turns)
+plot(den_sity, xlim=c(-5*ma_d, 5*ma_d),
+     xlab="returns", ylab="density",
+     t="l", col="blue", lwd=3,
+     main="Density of VTI Returns")
+
+# Plot histogram
+histo_gram <- hist(re_turns, breaks=100, freq=FALSE,
+  xlim=c(-5*ma_d, 5*ma_d), xlab="", ylab="",
+  main="VTI Return Distribution")
+# Draw kernel density of histogram
+lines(den_sity, col="red", lwd=2)
+# Add density of normal distribution
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+add=TRUE, lwd=2, col="blue")
+# Add legend
+legend("topright", inset=0.05, cex=0.8, title=NULL,
+ leg=c("VTI", "Normal"), bty="n",
+ lwd=6, bg="white", col=c("red", "blue"))
+
+library(rutils)  # Load package rutils
+# Calculate VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 # Mean and standard deviation of returns
 c(mean(re_turns), sd(re_turns))
@@ -14,8 +62,9 @@ c(mean(re_turns), sd(re_turns))
 # Plot histogram
 x11(width=6, height=5)
 par(mar=c(1, 1, 1, 1), oma=c(2, 2, 2, 0))
+ma_d <- mad(re_turns)
 histo_gram <- hist(re_turns, breaks=100,
-  main="", ylim=c(0, 60), xlim=c(-0.04, 0.04),
+  main="", xlim=c(-5*ma_d, 5*ma_d),
   xlab="", ylab="", freq=FALSE)
 # Draw kernel density of histogram
 lines(density(re_turns), col="red", lwd=2)
@@ -71,23 +120,25 @@ n_rows*(n_rows+1)/((n_rows-1)^3)*
 
 # calc_skew() calculates skew of returns
 calc_skew <- function(re_turns) {
-  # Standardize re_turns
-  re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
-  # Calculate skew
-  n_rows <- NROW(re_turns)
-  n_rows*sum(re_turns^3)/((n_rows-1)*(n_rows-2))
+  re_turns <- na.omit(re_turns)
+  sum(((re_turns - mean(re_turns))/sd(re_turns))^3)/NROW(re_turns)
 }  # end calc_skew
 # calc_kurt() calculates kurtosis of returns
 calc_kurt <- function(re_turns) {
-  # Standardize re_turns
-  re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
-  # Calculate skew
-  n_rows <- NROW(re_turns)
-  n_rows*(n_rows+1)*sum(re_turns^4)/((n_rows-1)*(n_rows-2)*(n_rows-3))
+  re_turns <- na.omit(re_turns)
+  sum(((re_turns - mean(re_turns))/sd(re_turns))^4)/NROW(re_turns)
 }  # end calc_kurt
 # Calculate skew and kurtosis of VTI returns
 calc_skew(re_turns)
 calc_kurt(re_turns)
+# calc_mom() calculates the moments of returns
+calc_mom <- function(re_turns, mo_ment=3) {
+  re_turns <- na.omit(re_turns)
+  sum(((re_turns - mean(re_turns))/sd(re_turns))^mo_ment)/NROW(re_turns)
+}  # end calc_mom
+# Calculate skew and kurtosis of VTI returns
+calc_mom(re_turns, mo_ment=3)
+calc_mom(re_turns, mo_ment=4)
 
 set.seed(1121)  # Reset random number generator
 # Sample from Standard Normal Distribution
@@ -248,6 +299,66 @@ legend("topleft", inset=0.05, bty="n",
   leg=c("density", "t-distr", "normal"),
   lwd=6, lty=1, col=c("blue", "red", "green"))
 
+# Calculate VTI returns and volume
+oh_lc <- HighFreq::SPY
+oh_lc <- rutils::etf_env$VTI
+price_s <- drop(coredata(quantmod::Cl(oh_lc)))
+re_turns <- rutils::diff_it(log(price_s))
+vol_ume <- drop(coredata(quantmod::Vo(oh_lc)))
+# Calculate moving average volume
+look_back <- 121
+volume_roll <- HighFreq::roll_vec(vol_ume, look_back=look_back)/look_back
+dygraphs::dygraph(xts(volume_roll, index(oh_lc)),
+  main="Moving Average VTI Volume") %>%
+  dySeries(strokeWidth=3, col="blue")
+# Scale returns using volume (volume clock)
+# rets_scaled <- sqrt(volume_roll)*re_turns/sqrt(vol_ume)
+rets_scaled <- ifelse(vol_ume > 0, volume_roll*re_turns/vol_ume, 0)
+rets_scaled <- sd(re_turns)*rets_scaled/sd(rets_scaled)
+
+
+# rets_scaled <- ifelse(vol_ume > 1e4, re_turns/vol_ume, 0)
+# Calculate moments of scaled returns
+# n_rows <- NROW(re_turns)
+# sapply(list(re_turns=re_turns, rets_scaled=rets_scaled),
+#   function(rets) {sapply(c(skew=3, kurt=4),
+#            function(x) sum((rets/sd(rets))^x)/n_rows)
+# })  # end sapply
+
+x11(width=6, height=5)
+par(mar=c(3, 3, 2, 1), oma=c(1, 1, 1, 1))
+# Plot densities of SPY returns
+ma_d <- mad(re_turns)
+# b_w <- mad(rutils::diff_it(re_turns))
+plot(density(re_turns, bw=ma_d/10), xlim=c(-5*ma_d, 5*ma_d),
+     lwd=3, mgp=c(2, 1, 0), col="blue",
+     xlab="returns (standardized)", ylab="frequency",
+     main="Density of Volume-scaled VTI Returns")
+lines(density(rets_scaled, bw=ma_d/10), lwd=3, col="red")
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+add=TRUE, lwd=3, col="green")
+# Add legend
+legend("topright", inset=0.05, bty="n",
+  leg=c("minutely", "scaled", "normal"),
+  lwd=6, lty=1, col=c("blue", "red", "green"))
+
+# KS test for normal distribution
+ks.test(rnorm(100), pnorm)
+# KS test for uniform distribution
+ks.test(runif(100), pnorm)
+# KS test for two similar normal distributions
+ks.test(rnorm(100), rnorm(100, mean=0.1))
+# KS test for two different normal distributions
+ks.test(rnorm(100), rnorm(100, mean=1.0))
+# Fit t-dist into VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
+lo_cation <- optim_fit$estimate[1]
+scal_e <- optim_fit$estimate[2]
+# Perform Kolmogorov-Smirnov test on VTI returns
+da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
+ks.test(as.numeric(re_turns), da_ta)
+
 x11(width=6, height=5)
 par(mar=c(2, 2, 2, 1), oma=c(1, 1, 1, 1))
 # Degrees of freedom
@@ -268,23 +379,6 @@ lab_els <- paste("df", deg_free, sep="=")
 legend("topright", inset=0.05, bty="n",
        title="Degrees of freedom", lab_els,
        cex=0.8, lwd=6, lty=1, col=col_ors)
-
-# KS test for normal distribution
-ks.test(rnorm(100), pnorm)
-# KS test for uniform distribution
-ks.test(runif(100), pnorm)
-# KS test for two similar normal distributions
-ks.test(rnorm(100), rnorm(100, mean=0.1))
-# KS test for two different normal distributions
-ks.test(rnorm(100), rnorm(100, mean=1.0))
-# Fit t-dist into VTI returns
-re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
-optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
-lo_cation <- optim_fit$estimate[1]
-scal_e <- optim_fit$estimate[2]
-# Perform Kolmogorov-Smirnov test on VTI returns
-da_ta <- lo_cation + scal_e*rt(NROW(re_turns), df=2)
-ks.test(as.numeric(re_turns), da_ta)
 
 # Observed frequencies from random normal data
 histo_gram <- hist(rnorm(1e3, mean=0), breaks=100, plot=FALSE)
@@ -556,34 +650,132 @@ all.equal(c_var,
   as.numeric(PerformanceAnalytics::ETL(re_turns,
   p=(1-conf_level), method="historical")))
 
-# Calculate the Sharpe ratio
-risk_return <- table.Stats(rutils::etf_env$re_turns)
-class(risk_return)
-all.equal(risk_return, rutils::etf_env$risk_return)
+# Calculate the risk-return statistics
+risk_ret <-
+  PerformanceAnalytics::table.Stats(rutils::etf_env$re_turns)
+class(risk_ret)
 # Transpose the data frame
-risk_return <- as.data.frame(t(risk_return))
-# Remove VIX etf data
-risk_return <- risk_return[-match(c("VXX", "SVXY"), rownames(risk_return)), ]
-# Plot scatterplot
-plot(Kurtosis ~ Skewness, data=risk_return,
-     ylim=c(1, max(risk_return$Kurtosis)),
+risk_ret <- as.data.frame(t(risk_ret))
+# Add Name column
+risk_ret$Name <- rownames(risk_ret)
+# Add Sharpe ratio column
+risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
+# Sort on Sharpe ratio
+risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
+
+# Copy from rutils to save time
+risk_ret <- rutils::etf_env$risk_return
+# Add Sharpe ratio column
+risk_ret$Sharpe <- risk_ret$"Arithmetic Mean"/risk_ret$Stdev
+# Sort on Sharpe ratio
+risk_ret <- risk_ret[order(risk_ret$Sharpe, decreasing=TRUE), ]
+# Print data frame
+knitr::kable(risk_ret[, c("Sharpe", "Skewness", "Kurtosis")])
+
+# Print data frame
+knitr::kable(risk_ret[c("VXX", "SVXY"), c("Sharpe", "Skewness", "Kurtosis")])
+
+# dygraph plot of VTI drawdowns
+price_s <- na.omit(rutils::etf_env$price_s[, c("VXX", "SVXY")])
+price_s <- price_s["2017/"]
+col_names <- c("VXX", "SVXY")
+colnames(price_s) <- col_names
+dygraphs::dygraph(price_s, main="Prices of VXX and SVXY") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="green") %>%
+  dyLegend(show="always", width=500)
+
+# Remove VIX volatility ETF data
+risk_ret <- risk_ret[-match(c("VXX", "SVXY"), risk_ret$Name), ]
+# Plot scatterplot of Sharpe vs Skewness
+plot(Sharpe ~ Skewness, data=risk_ret,
+     ylim=1.1*range(risk_ret$Sharpe),
+     main="Sharpe vs Skewness")
+# Add labels
+text(x=risk_ret$Skewness, y=risk_ret$Sharpe,
+    labels=risk_ret$Name, pos=3, cex=0.8)
+# Plot scatterplot of Kurtosis vs Skewness
+x11(width=6, height=5)
+par(mar=c(4, 4, 2, 1), oma=c(0, 0, 0, 0))
+plot(Kurtosis ~ Skewness, data=risk_ret,
+     ylim=c(1, max(risk_ret$Kurtosis)),
      main="Kurtosis vs Skewness")
 # Add labels
-text(x=risk_return$Skewness, y=risk_return$Kurtosis,
-    labels=rownames(risk_return), pos=1, cex=0.8)
+text(x=risk_ret$Skewness, y=risk_ret$Kurtosis,
+    labels=risk_ret$Name, pos=1, cex=0.8)
 
-risk_return <- rutils::etf_env$risk_return
-risk_return <- as.data.frame(t(risk_return))
-# Add skew_kurt column
-risk_return$skew_kurt <-
-  risk_return$Skewness/risk_return$Kurtosis
-# Sort on skew_kurt
-risk_return <- risk_return[order(risk_return$skew_kurt,
-  decreasing=TRUE), ]
+#Below is for ETFs
+# Sort on Sharpe ratio
+risk_ret <- risk_ret[order(risk_ret$Skewness, decreasing=TRUE), ]
+# Select high skew and low skew ETFs
+cut_off <- (NROW(risk_ret) %/% 2)
+high_skew <- risk_ret$Name[1:cut_off]
+low_skew <- risk_ret$Name[(cut_off+1):NROW(risk_ret)]
+# Calculate returns and log prices
+re_turns <- rutils::etf_env$re_turns
+re_turns <- zoo::na.locf(re_turns, na.rm=FALSE)
+re_turns[is.na(re_turns)] <- 0
+sum(is.na(re_turns))
+high_skew <- rowMeans(re_turns[, high_skew])
+low_skew <- rowMeans(re_turns[, low_skew])
+weal_th <- cbind(high_skew, low_skew)
+weal_th <- xts::xts(weal_th, index(re_turns))
+weal_th <- cumsum(weal_th)
+# dygraph plot of high skew and low skew ETFs
+col_names <- colnames(weal_th)
+dygraphs::dygraph(weal_th, main="Log Wealth of High and Low Skew ETFs") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="green") %>%
+  dyLegend(show="always", width=500)
 
-# Add names column
-risk_return$Name <- rutils::etf_env$etf_list[rownames(risk_return), ]$Name
-knitr::kable(risk_return[, c("Name", "Skewness", "Kurtosis")])
+#Below is for S&P500 constituent stocks
+# calc_mom() calculates the moments of returns
+calc_mom <- function(re_turns, mo_ment=3) {
+  re_turns <- na.omit(re_turns)
+  sum(((re_turns - mean(re_turns))/sd(re_turns))^mo_ment)/NROW(re_turns)
+}  # end calc_mom
+# Calculate skew and kurtosis of VTI returns
+calc_mom(re_turns, mo_ment=3)
+calc_mom(re_turns, mo_ment=4)
+# Load the S&P500 constituent stock returns
+load(file="C:/Develop/lecture_slides/data/sp500_returns.RData")
+dim(re_turns)
+sum(is.na(re_turns))
+# re_turns <- re_turns["2000/"]
+skew_s <- sapply(re_turns, calc_mom, mo_ment=3)
+# skew_s <- sapply(re_turns, calc_mom, mo_ment=4)
+# skew_s <- sapply(re_turns, sd, na.rm=TRUE)
+skew_s <- sort(skew_s)
+name_s <- names(skew_s)
+n_rows <- NROW(name_s)
+# Select high skew and low skew ETFs
+cut_off <- (n_rows %/% 2)
+low_skew <- name_s[1:cut_off]
+high_skew <- name_s[(cut_off+1):n_rows]
+
+# low_skew <- name_s[1:50]
+# high_skew <- name_s[(n_rows-51):n_rows]
+# Calculate returns and log prices
+low_skew <- rowMeans(re_turns[, low_skew], na.rm=TRUE)
+low_skew[1] <- 0
+high_skew <- rowMeans(re_turns[, high_skew], na.rm=TRUE)
+high_skew[1] <- 0
+weal_th <- cbind(high_skew, low_skew)
+weal_th <- xts::xts(weal_th, index(re_turns))
+weal_th <- cumsum(weal_th)
+# dygraph plot of high skew and low skew ETFs
+col_names <- colnames(weal_th)
+dygraphs::dygraph(weal_th, main="Log Wealth of High and Low Skew Stocks") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", strokeWidth=2, col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", strokeWidth=2, col="green") %>%
+  dyLegend(show="always", width=500)
+
 
 library(PerformanceAnalytics)
 re_turns <- rutils::etf_env$re_turns[, c("VTI", "IEF")]
@@ -601,9 +793,16 @@ price_s <- na.omit(rutils::etf_env$price_s$VTI)
 # Define look-back window and a half window
 win_dow <- 11
 # Calculate time series of medians
-medi_an <- TTR::runMedian(price_s, n=win_dow)
+medi_an <- roll::roll_median(price_s, width=win_dow)
 # Calculate time series of z-scores
 ma_d <- TTR::runMAD(price_s, n=win_dow)
+
+# This can't work - need new HighFreq function
+foo <- roll::roll_median(abs(price_s-medi_an), width=win_dow)
+all.equal(unname(coredata(ma_d[-(1:(2*win_dow+1))])), unname(coredata(foo[-(1:(2*win_dow+1))])))
+foo <- cbind(ma_d, foo)
+tail(foo, 22)
+
 z_scores <- (price_s - medi_an)/ma_d
 z_scores[1:win_dow, ] <- 0
 tail(z_scores, win_dow)
@@ -674,7 +873,7 @@ con_fuse <- function(actu_al, z_scores, thresh_old) {
     c(typeI=confu_sion[2, 1], typeII=confu_sion[1, 2])
   }  # end con_fuse
 con_fuse(is_jump, z_scores, thresh_old=thresh_old)
-# Define vector of thresholds
+# Define vector of discrimination thresholds
 threshold_s <- seq(from=0.2, to=5.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
@@ -690,70 +889,62 @@ false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
 # Plot ROC curve for Hampel classifier
-plot(x=error_rates[, "typeI"],
-     y=1-error_rates[, "typeII"],
-     xlab="FALSE positive rate",
-     ylab="TRUE positive rate",
+x11(width=6, height=5)
+plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
+     xlab="FALSE positive rate", ylab="TRUE positive rate",
      xlim=c(0, 1), ylim=c(0, 1),
      main="ROC Curve for Hampel Classifier",
      type="l", lwd=3, col="blue")
 abline(a=0.0, b=1.0, lwd=3, col="orange")
 
-# Calculate EWMA VTI variance using filter()
+# Calculate EWMA VTI variance using compiled C++ function
 look_back <- 51
 weight_s <- exp(-0.1*1:look_back)
 weight_s <- weight_s/sum(weight_s)
-vari_ance <- stats::filter(re_turns^2,
-    filter=weight_s, sides=1)
+vari_ance <- .Call(stats:::C_cfilter, re_turns^2,
+  filter=weight_s, sides=1, circular=FALSE)
 vari_ance[1:(look_back-1)] <- vari_ance[look_back]
-class(vari_ance)
-vari_ance <- as.numeric(vari_ance)
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
-# Plot EWMA standard deviation
-chart_Series(x_ts,
-  name="EWMA standard deviation")
-dygraphs::dygraph(x_ts, main="EWMA standard deviation")
-
-# Calculate EWMA VTI variance using filter()
-look_back <- 51
-weight_s <- exp(-0.1*1:look_back)
-weight_s <- weight_s/sum(weight_s)
-vari_ance <- stats::filter(re_turns^2,
-    filter=weight_s, sides=1)
-vari_ance[1:(look_back-1)] <- vari_ance[look_back]
-class(vari_ance)
-vari_ance <- as.numeric(vari_ance)
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
-# Plot EWMA standard deviation
-chart_Series(x_ts,
-  name="EWMA standard deviation")
-dygraphs::dygraph(x_ts, main="EWMA standard deviation")
+# Plot EWMA volatility
+vari_ance <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+dygraphs::dygraph(vari_ance, main="VTI EWMA Volatility")
+chart_Series(x_ts, name="VTI EWMA Volatility")
 
 # VTI percentage returns
 re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
+n_rows <- NROW(re_turns)
 # Define end points
-end_p <- 0:NROW(re_turns)
-n_rows <- NROW(end_p)
-look_back <- 51
-# start_p are multi-period lag of end_p
-start_p <- c(rep_len(0, look_back - 1),
-    end_p[1:(n_rows- look_back + 1)])
-# Calculate realized VTI variance in sapply() loop
-vari_ance <- sapply(2:n_rows, function(in_dex) {
+end_p <- 1:NROW(re_turns)
+# Start points are multi-period lag of end_p
+look_back <- 11
+start_p <- c(rep_len(0, look_back-1), end_p[1:(n_rows-look_back+1)])
+# Calculate rolling variance in sapply() loop - takes very long
+vari_ance <- sapply(1:n_rows, function(in_dex) {
   ret_s <- re_turns[start_p[in_dex]:end_p[in_dex]]
   sum((ret_s - mean(ret_s))^2)
 }) / (look_back-1)  # end sapply
+# Use only vectorized functions
+cum_rets <- cumsum(re_turns)
+cum_rets <- (cum_rets -
+  c(rep_len(0, look_back), cum_rets[1:(n_rows-look_back)]))
+cum_rets2 <- cumsum(re_turns^2)
+cum_rets2 <- (cum_rets2 -
+  c(rep_len(0, look_back), cum_rets2[1:(n_rows-look_back)]))
+vari_ance2 <- (cum_rets2 - cum_rets^2/look_back)/(look_back-1)
+all.equal(vari_ance[-(1:look_back)], as.numeric(vari_ance2)[-(1:look_back)])
+# Same, using package rutils
+cum_rets <- rutils::roll_sum(re_turns, look_back=look_back)
+cum_rets2 <- rutils::roll_sum(re_turns^2, look_back=look_back)
+vari_ance2 <- (cum_rets2 - cum_rets^2/look_back)/(look_back-1)
+# Coerce vari_ance into xts
 tail(vari_ance)
 class(vari_ance)
-# Coerce vari_ance into xts
 vari_ance <- xts(vari_ance, order.by=index(re_turns))
 colnames(vari_ance) <- "VTI.variance"
 head(vari_ance)
 
 # Calculate rolling VTI variance using package roll
 library(roll)  # Load roll
-vari_ance <-
-  roll::roll_var(re_turns, width=look_back)
+vari_ance <- roll::roll_var(re_turns, width=look_back)
 colnames(vari_ance) <- "VTI.variance"
 head(vari_ance)
 sum(is.na(vari_ance))
@@ -768,20 +959,18 @@ summary(microbenchmark(
   ro_ll=roll::roll_var(re_turns, width=look_back),
   times=10))[, c(1, 4, 5)]
 
-# Calculate EWMA VTI variance using filter()
+# Calculate EWMA VTI variance using compiled C++ function
 look_back <- 51
 weight_s <- exp(-0.1*1:look_back)
 weight_s <- weight_s/sum(weight_s)
-vari_ance <- stats::filter(re_turns^2,
-    filter=weight_s, sides=1)
+vari_ance <- .Call(stats:::C_cfilter, re_turns^2,
+  filter=weight_s, sides=1, circular=FALSE)
 vari_ance[1:(look_back-1)] <- vari_ance[look_back]
-class(vari_ance)
-vari_ance <- as.numeric(vari_ance)
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
-# Plot EWMA standard deviation
-chart_Series(x_ts,
-  name="EWMA standard deviation")
-dygraphs::dygraph(x_ts, main="EWMA standard deviation")
+# Plot EWMA volatility
+vari_ance <- xts:::xts(sqrt(vari_ance), order.by=index(re_turns))
+dygraphs::dygraph(vari_ance, main="VTI EWMA Volatility") %>%
+  dyOptions(colors="blue")
+chart_Series(x_ts, name="VTI EWMA Volatility")
 
 # Calculate rolling VTI variance using package roll
 library(roll)  # Load roll
@@ -792,6 +981,46 @@ class(vari_ance)
 head(vari_ance)
 sum(is.na(vari_ance))
 vari_ance[1:(look_back-1)] <- 0
+
+library(HighFreq)  # Load HighFreq
+# Minutely SPY returns (unit per minute) single day
+# Minutely SPY volatility (unit per minute)
+re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
+sd(re_turns)
+# SPY returns multiple days (includes overnight jumps)
+re_turns <- rutils::diff_it(log(SPY[, 4]))
+sd(re_turns)
+# Table of time intervals - 60 second is most frequent
+in_dex <- rutils::diff_it(.index(SPY))
+table(in_dex)
+# SPY returns divided by the overnight time intervals (unit per second)
+re_turns <- re_turns / in_dex
+re_turns[1] <- 0
+# Minutely SPY volatility scaled to unit per minute
+60*sd(re_turns)
+
+library(HighFreq)  # Load HighFreq
+sp_y <- HighFreq::SPY["2009"]
+# Calculate daily SPY volatility using package HighFreq
+sqrt(6.5*60*HighFreq::calc_var_ohlc(log(sp_y),
+  calc_method="yang_zhang"))
+# Calculate daily SPY volatility from minutely prices using package TTR
+sqrt((6.5*60)*mean(na.omit(
+  TTR::volatility(sp_y, N=1, calc="yang.zhang"))^2))
+# Calculate rolling SPY variance using package HighFreq
+vari_ance <- HighFreq::roll_var_ohlc(log(sp_y), calc_method="yang_zhang",
+  look_back=look_back)
+# Plot range volatility
+vari_ance <- xts:::xts(sqrt(vari_ance), order.by=index(sp_y))
+dygraphs::dygraph(vari_ance["2009-02"],
+  main="SPY Rolling Range Volatility") %>%
+  dyOptions(colors="blue")
+# Benchmark the speed of HighFreq vs TTR
+library(microbenchmark)
+summary(microbenchmark(
+  ttr=TTR::volatility(rutils::etf_env$VTI, N=1, calc="yang.zhang"),
+  highfreq=HighFreq::calc_var_ohlc(log(rutils::etf_env$VTI), calc_method="yang_zhang"),
+  times=2))[, c(1, 4, 5)]
 
 x11(width=6, height=4)
 par(mar=c(4, 3, 1, 1), oma=c(0, 0, 0, 0))
@@ -836,18 +1065,18 @@ par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0))
 plot(cumsum(re_turns/100), t="l",
   lwd=2, col="blue", xlab="", ylab="",
   main="GARCH cumulative returns")
-# Plot dygraphs GARCH standard deviation
+# Plot dygraphs GARCH volatility
 date_s <- seq.Date(from=Sys.Date()-n_rows+1,
   to=Sys.Date(), length.out=n_rows)
 x_ts <- xts:::xts(cumsum(re_turns/100), order.by=date_s)
 dygraphs::dygraph(x_ts, main="GARCH cumulative returns")
-# Plot GARCH standard deviation
+# Plot GARCH volatility
 plot(sqrt(vari_ance), t="l",
   col="blue", xlab="", ylab="",
-  main="GARCH standard deviation")
-# Plot dygraphsGARCH standard deviation
-x_ts <- xts:::xts(sqrt(vari_ance), order.by=date_s)
-dygraphs::dygraph(x_ts, main="GARCH standard deviation")
+  main="GARCH Volatility")
+# Plot dygraphsGARCH volatility
+vari_ance <- xts:::xts(sqrt(vari_ance), order.by=date_s)
+dygraphs::dygraph(vari_ance, main="GARCH Volatility")
 
 # Define GARCH parameters
 om_ega <- 0.0001 ; al_pha <- 0.5
@@ -855,17 +1084,16 @@ be_ta <- 0.1 ; n_rows <- 10000
 re_turns <- numeric(n_rows)
 vari_ance <- numeric(n_rows)
 vari_ance[1] <- om_ega/(1-al_pha-be_ta)
+set.seed(1121)  # Reset random numbers
 re_turns[1] <- rnorm(1, sd=sqrt(vari_ance[1]))
 # Simulate GARCH model
-set.seed(1121)  # Reset random numbers
 for (i in 2:n_rows) {
   re_turns[i] <- rnorm(n=1, sd=sqrt(vari_ance[i-1]))
   vari_ance[i] <- om_ega + al_pha*re_turns[i]^2 +
     be_ta*vari_ance[i-1]
 }  # end for
 # Calculate kurtosis of GARCH returns
-moments::moment(re_turns, order=4) /
-  moments::moment(re_turns, order=2)^2
+mean(((re_turns-mean(re_turns))/sd(re_turns))^4)
 # Perform Jarque-Bera test of normality
 tseries::jarque.bera.test(re_turns)
 
@@ -898,17 +1126,16 @@ round(garch_fit@fit$coef, 5)
 round(c(mu=mean(re_turns), omega=om_ega,
   alpha=al_pha, beta=be_ta), 5)
 
-# Plot GARCH fitted standard deviation
+# Plot GARCH fitted volatility
 plot(sqrt(garch_fit@fit$series$h), t="l",
   col="blue", xlab="", ylab="",
-  main="GARCH fitted standard deviation")
+  main="GARCH Fitted Volatility")
 
 # Specify GARCH model
-garch_spec <- fGarch::garchSpec(
-  model=list(omega=om_ega, alpha=al_pha, beta=be_ta))
+garch_spec <- fGarch::garchSpec(model=list(omega=om_ega,
+  alpha=al_pha, beta=be_ta))
 # Simulate GARCH model
-garch_sim <-
-  fGarch::garchSim(spec=garch_spec, n=n_rows)
+garch_sim <- fGarch::garchSim(spec=garch_spec, n=n_rows)
 re_turns <- as.numeric(garch_sim)
 # Calculate kurtosis of GARCH returns
 moments::moment(re_turns, order=4) /
@@ -980,26 +1207,8 @@ re_turns[1] <- 0
 60*sd(re_turns)
 
 library(HighFreq)  # Load HighFreq
-# Minutely SPY returns (unit per minute) single day
-# Minutely SPY volatility (unit per minute)
-re_turns <- rutils::diff_it(log(SPY["2012-02-13", 4]))
-sd(re_turns)
-# SPY returns multiple days (includes overnight jumps)
-re_turns <- rutils::diff_it(log(SPY[, 4]))
-sd(re_turns)
-# Table of time intervals - 60 second is most frequent
-in_dex <- rutils::diff_it(.index(SPY))
-table(in_dex)
-# SPY returns divided by the overnight time intervals (unit per second)
-re_turns <- re_turns / in_dex
-re_turns[1] <- 0
-# Minutely SPY volatility scaled to unit per minute
-60*sd(re_turns)
-
-library(HighFreq)  # Load HighFreq
-# Daily OHLC SPY prices
-SPY_daily <-
-  rutils::to_period(oh_lc=HighFreq::SPY, period="days")
+# Minutely OHLC SPY prices aggregated to daily prices
+SPY_daily <- rutils::to_period(oh_lc=HighFreq::SPY, period="days")
 # Daily SPY volatility from daily returns
 sd(rutils::diff_it(log(SPY_daily[, 4])))
 # Minutely SPY returns (unit per minute)
@@ -1014,72 +1223,79 @@ re_turns[1] <- 0
 # Daily SPY volatility from minutely returns
 sqrt(6.5*60)*60*sd(re_turns)
 # Daily SPY volatility
-# Including extra time over weekends and holidays
+# Scale by extra time over weekends and holidays
 24*60*60*sd(rutils::diff_it(log(SPY_daily[, 4]))[-1] /
     rutils::diff_it(.index(SPY_daily))[-1])
 
-# Calculate SPY prices adjusted for overnight jumps
+# Calculate SPY returns adjusted for overnight jumps
 price_s <- log(as.numeric(Cl(HighFreq::SPY[, 4])))
 re_turns <- rutils::diff_it(price_s) /
   rutils::diff_it(.index(HighFreq::SPY))
 re_turns[1] <- 0
 price_s <- cumsum(re_turns)
+n_rows <- NROW(price_s)
 # Calculate volatilities for vector of aggregation intervals
-interval_s <- round(seq.int(from=3, to=30, length.out=9)^2)
+interval_s <- seq.int(from=3, to=35, length.out=9)^2
 vol_s <- sapply(interval_s, function(inter_val) {
-  end_p <- rutils::calc_endpoints(price_s,
-    inter_val=inter_val)
+  num_agg <- n_rows %/% inter_val
+  end_p <- c(0, n_rows - num_agg*inter_val + (0:num_agg)*inter_val)
+  # end_p <- rutils::calc_endpoints(price_s, inter_val=inter_val)
   sd(rutils::diff_it(price_s[end_p]))
 })  # end sapply
+# Calculate Hurst as regression slope using formula
 vol_log <- log(vol_s)
-vol_log <- vol_log - mean(vol_log)
 inter_log <- log(interval_s)
-inter_log <- inter_log - mean(inter_log)
+hurs_t <- cov(vol_log, inter_log)/var(inter_log)
+# Or using function lm()
 mod_el <- lm(vol_log ~ inter_log)
-hurs_t <- summary(mod_el)$coeff[2, 1]
-# Or directly from formula
-hurst_form <- sum(vol_log*inter_log)/sum(inter_log^2)
-all.equal(hurst_form, hurs_t)
+coef(mod_el)[2]
 
+# Calculate Hurst from single data point
+(last(vol_log) - log(sd(re_turns)))/last(inter_log)
+# Plot the volatilities
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
 plot(vol_log ~ inter_log, lwd=6, col="red",
-     xlab="aggregation intervals (log)",
-     ylab="volatility (log)",
+     xlab="aggregation intervals (log)", ylab="volatility (log)",
      main="Hurst Exponent for SPY From Volatilities")
 abline(mod_el, lwd=3, col="blue")
-text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
+text(inter_log[2], vol_log[NROW(vol_log)-1],
+     paste0("Hurst = ", round(hurs_t, 4)))
 
 # Calculate the rescaled range
 inter_val <- 500
-end_p <- rutils::calc_endpoints(price_s,
-  inter_val=inter_val)
+n_rows <- NROW(price_s); num_agg <- n_rows %/% inter_val
+end_p <- c(0, n_rows - num_agg*inter_val + (0:num_agg)*inter_val)
+# Or
+# end_p <- rutils::calc_endpoints(price_s, inter_val=inter_val)
 r_s <- sapply(2:NROW(end_p), function(ep) {
   in_dex <- end_p[ep-1]:end_p[ep]
-  diff(range(price_s[in_dex])) /
-    sd(re_turns[in_dex])
+  diff(range(price_s[in_dex]))/sd(re_turns[in_dex])
 })  # end sapply
 mean(r_s)
+# Calculate Hurst from single data point
+log(mean(r_s))/log(inter_val)
 
 # Calculate rescaled range for vector of aggregation intervals
+n_rows <- NROW(price_s)
 r_s <- sapply(interval_s, function(inter_val) {
-  end_p <- rutils::calc_endpoints(price_s,
-    inter_val=inter_val)
+# Calculate end points
+  num_agg <- n_rows %/% inter_val
+  end_p <- c(0, n_rows - num_agg*inter_val + (0:num_agg)*inter_val)
+# Calculate rescaled ranges
   r_s <- sapply(2:NROW(end_p), function(ep) {
     in_dex <- end_p[ep-1]:end_p[ep]
     diff(range(price_s[in_dex]))/sd(re_turns[in_dex])
   })  # end sapply
   mean(na.omit(r_s))
 })  # end sapply
+# Calculate Hurst as regression slope using formula
 rs_log <- log(r_s)
-rs_log <- rs_log - mean(rs_log)
 inter_log <- log(interval_s)
-inter_log <- inter_log - mean(inter_log)
+hurs_t <- cov(rs_log, inter_log)/var(inter_log)
+# Or using function lm()
 mod_el <- lm(rs_log ~ inter_log)
-hurs_t <- summary(mod_el)$coeff[2, 1]
-# Or directly from formula
-hurst_form <- sum(rs_log*inter_log)/sum(inter_log^2)
-all.equal(hurst_form, hurs_t)
+coef(mod_el)[2]
 
 x11(width=6, height=5)
 par(mar=c(4, 4, 2, 1), oma=c(1, 1, 1, 1))
@@ -1088,18 +1304,8 @@ plot(rs_log ~ inter_log, lwd=6, col="red",
      ylab="rescaled range (log)",
      main="Rescaled Range Analysis for SPY")
 abline(mod_el, lwd=3, col="blue")
-text(-2, 0.5, paste0("Hurst = ", round(hurs_t, 4)))
-
-library(HighFreq)  # Load HighFreq
-# Daily SPY volatility from minutely prices using package TTR
-library(TTR)
-sqrt((6.5*60)*mean(na.omit(
-  TTR::volatility(HighFreq::SPY, N=1,
-          calc="yang.zhang"))^2))
-# SPY volatility using package HighFreq
-60*sqrt((6.5*60)*agg_regate(oh_lc=HighFreq::SPY,
-    weight_ed=FALSE, mo_ment="run_variance",
-    calc_method="yang_zhang"))
+text(inter_log[2], rs_log[NROW(rs_log)-1],
+     paste0("Hurst = ", round(hurs_t, 4)))
 
 library(HighFreq)  # Load HighFreq
 oh_lc <- log(rutils::etf_env$VTI)
@@ -1229,14 +1435,13 @@ head(start_p, 33)
 price_s <- quantmod::Cl(oh_lc["2018/"])
 n_rows <- NROW(price_s)
 # Number of periods between endpoints
-n_points <- 22
+n_points <- 21
 # Number of n_points that fit over n_rows
 n_agg <- n_rows %/% n_points
 # If n_rows==n_points*n_agg then whole number
 end_p <- (0:n_agg)*n_points
 # Stub interval at beginning
-end_p <- c(0, n_rows-n_points*n_agg +
-            (0:n_agg)*n_points)
+end_p <- c(0, n_rows-n_points*n_agg + (0:n_agg)*n_points)
 # Else stub interval at end
 end_p <- c((0:n_agg)*n_points, n_rows)
 # Or use xts::endpoints()
@@ -1257,18 +1462,16 @@ abline(v=end_p, col="red", lwd=2)
 # Number of data points
 n_rows <- NROW(rutils::etf_env$VTI["2019/"])
 # Number of n_points that fit over n_rows
-n_points <- 22
+n_points <- 21
 n_agg <- n_rows %/% n_points
 # Stub interval at beginning
-end_p <- c(0, n_rows-n_points*n_agg +
-            (0:n_agg)*n_points)
+end_p <- c(0, n_rows-n_points*n_agg + (0:n_agg)*n_points)
 
 # look_back defined as number of data points
 look_back <- 252
 # start_p are end_p lagged by look_back
 start_p <- (end_p - look_back + 1)
-start_p <- ifelse(start_p < 0, 0,
-                 start_p)
+start_p <- ifelse(start_p < 0, 0, start_p)
 # look_back defined as number of end_p
 look_back <- 12
 start_p <- c(rep_len(0, look_back-1),
@@ -1279,12 +1482,11 @@ cbind(start_p, end_p)
 # Number of data points
 n_rows <- NROW(rutils::etf_env$VTI["2019/"])
 # Number of data points per interval
-n_points <- 22
+n_points <- 21
 # Number of n_pointss that fit over n_rows
 n_agg <- n_rows %/% n_points
 # Define end_p with beginning stub
-end_p <- c(0, n_rows-n_points*n_agg +
-            (0:n_agg)*n_points)
+end_p <- c(0, n_rows-n_points*n_agg + (0:n_agg)*n_points)
 # Define contiguous start_p
 start_p <- c(0, end_p[1:(NROW(end_p)-1)])
 # Define exclusive start_p
@@ -1304,35 +1506,33 @@ look_backs <- lapply(2:n_rows, function(in_dex) {
 # Define aggregation function
 agg_regate <- function(x_ts) c(max=max(x_ts), min=min(x_ts))
 # Perform aggregations over look_backs list
-agg_regations <- sapply(look_backs,
+agg_s <- sapply(look_backs,
     function(look_back) agg_regate(price_s[look_back])
 )  # end sapply
-# Coerce agg_regations into matrix and transpose it
-if (is.vector(agg_regations))
-  agg_regations <- t(agg_regations)
-agg_regations <- t(agg_regations)
-# Coerce agg_regations into xts series
-agg_regations <- xts(agg_regations,
-               order.by=index(price_s[end_p]))
+# Coerce agg_s into matrix and transpose it
+if (is.vector(agg_s))
+  agg_s <- t(agg_s)
+agg_s <- t(agg_s)
+# Coerce agg_s into xts series
+agg_s <- xts(agg_s, order.by=index(price_s[end_p]))
 
 library(rutils)  # Load package rutils
 # Perform aggregations over look_backs list
-agg_regations <- lapply(look_backs,
+agg_s <- lapply(look_backs,
     function(look_back) agg_regate(price_s[look_back])
 )  # end lapply
 # rbind list into single xts or matrix
-agg_regations <- rutils::do_call(rbind, agg_regations)
+agg_s <- rutils::do_call(rbind, agg_s)
 # Convert into xts
-agg_regations <- xts::xts(agg_regations,
-    order.by=index(price_s))
-agg_regations <- cbind(agg_regations, price_s)
+agg_s <- xts::xts(agg_s, order.by=index(price_s))
+agg_s <- cbind(agg_s, price_s)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green")
 x11(width=6, height=5)
-chart_Series(agg_regations, theme=plot_theme,
+chart_Series(agg_s, theme=plot_theme,
        name="price aggregations")
-legend("top", legend=colnames(agg_regations),
+legend("top", legend=colnames(agg_s),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
@@ -1346,24 +1546,23 @@ roll_agg <- function(x_ts, look_back, FUN, ...) {
   start_p <- c(rep_len(0, look_back - 1),
     end_p[1:(n_rows- look_back + 1)])
 # Perform aggregations over look_backs list
-  agg_regations <- lapply(2:n_rows, function(in_dex)
+  agg_s <- lapply(2:n_rows, function(in_dex)
     FUN(x_ts[start_p[in_dex]:end_p[in_dex]], ...)
   )  # end lapply
 # rbind list into single xts or matrix
-  agg_regations <- rutils::do_call(rbind, agg_regations)
-# Coerce agg_regations into xts series
-  if (!is.xts(agg_regations))
-    agg_regations <- xts(agg_regations, order.by=index(x_ts))
-  agg_regations
+  agg_s <- rutils::do_call(rbind, agg_s)
+# Coerce agg_s into xts series
+  if (!is.xts(agg_s))
+    agg_s <- xts(agg_s, order.by=index(x_ts))
+  agg_s
 }  # end roll_agg
 # Define aggregation function
 agg_regate <- function(x_ts)
   c(max=max(x_ts), min=min(x_ts))
 # Perform aggregations over rolling interval
-agg_regations <- roll_agg(price_s, look_back=look_back,
-              FUN=agg_regate)
-class(agg_regations)
-dim(agg_regations)
+agg_s <- roll_agg(price_s, look_back=look_back, FUN=agg_regate)
+class(agg_s)
+dim(agg_s)
 
 # library(rutils)  # Load package rutils
 # Define aggregation function that returns a vector
@@ -1383,12 +1582,11 @@ summary(microbenchmark(
 # Define aggregation function that returns a single value
 agg_regate <- function(x_ts)  max(x_ts)
 # Perform aggregations over a rolling interval
-agg_regations <- xts:::rollapply.xts(price_s, width=look_back,
+agg_s <- xts:::rollapply.xts(price_s, width=look_back,
               FUN=agg_regate, align="right")
 # Perform aggregations over a rolling interval
 library(PerformanceAnalytics)  # Load package PerformanceAnalytics
-agg_regations <- apply.rolling(price_s,
-              width=look_back, FUN=agg_regate)
+agg_s <- apply.rolling(price_s, width=look_back, FUN=agg_regate)
 # Benchmark the speed of the functionals
 library(microbenchmark)
 summary(microbenchmark(
@@ -1401,20 +1599,20 @@ summary(microbenchmark(
 # Rolling sum using cumsum()
 roll_sum <- function(x_ts, look_back) {
   cum_sum <- cumsum(na.omit(x_ts))
-  out_put <- cum_sum - lag(x=cum_sum, k=look_back)
+  out_put <- cum_sum - rutils::lag_it(x=cum_sum, lagg=look_back)
   out_put[1:look_back, ] <- cum_sum[1:look_back, ]
   colnames(out_put) <- paste0(colnames(x_ts), "_stdev")
   out_put
 }  # end roll_sum
-agg_regations <- roll_sum(price_s, look_back=look_back)
+agg_s <- roll_sum(price_s, look_back=look_back)
 # Perform rolling aggregations using lapply loop
-agg_regations <- lapply(2:n_rows, function(in_dex)
+agg_s <- lapply(2:n_rows, function(in_dex)
     sum(price_s[start_p[in_dex]:end_p[in_dex]])
 )  # end lapply
 # rbind list into single xts or matrix
-agg_regations <- rutils::do_call(rbind, agg_regations)
-head(agg_regations)
-tail(agg_regations)
+agg_s <- rutils::do_call(rbind, agg_s)
+head(agg_s)
+tail(agg_s)
 # Benchmark the speed of both methods
 library(microbenchmark)
 summary(microbenchmark(
@@ -1436,7 +1634,8 @@ class(filter_ed)
 # Filter using compiled C++ function directly
 getAnywhere(C_cfilter)
 str(stats:::C_cfilter)
-filter_fast <- .Call(stats:::C_cfilter, price_s, filter=weight_s, sides=1, circular=FALSE)
+filter_fast <- .Call(stats:::C_cfilter, price_s,
+               filter=weight_s, sides=1, circular=FALSE)
 all.equal(as.numeric(filter_ed), filter_fast, check.attributes=FALSE)
 # Calculate EWMA prices using roll::roll_sum()
 weights_rev <- rev(weight_s)
@@ -1493,7 +1692,8 @@ look_back <- 22
 sum_roll <- roll::roll_sum(re_turns, width=look_back)
 # Calculate rolling sum using rutils
 sum_rutils <- rutils::roll_sum(re_turns, look_back=look_back)
-all.equal(sum_roll[-(1:look_back), ], sum_rutils[-(1:look_back), ], check.attributes=FALSE)
+all.equal(sum_roll[-(1:look_back), ],
+    sum_rutils[-(1:look_back), ], check.attributes=FALSE)
 # Benchmark speed of rolling calculations
 library(microbenchmark)
 summary(microbenchmark(
@@ -1508,7 +1708,8 @@ library(RcppRoll)  # Load package RcppRoll
 sum_roll <- RcppRoll::roll_sum(re_turns, align="right", n=look_back)
 # Calculate rolling sum using rutils
 sum_rutils <- rutils::roll_sum(re_turns, look_back=look_back)
-all.equal(sum_roll, coredata(sum_rutils[-(1:(look_back-1))]), check.attributes=FALSE)
+all.equal(sum_roll, coredata(sum_rutils[-(1:(look_back-1))]),
+    check.attributes=FALSE)
 # Benchmark speed of rolling calculations
 library(microbenchmark)
 summary(microbenchmark(
@@ -1530,8 +1731,7 @@ dygraphs::dygraph(prices_ewma)
 x11(width=6, height=5)
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red")
-chart_Series(prices_ewma, theme=plot_theme,
-       name="EWMA prices")
+chart_Series(prices_ewma, theme=plot_theme, name="EWMA prices")
 legend("top", legend=colnames(prices_ewma),
  bg="white", lty=1, lwd=6,
  col=plot_theme$col$line.col, bty="n")
@@ -1602,54 +1802,48 @@ end_p <- c(0, n_rows-look_back*n_agg + (0:n_agg)*look_back)
 # Define contiguous start_p
 start_p <- c(0, end_p[1:(NROW(end_p)-1)])
 # Define list of look-back intervals for aggregations over past
-look_backs <- lapply(2:NROW(end_p),
-  function(in_dex) {
+look_backs <- lapply(2:NROW(end_p), function(in_dex) {
     start_p[in_dex]:end_p[in_dex]
 })  # end lapply
 look_backs[[1]]
 look_backs[[2]]
 # Perform sapply() loop over look_backs list
-agg_regations <- sapply(look_backs,
-    function(look_back) {
-x_ts <- price_s[look_back]
-c(max=max(x_ts), min=min(x_ts))
-  })  # end sapply
-# Coerce agg_regations into matrix and transpose it
-if (is.vector(agg_regations))
-  agg_regations <- t(agg_regations)
-agg_regations <- t(agg_regations)
-# Coerce agg_regations into xts series
-agg_regations <- xts(agg_regations,
-    order.by=index(price_s[end_p]))
-head(agg_regations)
+agg_s <- sapply(look_backs, function(look_back) {
+  x_ts <- price_s[look_back]
+  c(max=max(x_ts), min=min(x_ts))
+})  # end sapply
+# Coerce agg_s into matrix and transpose it
+if (is.vector(agg_s))
+  agg_s <- t(agg_s)
+agg_s <- t(agg_s)
+# Coerce agg_s into xts series
+agg_s <- xts(agg_s, order.by=index(price_s[end_p]))
+head(agg_s)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
-chart_Series(agg_regations, theme=plot_theme,
+chart_Series(agg_s, theme=plot_theme,
        name="price aggregations")
-legend("top", legend=colnames(agg_regations),
+legend("top", legend=colnames(agg_s),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
 # library(rutils)  # Load package rutils
 # Perform lapply() loop over look_backs list
-agg_regations <- lapply(look_backs,
-    function(look_back) {
-x_ts <- price_s[look_back]
-c(max=max(x_ts), min=min(x_ts))
-    })  # end lapply
+agg_s <- lapply(look_backs, function(look_back) {
+  x_ts <- price_s[look_back]
+  c(max=max(x_ts), min=min(x_ts))
+})  # end lapply
 # rbind list into single xts or matrix
-agg_regations <- rutils::do_call(rbind, agg_regations)
-# Coerce agg_regations into xts series
-agg_regations <- xts(agg_regations,
-    order.by=index(price_s[end_p]))
-head(agg_regations)
+agg_s <- rutils::do_call(rbind, agg_s)
+# Coerce agg_s into xts series
+agg_s <- xts(agg_s, order.by=index(price_s[end_p]))
+head(agg_s)
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
-chart_Series(agg_regations, theme=plot_theme,
-       name="price aggregations")
-legend("top", legend=colnames(agg_regations),
+chart_Series(agg_s, theme=plot_theme, name="price aggregations")
+legend("top", legend=colnames(agg_s),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
@@ -1660,27 +1854,25 @@ roll_agg <- function(x_ts, end_p, FUN, ...) {
 # start_p are single-period lag of end_p
   start_p <- c(1, end_p[1:(n_rows-1)])
 # Perform aggregations over look_backs list
-  agg_regations <- lapply(look_backs,
+  agg_s <- lapply(look_backs,
     function(look_back) FUN(x_ts[look_back], ...))  # end lapply
 # rbind list into single xts or matrix
-  agg_regations <- rutils::do_call(rbind, agg_regations)
-  if (!is.xts(agg_regations))
-    agg_regations <-  # Coerce agg_regations into xts series
-    xts(agg_regations, order.by=index(x_ts[end_p]))
-  agg_regations
+  agg_s <- rutils::do_call(rbind, agg_s)
+  if (!is.xts(agg_s))
+    agg_s <-  # Coerce agg_s into xts series
+    xts(agg_s, order.by=index(x_ts[end_p]))
+  agg_s
 }  # end roll_agg
 # Apply sum() over end_p
-agg_regations <-
-  roll_agg(price_s, end_p=end_p, FUN=sum)
-agg_regations <-
-  period.apply(price_s, INDEX=end_p, FUN=sum)
+agg_s <- roll_agg(price_s, end_p=end_p, FUN=sum)
+agg_s <- period.apply(price_s, INDEX=end_p, FUN=sum)
 # Benchmark the speed of aggregation functions
 summary(microbenchmark(
   roll_agg=roll_agg(price_s, end_p=end_p, FUN=sum),
   period_apply=period.apply(price_s, INDEX=end_p, FUN=sum),
   times=10))[, c(1, 4, 5)]
-agg_regations <- period.sum(price_s, INDEX=end_p)
-head(agg_regations)
+agg_s <- period.sum(price_s, INDEX=end_p)
+head(agg_s)
 
 # library(rutils)  # Load package rutils
 # Load package HighFreq
@@ -1688,8 +1880,8 @@ library(HighFreq)
 # Extract closing minutely prices
 price_s <- quantmod::Cl(rutils::etf_env$VTI["2019"])
 # Apply "mean" over daily periods
-agg_regations <- apply.daily(price_s, FUN=sum)
-head(agg_regations)
+agg_s <- apply.daily(price_s, FUN=sum)
+head(agg_s)
 
 # Define end_p with beginning stub
 n_points <- 5
@@ -1702,33 +1894,31 @@ look_back <- 22
 start_p <- (end_p - look_back + 1)
 start_p <- ifelse(start_p < 0, 0, start_p)
 # Perform lapply() loop over look_backs list
-agg_regations <- lapply(2:NROW(end_p), function(in_dex) {
+agg_s <- lapply(2:NROW(end_p), function(in_dex) {
 x_ts <- price_s[start_p[in_dex]:end_p[in_dex]]
 c(max=max(x_ts), min=min(x_ts))
 })  # end lapply
 # rbind list into single xts or matrix
-agg_regations <- rutils::do_call(rbind, agg_regations)
-# Coerce agg_regations into xts series
-agg_regations <- xts(agg_regations,
-    order.by=index(price_s[end_p]))
+agg_s <- rutils::do_call(rbind, agg_s)
+# Coerce agg_s into xts series
+agg_s <- xts(agg_s, order.by=index(price_s[end_p]))
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("red", "green")
-chart_Series(agg_regations, theme=plot_theme,
+chart_Series(agg_s, theme=plot_theme,
        name="price aggregations")
-legend("top", legend=colnames(agg_regations),
+legend("top", legend=colnames(agg_s),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
-agg_regations <- cbind(price_s, agg_regations)
-tail(agg_regations)
-agg_regations <- na.omit(xts:::na.locf.xts(agg_regations))
+agg_s <- cbind(price_s, agg_s)
+tail(agg_s)
+agg_s <- na.omit(xts:::na.locf.xts(agg_s))
 # Plot aggregations with custom line colors
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- c("black", "red", "green")
-chart_Series(agg_regations, theme=plot_theme,
-       name="price aggregations")
-legend("top", legend=colnames(agg_regations),
+chart_Series(agg_s, theme=plot_theme, name="price aggregations")
+legend("top", legend=colnames(agg_s),
   bg="white", lty=1, lwd=6,
   col=plot_theme$col$line.col, bty="n")
 
@@ -1736,8 +1926,8 @@ set.seed(1121)  # Reset random number generator
 par(mar=c(7, 2, 1, 2), mgp=c(2, 1, 0), cex.lab=0.8, cex.axis=0.8, cex.main=0.8, cex.sub=0.5)
 library(zoo)  # Load package zoo
 # Create zoo time series of random returns
-in_dex <- Sys.Date() + 0:365
-zoo_series <- zoo(rnorm(NROW(in_dex)), order.by=in_dex)
+date_s <- Sys.Date() + 0:365
+zoo_series <- zoo(rnorm(NROW(date_s)), order.by=date_s)
 # Create monthly dates
 dates_agg <- as.Date(as.yearmon(index(zoo_series)))
 # Perform monthly mean aggregation
