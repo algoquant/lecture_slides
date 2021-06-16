@@ -2670,9 +2670,9 @@ dygraphs::dygraph(pnl_s[, 1:4],
       \vskip1ex
       Using the rolling average of returns as a predictor reduces the forecast variance at the expense of increasing its bias (known as the \emph{bias-variance tradeoff}).
       <<echo=TRUE,eval=FALSE>>=
-# Define predictor as a rolling sum
+# Define predictor as a rolling mean
 n_agg <- 5
-predic_tor <- rutils::roll_sum(re_turns, look_back=n_agg)
+predic_tor <- roll::roll_mean(re_turns, width=n_agg, min_obs=1)
 # Shift the res_ponse forward out-of-sample
 res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
 # Define predictor matrix for forecasting
@@ -2725,7 +2725,7 @@ dygraphs::dygraph(pnl_s[, 1:4],
       <<echo=TRUE,eval=FALSE>>=
 # Calculate out-of-sample PnLs
 pnl_s <- sapply(forecast_s, function(x) {
-  x <- rutils::roll_sum(x, look_back=n_agg)
+  x <- roll::roll_mean(x, width=n_agg, min_obs=1)
   cumsum(sign(x)*re_turns[out_sample])
 })  # end sapply
 colnames(pnl_s) <- names(forecast_s)
@@ -2816,9 +2816,9 @@ re_turns <- na.omit(rutils::etf_env$re_turns$VTI)
 date_s <- index(re_turns)
 re_turns <- as.numeric(re_turns)
 n_rows <- NROW(re_turns)
-# Define predictor as a rolling sum
+# Define predictor as a rolling mean
 n_agg <- 5
-predic_tor <- rutils::roll_sum(re_turns, look_back=n_agg)
+predic_tor <- roll::roll_mean(re_turns, width=n_agg, min_obs=1)
 # Shift the res_ponse forward out-of-sample
 res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
 # Define predictor matrix for forecasting
@@ -2891,7 +2891,7 @@ legend(x="top", legend=c("re_turns", "forecasts"),
 
 
 %%%%%%%%%%%%%%%
-\subsection{Backtesting Function for the Forecasting Model}
+\subsection{Backtesting Function for the \protect\emph{AR} Forecasting Model}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
@@ -2905,8 +2905,8 @@ legend(x="top", legend=c("re_turns", "forecasts"),
 sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
                       or_der=5, look_back=100) {
   n_rows <- NROW(res_ponse)
-  # Define predictor as a rolling sum
-  predic_tor <- rutils::roll_sum(res_ponse, look_back=n_agg)
+  # Define predictor as a rolling mean
+  predic_tor <- roll::roll_mean(re_turns, width=n_agg, min_obs=1)
   # Shift the res_ponse forward out-of-sample
   res_ponse <- rutils::lag_it(predic_tor, lagg=(-n_agg))
   # Define predictor matrix for forecasting
@@ -2931,7 +2931,7 @@ sim_forecasts <- function(res_ponse, predic_tor=res_ponse, n_agg=5,
   })  # end sapply
   # Add warmup period
   forecast_s <- c(rep(0, look_back), forecast_s)
-  rutils::roll_sum(forecast_s, look_back=n_agg)
+  roll::roll_mean(forecast_s, width=n_agg, min_obs=1)
 }  # end sim_forecasts
 # Simulate the rolling autoregressive forecasts
 forecast_s <- sim_forecasts(re_turns, or_der=5, look_back=100)
@@ -3225,110 +3225,6 @@ dygraphs::dygraph(da_ta, main="Improved Autoregressive Strategies") %>%
 
 %%%%%%%%%%%%%%%
 \section{Moving Average Crossover Strategies}
-
-
-%%%%%%%%%%%%%%%
-\subsection{draft: \protect\emph{RSI} Price Technical Indicator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Relative Strength Index} (\emph{RSI}) is defined as the weighted average of prices over a rolling interval:
-      \begin{displaymath}
-        p^{RSI}_i = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) p_{i-j}
-      \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{RSI} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa,
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Get close prices and calculate close-to-close returns
-# price_s <- quantmod::Cl(rutils::etf_env$VTI)
-price_s <- quantmod::Cl(HighFreq::SPY)
-colnames(price_s) <- rutils::get_name(colnames(price_s))
-re_turns <- TTR::ROC(price_s)
-re_turns[1] <- 0
-# Calculate the RSI indicator
-r_si <- TTR::RSI(price_s, 2)
-# Calculate the long (up) and short (dn) signals
-sig_up <- ifelse(r_si < 10, 1, 0)
-sig_dn <- ifelse(r_si > 90, -1, 0)
-# Lag signals by one period
-sig_up <- rutils::lag_it(sig_up, 1)
-sig_dn <- rutils::lag_it(sig_dn, 1)
-# Replace NA signals with zero position
-sig_up[is.na(sig_up)] <- 0
-sig_dn[is.na(sig_dn)] <- 0
-# Combine up and down signals into one
-sig_nals <- sig_up + sig_dn
-# Calculate cumulative returns
-eq_up <- exp(cumsum(sig_up*re_turns))
-eq_dn <- exp(cumsum(-1*sig_dn*re_turns))
-eq_all <- exp(cumsum(sig_nals*re_turns))
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/rsi_indic.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot daily cumulative returns in panels
-end_p <- endpoints(re_turns, on="days")
-plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
-  ylab=c("Total","Long","Short"), col=c("red","green","blue"),
-  main=paste("RSI(2) strategy for", colnames(price_s), "from",
-             format(start(re_turns), "%B %Y"), "to",
-             format(end(re_turns), "%B %Y")))
-@
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{\protect\emph{EWMA} Price Technical Indicator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The \emph{Exponentially Weighted Moving Average Price} (\emph{EWMA}) is defined as the weighted average of prices over a rolling interval:
-      \begin{displaymath}
-        p^{EWMA}_i = (1-\exp(-\lambda)) \sum_{j=0}^{\infty} \exp(-\lambda j) p_{i-j}
-      \end{displaymath}
-      Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
-      \vskip1ex
-      The difference between the current price minus the \emph{EWMA} price is similar to the rolling cumulative returns, and serves as an indicator of the trend in prices.
-      <<echo=TRUE,eval=FALSE>>=
-# Define length for weights and decay parameter
-wid_th <- 352
-lamb_da <- 0.01
-# Calculate EWMA prices
-weight_s <- exp(-lamb_da*1:wid_th)
-weight_s <- weight_s/sum(weight_s)
-ew_ma <- .Call(stats:::C_cfilter, clos_e, 
-  filter=weight_s, sides=1, circular=FALSE)
-ew_ma[1:(wid_th-1)] <- ew_ma[wid_th]
-ew_ma <- cbind(clos_e, ew_ma)
-colnames(ew_ma) <- c("VTI", "VTI EWMA")
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.5\paperwidth]{figure/ewma_indic.png}
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot EWMA prices with custom line colors
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("orange", "blue")
-quantmod::chart_Series(ew_ma["2007/2010"], theme=plot_theme,
-             name="EWMA prices")
-legend("bottomleft", legend=colnames(ew_ma),
-       inset=0.1, bg="white", lty=1, lwd=6,
-       col=plot_theme$col$line.col, bty="n")
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
 
 
 %%%%%%%%%%%%%%%
@@ -3890,63 +3786,6 @@ legend("top", legend=colnames(pnl_s),
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/ewma_ensemble.png}
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
-\subsection{Volume-Weighted Average Price Indicator}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The Volume-Weighted Average Price (\emph{VWAP}) is defined as the sum of prices multiplied by trading volumes, divided by the sum of volumes:
-      \begin{displaymath}
-        p^{VWAP}_i = \frac{\sum_{j=0}^{n} v_j p_{i-j}}{\sum_{j=0}^{n} v_j}
-      \end{displaymath}
-      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
-      \vskip1ex
-      <<echo=TRUE,eval=FALSE>>=
-# Calculate log OHLC prices
-sym_bol <- "VTI"
-# oh_lc <- rutils::etf_env$VTI
-oh_lc <- get(sym_bol, rutils::etf_env)
-oh_lc[, 1:4] <- log(oh_lc[, 1:4])
-n_rows <- NROW(oh_lc)
-op_en <- quantmod::Op(oh_lc)
-clos_e <- quantmod::Cl(oh_lc)
-colnames(clos_e) <- sym_bol
-vol_ume <- quantmod::Vo(oh_lc)
-re_turns <- rutils::diff_it(clos_e)
-cum_rets <- cumsum(re_turns)
-# Define aggregation interval and calculate VWAP
-look_back <- 200
-v_wap <- rutils::roll_sum(x_ts=cum_rets*vol_ume, look_back=look_back)
-volume_roll <- rutils::roll_sum(x_ts=vol_ume, look_back=look_back)
-v_wap <- v_wap/volume_roll
-v_wap[is.na(v_wap)] <- 0
-      @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.4\paperwidth]{figure/vwap_indic.png}
-      <<echo=TRUE,eval=FALSE>>=
-# Plot VTI and VWAP using dygraphs
-weal_th <- cbind(cum_rets, v_wap)
-colnames(weal_th) <- c(sym_bol, "VWAP")
-dygraphs::dygraph(weal_th, main="VTI and VWAP") %>% 
-  dyOptions(colors=c("blue", "red"), strokeWidth=3)
-# Plot VTI and VWAP using quantmod
-x11(width=6, height=5)
-plot_theme <- chart_theme()
-plot_theme$col$line.col <- c("blue", "red")
-quantmod::chart_Series(x=cbind(clos_e, v_wap), 
-  name="VTI and VWAP", theme=plot_theme)
-legend("top", legend=c("VTI", "VWAP"), lty=1, lwd=6, cex=0.9,
-       bg="white", col=c("blue", "red"), bty="n")
-      @
   \end{columns}
 \end{block}
 

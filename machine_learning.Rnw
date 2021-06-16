@@ -1075,12 +1075,12 @@ n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
 # Objective function equal to minus portfolio variance
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2
-}  # end object_ive
+}  # end objec_tive
 # Objective for equal weight portfolio
-object_ive(weight_s, re_turns)
+objec_tive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 summary(microbenchmark(
   trans_pose=(t(re_turns[, 1]) %*% re_turns[, 1]),
@@ -1094,14 +1094,14 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
 op_tim <- optim(par=weight_s,
-  fn=object_ive,
+  fn=objec_tive,
   re_turns=re_turns,
   method="L-BFGS-B",
   upper=rep(10.0, n_weights),
   lower=rep(-10.0, n_weights))
 # Optimal weights and maximum variance
 weights_1 <- op_tim$par
--object_ive(weights_1, re_turns)
+-objec_tive(weights_1, re_turns)
 # Plot first principal component weights
 barplot(weights_1, names.arg=names(weights_1), xlab="", ylab="",
         main="First Principal Component Weights")
@@ -1126,13 +1126,13 @@ barplot(weights_1, names.arg=names(weights_1), xlab="", ylab="",
 # PC1 returns
 pc_1 <- drop(re_turns %*% weights_1)
 # Redefine objective function
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2 +
     1e7*(sum(weights_1*weight_s))^2
-}  # end object_ive
+}  # end objec_tive
 # Find second PC weights using parallel DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
+op_tim <- DEoptim::DEoptim(fn=objec_tive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
   re_turns=re_turns, control=list(parVar="weights_1",
@@ -1263,12 +1263,12 @@ all.equal(abs(ei_gen$vectors), abs(pc_a$rotation),
       So the highest order \emph{principal component} is equal to the \emph{Minimum Variance Portfolio}.
       <<echo=TRUE,eval=FALSE>>=
 # Redefine objective function to minimize variance
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   sum(portf_rets^2) + 1e7*(1 - sum(weight_s^2))^2
-}  # end object_ive
+}  # end objec_tive
 # Find highest order PC weights using parallel DEoptim
-op_tim <- DEoptim::DEoptim(fn=object_ive,
+op_tim <- DEoptim::DEoptim(fn=objec_tive,
   upper=rep(10, NCOL(re_turns)),
   lower=rep(-10, NCOL(re_turns)),
   re_turns=re_turns, control=list(trace=FALSE,
@@ -1282,8 +1282,8 @@ sum(weights_1*weights_6)
 weights_6
 ei_gen$vectors[, 6]
 # Calculate objective function
-object_ive(weights_6, re_turns)
-object_ive(ei_gen$vectors[, 6], re_turns)
+objec_tive(weights_6, re_turns)
+objec_tive(ei_gen$vectors[, 6], re_turns)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1383,6 +1383,7 @@ for (or_der in 1:n_weights) {
 # Calculate products of principal component time series
 round(t(pc_a$x) %*% pc_a$x, 2)
 # Calculate principal component time series from re_turns
+date_s <- zoo::index(price_s)
 pca_rets <- xts::xts(re_turns %*% pc_a$rotation, order.by=date_s)
 round(cov(pca_rets), 3)
 all.equal(coredata(pca_rets), pc_a$x, check.attributes=FALSE)

@@ -528,12 +528,12 @@ n_weights <- NROW(sym_bols)
 weight_s <- rep(1/sqrt(n_weights), n_weights)
 names(weight_s) <- sym_bols
 # Objective function equal to minus portfolio variance
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s*weight_s))^2
-}  # end object_ive
+}  # end objec_tive
 # Objective for equal weight portfolio
-object_ive(weight_s, re_turns)
+objec_tive(weight_s, re_turns)
 # Compare speed of vector multiplication methods
 library(microbenchmark)
 summary(microbenchmark(
@@ -546,14 +546,14 @@ summary(microbenchmark(
       <<echo=TRUE,eval=FALSE>>=
 # Find weights with maximum variance
 op_tim <- optim(par=weight_s,
-  fn=object_ive,
+  fn=objec_tive,
   re_turns=re_turns,
   method="L-BFGS-B",
   upper=rep(5.0, n_weights),
   lower=rep(-5.0, n_weights))
 # Optimal weights and maximum variance
 weights_1 <- op_tim$par
-object_ive(weights_1, re_turns)
+objec_tive(weights_1, re_turns)
 # Plot first principal component loadings
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 1), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
@@ -582,14 +582,14 @@ barplot(weights_1, names.arg=names(weights_1),
 # pc1 weights and returns
 pc_1 <- drop(re_turns %*% weights_1)
 # Redefine objective function
-object_ive <- function(weight_s, re_turns) {
+objec_tive <- function(weight_s, re_turns) {
   portf_rets <- re_turns %*% weight_s
   -1e7*var(portf_rets) + 1e7*(1 - sum(weight_s^2))^2 +
     1e7*sum(weights_1*weight_s)^2
-}  # end object_ive
+}  # end objec_tive
 # Find second principal component weights
 op_tim <- optim(par=weight_s,
-                   fn=object_ive,
+                   fn=objec_tive,
                    re_turns=re_turns,
                    method="L-BFGS-B",
                    upper=rep(5.0, n_weights),
@@ -1209,11 +1209,13 @@ chart_Series(x=chain_ed["2018"], TA="add_Vo()",
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The \emph{VIX} Volatility Index is an estimate of expected stock market volatility, calculated from the implied volatilities of options on the \emph{S\&P500} Index (SPX).
+      The \emph{VIX} Volatility Index is an average of the implied volatilities of options on the \emph{S\&P500} Index (SPX).
+      \vskip1ex
+      The \emph{VIX} index is an estimate of the \emph{future} stock market volatility that is expected (anticipated) by investors.
       \vskip1ex
       The \emph{VIX} index is not a directly tradable asset, but it can be traded using \emph{VIX} futures.
       \vskip1ex
-      The CBOE provides daily historical data for the \emph{VIX} index.
+      The \emph{CBOE} provides daily historical data for the \emph{VIX} index.
       <<echo=TRUE,eval=FALSE>>=
 # Download VIX index data from CBOE
 vix_index <- data.table::fread("http://www.cboe.com/publish/scheduledtask/mktdata/datahouse/vixcurrent.csv", skip=1)
@@ -1228,17 +1230,18 @@ colnames(vix_index) <- c("Open", "High", "Low", "Close")
 load(file="C:/Develop/data/ib_data/vix_cboe.RData")
 ls(vix_env)
 vix_env$vix_index <- vix_index
-ls(vix_env)
 save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
-# Plot OHLC data in x11 window
+      @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/vix_historical.png}
+      <<echo=TRUE,eval=FALSE>>=
+# Plot VIX OHLC data in x11 window
 chart_Series(x=vix_index["2018"], name="VIX Index")
 # Plot dygraph
 dygraphs::dygraph(vix_index, main="VIX Index") %>%
   dyCandlestick()
       @
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/vix_historical.png}
   \end{columns}
 \end{block}
 
@@ -1258,7 +1261,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
       \vskip1ex
       These are the \href{http://www.macroption.com/vix-expiration-calendar/}{VIX Futures Monthly Expiration Dates} from 2004 to 2019.
       \vskip1ex
-      \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange):\\
+      \emph{VIX} futures are traded on the \emph{CFE} (CBOE Futures Exchange):\\
       \hskip1em\url{http://cfe.cboe.com/}\\
       \hskip1em\url{http://www.cboe.com/vix}
       \vskip1ex
@@ -4260,7 +4263,7 @@ IBrokers::reqContractDetails(conn=ib_connect, Contract=con_tract)
       \vskip1ex
       The function \texttt{reqContractDetails()} returns a list with information on the IB instrument.
       \vskip1ex
-      \emph{VIX} futures are traded on the CFE (CBOE Futures Exchange): \url{http://cfe.cboe.com/}
+      \emph{VIX} futures are traded on the \emph{CFE} (CBOE Futures Exchange): \url{http://cfe.cboe.com/}
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
