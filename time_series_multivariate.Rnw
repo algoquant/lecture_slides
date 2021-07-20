@@ -168,59 +168,6 @@ etf_betas
 
 
 %%%%%%%%%%%%%%%
-\subsection{Rolling Beta Regressions Over Time}
-\begin{frame}[fragile,t]{\subsecname}
-\vspace{-1em}
-\begin{block}{}
-  \begin{columns}[T]
-    \column{0.5\textwidth}
-      The function \texttt{rollapply()} allows performing regressions over a rolling window.
-      \vskip1ex
-      The function \texttt{roll\_lm()} from package \emph{roll} performs rolling regressions in \texttt{C++}, in parallel, and is therefore much faster than function \texttt{rollapply()}.
-      <<echo=TRUE,eval=FALSE>>=
-library(rutils)
-# Specify regression formula
-for_mula <- XLP ~ VTI
-# Perform rolling beta regressions every month
-beta_s <- rollapply(rutils::etf_env$re_turns, width=252, 
-  FUN=function(de_sign) 
-  coef(lm(for_mula, data=de_sign))[2],
-  by=22, by.column=FALSE, align="right")
-beta_s <- na.omit(beta_s)
-# Plot beta_s in x11() window
-x11(width=(wid_th <- 6), height=(hei_ght <- 4))
-chart_Series(x=beta_s[, "VTI"], 
-  name=paste("rolling betas", format(for_mula)))
-# Perform daily rolling beta regressions in parallel
-# library(roll)
-beta_s <- roll::roll_lm(x=rutils::etf_env$re_turns[, "VTI"], 
-                  y=rutils::etf_env$re_turns[, "XLP"],
-                  width=252)$coefficients
-      @
-    \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/rolling_betas.png}\\
-      \vspace{-1em}
-      <<echo=TRUE,eval=FALSE>>=
-# Compare speed of rollapply() versus roll_lm()
-library(microbenchmark)
-da_ta <- rutils::etf_env$re_turns["2012", c("VTI", "XLP")]
-summary(microbenchmark(
-  rollapply=rollapply(da_ta, width=22, 
-      FUN=function(de_sign) 
-      coef(lm(for_mula, data=de_sign))[2],
-        by.column=FALSE, align="right"), 
-  roll_lm=roll::roll_lm(x=da_ta[, "VTI"], 
-                  y=da_ta[, "XLP"],
-                  width=22)$coefficients, 
-  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
-      @
-  \end{columns}
-\end{block}
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%
 \subsection{Capital Asset Pricing Model (\protect\emph{CAPM})}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
@@ -433,6 +380,68 @@ rutils::etf_env$capm_stats[, c("Beta", "Alpha", "Information", "Treynor")]
 
 %%%%%%%%%%%%%%%
 \section{Factor Analysis}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Rolling Beta Regressions Over Time}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The rolling beta of \emph{XLP} versus \emph{VTI} changes over time, with lower beta in periods of \emph{VTI} selloffs.
+      \vskip1ex
+      The function \texttt{roll\_reg()} from package \emph{HighFreq} performs rolling regressions in \texttt{C++} (\emph{RcppArmadillo}), so it's therefore much faster than equivalent \texttt{R} code.
+      <<echo=TRUE,eval=FALSE>>=
+# Calculate XLP and VTI returns
+re_turns <- na.omit(rutils::etf_env$re_turns[, c("XLP", "VTI")])
+# Calculate monthly end points
+end_p <- xts::endpoints(re_turns, on="months")[-1]
+# Calculate start points from look-back interval
+look_back <- 12  # Look back 12 months
+start_p <- c(rep(1, look_back), end_p[1:(NROW(end_p)-look_back)])
+head(cbind(end_p, start_p), look_back+2)
+# Calculate rolling beta regressions every month in R
+for_mula <- XLP ~ VTI  # Specify regression formula
+betas_r <- sapply(1:NROW(end_p), FUN=function(ep) {
+    da_ta <- re_turns[start_p[ep]:end_p[ep], ]
+    # coef(lm(for_mula, data=da_ta))[2]
+    drop(cov(da_ta[, 1], da_ta[, 2])/var(da_ta[, 2]))
+  })  # end sapply
+# Calculate rolling betas using RcppArmadillo
+reg_stats <- HighFreq::roll_reg(response=re_turns[, 1], design=re_turns[, 2], endp=(end_p-1), startp=(start_p-1))
+beta_s <- reg_stats[, 2]
+all.equal(beta_s, betas_r)
+# Compare the speed of RcppArmadillo with R code
+library(microbenchmark)
+summary(microbenchmark(
+  Rcpp=HighFreq::roll_reg(response=re_turns[, 1], design=re_turns[, 2], endp=(end_p-1), startp=(start_p-1)),
+  Rcode=sapply(1:NROW(end_p), FUN=function(ep) {
+    da_ta <- re_turns[start_p[ep]:end_p[ep], ]
+    drop(cov(da_ta[, 1], da_ta[, 2])/var(da_ta[, 2]))
+  }),
+  times=10))[, c(1, 4, 5)]  # end microbenchmark summary
+      @
+    \column{0.5\textwidth}
+      \includegraphics[width=0.45\paperwidth]{figure/rolling_betas.png}\\
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# dygraph plot of rolling XLP beta and VTI prices
+date_s <- zoo::index(re_turns[end_p, ])
+price_s <- rutils::etf_env$price_s$VTI[date_s]
+da_ta <- cbind(price_s, beta_s)
+col_names <- colnames(da_ta)
+dygraphs::dygraph(da_ta, main="XLP Rolling 12-month Beta and VTI Prices") %>%
+  dyAxis("y", label=col_names[1], independentTicks=TRUE) %>%
+  dyAxis("y2", label=col_names[2], independentTicks=TRUE) %>%
+  dySeries(name=col_names[1], axis="y", col="blue") %>%
+  dySeries(name=col_names[2], axis="y2", col="red", strokeWidth=3) %>%
+  dyLegend(show="always", width=500)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
 
 
 %%%%%%%%%%%%%%%
