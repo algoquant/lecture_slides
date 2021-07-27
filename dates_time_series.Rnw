@@ -191,7 +191,7 @@ time_ldn <- as.POSIXct("2014-07-14 13:30:10",
            tz="UTC")
 # Add five hours to POSIXct
 time_ny + 5*60*60
-# subtract POSIXct
+# Subtract POSIXct
 time_ny - time_ldn
 class(time_ny - time_ldn)
 # Compare POSIXct
@@ -349,7 +349,7 @@ trunc.POSIXt
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 Sys.timezone()  # Get time-zone
-Sys.setenv(TZ="UTC")  # set time-zone to UTC
+Sys.setenv(TZ="UTC")  # Set time-zone to UTC
 Sys.timezone()  # Get time-zone
 # Standard Time in effect
 as.POSIXct("2013-03-09 11:00:00", tz="America/New_York")
@@ -364,7 +364,7 @@ as.POSIXct(format(date_time, tz="America/New_York"))
 # Difference between New_York time and UTC
 as.POSIXct(format(Sys.time(), tz="UTC")) -
   as.POSIXct(format(Sys.time(), tz="America/New_York"))
-# set time-zone to New York
+# Set time-zone to New York
 Sys.setenv(TZ="America/New_York")
       @
   \end{columns}
@@ -712,7 +712,7 @@ ts_series <- ts(data=exp(cumsum(rnorm(96)/100)),
     \column{0.5\textwidth}
         \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-# show some methods for class "ts"
+# Show some methods for class "ts"
 matrix(methods(class="ts")[3:8], ncol=2)
 # "tsp" attribute specifies the date-time index
 attributes(ts_series)
@@ -1717,8 +1717,53 @@ price_s <- HighFreq::SPY["2012-04"]
 price_s <- price_s["T10:30:00/T15:00:00"]
 first(price_s["2012-04-16"])  # First element of day
 last(price_s["2012-04-16"])  # Last element of day
-# suppress timezone warning messages
+# Suppress timezone warning messages
 options(xts_check_tz=FALSE)
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Binding \protect\emph{xts} Time Series by Rows}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{rbind()} joins the rows of \emph{xts} time series.
+      \vskip1ex
+      If the time series have overlapping time indices then the join produces duplicate rows with the same dates.
+      \vskip1ex
+      The duplicate rows can be removed using the function \texttt{duplicated()}.
+      \vskip1ex
+      The function \texttt{duplicated()} returns a \texttt{Boolean} vector indicating the duplicate elements of a vector.
+      \vskip1ex
+      The function \texttt{duplicated()} with argument \texttt{"fromLast=TRUE"} identifies duplicate elements starting from the end.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Create time series with overlapping time indices
+vti1 <- rutils::etf_env$VTI["/2015"]
+vti2 <- rutils::etf_env$VTI["2014/"]
+dates1 <- index(vti1)
+dates2 <- index(vti2)
+# Join by rows
+vt_i <- rbind(vti1, vti2)
+date_s <- index(vt_i)
+sum(duplicated(date_s))
+vt_i <- vt_i[!duplicated(date_s), ]
+all.equal(vt_i, rutils::etf_env$VTI)
+# Alternative method - slightly slower
+vt_i <- rbind(vti1, vti2[!(index(vti2) %in% index(vti1))])
+all.equal(vt_i, rutils::etf_env$VTI)
+# Remove duplicates starting from the end
+vt_i <- rbind(vti1, vti2)
+vt_i <- vt_i[!duplicated(date_s), ]
+vti_fl <- vt_i[!duplicated(date_s, fromLast=TRUE), ]
+all.equal(vt_i, vti_fl)
       @
   \end{columns}
 \end{block}

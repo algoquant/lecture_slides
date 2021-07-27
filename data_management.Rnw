@@ -356,27 +356,47 @@ data_read  # A data frame without row names
 
 
 %%%%%%%%%%%%%%%
-\subsection{draft: Reading \protect\emph{Data Frames} From Very Large \texttt{.csv} Files}
+\subsection{Reading Data From Very Large \texttt{.csv} Files}
 \begin{frame}[fragile,t]{\subsecname}
 \vspace{-1em}
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The functions \texttt{write.csv()} and \texttt{read.csv()} can write and read \emph{data frames} from \texttt{.csv} format files \emph{without using row names}.
+      Data from very large \texttt{.csv} files can be read in small chunks instead of all at once.
       \vskip1ex
-      Row names can be omitted from the output file by calling \texttt{write.csv()} with the argument \texttt{row.names=FALSE}.
+      The function \texttt{file()} opens a connection to a file or an internet website \texttt{URL}.
+      \vskip1ex
+      The function \texttt{read.csv()} with the argument \texttt{"nrows"} reads only the specified number of rows from a connection and returns a \emph{data frame}.  The connection pointer is reset to the next row.
+      \vskip1ex
+      The function \texttt{read.csv()} with the argument \texttt{"nrows"} allows reading data sequentially from very large files that wouldn't fit into memory.
     \column{0.5\textwidth}
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
-
-co_n = file("C:/Develop/lecture_slides/data/spy.csv", "r")
-foo <- read.csv(co_n, nrows=1e1, sep=" ")
-
-
-# Write data frame to CSV file, without row names
-write.csv(data_frame, row.names=FALSE, file="florist.csv")
-data_read <- read.csv(file="florist.csv")
-data_read  # A data frame without row names
+# Open a read connection to a file
+con_read = file("C:/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
+# Read the first 10 rows
+data_10 <- read.csv(con_read, nrows=10)
+# Read another 10 rows
+data_20 <- read.csv(con_read, nrows=10, header=FALSE)
+colnames(data_20) <- colnames(data_10)
+# Close the connection to the file
+close(con_read)
+# Open a read connection to a file
+con_read = file("C:/Develop/lecture_slides/data/etf_prices_crsp.csv", "r")
+# Read the first 1000 rows
+data_10 <- read.csv(con_read, nrows=1e3)
+col_names <- colnames(data_10)
+# Write to a file
+coun_t <- 1
+write.csv(data_10, paste0("C:/Develop/data/temp/etf_prices_", coun_t, ".csv"))
+# Read remaining rows in a loop 10 rows at a time
+# Can produce error without getting to end of file
+while (isOpen(con_read)) {
+  da_ta <- read.csv(con_read, nrows=1e3)
+  colnames(da_ta) <- col_names
+  write.csv(da_ta, paste0("C:/Develop/data/temp/etf_prices_", coun_t, ".csv"))
+  coun_t <- coun_t + 1
+}  # end while
       @
   \end{columns}
 \end{block}
@@ -2794,7 +2814,7 @@ chart_Series(x=etf_env$SP500["2016/"],
       \vskip1ex
       The \emph{S\&P500} index constituents may be scraped from websites like \href{https://en.wikipedia.org/wiki/List_of_S%26P_500_companies}{Wikipedia}, using dedicated packages.
       \vskip1ex
-      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{html} text data from a \texttt{URL}.
+      The function \texttt{getURL()} from package \emph{RCurl} downloads the \emph{html} text data from an internet website \texttt{URL}.
       \vskip1ex
       The function \texttt{readHTMLTable()} from package \emph{XML} extracts tables from \emph{html} text data or from a remote \texttt{URL}, and returns them as a list of \emph{data frames} or matrices.
       \vskip1ex
@@ -3231,6 +3251,60 @@ colnames(vix_env$VX_M18)
 # Save the data to a binary file called "vix_cboe.RData".
 save(vix_env,
   file="C:/Develop/data/vix_data/vix_cboe.RData")
+      @
+  \end{columns}
+\end{block}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%
+\subsection{Managing Data in JSON Format}
+\begin{frame}[fragile,t]{\subsecname}
+\vspace{-1em}
+\begin{block}{}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      The function \texttt{download.file()} downloads data from an internet website \texttt{URL} and writes it to a file.
+      \vskip1ex
+      The package \emph{jsonlite} contains functions for managing data in \emph{JSON} format.
+      \vskip1ex
+      \emph{JSON} (JavaScript Object Notation) is a data format consisting of symbol-value pairs.
+      \vskip1ex
+      The functions \texttt{fromJSON()} and \texttt{toJSON()} convert data from \emph{JSON} format to \texttt{R} objects, and vice versa.
+      \vskip1ex
+      The functions \texttt{read\_json()} and \texttt{write\_json()} read and write \emph{JSON} format data in files.
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      <<echo=TRUE,eval=FALSE>>=
+# Download VTI prices in JSON format from Polygon
+download.file("https://api.polygon.io/v2/aggs/ticker/VTI/range/1/day/1995-01-01/2021-07-20?adjusted=true&sort=asc&limit=50000&apiKey=cLXNCKw8fCkvrNAoLboAIwsET0wkL3QD", "C:/Develop/data/vti.json")
+# Read VTI prices from json file
+vt_i <- jsonlite::read_json("C:/Develop/data/vti.json")
+class(vt_i)
+NROW(vt_i)
+names(vt_i)
+# Coerce from json to data frame
+vt_i <- vt_i$results
+vt_i <- jsonlite::toJSON(vt_i)
+vt_i <- jsonlite::fromJSON(vt_i)
+sapply(vt_i, class)
+# Coerce from data frame to matrix
+vt_i <- lapply(vt_i, unlist)
+vt_i <- do.call(cbind, vt_i)
+class(vt_i)
+# Coerce time from milliseconds to dates
+date_s <- vt_i[, "t"]/1e3
+date_s <- as.POSIXct(date_s, origin="1970-01-01")
+date_s <- as.Date(date_s)
+tail(date_s)
+# Coerce from matrix to xts
+vt_i <- vt_i[, c("o","h","l","c","v","vw")]
+colnames(vt_i) <- c("Open", "High", "Low", "Close", "Volume", "VWAP")
+vt_i <- xts::xts(vt_i, order.by=date_s)
+tail(vt_i)
+# Save the xts time series to compressed RData file
+save(vt_i, file="C:/Develop/data/polygon/vti_daily.RData")
       @
   \end{columns}
 \end{block}
