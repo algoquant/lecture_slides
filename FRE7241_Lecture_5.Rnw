@@ -60,7 +60,7 @@ knit_theme$set(thm)
 \subtitle{Lecture\#5, Spring 2021}
 
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{April 27, 2021}
@@ -440,7 +440,7 @@ dy_graph
       \vskip1ex
       The rolling variance of returns is given by:
       \begin{flalign*}
-        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
+        \sigma^2_i &= \frac{1}{k-1} \sum_{j=0}^{k-1} (r_{i-j}-\bar{r_i})^2 \\
         \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} r_{i-j}}
       \end{flalign*}
       Where \texttt{k} is the \emph{look-back interval} equal to the number of data points
@@ -545,9 +545,9 @@ summary(microbenchmark(
       \vskip1ex
       If the \emph{time series} has zero \emph{expected} mean, then the \emph{EWMA} \emph{realized} variance estimator can be written approxiamtely as:
       \begin{displaymath}
-        \sigma_i^2 = (1-\lambda) {r_i}^2 + \lambda \sigma_{i-1}^2 = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
+        \sigma^2_i = (1-\lambda) r^2_i + \lambda \sigma^2_{i-1} = (1-\lambda) \sum_{j=0}^{\infty} \lambda^j {r_{i-j}}^2
       \end{displaymath}
-      $\sigma_i^2$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
+      $\sigma^2_i$ is the weighted \emph{realized} variance, equal to the weighted average of the point realized variance for period \texttt{i} and the past \emph{realized} variance.
       \vskip1ex
       The parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with smaller values of $\lambda$ producing faster decay, giving more weight to recent realized variance, and vice versa.
       \vskip1ex
@@ -586,7 +586,7 @@ dygraphs::dygraph(x_ts, main="EWMA standard deviation")
     \column{0.5\textwidth}
       If the \emph{time series} has non-zero \emph{expected} mean, then the rolling \emph{EWMA} variance is a vector given by the estimator:
       \begin{flalign*}
-        \sigma_i^2 &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2} \\
+        \sigma^2_i &= \frac{1}{k-1} \sum_{j=0}^{k-1} {w_j (r_{i-j}-\bar{r_i})^2} \\
         \bar{r_i} &= \frac{1}{k}{\sum_{j=0}^{k-1} {w_j r_{i-j}}}
       \end{flalign*}
       Where $w_j$ is the vector of weights:
@@ -664,11 +664,11 @@ pacf(vari_ance, lag=10, main="PACF of Variance", ylab=NA)
       The \emph{GARCH(1,1)} model is a volatility model defined by two coupled equations:
       \begin{flalign*}
         r_i &= \mu + \sigma_{i-1} \xi_i \\
-        \sigma_i^2 &= \omega + \alpha r_i^2 + \beta \sigma_{i-1}^2
+        \sigma^2_i &= \omega + \alpha r^2_i + \beta \sigma^2_{i-1}
       \end{flalign*}
-      Where $\sigma_i^2$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma_{i-1}^2$.
+      Where $\sigma^2_i$ is the time-dependent variance, equal to the weighted average of the point \emph{realized} variance ${r_{i-1}}^2$, and the past variance $\sigma^2_{i-1}$.
       \vskip1ex
-      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma_i^2$.
+      The return process $r_i$ follows a normal distribution with time-dependent variance $\sigma^2_i$.
       \vskip1ex
       The parameter $\alpha$ is the weight associated with recent realized variance updates, and $\beta$ is the weight associated with the past variance.
       \vskip1ex
@@ -3210,12 +3210,12 @@ x11(); plot(ari_ma, t="l", main="AR(1) coefficient = 0.99")
 tseries::adf.test(ari_ma, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with mean reversion
 eq_price <- 0.0; the_ta <- 0.001
-price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, the_ta=the_ta, in_nov=in_nov)
+price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, theta=the_ta, innov=in_nov)
 x11(); plot(price_s, t="l", main=paste("OU coefficient =", the_ta))
 tseries::adf.test(price_s, k=1)
 # Simulate Ornstein-Uhlenbeck OU process with zero reversion
 the_ta <- 0.0
-price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, the_ta=the_ta, in_nov=in_nov)
+price_s <- HighFreq::sim_ou(eq_price=eq_price, vol_at=1.0, theta=the_ta, innov=in_nov)
 x11(); plot(price_s, t="l", main=paste("OU coefficient =", the_ta))
 tseries::adf.test(price_s, k=1)
       @
@@ -3283,11 +3283,11 @@ tseries::adf.test(residual_s, k=1)
       \vskip1ex
       The expected value of the \emph{AR(1)} process $r_i = \varphi r_{i-1} + \xi_i$ is equal to zero: $\mathbb{E}[r_i] = \frac{\mathbb{E}[\xi_i]}{1 - \varphi} = 0$.
       \vskip1ex
-      And its variance is equal to: $\sigma^2 = \mathbb{E}[r_i^2] = \frac{\sigma_{\xi}^2}{1 - \varphi^2}$.
+      And its variance is equal to: $\sigma^2 = \mathbb{E}[r^2_i] = \frac{\sigma_{\xi}^2}{1 - \varphi^2}$.
       \vskip1ex
       If $\varphi = 1$, then the \emph{variance} grows over time and becomes infinite over time, so the process isn't \emph{stationary}.
       \vskip1ex
-      The variance of the \emph{Wiener process} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma_i^2 = \mathbb{E}[r_i^2] = i \sigma_{\xi}^2$
+      The variance of the \emph{Wiener process} $r_i = r_{i-1} + \xi$ is proportional to time: $\sigma^2_i = \mathbb{E}[r^2_i] = i \sigma_{\xi}^2$
     \column{0.5\textwidth}
       \vspace{-1em}
       \hspace*{-1em}
@@ -3635,7 +3635,7 @@ coeff_tvals <- drop(coeff_fit)/coeff_fitd
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      To lighten the notation we can assume that the time series $r_i$ has zero mean $\mathbb{E}[r_i] = 0$ and unit variance $\mathbb{E}[r_i^2] = 1$.  ($\mathbb{E}$ is the expectation operator.)
+      To lighten the notation we can assume that the time series $r_i$ has zero mean $\mathbb{E}[r_i] = 0$ and unit variance $\mathbb{E}[r^2_i] = 1$.  ($\mathbb{E}$ is the expectation operator.)
       \vskip1ex
       Then the \emph{autocorrelations} of $r_i$ are equal to: $\rho_k = \mathbb{E}[r_i r_{i-k}]$.
       \vskip1ex

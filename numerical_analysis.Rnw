@@ -61,7 +61,7 @@ knit_theme$set(thm)
 \title[Numerical Analysis]{Numerical Analysis}
 \subtitle{FRE6871 \& FRE7241, Spring 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
-\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color}}
+\titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
 % \email{jp3900@nyu.edu}
 \date{\today}
@@ -3475,32 +3475,30 @@ title(main="Objective Function", line=-1)
 \begin{block}{}
   \begin{columns}[T]
     \column{0.5\textwidth}
-      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a function or a matrix.
+      The package \emph{rgl} creates \emph{interactive} 3d scatter plots and surface plots by calling the 
+      \href{https://www.khronos.org/webgl/wiki/Main_Page}{\emph{WebGL}}
+      \href{https://en.wikipedia.org/wiki/JavaScript}{\emph{JavaScript}}
+      library.
       \vskip1ex
-      \emph{rgl} is an \texttt{R} package for 3d and perspective plotting, based on the \emph{OpenGL} framework.
-      <<rgl_surf3d,eval=FALSE,echo=TRUE,rgl=TRUE,fig.width=6,fig.height=6,fig.show="hide">>=
-library(rgl)  # Load rgl
-# Define function of two variables
-sur_face <- function(x, y) y*sin(x)
+      The function \texttt{rgl::persp3d()} plots an \emph{interactive} 3d surface plot of a \emph{vectorized} function or a matrix.
+      <<eval=FALSE,echo=TRUE>>=
+# Rastrigin function
+rastri_gin <- function(x, y, pa_ram=25) {
+  x^2 + y^2 - pa_ram*(cos(x) + cos(y))
+}  # end rastri_gin
+# Rastrigin function is vectorized!
+rastri_gin(c(-10, 5), c(-10, 5))
+# Set rgl options and load package rgl
+options(rgl.useNULL=TRUE)
+library(rgl)
 # Draw 3d surface plot of function
-rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE)
-# Draw 3d surface plot of matrix
-x_lim <- seq(from=-5, to=5, by=0.1)
-y_lim <- seq(from=-5, to=5, by=0.1)
-rgl::persp3d(z=outer(x_lim, y_lim, FUN=sur_face),
-        xlab="x", ylab="y", zlab="sur_face", col="green")
-# Save current view to png file
-rgl.snapshot("surface_plot.png")
-# Define function of two variables and two parameters
-sur_face <- function(x, y, par_1=1, par_2=1)
-  sin(par_1*x)*sin(par_2*y)
-# Draw 3d surface plot of function
-rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
-        col="green", axes=FALSE, par_1=1, par_2=2)
+rgl::persp3d(x=rastri_gin, xlim=c(-10, 10), ylim=c(-10, 10),
+        col="green", axes=FALSE, pa_ram=15)
+# Render the 3d surface plot of function
+rgl::rglwidget(elementId="plot3drgl", width=400, height=400)
       @
     \column{0.5\textwidth}
-      \includegraphics[width=0.5\paperwidth]{figure/rgl_surf3d.png}
+      \includegraphics[width=0.5\paperwidth]{figure/rgl_rastrigin.png}
   \end{columns}
 \end{block}
 
@@ -3534,7 +3532,7 @@ rgl::persp3d(x=sur_face, xlim=c(-5, 5), ylim=c(-5, 5),
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -3831,7 +3829,7 @@ legend("topright", inset=0.0, cex=0.8, title=NULL,
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -3876,7 +3874,7 @@ plot(op_tim)
     \column{0.5\textwidth}
         <<echo=TRUE,eval=FALSE>>=
 # Rastrigin function with vector argument for optimization
-rastri_gin <- function(vec_tor, pa_ram=25){
+rastri_gin <- function(vec_tor, pa_ram=25) {
   sum(vec_tor^2 - pa_ram*cos(vec_tor))
 }  # end rastri_gin
 vec_tor <- c(pi/6, pi/6)
@@ -4094,7 +4092,7 @@ boot_data <- function(da_ta, n_boot=n_boot) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4148,7 +4146,7 @@ static const double pi = 3.14159265;
       <<echo=TRUE,eval=FALSE>>=
 # Define Ornstein-Uhlenbeck function in R
 sim_ou <- function(n_rows=1000, eq_price=5.0,
-                    vol_at=0.01, the_ta=0.01) {
+                    vol_at=0.01, theta=0.01) {
   re_turns <- numeric(n_rows)
   price_s <- numeric(n_rows)
   price_s[1] <- eq_price
@@ -4162,7 +4160,7 @@ sim_ou <- function(n_rows=1000, eq_price=5.0,
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4187,14 +4185,14 @@ NumericVector sim_ou_rcpp(double eq_price,
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
   vol_at=sig_ma,
-  the_ta=the_ta,
-  in_nov=rnorm(n_rows))
+  theta=the_ta,
+  innov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, theta=the_ta, innov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
   \end{columns}
@@ -4226,14 +4224,14 @@ Rcpp::sourceCpp(file="C:/Develop/lecture_slides/scripts/sim_ou.cpp")
 set.seed(1121)  # Reset random numbers
 ou_sim_rcpp <- sim_ou_rcpp(eq_price=eq_price,
   vol_at=sig_ma,
-  the_ta=the_ta,
-  in_nov=rnorm(n_rows))
+  theta=the_ta,
+  innov=rnorm(n_rows))
 all.equal(ou_sim, ou_sim_rcpp)
 # Compare speed of Rcpp and R
 library(microbenchmark)
 summary(microbenchmark(
-  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta),
-  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta, in_nov=rnorm(n_rows)),
+  pure_r=sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta),
+  r_cpp=sim_ou_rcpp(eq_price=eq_price, vol_at=sig_ma, theta=the_ta, innov=rnorm(n_rows)),
   times=10))[, c(1, 4, 5)]
       @
     \column{0.5\textwidth}
@@ -4373,7 +4371,7 @@ boot_data <- function(da_ta, n_boot=1000) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -4463,7 +4461,7 @@ boot_data <- function(da_ta, n_boot=1000) {
 eq_price <- 5.0; sig_ma <- 0.01
 the_ta <- 0.01; n_rows <- 1000
 set.seed(1121)  # Reset random numbers
-ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, the_ta=the_ta)
+ou_sim <- sim_ou(n_rows=n_rows, eq_price=eq_price, vol_at=sig_ma, theta=the_ta)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
