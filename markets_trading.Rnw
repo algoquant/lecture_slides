@@ -12,7 +12,8 @@ knit_theme$set(thm)
 
 
 % Define document options
-\documentclass[10pt]{beamer}
+\documentclass[9pt]{beamer}
+\DeclareMathSizes{8pt}{6pt}{6pt}{5pt}
 \mode<presentation>
 \usetheme{AnnArbor}
 % \usecolortheme{whale}
@@ -62,7 +63,7 @@ knit_theme$set(thm)
 
 % Title page setup
 \title[Markets and Trading]{Markets and Trading}
-\subtitle{FRE6871 \& FRE7241, Spring 2021}
+\subtitle{FRE6871 \& FRE7241, Fall 2021}
 \institute[NYU Tandon]{NYU Tandon School of Engineering}
 \titlegraphic{\includegraphics[scale=0.2]{image/tandon_long_color.png}}
 \author[Jerzy Pawlowski]{Jerzy Pawlowski \emph{\href{mailto:jp3900@nyu.edu}{jp3900@nyu.edu}}}
@@ -94,7 +95,7 @@ knit_theme$set(thm)
       The \emph{S\&P500} stock index constituent data is of poor quality before \texttt{2000}, so we'll mostly use the data after the year \texttt{2000}.
       <<echo=TRUE,eval=FALSE>>=
 # Load S&P500 constituent stock prices
-load("C:/Develop/lecture_slides/data/sp500.RData")
+load("/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 price_s <- eapply(sp500_env, quantmod::Cl)
 price_s <- rutils::do_call(cbind, price_s)
 # Carry forward non-NA prices
@@ -114,9 +115,9 @@ sam_ple <- sample(NCOL(re_turns), s=100, replace=FALSE)
 prices_100 <- price_s[, sam_ple]
 returns_100 <- re_turns[, sam_ple]
 save(price_s, prices_100,
-  file="C:/Develop/lecture_slides/data/sp500_prices.RData")
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices.RData")
 save(re_turns, returns_100,
-  file="C:/Develop/lecture_slides/data/sp500_returns.RData")
+  file="/Users/jerzy/Develop/lecture_slides/data/sp500_returns.RData")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.5\paperwidth]{figure/sp500_without_prices.png}
@@ -145,6 +146,7 @@ dygraphs::dygraph(da_ta, main="Number of S&P 500 Constituents Without Prices") %
       <<echo=TRUE,eval=FALSE>>=
 # Calculate price weighted index of constituent
 n_cols <- NCOL(price_s)
+price_s <- zoo::na.locf(price_s, fromLast=TRUE)
 in_dex <- xts(rowSums(price_s)/n_cols, index(price_s))
 colnames(in_dex) <- "index"
 # Combine index with VTI
@@ -192,7 +194,7 @@ sym_bols <- c("VTI", "VEU", "EEM", "XLY", "XLP", "XLE", "XLF",
   "IWF", "IEF", "TLT", "VNQ", "DBC", "GLD", "USO", "VXX", "SVXY",
   "MTUM", "IVE", "VLUE", "QUAL", "VTV", "USMV")
 # Read etf database into data frame
-etf_list <- read.csv(file="C:/Develop/lecture_slides/data/etf_list.csv")
+etf_list <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/etf_list.csv")
 rownames(etf_list) <- etf_list$Symbol
 # Select from etf_list only those ETF's in sym_bols
 etf_list <- etf_list[sym_bols, ]
@@ -317,7 +319,7 @@ sapply(rates_env, class)
 # Get class of all objects in R workspace
 sapply(ls(), function(nam_e) class(get(nam_e)))
 # Save the time series environment into a binary .RData file
-save(rates_env, file="C:/Develop/lecture_slides/data/rates_data.RData")
+save(rates_env, file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
       @
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/treas_10y_rate.png}
@@ -354,7 +356,7 @@ chart_Series(rates_env$DGS10["1990/"], name="10-year Treasury Rate")
       The \emph{yield curve} shape changes depending on the economic conditions: in recessions rates drop and the curve flattens, while in expansions rates rise and the curve steepens.
       <<echo=TRUE,eval=FALSE>>=
 # Load constant maturity Treasury rates
-load(file="C:/Develop/lecture_slides/data/rates_data.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get most recent yield curve
 yc_2021 <- eapply(rates_env, xts::last)
 class(yc_2021)
@@ -407,7 +409,7 @@ legend("topleft", legend=colnames(rate_s),
 x11(width=6, height=5)
 par(mar=c(3, 3, 2, 0), oma=c(0, 0, 0, 0), mgp=c(2, 1, 0))
 # Load constant maturity Treasury rates
-load(file="C:/Develop/lecture_slides/data/rates_data.RData")
+load(file="/Users/jerzy/Develop/lecture_slides/data/rates_data.RData")
 # Get end-of-year dates since 2006
 date_s <- xts::endpoints(rates_env$DGS1["2006/"], on="years")
 date_s <- zoo::index(rates_env$DGS1["2006/"][date_s])
@@ -1062,7 +1064,7 @@ print(xtable::xtable(future_s), comment=FALSE, size="scriptsize", include.rownam
       The function \texttt{as.POSIXct.numeric()} coerces a \texttt{numeric} value representing the \emph{moment of time} into a \texttt{POSIXct} \emph{date-time}, equal to the \emph{clock time} in the local \emph{time zone}.
       <<echo=TRUE,eval=FALSE>>=
 # Load data for S&P Emini futures June 2019 contract
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ES_ohlc.csv")
 # Read a data table from CSV file
 price_s <- data.table::fread(file_name)
@@ -1110,7 +1112,7 @@ dygraphs::dygraph(price_s[, 1:4], main="OHLC prices") %>%
       The contract with the highest trading volume is usually considered the most liquid contract.
       <<echo=TRUE,eval=FALSE>>=
 # Load ESU8 data
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_name <- file.path(dir_name, "ESU8.csv")
 ES_U8 <- data.table::fread(file_name)
 # Coerce ES_U8 into xts series
@@ -1227,10 +1229,10 @@ vix_index <- xts(vix_index[, -1],
   order.by=as.Date(vix_index$Date, format="%m/%d/%Y"))
 colnames(vix_index) <- c("Open", "High", "Low", "Close")
 # Save the VIX data to binary file
-load(file="C:/Develop/data/ib_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
 ls(vix_env)
 vix_env$vix_index <- vix_index
-save(vix_env, file="C:/Develop/data/ib_data/vix_cboe.RData")
+save(vix_env, file="/Users/jerzy/Develop/data/ib_data/vix_cboe.RData")
       @
     \column{0.5\textwidth}
       \vspace{-1em}
@@ -1277,7 +1279,7 @@ dygraphs::dygraph(vix_index, main="VIX Index") %>%
       <<echo=TRUE,eval=FALSE>>=
 # Read CBOE monthly futures expiration dates
 date_s <- read.csv(
-  file="C:/Develop/data/vix_data/vix_dates.csv")
+  file="/Users/jerzy/Develop/data/vix_data/vix_dates.csv")
 date_s <- as.Date(date_s[, 1])
 year_s <- format(date_s, format="%Y")
 year_s <- substring(year_s, 4)
@@ -1291,9 +1293,9 @@ colnames(date_s) <- "exp_dates"
 rownames(date_s) <- sym_bols
 # Write dates to CSV file, with row names
 write.csv(date_s, row.names=TRUE,
-  file="C:/Develop/data/vix_data/vix_futures.csv")
+  file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv")
 # Read back CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
+date_s <- read.csv(file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv",
   row.names=1)
 date_s[, 1] <- as.Date(date_s[, 1])
       @
@@ -1325,7 +1327,7 @@ date_s[, 1] <- as.Date(date_s[, 1])
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Get all VIX futures for 2018 except January
 sym_bols <- ls(vix_env)
 sym_bols <- sym_bols[grep("*8", sym_bols)]
@@ -1396,9 +1398,9 @@ legend(x="topright", legend=colnames(curve_s),
     \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Read CBOE futures expiration dates
-date_s <- read.csv(file="C:/Develop/data/vix_data/vix_futures.csv",
+date_s <- read.csv(file="/Users/jerzy/Develop/data/vix_data/vix_futures.csv",
   row.names=1)
 sym_bols <- rownames(date_s)
 date_s <- as.Date(date_s[, 1])
@@ -1449,7 +1451,7 @@ pric_e <- (ra_tio*back_price + (1-ra_tio)*front_price)
       <<echo=(-(1:3)),eval=FALSE>>=
 x11(width=5, height=3)  # Open x11 for plotting
 # Load VIX futures data from binary file
-load(file="C:/Develop/data/vix_data/vix_cboe.RData")
+load(file="/Users/jerzy/Develop/data/vix_data/vix_cboe.RData")
 # Plot VIX and SVXY data in x11 window
 plot_theme <- chart_theme()
 plot_theme$col$line.col <- "blue"
@@ -1523,7 +1525,7 @@ chart_Series(x=Cl(rutils::etf_env$SVXY["2017/2018"]),
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
+  read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
@@ -1561,7 +1563,7 @@ print(xtable(fundamental_data), comment=FALSE, size="scriptsize", include.rownam
 library(xtable)
 # Read table of fundamental data into data frame
 fundamental_data <-
-  read.csv(file="C:/Develop/lecture_slides/data/fundamental_stock_data.csv")
+  read.csv(file="/Users/jerzy/Develop/lecture_slides/data/fundamental_stock_data.csv")
       @
   \end{columns}
       <<echo=FALSE,eval=TRUE,results='asis'>>=
@@ -1829,10 +1831,10 @@ wrds_con <- rwrds::wrds_connect(username="jp3900", password="RipvanWinkle20")
 names_table <- rwrds::compustat_names(wrds=wrds_con, subset=FALSE, dl=TRUE)
 dim(names_table)
 # Save names table as csv file
-write.csv(names_table, file="C:/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
+write.csv(names_table, file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv", row.names=FALSE)
 # rm(names_table)
 # Read names table from csv file
-names_table <- read.csv(file="C:/Develop/lecture_slides/data/compustat_table.csv")
+names_table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/compustat_table.csv")
 # sym_bol <- "VTI"
 # match(sym_bol, names_table$tic)
 # Create ETF symbols (tickers)
@@ -1843,11 +1845,11 @@ names(in_dex) <- sym_bols
 etf_cusips <- names_table$cusip[in_dex]
 names(etf_cusips) <- sym_bols
 # Save cusips into text file
-cat(etf_cusips, file="C:/Develop/lecture_slides/data/etf_cusips.txt", sep="\n")
+cat(etf_cusips, file="/Users/jerzy/Develop/lecture_slides/data/etf_cusips.txt", sep="\n")
 # Save gvkeys into text file
 etf_gvkeys <- names_table$gvkey[in_dex]
 names(etf_gvkeys) <- sym_bols
-cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
+cat(etf_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       @
   \end{columns}
 \end{block}
@@ -1898,11 +1900,11 @@ cat(etf_gvkeys, file="C:/Develop/lecture_slides/data/etf_gvkeys.txt", sep="\n")
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Read .csv file with S&P500 constituents
-sp500_table <- read.csv(file="C:/Develop/lecture_slides/data/sp500_constituents.csv")
+sp500_table <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_constituents.csv")
 class(sp500_table)
 # Select unique sp500 tickers and save them into text file
 sp500_tickers <- unique(sp500_table$co_tic)
-cat(sp500_tickers, file="C:/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
+cat(sp500_tickers, file="/Users/jerzy/Develop/lecture_slides/data/sp500_tickers.txt", sep="\n")
 # Some gvkeys are duplicates
 duplicate_s <- table(sp500_table$gvkey)
 duplicate_s <- duplicate_s[duplicate_s > 1]
@@ -1911,13 +1913,13 @@ duplicate_s <- sp500_table[match(as.numeric(names(duplicate_s)), sp500_table$gvk
 sp500_gvkeys <- unique(sp500_table$gvkey)
 # foo <- sp500_table[match(sp500_gvkeys, sp500_table$gvkey), ]
 # Save gvkeys into text file
-cat(sp500_gvkeys, file="C:/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
+cat(sp500_gvkeys, file="/Users/jerzy/Develop/lecture_slides/data/sp500_gvkeys.txt", sep="\n")
 # Select unique cusips and save into text file
 sp500_cusips <- unique(sp500_table$co_cusip)
 # Remove empty cusips
 which(sp500_cusips == "")
 sp500_cusips <- sp500_cusips[-which(sp500_cusips == "")]
-cat(sp500_cusips, file="C:/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
+cat(sp500_cusips, file="/Users/jerzy/Develop/lecture_slides/data/sp500_cusips.txt", sep="\n")
 # Find the rows corresponding to the sp500_cusips
 rows_cusips <- sp500_table[match(sp500_cusips, sp500_table$co_cusip), ]
 # Find the rows corresponding to duplicate gvkeys
@@ -1997,7 +1999,7 @@ duplicate_s <- rows_cusips[rows_cusips$gvkey %in% as.numeric(names(duplicate_s))
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
-oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
+oh_lc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
 # oh_lc contains cusips not in sp500_cusips
 cusip_s <- unique(oh_lc$cusip)
 cusip_s %in% sp500_cusips
@@ -2096,7 +2098,7 @@ format_ohlc <- function(oh_lc, environ_ment) {
       \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Load OHLC prices from .csv file downloaded from WRDS by cusip
-sp500_prices <- read.csv(file="C:/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
+sp500_prices <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/sp500_prices_bycusip.csv")
 # sp500_prices contains cusips not in sp500_cusips
 cusip_s <- unique(sp500_prices$cusip)
 NROW(sp500_cusips); NROW(cusip_s)
@@ -2158,7 +2160,7 @@ names(sp500_env$BFB) <- paste("BFB",
   c("Open", "High", "Low", "Close", "Volume"), sep=".")
 rm(BF.B, envir=sp500_env)
 # Save OHLC prices to .RData file
-save(sp500_env, file="C:/Develop/lecture_slides/data/sp500.RData")
+save(sp500_env, file="/Users/jerzy/Develop/lecture_slides/data/sp500.RData")
 plot(quantmod::Cl(sp500_env$MSFT))
       @
 
@@ -2324,7 +2326,7 @@ library(rutils)  # Load package rutils
 col_class <- "character"
 names(col_class) <- "TICKER"
 # Read .csv file with Ford OHLC prices
-oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/F_CRSP.csv",
+oh_lc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/F_CRSP.csv",
   colClasses=col_class)
 sym_bol <- oh_lc[1, "TICKER"]
 # Adjustment factor
@@ -2393,7 +2395,7 @@ plot(quantmod::Cl(oh_lc), main="Ford Stock")
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/wrds_crsp_compustat.png}
       <<echo=FALSE,eval=FALSE,results='asis'>>=
-crsp_compustat <- read.csv(file="C:/Develop/lecture_slides/data/crsp_compustat_indices.csv")
+crsp_compustat <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/crsp_compustat_indices.csv")
 colnames(crsp_compustat) <- crsp_compustat[1, ]
 crsp_compustat <- crsp_compustat[-1, ]
 print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE)
@@ -2418,7 +2420,7 @@ print(xtable(crsp_compustat), comment=FALSE, size="tiny", include.rownames=FALSE
       <<echo=(-(1:1)),eval=FALSE>>=
 library(rutils)  # Load package rutils
 # Read .csv file with TAP OHLC prices
-oh_lc <- read.csv(file="C:/Develop/lecture_slides/data/TAP.csv")
+oh_lc <- read.csv(file="/Users/jerzy/Develop/lecture_slides/data/TAP.csv")
 sym_bol <- oh_lc[1, "tic"]
 # Adjustment factor and total return factor
 adj_fact <- drop(oh_lc[, "ajexdi"])
@@ -2514,10 +2516,10 @@ options(width=200)
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
-symbol_s <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
-head(SPY_TAQ)
-head(SPY)
-tail(SPY)
+# symbol_s <- load("/Users/jerzy/Develop/R/HighFreq/data/hf_data.RData")
+head(HighFreq::SPY_TAQ)
+head(HighFreq::SPY)
+tail(HighFreq::SPY)
       @
   \end{columns}
 \end{block}
@@ -2570,7 +2572,7 @@ tail(SPY)
       <<echo=TRUE,eval=FALSE>>=
 library(rutils)
 # Read TAQ trade data from csv file
-ta_q <- data.table::fread(file="C:/Develop/data/xlk_tick_trades_2020_03_16.csv")
+ta_q <- data.table::fread(file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.csv")
 # Inspect the TAQ data
 ta_q
 class(ta_q)
@@ -2632,7 +2634,7 @@ ta_q <- cbind(index=date_s, ta_q)
 # Coerce trade ticks to xts series
 x_ts <- xts::xts(ta_q[, .(price, volume)], ta_q$index)
 colnames(x_ts) <- paste(sym_bol, c("Close", "Volume"), sep=".")
-save(x_ts, file="C:/Develop/data/xlk_tick_trades_2020_03_16.RData")
+save(x_ts, file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16.RData")
 # Plot dygraph
 dygraphs::dygraph(x_ts$XLK.Close,
   main="XLK Trade Ticks for 2020-03-16")
@@ -2667,7 +2669,7 @@ dim(big_ticks)
 # Number of large lot ticks per second
 NROW(big_ticks)/(6.5*3600)
 # Save trade ticks with large lots
-data.table::fwrite(big_ticks, file="C:/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
+data.table::fwrite(big_ticks, file="/Users/jerzy/Develop/data/xlk_tick_trades_2020_03_16_biglots.csv")
 # Coerce trade prices to xts
 x_ts <- xts::xts(big_ticks[, .(price, volume)], big_ticks$index)
 colnames(x_ts) <- c("XLK.Close", "XLK.Volume")
@@ -2761,10 +2763,10 @@ options(width=200)
 # Load package HighFreq
 library(HighFreq)
 # Or load the high frequency data file directly:
-symbol_s <- load("C:/Develop/R/HighFreq/data/hf_data.RData")
-head(SPY_TAQ)
-head(SPY)
-tail(SPY)
+# symbol_s <- load("/Users/jerzy/Develop/R/HighFreq/data/hf_data.RData")
+head(HighFreq::SPY_TAQ)
+head(HighFreq::SPY)
+tail(HighFreq::SPY)
       @
   \end{columns}
 \end{block}
@@ -2797,7 +2799,7 @@ tail(SPY)
       <<echo=TRUE,size="tiny",tidy=FALSE,eval=TRUE>>=
 # Load package HighFreq
 library(HighFreq)
-head(SPY)
+head(HighFreq::SPY)
       @
   \end{columns}
 \end{block}
@@ -2819,17 +2821,14 @@ library(HighFreq)
 # Define sym_bol
 sym_bol <- "SPY"
 # Load OHLC data
-output_dir <- "C:/Develop/data/hfreq/scrub/"
-sym_bol <- load(
-  file.path(output_dir,
-            paste0(sym_bol, ".RData")))
-inter_val <-
-  "2013-11-11 09:30:00/2013-11-11 10:30:00"
+output_dir <- "/Users/jerzy/Develop/data/hfreq/scrub/"
+sym_bol <- load(file.path(output_dir, paste0(sym_bol, ".RData")))
+inter_val <-"2013-11-11 09:30:00/2013-11-11 10:30:00"
 chart_Series(SPY[inter_val], name=sym_bol)
       @
       The package \emph{HighFreq} contains both \emph{TAQ} data and \emph{Open-High-Low-Close} (\emph{OHLC}) data.
       \vskip1ex
-      If you are not able to install package \emph{HighFreq} then download the file \texttt{hf\_data.RData} from NYU Classes and load it.
+      If you are not able to install package \emph{HighFreq} then download the file \texttt{hf\_data.RData} from Brightspace and load it.
     \column{0.5\textwidth}
       \includegraphics[width=0.45\paperwidth]{figure/earl_ohlc_chart-1}
   \end{columns}
@@ -2914,15 +2913,12 @@ install_github(repo="algoquant/HighFreq")
 # Load package HighFreq
 library(HighFreq)
 # set data directories
-data_dir <- "C:/Develop/data/hfreq/src/"
-output_dir <- "C:/Develop/data/hfreq/scrub/"
+data_dir <- "/Users/jerzy/Develop/data/hfreq/src/"
+output_dir <- "/Users/jerzy/Develop/data/hfreq/scrub/"
 # Define sym_bol
 sym_bol <- "SPY"
 # Load a single day of TAQ data
-sym_bol <- load(
-  file.path(data_dir,
-            paste0(sym_bol, "/2014.05.02.",
-                   sym_bol, ".RData")))
+sym_bol <- load(file.path(data_dir, paste0(sym_bol, "/2014.05.02.", sym_bol, ".RData")))
 # scrub, aggregate single day of TAQ data to OHLC
 ohlc_data <- scrub_agg(taq_data=get(sym_bol))
 # Aggregate TAQ data for symbol, save to file
@@ -2968,11 +2964,11 @@ data(package=HighFreq)
 # But the SPY dataset isn't listed in the workspace
 ls()
 # HighFreq datasets are lazy loaded and available when needed
-head(SPY)
+head(HighFreq::SPY)
 # Load all the datasets in package HighFreq
 data(hf_data)
 # HighFreq datasets are now loaded and in the workspace
-head(SPY)
+head(HighFreq::SPY)
       @
   \end{columns}
 \end{block}
@@ -3005,8 +3001,7 @@ colnames(re_turns) <- "SPY"
 # Standardize raw returns to make later comparisons
 re_turns <- (re_turns - mean(re_turns))/sd(re_turns)
 # Calculate moments and perform normality test
-sapply(c(var=2, skew=3, kurt=4),
-  function(x) sum(re_turns^x)/n_rows)
+sapply(c(var=2, skew=3, kurt=4), function(x) sum(re_turns^x)/n_rows)
 tseries::jarque.bera.test(re_turns)
 # Fit SPY returns using MASS::fitdistr()
 optim_fit <- MASS::fitdistr(re_turns, densfun="t", df=2)
@@ -3064,8 +3059,7 @@ dai_ly <- rutils::diff_it(clos_e)
 dai_ly <- (dai_ly - mean(dai_ly))/sd(dai_ly)
 # Calculate moments
 sapply(list(minutely=re_turns, hourly=hour_ly, daily=dai_ly),
-       function(rets) {
-         sapply(c(var=2, skew=3, kurt=4),
+       function(rets) {sapply(c(var=2, skew=3, kurt=4),
                 function(x) mean(rets^x))
 })  # end sapply
       @
@@ -3164,7 +3158,7 @@ legend("topright", legend=colnames(vol_rolling),
       \vskip1ex
       The \emph{bid-ask bounce} produces very high realized volatility and the appearance of mean reversion (negative autocorrelation), that isn't tradeable for most traders.
       <<echo=TRUE,eval=FALSE>>=
-price_s <- read.zoo(file="C:/Develop/lecture_slides/data/bid_ask_bounce.csv",
+price_s <- read.zoo(file="/Users/jerzy/Develop/lecture_slides/data/bid_ask_bounce.csv",
   header=TRUE, sep=",")
 price_s <- as.xts(price_s)
 x11(width=6, height=4)
@@ -4249,7 +4243,7 @@ sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   exch="GLOBEX", expiry="201906")
 # Open file for data download
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dir_name)
 file_name <- file.path(dir_name, paste0(sym_bol, "_201906.csv"))
 file_connect <- file(file_name, open="w")
@@ -4291,7 +4285,7 @@ sym_bols <- c("AAPL", "F", "MSFT")
 con_tracts <- lapply(sym_bols, IBrokers::twsEquity, primary="SMART")
 names(con_tracts) <- sym_bols
 # Open file connections for data download
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_names <- file.path(dir_name, paste0(sym_bols, format(Sys.time(), format="_%m_%d_%Y_%H_%M"), ".csv"))
 file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
 # Connect to Interactive Brokers TWS
@@ -4417,7 +4411,7 @@ con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   include_expired="1",
   exch="GLOBEX", expiry="201806")
 # Open file connection for data download
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 dir.create(dir_name)
 file_name <- file.path(dir_name, paste0(sym_bol, ".csv"))
 file_connect <- file(file_name, open="w")
@@ -4465,7 +4459,7 @@ sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dir_name)
 file_name <- file.path(dir_name, paste0(sym_bol, "_taq_live.csv"))
 file_connect <- file(file_name, open="w")
@@ -4507,7 +4501,7 @@ sym_bol <- "ES"
 con_tract <- IBrokers::twsFuture(symbol=sym_bol,
   exch="GLOBEX", expiry="201906")
 # Open file connection for data download
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dir_name)
 file_name <- file.path(dir_name, paste0(sym_bol, "_ohlc_live.csv"))
 file_connect <- file(file_name, open="w")
@@ -4563,7 +4557,7 @@ library(IBrokers)
 con_tracts <- list(ES=IBrokers::twsFuture(symbol="ES", exch="GLOBEX", expiry="201906"),
                    ZN=IBrokers::twsFuture(symbol="ZN", exch="ECBOT", expiry="201906"))
 # Open the file connection for storing the bar data
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 file_names <- file.path(dir_name, paste0(c("ES_", "ZN_"), format(Sys.time(), format="%m_%d_%Y_%H_%M"), ".csv"))
 file_connects <- lapply(file_names, function(file_name) file(file_name, open="w"))
 # Connect to Interactive Brokers TWS
@@ -4917,7 +4911,7 @@ euro_contract <- IBrokers::twsFuture(symbol="EUR",
 IBrokers::reqContractDetails(conn=ib_connect, Contract=euro_contract)
 
 # Define data directory
-dir_name <- "C:/Develop/data/ib_data"
+dir_name <- "/Users/jerzy/Develop/data/ib_data"
 # Dir.create(dir_name)
 
 # Open file for error messages

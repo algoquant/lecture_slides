@@ -172,10 +172,10 @@ dir(getwd(), all.files=TRUE, pattern=glob2rx("*.R*"))
 # Strings without quotes are variable names
 a  # Variable "a" doesn't exist
 # List elements can have different mode
-list(aa=c('a', 'b'), bb=1:5)
-data.frame(aa=c('a', 'b'), bb=1:2)
-is.atomic(data.frame(aa=c('a', 'b'), bb=1:2))
-is.recursive(data.frame(aa=c('a', 'b'), bb=1:2))
+list(aa=c("a", "b"), bb=1:5)
+data.frame(aa=c("a", "b"), bb=1:2)
+is.atomic(data.frame(aa=c("a", "b"), bb=1:2))
+is.recursive(data.frame(aa=c("a", "b"), bb=1:2))
 
 my_var <- "hello"
 c(typeof(my_var), mode(my_var), class(my_var))
@@ -192,22 +192,22 @@ c(typeof(my_var), mode(my_var), class(my_var))
 my_var <- matrix(runif(10), 2, 5)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-my_var <- list(aa=c('a', 'b'), bb=1:5)
+my_var <- list(aa=c("a", "b"), bb=1:5)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+my_var <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(my_var), mode(my_var), class(my_var))
 
-# a simple vector has no attributes
+# A simple vector has no attributes
 attributes(5:10)
 my_var <- c(pi=pi, euler=exp(1), gamma=-digamma(1))
-# named vector has "names" attribute
+# Named vector has "names" attribute
 attributes(my_var)
 my_var <- 1:10
-is.vector(my_var)  # is the object a vector?
+is.vector(my_var)  # Is the object a vector?
 attributes(my_var) <- list(my_attr="foo")
 my_var
-is.vector(my_var)  # is the object a vector?
+is.vector(my_var)  # Is the object a vector?
 my_var <- 0
 attributes(my_var) <- list(class="Date")
 my_var  # "Date" object
@@ -215,7 +215,7 @@ structure(0, class="Date")  # "Date" object
 
 my_var <- matrix(runif(10), 2, 5)
 class(my_var)  # Has implicit class
-# but no explicit "class" attribute
+# But no explicit "class" attribute
 attributes(my_var)
 c(typeof(my_var), mode(my_var), class(my_var))
 # Assign explicit "class" attribute
@@ -223,21 +223,21 @@ class(my_var) <- "my_class"
 class(my_var)  # Has explicit "class"
 # Has explicit "class" attribute
 attributes(my_var)
-is.matrix(my_var)  # is the object a matrix?
-is.vector(my_var)  # is the object a vector?
+is.matrix(my_var)  # Is the object a matrix?
+is.vector(my_var)  # Is the object a vector?
 attributes(unclass(my_var))
 
-# integer implicit class derived from type
+# Integer implicit class derived from type
 my_var <- vector(mode="integer", length=10)
 c(typeof(my_var), mode(my_var), class(my_var))
-# numeric implicit class derived from mode
+# Numeric implicit class derived from mode
 my_var <- vector(mode="numeric", length=10)
 c(typeof(my_var), mode(my_var), class(my_var))
-# adding dim attribute changes implicit class to matrix
+# Adding dim attribute changes implicit class to matrix
 dim(my_var) <- c(5, 2)
 c(typeof(my_var), mode(my_var), class(my_var))
 # Data frames have implicit dim attribute
-my_var <- data.frame(aa=c('a', 'b'), bb=1:2)
+my_var <- data.frame(aa=c("a", "b"), bb=1:2)
 c(typeof(my_var), mode(my_var), class(my_var))
 attributes(my_var)
 dim(my_var)
@@ -258,11 +258,11 @@ c(typeof(mat_rix), mode(mat_rix), class(mat_rix))
 c(is.matrix(mat_rix), is.vector(mat_rix))
 as.logical(0:3)  # Explicit coercion to "logical"
 as.numeric(c(FALSE, TRUE, TRUE, TRUE))
-c(1:3, 'a')  # implicit coercion to "character"
+c(1:3, "a")  # Implicit coercion to "character"
 # Explicit coercion to "numeric"
-as.numeric(c(1:3, 'a'))
+as.numeric(c(1:3, "a"))
 
-"Hello World!"  # type some text
+"Hello World!"  # Type some text
 # hello is a variable name, because it's not in quotes
 hello  # R interprets "hello" as a variable name
 is.vector(1)  # Single number is a vector
@@ -271,9 +271,9 @@ is.vector("a")  # String is a vector
 # Create vector using c() combine function
 c(1, 2, 3, 4, 5)
 # Create vector using c() combine function
-c('a', 'b', 'c')
+c("a", "b", "c")
 # Create vector using c() combine function
-c(1, 'b', 'c')
+c(1, "b", "c")
 
 str_var <- "Some string"
 str_var
@@ -291,16 +291,16 @@ cat("Enter\\backslash")
 
 str_var1 <- "Hello"  # Define a character string
 str_var2 <- "World!"  # Define a character string
-paste(str_var1, str_var2, sep=' ')  # Concatenate and return value
+paste(str_var1, str_var2, sep=" ")  # Concatenate and return value
 cat(str_var1, str_var2)  # Concatenate and echo to console
-paste('a', 1:4, sep='-')  # Convert, recycle and concatenate
+paste("a", 1:4, sep="-")  # Convert, recycle and concatenate
 paste(c("a1", "a2", "a3"), collapse="+")  # Collapse vector to string
 paste(list("a1", "a2", "a3"), collapse="+")
 paste("Today is", Sys.time())  # Coerce and concatenate strings
 paste("Today is", format(Sys.time(), "%B-%d-%Y"))
-strsplit("Hello World", split='r')  # Split string
-strsplit("Hello.World", split='[.]')  # Split string
-strsplit("Hello.World", split='.', fixed=TRUE)  # Split string
+strsplit("Hello World", split="r")  # Split string
+strsplit("Hello.World", split="[.]")  # Split string
+strsplit("Hello.World", split=".", fixed=TRUE)  # Split string
 substring("Hello World", 3, 6)  # Extract characters from 3 to 6
 
 gsub("is", "XX", "is this gratis?")  # Replace "is" with "XX"
@@ -324,14 +324,14 @@ c(FALSE, TRUE, TRUE)
 # Extract second and third elements
 vec_tor[c(FALSE, TRUE, TRUE)]
 letters[5:10]  # Vector of letters
-c('a', letters[5:10])  # Combine two vectors of letters
+c("a", letters[5:10])  # Combine two vectors of letters
 
 0:10  # Vector of integers from 0 to 10
 vector()  # Create empty vector
-vector(mode="numeric", length=10)  # numeric vector of zeros
+vector(mode="numeric", length=10)  # Numeric vector of zeros
 seq(10)  # Sequence from 1 to 10
-seq(along=(-5:5))  # instead of 1:NROW(obj)
-seq_along(c("a", "b", "c"))  # instead of 1:NROW(obj)
+seq(along=(-5:5))  # Instead of 1:NROW(obj)
+seq_along(c("a", "b", "c"))  # Instead of 1:NROW(obj)
 seq(from=0, to=1, len=11)  # Decimals from 0 to 1.0
 seq(from=0, to=1, by=0.1)  # Decimals from 0 to 1.0
 seq(-2,2, len=11)  # 10 numbers from -2 to 2
@@ -353,7 +353,7 @@ vec_tor > 6
 2*vec_tor  # Multiply all elements by 2
 vec_tor^2  # Square all elements
 c(11, 5:10)  # Combine two vectors
-c(vec_tor, 2.0)  # append number to vector
+c(vec_tor, 2.0)  # Append number to vector
 
 vec_tor <- # Create named vector
   c(pi_const=pi, euler=exp(1), gamma=-digamma(1))
@@ -364,11 +364,11 @@ names(vec_tor) <- c("pie","eulery","gammy")  # Rename elements
 vec_tor
 unname(vec_tor)  # Remove names attribute
 letters[5:10]  # Vector of letters
-c('a', letters[5:10])  # Combine two vectors of letters
+c("a", letters[5:10])  # Combine two vectors of letters
 # Create named vector
 structure(sample(1:5), names=paste0("el", 1:5))
 
-vec_tor  # named vector
+vec_tor  # Named vector
 # Extract second element
 vec_tor[2]
 # Extract all elements, except the second element
@@ -394,58 +394,57 @@ vec_tor[vec_tor == vec_tor[2]]
 vec_tor < 1  # Boolean vector of elements less than one
 # Extract all elements greater than one
 vec_tor[vec_tor > 1]
-vec_tor[vec_tor > 0.5]  # filter elements > 0.5
-which(vec_tor > 0.5)  # index of elements > 0.5
+vec_tor[vec_tor > 0.5]  # Filter elements > 0.5
+which(vec_tor > 0.5)  # Index of elements > 0.5
 
 # Create factor vector
-fac_tor <- factor(c('b', 'c', 'd', 'a', 'c', 'b'))
+fac_tor <- factor(c("b", "c", "d", "a", "c", "b"))
 fac_tor
 fac_tor[3]
-attributes(fac_tor)  # Get factor attributes
-levels(fac_tor)  # Get allowed values
-as.numeric(fac_tor)  # Get encoding vector
+# Get factor attributes
+attributes(fac_tor)
+# Get allowed values
+levels(fac_tor)
+# Get encoding vector
+as.numeric(fac_tor)
 is.vector(fac_tor)
-as.factor(1:5)  # Coerce vector to factor
+# Coerce vector to factor
+as.factor(1:5)
 # Coerce factor to character vector
 as.vector(as.factor(1:5))
 
 fac_tor
-levels(fac_tor)  # Get allowed values
-unique(fac_tor)  # Get unique elements
+# Get unique elements
+unique(fac_tor)
+# Get levels attribute of the factor
+levels(fac_tor)
+# Calculate the factor elements from its levels
+levels(fac_tor)[as.numeric(fac_tor)]
 # Get contingency (frequency) table
 table(fac_tor)
-# Get contingency table using sapply
-sapply(levels(fac_tor),
- function(le_vel) {
-   sum(fac_tor==le_vel)
- })  # end sapply
 
-library(microbenchmark)
-str(findInterval)
+# Display the formal arguments of findInterval
+args(findInterval)
 # Get index of the element of "vec" that matches 5
 findInterval(x=5, vec=c(3, 5, 7))
 match(5, c(3, 5, 7))
-# no exact match
+# No exact match
 findInterval(x=6, vec=c(3, 5, 7))
 match(6, c(3, 5, 7))
-# indices of "vec" that match elements of "x"
+# Indices of "vec" that match elements of "x"
 findInterval(x=1:8, vec=c(3, 5, 7))
 # Return only indices of inside intervals
-findInterval(x=1:8, vec=c(3, 5, 7),
-       all.inside=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), all.inside=TRUE)
 # make rightmost interval inclusive
-findInterval(x=1:8, vec=c(3, 5, 7),
-       rightmost.closed=TRUE)
+findInterval(x=1:8, vec=c(3, 5, 7), rightmost.closed=TRUE)
 
-# named numeric vector of breakpoints
-brea_ks <- c(freezing=0, very_cold=30,
-       cold=50, pleasant=60,
-       warm=80, hot=90)
+# Named numeric vector of breakpoints
+brea_ks <- c(freezing=0, very_cold=30, cold=50, 
+       pleasant=60, warm=80, hot=90)
 brea_ks
 tempe_ratures <- runif(10, min=10, max=100)
 feels_like <- names(
-  brea_ks[findInterval(x=tempe_ratures,
-                 vec=brea_ks)])
+  brea_ks[findInterval(x=tempe_ratures, vec=brea_ks)])
 names(tempe_ratures) <- feels_like
 tempe_ratures
 
@@ -479,7 +478,7 @@ histo_gram <- hist(re_turns, breaks=100,
 # Draw kernel density of histogram
 lines(density(re_turns), col="red", lwd=2)
 # Add density of normal distribution
-curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)),
+curve(expr=dnorm(x, mean=mean(re_turns), sd=sd(re_turns)), 
 add=TRUE, type="l", lwd=2, col="blue")
 title(main="VTI Return Distribution", line=0)
 # Add legend
@@ -490,7 +489,7 @@ legend("topright", inset=0.05, cex=0.8, title=NULL,
 sum(diff(histo_gram$breaks) * histo_gram$density)
 
 mat_rix <- matrix(5:10, nrow=2, ncol=3)  # Create a matrix
-mat_rix  # by default matrices are constructed column-wise
+mat_rix  # By default matrices are constructed column-wise
 # Create a matrix row-wise
 matrix(5:10, nrow=2, byrow=TRUE)
 mat_rix[2, 3]  # Extract third element from second row
@@ -512,7 +511,7 @@ class(mat_rix)  # Get class attribute
 rownames(mat_rix) <- c("row1", "row2")  # Rownames attribute
 colnames(mat_rix) <- c("col1", "col2", "col3")  # Colnames attribute
 mat_rix
-mat_rix["row2", "col3"]  # third element from second row
+mat_rix["row2", "col3"]  # Third element from second row
 names(mat_rix)  # Get the names attribute
 dimnames(mat_rix)  # Get dimnames attribute
 attributes(mat_rix)  # Get matrix attributes
@@ -1063,7 +1062,8 @@ calc_skew()
 
 str(plot)  # Dots for additional plot parameters
 bind_dots <- function(in_put, ...) {
-  paste0("in_put=", in_put, ", dots=", paste(..., sep=", "))
+  paste0("in_put=", in_put,
+ ", dots=", paste(..., sep=", "))
 }  # end bind_dots
 bind_dots(1, 2, 3)  # "in_put" bound by position
 bind_dots(2, in_put=1, 3)  # "in_put" bound by name
