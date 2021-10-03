@@ -904,19 +904,19 @@ sum(is_bad)
 # Add 200 random price jumps into price_s
 set.seed(1121)
 n_bad <- 200
-is_jump <- logical(NROW(clos_e))
+is_jump <- logical(NROW(x_ts))
 is_jump[sample(x=NROW(is_jump), size=n_bad)] <- TRUE
-clos_e[is_jump] <- clos_e[is_jump]*
+x_ts$XLK.Close[is_jump] <- x_ts$XLK.Close[is_jump]*
   sample(c(0.95, 1.05), size=n_bad, replace=TRUE)
 # Plot prices and medians
-dygraphs::dygraph(cbind(clos_e, medi_an), main="VTI median") %>%
+dygraphs::dygraph(cbind(x_ts, medi_an), main="VTI median") %>%
   dyOptions(colors=c("black", "red"))
 # Calculate time series of z-scores
-medi_an <- roll::roll_median(clos_e, width=look_back)
-# medi_an <- TTR::runMedian(clos_e, n=look_back)
-ma_d <- HighFreq::roll_var(clos_e, look_back=look_back, method="quantile")
-# ma_d <- TTR::runMAD(clos_e, n=look_back)
-z_scores <- (clos_e - medi_an)/ma_d
+medi_an <- roll::roll_median(x_ts, width=look_back)
+# medi_an <- TTR::runMedian(x_ts, n=look_back)
+ma_d <- HighFreq::roll_var(x_ts, look_back=look_back, method="quantile")
+# ma_d <- TTR::runMAD(x_ts, n=look_back)
+z_scores <- ifelse(ma_d > 0, (x_ts - medi_an)/ma_d, 0)
 z_scores[1:look_back, ] <- 0
 # Calculate number of prices classified as bad data
 is_bad <- (abs(z_scores) > thresh_old)
@@ -930,6 +930,8 @@ sum(!is_jump & is_bad)
 # FALSE negative (type II error)
 sum(is_jump & !is_bad)
 
+confu_sion <- table(!is_jump, !(abs(z_scores) > thresh_old))
+
 # Confusion matrix as function of thresh_old
 con_fuse <- function(actu_al, z_scores, thresh_old) {
     confu_sion <- table(!actu_al, !(abs(z_scores) > thresh_old))
@@ -938,7 +940,7 @@ con_fuse <- function(actu_al, z_scores, thresh_old) {
   }  # end con_fuse
 con_fuse(is_jump, z_scores, thresh_old=thresh_old)
 # Define vector of discrimination thresholds
-threshold_s <- seq(from=0.2, to=5.0, by=0.2)
+threshold_s <- seq(from=10.0, to=25.0, by=0.2)
 # Calculate error rates
 error_rates <- sapply(threshold_s, con_fuse,
   actu_al=is_jump, z_scores=z_scores)  # end sapply
@@ -953,7 +955,7 @@ false_pos <- rutils::diff_it(error_rates[, "typeI"])
 abs(sum(true_pos*false_pos))
 
 # Plot ROC curve for Hampel classifier
-x11(width=6, height=5)
+x11(width=5, height=5)
 plot(x=error_rates[, "typeI"], y=1-error_rates[, "typeII"],
      xlab="FALSE positive rate", ylab="TRUE positive rate",
      xlim=c(0, 1), ylim=c(0, 1),

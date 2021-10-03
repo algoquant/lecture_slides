@@ -656,7 +656,7 @@ legend("topright", inset=0.05, lty=1, lwd=6, bty="n",
     \column{0.5\textwidth}
       \vspace{-1em}
         <<echo=TRUE,eval=FALSE>>=
-# Objective function is log-likelihood
+# Objective function is negative log-likelihood
 likeli_hood <- function(par, dfree, data) {
   sum(-log(gamma((dfree+1)/2)/(sqrt(pi*dfree)*gamma(dfree/2))) +
     log(par[2]) + (dfree+1)/2*log(1+((data-par[1])/par[2])^2/dfree))
@@ -669,7 +669,6 @@ likeli_hood <- function(par, dfree, data) {
   -sum(log(dt(x=(data-par[1])/par[2], df=dfree)/par[2]))
 }  # end likeli_hood
       @
-      \vspace{-1em}
       The \emph{likelihood} function measures how \emph{likely} are the parameters, given the observed values $\bar{x}$.
       \vskip1ex
       The \emph{maximum-likelihood} estimate (\emph{MLE}) of the parameters are those that maximize the \emph{likelihood} function:
@@ -2525,11 +2524,12 @@ plot.zoo(cbind(eq_all, eq_up, eq_dn)[end_p], lwd=c(2, 2, 2),
       Where the decay parameter $\lambda$ determines the rate of decay of the \emph{EWMA} weights, with larger values of $\lambda$ producing faster decay, giving more weight to recent prices, and vice versa.
       <<echo=TRUE,eval=FALSE>>=
 # Extract log VTI prices
-clos_e <- log(na.omit(rutils::etf_env$price_s$VTI))
+oh_lc <- rutils::etf_env$VTI
+clos_e <- log(quantmod::Cl(oh_lc))
 n_rows <- NROW(clos_e)
 # Calculate EWMA weights
-look_back <- 21
-lamb_da <- 0.1
+look_back <- 252
+lamb_da <- 0.07
 weight_s <- exp(lamb_da*1:look_back)
 weight_s <- weight_s/sum(weight_s)
 # Calculate EWMA prices
@@ -2574,27 +2574,28 @@ legend("bottomright", legend=colnames(price_s),
       \begin{displaymath}
         p^{VWAP}_i = \frac{\sum_{j=0}^{n} v_j p_{i-j}}{\sum_{j=0}^{n} v_j}
       \end{displaymath}
-      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
+      The \emph{VWAP} applies more weight to prices with higher trading volumes, which allows it to react more quickly to recent market volatility.
       \vskip1ex
+      The \emph{VWAP} is often used as a technical indicator in trend following strategies.
       <<echo=TRUE,eval=FALSE>>=
 # Calculate log OHLC prices and volumes
-sym_bol <- "VTI"
 oh_lc <- rutils::etf_env$VTI
-n_rows <- NROW(oh_lc)
 clos_e <- log(quantmod::Cl(oh_lc))
+colnames(clos_e) <- "VTI"
 vol_ume <- quantmod::Vo(oh_lc)
+colnames(vol_ume) <- "Volume"
+n_rows <- NROW(clos_e)
 # Calculate the VWAP prices
 look_back <- 21
-v_wap <- roll::roll_sum(clos_e*vol_ume, width=look_back, min_obs=1)
+vwap <- roll::roll_sum(clos_e*vol_ume, width=look_back, min_obs=1)
 volume_roll <- roll::roll_sum(vol_ume, width=look_back, min_obs=1)
-v_wap <- v_wap/volume_roll
-v_wap <- zoo::na.locf(v_wap, fromLast=TRUE)
-price_s <- cbind(clos_e, v_wap)
-colnames(price_s) <- c(sym_bol, paste(sym_bol, "VWAP"))
+vwap <- vwap/volume_roll
+colnames(vwap) <- "VWAP"
+price_s <- cbind(clos_e, vwap)
       @
     \column{0.5\textwidth}
       \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/features_vwap.png}
+      \includegraphics[width=0.4\paperwidth]{figure/features_vwap.png}
       <<echo=TRUE,eval=FALSE>>=
 # Dygraphs plot with custom line colors
 col_ors <- c("blue", "red")
@@ -2810,14 +2811,14 @@ dy_graph
       Trading volumes are typically higher when prices drop and they are also positively correlated with the return volatility.
       \vskip1ex
       The \emph{volume z-scores} are positively skewed because returns are negatively skewed.
-      \vskip1ex
       <<echo=TRUE,eval=FALSE>>=
 # Calculate volume z-scores
 vol_ume <- quantmod::Vo(rutils::etf_env$VTI)
 look_back <- 21
 volume_mean <- roll::roll_mean(vol_ume, width=look_back, min_obs=1)
 volume_sd <- roll::roll_sd(rutils::diff_it(vol_ume), width=look_back, min_obs=1)
-volume_scores <- (vol_ume - volume_mean)/volume_sd
+volume_sd[1] <- 0
+volume_scores <- ifelse(volume_sd > 0, (vol_ume - volume_mean)/volume_sd, 0)
 # Plot histogram of volume z-scores
 x11(width=6, height=5)
 hist(volume_scores, breaks=1e2)
@@ -2866,7 +2867,8 @@ vol_at <- quantmod::Hi(oh_lc)-quantmod::Lo(oh_lc)
 look_back <- 21
 volat_mean <- roll::roll_mean(vol_at, width=look_back, min_obs=1)
 volat_sd <- roll::roll_sd(rutils::diff_it(vol_at), width=look_back, min_obs=1)
-volat_scores <- ifelse(is.na(volat_sd), 0, (vol_at - volat_mean)/volat_sd)
+volat_sd[1] <- 0
+volat_scores <- ifelse(volat_sd > 0, (vol_at - volat_mean)/volat_sd, 0)
 # Plot histogram of volatility z-scores
 x11(width=6, height=5)
 hist(volat_scores, breaks=1e2)
@@ -2915,6 +2917,7 @@ dygraphs::dygraph(price_s["2009"], main="VTI Volatility Z-Scores") %>%
 # Calculate the centered volatility
 look_back <- 21
 half_back <- look_back %/% 2
+re_turns <- rutils::diff_it(clos_e)
 vol_at <- roll::roll_sd(re_turns, width=look_back, min_obs=1)
 vol_at <- rutils::lag_it(vol_at, lagg=(-half_back))
 # Calculate the z-scores of prices
@@ -2951,6 +2954,8 @@ dygraphs::dygraph(price_s["2009"], main="VTI Price Z-Scores") %>%
   \begin{columns}[T]
     \column{0.5\textwidth}
       The local tops and bottoms of prices can be labeled approximately in-sample using the z-scores of prices and threshold values.
+      \vskip1ex
+      The local tops of prices represent \emph{overbought} conditions, while the bottoms represent \emph{oversold} conditions.
       \vskip1ex
       The labeled data can be used as a response or target variable in machine learning classifier models.
       \vskip1ex

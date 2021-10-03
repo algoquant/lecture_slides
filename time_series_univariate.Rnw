@@ -1508,10 +1508,6 @@ plot.zoo(per_centage[-(1:2),],
       \begin{displaymath}
         p_i = \varphi p_{i-1} + \sigma \, \xi_i
       \end{displaymath}
-    \column{0.5\textwidth}
-      \vspace{-1em}
-      \includegraphics[width=0.45\paperwidth]{figure/brown_paths.png}
-      \vspace{-1em}
       <<echo=TRUE,eval=FALSE>>=
 # Define Brownian Motion parameters
 n_rows <- 1000; sig_ma <- 0.01
@@ -1528,6 +1524,9 @@ matplot(y=price_s, main="Brownian Motion Paths",
 # Save plot to png file on Mac
 quartz.save("figure/brown_paths.png", type="png", width=6, height=4)
       @
+    \column{0.5\textwidth}
+      \vspace{-1em}
+      \includegraphics[width=0.45\paperwidth]{figure/brown_paths.png}
   \end{columns}
 \end{block}
 
@@ -1573,9 +1572,9 @@ for (i in 2:n_rows) {
   price_s[i] <- price_s[i-1] + re_turns[i]
 }  # end for
 # Simulate Ornstein-Uhlenbeck process in Rcpp
-prices_cpp <- HighFreq::sim_ou(eq_price=eq_price, volat=sig_ma, 
+returns_cpp <- HighFreq::sim_ou(eq_price=eq_price, volat=sig_ma, 
   theta=the_ta, innov=matrix(in_nov))
-all.equal(price_s, drop(prices_cpp))
+all.equal(re_turns, drop(returns_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
@@ -2617,21 +2616,17 @@ plot(vari_ance, xlab="time steps", ylab="",
       The \emph{Dickey-Fuller} process is a combination of an \emph{Ornstein-Uhlenbeck} process and an \emph{autoregressive} process.
       \vskip1ex
       The returns $r_i$ are equal to the sum of a mean reverting term plus \emph{autoregressive} terms:
-      {\scriptsize
       \begin{align*}
         r_i &= \theta (\mu - p_{i-1}) + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \sigma \, \xi_i \\
         p_i &= p_{i-1} + r_i
       \end{align*}
-      }
       Where $\mu$ is the equilibrium price, $\sigma$ is the volatility of returns, and $\xi_i$ are standard normal \emph{innovations}.
       \vskip1ex
       Then the prices follow an \emph{autoregressive} process:
-      {\scriptsize
       \begin{multline*}
         p_i = \theta \mu + (1 + \varphi_1 - \theta) p_{i-1} + (\varphi_2 - \varphi_1) p_{i-2} + \ldots + \\
         (\varphi_p - \varphi_{p-1}) p_{i-p} - \varphi_p p_{i-p-1} + \sigma \, \xi_i
       \end{multline*}
-      }
       \vskip1ex
       The sum of the \emph{autoregressive} coefficients is equal to $1 - \theta$, so if the mean reversion parameter $\theta$ is positive: $\theta > 0$, then the time series $p_i$ exhibits mean reversion and has no \emph{unit root}.
     \column{0.5\textwidth}
@@ -2651,9 +2646,9 @@ for (i in 2:n_rows) {
   price_s[i] <- price_s[i-1] + re_turns[i]
 }  # end for
 # Simulate Dickey-Fuller process in Rcpp
-prices_cpp <- HighFreq::sim_ou(eq_price=eq_price, volat=sig_ma, 
+returns_cpp <- HighFreq::sim_ou(eq_price=eq_price, volat=sig_ma, 
     theta=the_ta, innov=matrix(in_nov))
-all.equal(price_s, drop(prices_cpp))
+all.equal(price_s, drop(returns_cpp))
 # Compare the speed of R code with Rcpp
 library(microbenchmark)
 summary(microbenchmark(
@@ -2679,11 +2674,9 @@ summary(microbenchmark(
       The \emph{Augmented Dickey-Fuller} \emph{ADF} test is designed to test the \emph{null hypothesis} that a time series has a \emph{unit root}.
       \vskip1ex
       The \emph{ADF} test fits an autoregressive model with an extra mean reversion term:
-      {\scriptsize
       \begin{displaymath}
         r_i = \theta (\mu - p_{i-1}) + \varphi_1 r_{i-1} + \ldots + \varphi_p r_{i-p} + \varepsilon_i
       \end{displaymath}
-      }
       Where $\mu$ is the equilibrium price.
       \vskip1ex
       $\varepsilon_i$ are the \emph{residuals}, which are usually assumed to be standard normally distributed $\phi(0, \sigma_\varepsilon)$, independent, and stationary.
